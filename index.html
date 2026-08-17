@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: A235 ARCHIV INTEGRIERT + ACCOUNTING-FIX + A115 + SELBSTLÄUFER 0 MIN -->
+<!-- BUILD: A235 ZUSATZGEWICHT FIX + HISTORISCHE AKTIVZEITEN -->
 
 <style>
 
@@ -1192,7 +1192,7 @@ button {
   margin-bottom: 6px;
 
   background:
-    linear-gradient(å
+    linear-gradient(
       135deg,
       #182027,
       #121719
@@ -3747,11 +3747,15 @@ dateKey
 );
 
 
-let activeWithWeightMs =
+/*
+  MODERNE / EXAKTE AUFGABENSEGMENTE
+*/
+
+let exactSegmentOverlapMs =
 0;
 
 
-const byWeight =
+const exactByWeight =
 {};
 
 
@@ -3804,7 +3808,7 @@ return;
 }
 
 
-activeWithWeightMs +=
+exactSegmentOverlapMs +=
 overlap;
 
 
@@ -3817,13 +3821,22 @@ phase.weightKg
 
 
 if (
-!byWeight[weightKey]
+!exactByWeight[
+weightKey
+]
 ) {
-byWeight[weightKey] = 0;
+
+exactByWeight[
+weightKey
+] =
+0;
+
 }
 
 
-byWeight[weightKey] +=
+exactByWeight[
+weightKey
+] +=
 overlap;
 
 });
@@ -3831,6 +3844,265 @@ overlap;
 });
 
 });
+
+
+/*
+  HISTORISCHE ARCHIVDATEN
+
+  Viele alte Aufgaben besitzen bewusst keine activeSegments.
+  Dafür existieren historischeWeightKg an Aufgaben ODER
+  activeTaskDurationMs an dokumentierten Tragephasen.
+*/
+
+const historicalTasks =
+dayTasks.filter(
+task =>
+Number(
+task.historicalWeightKg
+) > 0
+);
+
+
+const historicalTaskMs =
+historicalTasks.reduce(
+(sum,task) =>
+sum +
+getArchiveAccountingActiveMs(
+task
+),
+0
+);
+
+
+const historicalTaskByWeight =
+{};
+
+
+historicalTasks.forEach(
+task => {
+
+const key =
+String(
+Number(
+task.historicalWeightKg
+)
+);
+
+
+if (
+!historicalTaskByWeight[
+key
+]
+) {
+
+historicalTaskByWeight[
+key
+] =
+0;
+
+}
+
+
+historicalTaskByWeight[
+key
+] +=
+getArchiveAccountingActiveMs(
+task
+);
+
+}
+);
+
+
+const historicalPhases =
+phases.filter(
+phase =>
+phase.historical ===
+true
+);
+
+
+const phaseKnownActiveMs =
+historicalPhases.reduce(
+(sum,phase) => {
+
+if (
+phase.activeTaskDurationMs ===
+null ||
+typeof phase.activeTaskDurationMs ===
+"undefined"
+) {
+
+return sum;
+
+}
+
+
+return (
+sum +
+(
+Number(
+phase.activeTaskDurationMs
+) || 0
+)
+);
+
+},
+0
+);
+
+
+const phaseHasUnknownDistribution =
+historicalPhases.some(
+phase =>
+phase.activeTaskDurationMs ===
+null ||
+typeof phase.activeTaskDurationMs ===
+"undefined"
+);
+
+
+const phaseKnownByWeight =
+{};
+
+
+historicalPhases.forEach(
+phase => {
+
+if (
+phase.activeTaskDurationMs ===
+null ||
+typeof phase.activeTaskDurationMs ===
+"undefined"
+) {
+
+return;
+
+}
+
+
+const key =
+String(
+Number(
+phase.weightKg
+)
+);
+
+
+if (
+!phaseKnownByWeight[
+key
+]
+) {
+
+phaseKnownByWeight[
+key
+] =
+0;
+
+}
+
+
+phaseKnownByWeight[
+key
+] +=
+Number(
+phase.activeTaskDurationMs
+) || 0;
+
+}
+);
+
+
+/*
+  Wenn die Tragephasen die aktive Zeit vollständig enthalten,
+  sind sie die beste Quelle.
+  Wenn die Verteilung auf einzelne Phasen historisch unbekannt war,
+  verwenden wir die taskweise Zusatzgewichts-Zuordnung.
+*/
+
+let historicalActiveMs =
+0;
+
+
+let historicalByWeight =
+{};
+
+
+if (
+historicalPhases.length > 0 &&
+!phaseHasUnknownDistribution &&
+phaseKnownActiveMs > 0
+) {
+
+historicalActiveMs =
+phaseKnownActiveMs;
+
+
+historicalByWeight =
+phaseKnownByWeight;
+
+} else if (
+historicalTaskMs > 0
+) {
+
+historicalActiveMs =
+historicalTaskMs;
+
+
+historicalByWeight =
+historicalTaskByWeight;
+
+} else {
+
+historicalActiveMs =
+phaseKnownActiveMs;
+
+
+historicalByWeight =
+phaseKnownByWeight;
+
+}
+
+
+const byWeight =
+{
+...historicalByWeight
+};
+
+
+Object.entries(
+exactByWeight
+)
+.forEach(
+entry => {
+
+if (
+!byWeight[
+entry[0]
+]
+) {
+
+byWeight[
+entry[0]
+] =
+0;
+
+}
+
+
+byWeight[
+entry[0]
+] +=
+entry[1];
+
+}
+);
+
+
+const activeWithWeightMs =
+historicalActiveMs +
+exactSegmentOverlapMs;
 
 
 const totalWeightMs =
@@ -4170,9 +4442,9 @@ item.archiveAccountingActiveDurationMs
 }
 
 
-return getArchiveAccountingActiveMs(
-item
-);
+return Number(
+item.activeDurationMs
+) || 0;
 
 }
 
@@ -4504,6 +4776,16 @@ phase.startedAt
 
 historical:
 true,
+
+activeTaskDurationMs:
+phase.activeTaskDurationMs ===
+null ||
+typeof phase.activeTaskDurationMs ===
+"undefined"
+? null
+: Number(
+phase.activeTaskDurationMs
+) || 0,
 
 historicalActiveTaskDurationMs:
 phase.activeTaskDurationMs ===
@@ -11095,11 +11377,25 @@ null;
 const weightDates =
 [
 ...new Set(
-weightPhases
+[
+...weightPhases
 .map(
 phase =>
 phase.date
+),
+
+...completedTasks
+.filter(
+task =>
+Number(
+task.historicalWeightKg
+) > 0
 )
+.map(
+task =>
+task.completedDate
+)
+]
 .filter(
 dateKey =>
 dateKey &&
@@ -11186,6 +11482,36 @@ duration;
 );
 
 
+if (
+statisticsPeriod ===
+"all" &&
+bundledArchiveA235 &&
+bundledArchiveA235.historicalStats &&
+bundledArchiveA235.historicalStats.controlSums
+) {
+
+const historicalMinimum =
+Number(
+bundledArchiveA235
+.historicalStats
+.controlSums
+.knownMinimumActiveTaskTimeWithAdditionalWeightMs
+) || 0;
+
+
+if (
+historicalMinimum >
+activeWithWeightMs
+) {
+
+activeWithWeightMs =
+historicalMinimum;
+
+}
+
+}
+
+
 const weightOutsideActiveMs =
 Math.max(
 0,
@@ -11241,7 +11567,16 @@ wrapper.innerHTML = `
 <div class="statistics-card">
 <div class="statistics-label">🤖 SELBSTLÄUFER</div>
 <div class="statistics-value">${selfrunnerTasks.length}</div>
-<div class="statistics-sub">${formatDuration(selfrunnerTasks.length * 60 * 1000)} AKTIVE ZEIT</div>
+<div class="statistics-sub">${formatDuration(
+selfrunnerTasks.reduce(
+(sum,item) =>
+sum +
+getArchiveAccountingActiveMs(
+item
+),
+0
+)
+)} HISTORISCHE AKTIVZEIT</div>
 </div>
 
 <div class="statistics-card">
