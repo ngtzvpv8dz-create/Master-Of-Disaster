@@ -49,6 +49,7 @@
 
     h1 {
       margin: 0;
+
       font-size: clamp(28px, 8vw, 42px);
       line-height: 1;
       letter-spacing: -1.5px;
@@ -56,9 +57,11 @@
 
     .eyebrow {
       margin-bottom: 5px;
+
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 4px;
+
       color: #8c969f;
     }
 
@@ -80,7 +83,7 @@
       border-radius: 18px;
 
       box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.28);
+        0 12px 30px rgba(0,0,0,0.28);
     }
 
     #taskInput {
@@ -124,10 +127,6 @@
       cursor: pointer;
     }
 
-    .add-button:active {
-      transform: scale(0.98);
-    }
-
     /* BEREICHE */
 
     .task-section {
@@ -146,6 +145,7 @@
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 2px;
+
       color: #8c969f;
     }
 
@@ -165,12 +165,12 @@
 
     .task {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
 
       min-height: 70px;
 
-      padding: 10px;
+      padding: 12px 10px;
       margin-bottom: 10px;
 
       background:
@@ -184,7 +184,7 @@
       border-radius: 15px;
 
       box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.18);
+        0 8px 20px rgba(0,0,0,0.18);
     }
 
     .task.running {
@@ -199,18 +199,22 @@
       opacity: 0.55;
     }
 
+    .task.aborted {
+      opacity: 0.5;
+    }
+
     .task.completed .task-text,
     .task.aborted .task-text {
       text-decoration: line-through;
     }
 
-    .task.aborted {
-      opacity: 0.5;
-    }
+    /* NUMMER */
 
     .task-number {
-      width: 34px;
+      width: 32px;
       flex-shrink: 0;
+
+      padding-top: 4px;
 
       text-align: center;
 
@@ -220,6 +224,24 @@
 
       color: #647887;
     }
+
+    /* STATUS */
+
+    .status-symbol {
+      width: 28px;
+      flex-shrink: 0;
+
+      padding-top: 1px;
+
+      text-align: center;
+
+      font-size: 20px;
+      line-height: 1;
+
+      user-select: none;
+    }
+
+    /* INHALT */
 
     .task-content {
       flex: 1;
@@ -236,59 +258,118 @@
 
     /* PRIORITÄT */
 
-    .priority-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .settings-block {
+      margin-top: 9px;
 
-      margin-top: 7px;
+      padding-top: 8px;
+
+      border-top: 1px solid #292f34;
     }
 
-    .priority-label {
-      font-size: 9px;
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      margin-top: 6px;
+
+      flex-wrap: wrap;
+    }
+
+    .settings-label {
+      min-width: 64px;
+
+      font-size: 8px;
       font-weight: 800;
       letter-spacing: 0.8px;
 
-      color: #778087;
+      color: #69747b;
     }
 
-    .priority-button {
-      min-width: 31px;
-      height: 28px;
+    .setting-button {
+      min-height: 29px;
 
-      padding: 0 6px;
+      padding: 4px 7px;
 
       border: 1px solid #30363b;
       border-radius: 8px;
 
       background: #101315;
-      color: white;
-
-      font-size: 13px;
-
-      cursor: pointer;
-
-      opacity: 0.45;
-    }
-
-    .priority-button.selected {
-      opacity: 1;
-      border-color: #69737a;
-      background: #20262a;
-    }
-
-    .priority-button:active {
-      transform: scale(0.94);
-    }
-
-    .priority-display {
-      margin-top: 6px;
+      color: #d9dde0;
 
       font-size: 10px;
       font-weight: 800;
-      letter-spacing: 0.7px;
 
-      color: #8f989f;
+      cursor: pointer;
+
+      opacity: 0.5;
+    }
+
+    .setting-button.selected {
+      opacity: 1;
+
+      border-color: #68747c;
+      background: #20262a;
+    }
+
+    .setting-button:active {
+      transform: scale(0.95);
+    }
+
+    /* KENNZEICHNUNGEN */
+
+    .flag-line {
+      display: flex;
+      gap: 7px;
+
+      margin-top: 7px;
+
+      flex-wrap: wrap;
+    }
+
+    .flag {
+      padding: 4px 7px;
+
+      border: 1px solid #30363b;
+      border-radius: 7px;
+
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .priority-normal {
+      color: #b8bec2;
+    }
+
+    .priority-medium {
+      color: #d4be54;
+    }
+
+    .priority-high {
+      color: #dd6969;
+    }
+
+    .optional-flag {
+      color: #b67bd5;
+      border-color: #5e476b;
+    }
+
+    .tomorrow-flag {
+      color: #6db6d6;
+      border-color: #3e6272;
+    }
+
+    .deadline-flag {
+      color: #60aee0;
+      border-color: #385e77;
+    }
+
+    .warning-flag {
+      color: #e3aa4d;
+      border-color: #805f31;
+
+      background: rgba(145, 92, 25, 0.12);
     }
 
     /* META */
@@ -341,41 +422,12 @@
       color: #ba7777;
     }
 
-    /* BUTTONS */
+    /* AKTIONEN */
 
     button {
       font-family: inherit;
       -webkit-tap-highlight-color: transparent;
     }
-
-    .icon-button {
-      width: 40px;
-      height: 40px;
-
-      flex-shrink: 0;
-
-      border: 1px solid #30363b;
-      border-radius: 10px;
-
-      background: #0e1113;
-      color: #e1e5e8;
-
-      font-size: 17px;
-
-      cursor: pointer;
-    }
-
-    .icon-button:disabled {
-      cursor: default;
-    }
-
-    .icon-button:active,
-    .task-action-text:active,
-    .edit-button:active {
-      transform: scale(0.95);
-    }
-
-    /* AKTIONSZEILE */
 
     .task-actions {
       width: 100%;
@@ -383,16 +435,16 @@
       display: flex;
       gap: 6px;
 
-      margin-top: 9px;
+      margin-top: 10px;
 
       flex-wrap: wrap;
     }
 
     .task-action-text {
       flex: 1;
-      min-width: 82px;
+      min-width: 80px;
 
-      padding: 8px 9px;
+      padding: 8px;
 
       border: 1px solid #30363b;
       border-radius: 8px;
@@ -400,7 +452,7 @@
       background: #101315;
       color: #d1d6d9;
 
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
 
       cursor: pointer;
@@ -420,6 +472,22 @@
 
     .abort-button {
       border-color: #6b3f3f;
+    }
+
+    .repeat-button {
+      width: 40px;
+      height: 40px;
+
+      flex-shrink: 0;
+
+      border: 1px solid #30363b;
+      border-radius: 10px;
+
+      background: #0e1113;
+
+      font-size: 17px;
+
+      cursor: pointer;
     }
 
     /* BEARBEITEN */
@@ -447,6 +515,7 @@
     .edit-actions {
       display: flex;
       gap: 7px;
+
       margin-top: 7px;
     }
 
@@ -491,7 +560,7 @@
 
       padding: 20px;
 
-      background: rgba(0, 0, 0, 0.72);
+      background: rgba(0,0,0,0.72);
 
       z-index: 1000;
     }
@@ -508,11 +577,12 @@
       border-radius: 18px;
 
       box-shadow:
-        0 20px 60px rgba(0, 0, 0, 0.6);
+        0 20px 60px rgba(0,0,0,0.6);
     }
 
     .modal h2 {
       margin: 0 0 8px;
+
       font-size: 20px;
     }
 
@@ -520,6 +590,7 @@
       margin: 0 0 20px;
 
       color: #9ba3a9;
+
       line-height: 1.4;
     }
 
@@ -564,19 +635,17 @@
       }
 
       .task {
-        gap: 5px;
+        gap: 4px;
       }
 
       .task-number {
-        width: 27px;
+        width: 25px;
         font-size: 9px;
       }
 
-      .icon-button {
-        width: 36px;
-        height: 38px;
-
-        font-size: 14px;
+      .status-symbol {
+        width: 24px;
+        font-size: 18px;
       }
 
       .task-text {
@@ -594,6 +663,16 @@
 
       .duration {
         font-size: 9px;
+      }
+
+      .setting-button {
+        font-size: 9px;
+        padding: 4px 6px;
+      }
+
+      .settings-label {
+        min-width: 58px;
+        font-size: 7.5px;
       }
     }
   </style>
@@ -719,7 +798,7 @@
 
 
     /*
-      DATENMIGRATION
+      MIGRATION ALTER DATEN
     */
 
     tasks = tasks.map(task => {
@@ -734,21 +813,25 @@
       }
 
       const defaults = {
+
+        priority: "normal",
+
+        optional: false,
+
+        dueMode: "none",
+        dueDate: null,
+
         startedAt: null,
         pausedAt: null,
         pauseTotalMs: 0,
+
         completedAt: null,
         activeDurationMs: null,
-        abortedAt: null,
-        abortedActiveDurationMs: null,
 
-        /*
-          NEU:
-          Jede bestehende Aufgabe bekommt
-          standardmäßig normale Priorität.
-        */
-        priority: "normal"
+        abortedAt: null,
+        abortedActiveDurationMs: null
       };
+
 
       Object.keys(defaults)
         .forEach(key => {
@@ -757,18 +840,141 @@
             typeof task[key] ===
             "undefined"
           ) {
+
             task[key] =
               defaults[key];
+
           }
 
         });
+
 
       return task;
 
     });
 
-    saveTasks();
 
+    /*
+      EUROPE / BERLIN DATUM
+    */
+
+    function getBerlinDateKey() {
+
+      return new Intl.DateTimeFormat(
+        "en-CA",
+        {
+          timeZone: "Europe/Berlin",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }
+      ).format(
+        new Date()
+      );
+
+    }
+
+
+    function addDaysToDateKey(
+      dateKey,
+      days
+    ) {
+
+      const parts =
+        dateKey.split("-")
+          .map(Number);
+
+      const date =
+        new Date(
+          Date.UTC(
+            parts[0],
+            parts[1] - 1,
+            parts[2] + days,
+            12,
+            0,
+            0
+          )
+        );
+
+      return (
+        date.getUTCFullYear() +
+        "-" +
+        String(
+          date.getUTCMonth() + 1
+        ).padStart(2, "0") +
+        "-" +
+        String(
+          date.getUTCDate()
+        ).padStart(2, "0")
+      );
+
+    }
+
+
+    /*
+      DATUMSREGELN AUTOMATISCH PRÜFEN
+
+      💠 gilt nur für den unmittelbar
+      folgenden Kalendertag.
+
+      Sobald dieser Tag erreicht ist,
+      wird 💠 entfernt.
+
+      🔷 bleibt gespeichert.
+      Sobald die Deadline erreicht ist,
+      wird es als ⚠️ angezeigt.
+    */
+
+    function applyAutomaticDateRules() {
+
+      const today =
+        getBerlinDateKey();
+
+      let changed =
+        false;
+
+
+      tasks.forEach(task => {
+
+        if (
+          task.status === "completed" ||
+          task.status === "aborted"
+        ) {
+          return;
+        }
+
+
+        if (
+          task.dueMode ===
+            "tomorrowOnly" &&
+          task.dueDate &&
+          task.dueDate <= today
+        ) {
+
+          task.dueMode =
+            "none";
+
+          task.dueDate =
+            null;
+
+          changed =
+            true;
+
+        }
+
+      });
+
+
+      if (changed) {
+        saveTasks();
+      }
+
+    }
+
+
+    /*
+      SPEICHERN
+    */
 
     function saveTasks() {
 
@@ -785,181 +991,6 @@
       return tasks.find(
         task => task.id === id
       );
-
-    }
-
-
-    /*
-      PRIORITÄTEN
-    */
-
-    function setPriority(
-      id,
-      priority
-    ) {
-
-      const task =
-        getTask(id);
-
-      if (!task) {
-        return;
-      }
-
-      if (
-        task.status === "completed" ||
-        task.status === "aborted"
-      ) {
-        return;
-      }
-
-      const allowed =
-        [
-          "normal",
-          "medium",
-          "high"
-        ];
-
-      if (
-        !allowed.includes(
-          priority
-        )
-      ) {
-        return;
-      }
-
-      task.priority =
-        priority;
-
-      saveTasks();
-      renderTasks();
-
-    }
-
-
-    function getPrioritySymbol(
-      priority
-    ) {
-
-      if (
-        priority === "medium"
-      ) {
-        return "🟡";
-      }
-
-      if (
-        priority === "high"
-      ) {
-        return "🔴";
-      }
-
-      return "⚪";
-
-    }
-
-
-    function getPriorityName(
-      priority
-    ) {
-
-      if (
-        priority === "medium"
-      ) {
-        return "MITTEL";
-      }
-
-      if (
-        priority === "high"
-      ) {
-        return "HOCH";
-      }
-
-      return "NORMAL";
-
-    }
-
-
-    function createPriorityControls(
-      task
-    ) {
-
-      return `
-
-        <div class="priority-row">
-
-          <span class="priority-label">
-            PRIORITÄT
-          </span>
-
-          <button
-            class="priority-button
-            ${
-              task.priority === "normal"
-                ? "selected"
-                : ""
-            }"
-            onclick="setPriority(
-              ${task.id},
-              'normal'
-            )"
-            title="Normale Priorität"
-          >
-            ⚪
-          </button>
-
-          <button
-            class="priority-button
-            ${
-              task.priority === "medium"
-                ? "selected"
-                : ""
-            }"
-            onclick="setPriority(
-              ${task.id},
-              'medium'
-            )"
-            title="Mittlere Priorität"
-          >
-            🟡
-          </button>
-
-          <button
-            class="priority-button
-            ${
-              task.priority === "high"
-                ? "selected"
-                : ""
-            }"
-            onclick="setPriority(
-              ${task.id},
-              'high'
-            )"
-            title="Hohe Priorität"
-          >
-            🔴
-          </button>
-
-        </div>
-      `;
-
-    }
-
-
-    function createPriorityDisplay(
-      task
-    ) {
-
-      return `
-
-        <div class="priority-display">
-          ${getPrioritySymbol(
-            task.priority
-          )}
-          PRIORITÄT ·
-          ${getPriorityName(
-            task.priority
-          )}
-        </div>
-      `;
 
     }
 
@@ -982,17 +1013,21 @@
         return;
       }
 
+
       tasks.push({
+
         id: Date.now(),
+
         text: text,
 
         status: "open",
 
-        /*
-          Neue Aufgaben sind gemäß
-          Regelwerk immer normal.
-        */
         priority: "normal",
+
+        optional: false,
+
+        dueMode: "none",
+        dueDate: null,
 
         startedAt: null,
         pausedAt: null,
@@ -1005,11 +1040,508 @@
         abortedActiveDurationMs: null
       });
 
+
       saveTasks();
 
-      input.value = "";
+      input.value =
+        "";
 
       renderTasks();
+
+    }
+
+
+    /*
+      PRIORITÄT
+    */
+
+    function setPriority(
+      id,
+      priority
+    ) {
+
+      const task =
+        getTask(id);
+
+      if (!task) {
+        return;
+      }
+
+
+      if (
+        task.status === "completed" ||
+        task.status === "aborted"
+      ) {
+        return;
+      }
+
+
+      if (
+        ![
+          "normal",
+          "medium",
+          "high"
+        ].includes(priority)
+      ) {
+        return;
+      }
+
+
+      task.priority =
+        priority;
+
+      saveTasks();
+
+      renderTasks();
+
+    }
+
+
+    /*
+      OPTIONAL
+    */
+
+    function toggleOptional(id) {
+
+      const task =
+        getTask(id);
+
+      if (!task) {
+        return;
+      }
+
+
+      if (
+        task.status === "completed" ||
+        task.status === "aborted"
+      ) {
+        return;
+      }
+
+
+      task.optional =
+        !task.optional;
+
+
+      saveTasks();
+
+      renderTasks();
+
+    }
+
+
+    /*
+      FÄLLIGKEIT
+    */
+
+    function setDueMode(
+      id,
+      mode
+    ) {
+
+      const task =
+        getTask(id);
+
+      if (!task) {
+        return;
+      }
+
+
+      if (
+        task.status === "completed" ||
+        task.status === "aborted"
+      ) {
+        return;
+      }
+
+
+      const today =
+        getBerlinDateKey();
+
+      const tomorrow =
+        addDaysToDateKey(
+          today,
+          1
+        );
+
+
+      if (
+        mode === "none"
+      ) {
+
+        task.dueMode =
+          "none";
+
+        task.dueDate =
+          null;
+
+      }
+
+
+      if (
+        mode === "tomorrowOnly"
+      ) {
+
+        task.dueMode =
+          "tomorrowOnly";
+
+        task.dueDate =
+          tomorrow;
+
+      }
+
+
+      if (
+        mode === "deadlineTomorrow"
+      ) {
+
+        task.dueMode =
+          "deadline";
+
+        task.dueDate =
+          tomorrow;
+
+      }
+
+
+      saveTasks();
+
+      renderTasks();
+
+    }
+
+
+    /*
+      PRIORITÄT HILFSFUNKTIONEN
+    */
+
+    function getPrioritySymbol(
+      priority
+    ) {
+
+      if (
+        priority === "medium"
+      ) {
+        return "🟡";
+      }
+
+
+      if (
+        priority === "high"
+      ) {
+        return "🔴";
+      }
+
+
+      return "⚪";
+
+    }
+
+
+    function getPriorityName(
+      priority
+    ) {
+
+      if (
+        priority === "medium"
+      ) {
+        return "MITTEL";
+      }
+
+
+      if (
+        priority === "high"
+      ) {
+        return "HOCH";
+      }
+
+
+      return "NORMAL";
+
+    }
+
+
+    function getPriorityClass(
+      priority
+    ) {
+
+      if (
+        priority === "medium"
+      ) {
+        return "priority-medium";
+      }
+
+
+      if (
+        priority === "high"
+      ) {
+        return "priority-high";
+      }
+
+
+      return "priority-normal";
+
+    }
+
+
+    /*
+      FÄLLIGKEITSANZEIGE
+    */
+
+    function getDueDisplay(task) {
+
+      if (
+        !task.dueMode ||
+        task.dueMode === "none" ||
+        !task.dueDate
+      ) {
+        return "";
+      }
+
+
+      const today =
+        getBerlinDateKey();
+
+
+      if (
+        task.dueMode ===
+        "tomorrowOnly"
+      ) {
+
+        return `
+          <span class="flag tomorrow-flag">
+            💠 MORGEN
+          </span>
+        `;
+
+      }
+
+
+      if (
+        task.dueMode ===
+        "deadline"
+      ) {
+
+        if (
+          task.dueDate <= today
+        ) {
+
+          return `
+            <span class="flag warning-flag">
+              ⚠️ HEUTE FÄLLIG
+            </span>
+          `;
+
+        }
+
+
+        return `
+          <span class="flag deadline-flag">
+            🔷 SPÄTESTENS MORGEN
+          </span>
+        `;
+
+      }
+
+
+      return "";
+
+    }
+
+
+    /*
+      KENNZEICHNUNGEN
+    */
+
+    function createFlags(task) {
+
+      return `
+
+        <div class="flag-line">
+
+          <span
+            class="flag
+            ${getPriorityClass(
+              task.priority
+            )}"
+          >
+            ${getPrioritySymbol(
+              task.priority
+            )}
+            ${getPriorityName(
+              task.priority
+            )}
+          </span>
+
+          ${
+            task.optional
+              ? `
+                <span class="flag optional-flag">
+                  🟣 OPTIONAL
+                </span>
+              `
+              : ""
+          }
+
+          ${getDueDisplay(task)}
+
+        </div>
+      `;
+
+    }
+
+
+    /*
+      EINSTELLUNGEN
+    */
+
+    function createTaskSettings(
+      task
+    ) {
+
+      return `
+
+        <div class="settings-block">
+
+          <div class="settings-row">
+
+            <span class="settings-label">
+              PRIORITÄT
+            </span>
+
+            <button
+              class="setting-button
+              ${
+                task.priority === "normal"
+                  ? "selected"
+                  : ""
+              }"
+              onclick="setPriority(
+                ${task.id},
+                'normal'
+              )"
+            >
+              ⚪ NORMAL
+            </button>
+
+            <button
+              class="setting-button
+              ${
+                task.priority === "medium"
+                  ? "selected"
+                  : ""
+              }"
+              onclick="setPriority(
+                ${task.id},
+                'medium'
+              )"
+            >
+              🟡 MITTEL
+            </button>
+
+            <button
+              class="setting-button
+              ${
+                task.priority === "high"
+                  ? "selected"
+                  : ""
+              }"
+              onclick="setPriority(
+                ${task.id},
+                'high'
+              )"
+            >
+              🔴 HOCH
+            </button>
+
+          </div>
+
+
+          <div class="settings-row">
+
+            <span class="settings-label">
+              OPTIONAL
+            </span>
+
+            <button
+              class="setting-button
+              ${
+                task.optional
+                  ? "selected"
+                  : ""
+              }"
+              onclick="toggleOptional(
+                ${task.id}
+              )"
+            >
+              🟣
+              ${
+                task.optional
+                  ? "JA"
+                  : "NEIN"
+              }
+            </button>
+
+          </div>
+
+
+          <div class="settings-row">
+
+            <span class="settings-label">
+              FÄLLIG
+            </span>
+
+            <button
+              class="setting-button
+              ${
+                task.dueMode === "none"
+                  ? "selected"
+                  : ""
+              }"
+              onclick="setDueMode(
+                ${task.id},
+                'none'
+              )"
+            >
+              —
+            </button>
+
+            <button
+              class="setting-button
+              ${
+                task.dueMode ===
+                  "tomorrowOnly"
+                  ? "selected"
+                  : ""
+              }"
+              onclick="setDueMode(
+                ${task.id},
+                'tomorrowOnly'
+              )"
+            >
+              💠 MORGEN
+            </button>
+
+            <button
+              class="setting-button
+              ${
+                task.dueMode ===
+                  "deadline"
+                  ? "selected"
+                  : ""
+              }"
+              onclick="setDueMode(
+                ${task.id},
+                'deadlineTomorrow'
+              )"
+            >
+              🔷 BIS MORGEN
+            </button>
+
+          </div>
+
+        </div>
+      `;
 
     }
 
@@ -1027,12 +1559,14 @@
         return;
       }
 
+
       const alreadyRunning =
         tasks.find(
           item =>
             item.status === "running" &&
             item.id !== id
         );
+
 
       if (alreadyRunning) {
 
@@ -1044,7 +1578,9 @@
         );
 
         return;
+
       }
+
 
       task.status =
         "running";
@@ -1070,7 +1606,9 @@
       task.abortedActiveDurationMs =
         null;
 
+
       saveTasks();
+
       renderTasks();
 
     }
@@ -1085,6 +1623,7 @@
       const task =
         getTask(id);
 
+
       if (
         !task ||
         task.status !== "running"
@@ -1092,13 +1631,16 @@
         return;
       }
 
+
       task.status =
         "paused";
 
       task.pausedAt =
         new Date().toISOString();
 
+
       saveTasks();
+
       renderTasks();
 
     }
@@ -1113,6 +1655,7 @@
       const task =
         getTask(id);
 
+
       if (
         !task ||
         task.status !== "paused"
@@ -1120,12 +1663,14 @@
         return;
       }
 
+
       const alreadyRunning =
         tasks.find(
           item =>
             item.status === "running" &&
             item.id !== id
         );
+
 
       if (alreadyRunning) {
 
@@ -1137,10 +1682,13 @@
         );
 
         return;
+
       }
+
 
       const now =
         Date.now();
+
 
       const pauseStart =
         task.pausedAt
@@ -1149,11 +1697,13 @@
             ).getTime()
           : now;
 
+
       task.pauseTotalMs +=
         Math.max(
           0,
           now - pauseStart
         );
+
 
       task.pausedAt =
         null;
@@ -1161,7 +1711,9 @@
       task.status =
         "running";
 
+
       saveTasks();
+
       renderTasks();
 
     }
@@ -1176,6 +1728,7 @@
       const task =
         getTask(id);
 
+
       if (
         !task ||
         (
@@ -1186,14 +1739,17 @@
         return;
       }
 
+
       const now =
         Date.now();
+
 
       const duration =
         calculateActiveDuration(
           task,
           now
         );
+
 
       if (
         task.status === "paused" &&
@@ -1210,6 +1766,7 @@
           );
 
       }
+
 
       task.status =
         "completed";
@@ -1230,10 +1787,13 @@
       task.abortedActiveDurationMs =
         null;
 
+
       editingTaskId =
         null;
 
+
       saveTasks();
+
       renderTasks();
 
     }
@@ -1252,10 +1812,12 @@
         return;
       }
 
+
       const container =
         document.getElementById(
           "modalContainer"
         );
+
 
       container.innerHTML = `
 
@@ -1310,6 +1872,7 @@
         return;
       }
 
+
       const now =
         Date.now();
 
@@ -1321,6 +1884,7 @@
             task,
             now
           );
+
 
         if (
           task.status === "paused" &&
@@ -1362,8 +1926,10 @@
       task.activeDurationMs =
         null;
 
+
       editingTaskId =
         null;
+
 
       saveTasks();
 
@@ -1387,10 +1953,12 @@
         return 0;
       }
 
+
       const started =
         new Date(
           task.startedAt
         ).getTime();
+
 
       let pauseTotal =
         task.pauseTotalMs || 0;
@@ -1437,6 +2005,14 @@
 
     /*
       WIEDERHOLEN
+
+      Priorität und Optionalität
+      werden übernommen.
+
+      Alte Fälligkeit dagegen NICHT,
+      damit keine alte Deadline
+      auf eine neue Wiederholung
+      übertragen wird.
     */
 
     function repeatTask(id) {
@@ -1448,32 +2024,57 @@
         return;
       }
 
+
       tasks.push({
+
         id: Date.now(),
-        text: oldTask.text,
 
-        status: "open",
+        text:
+          oldTask.text,
 
-        /*
-          Die Wiederholung übernimmt
-          die Priorität der Vorlage.
-        */
+        status:
+          "open",
+
         priority:
           oldTask.priority ||
           "normal",
 
-        startedAt: null,
-        pausedAt: null,
-        pauseTotalMs: 0,
+        optional:
+          oldTask.optional ||
+          false,
 
-        completedAt: null,
-        activeDurationMs: null,
+        dueMode:
+          "none",
 
-        abortedAt: null,
-        abortedActiveDurationMs: null
+        dueDate:
+          null,
+
+        startedAt:
+          null,
+
+        pausedAt:
+          null,
+
+        pauseTotalMs:
+          0,
+
+        completedAt:
+          null,
+
+        activeDurationMs:
+          null,
+
+        abortedAt:
+          null,
+
+        abortedActiveDurationMs:
+          null
+
       });
 
+
       saveTasks();
+
       renderTasks();
 
     }
@@ -1488,6 +2089,7 @@
       const task =
         getTask(id);
 
+
       if (
         !task ||
         task.status === "completed" ||
@@ -1496,10 +2098,13 @@
         return;
       }
 
+
       editingTaskId =
         id;
 
+
       renderTasks();
+
 
       setTimeout(() => {
 
@@ -1507,6 +2112,7 @@
           document.getElementById(
             "edit-" + id
           );
+
 
         if (input) {
 
@@ -1539,29 +2145,37 @@
       const task =
         getTask(id);
 
+
       const input =
         document.getElementById(
           "edit-" + id
         );
 
+
       if (!task || !input) {
         return;
       }
 
+
       const text =
         input.value.trim();
+
 
       if (text === "") {
         return;
       }
 
+
       task.text =
         text;
+
 
       editingTaskId =
         null;
 
+
       saveTasks();
+
       renderTasks();
 
     }
@@ -1580,10 +2194,12 @@
         return;
       }
 
+
       const container =
         document.getElementById(
           "modalContainer"
         );
+
 
       container.innerHTML = `
 
@@ -1637,6 +2253,7 @@
             task.id !== id
         );
 
+
       saveTasks();
 
       closeModal();
@@ -1668,7 +2285,9 @@
           "modal-backdrop"
         )
       ) {
+
         closeModal();
+
       }
 
     }
@@ -1683,6 +2302,7 @@
         document.getElementById(
           "modalContainer"
         );
+
 
       container.innerHTML = `
 
@@ -1721,7 +2341,7 @@
 
 
     /*
-      HTML SICHER AUSGEBEN
+      HTML SICHER
     */
 
     function escapeHtml(text) {
@@ -1731,8 +2351,10 @@
           "div"
         );
 
+
       div.textContent =
         text;
+
 
       return div.innerHTML;
 
@@ -1748,10 +2370,16 @@
     ) {
 
       if (number < 10) {
-        return "0" + number;
+
+        return "0" +
+          number;
+
       }
 
-      return String(number);
+
+      return String(
+        number
+      );
 
     }
 
@@ -1766,9 +2394,11 @@
             item.id === task.id
         );
 
+
       if (index === -1) {
         return "";
       }
+
 
       return formatTaskNumber(
         index + 1
@@ -1790,8 +2420,10 @@
         return "";
       }
 
+
       const date =
         new Date(value);
+
 
       if (
         Number.isNaN(
@@ -1801,25 +2433,44 @@
         return "";
       }
 
+
       const datePart =
         date.toLocaleDateString(
           "de-DE",
           {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric"
+            timeZone:
+              "Europe/Berlin",
+
+            day:
+              "2-digit",
+
+            month:
+              "2-digit",
+
+            year:
+              "numeric"
           }
         );
+
 
       const timePart =
         date.toLocaleTimeString(
           "de-DE",
           {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
+            timeZone:
+              "Europe/Berlin",
+
+            hour:
+              "2-digit",
+
+            minute:
+              "2-digit",
+
+            second:
+              "2-digit"
           }
         );
+
 
       return (
         label +
@@ -1841,47 +2492,101 @@
 
       if (
         ms === null ||
-        typeof ms === "undefined"
+        typeof ms ===
+          "undefined"
       ) {
         return "";
       }
+
 
       const totalSeconds =
         Math.floor(
           ms / 1000
         );
 
+
       const hours =
         Math.floor(
-          totalSeconds / 3600
+          totalSeconds /
+          3600
         );
+
 
       const minutes =
         Math.floor(
           (
-            totalSeconds % 3600
-          ) / 60
+            totalSeconds %
+            3600
+          ) /
+          60
         );
 
+
       const seconds =
-        totalSeconds % 60;
+        totalSeconds %
+        60;
+
 
       return (
         String(hours)
-          .padStart(2, "0") +
+          .padStart(
+            2,
+            "0"
+          ) +
         ":" +
         String(minutes)
-          .padStart(2, "0") +
+          .padStart(
+            2,
+            "0"
+          ) +
         ":" +
         String(seconds)
-          .padStart(2, "0")
+          .padStart(
+            2,
+            "0"
+          )
       );
 
     }
 
 
     /*
-      AKTIVE AUFGABEN
+      STATUSSYMBOL
+    */
+
+    function getStatusSymbol(
+      task
+    ) {
+
+      if (
+        task.status === "running" ||
+        task.status === "paused"
+      ) {
+        return "🟨";
+      }
+
+
+      if (
+        task.status === "completed"
+      ) {
+        return "✅";
+      }
+
+
+      if (
+        task.status === "aborted"
+      ) {
+        return "❌";
+      }
+
+
+      return "⬜";
+
+    }
+
+
+    /*
+      AKTIVE AUFGABE
     */
 
     function createActiveTaskElement(
@@ -1893,24 +2598,32 @@
           "div"
         );
 
+
       element.className =
         "task";
+
 
       if (
         task.status === "running"
       ) {
+
         element.classList.add(
           "running"
         );
+
       }
+
 
       if (
         task.status === "paused"
       ) {
+
         element.classList.add(
           "paused"
         );
+
       }
+
 
       const number =
         getDynamicTaskNumber(
@@ -1919,13 +2632,18 @@
 
 
       if (
-        editingTaskId === task.id
+        editingTaskId ===
+        task.id
       ) {
 
         element.innerHTML = `
 
           <div class="task-number">
             ${number}
+          </div>
+
+          <div class="status-symbol">
+            ${getStatusSymbol(task)}
           </div>
 
           <div class="edit-area">
@@ -1962,20 +2680,9 @@
           </div>
         `;
 
+
         return element;
 
-      }
-
-
-      let symbol =
-        "⬜";
-
-      if (
-        task.status === "running" ||
-        task.status === "paused"
-      ) {
-        symbol =
-          "🟨";
       }
 
 
@@ -2171,12 +2878,9 @@
           ${number}
         </div>
 
-        <button
-          class="icon-button"
-          disabled
-        >
-          ${symbol}
-        </button>
+        <div class="status-symbol">
+          ${getStatusSymbol(task)}
+        </div>
 
         <div class="task-content">
 
@@ -2184,16 +2888,17 @@
             ${escapeHtml(task.text)}
           </div>
 
-          ${createPriorityControls(
-            task
-          )}
+          ${createFlags(task)}
 
           ${meta}
+
+          ${createTaskSettings(task)}
 
           ${actions}
 
         </div>
       `;
+
 
       return element;
 
@@ -2201,7 +2906,7 @@
 
 
     /*
-      ERLEDIGTE AUFGABEN
+      ERLEDIGT
     */
 
     function createCompletedTaskElement(
@@ -2213,13 +2918,16 @@
           "div"
         );
 
+
       element.className =
         "task completed";
+
 
       const number =
         getDynamicTaskNumber(
           task
         );
+
 
       element.innerHTML = `
 
@@ -2227,12 +2935,9 @@
           ${number}
         </div>
 
-        <button
-          class="icon-button"
-          disabled
-        >
+        <div class="status-symbol">
           ✅
-        </button>
+        </div>
 
         <div class="task-content">
 
@@ -2240,9 +2945,7 @@
             ${escapeHtml(task.text)}
           </div>
 
-          ${createPriorityDisplay(
-            task
-          )}
+          ${createFlags(task)}
 
           ${
             task.completedAt
@@ -2258,7 +2961,8 @@
           }
 
           ${
-            task.activeDurationMs !== null
+            task.activeDurationMs !==
+              null
               ? `
                 <div class="duration">
                   DAUER ·
@@ -2273,7 +2977,7 @@
         </div>
 
         <button
-          class="icon-button"
+          class="repeat-button"
           onclick="repeatTask(${task.id})"
           title="Wiederholen"
         >
@@ -2281,13 +2985,14 @@
         </button>
       `;
 
+
       return element;
 
     }
 
 
     /*
-      ABGEBROCHENE AUFGABEN
+      ABGEBROCHEN
     */
 
     function createAbortedTaskElement(
@@ -2299,13 +3004,16 @@
           "div"
         );
 
+
       element.className =
         "task aborted";
+
 
       const number =
         getDynamicTaskNumber(
           task
         );
+
 
       element.innerHTML = `
 
@@ -2313,12 +3021,9 @@
           ${number}
         </div>
 
-        <button
-          class="icon-button"
-          disabled
-        >
+        <div class="status-symbol">
           ❌
-        </button>
+        </div>
 
         <div class="task-content">
 
@@ -2326,9 +3031,7 @@
             ${escapeHtml(task.text)}
           </div>
 
-          ${createPriorityDisplay(
-            task
-          )}
+          ${createFlags(task)}
 
           ${
             task.abortedAt
@@ -2344,7 +3047,8 @@
           }
 
           ${
-            task.abortedActiveDurationMs !== null
+            task.abortedActiveDurationMs !==
+              null
               ? `
                 <div class="duration aborted-duration">
                   AKTIVE ZEIT BIS ABBRUCH ·
@@ -2359,13 +3063,14 @@
         </div>
 
         <button
-          class="icon-button"
+          class="repeat-button"
           onclick="repeatTask(${task.id})"
           title="Wiederholen"
         >
           🔁
         </button>
       `;
+
 
       return element;
 
@@ -2378,15 +3083,20 @@
 
     function renderTasks() {
 
+      applyAutomaticDateRules();
+
+
       const activeList =
         document.getElementById(
           "activeTaskList"
         );
 
+
       const completedList =
         document.getElementById(
           "completedTaskList"
         );
+
 
       const abortedList =
         document.getElementById(
@@ -2411,7 +3121,7 @@
               "completed"
           )
           .sort(
-            (a, b) =>
+            (a,b) =>
               new Date(
                 b.completedAt || 0
               ) -
@@ -2429,7 +3139,7 @@
               "aborted"
           )
           .sort(
-            (a, b) =>
+            (a,b) =>
               new Date(
                 b.abortedAt || 0
               ) -
@@ -2445,11 +3155,13 @@
             task.status === "open"
         ).length;
 
+
       const runningCount =
         tasks.filter(
           task =>
             task.status === "running"
         ).length;
+
 
       const pausedCount =
         tasks.filter(
@@ -2594,12 +3306,15 @@
                 element.dataset.taskId
               );
 
+
             const task =
               getTask(id);
+
 
             if (!task) {
               return;
             }
+
 
             element.textContent =
               "AKTIV · " +
@@ -2622,7 +3337,29 @@
 
 
     /*
-      ENTER = AUFGABE HINZUFÜGEN
+      DATUMSREGELN AUCH PRÜFEN,
+      WENN MAN ZUR APP ZURÜCKKEHRT
+    */
+
+    document.addEventListener(
+      "visibilitychange",
+      function() {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+
+          renderTasks();
+
+        }
+
+      }
+    );
+
+
+    /*
+      ENTER = HINZUFÜGEN
     */
 
     document
@@ -2636,12 +3373,16 @@
           if (
             event.key === "Enter"
           ) {
+
             addTask();
+
           }
 
         }
       );
 
+
+    saveTasks();
 
     renderTasks();
 
