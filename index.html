@@ -49,7 +49,6 @@
 
     h1 {
       margin: 0;
-
       font-size: clamp(28px, 8vw, 42px);
       line-height: 1;
       letter-spacing: -1.5px;
@@ -57,11 +56,9 @@
 
     .eyebrow {
       margin-bottom: 5px;
-
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 4px;
-
       color: #8c969f;
     }
 
@@ -71,14 +68,13 @@
       letter-spacing: 2.5px;
     }
 
-    /* EINGABE */
+    /* NEUE AUFGABE */
 
     .input-panel {
       padding: 14px;
       margin-bottom: 26px;
 
       background: #171b1f;
-
       border: 1px solid #292f34;
       border-radius: 18px;
 
@@ -109,6 +105,59 @@
 
     #taskInput::placeholder {
       color: #626b72;
+    }
+
+    .new-task-options {
+      padding: 10px 0 4px;
+    }
+
+    .option-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      margin-bottom: 8px;
+
+      flex-wrap: wrap;
+    }
+
+    .option-label {
+      min-width: 65px;
+
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+
+      color: #69747b;
+    }
+
+    .option-button {
+      min-height: 30px;
+
+      padding: 4px 7px;
+
+      border: 1px solid #30363b;
+      border-radius: 8px;
+
+      background: #101315;
+      color: #d9dde0;
+
+      font-size: 10px;
+      font-weight: 800;
+
+      cursor: pointer;
+
+      opacity: 0.5;
+    }
+
+    .option-button.selected {
+      opacity: 1;
+      border-color: #68747c;
+      background: #20262a;
+    }
+
+    .option-button:active {
+      transform: scale(0.95);
     }
 
     .add-button {
@@ -145,7 +194,6 @@
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 2px;
-
       color: #8c969f;
     }
 
@@ -166,12 +214,12 @@
     .task {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
+      gap: 7px;
 
-      min-height: 70px;
+      min-height: 58px;
 
-      padding: 12px 10px;
-      margin-bottom: 10px;
+      padding: 10px;
+      margin-bottom: 8px;
 
       background:
         linear-gradient(
@@ -181,10 +229,10 @@
         );
 
       border: 1px solid #292f34;
-      border-radius: 15px;
+      border-radius: 14px;
 
       box-shadow:
-        0 8px 20px rgba(0,0,0,0.18);
+        0 7px 18px rgba(0,0,0,0.16);
     }
 
     .task.running {
@@ -208,40 +256,32 @@
       text-decoration: line-through;
     }
 
-    /* NUMMER */
-
     .task-number {
-      width: 32px;
+      width: 28px;
       flex-shrink: 0;
 
-      padding-top: 4px;
+      padding-top: 3px;
 
       text-align: center;
 
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 800;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.7px;
 
       color: #647887;
     }
 
-    /* STATUS */
-
     .status-symbol {
-      width: 28px;
+      width: 24px;
       flex-shrink: 0;
-
-      padding-top: 1px;
 
       text-align: center;
 
-      font-size: 20px;
-      line-height: 1;
+      font-size: 18px;
+      line-height: 1.1;
 
       user-select: none;
     }
-
-    /* INHALT */
 
     .task-content {
       flex: 1;
@@ -249,147 +289,47 @@
     }
 
     .task-text {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 600;
-      line-height: 1.3;
+      line-height: 1.25;
 
       word-break: break-word;
     }
 
-    /* PRIORITÄT */
+    /* KOMPAKTE FLAGS */
 
-    .settings-block {
-      margin-top: 9px;
-
-      padding-top: 8px;
-
-      border-top: 1px solid #292f34;
-    }
-
-    .settings-row {
+    .compact-flags {
       display: flex;
-      align-items: center;
       gap: 5px;
 
-      margin-top: 6px;
+      margin-top: 5px;
 
       flex-wrap: wrap;
     }
 
-    .settings-label {
-      min-width: 64px;
-
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: 0.8px;
-
-      color: #69747b;
-    }
-
-    .setting-button {
-      min-height: 29px;
-
-      padding: 4px 7px;
-
-      border: 1px solid #30363b;
-      border-radius: 8px;
-
-      background: #101315;
-      color: #d9dde0;
-
-      font-size: 10px;
-      font-weight: 800;
-
-      cursor: pointer;
-
-      opacity: 0.5;
-    }
-
-    .setting-button.selected {
-      opacity: 1;
-
-      border-color: #68747c;
-      background: #20262a;
-    }
-
-    .setting-button:active {
-      transform: scale(0.95);
-    }
-
-    /* KENNZEICHNUNGEN */
-
-    .flag-line {
-      display: flex;
-      gap: 7px;
-
-      margin-top: 7px;
-
-      flex-wrap: wrap;
-    }
-
-    .flag {
-      padding: 4px 7px;
-
-      border: 1px solid #30363b;
-      border-radius: 7px;
-
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-
-    .priority-normal {
-      color: #b8bec2;
-    }
-
-    .priority-medium {
-      color: #d4be54;
-    }
-
-    .priority-high {
-      color: #dd6969;
-    }
-
-    .optional-flag {
-      color: #b67bd5;
-      border-color: #5e476b;
-    }
-
-    .tomorrow-flag {
-      color: #6db6d6;
-      border-color: #3e6272;
-    }
-
-    .deadline-flag {
-      color: #60aee0;
-      border-color: #385e77;
-    }
-
-    .warning-flag {
-      color: #e3aa4d;
-      border-color: #805f31;
-
-      background: rgba(145, 92, 25, 0.12);
+    .mini-flag {
+      font-size: 12px;
+      line-height: 1;
     }
 
     /* META */
 
     .task-meta {
-      margin-top: 5px;
+      margin-top: 4px;
 
-      font-size: 8px;
+      font-size: 7.5px;
       font-weight: 700;
-      letter-spacing: 0.7px;
+      letter-spacing: 0.6px;
 
       color: #4f8ec4;
     }
 
     .status-meta {
-      margin-top: 5px;
+      margin-top: 4px;
 
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 800;
-      letter-spacing: 0.7px;
+      letter-spacing: 0.6px;
 
       color: #b3a94f;
     }
@@ -399,21 +339,21 @@
     }
 
     .abort-meta {
-      margin-top: 5px;
+      margin-top: 4px;
 
-      font-size: 8px;
+      font-size: 7.5px;
       font-weight: 700;
-      letter-spacing: 0.7px;
+      letter-spacing: 0.6px;
 
       color: #a96666;
     }
 
     .duration {
-      margin-top: 4px;
+      margin-top: 3px;
 
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 800;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.7px;
 
       color: #70a5cf;
     }
@@ -430,21 +370,20 @@
     }
 
     .task-actions {
-      width: 100%;
-
       display: flex;
-      gap: 6px;
+      gap: 5px;
 
-      margin-top: 10px;
+      margin-top: 8px;
 
       flex-wrap: wrap;
     }
 
     .task-action-text {
       flex: 1;
-      min-width: 80px;
 
-      padding: 8px;
+      min-width: 75px;
+
+      padding: 7px 8px;
 
       border: 1px solid #30363b;
       border-radius: 8px;
@@ -452,7 +391,7 @@
       background: #101315;
       color: #d1d6d9;
 
-      font-size: 10px;
+      font-size: 9px;
       font-weight: 800;
 
       cursor: pointer;
@@ -475,8 +414,8 @@
     }
 
     .repeat-button {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
 
       flex-shrink: 0;
 
@@ -485,7 +424,7 @@
 
       background: #0e1113;
 
-      font-size: 17px;
+      font-size: 15px;
 
       cursor: pointer;
     }
@@ -512,17 +451,25 @@
       font-size: 16px;
     }
 
+    .edit-options {
+      margin-top: 10px;
+
+      padding-top: 8px;
+
+      border-top: 1px solid #292f34;
+    }
+
     .edit-actions {
       display: flex;
       gap: 7px;
 
-      margin-top: 7px;
+      margin-top: 10px;
     }
 
     .edit-button {
       flex: 1;
 
-      padding: 8px;
+      padding: 9px;
 
       border: 1px solid #30363b;
       border-radius: 8px;
@@ -538,10 +485,10 @@
     /* LEERE BEREICHE */
 
     .empty-message {
-      padding: 25px 20px;
+      padding: 22px 18px;
 
       border: 1px dashed #30363b;
-      border-radius: 15px;
+      border-radius: 14px;
 
       text-align: center;
 
@@ -582,15 +529,12 @@
 
     .modal h2 {
       margin: 0 0 8px;
-
       font-size: 20px;
     }
 
     .modal p {
       margin: 0 0 20px;
-
       color: #9ba3a9;
-
       line-height: 1.4;
     }
 
@@ -630,49 +574,36 @@
     @media (max-width: 390px) {
 
       body {
-        padding-left: 12px;
-        padding-right: 12px;
+        padding-left: 11px;
+        padding-right: 11px;
       }
 
       .task {
         gap: 4px;
+        padding: 9px 8px;
       }
 
       .task-number {
-        width: 25px;
+        width: 24px;
         font-size: 9px;
       }
 
       .status-symbol {
-        width: 24px;
-        font-size: 18px;
+        width: 22px;
+        font-size: 17px;
       }
 
       .task-text {
-        font-size: 16px;
+        font-size: 15px;
       }
 
-      .task-meta,
-      .abort-meta {
-        font-size: 7.5px;
-      }
-
-      .status-meta {
+      .task-action-text {
+        min-width: 67px;
         font-size: 8px;
       }
 
-      .duration {
+      .option-button {
         font-size: 9px;
-      }
-
-      .setting-button {
-        font-size: 9px;
-        padding: 4px 6px;
-      }
-
-      .settings-label {
-        min-width: 58px;
-        font-size: 7.5px;
       }
     }
   </style>
@@ -703,6 +634,94 @@
         placeholder="Was steht an?"
         autocomplete="off"
       >
+
+
+      <div class="new-task-options">
+
+        <div class="option-row">
+
+          <span class="option-label">
+            PRIORITÄT
+          </span>
+
+          <button
+            id="newPriorityNormal"
+            class="option-button selected"
+            onclick="setNewPriority('normal')"
+          >
+            ⚪ NORMAL
+          </button>
+
+          <button
+            id="newPriorityMedium"
+            class="option-button"
+            onclick="setNewPriority('medium')"
+          >
+            🟡 MITTEL
+          </button>
+
+          <button
+            id="newPriorityHigh"
+            class="option-button"
+            onclick="setNewPriority('high')"
+          >
+            🔴 HOCH
+          </button>
+
+        </div>
+
+
+        <div class="option-row">
+
+          <span class="option-label">
+            OPTIONAL
+          </span>
+
+          <button
+            id="newOptionalButton"
+            class="option-button"
+            onclick="toggleNewOptional()"
+          >
+            🟣 NEIN
+          </button>
+
+        </div>
+
+
+        <div class="option-row">
+
+          <span class="option-label">
+            FÄLLIG
+          </span>
+
+          <button
+            id="newDueNone"
+            class="option-button selected"
+            onclick="setNewDue('none')"
+          >
+            —
+          </button>
+
+          <button
+            id="newDueTomorrow"
+            class="option-button"
+            onclick="setNewDue('tomorrowOnly')"
+          >
+            💠 MORGEN
+          </button>
+
+          <button
+            id="newDueDeadline"
+            class="option-button"
+            onclick="setNewDue('deadline')"
+          >
+            🔷 BIS MORGEN
+          </button>
+
+        </div>
+
+      </div>
+
 
       <button
         class="add-button"
@@ -798,7 +817,21 @@
 
 
     /*
-      MIGRATION ALTER DATEN
+      AUSWAHL FÜR NEUE AUFGABE
+    */
+
+    let newTaskPriority =
+      "normal";
+
+    let newTaskOptional =
+      false;
+
+    let newTaskDueMode =
+      "none";
+
+
+    /*
+      MIGRATION
     */
 
     tasks = tasks.map(task => {
@@ -811,6 +844,7 @@
             : "open";
 
       }
+
 
       const defaults = {
 
@@ -855,7 +889,7 @@
 
 
     /*
-      EUROPE / BERLIN DATUM
+      DATUM BERLIN
     */
 
     function getBerlinDateKey() {
@@ -863,10 +897,17 @@
       return new Intl.DateTimeFormat(
         "en-CA",
         {
-          timeZone: "Europe/Berlin",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit"
+          timeZone:
+            "Europe/Berlin",
+
+          year:
+            "numeric",
+
+          month:
+            "2-digit",
+
+          day:
+            "2-digit"
         }
       ).format(
         new Date()
@@ -881,8 +922,10 @@
     ) {
 
       const parts =
-        dateKey.split("-")
+        dateKey
+          .split("-")
           .map(Number);
+
 
       const date =
         new Date(
@@ -890,39 +933,28 @@
             parts[0],
             parts[1] - 1,
             parts[2] + days,
-            12,
-            0,
-            0
+            12
           )
         );
+
 
       return (
         date.getUTCFullYear() +
         "-" +
         String(
           date.getUTCMonth() + 1
-        ).padStart(2, "0") +
+        ).padStart(2,"0") +
         "-" +
         String(
           date.getUTCDate()
-        ).padStart(2, "0")
+        ).padStart(2,"0")
       );
 
     }
 
 
     /*
-      DATUMSREGELN AUTOMATISCH PRÜFEN
-
-      💠 gilt nur für den unmittelbar
-      folgenden Kalendertag.
-
-      Sobald dieser Tag erreicht ist,
-      wird 💠 entfernt.
-
-      🔷 bleibt gespeichert.
-      Sobald die Deadline erreicht ist,
-      wird es als ⚠️ angezeigt.
+      AUTOMATISCHE DATUMSREGELN
     */
 
     function applyAutomaticDateRules() {
@@ -996,7 +1028,204 @@
 
 
     /*
-      NEUE AUFGABE
+      NEUE-AUFGABE-OPTIONEN
+    */
+
+    function setNewPriority(
+      priority
+    ) {
+
+      newTaskPriority =
+        priority;
+
+      updateNewTaskOptions();
+
+    }
+
+
+    function toggleNewOptional() {
+
+      newTaskOptional =
+        !newTaskOptional;
+
+      updateNewTaskOptions();
+
+    }
+
+
+    function setNewDue(
+      mode
+    ) {
+
+      newTaskDueMode =
+        mode;
+
+      updateNewTaskOptions();
+
+    }
+
+
+    function updateNewTaskOptions() {
+
+      document
+        .querySelectorAll(
+          "#newPriorityNormal, #newPriorityMedium, #newPriorityHigh"
+        )
+        .forEach(
+          button =>
+            button.classList.remove(
+              "selected"
+            )
+        );
+
+
+      if (
+        newTaskPriority ===
+        "normal"
+      ) {
+
+        document
+          .getElementById(
+            "newPriorityNormal"
+          )
+          .classList.add(
+            "selected"
+          );
+
+      }
+
+
+      if (
+        newTaskPriority ===
+        "medium"
+      ) {
+
+        document
+          .getElementById(
+            "newPriorityMedium"
+          )
+          .classList.add(
+            "selected"
+          );
+
+      }
+
+
+      if (
+        newTaskPriority ===
+        "high"
+      ) {
+
+        document
+          .getElementById(
+            "newPriorityHigh"
+          )
+          .classList.add(
+            "selected"
+          );
+
+      }
+
+
+      const optionalButton =
+        document.getElementById(
+          "newOptionalButton"
+        );
+
+
+      optionalButton.classList.toggle(
+        "selected",
+        newTaskOptional
+      );
+
+
+      optionalButton.textContent =
+        newTaskOptional
+          ? "🟣 JA"
+          : "🟣 NEIN";
+
+
+      document
+        .querySelectorAll(
+          "#newDueNone, #newDueTomorrow, #newDueDeadline"
+        )
+        .forEach(
+          button =>
+            button.classList.remove(
+              "selected"
+            )
+        );
+
+
+      if (
+        newTaskDueMode ===
+        "none"
+      ) {
+
+        document
+          .getElementById(
+            "newDueNone"
+          )
+          .classList.add(
+            "selected"
+          );
+
+      }
+
+
+      if (
+        newTaskDueMode ===
+        "tomorrowOnly"
+      ) {
+
+        document
+          .getElementById(
+            "newDueTomorrow"
+          )
+          .classList.add(
+            "selected"
+          );
+
+      }
+
+
+      if (
+        newTaskDueMode ===
+        "deadline"
+      ) {
+
+        document
+          .getElementById(
+            "newDueDeadline"
+          )
+          .classList.add(
+            "selected"
+          );
+
+      }
+
+    }
+
+
+    function resetNewTaskOptions() {
+
+      newTaskPriority =
+        "normal";
+
+      newTaskOptional =
+        false;
+
+      newTaskDueMode =
+        "none";
+
+
+      updateNewTaskOptions();
+
+    }
+
+
+    /*
+      AUFGABE HINZUFÜGEN
     */
 
     function addTask() {
@@ -1006,45 +1235,98 @@
           "taskInput"
         );
 
+
       const text =
         input.value.trim();
+
 
       if (text === "") {
         return;
       }
 
 
+      const today =
+        getBerlinDateKey();
+
+
+      const tomorrow =
+        addDaysToDateKey(
+          today,
+          1
+        );
+
+
+      let dueDate =
+        null;
+
+
+      if (
+        newTaskDueMode ===
+          "tomorrowOnly" ||
+        newTaskDueMode ===
+          "deadline"
+      ) {
+
+        dueDate =
+          tomorrow;
+
+      }
+
+
       tasks.push({
 
-        id: Date.now(),
+        id:
+          Date.now(),
 
-        text: text,
+        text:
+          text,
 
-        status: "open",
+        status:
+          "open",
 
-        priority: "normal",
+        priority:
+          newTaskPriority,
 
-        optional: false,
+        optional:
+          newTaskOptional,
 
-        dueMode: "none",
-        dueDate: null,
+        dueMode:
+          newTaskDueMode,
 
-        startedAt: null,
-        pausedAt: null,
-        pauseTotalMs: 0,
+        dueDate:
+          dueDate,
 
-        completedAt: null,
-        activeDurationMs: null,
+        startedAt:
+          null,
 
-        abortedAt: null,
-        abortedActiveDurationMs: null
+        pausedAt:
+          null,
+
+        pauseTotalMs:
+          0,
+
+        completedAt:
+          null,
+
+        activeDurationMs:
+          null,
+
+        abortedAt:
+          null,
+
+        abortedActiveDurationMs:
+          null
+
       });
 
 
-      saveTasks();
-
       input.value =
         "";
+
+
+      resetNewTaskOptions();
+
+      saveTasks();
 
       renderTasks();
 
@@ -1052,7 +1334,7 @@
 
 
     /*
-      PRIORITÄT
+      PRIORITÄT / OPTIONAL / FÄLLIGKEIT
     */
 
     function setPriority(
@@ -1063,32 +1345,15 @@
       const task =
         getTask(id);
 
+
       if (!task) {
-        return;
-      }
-
-
-      if (
-        task.status === "completed" ||
-        task.status === "aborted"
-      ) {
-        return;
-      }
-
-
-      if (
-        ![
-          "normal",
-          "medium",
-          "high"
-        ].includes(priority)
-      ) {
         return;
       }
 
 
       task.priority =
         priority;
+
 
       saveTasks();
 
@@ -1097,24 +1362,13 @@
     }
 
 
-    /*
-      OPTIONAL
-    */
-
     function toggleOptional(id) {
 
       const task =
         getTask(id);
 
+
       if (!task) {
-        return;
-      }
-
-
-      if (
-        task.status === "completed" ||
-        task.status === "aborted"
-      ) {
         return;
       }
 
@@ -1130,10 +1384,6 @@
     }
 
 
-    /*
-      FÄLLIGKEIT
-    */
-
     function setDueMode(
       id,
       mode
@@ -1142,21 +1392,15 @@
       const task =
         getTask(id);
 
+
       if (!task) {
-        return;
-      }
-
-
-      if (
-        task.status === "completed" ||
-        task.status === "aborted"
-      ) {
         return;
       }
 
 
       const today =
         getBerlinDateKey();
+
 
       const tomorrow =
         addDaysToDateKey(
@@ -1165,38 +1409,18 @@
         );
 
 
+      task.dueMode =
+        mode;
+
+
       if (
         mode === "none"
       ) {
 
-        task.dueMode =
-          "none";
-
         task.dueDate =
           null;
 
-      }
-
-
-      if (
-        mode === "tomorrowOnly"
-      ) {
-
-        task.dueMode =
-          "tomorrowOnly";
-
-        task.dueDate =
-          tomorrow;
-
-      }
-
-
-      if (
-        mode === "deadlineTomorrow"
-      ) {
-
-        task.dueMode =
-          "deadline";
+      } else {
 
         task.dueDate =
           tomorrow;
@@ -1212,7 +1436,7 @@
 
 
     /*
-      PRIORITÄT HILFSFUNKTIONEN
+      SYMBOLE
     */
 
     function getPrioritySymbol(
@@ -1238,57 +1462,7 @@
     }
 
 
-    function getPriorityName(
-      priority
-    ) {
-
-      if (
-        priority === "medium"
-      ) {
-        return "MITTEL";
-      }
-
-
-      if (
-        priority === "high"
-      ) {
-        return "HOCH";
-      }
-
-
-      return "NORMAL";
-
-    }
-
-
-    function getPriorityClass(
-      priority
-    ) {
-
-      if (
-        priority === "medium"
-      ) {
-        return "priority-medium";
-      }
-
-
-      if (
-        priority === "high"
-      ) {
-        return "priority-high";
-      }
-
-
-      return "priority-normal";
-
-    }
-
-
-    /*
-      FÄLLIGKEITSANZEIGE
-    */
-
-    function getDueDisplay(task) {
+    function getDueSymbol(task) {
 
       if (
         !task.dueMode ||
@@ -1307,13 +1481,7 @@
         task.dueMode ===
         "tomorrowOnly"
       ) {
-
-        return `
-          <span class="flag tomorrow-flag">
-            💠 MORGEN
-          </span>
-        `;
-
+        return "💠";
       }
 
 
@@ -1325,21 +1493,11 @@
         if (
           task.dueDate <= today
         ) {
-
-          return `
-            <span class="flag warning-flag">
-              ⚠️ HEUTE FÄLLIG
-            </span>
-          `;
-
+          return "⚠️";
         }
 
 
-        return `
-          <span class="flag deadline-flag">
-            🔷 SPÄTESTENS MORGEN
-          </span>
-        `;
+        return "🔷";
 
       }
 
@@ -1349,26 +1507,18 @@
     }
 
 
-    /*
-      KENNZEICHNUNGEN
-    */
+    function createCompactFlags(task) {
 
-    function createFlags(task) {
+      const due =
+        getDueSymbol(task);
+
 
       return `
 
-        <div class="flag-line">
+        <div class="compact-flags">
 
-          <span
-            class="flag
-            ${getPriorityClass(
-              task.priority
-            )}"
-          >
+          <span class="mini-flag">
             ${getPrioritySymbol(
-              task.priority
-            )}
-            ${getPriorityName(
               task.priority
             )}
           </span>
@@ -1376,14 +1526,22 @@
           ${
             task.optional
               ? `
-                <span class="flag optional-flag">
-                  🟣 OPTIONAL
+                <span class="mini-flag">
+                  🟣
                 </span>
               `
               : ""
           }
 
-          ${getDueDisplay(task)}
+          ${
+            due
+              ? `
+                <span class="mini-flag">
+                  ${due}
+                </span>
+              `
+              : ""
+          }
 
         </div>
       `;
@@ -1392,25 +1550,25 @@
 
 
     /*
-      EINSTELLUNGEN
+      BEARBEITUNGSOPTIONEN
     */
 
-    function createTaskSettings(
+    function createEditOptions(
       task
     ) {
 
       return `
 
-        <div class="settings-block">
+        <div class="edit-options">
 
-          <div class="settings-row">
+          <div class="option-row">
 
-            <span class="settings-label">
+            <span class="option-label">
               PRIORITÄT
             </span>
 
             <button
-              class="setting-button
+              class="option-button
               ${
                 task.priority === "normal"
                   ? "selected"
@@ -1425,7 +1583,7 @@
             </button>
 
             <button
-              class="setting-button
+              class="option-button
               ${
                 task.priority === "medium"
                   ? "selected"
@@ -1440,7 +1598,7 @@
             </button>
 
             <button
-              class="setting-button
+              class="option-button
               ${
                 task.priority === "high"
                   ? "selected"
@@ -1457,14 +1615,14 @@
           </div>
 
 
-          <div class="settings-row">
+          <div class="option-row">
 
-            <span class="settings-label">
+            <span class="option-label">
               OPTIONAL
             </span>
 
             <button
-              class="setting-button
+              class="option-button
               ${
                 task.optional
                   ? "selected"
@@ -1485,14 +1643,14 @@
           </div>
 
 
-          <div class="settings-row">
+          <div class="option-row">
 
-            <span class="settings-label">
+            <span class="option-label">
               FÄLLIG
             </span>
 
             <button
-              class="setting-button
+              class="option-button
               ${
                 task.dueMode === "none"
                   ? "selected"
@@ -1507,7 +1665,7 @@
             </button>
 
             <button
-              class="setting-button
+              class="option-button
               ${
                 task.dueMode ===
                   "tomorrowOnly"
@@ -1523,7 +1681,7 @@
             </button>
 
             <button
-              class="setting-button
+              class="option-button
               ${
                 task.dueMode ===
                   "deadline"
@@ -1532,7 +1690,7 @@
               }"
               onclick="setDueMode(
                 ${task.id},
-                'deadlineTomorrow'
+                'deadline'
               )"
             >
               🔷 BIS MORGEN
@@ -1547,7 +1705,7 @@
 
 
     /*
-      STARTEN
+      START / PAUSE / FORTSETZEN
     */
 
     function startTask(id) {
@@ -1555,12 +1713,13 @@
       const task =
         getTask(id);
 
+
       if (!task) {
         return;
       }
 
 
-      const alreadyRunning =
+      const running =
         tasks.find(
           item =>
             item.status === "running" &&
@@ -1568,12 +1727,12 @@
         );
 
 
-      if (alreadyRunning) {
+      if (running) {
 
         showInfoModal(
           "Schon eine Aufgabe aktiv",
           "Aktuell läuft bereits „" +
-          alreadyRunning.text +
+          running.text +
           "“. Pausiere oder beende sie zuerst."
         );
 
@@ -1586,25 +1745,14 @@
         "running";
 
       task.startedAt =
-        new Date().toISOString();
+        new Date()
+          .toISOString();
 
       task.pausedAt =
         null;
 
       task.pauseTotalMs =
         0;
-
-      task.completedAt =
-        null;
-
-      task.activeDurationMs =
-        null;
-
-      task.abortedAt =
-        null;
-
-      task.abortedActiveDurationMs =
-        null;
 
 
       saveTasks();
@@ -1613,10 +1761,6 @@
 
     }
 
-
-    /*
-      PAUSIEREN
-    */
 
     function pauseTask(id) {
 
@@ -1636,7 +1780,8 @@
         "paused";
 
       task.pausedAt =
-        new Date().toISOString();
+        new Date()
+          .toISOString();
 
 
       saveTasks();
@@ -1645,10 +1790,6 @@
 
     }
 
-
-    /*
-      FORTSETZEN
-    */
 
     function resumeTask(id) {
 
@@ -1664,7 +1805,7 @@
       }
 
 
-      const alreadyRunning =
+      const running =
         tasks.find(
           item =>
             item.status === "running" &&
@@ -1672,12 +1813,12 @@
         );
 
 
-      if (alreadyRunning) {
+      if (running) {
 
         showInfoModal(
           "Schon eine Aufgabe aktiv",
           "Aktuell läuft bereits „" +
-          alreadyRunning.text +
+          running.text +
           "“. Pausiere oder beende sie zuerst."
         );
 
@@ -1781,12 +1922,6 @@
       task.activeDurationMs =
         duration;
 
-      task.abortedAt =
-        null;
-
-      task.abortedActiveDurationMs =
-        null;
-
 
       editingTaskId =
         null;
@@ -1807,6 +1942,7 @@
 
       const task =
         getTask(id);
+
 
       if (!task) {
         return;
@@ -1834,7 +1970,7 @@
 
             <p>
               „${escapeHtml(task.text)}“
-              wird endgültig als abgebrochen markiert.
+              wird als abgebrochen markiert.
             </p>
 
             <div class="modal-actions">
@@ -1868,6 +2004,7 @@
       const task =
         getTask(id);
 
+
       if (!task) {
         return;
       }
@@ -1884,23 +2021,6 @@
             task,
             now
           );
-
-
-        if (
-          task.status === "paused" &&
-          task.pausedAt
-        ) {
-
-          task.pauseTotalMs +=
-            Math.max(
-              0,
-              now -
-              new Date(
-                task.pausedAt
-              ).getTime()
-            );
-
-        }
 
       } else {
 
@@ -1920,12 +2040,6 @@
       task.pausedAt =
         null;
 
-      task.completedAt =
-        null;
-
-      task.activeDurationMs =
-        null;
-
 
       editingTaskId =
         null;
@@ -1941,7 +2055,7 @@
 
 
     /*
-      ZEITBERECHNUNG
+      ZEIT
     */
 
     function calculateActiveDuration(
@@ -2005,20 +2119,13 @@
 
     /*
       WIEDERHOLEN
-
-      Priorität und Optionalität
-      werden übernommen.
-
-      Alte Fälligkeit dagegen NICHT,
-      damit keine alte Deadline
-      auf eine neue Wiederholung
-      übertragen wird.
     */
 
     function repeatTask(id) {
 
       const oldTask =
         getTask(id);
+
 
       if (!oldTask) {
         return;
@@ -2027,7 +2134,8 @@
 
       tasks.push({
 
-        id: Date.now(),
+        id:
+          Date.now(),
 
         text:
           oldTask.text,
@@ -2125,7 +2233,7 @@
 
         }
 
-      }, 0);
+      },0);
 
     }
 
@@ -2152,7 +2260,10 @@
         );
 
 
-      if (!task || !input) {
+      if (
+        !task ||
+        !input
+      ) {
         return;
       }
 
@@ -2189,6 +2300,7 @@
 
       const task =
         getTask(id);
+
 
       if (!task) {
         return;
@@ -2271,7 +2383,8 @@
 
       document.getElementById(
         "modalContainer"
-      ).innerHTML = "";
+      ).innerHTML =
+        "";
 
     }
 
@@ -2341,7 +2454,7 @@
 
 
     /*
-      HTML SICHER
+      ESCAPE
     */
 
     function escapeHtml(text) {
@@ -2369,17 +2482,9 @@
       number
     ) {
 
-      if (number < 10) {
-
-        return "0" +
-          number;
-
-      }
-
-
-      return String(
-        number
-      );
+      return number < 10
+        ? "0" + number
+        : String(number);
 
     }
 
@@ -2395,20 +2500,17 @@
         );
 
 
-      if (index === -1) {
-        return "";
-      }
-
-
-      return formatTaskNumber(
-        index + 1
-      );
+      return index === -1
+        ? ""
+        : formatTaskNumber(
+            index + 1
+          );
 
     }
 
 
     /*
-      DATUM + ZEIT
+      ZEITANZEIGE
     */
 
     function formatDateTime(
@@ -2423,15 +2525,6 @@
 
       const date =
         new Date(value);
-
-
-      if (
-        Number.isNaN(
-          date.getTime()
-        )
-      ) {
-        return "";
-      }
 
 
       const datePart =
@@ -2484,10 +2577,6 @@
     }
 
 
-    /*
-      DAUER
-    */
-
     function formatDuration(ms) {
 
       if (
@@ -2529,29 +2618,20 @@
 
       return (
         String(hours)
-          .padStart(
-            2,
-            "0"
-          ) +
+          .padStart(2,"0") +
         ":" +
         String(minutes)
-          .padStart(
-            2,
-            "0"
-          ) +
+          .padStart(2,"0") +
         ":" +
         String(seconds)
-          .padStart(
-            2,
-            "0"
-          )
+          .padStart(2,"0")
       );
 
     }
 
 
     /*
-      STATUSSYMBOL
+      STATUS
     */
 
     function getStatusSymbol(
@@ -2586,7 +2666,7 @@
 
 
     /*
-      AKTIVE AUFGABE
+      AKTIVE AUFGABEN
     */
 
     function createActiveTaskElement(
@@ -2659,20 +2739,22 @@
               "
             >
 
+            ${createEditOptions(task)}
+
             <div class="edit-actions">
 
               <button
                 class="edit-button"
                 onclick="saveEdit(${task.id})"
               >
-                ✓ Speichern
+                ✓ SPEICHERN
               </button>
 
               <button
                 class="edit-button"
                 onclick="cancelEditing()"
               >
-                × Abbrechen
+                × ABBRECHEN
               </button>
 
             </div>
@@ -2700,13 +2782,6 @@
             LÄUFT
           </div>
 
-          <div class="task-meta">
-            ${formatDateTime(
-              task.startedAt,
-              "GESTARTET"
-            )}
-          </div>
-
           <div
             class="duration live-duration"
             data-task-id="${task.id}"
@@ -2731,13 +2806,6 @@
 
           <div class="status-meta paused-meta">
             PAUSIERT
-          </div>
-
-          <div class="task-meta">
-            ${formatDateTime(
-              task.startedAt,
-              "GESTARTET"
-            )}
           </div>
 
           <div
@@ -2772,7 +2840,7 @@
               class="task-action-text start-button"
               onclick="startTask(${task.id})"
             >
-              ▶ STARTEN
+              ▶ START
             </button>
 
             <button
@@ -2793,7 +2861,7 @@
               class="task-action-text abort-button"
               onclick="askAbort(${task.id})"
             >
-              ❌ ABBRECHEN
+              ❌ ABBRUCH
             </button>
 
           </div>
@@ -2828,7 +2896,7 @@
               class="task-action-text abort-button"
               onclick="askAbort(${task.id})"
             >
-              ❌ ABBRECHEN
+              ❌ ABBRUCH
             </button>
 
           </div>
@@ -2849,7 +2917,7 @@
               class="task-action-text start-button"
               onclick="resumeTask(${task.id})"
             >
-              ▶ FORTSETZEN
+              ▶ WEITER
             </button>
 
             <button
@@ -2863,7 +2931,7 @@
               class="task-action-text abort-button"
               onclick="askAbort(${task.id})"
             >
-              ❌ ABBRECHEN
+              ❌ ABBRUCH
             </button>
 
           </div>
@@ -2888,11 +2956,9 @@
             ${escapeHtml(task.text)}
           </div>
 
-          ${createFlags(task)}
+          ${createCompactFlags(task)}
 
           ${meta}
-
-          ${createTaskSettings(task)}
 
           ${actions}
 
@@ -2945,7 +3011,7 @@
             ${escapeHtml(task.text)}
           </div>
 
-          ${createFlags(task)}
+          ${createCompactFlags(task)}
 
           ${
             task.completedAt
@@ -2979,7 +3045,6 @@
         <button
           class="repeat-button"
           onclick="repeatTask(${task.id})"
-          title="Wiederholen"
         >
           🔁
         </button>
@@ -3031,7 +3096,7 @@
             ${escapeHtml(task.text)}
           </div>
 
-          ${createFlags(task)}
+          ${createCompactFlags(task)}
 
           ${
             task.abortedAt
@@ -3051,7 +3116,7 @@
               null
               ? `
                 <div class="duration aborted-duration">
-                  AKTIVE ZEIT BIS ABBRUCH ·
+                  AKTIV BIS ABBRUCH ·
                   ${formatDuration(
                     task.abortedActiveDurationMs
                   )}
@@ -3065,7 +3130,6 @@
         <button
           class="repeat-button"
           onclick="repeatTask(${task.id})"
-          title="Wiederholen"
         >
           🔁
         </button>
@@ -3117,8 +3181,7 @@
         tasks
           .filter(
             task =>
-              task.status ===
-              "completed"
+              task.status === "completed"
           )
           .sort(
             (a,b) =>
@@ -3135,8 +3198,7 @@
         tasks
           .filter(
             task =>
-              task.status ===
-              "aborted"
+              task.status === "aborted"
           )
           .sort(
             (a,b) =>
@@ -3289,7 +3351,7 @@
 
 
     /*
-      LIVE-TIMER
+      LIVE TIMER
     */
 
     function updateLiveTimers() {
@@ -3336,11 +3398,6 @@
     );
 
 
-    /*
-      DATUMSREGELN AUCH PRÜFEN,
-      WENN MAN ZUR APP ZURÜCKKEHRT
-    */
-
     document.addEventListener(
       "visibilitychange",
       function() {
@@ -3357,10 +3414,6 @@
       }
     );
 
-
-    /*
-      ENTER = HINZUFÜGEN
-    */
 
     document
       .getElementById(
@@ -3383,6 +3436,8 @@
 
 
     saveTasks();
+
+    updateNewTaskOptions();
 
     renderTasks();
 
