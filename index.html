@@ -581,6 +581,31 @@
     }
 
 
+    function repeatTask(id) {
+
+      const oldTask =
+        tasks.find(
+          task => task.id === id
+        );
+
+      if (!oldTask) {
+        return;
+      }
+
+      const newTask = {
+        id: Date.now(),
+        text: oldTask.text,
+        completed: false
+      };
+
+      tasks.push(newTask);
+
+      saveTasks();
+
+      renderTasks();
+    }
+
+
     function startEditing(id) {
 
       editingTaskId = id;
@@ -909,12 +934,28 @@
         </div>
 
 
-        <button
-          class="icon-button"
-          onclick="toggleTask(${task.id})"
-        >
-          ${task.completed ? "✅" : "⬜"}
-        </button>
+        ${task.completed
+  ? `
+    <button
+      class="icon-button"
+      onclick="repeatTask(${task.id})"
+      aria-label="Aufgabe wiederholen"
+      title="Wiederholen"
+    >
+      🔁
+    </button>
+  `
+  : `
+    <button
+      class="icon-button"
+      onclick="toggleTask(${task.id})"
+      aria-label="Aufgabe erledigen"
+      title="Erledigen"
+    >
+      ⬜
+    </button>
+  `
+}
 
 
         <div class="task-text">
