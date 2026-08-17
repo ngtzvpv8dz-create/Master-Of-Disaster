@@ -1,946 +1,3382 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b0d0f">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0d0f">
 
-  <title>Master of Disaster</title>
+<title>Master of Disaster</title>
 
-  <style>
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    * {
-      box-sizing: border-box;
-    }
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 20px 12px 50px;
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      padding: 20px 12px 50px;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+  background:
+    linear-gradient(
+      180deg,
+      #15191d 0%,
+      #0b0d0f 45%,
+      #070809 100%
+    );
 
-      background:
-        linear-gradient(
-          180deg,
-          #15191d 0%,
-          #0b0d0f 45%,
-          #070809 100%
-        );
+  color: #f3f3f3;
+}
 
-      color: #f3f3f3;
-    }
+.app {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
 
-    .app {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-    }
+/* HEADER */
 
-    /* HEADER */
+.header {
+  margin: 8px 0 24px;
+  text-align: center;
+}
 
-    .header {
-      margin: 8px 0 24px;
-      text-align: center;
-    }
+h1 {
+  margin: 0;
 
-    h1 {
-      margin: 0;
+  font-size: clamp(28px, 8vw, 42px);
+  line-height: 1;
+  letter-spacing: -1.5px;
+}
 
-      font-size: clamp(28px, 8vw, 42px);
-      line-height: 1;
-      letter-spacing: -1.5px;
-    }
+.eyebrow {
+  margin-top: 10px;
 
-    .eyebrow {
-      margin-top: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
 
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 2.5px;
+  color: #8c969f;
+}
 
-      color: #8c969f;
-    }
+/* TABS */
 
-    /* TABS */
+.tabs-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 50;
 
-    .tabs-wrapper {
-      position: sticky;
-      top: 0;
-      z-index: 50;
+  margin: 0 -12px 18px;
+  padding: 8px 12px;
 
-      margin: 0 -12px 18px;
-      padding: 8px 12px;
+  background: rgba(11,13,15,0.96);
 
-      background: rgba(11,13,15,0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #252a2e;
+}
 
-      border-bottom: 1px solid #252a2e;
-    }
+.tabs {
+  display: flex;
+  gap: 7px;
 
-    .tabs {
-      display: flex;
-      gap: 7px;
+  overflow-x: auto;
 
-      overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
 
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-    }
+.tabs::-webkit-scrollbar {
+  display: none;
+}
 
-    .tabs::-webkit-scrollbar {
-      display: none;
-    }
+.tab-button {
+  flex-shrink: 0;
 
-    .tab-button {
-      flex-shrink: 0;
+  padding: 9px 12px;
 
-      padding: 9px 12px;
+  border: 1px solid #30363b;
+  border-radius: 10px;
 
-      border: 1px solid #30363b;
-      border-radius: 10px;
+  background: #121619;
+  color: #7f8990;
 
-      background: #121619;
-      color: #7f8990;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
 
-      font-size: 10px;
-      font-weight: 900;
-      letter-spacing: 0.7px;
+  cursor: pointer;
+}
 
-      cursor: pointer;
-    }
+.tab-button.active {
+  background: #e8ecef;
+  color: #101214;
 
-    .tab-button.active {
-      background: #e8ecef;
-      color: #101214;
+  border-color: #e8ecef;
+}
 
-      border-color: #e8ecef;
-    }
+/* EINGABE */
 
-    /* EINGABE */
+.input-panel {
+  padding: 14px;
+  margin-bottom: 22px;
 
-    .input-panel {
-      padding: 14px;
-      margin-bottom: 22px;
+  background: #171b1f;
 
-      background: #171b1f;
+  border: 1px solid #292f34;
+  border-radius: 16px;
+}
 
-      border: 1px solid #292f34;
-      border-radius: 16px;
-    }
+#taskInput {
+  width: 100%;
 
-    #taskInput {
-      width: 100%;
+  padding: 14px;
+  margin-bottom: 10px;
 
-      padding: 14px;
-      margin-bottom: 10px;
+  border: 1px solid #30373d;
+  border-radius: 11px;
 
-      border: 1px solid #30373d;
-      border-radius: 11px;
+  outline: none;
 
-      outline: none;
+  background: #0d1012;
+  color: white;
 
-      background: #0d1012;
-      color: white;
+  font-size: 16px;
+}
 
-      font-size: 16px;
-    }
+#taskInput:focus,
+.edit-input:focus {
+  border-color: #7d8993;
+}
 
-    #taskInput:focus,
-    .edit-input:focus {
-      border-color: #7d8993;
-    }
+#taskInput::placeholder {
+  color: #626b72;
+}
 
-    #taskInput::placeholder {
-      color: #626b72;
-    }
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 
-    .option-row {
-      display: flex;
-      align-items: center;
-      gap: 5px;
+  margin-bottom: 7px;
 
-      margin-bottom: 7px;
+  flex-wrap: wrap;
+}
 
-      flex-wrap: wrap;
-    }
+.option-label {
+  min-width: 62px;
 
-    .option-label {
-      min-width: 62px;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
 
-      font-size: 8px;
-      font-weight: 900;
-      letter-spacing: 0.7px;
+  color: #69747b;
+}
 
-      color: #69747b;
-    }
+.option-button {
+  min-height: 29px;
 
-    .option-button {
-      min-height: 29px;
+  padding: 4px 7px;
 
-      padding: 4px 7px;
+  border: 1px solid #30363b;
+  border-radius: 8px;
 
-      border: 1px solid #30363b;
-      border-radius: 8px;
+  background: #101315;
+  color: #d9dde0;
 
-      background: #101315;
-      color: #d9dde0;
+  font-size: 9px;
+  font-weight: 800;
 
-      font-size: 9px;
-      font-weight: 800;
+  cursor: pointer;
 
-      cursor: pointer;
+  opacity: 0.48;
+}
 
-      opacity: 0.48;
-    }
+.option-button.selected {
+  opacity: 1;
 
-    .option-button.selected {
-      opacity: 1;
+  background: #20262a;
+  border-color: #68747c;
+}
 
-      background: #20262a;
-      border-color: #68747c;
-    }
+.add-button {
+  width: 100%;
 
-    .add-button {
-      width: 100%;
+  padding: 14px;
+  margin-top: 4px;
 
-      padding: 14px;
-      margin-top: 4px;
+  border: 0;
+  border-radius: 11px;
 
-      border: 0;
-      border-radius: 11px;
+  background: #e8ecef;
+  color: #101214;
 
-      background: #e8ecef;
-      color: #101214;
+  font-size: 15px;
+  font-weight: 900;
 
-      font-size: 15px;
-      font-weight: 900;
+  cursor: pointer;
+}
 
-      cursor: pointer;
-    }
+/* SECTIONS */
 
-    /* SECTIONS */
+.section {
+  margin-bottom: 26px;
+}
 
-    .section {
-      margin-bottom: 26px;
-    }
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+  gap: 8px;
 
-      gap: 8px;
+  margin: 0 3px 10px;
+}
 
-      margin: 0 3px 10px;
-    }
+.section-title {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
 
-    .section-title {
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 1.6px;
+  color: #8c969f;
+}
 
-      color: #8c969f;
-    }
+.counter {
+  flex-shrink: 0;
 
-    .counter {
-      flex-shrink: 0;
+  padding: 5px 8px;
 
-      padding: 5px 8px;
+  border: 1px solid #30363b;
+  border-radius: 20px;
 
-      border: 1px solid #30363b;
-      border-radius: 20px;
+  background: #15191c;
 
-      background: #15191c;
+  font-size: 10px;
+  color: #aab1b7;
+}
 
-      font-size: 10px;
-      color: #aab1b7;
-    }
+/* TASK */
 
-    /* AUFGABEN */
+.task {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 
-    .task {
-      display: flex;
-      align-items: center;
-      gap: 5px;
+  min-height: 50px;
 
-      min-height: 50px;
+  padding: 8px;
+  margin-bottom: 7px;
 
-      padding: 8px;
-      margin-bottom: 7px;
+  background:
+    linear-gradient(
+      135deg,
+      #1c2125,
+      #14181b
+    );
 
-      background:
-        linear-gradient(
-          135deg,
-          #1c2125,
-          #14181b
-        );
+  border: 1px solid #292f34;
+  border-radius: 13px;
+}
 
-      border: 1px solid #292f34;
-      border-radius: 13px;
-    }
+.task.running {
+  border-color: #55775f;
+}
 
-    .task.running {
-      border-color: #55775f;
-    }
+.task.paused {
+  border-color: #776d36;
+}
 
-    .task.paused {
-      border-color: #776d36;
-    }
+.task.completed {
+  opacity: 0.56;
+}
 
-    .task.completed {
-      opacity: 0.56;
-    }
+.task.aborted {
+  opacity: 0.5;
+}
 
-    .task.aborted {
-      opacity: 0.5;
-    }
+.task.completed .task-text,
+.task.aborted .task-text {
+  text-decoration: line-through;
+}
 
-    .task.completed .task-text,
-    .task.aborted .task-text {
-      text-decoration: line-through;
-    }
+.task-number {
+  width: 27px;
+  flex-shrink: 0;
 
-    .task-number {
-      width: 27px;
-      flex-shrink: 0;
+  text-align: center;
 
-      text-align: center;
+  font-size: 9px;
+  font-weight: 900;
 
-      font-size: 9px;
-      font-weight: 900;
+  color: #647887;
+}
 
-      color: #647887;
-    }
+.status-symbol {
+  width: 25px;
+  flex-shrink: 0;
 
-    .status-symbol {
-      width: 25px;
-      flex-shrink: 0;
+  text-align: center;
 
-      text-align: center;
+  font-size: 17px;
+  line-height: 1;
+}
 
-      font-size: 17px;
-      line-height: 1;
-    }
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
 
-    .task-content {
-      flex: 1;
-      min-width: 0;
-    }
+.task-main-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-    .task-main-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+.task-text {
+  flex: 1;
+  min-width: 0;
 
-    .task-text {
-      flex: 1;
-      min-width: 0;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
 
-      font-size: 15px;
-      font-weight: 650;
-      line-height: 1.25;
+  word-break: break-word;
+}
 
-      word-break: break-word;
-    }
+/* FLAGS */
 
-    /* FLAGS */
+.compact-flags {
+  display: flex;
+  gap: 3px;
 
-    .compact-flags {
-      display: flex;
-      gap: 3px;
+  margin-top: 3px;
+}
 
-      margin-top: 3px;
-    }
+.mini-flag {
+  font-size: 10px;
+  line-height: 1;
+}
 
-    .mini-flag {
-      font-size: 10px;
-      line-height: 1;
-    }
+/* META */
 
-    /* META */
+.task-meta {
+  margin-top: 3px;
 
-    .task-meta {
-      margin-top: 3px;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.45px;
 
-      font-size: 7px;
-      font-weight: 700;
-      letter-spacing: 0.45px;
+  color: #4f8ec4;
+}
 
-      color: #4f8ec4;
-    }
+.duration {
+  margin-top: 2px;
 
-    .duration {
-      margin-top: 2px;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
 
-      font-size: 8.5px;
-      font-weight: 900;
-      letter-spacing: 0.5px;
+  color: #70a5cf;
+}
 
-      color: #70a5cf;
-    }
+.status-meta {
+  margin-top: 3px;
 
-    .status-meta {
-      margin-top: 3px;
+  font-size: 8px;
+  font-weight: 900;
 
-      font-size: 8px;
-      font-weight: 900;
+  color: #b3a94f;
+}
 
-      color: #b3a94f;
-    }
+.abort-meta {
+  margin-top: 3px;
 
-    .abort-meta {
-      margin-top: 3px;
+  font-size: 7px;
+  font-weight: 700;
 
-      font-size: 7px;
-      font-weight: 700;
+  color: #ad6666;
+}
 
-      color: #ad6666;
-    }
+/* ICONS */
 
-    /* ICON BUTTONS */
+button {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
 
-    button {
-      font-family: inherit;
-      -webkit-tap-highlight-color: transparent;
-    }
+.icon-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 
-    .icon-actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+  margin-top: 5px;
 
-      margin-top: 5px;
+  flex-wrap: nowrap;
+}
 
-      flex-wrap: nowrap;
-    }
+.icon-action {
+  width: 31px;
+  height: 31px;
 
-    .icon-action {
-      width: 31px;
-      height: 31px;
+  flex: 0 0 31px;
 
-      flex: 0 0 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-      display: flex;
-      align-items: center;
-      justify-content: center;
+  padding: 0;
 
-      padding: 0;
+  border: 1px solid #30363b;
+  border-radius: 8px;
 
-      border: 1px solid #30363b;
-      border-radius: 8px;
+  background: #101315;
+  color: #d1d6d9;
 
-      background: #101315;
-      color: #d1d6d9;
+  font-size: 13px;
 
-      font-size: 13px;
+  cursor: pointer;
+}
 
-      cursor: pointer;
-    }
+.icon-action:active {
+  transform: scale(0.93);
+}
 
-    .icon-action:active {
-      transform: scale(0.93);
-    }
+.start-button {
+  border-color: #3e6047;
+}
 
-    .start-button {
-      border-color: #3e6047;
-    }
+.pause-button {
+  border-color: #776d36;
+}
 
-    .pause-button {
-      border-color: #776d36;
-    }
+.finish-button {
+  border-color: #41604b;
+}
 
-    .finish-button {
-      border-color: #41604b;
-    }
+.abort-button {
+  border-color: #6b3f3f;
+}
 
-    .abort-button {
-      border-color: #6b3f3f;
-    }
+.today-button {
+  border-color: #385e77;
+}
 
-    .today-button {
-      border-color: #385e77;
-    }
+.today-button.selected {
+  background: #14232c;
+  border-color: #4c7490;
+}
 
-    .today-button.selected {
-      background: #14232c;
-      border-color: #4c7490;
-    }
+.filter-today-action {
+  margin-left: auto;
+  flex-shrink: 0;
+}
 
-    .filter-today-action {
-      margin-left: auto;
-      flex-shrink: 0;
-    }
+.repeat-button {
+  width: 32px;
+  height: 32px;
 
-    .repeat-button {
-      width: 32px;
-      height: 32px;
+  flex-shrink: 0;
 
-      flex-shrink: 0;
+  border: 1px solid #30363b;
+  border-radius: 8px;
 
-      border: 1px solid #30363b;
-      border-radius: 8px;
+  background: #0e1113;
 
-      background: #0e1113;
+  font-size: 14px;
 
-      font-size: 14px;
+  cursor: pointer;
+}
 
-      cursor: pointer;
-    }
+/* HEUTE */
 
-    /* HEUTE SUMMARY */
+.today-summary {
+  padding: 13px;
+  margin-bottom: 14px;
 
-    .today-summary {
-      padding: 13px;
-      margin-bottom: 14px;
+  border: 1px solid #34414a;
+  border-radius: 13px;
 
-      border: 1px solid #34414a;
-      border-radius: 13px;
+  background: #151b1f;
+}
 
-      background: #151b1f;
-    }
+.today-progress {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 
-    .today-progress {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
 
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.4px;
-    }
+.today-percentage {
+  color: #91a8b7;
+}
 
-    .today-percentage {
-      color: #91a8b7;
-    }
+.today-progress-bar {
+  height: 7px;
 
-    .today-progress-bar {
-      height: 7px;
+  margin-top: 9px;
 
-      margin-top: 9px;
+  background: #252b2f;
 
-      background: #252b2f;
+  border-radius: 20px;
 
-      border-radius: 20px;
+  overflow: hidden;
+}
 
-      overflow: hidden;
-    }
+.today-progress-fill {
+  height: 100%;
 
-    .today-progress-fill {
-      height: 100%;
+  background: #b8c3ca;
 
-      background: #b8c3ca;
+  transition: width 0.25s ease;
+}
 
-      transition: width 0.25s ease;
-    }
+/* NÄCHSTE AUFGABE */
 
-    /* NÄCHSTE AUFGABE */
+.next-task-panel {
+  padding: 13px;
+  margin-bottom: 18px;
 
-    .next-task-panel {
-      padding: 13px;
-      margin-bottom: 18px;
+  border: 1px solid #50738b;
+  border-radius: 14px;
 
-      border: 1px solid #50738b;
-      border-radius: 14px;
+  background:
+    linear-gradient(
+      135deg,
+      #17242c,
+      #11191e
+    );
+}
 
-      background:
-        linear-gradient(
-          135deg,
-          #17242c,
-          #11191e
-        );
+.next-task-label {
+  margin-bottom: 9px;
 
-      box-shadow:
-        0 8px 24px rgba(0,0,0,0.18);
-    }
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
 
-    .next-task-label {
-      margin-bottom: 9px;
+  color: #75acd0;
+}
 
-      font-size: 9px;
-      font-weight: 900;
-      letter-spacing: 1.5px;
+.next-task-content {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
 
-      color: #75acd0;
-    }
+.next-task-number {
+  flex-shrink: 0;
 
-    .next-task-content {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
+  font-size: 10px;
+  font-weight: 900;
 
-    .next-task-number {
-      flex-shrink: 0;
+  color: #78909f;
+}
 
-      font-size: 10px;
-      font-weight: 900;
+.next-task-status {
+  flex-shrink: 0;
 
-      color: #78909f;
-    }
+  font-size: 19px;
+}
 
-    .next-task-status {
-      flex-shrink: 0;
+.next-task-name {
+  flex: 1;
+  min-width: 0;
 
-      font-size: 19px;
-    }
+  font-size: 17px;
+  font-weight: 800;
 
-    .next-task-name {
-      flex: 1;
-      min-width: 0;
+  word-break: break-word;
+}
 
-      font-size: 17px;
-      font-weight: 800;
+.next-task-empty {
+  color: #687780;
 
-      word-break: break-word;
-    }
+  font-size: 13px;
+}
 
-    .next-task-empty {
-      color: #687780;
+/* DRAG */
 
-      font-size: 13px;
-    }
+.drag-handle {
+  width: 27px;
+  min-height: 38px;
 
-    /* HEUTE DRAG */
+  flex-shrink: 0;
 
-    .drag-handle {
-      width: 27px;
-      min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-      flex-shrink: 0;
+  border: 1px solid #30363b;
+  border-radius: 8px;
 
-      display: flex;
-      align-items: center;
-      justify-content: center;
+  background: #0d1012;
+  color: #74818a;
 
-      border: 1px solid #30363b;
-      border-radius: 8px;
+  font-size: 18px;
 
-      background: #0d1012;
-      color: #74818a;
+  cursor: grab;
 
-      font-size: 18px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
 
-      cursor: grab;
+.dragging {
+  opacity: 0.4;
+  transform: scale(0.985);
+}
 
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+.drag-target {
+  border-color: #5d829e;
+}
 
-    .dragging {
-      opacity: 0.4;
-      transform: scale(0.985);
-    }
+/* EDIT */
 
-    .drag-target {
-      border-color: #5d829e;
-    }
+.edit-area {
+  flex: 1;
+  min-width: 0;
+}
 
-    /* EDIT */
+.edit-input {
+  width: 100%;
 
-    .edit-area {
-      flex: 1;
-      min-width: 0;
-    }
+  padding: 10px;
 
-    .edit-input {
-      width: 100%;
+  border: 1px solid #30373d;
+  border-radius: 8px;
 
-      padding: 10px;
+  background: #0d1012;
+  color: white;
 
-      border: 1px solid #30373d;
-      border-radius: 8px;
+  outline: none;
 
-      background: #0d1012;
-      color: white;
+  font-size: 15px;
+}
 
-      outline: none;
+.edit-options {
+  margin-top: 9px;
+}
 
-      font-size: 15px;
-    }
+.edit-actions {
+  display: flex;
+  gap: 6px;
 
-    .edit-options {
-      margin-top: 9px;
-    }
+  margin-top: 9px;
+}
 
-    .edit-actions {
-      display: flex;
-      gap: 6px;
+.edit-button {
+  flex: 1;
 
-      margin-top: 9px;
-    }
+  padding: 8px;
 
-    .edit-button {
-      flex: 1;
+  border: 1px solid #30363b;
+  border-radius: 8px;
 
-      padding: 8px;
+  background: #0e1113;
+  color: #d8dde0;
 
-      border: 1px solid #30363b;
-      border-radius: 8px;
+  font-weight: 800;
 
-      background: #0e1113;
-      color: #d8dde0;
+  cursor: pointer;
+}
 
-      font-weight: 800;
+/* EMPTY */
 
-      cursor: pointer;
-    }
+.empty-message {
+  padding: 22px 16px;
 
-    /* EMPTY */
+  border: 1px dashed #30363b;
+  border-radius: 13px;
 
-    .empty-message {
-      padding: 22px 16px;
+  text-align: center;
 
-      border: 1px dashed #30363b;
-      border-radius: 13px;
+  color: #626c73;
 
-      text-align: center;
+  font-size: 13px;
+}
 
-      color: #626c73;
+/* ARCHIV */
 
-      font-size: 13px;
-    }
+.archive-summary {
+  padding: 14px;
+  margin-bottom: 18px;
 
-    /* ARCHIV */
+  background: #171b1f;
 
-    .archive-placeholder {
-      padding: 28px 20px;
+  border: 1px solid #30383e;
+  border-radius: 14px;
+}
 
-      border: 1px dashed #354048;
-      border-radius: 14px;
+.archive-summary-title {
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
 
-      text-align: center;
+  color: #84929b;
+}
 
-      color: #7b858c;
+.archive-summary-number {
+  margin-top: 5px;
 
-      line-height: 1.5;
-    }
+  font-size: 22px;
+  font-weight: 900;
+}
 
-    /* MODAL */
+.archive-task {
+  opacity: 0.72;
+}
 
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
+.archive-number {
+  width: 48px;
+  flex-shrink: 0;
 
-      display: flex;
-      justify-content: center;
-      align-items: center;
+  font-size: 10px;
+  font-weight: 900;
 
-      padding: 20px;
+  text-align: center;
 
-      background: rgba(0,0,0,0.72);
+  color: #8ba0ad;
+}
 
-      z-index: 1000;
-    }
+.archive-date-heading {
+  margin: 20px 3px 9px;
 
-    .modal {
-      width: 100%;
-      max-width: 360px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.3px;
 
-      padding: 22px;
+  color: #74818a;
+}
 
-      background: #191d20;
+/* MODAL */
 
-      border: 1px solid #343b40;
-      border-radius: 18px;
-    }
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
 
-    .modal h2 {
-      margin: 0 0 8px;
-      font-size: 20px;
-    }
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-    .modal p {
-      margin: 0 0 20px;
+  padding: 20px;
 
-      color: #9ba3a9;
-      line-height: 1.4;
-    }
+  background: rgba(0,0,0,0.72);
 
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-    }
+  z-index: 1000;
+}
 
-    .modal-button {
-      flex: 1;
+.modal {
+  width: 100%;
+  max-width: 360px;
 
-      padding: 12px;
+  padding: 22px;
 
-      border: 0;
-      border-radius: 10px;
+  background: #191d20;
 
-      font-weight: 800;
+  border: 1px solid #343b40;
+  border-radius: 18px;
+}
 
-      cursor: pointer;
-    }
+.modal h2 {
+  margin: 0 0 8px;
 
-    .cancel-modal {
-      background: #30363b;
-      color: white;
-    }
+  font-size: 20px;
+}
 
-    .confirm-modal {
-      background: #e8ecef;
-      color: #101214;
-    }
+.modal p {
+  margin: 0 0 20px;
 
-    .danger-modal {
-      background: #7c3f3f;
-      color: white;
-    }
+  color: #9ba3a9;
+  line-height: 1.4;
+}
 
-    @media (max-width: 390px) {
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
 
-      body {
-        padding-left: 9px;
-        padding-right: 9px;
-      }
+.modal-button {
+  flex: 1;
 
-      .tabs-wrapper {
-        margin-left: -9px;
-        margin-right: -9px;
+  padding: 12px;
 
-        padding-left: 9px;
-        padding-right: 9px;
-      }
+  border: 0;
+  border-radius: 10px;
 
-      .task {
-        padding: 7px 6px;
-      }
+  font-weight: 800;
 
-      .task-number {
-        width: 22px;
-      }
+  cursor: pointer;
+}
 
-      .status-symbol {
-        width: 20px;
-        font-size: 16px;
-      }
+.cancel-modal {
+  background: #30363b;
+  color: white;
+}
 
-      .task-text {
-        font-size: 14px;
-      }
+.confirm-modal {
+  background: #e8ecef;
+  color: #101214;
+}
 
-      .icon-action {
-        width: 29px;
-        height: 29px;
+.danger-modal {
+  background: #7c3f3f;
+  color: white;
+}
 
-        flex-basis: 29px;
+@media (max-width: 390px) {
 
-        font-size: 12px;
-      }
+  body {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
 
-      .next-task-name {
-        font-size: 15px;
-      }
-    }
+  .tabs-wrapper {
+    margin-left: -9px;
+    margin-right: -9px;
 
-  </style>
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .task {
+    padding: 7px 6px;
+  }
+
+  .task-number {
+    width: 22px;
+  }
+
+  .status-symbol {
+    width: 20px;
+    font-size: 16px;
+  }
+
+  .task-text {
+    font-size: 14px;
+  }
+
+  .icon-action {
+    width: 29px;
+    height: 29px;
+
+    flex-basis: 29px;
+
+    font-size: 12px;
+  }
+
+  .next-task-name {
+    font-size: 15px;
+  }
+
+}
+</style>
 </head>
 
 <body>
 
-  <main class="app">
+<main class="app">
 
-    <header class="header">
+<header class="header">
 
-      <h1>
-        MASTER OF DISASTER
-      </h1>
+  <h1>
+    MASTER OF DISASTER
+  </h1>
 
-      <div class="eyebrow">
-        WEEK-AND-END-TO-DO-DINGSI
-      </div>
+  <div class="eyebrow">
+    WEEK-AND-END-TO-DO-DINGSI
+  </div>
 
-    </header>
-
-
-    <div class="tabs-wrapper">
-
-      <nav class="tabs">
-
-        <button
-          class="tab-button active"
-          data-tab="all"
-          onclick="switchTab('all')"
-        >
-          ALLE
-        </button>
-
-        <button
-          class="tab-button"
-          data-tab="today"
-          onclick="switchTab('today')"
-        >
-          HEUTE
-        </button>
-
-        <button
-          class="tab-button"
-          data-tab="priority"
-          onclick="switchTab('priority')"
-        >
-          PRIORITÄT
-        </button>
-
-        <button
-          class="tab-button"
-          data-tab="due"
-          onclick="switchTab('due')"
-        >
-          FÄLLIG
-        </button>
-
-        <button
-          class="tab-button"
-          data-tab="active"
-          onclick="switchTab('active')"
-        >
-          AKTIV
-        </button>
-
-        <button
-          class="tab-button"
-          data-tab="completed"
-          onclick="switchTab('completed')"
-        >
-          ERLEDIGT
-        </button>
-
-        <button
-          class="tab-button"
-          data-tab="archive"
-          onclick="switchTab('archive')"
-        >
-          ARCHIV
-        </button>
-
-      </nav>
-
-    </div>
+</header>
 
 
-    <section
-      class="input-panel"
-      id="inputPanel"
-    >
+<div class="tabs-wrapper">
 
-      <input
-        type="text"
-        id="taskInput"
-        placeholder="Was steht an?"
-        autocomplete="off"
+<nav class="tabs">
+
+<button
+  class="tab-button active"
+  data-tab="all"
+  onclick="switchTab('all')"
+>
+  ALLE
+</button>
+
+<button
+  class="tab-button"
+  data-tab="today"
+  onclick="switchTab('today')"
+>
+  HEUTE
+</button>
+
+<button
+  class="tab-button"
+  data-tab="priority"
+  onclick="switchTab('priority')"
+>
+  PRIORITÄT
+</button>
+
+<button
+  class="tab-button"
+  data-tab="due"
+  onclick="switchTab('due')"
+>
+  FÄLLIG
+</button>
+
+<button
+  class="tab-button"
+  data-tab="active"
+  onclick="switchTab('active')"
+>
+  AKTIV
+</button>
+
+<button
+  class="tab-button"
+  data-tab="completed"
+  onclick="switchTab('completed')"
+>
+  ERLEDIGT
+</button>
+
+<button
+  class="tab-button"
+  data-tab="archive"
+  onclick="switchTab('archive')"
+>
+  ARCHIV
+</button>
+
+</nav>
+
+</div>
+
+
+<section
+  class="input-panel"
+  id="inputPanel"
+>
+
+<input
+  type="text"
+  id="taskInput"
+  placeholder="Was steht an?"
+  autocomplete="off"
+>
+
+
+<div class="option-row">
+
+<span class="option-label">
+  PRIORITÄT
+</span>
+
+<button
+  id="newPriorityNormal"
+  class="option-button selected"
+  onclick="setNewPriority('normal')"
+>
+  ⚪ NORMAL
+</button>
+
+<button
+  id="newPriorityMedium"
+  class="option-button"
+  onclick="setNewPriority('medium')"
+>
+  🟡 MITTEL
+</button>
+
+<button
+  id="newPriorityHigh"
+  class="option-button"
+  onclick="setNewPriority('high')"
+>
+  🔴 HOCH
+</button>
+
+</div>
+
+
+<div class="option-row">
+
+<span class="option-label">
+  OPTIONAL
+</span>
+
+<button
+  id="newOptionalButton"
+  class="option-button"
+  onclick="toggleNewOptional()"
+>
+  🟣 NEIN
+</button>
+
+</div>
+
+
+<div class="option-row">
+
+<span class="option-label">
+  FÄLLIG
+</span>
+
+<button
+  id="newDueNone"
+  class="option-button selected"
+  onclick="setNewDue('none')"
+>
+  —
+</button>
+
+<button
+  id="newDueTomorrow"
+  class="option-button"
+  onclick="setNewDue('tomorrowOnly')"
+>
+  💠 MORGEN
+</button>
+
+<button
+  id="newDueDeadline"
+  class="option-button"
+  onclick="setNewDue('deadline')"
+>
+  🔷 BIS MORGEN
+</button>
+
+</div>
+
+
+<button
+  class="add-button"
+  onclick="addTask()"
+>
+  + AUFGABE HINZUFÜGEN
+</button>
+
+</section>
+
+
+<div id="viewContainer"></div>
+
+</main>
+
+
+<div id="modalContainer"></div>
+
+
+<script>
+
+/*
+  AKTIVER BESTAND
+*/
+
+let tasks =
+  JSON.parse(
+    localStorage.getItem(
+      "masterOfDisasterTasks"
+    )
+  ) || [];
+
+
+/*
+  ARCHIVBESTAND
+*/
+
+let archive =
+  JSON.parse(
+    localStorage.getItem(
+      "masterOfDisasterArchive"
+    )
+  ) || [];
+
+
+/*
+  NÄCHSTE ARCHIVNUMMER
+
+  Wird später beim Import unseres
+  echten Archivs automatisch auf
+  beispielsweise 214 gesetzt.
+*/
+
+let nextArchiveNumber =
+  Number(
+    localStorage.getItem(
+      "masterOfDisasterNextArchiveNumber"
+    )
+  ) || 1;
+
+
+let currentTab =
+  "all";
+
+
+let editingTaskId =
+  null;
+
+
+let newTaskPriority =
+  "normal";
+
+
+let newTaskOptional =
+  false;
+
+
+let newTaskDueMode =
+  "none";
+
+
+let dragState =
+  null;
+
+
+/*
+  MIGRATION AKTIVER DATEN
+*/
+
+tasks = tasks.map(
+  task => {
+
+    if (!task.status) {
+
+      task.status =
+        task.completed
+          ? "completed"
+          : "open";
+
+    }
+
+
+    const defaults = {
+
+      priority: "normal",
+
+      optional: false,
+
+      dueMode: "none",
+
+      dueDate: null,
+
+      todayDate: null,
+
+      todayOrder: null,
+
+      startedAt: null,
+
+      pausedAt: null,
+
+      pauseTotalMs: 0,
+
+      completedAt: null,
+
+      activeDurationMs: null,
+
+      abortedAt: null,
+
+      abortedActiveDurationMs: null
+
+    };
+
+
+    Object.keys(
+      defaults
+    ).forEach(
+      key => {
+
+        if (
+          typeof task[key] ===
+          "undefined"
+        ) {
+
+          task[key] =
+            defaults[key];
+
+        }
+
+      }
+    );
+
+
+    return task;
+
+  }
+);
+
+
+/*
+  ARCHIVNUMMER ABSICHERN
+
+  Wenn bereits Archivdaten existieren,
+  wird immer mindestens eine Nummer
+  über der höchsten vorhandenen
+  Archivnummer weitergemacht.
+*/
+
+function repairNextArchiveNumber() {
+
+  const highest =
+    archive.reduce(
+      (max, item) =>
+        Math.max(
+          max,
+          Number(
+            item.archiveNumber
+          ) || 0
+        ),
+      0
+    );
+
+
+  if (
+    nextArchiveNumber <= highest
+  ) {
+
+    nextArchiveNumber =
+      highest + 1;
+
+  }
+
+}
+
+
+repairNextArchiveNumber();
+
+
+/*
+  SPEICHERN
+*/
+
+function saveTasks() {
+
+  localStorage.setItem(
+    "masterOfDisasterTasks",
+    JSON.stringify(tasks)
+  );
+
+}
+
+
+function saveArchive() {
+
+  localStorage.setItem(
+    "masterOfDisasterArchive",
+    JSON.stringify(archive)
+  );
+
+
+  localStorage.setItem(
+    "masterOfDisasterNextArchiveNumber",
+    String(
+      nextArchiveNumber
+    )
+  );
+
+}
+
+
+function saveAll() {
+
+  saveTasks();
+
+  saveArchive();
+
+}
+
+
+function getTask(id) {
+
+  return tasks.find(
+    task =>
+      task.id === id
+  );
+
+}
+
+
+/*
+  DATUM EUROPE / BERLIN
+*/
+
+function getBerlinDateKey(
+  date = new Date()
+) {
+
+  return new Intl
+    .DateTimeFormat(
+      "en-CA",
+      {
+        timeZone:
+          "Europe/Berlin",
+
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+
+        day:
+          "2-digit"
+      }
+    )
+    .format(
+      date
+    );
+
+}
+
+
+function getBerlinDateKeyFromISO(
+  value
+) {
+
+  if (!value) {
+    return null;
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+
+  return getBerlinDateKey(
+    date
+  );
+
+}
+
+
+function addDays(
+  dateKey,
+  days
+) {
+
+  const parts =
+    dateKey
+      .split("-")
+      .map(Number);
+
+
+  const date =
+    new Date(
+      Date.UTC(
+        parts[0],
+        parts[1] - 1,
+        parts[2] + days,
+        12
+      )
+    );
+
+
+  return (
+    date.getUTCFullYear() +
+    "-" +
+    String(
+      date.getUTCMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    ) +
+    "-" +
+    String(
+      date.getUTCDate()
+    ).padStart(
+      2,
+      "0"
+    )
+  );
+
+}
+
+
+/*
+  ARCHIVIEREN
+*/
+
+function archiveCompletedTask(
+  task
+) {
+
+  const completionDate =
+    getBerlinDateKeyFromISO(
+      task.completedAt
+    );
+
+
+  const archivedAt =
+    new Date()
+      .toISOString();
+
+
+  const archivedTask = {
+
+    archiveNumber:
+      nextArchiveNumber,
+
+    archiveId:
+      "A-" +
+      nextArchiveNumber +
+      "-" +
+      task.id,
+
+    sourceTaskId:
+      task.id,
+
+    text:
+      task.text,
+
+    status:
+      "completed",
+
+    priority:
+      task.priority,
+
+    optional:
+      task.optional,
+
+    dueMode:
+      task.dueMode,
+
+    dueDate:
+      task.dueDate,
+
+    startedAt:
+      task.startedAt,
+
+    pauseTotalMs:
+      task.pauseTotalMs,
+
+    completedAt:
+      task.completedAt,
+
+    activeDurationMs:
+      task.activeDurationMs,
+
+    completedDate:
+      completionDate,
+
+    archivedAt:
+      archivedAt
+
+  };
+
+
+  archive.push(
+    archivedTask
+  );
+
+
+  nextArchiveNumber +=
+    1;
+
+}
+
+
+/*
+  AUTOMATISCHER TAGESWECHSEL
+*/
+
+function processDayTransition() {
+
+  const today =
+    getBerlinDateKey();
+
+
+  let changed =
+    false;
+
+
+  const remainingTasks =
+    [];
+
+
+  tasks.forEach(
+    task => {
+
+      /*
+        ERLEDIGTE AUFGABEN
+        VERGANGENER TAGE
+        → ARCHIV
+      */
+
+      if (
+        task.status ===
+          "completed"
+      ) {
+
+        const completedDate =
+          getBerlinDateKeyFromISO(
+            task.completedAt
+          );
+
+
+        if (
+          completedDate &&
+          completedDate < today
+        ) {
+
+          archiveCompletedTask(
+            task
+          );
+
+          changed =
+            true;
+
+          return;
+
+        }
+
+      }
+
+
+      /*
+        ALTE HEUTE-ZUORDNUNG
+        BEI NICHT ARCHIVIERTEN
+        AUFGABEN ENTFERNEN.
+
+        OFFEN BLEIBT OFFEN.
+        PAUSIERT BLEIBT PAUSIERT.
+        LAUFEND BLEIBT LAUFEND.
+      */
+
+      if (
+        task.todayDate &&
+        task.todayDate < today
+      ) {
+
+        task.todayDate =
+          null;
+
+        task.todayOrder =
+          null;
+
+        changed =
+          true;
+
+      }
+
+
+      remainingTasks.push(
+        task
+      );
+
+    }
+  );
+
+
+  if (changed) {
+
+    tasks =
+      remainingTasks;
+
+
+    normalizeTodayOrder();
+
+
+    saveAll();
+
+  }
+
+}
+
+
+/*
+  TABS
+*/
+
+function switchTab(tab) {
+
+  currentTab =
+    tab;
+
+
+  document
+    .querySelectorAll(
+      ".tab-button"
+    )
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          "active",
+          button.dataset.tab ===
+            tab
+        );
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "inputPanel"
+    )
+    .style.display =
+      tab === "all"
+        ? "block"
+        : "none";
+
+
+  editingTaskId =
+    null;
+
+
+  processDayTransition();
+
+  render();
+
+}
+
+
+/*
+  NEUE OPTIONEN
+*/
+
+function setNewPriority(
+  priority
+) {
+
+  newTaskPriority =
+    priority;
+
+  updateNewOptions();
+
+}
+
+
+function toggleNewOptional() {
+
+  newTaskOptional =
+    !newTaskOptional;
+
+  updateNewOptions();
+
+}
+
+
+function setNewDue(
+  mode
+) {
+
+  newTaskDueMode =
+    mode;
+
+  updateNewOptions();
+
+}
+
+
+function updateNewOptions() {
+
+  [
+    "newPriorityNormal",
+    "newPriorityMedium",
+    "newPriorityHigh"
+  ].forEach(
+    id => {
+
+      document
+        .getElementById(id)
+        .classList.remove(
+          "selected"
+        );
+
+    }
+  );
+
+
+  const priorityId =
+    newTaskPriority ===
+      "high"
+      ? "newPriorityHigh"
+      : newTaskPriority ===
+          "medium"
+        ? "newPriorityMedium"
+        : "newPriorityNormal";
+
+
+  document
+    .getElementById(
+      priorityId
+    )
+    .classList.add(
+      "selected"
+    );
+
+
+  const optional =
+    document.getElementById(
+      "newOptionalButton"
+    );
+
+
+  optional.classList.toggle(
+    "selected",
+    newTaskOptional
+  );
+
+
+  optional.textContent =
+    newTaskOptional
+      ? "🟣 JA"
+      : "🟣 NEIN";
+
+
+  [
+    "newDueNone",
+    "newDueTomorrow",
+    "newDueDeadline"
+  ].forEach(
+    id => {
+
+      document
+        .getElementById(id)
+        .classList.remove(
+          "selected"
+        );
+
+    }
+  );
+
+
+  const dueId =
+    newTaskDueMode ===
+      "tomorrowOnly"
+      ? "newDueTomorrow"
+      : newTaskDueMode ===
+          "deadline"
+        ? "newDueDeadline"
+        : "newDueNone";
+
+
+  document
+    .getElementById(
+      dueId
+    )
+    .classList.add(
+      "selected"
+    );
+
+}
+
+
+function resetNewOptions() {
+
+  newTaskPriority =
+    "normal";
+
+  newTaskOptional =
+    false;
+
+  newTaskDueMode =
+    "none";
+
+
+  updateNewOptions();
+
+}
+
+
+/*
+  AUFGABE ANLEGEN
+*/
+
+function addTask() {
+
+  const input =
+    document.getElementById(
+      "taskInput"
+    );
+
+
+  const text =
+    input.value.trim();
+
+
+  if (!text) {
+    return;
+  }
+
+
+  const today =
+    getBerlinDateKey();
+
+
+  tasks.push({
+
+    id:
+      Date.now(),
+
+    text:
+      text,
+
+    status:
+      "open",
+
+    priority:
+      newTaskPriority,
+
+    optional:
+      newTaskOptional,
+
+    dueMode:
+      newTaskDueMode,
+
+    dueDate:
+      newTaskDueMode ===
+        "none"
+        ? null
+        : addDays(
+            today,
+            1
+          ),
+
+    todayDate:
+      null,
+
+    todayOrder:
+      null,
+
+    startedAt:
+      null,
+
+    pausedAt:
+      null,
+
+    pauseTotalMs:
+      0,
+
+    completedAt:
+      null,
+
+    activeDurationMs:
+      null,
+
+    abortedAt:
+      null,
+
+    abortedActiveDurationMs:
+      null
+
+  });
+
+
+  input.value =
+    "";
+
+
+  resetNewOptions();
+
+  saveTasks();
+
+  render();
+
+}
+
+
+/*
+  HEUTE
+*/
+
+function isTodayTask(task) {
+
+  return (
+    task.todayDate ===
+    getBerlinDateKey()
+  );
+
+}
+
+
+function toggleToday(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  const today =
+    getBerlinDateKey();
+
+
+  if (
+    task.todayDate ===
+    today
+  ) {
+
+    task.todayDate =
+      null;
+
+    task.todayOrder =
+      null;
+
+  } else {
+
+    const todays =
+      tasks.filter(
+        item =>
+          item.todayDate === today &&
+          item.status !==
+            "completed"
+      );
+
+
+    const highest =
+      todays.reduce(
+        (max, item) =>
+          Math.max(
+            max,
+            item.todayOrder || 0
+          ),
+        0
+      );
+
+
+    task.todayDate =
+      today;
+
+    task.todayOrder =
+      highest + 1;
+
+  }
+
+
+  normalizeTodayOrder();
+
+  saveTasks();
+
+  render();
+
+}
+
+
+function normalizeTodayOrder() {
+
+  const today =
+    getBerlinDateKey();
+
+
+  const selected =
+    tasks
+      .filter(
+        task =>
+          task.todayDate ===
+            today &&
+          ![
+            "completed",
+            "aborted"
+          ].includes(
+            task.status
+          )
+      )
+      .sort(
+        (a,b) =>
+          (a.todayOrder || 0) -
+          (b.todayOrder || 0)
+      );
+
+
+  selected.forEach(
+    (task,index) => {
+
+      task.todayOrder =
+        index + 1;
+
+    }
+  );
+
+}
+
+
+/*
+  DRAG & DROP
+*/
+
+function startTodayDrag(
+  event,
+  id
+) {
+
+  event.preventDefault();
+
+
+  const card =
+    event.currentTarget.closest(
+      ".task"
+    );
+
+
+  dragState = {
+
+    id:
+      id,
+
+    pointerId:
+      event.pointerId,
+
+    card:
+      card
+
+  };
+
+
+  event.currentTarget
+    .setPointerCapture(
+      event.pointerId
+    );
+
+
+  card.classList.add(
+    "dragging"
+  );
+
+}
+
+
+function moveTodayDrag(
+  event
+) {
+
+  if (!dragState) {
+    return;
+  }
+
+
+  if (
+    event.pointerId !==
+    dragState.pointerId
+  ) {
+    return;
+  }
+
+
+  event.preventDefault();
+
+
+  document
+    .querySelectorAll(
+      ".drag-target"
+    )
+    .forEach(
+      item =>
+        item.classList.remove(
+          "drag-target"
+        )
+    );
+
+
+  const element =
+    document.elementFromPoint(
+      event.clientX,
+      event.clientY
+    );
+
+
+  const target =
+    element
+      ? element.closest(
+          ".today-task-active"
+        )
+      : null;
+
+
+  if (
+    target &&
+    Number(
+      target.dataset.id
+    ) !== dragState.id
+  ) {
+
+    target.classList.add(
+      "drag-target"
+    );
+
+  }
+
+}
+
+
+function endTodayDrag(
+  event
+) {
+
+  if (!dragState) {
+    return;
+  }
+
+
+  if (
+    event.pointerId !==
+    dragState.pointerId
+  ) {
+    return;
+  }
+
+
+  const element =
+    document.elementFromPoint(
+      event.clientX,
+      event.clientY
+    );
+
+
+  const target =
+    element
+      ? element.closest(
+          ".today-task-active"
+        )
+      : null;
+
+
+  const draggedId =
+    dragState.id;
+
+
+  dragState.card
+    .classList.remove(
+      "dragging"
+    );
+
+
+  document
+    .querySelectorAll(
+      ".drag-target"
+    )
+    .forEach(
+      item =>
+        item.classList.remove(
+          "drag-target"
+        )
+    );
+
+
+  dragState =
+    null;
+
+
+  if (!target) {
+    return;
+  }
+
+
+  const targetId =
+    Number(
+      target.dataset.id
+    );
+
+
+  if (
+    draggedId ===
+    targetId
+  ) {
+    return;
+  }
+
+
+  reorderToday(
+    draggedId,
+    targetId
+  );
+
+}
+
+
+function reorderToday(
+  draggedId,
+  targetId
+) {
+
+  const today =
+    getBerlinDateKey();
+
+
+  const selected =
+    tasks
+      .filter(
+        task =>
+          task.todayDate ===
+            today &&
+          ![
+            "completed",
+            "aborted"
+          ].includes(
+            task.status
+          )
+      )
+      .sort(
+        (a,b) =>
+          (a.todayOrder || 0) -
+          (b.todayOrder || 0)
+      );
+
+
+  const from =
+    selected.findIndex(
+      task =>
+        task.id ===
+        draggedId
+    );
+
+
+  const to =
+    selected.findIndex(
+      task =>
+        task.id ===
+        targetId
+    );
+
+
+  if (
+    from === -1 ||
+    to === -1
+  ) {
+    return;
+  }
+
+
+  const [moved] =
+    selected.splice(
+      from,
+      1
+    );
+
+
+  selected.splice(
+    to,
+    0,
+    moved
+  );
+
+
+  selected.forEach(
+    (task,index) => {
+
+      task.todayOrder =
+        index + 1;
+
+    }
+  );
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+document.addEventListener(
+  "pointermove",
+  moveTodayDrag,
+  {
+    passive:
+      false
+  }
+);
+
+
+document.addEventListener(
+  "pointerup",
+  endTodayDrag
+);
+
+
+document.addEventListener(
+  "pointercancel",
+  endTodayDrag
+);
+
+
+/*
+  PRIORITÄT / OPTIONAL / FÄLLIG
+*/
+
+function setPriority(
+  id,
+  priority
+) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  task.priority =
+    priority;
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+function toggleOptional(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  task.optional =
+    !task.optional;
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+function setDueMode(
+  id,
+  mode
+) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  task.dueMode =
+    mode;
+
+
+  task.dueDate =
+    mode === "none"
+      ? null
+      : addDays(
+          getBerlinDateKey(),
+          1
+        );
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+/*
+  ZEIT
+*/
+
+function startTask(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  const running =
+    tasks.find(
+      item =>
+        item.status ===
+          "running" &&
+        item.id !== id
+    );
+
+
+  if (running) {
+
+    showInfoModal(
+      "Schon eine Aufgabe aktiv",
+      "Aktuell läuft bereits „" +
+      running.text +
+      "“. Pausiere oder beende sie zuerst."
+    );
+
+    return;
+
+  }
+
+
+  task.status =
+    "running";
+
+  task.startedAt =
+    new Date()
+      .toISOString();
+
+  task.pausedAt =
+    null;
+
+  task.pauseTotalMs =
+    0;
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+function pauseTask(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (
+    !task ||
+    task.status !==
+      "running"
+  ) {
+    return;
+  }
+
+
+  task.status =
+    "paused";
+
+  task.pausedAt =
+    new Date()
+      .toISOString();
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+function resumeTask(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (
+    !task ||
+    task.status !==
+      "paused"
+  ) {
+    return;
+  }
+
+
+  const running =
+    tasks.find(
+      item =>
+        item.status ===
+          "running" &&
+        item.id !== id
+    );
+
+
+  if (running) {
+
+    showInfoModal(
+      "Schon eine Aufgabe aktiv",
+      "Aktuell läuft bereits „" +
+      running.text +
+      "“. Pausiere oder beende sie zuerst."
+    );
+
+    return;
+
+  }
+
+
+  const now =
+    Date.now();
+
+
+  task.pauseTotalMs +=
+    Math.max(
+      0,
+      now -
+      new Date(
+        task.pausedAt
+      ).getTime()
+    );
+
+
+  task.pausedAt =
+    null;
+
+  task.status =
+    "running";
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+function calculateActiveDuration(
+  task,
+  end
+) {
+
+  if (!task.startedAt) {
+    return 0;
+  }
+
+
+  let pause =
+    task.pauseTotalMs || 0;
+
+
+  if (
+    task.status ===
+      "paused" &&
+    task.pausedAt
+  ) {
+
+    pause +=
+      Math.max(
+        0,
+        end -
+        new Date(
+          task.pausedAt
+        ).getTime()
+      );
+
+  }
+
+
+  return Math.max(
+    0,
+    end -
+    new Date(
+      task.startedAt
+    ).getTime() -
+    pause
+  );
+
+}
+
+
+function liveDuration(task) {
+
+  return calculateActiveDuration(
+    task,
+    Date.now()
+  );
+
+}
+
+
+function finishTask(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (
+    !task ||
+    ![
+      "running",
+      "paused"
+    ].includes(
+      task.status
+    )
+  ) {
+    return;
+  }
+
+
+  const now =
+    Date.now();
+
+
+  task.activeDurationMs =
+    calculateActiveDuration(
+      task,
+      now
+    );
+
+
+  task.status =
+    "completed";
+
+  task.completedAt =
+    new Date(now)
+      .toISOString();
+
+  task.pausedAt =
+    null;
+
+
+  normalizeTodayOrder();
+
+  saveTasks();
+
+  render();
+
+}
+
+
+/*
+  ABBRUCH
+*/
+
+function askAbort(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  document
+    .getElementById(
+      "modalContainer"
+    )
+    .innerHTML = `
+
+      <div
+        class="modal-backdrop"
+        onclick="closeModalOnBackdrop(event)"
       >
 
+        <div class="modal">
+
+          <h2>
+            Aufgabe abbrechen?
+          </h2>
+
+          <p>
+            „${escapeHtml(task.text)}“
+            wird als abgebrochen markiert.
+          </p>
+
+          <div class="modal-actions">
+
+            <button
+              class="modal-button cancel-modal"
+              onclick="closeModal()"
+            >
+              Zurück
+            </button>
+
+            <button
+              class="modal-button danger-modal"
+              onclick="abortTask(${id})"
+            >
+              Abbrechen
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+}
+
+
+function abortTask(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  const now =
+    Date.now();
+
+
+  task.abortedActiveDurationMs =
+    task.startedAt
+      ? calculateActiveDuration(
+          task,
+          now
+        )
+      : null;
+
+
+  task.status =
+    "aborted";
+
+  task.abortedAt =
+    new Date(now)
+      .toISOString();
+
+  task.pausedAt =
+    null;
+
+
+  task.todayDate =
+    null;
+
+  task.todayOrder =
+    null;
+
+
+  normalizeTodayOrder();
+
+  closeModal();
+
+  saveTasks();
+
+  render();
+
+}
+
+
+/*
+  WIEDERHOLEN
+*/
+
+function repeatTask(id) {
+
+  const old =
+    getTask(id);
+
+
+  if (!old) {
+    return;
+  }
+
+
+  tasks.push({
+
+    id:
+      Date.now(),
+
+    text:
+      old.text,
+
+    status:
+      "open",
+
+    priority:
+      old.priority ||
+      "normal",
+
+    optional:
+      old.optional ||
+      false,
+
+    dueMode:
+      "none",
+
+    dueDate:
+      null,
+
+    todayDate:
+      null,
+
+    todayOrder:
+      null,
+
+    startedAt:
+      null,
+
+    pausedAt:
+      null,
+
+    pauseTotalMs:
+      0,
+
+    completedAt:
+      null,
+
+    activeDurationMs:
+      null,
+
+    abortedAt:
+      null,
+
+    abortedActiveDurationMs:
+      null
+
+  });
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+/*
+  BEARBEITEN
+*/
+
+function startEditing(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (
+    !task ||
+    task.status ===
+      "completed" ||
+    task.status ===
+      "aborted"
+  ) {
+    return;
+  }
+
+
+  editingTaskId =
+    id;
+
+
+  render();
+
+}
+
+
+function cancelEditing() {
+
+  editingTaskId =
+    null;
+
+  render();
+
+}
+
+
+function saveEdit(id) {
+
+  const task =
+    getTask(id);
+
+
+  const input =
+    document.getElementById(
+      "edit-" + id
+    );
+
+
+  if (
+    !task ||
+    !input
+  ) {
+    return;
+  }
+
+
+  const text =
+    input.value.trim();
+
+
+  if (!text) {
+    return;
+  }
+
+
+  task.text =
+    text;
+
+
+  editingTaskId =
+    null;
+
+
+  saveTasks();
+
+  render();
+
+}
+
+
+/*
+  LÖSCHEN
+*/
+
+function askDelete(id) {
+
+  const task =
+    getTask(id);
+
+
+  if (!task) {
+    return;
+  }
+
+
+  document
+    .getElementById(
+      "modalContainer"
+    )
+    .innerHTML = `
+
+      <div
+        class="modal-backdrop"
+        onclick="closeModalOnBackdrop(event)"
+      >
+
+        <div class="modal">
+
+          <h2>
+            Aufgabe löschen?
+          </h2>
+
+          <p>
+            „${escapeHtml(task.text)}“
+            wird endgültig gelöscht.
+          </p>
+
+          <div class="modal-actions">
+
+            <button
+              class="modal-button cancel-modal"
+              onclick="closeModal()"
+            >
+              Abbrechen
+            </button>
+
+            <button
+              class="modal-button danger-modal"
+              onclick="deleteTask(${id})"
+            >
+              Löschen
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+}
+
+
+function deleteTask(id) {
+
+  tasks =
+    tasks.filter(
+      task =>
+        task.id !== id
+    );
+
+
+  normalizeTodayOrder();
+
+  closeModal();
+
+  saveTasks();
+
+  render();
+
+}
+
+
+/*
+  SYMBOLE
+*/
+
+function prioritySymbol(
+  priority
+) {
+
+  if (
+    priority ===
+    "high"
+  ) {
+    return "🔴";
+  }
+
+
+  if (
+    priority ===
+    "medium"
+  ) {
+    return "🟡";
+  }
+
+
+  return "⚪";
+
+}
+
+
+function statusSymbol(
+  task
+) {
+
+  if (
+    task.status ===
+    "completed"
+  ) {
+    return "✅";
+  }
+
+
+  if (
+    task.status ===
+    "aborted"
+  ) {
+    return "❌";
+  }
+
+
+  if (
+    task.status ===
+    "running"
+  ) {
+    return "▶️";
+  }
+
+
+  if (
+    task.status ===
+    "paused"
+  ) {
+    return "⏸️";
+  }
+
+
+  return "⬜";
+
+}
+
+
+function dueSymbol(
+  task
+) {
+
+  if (
+    !task.dueDate ||
+    task.dueMode ===
+      "none"
+  ) {
+    return "";
+  }
+
+
+  const today =
+    getBerlinDateKey();
+
+
+  if (
+    task.dueMode ===
+    "tomorrowOnly"
+  ) {
+
+    if (
+      task.dueDate <= today
+    ) {
+      return "";
+    }
+
+
+    return "💠";
+
+  }
+
+
+  if (
+    task.dueMode ===
+    "deadline"
+  ) {
+
+    return (
+      task.dueDate <= today
+        ? "⚠️"
+        : "🔷"
+    );
+
+  }
+
+
+  return "";
+
+}
+
+
+function flags(task) {
+
+  return `
+
+    <div class="compact-flags">
+
+      <span class="mini-flag">
+        ${prioritySymbol(
+          task.priority
+        )}
+      </span>
+
+      ${
+        task.optional
+          ? `
+            <span class="mini-flag">
+              🟣
+            </span>
+          `
+          : ""
+      }
+
+      ${
+        dueSymbol(task)
+          ? `
+            <span class="mini-flag">
+              ${dueSymbol(task)}
+            </span>
+          `
+          : ""
+      }
+
+    </div>
+  `;
+
+}
+
+
+/*
+  DYNAMISCHE NUMMER
+*/
+
+function dynamicNumber(
+  task
+) {
+
+  const activeTasks =
+    tasks;
+
+
+  const index =
+    activeTasks.findIndex(
+      item =>
+        item.id === task.id
+    );
+
+
+  if (
+    index === -1
+  ) {
+    return "";
+  }
+
+
+  const number =
+    index + 1;
+
+
+  return number < 10
+    ? "0" + number
+    : String(number);
+
+}
+
+
+/*
+  FORMATIERUNG
+*/
+
+function escapeHtml(text) {
+
+  const div =
+    document.createElement(
+      "div"
+    );
+
+
+  div.textContent =
+    text;
+
+
+  return div.innerHTML;
+
+}
+
+
+function formatDuration(ms) {
+
+  if (
+    ms === null ||
+    typeof ms ===
+      "undefined"
+  ) {
+    return "";
+  }
+
+
+  const total =
+    Math.floor(
+      ms / 1000
+    );
+
+
+  const h =
+    Math.floor(
+      total / 3600
+    );
+
+
+  const m =
+    Math.floor(
+      (
+        total %
+        3600
+      ) /
+      60
+    );
+
+
+  const s =
+    total %
+    60;
+
+
+  return (
+    String(h)
+      .padStart(
+        2,
+        "0"
+      ) +
+    ":" +
+    String(m)
+      .padStart(
+        2,
+        "0"
+      ) +
+    ":" +
+    String(s)
+      .padStart(
+        2,
+        "0"
+      )
+  );
+
+}
+
+
+function formatDateTime(
+  value,
+  label
+) {
+
+  if (!value) {
+    return "";
+  }
+
+
+  const date =
+    new Date(value);
+
+
+  return (
+    label +
+    " · " +
+    date.toLocaleDateString(
+      "de-DE",
+      {
+        timeZone:
+          "Europe/Berlin"
+      }
+    ) +
+    " · " +
+    date.toLocaleTimeString(
+      "de-DE",
+      {
+        timeZone:
+          "Europe/Berlin",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        second:
+          "2-digit"
+      }
+    ) +
+    " UHR"
+  );
+
+}
+
+
+function formatArchiveDate(
+  dateKey
+) {
+
+  if (!dateKey) {
+    return "UNBEKANNT";
+  }
+
+
+  const parts =
+    dateKey
+      .split("-");
+
+
+  return (
+    parts[2] +
+    "." +
+    parts[1] +
+    "." +
+    parts[0]
+  );
+
+}
+
+
+/*
+  EDIT OPTIONEN
+*/
+
+function editOptions(task) {
+
+  return `
+
+    <div class="edit-options">
 
       <div class="option-row">
 
@@ -949,25 +3385,49 @@
         </span>
 
         <button
-          id="newPriorityNormal"
-          class="option-button selected"
-          onclick="setNewPriority('normal')"
+          class="option-button
+          ${
+            task.priority ===
+              "normal"
+              ? "selected"
+              : ""
+          }"
+          onclick="setPriority(
+            ${task.id},
+            'normal'
+          )"
         >
           ⚪ NORMAL
         </button>
 
         <button
-          id="newPriorityMedium"
-          class="option-button"
-          onclick="setNewPriority('medium')"
+          class="option-button
+          ${
+            task.priority ===
+              "medium"
+              ? "selected"
+              : ""
+          }"
+          onclick="setPriority(
+            ${task.id},
+            'medium'
+          )"
         >
           🟡 MITTEL
         </button>
 
         <button
-          id="newPriorityHigh"
-          class="option-button"
-          onclick="setNewPriority('high')"
+          class="option-button
+          ${
+            task.priority ===
+              "high"
+              ? "selected"
+              : ""
+          }"
+          onclick="setPriority(
+            ${task.id},
+            'high'
+          )"
         >
           🔴 HOCH
         </button>
@@ -982,11 +3442,22 @@
         </span>
 
         <button
-          id="newOptionalButton"
-          class="option-button"
-          onclick="toggleNewOptional()"
+          class="option-button
+          ${
+            task.optional
+              ? "selected"
+              : ""
+          }"
+          onclick="toggleOptional(
+            ${task.id}
+          )"
         >
-          🟣 NEIN
+          🟣
+          ${
+            task.optional
+              ? "JA"
+              : "NEIN"
+          }
         </button>
 
       </div>
@@ -999,3711 +3470,2025 @@
         </span>
 
         <button
-          id="newDueNone"
-          class="option-button selected"
-          onclick="setNewDue('none')"
+          class="option-button
+          ${
+            task.dueMode ===
+              "none"
+              ? "selected"
+              : ""
+          }"
+          onclick="setDueMode(
+            ${task.id},
+            'none'
+          )"
         >
           —
         </button>
 
         <button
-          id="newDueTomorrow"
-          class="option-button"
-          onclick="setNewDue('tomorrowOnly')"
+          class="option-button
+          ${
+            task.dueMode ===
+              "tomorrowOnly"
+              ? "selected"
+              : ""
+          }"
+          onclick="setDueMode(
+            ${task.id},
+            'tomorrowOnly'
+          )"
         >
           💠 MORGEN
         </button>
 
         <button
-          id="newDueDeadline"
-          class="option-button"
-          onclick="setNewDue('deadline')"
+          class="option-button
+          ${
+            task.dueMode ===
+              "deadline"
+              ? "selected"
+              : ""
+          }"
+          onclick="setDueMode(
+            ${task.id},
+            'deadline'
+          )"
         >
           🔷 BIS MORGEN
         </button>
 
       </div>
 
+    </div>
+  `;
 
-      <button
-        class="add-button"
-        onclick="addTask()"
+}
+
+
+/*
+  ICON
+*/
+
+function iconButton(
+  icon,
+  title,
+  onclick,
+  extraClass = ""
+) {
+
+  return `
+    <button
+      class="icon-action ${extraClass}"
+      onclick="${onclick}"
+      title="${title}"
+      aria-label="${title}"
+    >
+      ${icon}
+    </button>
+  `;
+
+}
+
+
+/*
+  TASK CARD
+*/
+
+function taskCard(
+  task,
+  options = {}
+) {
+
+  const {
+
+    todayDrag =
+      false,
+
+    showTodayButton =
+      false,
+
+    compactOnly =
+      false,
+
+    filterTodayOnly =
+      false
+
+  } = options;
+
+
+  const element =
+    document.createElement(
+      "div"
+    );
+
+
+  element.className =
+    "task";
+
+
+  if (
+    task.status ===
+    "running"
+  ) {
+    element.classList.add(
+      "running"
+    );
+  }
+
+
+  if (
+    task.status ===
+    "paused"
+  ) {
+    element.classList.add(
+      "paused"
+    );
+  }
+
+
+  if (
+    task.status ===
+    "completed"
+  ) {
+    element.classList.add(
+      "completed"
+    );
+  }
+
+
+  if (
+    task.status ===
+    "aborted"
+  ) {
+    element.classList.add(
+      "aborted"
+    );
+  }
+
+
+  if (
+    todayDrag &&
+    ![
+      "completed",
+      "aborted"
+    ].includes(
+      task.status
+    )
+  ) {
+
+    element.classList.add(
+      "today-task-active"
+    );
+
+    element.dataset.id =
+      task.id;
+
+  }
+
+
+  if (
+    editingTaskId ===
+    task.id
+  ) {
+
+    element.innerHTML = `
+
+      <div class="task-number">
+        ${dynamicNumber(task)}
+      </div>
+
+      <div class="status-symbol">
+        ${statusSymbol(task)}
+      </div>
+
+      <div class="edit-area">
+
+        <input
+          id="edit-${task.id}"
+          class="edit-input"
+          value="${escapeHtml(task.text)}"
+        >
+
+        ${editOptions(task)}
+
+        <div class="edit-actions">
+
+          <button
+            class="edit-button"
+            onclick="saveEdit(${task.id})"
+          >
+            ✓ SPEICHERN
+          </button>
+
+          <button
+            class="edit-button"
+            onclick="cancelEditing()"
+          >
+            × ABBRECHEN
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+
+    return element;
+
+  }
+
+
+  let leftDrag =
+    "";
+
+
+  if (
+    todayDrag &&
+    ![
+      "completed",
+      "aborted"
+    ].includes(
+      task.status
+    )
+  ) {
+
+    leftDrag = `
+
+      <div
+        class="drag-handle"
+        onpointerdown="
+          startTodayDrag(
+            event,
+            ${task.id}
+          )
+        "
       >
-        + AUFGABE HINZUFÜGEN
-      </button>
+        ≡
+      </div>
+    `;
 
-    </section>
-
-
-    <div id="viewContainer"></div>
-
-  </main>
+  }
 
 
-  <div id="modalContainer"></div>
+  let meta =
+    "";
 
 
-  <script>
+  if (
+    task.status ===
+    "running"
+  ) {
 
-    let tasks =
-      JSON.parse(
-        localStorage.getItem(
-          "masterOfDisasterTasks"
-        )
-      ) || [];
+    meta = `
 
+      <div class="status-meta">
+        LÄUFT
+      </div>
 
-    let currentTab =
-      "all";
+      <div
+        class="duration live-duration"
+        data-task-id="${task.id}"
+      >
+        AKTIV ·
+        ${formatDuration(
+          liveDuration(task)
+        )}
+      </div>
+    `;
 
-
-    let editingTaskId =
-      null;
-
-
-    let newTaskPriority =
-      "normal";
-
-
-    let newTaskOptional =
-      false;
-
-
-    let newTaskDueMode =
-      "none";
+  }
 
 
-    let dragState =
-      null;
+  if (
+    task.status ===
+    "paused"
+  ) {
+
+    meta = `
+
+      <div class="status-meta">
+        PAUSIERT
+      </div>
+
+      <div
+        class="duration live-duration"
+        data-task-id="${task.id}"
+      >
+        AKTIV ·
+        ${formatDuration(
+          liveDuration(task)
+        )}
+      </div>
+    `;
+
+  }
 
 
-    /*
-      MIGRATION
-    */
+  if (
+    task.status ===
+    "completed"
+  ) {
 
-    tasks = tasks.map(
-      task => {
+    meta = `
 
-        if (!task.status) {
+      ${
+        task.completedAt
+          ? `
+            <div class="task-meta">
+              ${formatDateTime(
+                task.completedAt,
+                "ERLEDIGT"
+              )}
+            </div>
+          `
+          : ""
+      }
 
-          task.status =
-            task.completed
-              ? "completed"
-              : "open";
+      ${
+        task.activeDurationMs !==
+          null
+          ? `
+            <div class="duration">
+              DAUER ·
+              ${formatDuration(
+                task.activeDurationMs
+              )}
+            </div>
+          `
+          : ""
+      }
+    `;
 
-        }
-
-
-        const defaults = {
-
-          priority: "normal",
-
-          optional: false,
-
-          dueMode: "none",
-
-          dueDate: null,
-
-          todayDate: null,
-
-          todayOrder: null,
-
-          startedAt: null,
-
-          pausedAt: null,
-
-          pauseTotalMs: 0,
-
-          completedAt: null,
-
-          activeDurationMs: null,
-
-          abortedAt: null,
-
-          abortedActiveDurationMs: null
-
-        };
+  }
 
 
-        Object.keys(
-          defaults
-        ).forEach(
-          key => {
+  if (
+    task.status ===
+    "aborted"
+  ) {
 
-            if (
-              typeof task[key] ===
-              "undefined"
-            ) {
+    meta = `
 
-              task[key] =
-                defaults[key];
+      ${
+        task.abortedAt
+          ? `
+            <div class="abort-meta">
+              ${formatDateTime(
+                task.abortedAt,
+                "ABGEBROCHEN"
+              )}
+            </div>
+          `
+          : ""
+      }
 
-            }
+      ${
+        task.abortedActiveDurationMs !==
+          null
+          ? `
+            <div class="duration">
+              AKTIV BIS ABBRUCH ·
+              ${formatDuration(
+                task.abortedActiveDurationMs
+              )}
+            </div>
+          `
+          : ""
+      }
+    `;
 
+  }
+
+
+  let filterTodayAction =
+    "";
+
+
+  if (
+    filterTodayOnly &&
+    ![
+      "completed",
+      "aborted"
+    ].includes(
+      task.status
+    )
+  ) {
+
+    filterTodayAction = `
+
+      <div class="filter-today-action">
+
+        ${iconButton(
+
+          isTodayTask(task)
+            ? "📌"
+            : "📅",
+
+          isTodayTask(task)
+            ? "Aus Heute entfernen"
+            : "Zu Heute hinzufügen",
+
+          `toggleToday(${task.id})`,
+
+          isTodayTask(task)
+            ? "today-button selected"
+            : "today-button"
+
+        )}
+
+      </div>
+    `;
+
+  }
+
+
+  let actions =
+    "";
+
+
+  if (!compactOnly) {
+
+    if (
+      task.status ===
+      "open"
+    ) {
+
+      actions = `
+
+        <div class="icon-actions">
+
+          ${iconButton(
+            "▶️",
+            "Starten",
+            `startTask(${task.id})`,
+            "start-button"
+          )}
+
+          ${
+            showTodayButton
+              ? iconButton(
+
+                  isTodayTask(task)
+                    ? "📌"
+                    : "📅",
+
+                  isTodayTask(task)
+                    ? "Ist im heutigen Aufgabenblock"
+                    : "Für heute auswählen",
+
+                  `toggleToday(${task.id})`,
+
+                  isTodayTask(task)
+                    ? "today-button selected"
+                    : "today-button"
+
+                )
+              : ""
           }
-        );
 
+          ${iconButton(
+            "✏️",
+            "Bearbeiten",
+            `startEditing(${task.id})`
+          )}
 
-        return task;
+          ${iconButton(
+            "🗑️",
+            "Löschen",
+            `askDelete(${task.id})`
+          )}
 
-      }
-    );
+          ${iconButton(
+            "❌",
+            "Abbrechen",
+            `askAbort(${task.id})`,
+            "abort-button"
+          )}
 
-
-    /*
-      SPEICHERN
-    */
-
-    function saveTasks() {
-
-      localStorage.setItem(
-        "masterOfDisasterTasks",
-        JSON.stringify(tasks)
-      );
-
-    }
-
-
-    function getTask(id) {
-
-      return tasks.find(
-        task =>
-          task.id === id
-      );
-
-    }
-
-
-    /*
-      BERLIN-DATUM
-    */
-
-    function getBerlinDateKey() {
-
-      return new Intl
-        .DateTimeFormat(
-          "en-CA",
-          {
-            timeZone:
-              "Europe/Berlin",
-
-            year:
-              "numeric",
-
-            month:
-              "2-digit",
-
-            day:
-              "2-digit"
+          ${
+            todayDrag &&
+            isTodayTask(task)
+              ? iconButton(
+                  "➖",
+                  "Aus Heute entfernen",
+                  `toggleToday(${task.id})`,
+                  "today-button selected"
+                )
+              : ""
           }
-        )
-        .format(
-          new Date()
-        );
+
+        </div>
+      `;
 
     }
 
 
-    function addDays(
-      dateKey,
-      days
+    if (
+      task.status ===
+      "running"
     ) {
 
-      const parts =
-        dateKey
-          .split("-")
-          .map(Number);
+      actions = `
 
+        <div class="icon-actions">
 
-      const date =
-        new Date(
-          Date.UTC(
-            parts[0],
-            parts[1] - 1,
-            parts[2] + days,
-            12
-          )
-        );
+          ${iconButton(
+            "⏸️",
+            "Pausieren",
+            `pauseTask(${task.id})`,
+            "pause-button"
+          )}
 
+          ${iconButton(
+            "✅",
+            "Beenden",
+            `finishTask(${task.id})`,
+            "finish-button"
+          )}
 
-      return (
-        date.getUTCFullYear() +
-        "-" +
-        String(
-          date.getUTCMonth() + 1
-        ).padStart(2, "0") +
-        "-" +
-        String(
-          date.getUTCDate()
-        ).padStart(2, "0")
-      );
+          ${iconButton(
+            "❌",
+            "Abbrechen",
+            `askAbort(${task.id})`,
+            "abort-button"
+          )}
 
-    }
-
-
-    /*
-      TABS
-    */
-
-    function switchTab(tab) {
-
-      currentTab =
-        tab;
-
-
-      document
-        .querySelectorAll(
-          ".tab-button"
-        )
-        .forEach(
-          button => {
-
-            button.classList.toggle(
-              "active",
-              button.dataset.tab === tab
-            );
-
+          ${
+            todayDrag &&
+            isTodayTask(task)
+              ? iconButton(
+                  "➖",
+                  "Aus Heute entfernen",
+                  `toggleToday(${task.id})`,
+                  "today-button selected"
+                )
+              : ""
           }
-        );
 
-
-      document
-        .getElementById(
-          "inputPanel"
-        )
-        .style.display =
-          tab === "all"
-            ? "block"
-            : "none";
-
-
-      editingTaskId =
-        null;
-
-
-      render();
+        </div>
+      `;
 
     }
 
 
-    /*
-      NEUE AUFGABE OPTIONEN
-    */
-
-    function setNewPriority(
-      priority
+    if (
+      task.status ===
+      "paused"
     ) {
 
-      newTaskPriority =
-        priority;
+      actions = `
 
-      updateNewOptions();
+        <div class="icon-actions">
 
-    }
+          ${iconButton(
+            "▶️",
+            "Fortsetzen",
+            `resumeTask(${task.id})`,
+            "start-button"
+          )}
 
+          ${iconButton(
+            "✅",
+            "Beenden",
+            `finishTask(${task.id})`,
+            "finish-button"
+          )}
 
-    function toggleNewOptional() {
+          ${iconButton(
+            "❌",
+            "Abbrechen",
+            `askAbort(${task.id})`,
+            "abort-button"
+          )}
 
-      newTaskOptional =
-        !newTaskOptional;
+          ${
+            todayDrag &&
+            isTodayTask(task)
+              ? iconButton(
+                  "➖",
+                  "Aus Heute entfernen",
+                  `toggleToday(${task.id})`,
+                  "today-button selected"
+                )
+              : ""
+          }
 
-      updateNewOptions();
-
-    }
-
-
-    function setNewDue(
-      mode
-    ) {
-
-      newTaskDueMode =
-        mode;
-
-      updateNewOptions();
-
-    }
-
-
-    function updateNewOptions() {
-
-      [
-        "newPriorityNormal",
-        "newPriorityMedium",
-        "newPriorityHigh"
-      ].forEach(
-        id => {
-
-          document
-            .getElementById(id)
-            .classList.remove(
-              "selected"
-            );
-
-        }
-      );
-
-
-      const priorityId =
-        newTaskPriority === "high"
-          ? "newPriorityHigh"
-          : newTaskPriority === "medium"
-            ? "newPriorityMedium"
-            : "newPriorityNormal";
-
-
-      document
-        .getElementById(
-          priorityId
-        )
-        .classList.add(
-          "selected"
-        );
-
-
-      const optional =
-        document.getElementById(
-          "newOptionalButton"
-        );
-
-
-      optional.classList.toggle(
-        "selected",
-        newTaskOptional
-      );
-
-
-      optional.textContent =
-        newTaskOptional
-          ? "🟣 JA"
-          : "🟣 NEIN";
-
-
-      [
-        "newDueNone",
-        "newDueTomorrow",
-        "newDueDeadline"
-      ].forEach(
-        id => {
-
-          document
-            .getElementById(id)
-            .classList.remove(
-              "selected"
-            );
-
-        }
-      );
-
-
-      const dueId =
-        newTaskDueMode === "tomorrowOnly"
-          ? "newDueTomorrow"
-          : newTaskDueMode === "deadline"
-            ? "newDueDeadline"
-            : "newDueNone";
-
-
-      document
-        .getElementById(
-          dueId
-        )
-        .classList.add(
-          "selected"
-        );
+        </div>
+      `;
 
     }
 
+  }
 
-    function resetNewOptions() {
 
-      newTaskPriority =
-        "normal";
+  const repeat =
+    [
+      "completed",
+      "aborted"
+    ].includes(
+      task.status
+    )
+      ? `
+        <button
+          class="repeat-button"
+          onclick="repeatTask(${task.id})"
+          title="Wiederholen"
+        >
+          🔁
+        </button>
+      `
+      : "";
 
-      newTaskOptional =
-        false;
 
-      newTaskDueMode =
-        "none";
+  element.innerHTML = `
 
+    ${leftDrag}
 
-      updateNewOptions();
+    <div class="task-number">
+      ${dynamicNumber(task)}
+    </div>
 
-    }
+    <div class="status-symbol">
+      ${statusSymbol(task)}
+    </div>
 
+    <div class="task-content">
 
-    /*
-      AUFGABE ANLEGEN
-    */
+      <div class="task-main-row">
 
-    function addTask() {
+        <div class="task-text">
+          ${escapeHtml(task.text)}
+        </div>
 
-      const input =
-        document.getElementById(
-          "taskInput"
-        );
+        ${filterTodayAction}
 
+      </div>
 
-      const text =
-        input.value.trim();
+      ${flags(task)}
 
+      ${meta}
 
-      if (!text) {
-        return;
-      }
+      ${actions}
 
+    </div>
 
-      const today =
-        getBerlinDateKey();
+    ${repeat}
+  `;
 
 
-      const tomorrow =
-        addDays(
-          today,
-          1
-        );
+  return element;
 
+}
 
-      tasks.push({
 
-        id: Date.now(),
+/*
+  SECTION
+*/
 
-        text: text,
+function section(
+  title,
+  items,
+  options = {}
+) {
 
-        status: "open",
+  const {
 
-        priority: newTaskPriority,
+    counter =
+      "",
 
-        optional: newTaskOptional,
+    empty =
+      "Keine Aufgaben.",
 
-        dueMode: newTaskDueMode,
+    cardOptions =
+      {}
 
-        dueDate:
-          newTaskDueMode === "none"
-            ? null
-            : tomorrow,
+  } = options;
 
-        todayDate: null,
 
-        todayOrder: null,
-
-        startedAt: null,
-
-        pausedAt: null,
-
-        pauseTotalMs: 0,
-
-        completedAt: null,
-
-        activeDurationMs: null,
-
-        abortedAt: null,
-
-        abortedActiveDurationMs: null
-
-      });
-
-
-      input.value =
-        "";
-
-
-      resetNewOptions();
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    /*
-      HEUTE ZUORDNUNG
-    */
-
-    function isTodayTask(task) {
-
-      return (
-        task.todayDate ===
-        getBerlinDateKey()
-      );
-
-    }
-
-
-    function toggleToday(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      const today =
-        getBerlinDateKey();
-
-
-      if (
-        task.todayDate === today
-      ) {
-
-        task.todayDate =
-          null;
-
-        task.todayOrder =
-          null;
-
-      } else {
-
-        const todays =
-          tasks.filter(
-            item =>
-              item.todayDate === today
-          );
-
-
-        const highest =
-          todays.reduce(
-            (max, item) =>
-              Math.max(
-                max,
-                item.todayOrder || 0
-              ),
-            0
-          );
-
-
-        task.todayDate =
-          today;
-
-        task.todayOrder =
-          highest + 1;
-
-      }
-
-
-      normalizeTodayOrder();
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function normalizeTodayOrder() {
-
-      const today =
-        getBerlinDateKey();
-
-
-      const selected =
-        tasks
-          .filter(
-            task =>
-              task.todayDate === today &&
-              task.status !== "completed"
-          )
-          .sort(
-            (a, b) =>
-              (a.todayOrder || 0) -
-              (b.todayOrder || 0)
-          );
-
-
-      selected.forEach(
-        (task, index) => {
-
-          task.todayOrder =
-            index + 1;
-
-        }
-      );
-
-    }
-
-
-    /*
-      DRAG & DROP
-      NUR NOCH NICHT ERLEDIGTE
-      HEUTE-AUFGABEN
-    */
-
-    function startTodayDrag(
-      event,
-      id
-    ) {
-
-      event.preventDefault();
-
-
-      const card =
-        event.currentTarget.closest(
-          ".task"
-        );
-
-
-      dragState = {
-
-        id: id,
-
-        pointerId:
-          event.pointerId,
-
-        card: card
-
-      };
-
-
-      event.currentTarget
-        .setPointerCapture(
-          event.pointerId
-        );
-
-
-      card.classList.add(
-        "dragging"
-      );
-
-    }
-
-
-    function moveTodayDrag(
-      event
-    ) {
-
-      if (!dragState) {
-        return;
-      }
-
-
-      if (
-        event.pointerId !==
-        dragState.pointerId
-      ) {
-        return;
-      }
-
-
-      event.preventDefault();
-
-
-      document
-        .querySelectorAll(
-          ".drag-target"
-        )
-        .forEach(
-          item =>
-            item.classList.remove(
-              "drag-target"
-            )
-        );
-
-
-      const element =
-        document.elementFromPoint(
-          event.clientX,
-          event.clientY
-        );
-
-
-      const target =
-        element
-          ? element.closest(
-              ".today-task-active"
-            )
-          : null;
-
-
-      if (
-        target &&
-        Number(
-          target.dataset.id
-        ) !== dragState.id
-      ) {
-
-        target.classList.add(
-          "drag-target"
-        );
-
-      }
-
-    }
-
-
-    function endTodayDrag(
-      event
-    ) {
-
-      if (!dragState) {
-        return;
-      }
-
-
-      if (
-        event.pointerId !==
-        dragState.pointerId
-      ) {
-        return;
-      }
-
-
-      const element =
-        document.elementFromPoint(
-          event.clientX,
-          event.clientY
-        );
-
-
-      const target =
-        element
-          ? element.closest(
-              ".today-task-active"
-            )
-          : null;
-
-
-      const draggedId =
-        dragState.id;
-
-
-      dragState.card
-        .classList.remove(
-          "dragging"
-        );
-
-
-      document
-        .querySelectorAll(
-          ".drag-target"
-        )
-        .forEach(
-          item =>
-            item.classList.remove(
-              "drag-target"
-            )
-        );
-
-
-      dragState =
-        null;
-
-
-      if (!target) {
-        return;
-      }
-
-
-      const targetId =
-        Number(
-          target.dataset.id
-        );
-
-
-      if (
-        draggedId === targetId
-      ) {
-        return;
-      }
-
-
-      reorderToday(
-        draggedId,
-        targetId
-      );
-
-    }
-
-
-    function reorderToday(
-      draggedId,
-      targetId
-    ) {
-
-      const today =
-        getBerlinDateKey();
-
-
-      const selected =
-        tasks
-          .filter(
-            task =>
-              task.todayDate === today &&
-              ![
-                "completed",
-                "aborted"
-              ].includes(
-                task.status
-              )
-          )
-          .sort(
-            (a, b) =>
-              (a.todayOrder || 0) -
-              (b.todayOrder || 0)
-          );
-
-
-      const from =
-        selected.findIndex(
-          task =>
-            task.id === draggedId
-        );
-
-
-      const to =
-        selected.findIndex(
-          task =>
-            task.id === targetId
-        );
-
-
-      if (
-        from === -1 ||
-        to === -1
-      ) {
-        return;
-      }
-
-
-      const [moved] =
-        selected.splice(
-          from,
-          1
-        );
-
-
-      selected.splice(
-        to,
-        0,
-        moved
-      );
-
-
-      selected.forEach(
-        (task, index) => {
-
-          task.todayOrder =
-            index + 1;
-
-        }
-      );
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    document.addEventListener(
-      "pointermove",
-      moveTodayDrag,
-      {
-        passive: false
-      }
+  const wrapper =
+    document.createElement(
+      "section"
     );
 
 
-    document.addEventListener(
-      "pointerup",
-      endTodayDrag
+  wrapper.className =
+    "section";
+
+
+  wrapper.innerHTML = `
+
+    <div class="section-header">
+
+      <div class="section-title">
+        ${title}
+      </div>
+
+      ${
+        counter
+          ? `
+            <div class="counter">
+              ${counter}
+            </div>
+          `
+          : ""
+      }
+
+    </div>
+  `;
+
+
+  if (
+    items.length ===
+    0
+  ) {
+
+    const emptyDiv =
+      document.createElement(
+        "div"
+      );
+
+
+    emptyDiv.className =
+      "empty-message";
+
+
+    emptyDiv.textContent =
+      empty;
+
+
+    wrapper.appendChild(
+      emptyDiv
     );
 
 
-    document.addEventListener(
-      "pointercancel",
-      endTodayDrag
-    );
+    return wrapper;
 
+  }
 
-    /*
-      PRIORITÄT / OPTIONAL / FÄLLIG
-    */
 
-    function setPriority(
-      id,
-      priority
-    ) {
+  items.forEach(
+    task => {
 
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      task.priority =
-        priority;
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function toggleOptional(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      task.optional =
-        !task.optional;
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function setDueMode(
-      id,
-      mode
-    ) {
-
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      const today =
-        getBerlinDateKey();
-
-
-      task.dueMode =
-        mode;
-
-
-      task.dueDate =
-        mode === "none"
-          ? null
-          : addDays(
-              today,
-              1
-            );
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    /*
-      STATUS / ZEIT
-    */
-
-    function startTask(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      const running =
-        tasks.find(
-          item =>
-            item.status === "running" &&
-            item.id !== id
-        );
-
-
-      if (running) {
-
-        showInfoModal(
-          "Schon eine Aufgabe aktiv",
-          "Aktuell läuft bereits „" +
-          running.text +
-          "“. Pausiere oder beende sie zuerst."
-        );
-
-        return;
-
-      }
-
-
-      task.status =
-        "running";
-
-      task.startedAt =
-        new Date()
-          .toISOString();
-
-      task.pausedAt =
-        null;
-
-      task.pauseTotalMs =
-        0;
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function pauseTask(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (
-        !task ||
-        task.status !== "running"
-      ) {
-        return;
-      }
-
-
-      task.status =
-        "paused";
-
-      task.pausedAt =
-        new Date()
-          .toISOString();
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function resumeTask(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (
-        !task ||
-        task.status !== "paused"
-      ) {
-        return;
-      }
-
-
-      const running =
-        tasks.find(
-          item =>
-            item.status === "running" &&
-            item.id !== id
-        );
-
-
-      if (running) {
-
-        showInfoModal(
-          "Schon eine Aufgabe aktiv",
-          "Aktuell läuft bereits „" +
-          running.text +
-          "“. Pausiere oder beende sie zuerst."
-        );
-
-        return;
-
-      }
-
-
-      const now =
-        Date.now();
-
-
-      task.pauseTotalMs +=
-        Math.max(
-          0,
-          now -
-          new Date(
-            task.pausedAt
-          ).getTime()
-        );
-
-
-      task.pausedAt =
-        null;
-
-      task.status =
-        "running";
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function calculateActiveDuration(
-      task,
-      end
-    ) {
-
-      if (!task.startedAt) {
-        return 0;
-      }
-
-
-      let pause =
-        task.pauseTotalMs || 0;
-
-
-      if (
-        task.status === "paused" &&
-        task.pausedAt
-      ) {
-
-        pause +=
-          Math.max(
-            0,
-            end -
-            new Date(
-              task.pausedAt
-            ).getTime()
-          );
-
-      }
-
-
-      return Math.max(
-        0,
-        end -
-        new Date(
-          task.startedAt
-        ).getTime() -
-        pause
+      wrapper.appendChild(
+        taskCard(
+          task,
+          cardOptions
+        )
       );
 
     }
+  );
 
 
-    function finishTask(id) {
+  return wrapper;
 
-      const task =
-        getTask(id);
+}
 
 
-      if (
-        !task ||
-        ![
+/*
+  ALLE
+*/
+
+function renderAll(
+  container
+) {
+
+  const active =
+    tasks.filter(
+      task =>
+        [
+          "open",
           "running",
           "paused"
         ].includes(
           task.status
         )
-      ) {
-        return;
-      }
+    );
 
 
-      const now =
-        Date.now();
-
-
-      task.activeDurationMs =
-        calculateActiveDuration(
-          task,
-          now
-        );
-
-
-      task.status =
-        "completed";
-
-      task.completedAt =
-        new Date(now)
-          .toISOString();
-
-      task.pausedAt =
-        null;
-
-
-      /*
-        HEUTE-Zuordnung bleibt bestehen.
-        Dadurch erscheint die Aufgabe
-        anschließend unter
-        ERLEDIGT HEUTE.
-      */
-
-
-      normalizeTodayOrder();
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function askAbort(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      document
-        .getElementById(
-          "modalContainer"
-        )
-        .innerHTML = `
-
-          <div
-            class="modal-backdrop"
-            onclick="closeModalOnBackdrop(event)"
-          >
-
-            <div class="modal">
-
-              <h2>
-                Aufgabe abbrechen?
-              </h2>
-
-              <p>
-                „${escapeHtml(task.text)}“
-                wird als abgebrochen markiert.
-              </p>
-
-              <div class="modal-actions">
-
-                <button
-                  class="modal-button cancel-modal"
-                  onclick="closeModal()"
-                >
-                  Zurück
-                </button>
-
-                <button
-                  class="modal-button danger-modal"
-                  onclick="abortTask(${id})"
-                >
-                  Abbrechen
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-        `;
-
-    }
-
-
-    function abortTask(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      const now =
-        Date.now();
-
-
-      task.abortedActiveDurationMs =
-        task.startedAt
-          ? calculateActiveDuration(
-              task,
-              now
-            )
-          : null;
-
-
-      task.status =
-        "aborted";
-
-      task.abortedAt =
-        new Date(now)
-          .toISOString();
-
-      task.pausedAt =
-        null;
-
-
-      /*
-        Abgebrochen ist kein erledigter
-        Tagesblock-Eintrag.
-        Daher aus HEUTE entfernen.
-      */
-
-      task.todayDate =
-        null;
-
-      task.todayOrder =
-        null;
-
-
-      normalizeTodayOrder();
-
-      closeModal();
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    /*
-      WIEDERHOLEN
-    */
-
-    function repeatTask(id) {
-
-      const old =
-        getTask(id);
-
-
-      if (!old) {
-        return;
-      }
-
-
-      tasks.push({
-
-        id: Date.now(),
-
-        text: old.text,
-
-        status: "open",
-
-        priority:
-          old.priority || "normal",
-
-        optional:
-          old.optional || false,
-
-        dueMode: "none",
-
-        dueDate: null,
-
-        todayDate: null,
-
-        todayOrder: null,
-
-        startedAt: null,
-
-        pausedAt: null,
-
-        pauseTotalMs: 0,
-
-        completedAt: null,
-
-        activeDurationMs: null,
-
-        abortedAt: null,
-
-        abortedActiveDurationMs: null
-
-      });
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    /*
-      BEARBEITEN
-    */
-
-    function startEditing(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (
-        !task ||
-        task.status === "completed" ||
-        task.status === "aborted"
-      ) {
-        return;
-      }
-
-
-      editingTaskId =
-        id;
-
-
-      render();
-
-    }
-
-
-    function cancelEditing() {
-
-      editingTaskId =
-        null;
-
-      render();
-
-    }
-
-
-    function saveEdit(id) {
-
-      const task =
-        getTask(id);
-
-
-      const input =
-        document.getElementById(
-          "edit-" + id
-        );
-
-
-      if (
-        !task ||
-        !input
-      ) {
-        return;
-      }
-
-
-      const text =
-        input.value.trim();
-
-
-      if (!text) {
-        return;
-      }
-
-
-      task.text =
-        text;
-
-
-      editingTaskId =
-        null;
-
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    function askDelete(id) {
-
-      const task =
-        getTask(id);
-
-
-      if (!task) {
-        return;
-      }
-
-
-      document
-        .getElementById(
-          "modalContainer"
-        )
-        .innerHTML = `
-
-          <div
-            class="modal-backdrop"
-            onclick="closeModalOnBackdrop(event)"
-          >
-
-            <div class="modal">
-
-              <h2>
-                Aufgabe löschen?
-              </h2>
-
-              <p>
-                „${escapeHtml(task.text)}“
-                wird endgültig gelöscht.
-              </p>
-
-              <div class="modal-actions">
-
-                <button
-                  class="modal-button cancel-modal"
-                  onclick="closeModal()"
-                >
-                  Abbrechen
-                </button>
-
-                <button
-                  class="modal-button danger-modal"
-                  onclick="deleteTask(${id})"
-                >
-                  Löschen
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-        `;
-
-    }
-
-
-    function deleteTask(id) {
-
-      tasks =
-        tasks.filter(
-          task =>
-            task.id !== id
-        );
-
-
-      normalizeTodayOrder();
-
-      closeModal();
-
-      saveTasks();
-
-      render();
-
-    }
-
-
-    /*
-      SYMBOLE
-    */
-
-    function prioritySymbol(
-      priority
-    ) {
-
-      if (
-        priority === "high"
-      ) {
-        return "🔴";
-      }
-
-
-      if (
-        priority === "medium"
-      ) {
-        return "🟡";
-      }
-
-
-      return "⚪";
-
-    }
-
-
-    function statusSymbol(
-      task
-    ) {
-
-      if (
-        task.status === "completed"
-      ) {
-        return "✅";
-      }
-
-
-      if (
-        task.status === "aborted"
-      ) {
-        return "❌";
-      }
-
-
-      if (
-        task.status === "running"
-      ) {
-        return "▶️";
-      }
-
-
-      if (
-        task.status === "paused"
-      ) {
-        return "⏸️";
-      }
-
-
-      return "⬜";
-
-    }
-
-
-    function dueSymbol(
-      task
-    ) {
-
-      if (
-        !task.dueDate ||
-        task.dueMode === "none"
-      ) {
-        return "";
-      }
-
-
-      const today =
-        getBerlinDateKey();
-
-
-      if (
-        task.dueMode === "tomorrowOnly"
-      ) {
-
-        if (
-          task.dueDate <= today
-        ) {
-          return "";
-        }
-
-
-        return "💠";
-
-      }
-
-
-      if (
-        task.dueMode === "deadline"
-      ) {
-
-        return (
-          task.dueDate <= today
-            ? "⚠️"
-            : "🔷"
-        );
-
-      }
-
-
-      return "";
-
-    }
-
-
-    function flags(task) {
-
-      return `
-
-        <div class="compact-flags">
-
-          <span class="mini-flag">
-            ${prioritySymbol(
-              task.priority
-            )}
-          </span>
-
-          ${
-            task.optional
-              ? `
-                <span class="mini-flag">
-                  🟣
-                </span>
-              `
-              : ""
-          }
-
-          ${
-            dueSymbol(task)
-              ? `
-                <span class="mini-flag">
-                  ${dueSymbol(task)}
-                </span>
-              `
-              : ""
-          }
-
-        </div>
-      `;
-
-    }
-
-
-    /*
-      NUMMERIERUNG
-    */
-
-    function dynamicNumber(
-      task
-    ) {
-
-      const index =
-        tasks.findIndex(
-          item =>
-            item.id === task.id
-        );
-
-
-      if (index === -1) {
-        return "";
-      }
-
-
-      const number =
-        index + 1;
-
-
-      return number < 10
-        ? "0" + number
-        : String(number);
-
-    }
-
-
-    /*
-      FORMATIERUNG
-    */
-
-    function escapeHtml(text) {
-
-      const div =
-        document.createElement(
-          "div"
-        );
-
-
-      div.textContent =
-        text;
-
-
-      return div.innerHTML;
-
-    }
-
-
-    function formatDuration(ms) {
-
-      if (
-        ms === null ||
-        typeof ms === "undefined"
-      ) {
-        return "";
-      }
-
-
-      const total =
-        Math.floor(
-          ms / 1000
-        );
-
-
-      const h =
-        Math.floor(
-          total / 3600
-        );
-
-
-      const m =
-        Math.floor(
-          (
-            total % 3600
-          ) / 60
-        );
-
-
-      const s =
-        total % 60;
-
-
-      return (
-        String(h)
-          .padStart(2,"0") +
-        ":" +
-        String(m)
-          .padStart(2,"0") +
-        ":" +
-        String(s)
-          .padStart(2,"0")
-      );
-
-    }
-
-
-    function formatDateTime(
-      value,
-      label
-    ) {
-
-      if (!value) {
-        return "";
-      }
-
-
-      const date =
-        new Date(value);
-
-
-      return (
-        label +
-        " · " +
-        date.toLocaleDateString(
-          "de-DE",
-          {
-            timeZone:
-              "Europe/Berlin"
-          }
-        ) +
-        " · " +
-        date.toLocaleTimeString(
-          "de-DE",
-          {
-            timeZone:
-              "Europe/Berlin",
-
-            hour:
-              "2-digit",
-
-            minute:
-              "2-digit",
-
-            second:
-              "2-digit"
-          }
-        ) +
-        " UHR"
-      );
-
-    }
-
-
-    function liveDuration(
-      task
-    ) {
-
-      return calculateActiveDuration(
-        task,
-        Date.now()
-      );
-
-    }
-
-
-    /*
-      BEARBEITUNGSOPTIONEN
-    */
-
-    function editOptions(task) {
-
-      return `
-
-        <div class="edit-options">
-
-          <div class="option-row">
-
-            <span class="option-label">
-              PRIORITÄT
-            </span>
-
-            <button
-              class="option-button
-              ${
-                task.priority === "normal"
-                  ? "selected"
-                  : ""
-              }"
-              onclick="setPriority(
-                ${task.id},
-                'normal'
-              )"
-            >
-              ⚪ NORMAL
-            </button>
-
-            <button
-              class="option-button
-              ${
-                task.priority === "medium"
-                  ? "selected"
-                  : ""
-              }"
-              onclick="setPriority(
-                ${task.id},
-                'medium'
-              )"
-            >
-              🟡 MITTEL
-            </button>
-
-            <button
-              class="option-button
-              ${
-                task.priority === "high"
-                  ? "selected"
-                  : ""
-              }"
-              onclick="setPriority(
-                ${task.id},
-                'high'
-              )"
-            >
-              🔴 HOCH
-            </button>
-
-          </div>
-
-
-          <div class="option-row">
-
-            <span class="option-label">
-              OPTIONAL
-            </span>
-
-            <button
-              class="option-button
-              ${
-                task.optional
-                  ? "selected"
-                  : ""
-              }"
-              onclick="toggleOptional(
-                ${task.id}
-              )"
-            >
-              🟣
-              ${
-                task.optional
-                  ? "JA"
-                  : "NEIN"
-              }
-            </button>
-
-          </div>
-
-
-          <div class="option-row">
-
-            <span class="option-label">
-              FÄLLIG
-            </span>
-
-            <button
-              class="option-button
-              ${
-                task.dueMode === "none"
-                  ? "selected"
-                  : ""
-              }"
-              onclick="setDueMode(
-                ${task.id},
-                'none'
-              )"
-            >
-              —
-            </button>
-
-            <button
-              class="option-button
-              ${
-                task.dueMode === "tomorrowOnly"
-                  ? "selected"
-                  : ""
-              }"
-              onclick="setDueMode(
-                ${task.id},
-                'tomorrowOnly'
-              )"
-            >
-              💠 MORGEN
-            </button>
-
-            <button
-              class="option-button
-              ${
-                task.dueMode === "deadline"
-                  ? "selected"
-                  : ""
-              }"
-              onclick="setDueMode(
-                ${task.id},
-                'deadline'
-              )"
-            >
-              🔷 BIS MORGEN
-            </button>
-
-          </div>
-
-        </div>
-      `;
-
-    }
-
-
-    /*
-      ICON BUTTON
-    */
-
-    function iconButton(
-      icon,
-      title,
-      onclick,
-      extraClass = ""
-    ) {
-
-      return `
-        <button
-          class="icon-action ${extraClass}"
-          onclick="${onclick}"
-          title="${title}"
-          aria-label="${title}"
-        >
-          ${icon}
-        </button>
-      `;
-
-    }
-
-
-    /*
-      AUFGABENKARTE
-    */
-
-    function taskCard(
-      task,
-      options = {}
-    ) {
-
-      const {
-        todayDrag = false,
-        showTodayButton = false,
-        compactOnly = false,
-        filterTodayOnly = false
-      } = options;
-
-
-      const element =
-        document.createElement(
-          "div"
-        );
-
-
-      element.className =
-        "task";
-
-
-      if (
-        task.status === "running"
-      ) {
-        element.classList.add(
-          "running"
-        );
-      }
-
-
-      if (
-        task.status === "paused"
-      ) {
-        element.classList.add(
-          "paused"
-        );
-      }
-
-
-      if (
-        task.status === "completed"
-      ) {
-        element.classList.add(
+  const completed =
+    tasks
+      .filter(
+        task =>
+          task.status ===
           "completed"
-        );
+      )
+      .sort(
+        (a,b) =>
+          new Date(
+            b.completedAt || 0
+          ) -
+          new Date(
+            a.completedAt || 0
+          )
+      );
+
+
+  const aborted =
+    tasks.filter(
+      task =>
+        task.status ===
+        "aborted"
+    );
+
+
+  container.appendChild(
+    section(
+      "OFFENE UND LAUFENDE AUFGABEN",
+      active,
+      {
+        counter:
+          active.length +
+          " aktiv",
+
+        empty:
+          "Nix offen. Verdächtig. 👀",
+
+        cardOptions: {
+          showTodayButton:
+            true
+        }
       }
+    )
+  );
 
 
-      if (
-        task.status === "aborted"
-      ) {
-        element.classList.add(
-          "aborted"
-        );
+  container.appendChild(
+    section(
+      "ERLEDIGT",
+      completed,
+      {
+        counter:
+          completed.length +
+          " erledigt",
+
+        empty:
+          "Noch nix erledigt."
       }
+    )
+  );
 
 
-      if (
-        todayDrag &&
-        task.status !== "completed"
-      ) {
+  container.appendChild(
+    section(
+      "ABGEBROCHEN",
+      aborted,
+      {
+        counter:
+          aborted.length +
+          " abgebrochen",
 
-        element.classList.add(
-          "today-task-active"
-        );
-
-        element.dataset.id =
-          task.id;
-
+        empty:
+          "Nix abgebrochen."
       }
+    )
+  );
+
+}
 
 
-      if (
-        editingTaskId === task.id
-      ) {
+/*
+  HEUTE
+*/
 
-        element.innerHTML = `
+function renderToday(
+  container
+) {
 
-          <div class="task-number">
-            ${dynamicNumber(task)}
-          </div>
-
-          <div class="status-symbol">
-            ${statusSymbol(task)}
-          </div>
-
-          <div class="edit-area">
-
-            <input
-              id="edit-${task.id}"
-              class="edit-input"
-              value="${escapeHtml(task.text)}"
-            >
-
-            ${editOptions(task)}
-
-            <div class="edit-actions">
-
-              <button
-                class="edit-button"
-                onclick="saveEdit(${task.id})"
-              >
-                ✓ SPEICHERN
-              </button>
-
-              <button
-                class="edit-button"
-                onclick="cancelEditing()"
-              >
-                × ABBRECHEN
-              </button>
-
-            </div>
-
-          </div>
-        `;
+  const today =
+    getBerlinDateKey();
 
 
-        return element;
+  const todayAll =
+    tasks.filter(
+      task =>
+        task.todayDate ===
+        today
+    );
 
-      }
+
+  const todayActive =
+    todayAll
+      .filter(
+        task =>
+          [
+            "open",
+            "running",
+            "paused"
+          ].includes(
+            task.status
+          )
+      )
+      .sort(
+        (a,b) =>
+          (a.todayOrder || 0) -
+          (b.todayOrder || 0)
+      );
 
 
-      let leftDrag =
-        "";
+  const todayCompleted =
+    todayAll
+      .filter(
+        task =>
+          task.status ===
+          "completed"
+      )
+      .sort(
+        (a,b) =>
+          new Date(
+            b.completedAt || 0
+          ) -
+          new Date(
+            a.completedAt || 0
+          )
+      );
 
 
-      if (
-        todayDrag &&
-        ![
-          "completed",
-          "aborted"
-        ].includes(
-          task.status
+  const total =
+    todayActive.length +
+    todayCompleted.length;
+
+
+  const completedCount =
+    todayCompleted.length;
+
+
+  const percent =
+    total
+      ? Math.round(
+          completedCount /
+          total *
+          100
         )
-      ) {
-
-        leftDrag = `
-
-          <div
-            class="drag-handle"
-            onpointerdown="
-              startTodayDrag(
-                event,
-                ${task.id}
-              )
-            "
-          >
-            ≡
-          </div>
-        `;
-
-      }
+      : 0;
 
 
-      let meta =
-        "";
+  const summary =
+    document.createElement(
+      "div"
+    );
 
 
-      if (
-        task.status === "running"
-      ) {
-
-        meta = `
-
-          <div class="status-meta">
-            LÄUFT
-          </div>
-
-          <div
-            class="duration live-duration"
-            data-task-id="${task.id}"
-          >
-            AKTIV ·
-            ${formatDuration(
-              liveDuration(task)
-            )}
-          </div>
-        `;
-
-      }
+  summary.className =
+    "today-summary";
 
 
-      if (
-        task.status === "paused"
-      ) {
+  summary.innerHTML = `
 
-        meta = `
+    <div class="today-progress">
 
-          <div class="status-meta">
-            PAUSIERT
-          </div>
+      <span>
+        HEUTE ·
+        ${completedCount}/${total}
+        ERLEDIGT
+      </span>
 
-          <div
-            class="duration live-duration"
-            data-task-id="${task.id}"
-          >
-            AKTIV ·
-            ${formatDuration(
-              liveDuration(task)
-            )}
-          </div>
-        `;
+      <span class="today-percentage">
+        ${percent} %
+      </span>
 
-      }
+    </div>
 
+    <div class="today-progress-bar">
 
-      if (
-        task.status === "completed"
-      ) {
+      <div
+        class="today-progress-fill"
+        style="width:${percent}%"
+      ></div>
 
-        meta = `
-
-          ${
-            task.completedAt
-              ? `
-                <div class="task-meta">
-                  ${formatDateTime(
-                    task.completedAt,
-                    "ERLEDIGT"
-                  )}
-                </div>
-              `
-              : ""
-          }
-
-          ${
-            task.activeDurationMs !== null
-              ? `
-                <div class="duration">
-                  DAUER ·
-                  ${formatDuration(
-                    task.activeDurationMs
-                  )}
-                </div>
-              `
-              : ""
-          }
-        `;
-
-      }
+    </div>
+  `;
 
 
-      if (
-        task.status === "aborted"
-      ) {
-
-        meta = `
-
-          ${
-            task.abortedAt
-              ? `
-                <div class="abort-meta">
-                  ${formatDateTime(
-                    task.abortedAt,
-                    "ABGEBROCHEN"
-                  )}
-                </div>
-              `
-              : ""
-          }
-
-          ${
-            task.abortedActiveDurationMs !== null
-              ? `
-                <div class="duration">
-                  AKTIV BIS ABBRUCH ·
-                  ${formatDuration(
-                    task.abortedActiveDurationMs
-                  )}
-                </div>
-              `
-              : ""
-          }
-        `;
-
-      }
+  container.appendChild(
+    summary
+  );
 
 
-      let filterTodayAction =
-        "";
+  const runningTask =
+    todayActive.find(
+      task =>
+        task.status ===
+        "running"
+    );
 
 
-      if (
-        filterTodayOnly &&
-        ![
-          "completed",
-          "aborted"
-        ].includes(
-          task.status
-        )
-      ) {
-
-        filterTodayAction = `
-
-          <div class="filter-today-action">
-
-            ${iconButton(
-              isTodayTask(task)
-                ? "📌"
-                : "📅",
-
-              isTodayTask(task)
-                ? "Aus dem heutigen Aufgabenblock entfernen"
-                : "Zum heutigen Aufgabenblock hinzufügen",
-
-              `toggleToday(${task.id})`,
-
-              isTodayTask(task)
-                ? "today-button selected"
-                : "today-button"
-            )}
-
-          </div>
-        `;
-
-      }
+  const nextTask =
+    runningTask ||
+    todayActive[0] ||
+    null;
 
 
-      let actions =
-        "";
+  const nextPanel =
+    document.createElement(
+      "div"
+    );
 
 
-      if (!compactOnly) {
+  nextPanel.className =
+    "next-task-panel";
 
-        if (
-          task.status === "open"
-        ) {
 
-          actions = `
+  if (nextTask) {
 
-            <div class="icon-actions">
+    let label =
+      "NÄCHSTE AUFGABE";
 
-              ${iconButton(
+
+    if (
+      nextTask.status ===
+      "running"
+    ) {
+
+      label =
+        "AKTUELL LAUFENDE AUFGABE";
+
+    }
+
+
+    if (
+      nextTask.status ===
+      "paused"
+    ) {
+
+      label =
+        "NÄCHSTE AUFGABE · PAUSIERT";
+
+    }
+
+
+    nextPanel.innerHTML = `
+
+      <div class="next-task-label">
+        ${label}
+      </div>
+
+      <div class="next-task-content">
+
+        <div class="next-task-number">
+          ${dynamicNumber(
+            nextTask
+          )}
+        </div>
+
+        <div class="next-task-status">
+          ${statusSymbol(
+            nextTask
+          )}
+        </div>
+
+        <div class="next-task-name">
+          ${escapeHtml(
+            nextTask.text
+          )}
+        </div>
+
+        ${
+          nextTask.status ===
+            "open"
+            ? iconButton(
                 "▶️",
                 "Starten",
-                `startTask(${task.id})`,
+                `startTask(${nextTask.id})`,
                 "start-button"
-              )}
-
-              ${
-                showTodayButton
-                  ? iconButton(
-                      isTodayTask(task)
-                        ? "📌"
-                        : "📅",
-
-                      isTodayTask(task)
-                        ? "Ist im heutigen Aufgabenblock"
-                        : "Für heute auswählen",
-
-                      `toggleToday(${task.id})`,
-
-                      isTodayTask(task)
-                        ? "today-button selected"
-                        : "today-button"
-                    )
-                  : ""
-              }
-
-              ${iconButton(
-                "✏️",
-                "Bearbeiten",
-                `startEditing(${task.id})`
-              )}
-
-              ${iconButton(
-                "🗑️",
-                "Löschen",
-                `askDelete(${task.id})`
-              )}
-
-              ${iconButton(
-                "❌",
-                "Abbrechen",
-                `askAbort(${task.id})`,
-                "abort-button"
-              )}
-
-              ${
-                todayDrag &&
-                isTodayTask(task)
-                  ? iconButton(
-                      "➖",
-                      "Aus Heute entfernen",
-                      `toggleToday(${task.id})`,
-                      "today-button selected"
-                    )
-                  : ""
-              }
-
-            </div>
-          `;
-
+              )
+            : ""
         }
 
-
-        if (
-          task.status === "running"
-        ) {
-
-          actions = `
-
-            <div class="icon-actions">
-
-              ${iconButton(
-                "⏸️",
-                "Pausieren",
-                `pauseTask(${task.id})`,
-                "pause-button"
-              )}
-
-              ${iconButton(
-                "✅",
-                "Beenden",
-                `finishTask(${task.id})`,
-                "finish-button"
-              )}
-
-              ${iconButton(
-                "❌",
-                "Abbrechen",
-                `askAbort(${task.id})`,
-                "abort-button"
-              )}
-
-              ${
-                todayDrag &&
-                isTodayTask(task)
-                  ? iconButton(
-                      "➖",
-                      "Aus Heute entfernen",
-                      `toggleToday(${task.id})`,
-                      "today-button selected"
-                    )
-                  : ""
-              }
-
-            </div>
-          `;
-
-        }
-
-
-        if (
-          task.status === "paused"
-        ) {
-
-          actions = `
-
-            <div class="icon-actions">
-
-              ${iconButton(
+        ${
+          nextTask.status ===
+            "paused"
+            ? iconButton(
                 "▶️",
                 "Fortsetzen",
-                `resumeTask(${task.id})`,
+                `resumeTask(${nextTask.id})`,
                 "start-button"
-              )}
-
-              ${iconButton(
-                "✅",
-                "Beenden",
-                `finishTask(${task.id})`,
-                "finish-button"
-              )}
-
-              ${iconButton(
-                "❌",
-                "Abbrechen",
-                `askAbort(${task.id})`,
-                "abort-button"
-              )}
-
-              ${
-                todayDrag &&
-                isTodayTask(task)
-                  ? iconButton(
-                      "➖",
-                      "Aus Heute entfernen",
-                      `toggleToday(${task.id})`,
-                      "today-button selected"
-                    )
-                  : ""
-              }
-
-            </div>
-          `;
-
+              )
+            : ""
         }
+
+      </div>
+
+      ${flags(nextTask)}
+    `;
+
+  } else {
+
+    nextPanel.innerHTML = `
+
+      <div class="next-task-label">
+        NÄCHSTE AUFGABE
+      </div>
+
+      <div class="next-task-empty">
+        Keine offene Aufgabe im
+        heutigen Tagesblock.
+      </div>
+    `;
+
+  }
+
+
+  container.appendChild(
+    nextPanel
+  );
+
+
+  container.appendChild(
+    section(
+      "OFFEN / LAUFEND / PAUSIERT",
+      todayActive,
+      {
+        counter:
+          todayActive.length +
+          " offen",
+
+        empty:
+          "Keine offenen Aufgaben mehr im heutigen Tagesblock.",
+
+        cardOptions: {
+          todayDrag:
+            true
+        }
+      }
+    )
+  );
+
+
+  container.appendChild(
+    section(
+      "ERLEDIGT HEUTE",
+      todayCompleted,
+      {
+        counter:
+          todayCompleted.length +
+          " erledigt",
+
+        empty:
+          "Heute noch nichts erledigt."
+      }
+    )
+  );
+
+}
+
+
+/*
+  PRIORITÄT
+*/
+
+function renderPriority(
+  container
+) {
+
+  const relevant =
+    tasks.filter(
+      task =>
+        [
+          "open",
+          "running",
+          "paused"
+        ].includes(
+          task.status
+        )
+    );
+
+
+  [
+    [
+      "🔴 HOHE PRIORITÄT",
+      "high"
+    ],
+    [
+      "🟡 MITTLERE PRIORITÄT",
+      "medium"
+    ],
+    [
+      "⚪ NORMALE PRIORITÄT",
+      "normal"
+    ]
+  ].forEach(
+    group => {
+
+      const items =
+        relevant.filter(
+          task =>
+            task.priority ===
+            group[1]
+        );
+
+
+      container.appendChild(
+        section(
+          group[0],
+          items,
+          {
+            counter:
+              items.length,
+
+            empty:
+              "Keine Aufgaben in dieser Priorität.",
+
+            cardOptions: {
+
+              compactOnly:
+                true,
+
+              filterTodayOnly:
+                true
+
+            }
+          }
+        )
+      );
+
+    }
+  );
+
+}
+
+
+/*
+  FÄLLIG
+*/
+
+function renderDue(
+  container
+) {
+
+  const active =
+    tasks.filter(
+      task =>
+        [
+          "open",
+          "running",
+          "paused"
+        ].includes(
+          task.status
+        )
+    );
+
+
+  const warning =
+    active.filter(
+      task =>
+        dueSymbol(task) ===
+        "⚠️"
+    );
+
+
+  const deadline =
+    active.filter(
+      task =>
+        dueSymbol(task) ===
+        "🔷"
+    );
+
+
+  const tomorrow =
+    active.filter(
+      task =>
+        dueSymbol(task) ===
+        "💠"
+    );
+
+
+  const filterOptions = {
+
+    compactOnly:
+      true,
+
+    filterTodayOnly:
+      true
+
+  };
+
+
+  container.appendChild(
+    section(
+      "⚠️ HEUTE FÄLLIG",
+      warning,
+      {
+        counter:
+          warning.length,
+
+        empty:
+          "Keine Deadline für heute.",
+
+        cardOptions:
+          filterOptions
+      }
+    )
+  );
+
+
+  container.appendChild(
+    section(
+      "🔷 SPÄTESTENS MORGEN",
+      deadline,
+      {
+        counter:
+          deadline.length,
+
+        empty:
+          "Nix spätestens morgen fällig.",
+
+        cardOptions:
+          filterOptions
+      }
+    )
+  );
+
+
+  container.appendChild(
+    section(
+      "💠 FÜR MORGEN",
+      tomorrow,
+      {
+        counter:
+          tomorrow.length,
+
+        empty:
+          "Keine Aufgabe gezielt für morgen.",
+
+        cardOptions:
+          filterOptions
+      }
+    )
+  );
+
+}
+
+
+/*
+  AKTIV
+*/
+
+function renderActive(
+  container
+) {
+
+  const running =
+    tasks.filter(
+      task =>
+        task.status ===
+        "running"
+    );
+
+
+  const paused =
+    tasks.filter(
+      task =>
+        task.status ===
+        "paused"
+    );
+
+
+  container.appendChild(
+    section(
+      "▶️ LÄUFT",
+      running,
+      {
+        counter:
+          running.length,
+
+        empty:
+          "Aktuell läuft keine Aufgabe."
+      }
+    )
+  );
+
+
+  container.appendChild(
+    section(
+      "⏸️ PAUSIERT",
+      paused,
+      {
+        counter:
+          paused.length,
+
+        empty:
+          "Keine pausierte Aufgabe."
+      }
+    )
+  );
+
+}
+
+
+/*
+  ERLEDIGT
+*/
+
+function renderCompleted(
+  container
+) {
+
+  const completed =
+    tasks
+      .filter(
+        task =>
+          task.status ===
+          "completed"
+      )
+      .sort(
+        (a,b) =>
+          new Date(
+            b.completedAt || 0
+          ) -
+          new Date(
+            a.completedAt || 0
+          )
+      );
+
+
+  container.appendChild(
+    section(
+      "ERLEDIGT · NOCH NICHT ARCHIVIERT",
+      completed,
+      {
+        counter:
+          completed.length +
+          " erledigt",
+
+        empty:
+          "Keine noch nicht archivierten erledigten Aufgaben."
+      }
+    )
+  );
+
+}
+
+
+/*
+  ARCHIV-KARTE
+*/
+
+function archiveCard(
+  item
+) {
+
+  const element =
+    document.createElement(
+      "div"
+    );
+
+
+  element.className =
+    "task completed archive-task";
+
+
+  element.innerHTML = `
+
+    <div class="archive-number">
+      A${String(
+        item.archiveNumber
+      ).padStart(
+        3,
+        "0"
+      )}
+    </div>
+
+    <div class="status-symbol">
+      ✅
+    </div>
+
+    <div class="task-content">
+
+      <div class="task-text">
+        ${escapeHtml(
+          item.text
+        )}
+      </div>
+
+      ${flags(item)}
+
+      ${
+        item.completedAt
+          ? `
+            <div class="task-meta">
+              ${formatDateTime(
+                item.completedAt,
+                "ERLEDIGT"
+              )}
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        item.activeDurationMs !==
+          null
+          ? `
+            <div class="duration">
+              DAUER ·
+              ${formatDuration(
+                item.activeDurationMs
+              )}
+            </div>
+          `
+          : ""
+      }
+
+    </div>
+  `;
+
+
+  return element;
+
+}
+
+
+/*
+  ARCHIV
+*/
+
+function renderArchive(
+  container
+) {
+
+  const summary =
+    document.createElement(
+      "div"
+    );
+
+
+  summary.className =
+    "archive-summary";
+
+
+  summary.innerHTML = `
+
+    <div class="archive-summary-title">
+      ARCHIVIERTE AUFGABEN
+    </div>
+
+    <div class="archive-summary-number">
+      ${archive.length}
+    </div>
+
+    <div class="task-meta">
+      NÄCHSTE ARCHIVNUMMER ·
+      A${String(
+        nextArchiveNumber
+      ).padStart(
+        3,
+        "0"
+      )}
+    </div>
+  `;
+
+
+  container.appendChild(
+    summary
+  );
+
+
+  if (
+    archive.length ===
+    0
+  ) {
+
+    const empty =
+      document.createElement(
+        "div"
+      );
+
+
+    empty.className =
+      "empty-message";
+
+
+    empty.textContent =
+      "Archiv noch leer.";
+
+
+    container.appendChild(
+      empty
+    );
+
+
+    return;
+
+  }
+
+
+  /*
+    NACH ABSCHLUSSDATUM
+    GRUPPIEREN
+  */
+
+  const sorted =
+    [...archive]
+      .sort(
+        (a,b) =>
+          Number(
+            b.archiveNumber
+          ) -
+          Number(
+            a.archiveNumber
+          )
+      );
+
+
+  const groups =
+    {};
+
+
+  sorted.forEach(
+    item => {
+
+      const key =
+        item.completedDate ||
+        "unknown";
+
+
+      if (!groups[key]) {
+
+        groups[key] =
+          [];
 
       }
 
 
-      const repeat =
-        [
-          "completed",
-          "aborted"
-        ].includes(
-          task.status
-        )
-          ? `
-            <button
-              class="repeat-button"
-              onclick="repeatTask(${task.id})"
-              title="Wiederholen"
-              aria-label="Wiederholen"
-            >
-              🔁
-            </button>
-          `
-          : "";
-
-
-      element.innerHTML = `
-
-        ${leftDrag}
-
-        <div class="task-number">
-          ${dynamicNumber(task)}
-        </div>
-
-        <div class="status-symbol">
-          ${statusSymbol(task)}
-        </div>
-
-        <div class="task-content">
-
-          <div class="task-main-row">
-
-            <div class="task-text">
-              ${escapeHtml(task.text)}
-            </div>
-
-            ${filterTodayAction}
-
-          </div>
-
-          ${flags(task)}
-
-          ${meta}
-
-          ${actions}
-
-        </div>
-
-        ${repeat}
-      `;
-
-
-      return element;
+      groups[key].push(
+        item
+      );
 
     }
+  );
 
 
-    /*
-      SECTION
-    */
+  Object.keys(
+    groups
+  )
+    .sort()
+    .reverse()
+    .forEach(
+      dateKey => {
 
-    function section(
-      title,
-      items,
-      options = {}
-    ) {
-
-      const {
-        counter = "",
-        empty = "Keine Aufgaben.",
-        cardOptions = {}
-      } = options;
-
-
-      const wrapper =
-        document.createElement(
-          "section"
-        );
-
-
-      wrapper.className =
-        "section";
-
-
-      wrapper.innerHTML = `
-
-        <div class="section-header">
-
-          <div class="section-title">
-            ${title}
-          </div>
-
-          ${
-            counter
-              ? `
-                <div class="counter">
-                  ${counter}
-                </div>
-              `
-              : ""
-          }
-
-        </div>
-      `;
-
-
-      if (
-        items.length === 0
-      ) {
-
-        const emptyDiv =
+        const heading =
           document.createElement(
             "div"
           );
 
 
-        emptyDiv.className =
-          "empty-message";
+        heading.className =
+          "archive-date-heading";
 
 
-        emptyDiv.textContent =
-          empty;
+        heading.textContent =
+          dateKey === "unknown"
+            ? "DATUM UNBEKANNT"
+            : formatArchiveDate(
+                dateKey
+              );
 
 
-        wrapper.appendChild(
-          emptyDiv
+        container.appendChild(
+          heading
         );
 
 
-        return wrapper;
+        groups[
+          dateKey
+        ].forEach(
+          item => {
 
-      }
-
-
-      items.forEach(
-        task => {
-
-          wrapper.appendChild(
-            taskCard(
-              task,
-              cardOptions
-            )
-          );
-
-        }
-      );
-
-
-      return wrapper;
-
-    }
-
-
-    /*
-      ALLE
-    */
-
-    function renderAll(
-      container
-    ) {
-
-      const active =
-        tasks.filter(
-          task =>
-            [
-              "open",
-              "running",
-              "paused"
-            ].includes(
-              task.status
-            )
-        );
-
-
-      const completed =
-        tasks
-          .filter(
-            task =>
-              task.status === "completed"
-          )
-          .sort(
-            (a,b) =>
-              new Date(
-                b.completedAt || 0
-              ) -
-              new Date(
-                a.completedAt || 0
+            container.appendChild(
+              archiveCard(
+                item
               )
-          );
-
-
-      const aborted =
-        tasks.filter(
-          task =>
-            task.status === "aborted"
-        );
-
-
-      container.appendChild(
-        section(
-          "OFFENE UND LAUFENDE AUFGABEN",
-          active,
-          {
-            counter:
-              active.length +
-              " aktiv",
-
-            empty:
-              "Nix offen. Verdächtig. 👀",
-
-            cardOptions: {
-              showTodayButton: true
-            }
-          }
-        )
-      );
-
-
-      container.appendChild(
-        section(
-          "ERLEDIGT",
-          completed,
-          {
-            counter:
-              completed.length +
-              " erledigt",
-
-            empty:
-              "Noch nix erledigt."
-          }
-        )
-      );
-
-
-      container.appendChild(
-        section(
-          "ABGEBROCHEN",
-          aborted,
-          {
-            counter:
-              aborted.length +
-              " abgebrochen",
-
-            empty:
-              "Nix abgebrochen."
-          }
-        )
-      );
-
-    }
-
-
-    /*
-      HEUTE
-    */
-
-    function renderToday(
-      container
-    ) {
-
-      const todayKey =
-        getBerlinDateKey();
-
-
-      const todayAll =
-        tasks.filter(
-          task =>
-            task.todayDate === todayKey
-        );
-
-
-      /*
-        OFFEN / LÄUFT / PAUSIERT
-        BLEIBEN IN DER
-        DRAG-&-DROP-REIHENFOLGE
-      */
-
-      const todayActive =
-        todayAll
-          .filter(
-            task =>
-              [
-                "open",
-                "running",
-                "paused"
-              ].includes(
-                task.status
-              )
-          )
-          .sort(
-            (a,b) =>
-              (a.todayOrder || 0) -
-              (b.todayOrder || 0)
-          );
-
-
-      /*
-        ERLEDIGT HEUTE
-
-        NEUESTE ERLEDIGUNG
-        IMMER GANZ OBEN
-      */
-
-      const todayCompleted =
-        todayAll
-          .filter(
-            task =>
-              task.status === "completed"
-          )
-          .sort(
-            (a,b) =>
-              new Date(
-                b.completedAt || 0
-              ) -
-              new Date(
-                a.completedAt || 0
-              )
-          );
-
-
-      const total =
-        todayActive.length +
-        todayCompleted.length;
-
-
-      const completedCount =
-        todayCompleted.length;
-
-
-      const percent =
-        total
-          ? Math.round(
-              completedCount /
-              total *
-              100
-            )
-          : 0;
-
-
-      /*
-        TAGESFORTSCHRITT
-      */
-
-      const summary =
-        document.createElement(
-          "div"
-        );
-
-
-      summary.className =
-        "today-summary";
-
-
-      summary.innerHTML = `
-
-        <div class="today-progress">
-
-          <span>
-            HEUTE ·
-            ${completedCount}/${total}
-            ERLEDIGT
-          </span>
-
-          <span class="today-percentage">
-            ${percent} %
-          </span>
-
-        </div>
-
-        <div class="today-progress-bar">
-
-          <div
-            class="today-progress-fill"
-            style="width:${percent}%"
-          ></div>
-
-        </div>
-      `;
-
-
-      container.appendChild(
-        summary
-      );
-
-
-      /*
-        NÄCHSTE AUFGABE
-
-        PRIORITÄT:
-        1. laufende Aufgabe
-        2. erste Aufgabe aus Tagesreihenfolge
-      */
-
-      const runningTask =
-        todayActive.find(
-          task =>
-            task.status === "running"
-        );
-
-
-      const nextTask =
-        runningTask ||
-        todayActive[0] ||
-        null;
-
-
-      const nextPanel =
-        document.createElement(
-          "div"
-        );
-
-
-      nextPanel.className =
-        "next-task-panel";
-
-
-      if (nextTask) {
-
-        let label =
-          "NÄCHSTE AUFGABE";
-
-
-        if (
-          nextTask.status === "running"
-        ) {
-
-          label =
-            "AKTUELL LAUFENDE AUFGABE";
-
-        }
-
-
-        if (
-          nextTask.status === "paused"
-        ) {
-
-          label =
-            "NÄCHSTE AUFGABE · PAUSIERT";
-
-        }
-
-
-        nextPanel.innerHTML = `
-
-          <div class="next-task-label">
-            ${label}
-          </div>
-
-          <div class="next-task-content">
-
-            <div class="next-task-number">
-              ${dynamicNumber(
-                nextTask
-              )}
-            </div>
-
-            <div class="next-task-status">
-              ${statusSymbol(
-                nextTask
-              )}
-            </div>
-
-            <div class="next-task-name">
-              ${escapeHtml(
-                nextTask.text
-              )}
-            </div>
-
-            ${
-              nextTask.status === "open"
-                ? iconButton(
-                    "▶️",
-                    "Starten",
-                    `startTask(${nextTask.id})`,
-                    "start-button"
-                  )
-                : ""
-            }
-
-            ${
-              nextTask.status === "paused"
-                ? iconButton(
-                    "▶️",
-                    "Fortsetzen",
-                    `resumeTask(${nextTask.id})`,
-                    "start-button"
-                  )
-                : ""
-            }
-
-          </div>
-
-          ${flags(nextTask)}
-        `;
-
-      } else {
-
-        nextPanel.innerHTML = `
-
-          <div class="next-task-label">
-            NÄCHSTE AUFGABE
-          </div>
-
-          <div class="next-task-empty">
-            Aktuell keine offene Aufgabe
-            im heutigen Tagesblock. 👀
-          </div>
-        `;
-
-      }
-
-
-      container.appendChild(
-        nextPanel
-      );
-
-
-      /*
-        OFFENER TAGESBLOCK
-      */
-
-      container.appendChild(
-        section(
-          "OFFEN / LAUFEND / PAUSIERT",
-          todayActive,
-          {
-            counter:
-              todayActive.length +
-              " offen",
-
-            empty:
-              "Keine offenen Aufgaben mehr im heutigen Tagesblock.",
-
-            cardOptions: {
-              todayDrag: true
-            }
-          }
-        )
-      );
-
-
-      /*
-        ERLEDIGT HEUTE
-      */
-
-      container.appendChild(
-        section(
-          "ERLEDIGT HEUTE",
-          todayCompleted,
-          {
-            counter:
-              todayCompleted.length +
-              " erledigt",
-
-            empty:
-              "Heute noch nichts erledigt."
-          }
-        )
-      );
-
-    }
-
-
-    /*
-      PRIORITÄT
-    */
-
-    function renderPriority(
-      container
-    ) {
-
-      const relevant =
-        tasks.filter(
-          task =>
-            [
-              "open",
-              "running",
-              "paused"
-            ].includes(
-              task.status
-            )
-        );
-
-
-      [
-        [
-          "🔴 HOHE PRIORITÄT",
-          "high"
-        ],
-        [
-          "🟡 MITTLERE PRIORITÄT",
-          "medium"
-        ],
-        [
-          "⚪ NORMALE PRIORITÄT",
-          "normal"
-        ]
-      ].forEach(
-        group => {
-
-          const items =
-            relevant.filter(
-              task =>
-                task.priority === group[1]
             );
 
-
-          container.appendChild(
-            section(
-              group[0],
-              items,
-              {
-                counter:
-                  items.length,
-
-                empty:
-                  "Keine Aufgaben in dieser Priorität.",
-
-                cardOptions: {
-
-                  compactOnly: true,
-
-                  filterTodayOnly: true
-
-                }
-              }
-            )
-          );
-
-        }
-      );
-
-    }
-
-
-    /*
-      FÄLLIG
-    */
-
-    function renderDue(
-      container
-    ) {
-
-      const active =
-        tasks.filter(
-          task =>
-            [
-              "open",
-              "running",
-              "paused"
-            ].includes(
-              task.status
-            )
-        );
-
-
-      const warning =
-        active.filter(
-          task =>
-            dueSymbol(task) === "⚠️"
-        );
-
-
-      const deadline =
-        active.filter(
-          task =>
-            dueSymbol(task) === "🔷"
-        );
-
-
-      const tomorrow =
-        active.filter(
-          task =>
-            dueSymbol(task) === "💠"
-        );
-
-
-      const filterOptions = {
-
-        compactOnly: true,
-
-        filterTodayOnly: true
-
-      };
-
-
-      container.appendChild(
-        section(
-          "⚠️ HEUTE FÄLLIG",
-          warning,
-          {
-            counter:
-              warning.length,
-
-            empty:
-              "Keine Deadline für heute.",
-
-            cardOptions:
-              filterOptions
-          }
-        )
-      );
-
-
-      container.appendChild(
-        section(
-          "🔷 SPÄTESTENS MORGEN",
-          deadline,
-          {
-            counter:
-              deadline.length,
-
-            empty:
-              "Nix spätestens morgen fällig.",
-
-            cardOptions:
-              filterOptions
-          }
-        )
-      );
-
-
-      container.appendChild(
-        section(
-          "💠 FÜR MORGEN",
-          tomorrow,
-          {
-            counter:
-              tomorrow.length,
-
-            empty:
-              "Keine Aufgabe gezielt für morgen.",
-
-            cardOptions:
-              filterOptions
-          }
-        )
-      );
-
-    }
-
-
-    /*
-      AKTIV
-    */
-
-    function renderActive(
-      container
-    ) {
-
-      const running =
-        tasks.filter(
-          task =>
-            task.status === "running"
-        );
-
-
-      const paused =
-        tasks.filter(
-          task =>
-            task.status === "paused"
-        );
-
-
-      container.appendChild(
-        section(
-          "▶️ LÄUFT",
-          running,
-          {
-            counter:
-              running.length,
-
-            empty:
-              "Aktuell läuft keine Aufgabe."
-          }
-        )
-      );
-
-
-      container.appendChild(
-        section(
-          "⏸️ PAUSIERT",
-          paused,
-          {
-            counter:
-              paused.length,
-
-            empty:
-              "Keine pausierte Aufgabe."
-          }
-        )
-      );
-
-    }
-
-
-    /*
-      ERLEDIGT
-    */
-
-    function renderCompleted(
-      container
-    ) {
-
-      const completed =
-        tasks
-          .filter(
-            task =>
-              task.status === "completed"
-          )
-          .sort(
-            (a,b) =>
-              new Date(
-                b.completedAt || 0
-              ) -
-              new Date(
-                a.completedAt || 0
-              )
-          );
-
-
-      container.appendChild(
-        section(
-          "ERLEDIGT",
-          completed,
-          {
-            counter:
-              completed.length +
-              " erledigt",
-
-            empty:
-              "Noch nix erledigt."
-          }
-        )
-      );
-
-    }
-
-
-    /*
-      ARCHIV NOCH PLATZHALTER
-    */
-
-    function renderArchive(
-      container
-    ) {
-
-      const placeholder =
-        document.createElement(
-          "div"
-        );
-
-
-      placeholder.className =
-        "archive-placeholder";
-
-
-      placeholder.innerHTML = `
-        <strong>ARCHIV</strong><br><br>
-
-        Noch nicht aktiviert.<br>
-
-        Im nächsten großen Schritt
-        bauen wir hier die automatische
-        Tagesarchivierung mit dauerhaften
-        Archivnummern ein.
-
-        ☠️📚
-      `;
-
-
-      container.appendChild(
-        placeholder
-      );
-
-    }
-
-
-    /*
-      RENDER
-    */
-
-    function render() {
-
-      const container =
-        document.getElementById(
-          "viewContainer"
-        );
-
-
-      container.innerHTML =
-        "";
-
-
-      if (
-        currentTab === "all"
-      ) {
-        renderAll(
-          container
-        );
-      }
-
-
-      if (
-        currentTab === "today"
-      ) {
-        renderToday(
-          container
-        );
-      }
-
-
-      if (
-        currentTab === "priority"
-      ) {
-        renderPriority(
-          container
-        );
-      }
-
-
-      if (
-        currentTab === "due"
-      ) {
-        renderDue(
-          container
-        );
-      }
-
-
-      if (
-        currentTab === "active"
-      ) {
-        renderActive(
-          container
-        );
-      }
-
-
-      if (
-        currentTab === "completed"
-      ) {
-        renderCompleted(
-          container
-        );
-      }
-
-
-      if (
-        currentTab === "archive"
-      ) {
-        renderArchive(
-          container
-        );
-      }
-
-    }
-
-
-    /*
-      LIVE TIMER
-    */
-
-    function updateLiveTimers() {
-
-      document
-        .querySelectorAll(
-          ".live-duration"
-        )
-        .forEach(
-          element => {
-
-            const task =
-              getTask(
-                Number(
-                  element.dataset.taskId
-                )
-              );
-
-
-            if (!task) {
-              return;
-            }
-
-
-            element.textContent =
-              "AKTIV · " +
-              formatDuration(
-                liveDuration(
-                  task
-                )
-              );
-
           }
         );
 
-    }
+      }
+    );
+
+}
 
 
-    setInterval(
-      updateLiveTimers,
-      1000
+/*
+  RENDER
+*/
+
+function render() {
+
+  const container =
+    document.getElementById(
+      "viewContainer"
     );
 
 
-    /*
-      MODAL
-    */
+  container.innerHTML =
+    "";
 
-    function closeModal() {
 
-      document
-        .getElementById(
-          "modalContainer"
-        )
-        .innerHTML =
-          "";
+  if (
+    currentTab ===
+    "all"
+  ) {
+    renderAll(
+      container
+    );
+  }
+
+
+  if (
+    currentTab ===
+    "today"
+  ) {
+    renderToday(
+      container
+    );
+  }
+
+
+  if (
+    currentTab ===
+    "priority"
+  ) {
+    renderPriority(
+      container
+    );
+  }
+
+
+  if (
+    currentTab ===
+    "due"
+  ) {
+    renderDue(
+      container
+    );
+  }
+
+
+  if (
+    currentTab ===
+    "active"
+  ) {
+    renderActive(
+      container
+    );
+  }
+
+
+  if (
+    currentTab ===
+    "completed"
+  ) {
+    renderCompleted(
+      container
+    );
+  }
+
+
+  if (
+    currentTab ===
+    "archive"
+  ) {
+    renderArchive(
+      container
+    );
+  }
+
+}
+
+
+/*
+  LIVE TIMER
+*/
+
+function updateLiveTimers() {
+
+  document
+    .querySelectorAll(
+      ".live-duration"
+    )
+    .forEach(
+      element => {
+
+        const task =
+          getTask(
+            Number(
+              element.dataset.taskId
+            )
+          );
+
+
+        if (!task) {
+          return;
+        }
+
+
+        element.textContent =
+          "AKTIV · " +
+          formatDuration(
+            liveDuration(
+              task
+            )
+          );
+
+      }
+    );
+
+}
+
+
+/*
+  TAGESWECHSEL REGELMÄSSIG
+  PRÜFEN
+
+  Wenn die Seite offen ist,
+  wird spätestens innerhalb
+  einer Minute reagiert.
+*/
+
+setInterval(
+  function() {
+
+    const beforeTasks =
+      tasks.length;
+
+
+    const beforeArchive =
+      archive.length;
+
+
+    processDayTransition();
+
+
+    if (
+      beforeTasks !==
+        tasks.length ||
+      beforeArchive !==
+        archive.length
+    ) {
+
+      render();
 
     }
 
+  },
+  60000
+);
 
-    function closeModalOnBackdrop(
-      event
+
+/*
+  LIVE TIMER
+*/
+
+setInterval(
+  updateLiveTimers,
+  1000
+);
+
+
+/*
+  WENN APP / TAB WIEDER
+  SICHTBAR WIRD
+*/
+
+document.addEventListener(
+  "visibilitychange",
+  function() {
+
+    if (
+      document.visibilityState ===
+      "visible"
     ) {
 
+      processDayTransition();
+
+      render();
+
+    }
+
+  }
+);
+
+
+/*
+  MODAL
+*/
+
+function closeModal() {
+
+  document
+    .getElementById(
+      "modalContainer"
+    )
+    .innerHTML =
+      "";
+
+}
+
+
+function closeModalOnBackdrop(
+  event
+) {
+
+  if (
+    event.target.classList.contains(
+      "modal-backdrop"
+    )
+  ) {
+    closeModal();
+  }
+
+}
+
+
+function showInfoModal(
+  title,
+  text
+) {
+
+  document
+    .getElementById(
+      "modalContainer"
+    )
+    .innerHTML = `
+
+      <div
+        class="modal-backdrop"
+        onclick="closeModalOnBackdrop(event)"
+      >
+
+        <div class="modal">
+
+          <h2>
+            ${escapeHtml(title)}
+          </h2>
+
+          <p>
+            ${escapeHtml(text)}
+          </p>
+
+          <div class="modal-actions">
+
+            <button
+              class="modal-button confirm-modal"
+              onclick="closeModal()"
+            >
+              Alles klar
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+}
+
+
+/*
+  ENTER
+*/
+
+document
+  .getElementById(
+    "taskInput"
+  )
+  .addEventListener(
+    "keydown",
+    event => {
+
       if (
-        event.target.classList.contains(
-          "modal-backdrop"
-        )
+        event.key ===
+        "Enter"
       ) {
-        closeModal();
+
+        addTask();
+
       }
 
     }
+  );
 
 
-    function showInfoModal(
-      title,
-      text
-    ) {
+/*
+  START
 
-      document
-        .getElementById(
-          "modalContainer"
-        )
-        .innerHTML = `
+  Direkt beim Laden wird geprüft,
+  ob seit dem letzten Besuch
+  ein Tageswechsel stattgefunden hat.
+*/
 
-          <div
-            class="modal-backdrop"
-            onclick="closeModalOnBackdrop(event)"
-          >
+processDayTransition();
 
-            <div class="modal">
+saveAll();
 
-              <h2>
-                ${escapeHtml(title)}
-              </h2>
+updateNewOptions();
 
-              <p>
-                ${escapeHtml(text)}
-              </p>
+render();
 
-              <div class="modal-actions">
-
-                <button
-                  class="modal-button confirm-modal"
-                  onclick="closeModal()"
-                >
-                  Alles klar
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-        `;
-
-    }
-
-
-    /*
-      ENTER
-    */
-
-    document
-      .getElementById(
-        "taskInput"
-      )
-      .addEventListener(
-        "keydown",
-        event => {
-
-          if (
-            event.key === "Enter"
-          ) {
-            addTask();
-          }
-
-        }
-      );
-
-
-    /*
-      START
-    */
-
-    saveTasks();
-
-    updateNewOptions();
-
-    render();
-
-  </script>
+</script>
 
 </body>
 </html>
