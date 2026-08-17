@@ -49,6 +49,7 @@
 
     h1 {
       margin: 0;
+
       font-size: clamp(28px, 8vw, 42px);
       line-height: 1;
       letter-spacing: -1.5px;
@@ -64,7 +65,7 @@
       color: #8c969f;
     }
 
-    /* TAB-NAVIGATION */
+    /* TABS */
 
     .tabs-wrapper {
       position: sticky;
@@ -74,8 +75,7 @@
       margin: 0 -12px 18px;
       padding: 8px 12px;
 
-      background:
-        rgba(11, 13, 15, 0.96);
+      background: rgba(11, 13, 15, 0.96);
 
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
@@ -136,6 +136,7 @@
 
     #taskInput {
       width: 100%;
+
       padding: 14px;
       margin-bottom: 10px;
 
@@ -207,8 +208,8 @@
 
     .add-button {
       width: 100%;
-      padding: 14px;
 
+      padding: 14px;
       margin-top: 4px;
 
       border: 0;
@@ -258,7 +259,6 @@
       background: #15191c;
 
       font-size: 10px;
-
       color: #aab1b7;
     }
 
@@ -266,13 +266,13 @@
 
     .task {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 5px;
 
-      padding: 9px 8px;
-      margin-bottom: 7px;
+      min-height: 50px;
 
-      min-height: 55px;
+      padding: 8px;
+      margin-bottom: 7px;
 
       background:
         linear-gradient(
@@ -286,11 +286,11 @@
     }
 
     .task.running {
-      border-color: #928832;
+      border-color: #55775f;
     }
 
     .task.paused {
-      border-color: #695f32;
+      border-color: #776d36;
     }
 
     .task.completed {
@@ -310,8 +310,6 @@
       width: 27px;
       flex-shrink: 0;
 
-      padding-top: 3px;
-
       text-align: center;
 
       font-size: 9px;
@@ -321,13 +319,13 @@
     }
 
     .status-symbol {
-      width: 23px;
+      width: 25px;
       flex-shrink: 0;
 
       text-align: center;
 
       font-size: 17px;
-      line-height: 1.1;
+      line-height: 1;
     }
 
     .task-content {
@@ -335,7 +333,16 @@
       min-width: 0;
     }
 
+    .task-main-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .task-text {
+      flex: 1;
+      min-width: 0;
+
       font-size: 15px;
       font-weight: 650;
       line-height: 1.25;
@@ -347,39 +354,40 @@
 
     .compact-flags {
       display: flex;
-      gap: 4px;
+      gap: 3px;
 
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
     .mini-flag {
-      font-size: 11px;
+      font-size: 10px;
+      line-height: 1;
     }
 
-    /* ZEIT */
+    /* META */
 
     .task-meta {
-      margin-top: 4px;
+      margin-top: 3px;
 
-      font-size: 7.5px;
+      font-size: 7px;
       font-weight: 700;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.45px;
 
       color: #4f8ec4;
     }
 
     .duration {
-      margin-top: 3px;
+      margin-top: 2px;
 
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 900;
-      letter-spacing: 0.6px;
+      letter-spacing: 0.5px;
 
       color: #70a5cf;
     }
 
     .status-meta {
-      margin-top: 4px;
+      margin-top: 3px;
 
       font-size: 8px;
       font-weight: 900;
@@ -388,47 +396,56 @@
     }
 
     .abort-meta {
-      margin-top: 4px;
+      margin-top: 3px;
 
-      font-size: 7.5px;
+      font-size: 7px;
       font-weight: 700;
 
       color: #ad6666;
     }
 
-    /* AKTIONEN */
+    /* KOMPAKTE ICON-AKTIONEN */
 
     button {
       font-family: inherit;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .task-actions {
+    .icon-actions {
       display: flex;
+      align-items: center;
       gap: 4px;
 
-      margin-top: 7px;
+      margin-top: 5px;
 
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
-    .task-action {
-      flex: 1;
+    .icon-action {
+      width: 31px;
+      height: 31px;
 
-      min-width: 66px;
+      flex: 0 0 31px;
 
-      padding: 7px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 0;
 
       border: 1px solid #30363b;
-      border-radius: 7px;
+      border-radius: 8px;
 
       background: #101315;
       color: #d1d6d9;
 
-      font-size: 8px;
-      font-weight: 900;
+      font-size: 13px;
 
       cursor: pointer;
+    }
+
+    .icon-action:active {
+      transform: scale(0.93);
     }
 
     .start-button {
@@ -447,22 +464,23 @@
       border-color: #6b3f3f;
     }
 
+    .today-button {
+      border-color: #385e77;
+    }
+
     .today-button.selected {
+      background: #14232c;
       border-color: #4c7490;
-
-      color: #79b8e8;
-
-      background: #121d24;
     }
 
     .repeat-button {
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
 
       flex-shrink: 0;
 
       border: 1px solid #30363b;
-      border-radius: 9px;
+      border-radius: 8px;
 
       background: #0e1113;
 
@@ -508,13 +526,9 @@
       transition: width 0.25s ease;
     }
 
-    .today-task {
-      position: relative;
-    }
-
     .drag-handle {
-      width: 28px;
-      min-height: 42px;
+      width: 27px;
+      min-height: 38px;
 
       flex-shrink: 0;
 
@@ -528,7 +542,7 @@
       background: #0d1012;
       color: #74818a;
 
-      font-size: 19px;
+      font-size: 18px;
 
       cursor: grab;
 
@@ -719,11 +733,11 @@
       }
 
       .task {
-        padding: 8px 6px;
+        padding: 7px 6px;
       }
 
       .task-number {
-        width: 23px;
+        width: 22px;
       }
 
       .status-symbol {
@@ -736,10 +750,13 @@
         font-size: 14px;
       }
 
-      .task-action {
-        min-width: 61px;
+      .icon-action {
+        width: 29px;
+        height: 29px;
 
-        font-size: 7.5px;
+        flex-basis: 29px;
+
+        font-size: 12px;
       }
     }
   </style>
@@ -761,8 +778,6 @@
 
     </header>
 
-
-    <!-- TABS -->
 
     <div class="tabs-wrapper">
 
@@ -828,8 +843,6 @@
 
     </div>
 
-
-    <!-- NEUE AUFGABE -->
 
     <section
       class="input-panel"
@@ -936,8 +949,6 @@
 
     </section>
 
-
-    <!-- INHALT -->
 
     <div id="viewContainer"></div>
 
@@ -1184,11 +1195,6 @@
           }
         );
 
-
-      /*
-        Eingabefeld nur in ALLE
-        anzeigen.
-      */
 
       document
         .getElementById(
@@ -1568,7 +1574,7 @@
 
 
     /*
-      DRAG & DROP NUR HEUTE
+      DRAG & DROP HEUTE
     */
 
     function startTodayDrag(
@@ -2561,6 +2567,16 @@
     }
 
 
+    /*
+      NEUE STATUSSYMBOLE
+
+      offen      = ⬜
+      läuft      = ▶️
+      pausiert   = ⏸️
+      erledigt   = ✅
+      abgebrochen= ❌
+    */
+
     function statusSymbol(
       task
     ) {
@@ -2583,11 +2599,17 @@
 
       if (
         task.status ===
-          "running" ||
+          "running"
+      ) {
+        return "▶️";
+      }
+
+
+      if (
         task.status ===
           "paused"
       ) {
-        return "🟨";
+        return "⏸️";
       }
 
 
@@ -3005,7 +3027,32 @@
 
 
     /*
-      STANDARD-AUFGABENKARTE
+      TOOLTIP / TITEL FÜR ICONS
+    */
+
+    function iconButton(
+      icon,
+      title,
+      onclick,
+      extraClass = ""
+    ) {
+
+      return `
+        <button
+          class="icon-action ${extraClass}"
+          onclick="${onclick}"
+          title="${title}"
+          aria-label="${title}"
+        >
+          ${icon}
+        </button>
+      `;
+
+    }
+
+
+    /*
+      AUFGABENKARTE
     */
 
     function taskCard(
@@ -3309,57 +3356,62 @@
 
           actions = `
 
-            <div class="task-actions">
+            <div class="icon-actions">
 
-              <button
-                class="task-action start-button"
-                onclick="startTask(${task.id})"
-              >
-                ▶ START
-              </button>
+              ${iconButton(
+                "▶️",
+                "Starten",
+                `startTask(${task.id})`,
+                "start-button"
+              )}
 
               ${
                 showTodayButton
-                  ? `
-                    <button
-                      class="task-action today-button
-                      ${
-                        isTodayTask(task)
-                          ? "selected"
-                          : ""
-                      }"
-                      onclick="toggleToday(${task.id})"
-                    >
-                      ${
-                        isTodayTask(task)
-                          ? "✓ HEUTE"
-                          : "+ HEUTE"
-                      }
-                    </button>
-                  `
+                  ? iconButton(
+                      isTodayTask(task)
+                        ? "📌"
+                        : "📅",
+                      isTodayTask(task)
+                        ? "Ist im heutigen Aufgabenblock"
+                        : "Für heute auswählen",
+                      `toggleToday(${task.id})`,
+                      isTodayTask(task)
+                        ? "today-button selected"
+                        : "today-button"
+                    )
                   : ""
               }
 
-              <button
-                class="task-action"
-                onclick="startEditing(${task.id})"
-              >
-                ✏️ BEARBEITEN
-              </button>
+              ${iconButton(
+                "✏️",
+                "Bearbeiten",
+                `startEditing(${task.id})`
+              )}
 
-              <button
-                class="task-action"
-                onclick="askDelete(${task.id})"
-              >
-                🗑 LÖSCHEN
-              </button>
+              ${iconButton(
+                "🗑️",
+                "Löschen",
+                `askDelete(${task.id})`
+              )}
 
-              <button
-                class="task-action abort-button"
-                onclick="askAbort(${task.id})"
-              >
-                ❌ ABBRUCH
-              </button>
+              ${iconButton(
+                "❌",
+                "Abbrechen",
+                `askAbort(${task.id})`,
+                "abort-button"
+              )}
+
+              ${
+                todayDrag &&
+                isTodayTask(task)
+                  ? iconButton(
+                      "➖",
+                      "Aus Heute entfernen",
+                      `toggleToday(${task.id})`,
+                      "today-button selected"
+                    )
+                  : ""
+              }
 
             </div>
           `;
@@ -3374,28 +3426,40 @@
 
           actions = `
 
-            <div class="task-actions">
+            <div class="icon-actions">
 
-              <button
-                class="task-action pause-button"
-                onclick="pauseTask(${task.id})"
-              >
-                ⏸ PAUSE
-              </button>
+              ${iconButton(
+                "⏸️",
+                "Pausieren",
+                `pauseTask(${task.id})`,
+                "pause-button"
+              )}
 
-              <button
-                class="task-action finish-button"
-                onclick="finishTask(${task.id})"
-              >
-                ✅ BEENDEN
-              </button>
+              ${iconButton(
+                "✅",
+                "Beenden",
+                `finishTask(${task.id})`,
+                "finish-button"
+              )}
 
-              <button
-                class="task-action abort-button"
-                onclick="askAbort(${task.id})"
-              >
-                ❌ ABBRUCH
-              </button>
+              ${iconButton(
+                "❌",
+                "Abbrechen",
+                `askAbort(${task.id})`,
+                "abort-button"
+              )}
+
+              ${
+                todayDrag &&
+                isTodayTask(task)
+                  ? iconButton(
+                      "➖",
+                      "Aus Heute entfernen",
+                      `toggleToday(${task.id})`,
+                      "today-button selected"
+                    )
+                  : ""
+              }
 
             </div>
           `;
@@ -3410,51 +3474,40 @@
 
           actions = `
 
-            <div class="task-actions">
+            <div class="icon-actions">
 
-              <button
-                class="task-action start-button"
-                onclick="resumeTask(${task.id})"
-              >
-                ▶ WEITER
-              </button>
+              ${iconButton(
+                "▶️",
+                "Fortsetzen",
+                `resumeTask(${task.id})`,
+                "start-button"
+              )}
 
-              <button
-                class="task-action finish-button"
-                onclick="finishTask(${task.id})"
-              >
-                ✅ BEENDEN
-              </button>
+              ${iconButton(
+                "✅",
+                "Beenden",
+                `finishTask(${task.id})`,
+                "finish-button"
+              )}
 
-              <button
-                class="task-action abort-button"
-                onclick="askAbort(${task.id})"
-              >
-                ❌ ABBRUCH
-              </button>
+              ${iconButton(
+                "❌",
+                "Abbrechen",
+                `askAbort(${task.id})`,
+                "abort-button"
+              )}
 
-            </div>
-          `;
-
-        }
-
-
-        if (
-          todayDrag &&
-          task.todayDate ===
-            getBerlinDateKey()
-        ) {
-
-          actions += `
-
-            <div class="task-actions">
-
-              <button
-                class="task-action today-button selected"
-                onclick="toggleToday(${task.id})"
-              >
-                − AUS HEUTE
-              </button>
+              ${
+                todayDrag &&
+                isTodayTask(task)
+                  ? iconButton(
+                      "➖",
+                      "Aus Heute entfernen",
+                      `toggleToday(${task.id})`,
+                      "today-button selected"
+                    )
+                  : ""
+              }
 
             </div>
           `;
@@ -3475,6 +3528,8 @@
             <button
               class="repeat-button"
               onclick="repeatTask(${task.id})"
+              title="Wiederholen"
+              aria-label="Wiederholen"
             >
               🔁
             </button>
@@ -3496,8 +3551,12 @@
 
         <div class="task-content">
 
-          <div class="task-text">
-            ${escapeHtml(task.text)}
+          <div class="task-main-row">
+
+            <div class="task-text">
+              ${escapeHtml(task.text)}
+            </div>
+
           </div>
 
           ${flags(task)}
@@ -3518,7 +3577,7 @@
 
 
     /*
-      RENDER-HILFEN
+      SECTION
     */
 
     function section(
@@ -3653,12 +3712,11 @@
 
 
       const aborted =
-        tasks
-          .filter(
-            task =>
-              task.status ===
-              "aborted"
-          );
+        tasks.filter(
+          task =>
+            task.status ===
+            "aborted"
+        );
 
 
       container.appendChild(
@@ -3745,16 +3803,6 @@
         ).length;
 
 
-      const summary =
-        document.createElement(
-          "div"
-        );
-
-
-      summary.className =
-        "today-summary";
-
-
       const percent =
         today.length
           ? Math.round(
@@ -3763,6 +3811,16 @@
               100
             )
           : 0;
+
+
+      const summary =
+        document.createElement(
+          "div"
+        );
+
+
+      summary.className =
+        "today-summary";
 
 
       summary.innerHTML = `
@@ -4000,7 +4058,7 @@
 
       container.appendChild(
         section(
-          "🟨 LÄUFT",
+          "▶️ LÄUFT",
           running,
           {
             counter:
@@ -4015,7 +4073,7 @@
 
       container.appendChild(
         section(
-          "🟨 PAUSIERT",
+          "⏸️ PAUSIERT",
           paused,
           {
             counter:
@@ -4111,7 +4169,7 @@
 
 
     /*
-      HAUPT-RENDER
+      RENDER
     */
 
     function render() {
@@ -4127,7 +4185,8 @@
 
 
       if (
-        currentTab === "all"
+        currentTab ===
+        "all"
       ) {
         renderAll(
           container
@@ -4136,7 +4195,8 @@
 
 
       if (
-        currentTab === "today"
+        currentTab ===
+        "today"
       ) {
         renderToday(
           container
@@ -4145,7 +4205,8 @@
 
 
       if (
-        currentTab === "priority"
+        currentTab ===
+        "priority"
       ) {
         renderPriority(
           container
@@ -4154,7 +4215,8 @@
 
 
       if (
-        currentTab === "due"
+        currentTab ===
+        "due"
       ) {
         renderDue(
           container
@@ -4163,7 +4225,8 @@
 
 
       if (
-        currentTab === "active"
+        currentTab ===
+        "active"
       ) {
         renderActive(
           container
@@ -4172,7 +4235,8 @@
 
 
       if (
-        currentTab === "completed"
+        currentTab ===
+        "completed"
       ) {
         renderCompleted(
           container
@@ -4181,7 +4245,8 @@
 
 
       if (
-        currentTab === "archive"
+        currentTab ===
+        "archive"
       ) {
         renderArchive(
           container
@@ -4335,10 +4400,6 @@
         }
       );
 
-
-    /*
-      START
-    */
 
     saveTasks();
 
