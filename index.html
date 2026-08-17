@@ -2332,94 +2332,6 @@ if (
 return;
 }
 
-function getArchiveTaskWeightOverlapMs(
-task
-) {
-
-if (
-!task ||
-!task.completedDate
-) {
-
-return 0;
-
-}
-
-
-const segments =
-Array.isArray(
-task.activeSegments
-)
-? task.activeSegments
-: [];
-
-
-if (
-segments.length === 0
-) {
-
-return 0;
-
-}
-
-
-const phases =
-getWeightPhasesForDate(
-task.completedDate,
-false
-);
-
-
-let totalOverlapMs =
-0;
-
-
-segments.forEach(
-segment => {
-
-if (
-!segment.startedAt ||
-!segment.endedAt
-) {
-
-return;
-
-}
-
-
-phases.forEach(
-phase => {
-
-if (
-!phase.startedAt ||
-!phase.endedAt
-) {
-
-return;
-
-}
-
-
-totalOverlapMs +=
-getOverlapMs(
-
-segment.startedAt,
-segment.endedAt,
-
-phase.startedAt,
-phase.endedAt
-
-);
-
-});
-
-});
-
-
-return totalOverlapMs;
-
-}
-
 
 phases.forEach(
 phase => {
@@ -2434,13 +2346,10 @@ return;
 
 const overlap =
 getOverlapMs(
-
 segment.startedAt,
 segment.endedAt,
-
 phase.startedAt,
 phase.endedAt
-
 );
 
 
@@ -2464,22 +2373,13 @@ phase.weightKg
 
 
 if (
-!byWeight[
-weightKey
-]
+!byWeight[weightKey]
 ) {
-
-byWeight[
-weightKey
-] =
-0;
-
+byWeight[weightKey] = 0;
 }
 
 
-byWeight[
-weightKey
-] +=
+byWeight[weightKey] +=
 overlap;
 
 });
@@ -2515,6 +2415,83 @@ byWeight
 
 }
 
+
+function getArchiveTaskWeightOverlapMs(
+task
+) {
+
+if (
+!task ||
+!task.completedDate
+) {
+return 0;
+}
+
+
+const segments =
+Array.isArray(
+task.activeSegments
+)
+? task.activeSegments
+: [];
+
+
+if (
+segments.length === 0
+) {
+return 0;
+}
+
+
+const phases =
+getWeightPhasesForDate(
+task.completedDate,
+false
+);
+
+
+let totalOverlapMs =
+0;
+
+
+segments.forEach(
+segment => {
+
+if (
+!segment.startedAt ||
+!segment.endedAt
+) {
+return;
+}
+
+
+phases.forEach(
+phase => {
+
+if (
+!phase.startedAt ||
+!phase.endedAt
+) {
+return;
+}
+
+
+totalOverlapMs +=
+getOverlapMs(
+segment.startedAt,
+segment.endedAt,
+phase.startedAt,
+phase.endedAt
+);
+
+});
+
+});
+
+
+return totalOverlapMs;
+
+}
 
 /* ======================================
    WEIGHT PANEL
@@ -5461,8 +5438,6 @@ document.createElement(
 element.className =
 "task completed archive-task";
 
-
-element.innerHTML = `
 
 const weightOverlapMs =
 getArchiveTaskWeightOverlapMs(
