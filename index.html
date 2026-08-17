@@ -2120,6 +2120,89 @@ button {
   }
 }
 
+
+/* ======================================
+   UI-FEINSCHLIFF 18.08.2026
+   ARCHIV-GEWICHT · STATISTIK · TAGE KLAPPBAR
+====================================== */
+
+/* Gewichtssymbol/-text direkt an Archivaufgaben besser lesbar */
+.archive-task-weight {
+  font-size: 12px;
+  opacity: .92;
+}
+
+.archive-task-weight-details {
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+/* Statistik: Randtexte/Symbole größer, Hauptwert etwas kleiner */
+.statistics-label {
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.statistics-value {
+  font-size: 16px;
+}
+
+.statistics-sub {
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+/* Emoji/Symbol im oberen Statistiktext zusätzlich leicht hervorheben */
+.statistics-label .statistics-icon {
+  display: inline-block;
+  margin-right: 2px;
+  font-size: 12px;
+  line-height: 1;
+  vertical-align: -1px;
+}
+
+/* Archivtage einzeln ein-/ausklappbar */
+.archive-day-header {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.archive-day-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.archive-day-toggle {
+  flex: 0 0 12px;
+  width: 12px;
+  font-size: 10px;
+  line-height: 1;
+  color: #8b9aa3;
+  transition: transform .18s ease;
+}
+
+.archive-day.collapsed .archive-day-toggle {
+  transform: rotate(-90deg);
+}
+
+.archive-day.collapsed .archive-task-list {
+  display: none;
+}
+
+.archive-day.collapsed .archive-day-header {
+  margin-bottom: 0;
+}
+
+@media (max-width: 360px) {
+  .statistics-value {
+    font-size: 15px;
+  }
+}
+
 </style>
 </head>
 
@@ -10821,6 +10904,10 @@ ${lines}
 
 header.innerHTML = `
 
+<div class="archive-day-heading-row">
+
+<span class="archive-day-toggle">▼</span>
+
 <div class="archive-day-title">
 
 ${dateKey ===
@@ -10829,6 +10916,8 @@ ${dateKey ===
 : formatArchiveDayHeading(
 dateKey
 )}
+
+</div>
 
 </div>
 
@@ -10845,6 +10934,60 @@ activeMs
 
 ${weightHtml}
 `;
+
+
+header.setAttribute(
+"role",
+"button"
+);
+
+header.setAttribute(
+"tabindex",
+"0"
+);
+
+header.setAttribute(
+"aria-expanded",
+"true"
+);
+
+const toggleArchiveDay = () => {
+
+const collapsed =
+block.classList.toggle(
+"collapsed"
+);
+
+header.setAttribute(
+"aria-expanded",
+collapsed
+? "false"
+: "true"
+);
+
+};
+
+header.addEventListener(
+"click",
+toggleArchiveDay
+);
+
+header.addEventListener(
+"keydown",
+event => {
+
+if (
+event.key === "Enter" ||
+event.key === " "
+) {
+
+event.preventDefault();
+toggleArchiveDay();
+
+}
+
+}
+);
 
 
 block.appendChild(
@@ -13197,31 +13340,31 @@ wrapper.innerHTML = `
 <div class="statistics-grid">
 
 <div class="statistics-card">
-<div class="statistics-label">✅ AUFGABEN</div>
+<div class="statistics-label"><span class="statistics-icon">✅</span> AUFGABEN</div>
 <div class="statistics-value">${totalTasks}</div>
 <div class="statistics-sub">ARCHIVIERT</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">📅 EINSATZTAGE</div>
+<div class="statistics-label"><span class="statistics-icon">📅</span> EINSATZTAGE</div>
 <div class="statistics-value">${deploymentDays}</div>
 <div class="statistics-sub">ARCHIVIERTE TAGE</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">⏱ AKTIVE GESAMTZEIT</div>
+<div class="statistics-label"><span class="statistics-icon">⏱</span> AKTIVE GESAMTZEIT</div>
 <div class="statistics-value">${formatDuration(activeTotalMs)}</div>
 <div class="statistics-sub">ARBEITSZEIT</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">🎮 FREIZEIT</div>
+<div class="statistics-label"><span class="statistics-icon">🎮</span> FREIZEIT</div>
 <div class="statistics-value">${formatDuration(leisureTotalMs)}</div>
 <div class="statistics-sub">${leisureTasks.length} FREIZEIT-AUFGABEN</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">🤖 SELBSTLÄUFER</div>
+<div class="statistics-label"><span class="statistics-icon">🤖</span> SELBSTLÄUFER</div>
 <div class="statistics-value">${selfrunnerTasks.length}</div>
 <div class="statistics-sub">${formatDuration(
 selfrunnerTasks.reduce(
@@ -13236,13 +13379,13 @@ item
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">🍳 KOCHEN AKTIV</div>
+<div class="statistics-label"><span class="statistics-icon">🍳</span> KOCHEN AKTIV</div>
 <div class="statistics-value">${formatDuration(cookingActiveTotalMs)}</div>
 <div class="statistics-sub">AKTIVE KOCHZEIT</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">🍳 WARTE-/GARZEIT</div>
+<div class="statistics-label"><span class="statistics-icon">🍳</span> WARTE-/GARZEIT</div>
 <div class="statistics-value">${formatDuration(cookingPassiveTotalMs)}</div>
 <div class="statistics-sub">GAR-/OFEN-/WARTEZEIT</div>
 </div>
@@ -13251,7 +13394,7 @@ item
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">🏋️ TRAGEZEIT</div>
+<div class="statistics-label"><span class="statistics-icon">🏋️</span> TRAGEZEIT</div>
 <div class="statistics-value">${formatDuration(totalWeightMs)}</div>
 <div class="statistics-sub">ZUSATZGEWICHT GESAMT</div>
 </div>
@@ -13269,25 +13412,25 @@ DURCHSCHNITTE
 <div class="statistics-grid">
 
 <div class="statistics-card">
-<div class="statistics-label">📊 AUFGABEN / TAG</div>
+<div class="statistics-label"><span class="statistics-icon">📊</span> AUFGABEN / TAG</div>
 <div class="statistics-value">${averageTasksPerDay.toFixed(1).replace(".",",")}</div>
 <div class="statistics-sub">PRO EINSATZTAG</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">⏱ ZEIT / AUFGABE</div>
+<div class="statistics-label"><span class="statistics-icon">⏱</span> ZEIT / AUFGABE</div>
 <div class="statistics-value">${formatDuration(averageTimePerTask)}</div>
 <div class="statistics-sub">AKTIVER DURCHSCHNITT</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">📅 AKTIVE ZEIT / TAG</div>
+<div class="statistics-label"><span class="statistics-icon">📅</span> AKTIVE ZEIT / TAG</div>
 <div class="statistics-value">${formatDuration(averageTimePerDay)}</div>
 <div class="statistics-sub">PRO EINSATZTAG</div>
 </div>
 
 <div class="statistics-card">
-<div class="statistics-label">🏋️ AKTIV MIT GEWICHT</div>
+<div class="statistics-label"><span class="statistics-icon">🏋️</span> AKTIV MIT GEWICHT</div>
 <div class="statistics-value">${formatDuration(activeWithWeightMs)}</div>
 <div class="statistics-sub">WÄHREND AUFGABEN</div>
 </div>
@@ -13359,25 +13502,25 @@ ZUSATZGEWICHT
 <div class="statistics-grid">
 
 <div class="statistics-card statistics-weight-card">
-<div class="statistics-label">🏋️ TRAGEZEIT GESAMT</div>
+<div class="statistics-label"><span class="statistics-icon">🏋️</span> TRAGEZEIT GESAMT</div>
 <div class="statistics-value">${formatDuration(totalWeightMs)}</div>
 <div class="statistics-sub">DOKUMENTIERTE TRAGEZEIT</div>
 </div>
 
 <div class="statistics-card statistics-weight-card">
-<div class="statistics-label">💪 AKTIVE AUFGABEN</div>
+<div class="statistics-label"><span class="statistics-icon">💪</span> AKTIVE AUFGABEN</div>
 <div class="statistics-value">${formatDuration(activeWithWeightMs)}</div>
 <div class="statistics-sub">MIT ZUSATZGEWICHT</div>
 </div>
 
 <div class="statistics-card statistics-weight-card">
-<div class="statistics-label">🛋️ AUSSERHALB</div>
+<div class="statistics-label"><span class="statistics-icon">🛋️</span> AUSSERHALB</div>
 <div class="statistics-value">${formatDuration(weightOutsideActiveMs)}</div>
 <div class="statistics-sub">AUSSERHALB AKTIVER AUFGABEN</div>
 </div>
 
 <div class="statistics-card statistics-weight-card">
-<div class="statistics-label">📊 AKTIVER ANTEIL</div>
+<div class="statistics-label"><span class="statistics-icon">📊</span> AKTIVER ANTEIL</div>
 <div class="statistics-value">${
 totalWeightMs > 0
 ? (
@@ -13447,7 +13590,7 @@ ${weightEntries
 entry => `
 
 <div class="statistics-card statistics-weight-card">
-<div class="statistics-label">🏋️ ${formatWeight(entry[0])} KG</div>
+<div class="statistics-label"><span class="statistics-icon">🏋️</span> ${formatWeight(entry[0])} KG</div>
 <div class="statistics-value">${formatDuration(entry[1])}</div>
 <div class="statistics-sub">TRAGEZEIT</div>
 </div>
