@@ -888,6 +888,96 @@ button {
   margin-bottom: 18px;
 }
 
+/*
+  CONTAINER FÜR ALLE AUFGABEN
+  EINES ARCHIVTAGES
+*/
+
+.archive-task-list {
+  position: relative;
+
+  margin-top: 8px;
+}
+
+
+/*
+  EINE EINZIGE SENKRECHTE LINIE
+  FÜR DEN KOMPLETTEN AUFGABENSTRANG
+*/
+
+.archive-task-list::before {
+  content: "";
+
+  position: absolute;
+
+  left: 7px;
+  top: 0;
+  bottom: 0;
+
+  width: 1px;
+
+  background: #29353b;
+
+  z-index: 0;
+}
+
+
+/*
+  AUFGABEN LIEGEN ÜBER DER LINIE
+*/
+
+.archive-task {
+  position: relative;
+  z-index: 1;
+
+  margin-left: 20px;
+}
+
+
+/*
+  WAAGERECHTER ABZWEIG
+  VON DER SENKRECHTEN LINIE
+*/
+
+.archive-task::before {
+  content: "";
+
+  position: absolute;
+
+  left: -13px;
+  top: 15px;
+
+  width: 13px;
+  height: 1px;
+
+  background: #29353b;
+
+  opacity: 1;
+}
+
+
+/*
+  BEI DER LETZTEN AUFGABE
+  DIE SENKRECHTE LINIE UNTERHALB
+  DES ABZWEIGS VERDECKEN
+*/
+
+.archive-task:last-child::after {
+  content: "";
+
+  position: absolute;
+
+  left: -13px;
+  top: 16px;
+  bottom: -1px;
+
+  width: 1px;
+
+  background: #0b0d0f;
+
+  z-index: 2;
+}
+  
 .archive-day-header {
   padding: 8px 10px;
   margin-bottom: 6px;
@@ -955,22 +1045,6 @@ button {
   AUFGABEN DES TAGES
 */
 
-.archive-day::after {
-  content: "";
-
-  position: absolute;
-
-  left: 7px;
-
-  top: 100px;
-  bottom: 15px;
-
-  width: 1px;
-
-  background: #34414a;
-
-  opacity: .75;
-}
 
 /*
   TAGESKOPF ÜBER DIE VOLLE BREITE
@@ -5940,16 +6014,36 @@ header
 );
 
 
+/*
+  EIGENER CONTAINER
+  FÜR DIE AUFGABEN DIESES TAGES
+*/
+
+const taskList =
+document.createElement(
+"div"
+);
+
+
+taskList.className =
+"archive-task-list";
+
+
 dayTasks.forEach(
 item => {
 
-block.appendChild(
+taskList.appendChild(
 archiveCard(
 item
 )
 );
 
 }
+);
+
+
+block.appendChild(
+taskList
 );
 
 
