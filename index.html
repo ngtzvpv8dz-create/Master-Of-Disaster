@@ -950,6 +950,29 @@ button {
 
 
 /*
+  EINE EINZIGE DURCHGEHENDE
+  SENKRECHTE LINIE FÜR ALLE
+  AUFGABEN DES TAGES
+*/
+
+.archive-day::after {
+  content: "";
+
+  position: absolute;
+
+  left: 7px;
+
+  top: 100px;
+  bottom: 15px;
+
+  width: 1px;
+
+  background: #34414a;
+
+  opacity: .75;
+}
+
+/*
   TAGESKOPF ÜBER DIE VOLLE BREITE
 */
 
@@ -1024,22 +1047,7 @@ button {
   DEN EINZELNEN AUFGABEN
 */
 
-.archive-task::after {
-  content: "";
 
-  position: absolute;
-
-  left: -13px;
-
-  top: 0;
-  bottom: -4px;
-
-  width: 1px;
-
-  background: #34414a;
-
-  opacity: .75;
-}
   
 /*
   BEI DER LETZTEN AUFGABE
@@ -1047,12 +1055,7 @@ button {
   EXAKT AN DER QUERLINIE
 */
 
-.archive-task:last-child::after {
-  top: 0;
-  bottom: auto;
 
-  height: 15px;
-}
   
 .archive-task .archive-number {
   width: 39px;
