@@ -1201,6 +1201,72 @@ button {
   color: #8ba0ad;
 }
 
+/* STATISTIK */
+
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+
+  margin-bottom: 20px;
+}
+
+.statistics-card {
+  min-width: 0;
+
+  padding: 12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #182027,
+      #111619
+    );
+
+  border: 1px solid #30383e;
+  border-radius: 12px;
+}
+
+.statistics-card.wide {
+  grid-column: 1 / -1;
+}
+
+.statistics-label {
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 1px;
+
+  color: #71808a;
+}
+
+.statistics-value {
+  margin-top: 6px;
+
+  font-size: 21px;
+  font-weight: 900;
+
+  color: #e3e8eb;
+}
+
+.statistics-sub {
+  margin-top: 4px;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  color: #66757e;
+}
+
+.statistics-section-title {
+  margin: 4px 3px 10px;
+
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
+
+  color: #8c969f;
+}
+
 /* DEV */
 
 .dev-panel {
@@ -1360,6 +1426,10 @@ ERLEDIGT
 
 <button class="tab-button" data-tab="archive" onclick="switchTab('archive')">
 ARCHIV
+</button>
+
+<button class="tab-button" data-tab="statistics" onclick="switchTab('statistics')">
+STATISTIK
 </button>
 
 </nav>
@@ -6426,6 +6496,205 @@ showInfoModal(
 }
 
 /* ======================================
+   STATISTIK
+====================================== */
+
+function renderStatistics(container) {
+
+const completedTasks =
+archive.filter(
+item =>
+item.status === "completed"
+);
+
+
+const archiveDates =
+[
+...new Set(
+completedTasks
+.map(
+item =>
+item.completedDate
+)
+.filter(Boolean)
+)
+];
+
+
+const totalTasks =
+completedTasks.length;
+
+
+const activeTotalMs =
+completedTasks.reduce(
+(sum,item) =>
+sum +
+(
+Number(
+item.activeDurationMs
+) || 0
+),
+0
+);
+
+
+const deploymentDays =
+archiveDates.length;
+
+
+const averageTasksPerDay =
+deploymentDays > 0
+? totalTasks / deploymentDays
+: 0;
+
+
+const averageTimePerTask =
+totalTasks > 0
+? activeTotalMs / totalTasks
+: 0;
+
+
+const averageTimePerDay =
+deploymentDays > 0
+? activeTotalMs / deploymentDays
+: 0;
+
+
+const wrapper =
+document.createElement(
+"div"
+);
+
+
+wrapper.innerHTML = `
+
+<div class="statistics-section-title">
+GESAMTSTATISTIK
+</div>
+
+
+<div class="statistics-grid">
+
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+✅ AUFGABEN
+</div>
+
+<div class="statistics-value">
+${totalTasks}
+</div>
+
+<div class="statistics-sub">
+ARCHIVIERT UND ERLEDIGT
+</div>
+
+</div>
+
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+📅 EINSATZTAGE
+</div>
+
+<div class="statistics-value">
+${deploymentDays}
+</div>
+
+<div class="statistics-sub">
+TAGE MIT ARCHIVAUFGABEN
+</div>
+
+</div>
+
+
+<div class="statistics-card wide">
+
+<div class="statistics-label">
+⏱ AKTIVE GESAMTZEIT
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+activeTotalMs
+)}
+</div>
+
+<div class="statistics-sub">
+SUMME ALLER ARCHIVIERTEN AUFGABEN
+</div>
+
+</div>
+
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+📊 Ø AUFGABEN / TAG
+</div>
+
+<div class="statistics-value">
+${averageTasksPerDay.toFixed(1).replace(".",",")}
+</div>
+
+<div class="statistics-sub">
+PRO EINSATZTAG
+</div>
+
+</div>
+
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+⏱ Ø ZEIT / AUFGABE
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+averageTimePerTask
+)}
+</div>
+
+<div class="statistics-sub">
+AKTIVE DURCHSCHNITTSZEIT
+</div>
+
+</div>
+
+
+<div class="statistics-card wide">
+
+<div class="statistics-label">
+📅 Ø AKTIVE ZEIT / TAG
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+averageTimePerDay
+)}
+</div>
+
+<div class="statistics-sub">
+PRO EINSATZTAG
+</div>
+
+</div>
+
+
+</div>
+`;
+
+
+container.appendChild(
+wrapper
+);
+
+}
+
+/* ======================================
    RENDER
 ====================================== */
 
@@ -6506,6 +6775,15 @@ currentTab ===
 "archive"
 ) {
 renderArchive(
+container
+);
+}
+
+if (
+currentTab ===
+"statistics"
+) {
+renderStatistics(
 container
 );
 }
