@@ -944,6 +944,60 @@ button {
 
 .archive-task {
   opacity: .72;
+
+  min-height: 38px;
+
+  padding: 6px 7px;
+  margin: 0 0 5px 8px;
+
+  border-left: 3px solid #34414a;
+  border-radius: 8px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #171c1f,
+      #111416
+    );
+}
+
+.archive-task .archive-number {
+  width: 43px;
+
+  font-size: 9px;
+}
+
+.archive-task .status-symbol {
+  width: 20px;
+
+  font-size: 14px;
+}
+
+.archive-task .task-text {
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.archive-task .task-meta {
+  margin-top: 2px;
+
+  font-size: 6.5px;
+}
+
+.archive-task .duration {
+  margin-top: 1px;
+
+  font-size: 7.5px;
+}
+
+.archive-task-weight {
+  flex-shrink: 0;
+
+  margin-left: 5px;
+
+  font-size: 11px;
+
+  opacity: .78;
 }
 
 .archive-number {
@@ -2276,6 +2330,94 @@ if (
 !segment.endedAt
 ) {
 return;
+}
+
+function getArchiveTaskWeightOverlapMs(
+task
+) {
+
+if (
+!task ||
+!task.completedDate
+) {
+
+return 0;
+
+}
+
+
+const segments =
+Array.isArray(
+task.activeSegments
+)
+? task.activeSegments
+: [];
+
+
+if (
+segments.length === 0
+) {
+
+return 0;
+
+}
+
+
+const phases =
+getWeightPhasesForDate(
+task.completedDate,
+false
+);
+
+
+let totalOverlapMs =
+0;
+
+
+segments.forEach(
+segment => {
+
+if (
+!segment.startedAt ||
+!segment.endedAt
+) {
+
+return;
+
+}
+
+
+phases.forEach(
+phase => {
+
+if (
+!phase.startedAt ||
+!phase.endedAt
+) {
+
+return;
+
+}
+
+
+totalOverlapMs +=
+getOverlapMs(
+
+segment.startedAt,
+segment.endedAt,
+
+phase.startedAt,
+phase.endedAt
+
+);
+
+});
+
+});
+
+
+return totalOverlapMs;
+
 }
 
 
@@ -5322,6 +5464,27 @@ element.className =
 
 element.innerHTML = `
 
+const weightOverlapMs =
+getArchiveTaskWeightOverlapMs(
+item
+);
+
+
+const weightIndicator =
+weightOverlapMs > 0
+? `
+<span
+class="archive-task-weight"
+title="Mit Zusatzgewicht · ${formatDuration(weightOverlapMs)}"
+>
+🏋️
+</span>
+`
+: "";
+
+
+element.innerHTML = `
+
 <div class="archive-number">
 
 A${String(
@@ -5339,10 +5502,16 @@ item.archiveNumber
 
 <div class="task-content">
 
+<div class="task-main-row">
+
 <div class="task-text">
 ${escapeHtml(
 item.text
 )}
+</div>
+
+${weightIndicator}
+
 </div>
 
 <div class="task-meta">
