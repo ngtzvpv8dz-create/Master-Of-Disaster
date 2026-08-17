@@ -2195,6 +2195,182 @@ true
 
 }
 
+/* ======================================
+   AKTIVE AUFGABENZEIT MIT ZUSATZGEWICHT
+====================================== */
+
+function getOverlapMs(
+startA,
+endA,
+startB,
+endB
+) {
+
+const start =
+Math.max(
+new Date(startA).getTime(),
+new Date(startB).getTime()
+);
+
+
+const end =
+Math.min(
+new Date(endA).getTime(),
+new Date(endB).getTime()
+);
+
+
+return Math.max(
+0,
+end - start
+);
+
+}
+
+
+function getWeightTaskOverlapForDate(
+dateKey
+) {
+
+const phases =
+getWeightPhasesForDate(
+dateKey,
+false
+);
+
+
+const dayTasks =
+archive.filter(
+task =>
+task.completedDate ===
+dateKey
+);
+
+
+let activeWithWeightMs =
+0;
+
+
+const byWeight =
+{};
+
+
+dayTasks.forEach(
+task => {
+
+const segments =
+Array.isArray(
+task.activeSegments
+)
+? task.activeSegments
+: [];
+
+
+segments.forEach(
+segment => {
+
+if (
+!segment.startedAt ||
+!segment.endedAt
+) {
+return;
+}
+
+
+phases.forEach(
+phase => {
+
+if (
+!phase.startedAt ||
+!phase.endedAt
+) {
+return;
+}
+
+
+const overlap =
+getOverlapMs(
+
+segment.startedAt,
+segment.endedAt,
+
+phase.startedAt,
+phase.endedAt
+
+);
+
+
+if (
+overlap <= 0
+) {
+return;
+}
+
+
+activeWithWeightMs +=
+overlap;
+
+
+const weightKey =
+String(
+Number(
+phase.weightKg
+)
+);
+
+
+if (
+!byWeight[
+weightKey
+]
+) {
+
+byWeight[
+weightKey
+] =
+0;
+
+}
+
+
+byWeight[
+weightKey
+] +=
+overlap;
+
+});
+
+});
+
+});
+
+
+const totalWeightMs =
+getWeightSummaryForDate(
+dateKey,
+false
+).totalMs;
+
+
+return {
+
+activeWithWeightMs:
+activeWithWeightMs,
+
+outsideActiveMs:
+Math.max(
+0,
+totalWeightMs -
+activeWithWeightMs
+),
+
+byWeight:
+byWeight
+
+};
+
+}
+
 
 /* ======================================
    WEIGHT PANEL
@@ -5365,8 +5541,14 @@ getWeightSummaryForDate(
 dateKey,
 false
 );
+  
 
+const weightOverlap =
+getWeightTaskOverlapForDate(
+dateKey
+);
 
+  
 const block =
 document.createElement(
 "div"
@@ -5434,6 +5616,27 @@ weight.totalMs
 )}
 
 </div>
+
+
+<div class="archive-weight-line">
+
+DAVON AKTIVE AUFGABEN ·
+${formatDuration(
+weightOverlap.activeWithWeightMs
+)}
+
+</div>
+
+
+<div class="archive-weight-line">
+
+AUSSERHALB AKTIVER AUFGABEN ·
+${formatDuration(
+weightOverlap.outsideActiveMs
+)}
+
+</div>
+
 
 ${lines}
 
