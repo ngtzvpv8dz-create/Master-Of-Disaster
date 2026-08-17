@@ -965,21 +965,7 @@ button {
   DIREKT UNTER DEM TAGESKOPF
 */
 
-.archive-day-header::after {
-  content: "";
 
-  position: absolute;
-
-  left: 12px;
-  top: 100%;
-
-  width: 1px;
-  height: 7px;
-
-  background: #34414a;
-
-  opacity: .75;
-}
 .archive-task {
   position: relative;
 
@@ -1044,8 +1030,9 @@ button {
   position: absolute;
 
   left: -13px;
-  top: -6px;
-  bottom: -6px;
+
+  top: -5px;
+  bottom: -5px;
 
   width: 1px;
 
@@ -1053,7 +1040,7 @@ button {
 
   opacity: .75;
 }
-
+  
 /*
   BEI DER LETZTEN AUFGABE
   ENDET DIE SENKRECHTE LINIE
@@ -1062,9 +1049,9 @@ button {
 
 .archive-task:last-child::after {
   bottom: auto;
-  height: 21px;
+  height: 20px;
 }
-
+  
 .archive-task .archive-number {
   width: 39px;
 
