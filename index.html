@@ -6559,6 +6559,98 @@ deploymentDays > 0
 ? activeTotalMs / deploymentDays
 : 0;
 
+/*
+  ZUSATZGEWICHT GESAMT
+*/
+
+const weightDates =
+[
+...new Set(
+weightPhases
+.map(
+phase =>
+phase.date
+)
+.filter(Boolean)
+)
+];
+
+
+let totalWeightMs =
+0;
+
+
+let activeWithWeightMs =
+0;
+
+
+const weightByKg =
+{};
+
+
+weightDates.forEach(
+dateKey => {
+
+const summary =
+getWeightSummaryForDate(
+dateKey,
+false
+);
+
+
+const overlap =
+getWeightTaskOverlapForDate(
+dateKey
+);
+
+
+totalWeightMs +=
+summary.totalMs;
+
+
+activeWithWeightMs +=
+overlap.activeWithWeightMs;
+
+
+Object.entries(
+summary.byWeight
+)
+.forEach(
+entry => {
+
+const kg =
+entry[0];
+
+const duration =
+entry[1];
+
+
+if (
+!weightByKg[kg]
+) {
+
+weightByKg[kg] =
+0;
+
+}
+
+
+weightByKg[kg] +=
+duration;
+
+}
+);
+
+}
+);
+
+
+const weightOutsideActiveMs =
+Math.max(
+0,
+totalWeightMs -
+activeWithWeightMs
+);
 
 const wrapper =
 document.createElement(
@@ -6683,6 +6775,61 @@ PRO EINSATZTAG
 
 </div>
 
+<div class="statistics-card wide">
+
+<div class="statistics-label">
+🏋️ ZUSATZGEWICHT · GESAMT
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+totalWeightMs
+)}
+</div>
+
+<div class="statistics-sub">
+GESAMTE DOKUMENTIERTE TRAGEZEIT
+</div>
+
+</div>
+
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+🏋️ AKTIV MIT GEWICHT
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+activeWithWeightMs
+)}
+</div>
+
+<div class="statistics-sub">
+WÄHREND AKTIVER AUFGABEN
+</div>
+
+</div>
+
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+🛋️ AUSSERHALB
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+weightOutsideActiveMs
+)}
+</div>
+
+<div class="statistics-sub">
+TRAGEZEIT AUSSERHALB AKTIVER AUFGABEN
+</div>
+
+</div>
 
 </div>
 `;
@@ -6691,6 +6838,73 @@ PRO EINSATZTAG
 container.appendChild(
 wrapper
 );
+
+  const weightEntries =
+Object.entries(
+weightByKg
+)
+.sort(
+(a,b) =>
+Number(a[0]) -
+Number(b[0])
+);
+
+
+if (
+weightEntries.length > 0
+) {
+
+const weightSection =
+document.createElement(
+"div"
+);
+
+
+weightSection.innerHTML = `
+
+<div class="statistics-section-title">
+🏋️ GEWICHTSSTUFEN
+</div>
+
+<div class="statistics-grid">
+
+${weightEntries
+.map(
+entry => `
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+${formatWeight(
+entry[0]
+)} KG
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+entry[1]
+)}
+</div>
+
+<div class="statistics-sub">
+TRAGEZEIT
+</div>
+
+</div>
+
+`
+)
+.join("")}
+
+</div>
+`;
+
+
+container.appendChild(
+weightSection
+);
+
+}
 
 }
 
