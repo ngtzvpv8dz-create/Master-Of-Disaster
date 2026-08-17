@@ -2471,6 +2471,13 @@ task.completedAt,
 activeDurationMs:
 task.activeDurationMs,
 
+activeSegments:
+Array.isArray(
+task.activeSegments
+)
+? task.activeSegments
+: [],
+
 completedDate:
 getBerlinDateKeyFromISO(
 task.completedAt
@@ -3444,6 +3451,32 @@ new Date()
 .toISOString();
 
 
+if (
+Array.isArray(
+task.activeSegments
+) &&
+task.activeSegments.length
+) {
+
+const segment =
+task.activeSegments[
+task.activeSegments.length - 1
+];
+
+
+if (
+segment &&
+!segment.endedAt
+) {
+
+segment.endedAt =
+task.pausedAt;
+
+}
+
+}
+
+
 saveTasks();
 
 render();
@@ -3483,8 +3516,32 @@ task.status =
 "running";
 
 
-saveTasks();
+if (
+!Array.isArray(
+task.activeSegments
+)
+) {
 
+task.activeSegments =
+[];
+
+}
+
+
+task.activeSegments.push({
+
+startedAt:
+new Date(now)
+.toISOString(),
+
+endedAt:
+null
+
+});
+
+
+saveTasks();
+  
 render();
 
 }
@@ -3572,6 +3629,33 @@ task.status =
 task.completedAt =
 new Date(now)
 .toISOString();
+
+
+if (
+Array.isArray(
+task.activeSegments
+) &&
+task.activeSegments.length
+) {
+
+const segment =
+task.activeSegments[
+task.activeSegments.length - 1
+];
+
+
+if (
+segment &&
+!segment.endedAt
+) {
+
+segment.endedAt =
+task.completedAt;
+
+}
+
+}
+
 
 task.pausedAt =
 null;
