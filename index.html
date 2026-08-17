@@ -8,6 +8,7 @@
 <title>Master of Disaster</title>
 
 <style>
+
 * {
   box-sizing: border-box;
 }
@@ -266,8 +267,6 @@ h1 {
   width: 30px;
   height: 30px;
 
-  flex-shrink: 0;
-
   border: 1px solid #30363b;
   border-radius: 8px;
 
@@ -322,8 +321,6 @@ h1 {
 }
 
 .weight-action-button {
-  flex-shrink: 0;
-
   min-width: 108px;
 
   padding: 10px 11px;
@@ -349,7 +346,6 @@ h1 {
 
 .weight-edit-area {
   margin-top: 12px;
-
   padding-top: 10px;
 
   border-top: 1px solid #292f34;
@@ -390,17 +386,6 @@ h1 {
   font-weight: 900;
 
   cursor: pointer;
-}
-
-.weight-history {
-  margin-top: 10px;
-
-  font-size: 8px;
-  color: #6d777d;
-}
-
-.weight-live-duration {
-  color: #94aab8;
 }
 
 /* SECTIONS */
@@ -583,7 +568,7 @@ h1 {
   color: #ad6666;
 }
 
-/* BUTTONS */
+/* ICONS */
 
 button {
   font-family: inherit;
@@ -596,7 +581,6 @@ button {
   gap: 4px;
 
   margin-top: 5px;
-
   flex-wrap: nowrap;
 }
 
@@ -621,10 +605,6 @@ button {
   font-size: 13px;
 
   cursor: pointer;
-}
-
-.icon-action:active {
-  transform: scale(0.93);
 }
 
 .start-button {
@@ -654,7 +634,6 @@ button {
 
 .filter-today-action {
   margin-left: auto;
-  flex-shrink: 0;
 }
 
 .repeat-button {
@@ -667,8 +646,6 @@ button {
   border-radius: 8px;
 
   background: #0e1113;
-
-  font-size: 14px;
 
   cursor: pointer;
 }
@@ -688,7 +665,6 @@ button {
 .today-progress {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
 
   font-size: 11px;
   font-weight: 900;
@@ -706,7 +682,6 @@ button {
   background: #252b2f;
 
   border-radius: 20px;
-
   overflow: hidden;
 }
 
@@ -714,11 +689,7 @@ button {
   height: 100%;
 
   background: #b8c3ca;
-
-  transition: width 0.25s ease;
 }
-
-/* NEXT */
 
 .next-task-panel {
   padding: 13px;
@@ -752,8 +723,6 @@ button {
 }
 
 .next-task-number {
-  flex-shrink: 0;
-
   font-size: 10px;
   font-weight: 900;
 
@@ -761,25 +730,20 @@ button {
 }
 
 .next-task-status {
-  flex-shrink: 0;
-
   font-size: 19px;
 }
 
 .next-task-name {
   flex: 1;
-  min-width: 0;
 
   font-size: 17px;
   font-weight: 800;
-
-  word-break: break-word;
 }
 
 .next-task-empty {
-  color: #687780;
-
   font-size: 13px;
+
+  color: #687780;
 }
 
 /* DRAG */
@@ -806,12 +770,10 @@ button {
 
   touch-action: none;
   user-select: none;
-  -webkit-user-select: none;
 }
 
 .dragging {
   opacity: 0.4;
-  transform: scale(0.985);
 }
 
 .drag-target {
@@ -822,7 +784,6 @@ button {
 
 .edit-area {
   flex: 1;
-  min-width: 0;
 }
 
 .edit-input {
@@ -835,8 +796,6 @@ button {
 
   background: #0d1012;
   color: white;
-
-  outline: none;
 
   font-size: 15px;
 }
@@ -864,8 +823,6 @@ button {
   color: #d8dde0;
 
   font-weight: 800;
-
-  cursor: pointer;
 }
 
 /* EMPTY */
@@ -887,7 +844,7 @@ button {
 
 .archive-summary {
   padding: 14px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 
   background: #171b1f;
 
@@ -895,52 +852,116 @@ button {
   border-radius: 14px;
 }
 
-.archive-summary-title {
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
+.archive-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 8px;
 
-  color: #84929b;
+  margin-top: 10px;
 }
 
-.archive-summary-number {
+.archive-stat {
+  padding: 9px;
+
+  background: #111416;
+
+  border: 1px solid #292f33;
+  border-radius: 10px;
+}
+
+.archive-stat-label {
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .8px;
+
+  color: #68757d;
+}
+
+.archive-stat-value {
+  margin-top: 4px;
+
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.archive-day {
+  margin-bottom: 27px;
+}
+
+.archive-day-header {
+  padding: 12px;
+  margin-bottom: 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #182027,
+      #121719
+    );
+
+  border: 1px solid #34414a;
+  border-radius: 13px;
+}
+
+.archive-day-title {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+
+  color: #a8b5bd;
+}
+
+.archive-day-meta {
   margin-top: 5px;
 
-  font-size: 22px;
+  font-size: 9px;
+  font-weight: 800;
+
+  color: #71828d;
+}
+
+.archive-weight-box {
+  margin-top: 9px;
+  padding-top: 8px;
+
+  border-top: 1px solid #2c353a;
+}
+
+.archive-weight-total {
+  font-size: 9px;
   font-weight: 900;
+
+  color: #a6b477;
+}
+
+.archive-weight-line {
+  margin-top: 4px;
+
+  font-size: 8px;
+
+  color: #7e8b68;
 }
 
 .archive-task {
-  opacity: 0.72;
+  opacity: .72;
 }
 
 .archive-number {
   width: 48px;
   flex-shrink: 0;
 
-  font-size: 10px;
-  font-weight: 900;
-
   text-align: center;
 
-  color: #8ba0ad;
-}
-
-.archive-date-heading {
-  margin: 20px 3px 9px;
-
   font-size: 10px;
   font-weight: 900;
-  letter-spacing: 1.3px;
 
-  color: #74818a;
+  color: #8ba0ad;
 }
 
 /* DEV */
 
 .dev-panel {
   margin-top: 30px;
-
   padding: 13px;
 
   border: 1px dashed #5d4545;
@@ -950,34 +971,23 @@ button {
 }
 
 .dev-title {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 
   font-size: 9px;
   font-weight: 900;
-  letter-spacing: 1.3px;
 
   color: #b97e7e;
 }
 
-.dev-description {
-  margin-bottom: 11px;
-
-  font-size: 10px;
-  line-height: 1.4;
-
-  color: #806f6f;
-}
-
 .dev-buttons {
   display: flex;
-  gap: 7px;
-
   flex-wrap: wrap;
+  gap: 7px;
 }
 
 .dev-button {
   flex: 1;
-  min-width: 135px;
+  min-width: 130px;
 
   padding: 9px;
 
@@ -989,8 +999,6 @@ button {
 
   font-size: 9px;
   font-weight: 900;
-
-  cursor: pointer;
 }
 
 /* MODAL */
@@ -1005,7 +1013,7 @@ button {
 
   padding: 20px;
 
-  background: rgba(0,0,0,0.72);
+  background: rgba(0,0,0,.72);
 
   z-index: 1000;
 }
@@ -1023,15 +1031,11 @@ button {
 }
 
 .modal h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
+  margin-top: 0;
 }
 
 .modal p {
-  margin: 0 0 20px;
-
   color: #9ba3a9;
-  line-height: 1.4;
 }
 
 .modal-actions {
@@ -1048,8 +1052,6 @@ button {
   border-radius: 10px;
 
   font-weight: 800;
-
-  cursor: pointer;
 }
 
 .cancel-modal {
@@ -1067,56 +1069,6 @@ button {
   color: white;
 }
 
-@media (max-width: 390px) {
-
-  body {
-    padding-left: 9px;
-    padding-right: 9px;
-  }
-
-  .tabs-wrapper {
-    margin-left: -9px;
-    margin-right: -9px;
-
-    padding-left: 9px;
-    padding-right: 9px;
-  }
-
-  .task {
-    padding: 7px 6px;
-  }
-
-  .task-number {
-    width: 22px;
-  }
-
-  .status-symbol {
-    width: 20px;
-    font-size: 16px;
-  }
-
-  .task-text {
-    font-size: 14px;
-  }
-
-  .icon-action {
-    width: 29px;
-    height: 29px;
-
-    flex-basis: 29px;
-
-    font-size: 12px;
-  }
-
-  .weight-main {
-    align-items: flex-end;
-  }
-
-  .weight-action-button {
-    min-width: 96px;
-  }
-
-}
 </style>
 </head>
 
@@ -1126,9 +1078,7 @@ button {
 
 <header class="header">
 
-<h1>
-MASTER OF DISASTER
-</h1>
+<h1>MASTER OF DISASTER</h1>
 
 <div class="eyebrow">
 WEEK-AND-END-TO-DO-DINGSI
@@ -1177,18 +1127,15 @@ ARCHIV
 <section class="input-panel" id="inputPanel">
 
 <input
-type="text"
 id="taskInput"
+type="text"
 placeholder="Was steht an?"
 autocomplete="off"
 >
 
-
 <div class="option-row">
 
-<span class="option-label">
-PRIORITÄT
-</span>
+<span class="option-label">PRIORITÄT</span>
 
 <button
 id="newPriorityNormal"
@@ -1219,9 +1166,7 @@ onclick="setNewPriority('high')"
 
 <div class="option-row">
 
-<span class="option-label">
-OPTIONAL
-</span>
+<span class="option-label">OPTIONAL</span>
 
 <button
 id="newOptionalButton"
@@ -1236,9 +1181,7 @@ onclick="toggleNewOptional()"
 
 <div class="option-row">
 
-<span class="option-label">
-FÄLLIG
-</span>
+<span class="option-label">FÄLLIG</span>
 
 <button
 id="newDueNone"
@@ -1267,7 +1210,10 @@ onclick="setNewDue('deadline')"
 </div>
 
 
-<button class="add-button" onclick="addTask()">
+<button
+class="add-button"
+onclick="addTask()"
+>
 + AUFGABE HINZUFÜGEN
 </button>
 
@@ -1286,9 +1232,9 @@ onclick="setNewDue('deadline')"
 
 <script>
 
-/* =========================
-   AKTIVE AUFGABEN
-========================= */
+/* ======================================
+   DATEN
+====================================== */
 
 let tasks =
 JSON.parse(
@@ -1297,10 +1243,6 @@ localStorage.getItem(
 )
 ) || [];
 
-
-/* =========================
-   ARCHIV
-========================= */
 
 let archive =
 JSON.parse(
@@ -1318,10 +1260,6 @@ localStorage.getItem(
 ) || 1;
 
 
-/* =========================
-   ZUSATZGEWICHT
-========================= */
-
 let weightState =
 JSON.parse(
 localStorage.getItem(
@@ -1329,17 +1267,13 @@ localStorage.getItem(
 )
 ) || {
 
-currentWeightKg:
-12.3,
+currentWeightKg: 12.3,
 
-isWearing:
-false,
+isWearing: false,
 
-currentPhaseStartedAt:
-null,
+currentPhaseStartedAt: null,
 
-currentPhaseWeightKg:
-null
+currentPhaseWeightKg: null
 
 };
 
@@ -1352,17 +1286,14 @@ localStorage.getItem(
 ) || [];
 
 
-let editingWeight =
-false;
-
-
-/* ========================= */
-
 let currentTab =
 "all";
 
 let editingTaskId =
 null;
+
+let editingWeight =
+false;
 
 let newTaskPriority =
 "normal";
@@ -1377,9 +1308,12 @@ let dragState =
 null;
 
 
-/* MIGRATION */
+/* ======================================
+   MIGRATION
+====================================== */
 
-tasks = tasks.map(task => {
+tasks =
+tasks.map(task => {
 
 if (!task.status) {
 
@@ -1457,9 +1391,9 @@ return task;
 });
 
 
-/* =========================
+/* ======================================
    SPEICHERN
-========================= */
+====================================== */
 
 function saveTasks() {
 
@@ -1493,17 +1427,13 @@ function saveWeight() {
 
 localStorage.setItem(
 "masterOfDisasterWeightState",
-JSON.stringify(
-weightState
-)
+JSON.stringify(weightState)
 );
 
 
 localStorage.setItem(
 "masterOfDisasterWeightPhases",
-JSON.stringify(
-weightPhases
-)
+JSON.stringify(weightPhases)
 );
 
 }
@@ -1512,23 +1442,22 @@ weightPhases
 function saveAll() {
 
 saveTasks();
-
 saveArchive();
-
 saveWeight();
 
 }
 
 
-/* =========================
-   DATUM / ZEIT
-========================= */
+/* ======================================
+   DATUM
+====================================== */
 
 function getBerlinDateKey(
 date = new Date()
 ) {
 
-return new Intl.DateTimeFormat(
+return new Intl
+.DateTimeFormat(
 "en-CA",
 {
 timeZone:
@@ -1543,16 +1472,13 @@ month:
 day:
 "2-digit"
 }
-).format(
-date
-);
+)
+.format(date);
 
 }
 
 
-function getBerlinDateKeyFromISO(
-value
-) {
+function getBerlinDateKeyFromISO(value) {
 
 if (!value) {
 return null;
@@ -1568,7 +1494,9 @@ Number.isNaN(
 date.getTime()
 )
 ) {
+
 return null;
+
 }
 
 
@@ -1584,7 +1512,7 @@ dateKey,
 days
 ) {
 
-const parts =
+const p =
 dateKey
 .split("-")
 .map(Number);
@@ -1593,9 +1521,9 @@ dateKey
 const date =
 new Date(
 Date.UTC(
-parts[0],
-parts[1] - 1,
-parts[2] + days,
+p[0],
+p[1] - 1,
+p[2] + days,
 12
 )
 );
@@ -1606,25 +1534,275 @@ date.getUTCFullYear() +
 "-" +
 String(
 date.getUTCMonth() + 1
-).padStart(
-2,
-"0"
-) +
+).padStart(2,"0") +
 "-" +
 String(
 date.getUTCDate()
-).padStart(
-2,
-"0"
+).padStart(2,"0")
+);
+
+}
+
+
+function createTestISOForBerlinDate(
+dateKey,
+hour = 12,
+minute = 0
+) {
+
+const p =
+dateKey
+.split("-")
+.map(Number);
+
+
+return new Date(
+Date.UTC(
+p[0],
+p[1] - 1,
+p[2],
+hour,
+minute,
+0
+)
+).toISOString();
+
+}
+
+
+/* ======================================
+   FORMAT
+====================================== */
+
+function escapeHtml(text) {
+
+const div =
+document.createElement(
+"div"
+);
+
+
+div.textContent =
+text;
+
+
+return div.innerHTML;
+
+}
+
+
+function formatDuration(ms) {
+
+if (
+ms === null ||
+typeof ms ===
+"undefined"
+) {
+
+return "";
+
+}
+
+
+const total =
+Math.floor(
+ms / 1000
+);
+
+
+const h =
+Math.floor(
+total / 3600
+);
+
+
+const m =
+Math.floor(
+(total % 3600) /
+60
+);
+
+
+const s =
+total % 60;
+
+
+return (
+String(h).padStart(2,"0") +
+":" +
+String(m).padStart(2,"0") +
+":" +
+String(s).padStart(2,"0")
+);
+
+}
+
+
+function formatWeight(value) {
+
+return Number(value)
+.toFixed(1)
+.replace(
+".",
+","
+);
+
+}
+
+
+function formatTimeOnly(value) {
+
+if (!value) {
+return "";
+}
+
+
+return new Date(value)
+.toLocaleTimeString(
+"de-DE",
+{
+timeZone:
+"Europe/Berlin",
+
+hour:
+"2-digit",
+
+minute:
+"2-digit",
+
+second:
+"2-digit"
+}
+) +
+" UHR";
+
+}
+
+
+function formatDateTime(
+value,
+label
+) {
+
+if (!value) {
+return "";
+}
+
+
+const date =
+new Date(value);
+
+
+return (
+label +
+" · " +
+date.toLocaleDateString(
+"de-DE",
+{
+timeZone:
+"Europe/Berlin"
+}
+) +
+" · " +
+date.toLocaleTimeString(
+"de-DE",
+{
+timeZone:
+"Europe/Berlin",
+
+hour:
+"2-digit",
+
+minute:
+"2-digit",
+
+second:
+"2-digit"
+}
+) +
+" UHR"
+);
+
+}
+
+
+function formatArchiveDate(dateKey) {
+
+if (!dateKey) {
+return "UNBEKANNT";
+}
+
+
+const p =
+dateKey.split("-");
+
+
+return (
+p[2] +
+"." +
+p[1] +
+"." +
+p[0]
+);
+
+}
+
+
+function formatArchiveDayHeading(
+dateKey
+) {
+
+if (!dateKey) {
+return "DATUM UNBEKANNT";
+}
+
+
+const p =
+dateKey
+.split("-")
+.map(Number);
+
+
+const date =
+new Date(
+Date.UTC(
+p[0],
+p[1] - 1,
+p[2],
+12
+)
+);
+
+
+const weekday =
+new Intl.DateTimeFormat(
+"de-DE",
+{
+weekday:
+"long",
+
+timeZone:
+"Europe/Berlin"
+}
+)
+.format(date)
+.toUpperCase();
+
+
+return (
+weekday +
+" · " +
+formatArchiveDate(
+dateKey
 )
 );
 
 }
 
 
-/* =========================
-   ZUSATZGEWICHT LOGIK
-========================= */
+/* ======================================
+   ZUSATZGEWICHT
+====================================== */
 
 function startWeightPhase() {
 
@@ -1667,7 +1845,9 @@ if (
 !weightState.isWearing ||
 !weightState.currentPhaseStartedAt
 ) {
+
 return;
+
 }
 
 
@@ -1760,26 +1940,20 @@ return;
 }
 
 
-const normalized =
+const value =
+Number(
 String(
 input.value
 )
 .replace(
 ",",
 "."
-);
-
-
-const value =
-Number(
-normalized
+)
 );
 
 
 if (
-!Number.isFinite(
-value
-) ||
+!Number.isFinite(value) ||
 value <= 0
 ) {
 
@@ -1792,15 +1966,6 @@ return;
 
 }
 
-
-/*
-  WENN DAS GEWICHT GERADE
-  GETRAGEN WIRD UND SICH DIE
-  GEWICHTSSTUFE ÄNDERT:
-
-  ALTE PHASE BEENDEN
-  → NEUE PHASE STARTEN
-*/
 
 if (
 weightState.isWearing &&
@@ -1846,7 +2011,9 @@ if (
 !weightState.isWearing ||
 !weightState.currentPhaseStartedAt
 ) {
+
 return 0;
+
 }
 
 
@@ -1861,19 +2028,7 @@ weightState.currentPhaseStartedAt
 }
 
 
-function getTodayFinishedWeightDurationMs() {
-
-const today =
-getBerlinDateKey();
-
-
-return weightPhases
-.filter(
-phase =>
-phase.date === today
-)
-.reduce(
-(sum, phase) => {
+function phaseDurationMs(phase) {
 
 const start =
 new Date(
@@ -1891,51 +2046,159 @@ if (
 Number.isNaN(start) ||
 Number.isNaN(end)
 ) {
-return sum;
+
+return 0;
+
 }
 
 
-return sum +
-Math.max(
+return Math.max(
 0,
 end - start
 );
 
-},
-0
+}
+
+
+function getWeightPhasesForDate(
+dateKey,
+includeCurrent = false
+) {
+
+const phases =
+weightPhases.filter(
+phase =>
+phase.date ===
+dateKey
 );
+
+
+if (
+includeCurrent &&
+weightState.isWearing &&
+getBerlinDateKeyFromISO(
+weightState.currentPhaseStartedAt
+) === dateKey
+) {
+
+phases.push({
+
+id:
+"current",
+
+weightKg:
+Number(
+weightState.currentPhaseWeightKg
+),
+
+startedAt:
+weightState.currentPhaseStartedAt,
+
+endedAt:
+new Date()
+.toISOString(),
+
+date:
+dateKey,
+
+temporary:
+true
+
+});
+
+}
+
+
+return phases;
+
+}
+
+
+function getWeightSummaryForDate(
+dateKey,
+includeCurrent = false
+) {
+
+const phases =
+getWeightPhasesForDate(
+dateKey,
+includeCurrent
+);
+
+
+const byWeight =
+{};
+
+
+let totalMs =
+0;
+
+
+phases.forEach(
+phase => {
+
+const duration =
+phaseDurationMs(
+phase
+);
+
+
+totalMs +=
+duration;
+
+
+const key =
+String(
+Number(
+phase.weightKg
+)
+);
+
+
+if (!byWeight[key]) {
+
+byWeight[key] =
+0;
+
+}
+
+
+byWeight[key] +=
+duration;
+
+}
+);
+
+
+return {
+
+totalMs:
+totalMs,
+
+byWeight:
+byWeight,
+
+phases:
+phases
+
+};
 
 }
 
 
 function getTodayWeightDurationMs() {
 
-let total =
-getTodayFinishedWeightDurationMs();
-
-
-if (
-weightState.isWearing &&
-getBerlinDateKeyFromISO(
-weightState.currentPhaseStartedAt
-) ===
-getBerlinDateKey()
-) {
-
-total +=
-getCurrentWeightDurationMs();
+return getWeightSummaryForDate(
+getBerlinDateKey(),
+true
+).totalMs;
 
 }
 
 
-return total;
-
-}
-
-
-/* =========================
+/* ======================================
    WEIGHT PANEL
-========================= */
+====================================== */
 
 function renderWeightPanel() {
 
@@ -1983,15 +2246,9 @@ panel.classList.add(
 }
 
 
-let editArea =
-"";
-
-
-if (
+const editArea =
 editingWeight
-) {
-
-editArea = `
+? `
 
 <div class="weight-edit-area">
 
@@ -2001,9 +2258,9 @@ editArea = `
 id="weightInput"
 class="weight-input"
 inputmode="decimal"
-value="${String(
+value="${formatWeight(
 weightState.currentWeightKg
-).replace(".",",")}"
+)}"
 >
 
 <button
@@ -2016,12 +2273,11 @@ SPEICHERN
 </div>
 
 </div>
-`;
+`
+: "";
 
-}
 
-
-const activeMeta =
+const meta =
 weightState.isWearing
 ? `
 
@@ -2031,16 +2287,12 @@ ${formatTimeOnly(
 weightState.currentPhaseStartedAt
 )}
 ·
-<span
-class="weight-live-duration"
-id="weightLiveDuration"
->
+<span id="weightLiveDuration">
 ${formatDuration(
 getCurrentWeightDurationMs()
 )}
 </span>
 </div>
-
 `
 : `
 
@@ -2050,7 +2302,6 @@ ${formatDuration(
 getTodayWeightDurationMs()
 )}
 </div>
-
 `;
 
 
@@ -2065,7 +2316,6 @@ ZUSATZGEWICHT
 <button
 class="weight-edit-button"
 onclick="toggleWeightEdit()"
-title="Gewicht ändern"
 >
 ✏️
 </button>
@@ -2082,11 +2332,13 @@ weightState.isWearing
 ? "on"
 : "off"
 }">
+
 ${
 weightState.isWearing
 ? "● ANGELEGT"
 : "○ NICHT ANGELEGT"
 }
+
 </div>
 
 <div class="weight-value">
@@ -2095,7 +2347,7 @@ weightState.currentWeightKg
 )} kg
 </div>
 
-${activeMeta}
+${meta}
 
 </div>
 
@@ -2108,17 +2360,18 @@ weightState.isWearing
 }"
 onclick="toggleWeight()"
 >
+
 ${
 weightState.isWearing
 ? "ABLEGEN"
 : "ANLEGEN"
 }
+
 </button>
 
 </div>
 
 ${editArea}
-
 `;
 
 
@@ -2133,9 +2386,9 @@ panel
 }
 
 
-/* =========================
-   ARCHIVNUMMER
-========================= */
+/* ======================================
+   ARCHIVNUMMERN
+====================================== */
 
 function repairNextArchiveNumber() {
 
@@ -2168,13 +2421,11 @@ highest + 1;
 repairNextArchiveNumber();
 
 
-/* =========================
-   ARCHIV
-========================= */
+/* ======================================
+   ARCHIVIERUNG
+====================================== */
 
-function archiveCompletedTask(
-task
-) {
+function archiveCompletedTask(task) {
 
 archive.push({
 
@@ -2238,9 +2489,9 @@ nextArchiveNumber +=
 }
 
 
-/* =========================
+/* ======================================
    TAGESWECHSEL
-========================= */
+====================================== */
 
 function processDayTransition() {
 
@@ -2256,7 +2507,8 @@ const remaining =
 [];
 
 
-tasks.forEach(task => {
+tasks.forEach(
+task => {
 
 if (
 task.status ===
@@ -2309,7 +2561,8 @@ remaining.push(
 task
 );
 
-});
+}
+);
 
 
 if (changed) {
@@ -2331,9 +2584,9 @@ return changed;
 }
 
 
-/* =========================
+/* ======================================
    TABS
-========================= */
+====================================== */
 
 function switchTab(tab) {
 
@@ -2381,13 +2634,11 @@ render();
 }
 
 
-/* =========================
-   NEUE AUFGABE OPTIONEN
-========================= */
+/* ======================================
+   NEUE AUFGABE
+====================================== */
 
-function setNewPriority(
-priority
-) {
+function setNewPriority(priority) {
 
 newTaskPriority =
 priority;
@@ -2407,9 +2658,7 @@ updateNewOptions();
 }
 
 
-function setNewDue(
-mode
-) {
+function setNewDue(mode) {
 
 newTaskDueMode =
 mode;
@@ -2530,10 +2779,6 @@ updateNewOptions();
 }
 
 
-/* =========================
-   AUFGABE ANLEGEN
-========================= */
-
 function addTask() {
 
 const input =
@@ -2623,9 +2868,9 @@ render();
 }
 
 
-/* =========================
-   HEUTE
-========================= */
+/* ======================================
+   AUFGABEN
+====================================== */
 
 function getTask(id) {
 
@@ -2752,9 +2997,9 @@ index + 1;
 }
 
 
-/* =========================
+/* ======================================
    DRAG
-========================= */
+====================================== */
 
 function startTodayDrag(
 event,
@@ -2866,14 +3111,6 @@ return;
 }
 
 
-if (
-event.pointerId !==
-dragState.pointerId
-) {
-return;
-}
-
-
 const element =
 document.elementFromPoint(
 event.clientX,
@@ -2896,18 +3133,6 @@ dragState.id;
 dragState.card
 .classList.remove(
 "dragging"
-);
-
-
-document
-.querySelectorAll(
-".drag-target"
-)
-.forEach(
-item =>
-item.classList.remove(
-"drag-target"
-)
 );
 
 
@@ -3030,8 +3255,7 @@ document.addEventListener(
 "pointermove",
 moveTodayDrag,
 {
-passive:
-false
+passive:false
 }
 );
 
@@ -3042,15 +3266,9 @@ endTodayDrag
 );
 
 
-document.addEventListener(
-"pointercancel",
-endTodayDrag
-);
-
-
-/* =========================
-   PRIORITÄT ETC.
-========================= */
+/* ======================================
+   PRIORITÄT / FÄLLIG
+====================================== */
 
 function setPriority(
 id,
@@ -3134,9 +3352,9 @@ render();
 }
 
 
-/* =========================
+/* ======================================
    TIMER
-========================= */
+====================================== */
 
 function startTask(id) {
 
@@ -3164,7 +3382,7 @@ showInfoModal(
 "Schon eine Aufgabe aktiv",
 "Aktuell läuft bereits „" +
 running.text +
-"“. Pausiere oder beende sie zuerst."
+"“."
 );
 
 return;
@@ -3199,11 +3417,7 @@ const task =
 getTask(id);
 
 
-if (
-!task ||
-task.status !==
-"running"
-) {
+if (!task) {
 return;
 }
 
@@ -3229,35 +3443,8 @@ const task =
 getTask(id);
 
 
-if (
-!task ||
-task.status !==
-"paused"
-) {
+if (!task) {
 return;
-}
-
-
-const running =
-tasks.find(
-item =>
-item.status ===
-"running" &&
-item.id !== id
-);
-
-
-if (running) {
-
-showInfoModal(
-"Schon eine Aufgabe aktiv",
-"Aktuell läuft bereits „" +
-running.text +
-"“. Pausiere oder beende sie zuerst."
-);
-
-return;
-
 }
 
 
@@ -3349,15 +3536,7 @@ const task =
 getTask(id);
 
 
-if (
-!task ||
-![
-"running",
-"paused"
-].includes(
-task.status
-)
-) {
+if (!task) {
 return;
 }
 
@@ -3393,9 +3572,9 @@ render();
 }
 
 
-/* =========================
+/* ======================================
    ABBRUCH
-========================= */
+====================================== */
 
 function askAbort(id) {
 
@@ -3414,10 +3593,7 @@ document
 )
 .innerHTML = `
 
-<div
-class="modal-backdrop"
-onclick="closeModalOnBackdrop(event)"
->
+<div class="modal-backdrop">
 
 <div class="modal">
 
@@ -3427,7 +3603,7 @@ Aufgabe abbrechen?
 
 <p>
 „${escapeHtml(task.text)}“
-wird als abgebrochen markiert.
+wird abgebrochen.
 </p>
 
 <div class="modal-actions">
@@ -3467,29 +3643,12 @@ return;
 }
 
 
-const now =
-Date.now();
-
-
-task.abortedActiveDurationMs =
-task.startedAt
-? calculateActiveDuration(
-task,
-now
-)
-: null;
-
-
 task.status =
 "aborted";
 
 task.abortedAt =
-new Date(now)
+new Date()
 .toISOString();
-
-task.pausedAt =
-null;
-
 
 task.todayDate =
 null;
@@ -3497,8 +3656,6 @@ null;
 task.todayOrder =
 null;
 
-
-normalizeTodayOrder();
 
 closeModal();
 
@@ -3509,9 +3666,9 @@ render();
 }
 
 
-/* =========================
-   WIEDERHOLEN
-========================= */
+/* ======================================
+   WIEDERHOLEN / LÖSCHEN / EDIT
+====================================== */
 
 function repeatTask(id) {
 
@@ -3526,28 +3683,13 @@ return;
 
 tasks.push({
 
+...old,
+
 id:
 Date.now(),
 
-text:
-old.text,
-
 status:
 "open",
-
-priority:
-old.priority ||
-"normal",
-
-optional:
-old.optional ||
-false,
-
-dueMode:
-"none",
-
-dueDate:
-null,
 
 todayDate:
 null,
@@ -3571,9 +3713,6 @@ activeDurationMs:
 null,
 
 abortedAt:
-null,
-
-abortedActiveDurationMs:
 null
 
 });
@@ -3586,30 +3725,10 @@ render();
 }
 
 
-/* =========================
-   BEARBEITEN
-========================= */
-
 function startEditing(id) {
-
-const task =
-getTask(id);
-
-
-if (
-!task ||
-task.status ===
-"completed" ||
-task.status ===
-"aborted"
-) {
-return;
-}
-
 
 editingTaskId =
 id;
-
 
 render();
 
@@ -3646,17 +3765,8 @@ return;
 }
 
 
-const text =
-input.value.trim();
-
-
-if (!text) {
-return;
-}
-
-
 task.text =
-text;
+input.value.trim();
 
 
 editingTaskId =
@@ -3670,20 +3780,7 @@ render();
 }
 
 
-/* =========================
-   LÖSCHEN
-========================= */
-
 function askDelete(id) {
-
-const task =
-getTask(id);
-
-
-if (!task) {
-return;
-}
-
 
 document
 .getElementById(
@@ -3691,10 +3788,7 @@ document
 )
 .innerHTML = `
 
-<div
-class="modal-backdrop"
-onclick="closeModalOnBackdrop(event)"
->
+<div class="modal-backdrop">
 
 <div class="modal">
 
@@ -3703,8 +3797,7 @@ Aufgabe löschen?
 </h2>
 
 <p>
-„${escapeHtml(task.text)}“
-wird endgültig gelöscht.
+Wirklich endgültig löschen?
 </p>
 
 <div class="modal-actions">
@@ -3713,7 +3806,7 @@ wird endgültig gelöscht.
 class="modal-button cancel-modal"
 onclick="closeModal()"
 >
-Abbrechen
+Zurück
 </button>
 
 <button
@@ -3742,8 +3835,6 @@ task.id !== id
 );
 
 
-normalizeTodayOrder();
-
 closeModal();
 
 saveTasks();
@@ -3753,9 +3844,9 @@ render();
 }
 
 
-/* =========================
+/* ======================================
    SYMBOLE
-========================= */
+====================================== */
 
 function prioritySymbol(priority) {
 
@@ -3830,42 +3921,20 @@ return "";
 }
 
 
-const today =
-getBerlinDateKey();
-
-
 if (
 task.dueMode ===
 "tomorrowOnly"
 ) {
-
-if (
-task.dueDate <= today
-) {
-return "";
-}
-
-
 return "💠";
-
 }
 
-
-if (
-task.dueMode ===
-"deadline"
-) {
 
 return (
-task.dueDate <= today
+task.dueDate <=
+getBerlinDateKey()
 ? "⚠️"
 : "🔷"
 );
-
-}
-
-
-return "";
 
 }
 
@@ -3884,21 +3953,15 @@ task.priority
 
 ${
 task.optional
-? `
-<span class="mini-flag">
-🟣
-</span>
-`
+? "<span class='mini-flag'>🟣</span>"
 : ""
 }
 
 ${
 dueSymbol(task)
-? `
-<span class="mini-flag">
-${dueSymbol(task)}
-</span>
-`
+? "<span class='mini-flag'>" +
+dueSymbol(task) +
+"</span>"
 : ""
 }
 
@@ -3907,10 +3970,6 @@ ${dueSymbol(task)}
 
 }
 
-
-/* =========================
-   FORMATIERUNG
-========================= */
 
 function dynamicNumber(task) {
 
@@ -3922,212 +3981,458 @@ task.id
 );
 
 
-if (
-index === -1
-) {
-return "";
-}
-
-
 const number =
 index + 1;
 
 
 return number < 10
 ? "0" + number
-: String(number);
+: number;
 
 }
 
 
-function escapeHtml(text) {
+/* ======================================
+   BUTTON
+====================================== */
 
-const div =
+function iconButton(
+icon,
+title,
+action,
+className = ""
+) {
+
+return `
+
+<button
+class="icon-action ${className}"
+title="${title}"
+onclick="${action}"
+>
+${icon}
+</button>
+`;
+
+}
+
+
+/* ======================================
+   TASK CARD
+====================================== */
+
+function taskCard(
+task,
+options = {}
+) {
+
+const {
+todayDrag = false,
+showTodayButton = false,
+compactOnly = false,
+filterTodayOnly = false
+} = options;
+
+
+const element =
 document.createElement(
 "div"
 );
 
 
-div.textContent =
-text;
+element.className =
+"task " +
+task.status;
 
-
-return div.innerHTML;
-
-}
-
-
-function formatDuration(ms) {
 
 if (
-ms === null ||
-typeof ms ===
-"undefined"
-) {
-return "";
-}
-
-
-const total =
-Math.floor(
-ms / 1000
-);
-
-
-const h =
-Math.floor(
-total / 3600
-);
-
-
-const m =
-Math.floor(
-(
-total % 3600
-) / 60
-);
-
-
-const s =
-total % 60;
-
-
-return (
-String(h).padStart(2,"0") +
-":" +
-String(m).padStart(2,"0") +
-":" +
-String(s).padStart(2,"0")
-);
-
-}
-
-
-function formatWeight(value) {
-
-return Number(
-value
+todayDrag &&
+![
+"completed",
+"aborted"
+].includes(
+task.status
 )
-.toFixed(1)
-.replace(
-".",
-","
+) {
+
+element.classList.add(
+"today-task-active"
 );
 
+element.dataset.id =
+task.id;
+
 }
 
 
-function formatTimeOnly(value) {
+if (
+editingTaskId ===
+task.id
+) {
 
-if (!value) {
-return "";
+element.innerHTML = `
+
+<div class="task-number">
+${dynamicNumber(task)}
+</div>
+
+<div class="edit-area">
+
+<input
+id="edit-${task.id}"
+class="edit-input"
+value="${escapeHtml(task.text)}"
+>
+
+<div class="edit-options">
+
+${editOptions(task)}
+
+</div>
+
+<div class="edit-actions">
+
+<button
+class="edit-button"
+onclick="saveEdit(${task.id})"
+>
+SPEICHERN
+</button>
+
+<button
+class="edit-button"
+onclick="cancelEditing()"
+>
+ABBRECHEN
+</button>
+
+</div>
+
+</div>
+`;
+
+
+return element;
+
 }
 
 
-return new Date(
-value
+let drag =
+"";
+
+
+if (
+todayDrag &&
+![
+"completed",
+"aborted"
+].includes(
+task.status
 )
-.toLocaleTimeString(
-"de-DE",
-{
-timeZone:
-"Europe/Berlin",
-
-hour:
-"2-digit",
-
-minute:
-"2-digit",
-
-second:
-"2-digit"
-}
-) +
-" UHR";
-
-}
-
-
-function formatDateTime(
-value,
-label
 ) {
 
-if (!value) {
-return "";
+drag = `
+
+<div
+class="drag-handle"
+onpointerdown="startTodayDrag(event,${task.id})"
+>
+≡
+</div>
+`;
+
 }
 
 
-const date =
-new Date(value);
+let meta =
+"";
 
 
-return (
-label +
-" · " +
-date.toLocaleDateString(
-"de-DE",
-{
-timeZone:
-"Europe/Berlin"
+if (
+task.status ===
+"running" ||
+task.status ===
+"paused"
+) {
+
+meta = `
+
+<div
+class="duration live-duration"
+data-task-id="${task.id}"
+>
+AKTIV ·
+${formatDuration(
+liveDuration(task)
+)}
+</div>
+`;
+
 }
-) +
-" · " +
-date.toLocaleTimeString(
-"de-DE",
-{
-timeZone:
-"Europe/Berlin",
 
-hour:
-"2-digit",
 
-minute:
-"2-digit",
+if (
+task.status ===
+"completed"
+) {
 
-second:
-"2-digit"
+meta = `
+
+<div class="task-meta">
+${formatDateTime(
+task.completedAt,
+"ERLEDIGT"
+)}
+</div>
+
+<div class="duration">
+DAUER ·
+${formatDuration(
+task.activeDurationMs
+)}
+</div>
+`;
+
 }
-) +
-" UHR"
+
+
+let filterTodayButton =
+"";
+
+
+if (
+filterTodayOnly
+) {
+
+filterTodayButton =
+iconButton(
+
+isTodayTask(task)
+? "📌"
+: "📅",
+
+"Zu Heute",
+
+`toggleToday(${task.id})`,
+
+isTodayTask(task)
+? "today-button selected"
+: "today-button"
+
 );
 
 }
 
 
-function formatArchiveDate(
-dateKey
+let actions =
+"";
+
+
+if (!compactOnly) {
+
+if (
+task.status ===
+"open"
 ) {
 
-if (!dateKey) {
-return "UNBEKANNT";
+actions = `
+
+<div class="icon-actions">
+
+${iconButton(
+"▶️",
+"Start",
+`startTask(${task.id})`,
+"start-button"
+)}
+
+${
+showTodayButton
+? filterTodayButton
+: ""
+}
+
+${iconButton(
+"✏️",
+"Bearbeiten",
+`startEditing(${task.id})`
+)}
+
+${iconButton(
+"🗑️",
+"Löschen",
+`askDelete(${task.id})`
+)}
+
+${iconButton(
+"❌",
+"Abbruch",
+`askAbort(${task.id})`,
+"abort-button"
+)}
+
+${
+todayDrag
+? iconButton(
+"➖",
+"Aus Heute",
+`toggleToday(${task.id})`,
+"today-button selected"
+)
+: ""
+}
+
+</div>
+`;
+
 }
 
 
-const parts =
-dateKey.split("-");
+if (
+task.status ===
+"running"
+) {
 
+actions = `
 
-return (
-parts[2] +
-"." +
-parts[1] +
-"." +
-parts[0]
-);
+<div class="icon-actions">
+
+${iconButton(
+"⏸️",
+"Pause",
+`pauseTask(${task.id})`,
+"pause-button"
+)}
+
+${iconButton(
+"✅",
+"Beenden",
+`finishTask(${task.id})`,
+"finish-button"
+)}
+
+${iconButton(
+"❌",
+"Abbruch",
+`askAbort(${task.id})`,
+"abort-button"
+)}
+
+</div>
+`;
 
 }
 
 
-/* =========================
+if (
+task.status ===
+"paused"
+) {
+
+actions = `
+
+<div class="icon-actions">
+
+${iconButton(
+"▶️",
+"Weiter",
+`resumeTask(${task.id})`,
+"start-button"
+)}
+
+${iconButton(
+"✅",
+"Beenden",
+`finishTask(${task.id})`,
+"finish-button"
+)}
+
+${iconButton(
+"❌",
+"Abbruch",
+`askAbort(${task.id})`,
+"abort-button"
+)}
+
+</div>
+`;
+
+}
+
+}
+
+
+element.innerHTML = `
+
+${drag}
+
+<div class="task-number">
+${dynamicNumber(task)}
+</div>
+
+<div class="status-symbol">
+${statusSymbol(task)}
+</div>
+
+<div class="task-content">
+
+<div class="task-main-row">
+
+<div class="task-text">
+${escapeHtml(
+task.text
+)}
+</div>
+
+${
+filterTodayOnly
+? filterTodayButton
+: ""
+}
+
+</div>
+
+${flags(task)}
+
+${meta}
+
+${actions}
+
+</div>
+
+${
+[
+"completed",
+"aborted"
+].includes(
+task.status
+)
+? `
+<button
+class="repeat-button"
+onclick="repeatTask(${task.id})"
+>
+🔁
+</button>
+`
+: ""
+}
+
+`;
+
+
+return element;
+
+}
+
+
+/* ======================================
    EDIT OPTIONEN
-========================= */
+====================================== */
 
 function editOptions(task) {
 
 return `
-
-<div class="edit-options">
 
 <div class="option-row">
 
@@ -4173,7 +4478,6 @@ onclick="setPriority(${task.id},'high')"
 
 </div>
 
-
 <div class="option-row">
 
 <span class="option-label">
@@ -4181,11 +4485,7 @@ OPTIONAL
 </span>
 
 <button
-class="option-button ${
-task.optional
-? "selected"
-: ""
-}"
+class="option-button"
 onclick="toggleOptional(${task.id})"
 >
 🟣 ${
@@ -4197,680 +4497,20 @@ task.optional
 
 </div>
 
-
-<div class="option-row">
-
-<span class="option-label">
-FÄLLIG
-</span>
-
-<button
-class="option-button ${
-task.dueMode ===
-"none"
-? "selected"
-: ""
-}"
-onclick="setDueMode(${task.id},'none')"
->
-—
-</button>
-
-<button
-class="option-button ${
-task.dueMode ===
-"tomorrowOnly"
-? "selected"
-: ""
-}"
-onclick="setDueMode(${task.id},'tomorrowOnly')"
->
-💠 MORGEN
-</button>
-
-<button
-class="option-button ${
-task.dueMode ===
-"deadline"
-? "selected"
-: ""
-}"
-onclick="setDueMode(${task.id},'deadline')"
->
-🔷 BIS MORGEN
-</button>
-
-</div>
-
-</div>
 `;
 
 }
 
 
-/* =========================
-   ICON
-========================= */
-
-function iconButton(
-icon,
-title,
-onclick,
-extraClass = ""
-) {
-
-return `
-<button
-class="icon-action ${extraClass}"
-onclick="${onclick}"
-title="${title}"
-aria-label="${title}"
->
-${icon}
-</button>
-`;
-
-}
-
-
-/* =========================
-   TASK CARD
-========================= */
-
-function taskCard(
-task,
-options = {}
-) {
-
-const {
-todayDrag = false,
-showTodayButton = false,
-compactOnly = false,
-filterTodayOnly = false
-} = options;
-
-
-const element =
-document.createElement(
-"div"
-);
-
-
-element.className =
-"task";
-
-
-if (
-task.status ===
-"running"
-) {
-element.classList.add(
-"running"
-);
-}
-
-
-if (
-task.status ===
-"paused"
-) {
-element.classList.add(
-"paused"
-);
-}
-
-
-if (
-task.status ===
-"completed"
-) {
-element.classList.add(
-"completed"
-);
-}
-
-
-if (
-task.status ===
-"aborted"
-) {
-element.classList.add(
-"aborted"
-);
-}
-
-
-if (
-todayDrag &&
-![
-"completed",
-"aborted"
-].includes(
-task.status
-)
-) {
-
-element.classList.add(
-"today-task-active"
-);
-
-element.dataset.id =
-task.id;
-
-}
-
-
-if (
-editingTaskId ===
-task.id
-) {
-
-element.innerHTML = `
-
-<div class="task-number">
-${dynamicNumber(task)}
-</div>
-
-<div class="status-symbol">
-${statusSymbol(task)}
-</div>
-
-<div class="edit-area">
-
-<input
-id="edit-${task.id}"
-class="edit-input"
-value="${escapeHtml(task.text)}"
->
-
-${editOptions(task)}
-
-<div class="edit-actions">
-
-<button
-class="edit-button"
-onclick="saveEdit(${task.id})"
->
-✓ SPEICHERN
-</button>
-
-<button
-class="edit-button"
-onclick="cancelEditing()"
->
-× ABBRECHEN
-</button>
-
-</div>
-
-</div>
-`;
-
-
-return element;
-
-}
-
-
-let leftDrag =
-"";
-
-
-if (
-todayDrag &&
-![
-"completed",
-"aborted"
-].includes(
-task.status
-)
-) {
-
-leftDrag = `
-
-<div
-class="drag-handle"
-onpointerdown="
-startTodayDrag(
-event,
-${task.id}
-)
-"
->
-≡
-</div>
-`;
-
-}
-
-
-let meta =
-"";
-
-
-if (
-task.status ===
-"running"
-) {
-
-meta = `
-
-<div class="status-meta">
-LÄUFT
-</div>
-
-<div
-class="duration live-duration"
-data-task-id="${task.id}"
->
-AKTIV ·
-${formatDuration(
-liveDuration(task)
-)}
-</div>
-`;
-
-}
-
-
-if (
-task.status ===
-"paused"
-) {
-
-meta = `
-
-<div class="status-meta">
-PAUSIERT
-</div>
-
-<div
-class="duration live-duration"
-data-task-id="${task.id}"
->
-AKTIV ·
-${formatDuration(
-liveDuration(task)
-)}
-</div>
-`;
-
-}
-
-
-if (
-task.status ===
-"completed"
-) {
-
-meta = `
-
-${
-task.completedAt
-? `
-<div class="task-meta">
-${formatDateTime(
-task.completedAt,
-"ERLEDIGT"
-)}
-</div>
-`
-: ""
-}
-
-${
-task.activeDurationMs !==
-null
-? `
-<div class="duration">
-DAUER ·
-${formatDuration(
-task.activeDurationMs
-)}
-</div>
-`
-: ""
-}
-`;
-
-}
-
-
-if (
-task.status ===
-"aborted"
-) {
-
-meta = `
-
-${
-task.abortedAt
-? `
-<div class="abort-meta">
-${formatDateTime(
-task.abortedAt,
-"ABGEBROCHEN"
-)}
-</div>
-`
-: ""
-}
-
-${
-task.abortedActiveDurationMs !==
-null
-? `
-<div class="duration">
-AKTIV BIS ABBRUCH ·
-${formatDuration(
-task.abortedActiveDurationMs
-)}
-</div>
-`
-: ""
-}
-`;
-
-}
-
-
-let filterTodayAction =
-"";
-
-
-if (
-filterTodayOnly &&
-![
-"completed",
-"aborted"
-].includes(
-task.status
-)
-) {
-
-filterTodayAction = `
-
-<div class="filter-today-action">
-
-${iconButton(
-
-isTodayTask(task)
-? "📌"
-: "📅",
-
-isTodayTask(task)
-? "Aus Heute entfernen"
-: "Zu Heute hinzufügen",
-
-`toggleToday(${task.id})`,
-
-isTodayTask(task)
-? "today-button selected"
-: "today-button"
-
-)}
-
-</div>
-`;
-
-}
-
-
-let actions =
-"";
-
-
-if (!compactOnly) {
-
-if (
-task.status ===
-"open"
-) {
-
-actions = `
-
-<div class="icon-actions">
-
-${iconButton(
-"▶️",
-"Starten",
-`startTask(${task.id})`,
-"start-button"
-)}
-
-${
-showTodayButton
-? iconButton(
-
-isTodayTask(task)
-? "📌"
-: "📅",
-
-isTodayTask(task)
-? "Ist im heutigen Aufgabenblock"
-: "Für heute auswählen",
-
-`toggleToday(${task.id})`,
-
-isTodayTask(task)
-? "today-button selected"
-: "today-button"
-
-)
-: ""
-}
-
-${iconButton(
-"✏️",
-"Bearbeiten",
-`startEditing(${task.id})`
-)}
-
-${iconButton(
-"🗑️",
-"Löschen",
-`askDelete(${task.id})`
-)}
-
-${iconButton(
-"❌",
-"Abbrechen",
-`askAbort(${task.id})`,
-"abort-button"
-)}
-
-${
-todayDrag &&
-isTodayTask(task)
-? iconButton(
-"➖",
-"Aus Heute entfernen",
-`toggleToday(${task.id})`,
-"today-button selected"
-)
-: ""
-}
-
-</div>
-`;
-
-}
-
-
-if (
-task.status ===
-"running"
-) {
-
-actions = `
-
-<div class="icon-actions">
-
-${iconButton(
-"⏸️",
-"Pausieren",
-`pauseTask(${task.id})`,
-"pause-button"
-)}
-
-${iconButton(
-"✅",
-"Beenden",
-`finishTask(${task.id})`,
-"finish-button"
-)}
-
-${iconButton(
-"❌",
-"Abbrechen",
-`askAbort(${task.id})`,
-"abort-button"
-)}
-
-${
-todayDrag &&
-isTodayTask(task)
-? iconButton(
-"➖",
-"Aus Heute entfernen",
-`toggleToday(${task.id})`,
-"today-button selected"
-)
-: ""
-}
-
-</div>
-`;
-
-}
-
-
-if (
-task.status ===
-"paused"
-) {
-
-actions = `
-
-<div class="icon-actions">
-
-${iconButton(
-"▶️",
-"Fortsetzen",
-`resumeTask(${task.id})`,
-"start-button"
-)}
-
-${iconButton(
-"✅",
-"Beenden",
-`finishTask(${task.id})`,
-"finish-button"
-)}
-
-${iconButton(
-"❌",
-"Abbrechen",
-`askAbort(${task.id})`,
-"abort-button"
-)}
-
-${
-todayDrag &&
-isTodayTask(task)
-? iconButton(
-"➖",
-"Aus Heute entfernen",
-`toggleToday(${task.id})`,
-"today-button selected"
-)
-: ""
-}
-
-</div>
-`;
-
-}
-
-}
-
-
-const repeat =
-[
-"completed",
-"aborted"
-].includes(
-task.status
-)
-? `
-<button
-class="repeat-button"
-onclick="repeatTask(${task.id})"
-title="Wiederholen"
->
-🔁
-</button>
-`
-: "";
-
-
-element.innerHTML = `
-
-${leftDrag}
-
-<div class="task-number">
-${dynamicNumber(task)}
-</div>
-
-<div class="status-symbol">
-${statusSymbol(task)}
-</div>
-
-<div class="task-content">
-
-<div class="task-main-row">
-
-<div class="task-text">
-${escapeHtml(task.text)}
-</div>
-
-${filterTodayAction}
-
-</div>
-
-${flags(task)}
-
-${meta}
-
-${actions}
-
-</div>
-
-${repeat}
-`;
-
-
-return element;
-
-}
-
-
-/* =========================
+/* ======================================
    SECTION
-========================= */
+====================================== */
 
 function section(
 title,
 items,
 options = {}
 ) {
-
-const {
-counter = "",
-empty = "Keine Aufgaben.",
-cardOptions = {}
-} = options;
-
 
 const wrapper =
 document.createElement(
@@ -4890,15 +4530,9 @@ wrapper.innerHTML = `
 ${title}
 </div>
 
-${
-counter
-? `
 <div class="counter">
-${counter}
+${options.counter || items.length}
 </div>
-`
-: ""
-}
 
 </div>
 `;
@@ -4909,22 +4543,23 @@ items.length ===
 0
 ) {
 
-const emptyDiv =
+const empty =
 document.createElement(
 "div"
 );
 
 
-emptyDiv.className =
+empty.className =
 "empty-message";
 
 
-emptyDiv.textContent =
-empty;
+empty.textContent =
+options.empty ||
+"Keine Aufgaben.";
 
 
 wrapper.appendChild(
-emptyDiv
+empty
 );
 
 
@@ -4939,7 +4574,7 @@ task => {
 wrapper.appendChild(
 taskCard(
 task,
-cardOptions
+options.cardOptions || {}
 )
 );
 
@@ -4952,9 +4587,9 @@ return wrapper;
 }
 
 
-/* =========================
+/* ======================================
    ALLE
-========================= */
+====================================== */
 
 function renderAll(container) {
 
@@ -4981,19 +4616,11 @@ task.status ===
 .sort(
 (a,b) =>
 new Date(
-b.completedAt || 0
+b.completedAt
 ) -
 new Date(
-a.completedAt || 0
+a.completedAt
 )
-);
-
-
-const aborted =
-tasks.filter(
-task =>
-task.status ===
-"aborted"
 );
 
 
@@ -5003,11 +4630,7 @@ section(
 active,
 {
 counter:
-active.length +
-" aktiv",
-
-empty:
-"Nix offen. Verdächtig. 👀",
+active.length,
 
 cardOptions: {
 showTodayButton:
@@ -5021,40 +4644,16 @@ true
 container.appendChild(
 section(
 "ERLEDIGT",
-completed,
-{
-counter:
-completed.length +
-" erledigt",
-
-empty:
-"Noch nix erledigt."
-}
-)
-);
-
-
-container.appendChild(
-section(
-"ABGEBROCHEN",
-aborted,
-{
-counter:
-aborted.length +
-" abgebrochen",
-
-empty:
-"Nix abgebrochen."
-}
+completed
 )
 );
 
 }
 
 
-/* =========================
+/* ======================================
    HEUTE
-========================= */
+====================================== */
 
 function renderToday(container) {
 
@@ -5062,7 +4661,7 @@ const today =
 getBerlinDateKey();
 
 
-const todayAll =
+const all =
 tasks.filter(
 task =>
 task.todayDate ===
@@ -5070,8 +4669,8 @@ today
 );
 
 
-const todayActive =
-todayAll
+const active =
+all
 .filter(
 task =>
 [
@@ -5089,8 +4688,8 @@ task.status
 );
 
 
-const todayCompleted =
-todayAll
+const completed =
+all
 .filter(
 task =>
 task.status ===
@@ -5099,27 +4698,23 @@ task.status ===
 .sort(
 (a,b) =>
 new Date(
-b.completedAt || 0
+b.completedAt
 ) -
 new Date(
-a.completedAt || 0
+a.completedAt
 )
 );
 
 
 const total =
-todayActive.length +
-todayCompleted.length;
-
-
-const completedCount =
-todayCompleted.length;
+active.length +
+completed.length;
 
 
 const percent =
 total
 ? Math.round(
-completedCount /
+completed.length /
 total *
 100
 )
@@ -5142,7 +4737,7 @@ summary.innerHTML = `
 
 <span>
 HEUTE ·
-${completedCount}/${total}
+${completed.length}/${total}
 ERLEDIGT
 </span>
 
@@ -5168,18 +4763,17 @@ summary
 );
 
 
-const runningTask =
-todayActive.find(
+const running =
+active.find(
 task =>
 task.status ===
 "running"
 );
 
 
-const nextTask =
-runningTask ||
-todayActive[0] ||
-null;
+const next =
+running ||
+active[0];
 
 
 const nextPanel =
@@ -5192,87 +4786,34 @@ nextPanel.className =
 "next-task-panel";
 
 
-if (nextTask) {
-
-let label =
-"NÄCHSTE AUFGABE";
-
-
-if (
-nextTask.status ===
-"running"
-) {
-
-label =
-"AKTUELL LAUFENDE AUFGABE";
-
-}
-
-
-if (
-nextTask.status ===
-"paused"
-) {
-
-label =
-"NÄCHSTE AUFGABE · PAUSIERT";
-
-}
-
+if (next) {
 
 nextPanel.innerHTML = `
 
 <div class="next-task-label">
-${label}
+${
+next.status ===
+"running"
+? "AKTUELL LAUFENDE AUFGABE"
+: "NÄCHSTE AUFGABE"
+}
 </div>
 
 <div class="next-task-content">
 
 <div class="next-task-number">
-${dynamicNumber(
-nextTask
-)}
+${dynamicNumber(next)}
 </div>
 
 <div class="next-task-status">
-${statusSymbol(
-nextTask
-)}
+${statusSymbol(next)}
 </div>
 
 <div class="next-task-name">
-${escapeHtml(
-nextTask.text
-)}
+${escapeHtml(next.text)}
 </div>
 
-${
-nextTask.status ===
-"open"
-? iconButton(
-"▶️",
-"Starten",
-`startTask(${nextTask.id})`,
-"start-button"
-)
-: ""
-}
-
-${
-nextTask.status ===
-"paused"
-? iconButton(
-"▶️",
-"Fortsetzen",
-`resumeTask(${nextTask.id})`,
-"start-button"
-)
-: ""
-}
-
 </div>
-
-${flags(nextTask)}
 `;
 
 } else {
@@ -5284,7 +4825,7 @@ NÄCHSTE AUFGABE
 </div>
 
 <div class="next-task-empty">
-Keine offene Aufgabe im heutigen Tagesblock.
+Keine offene Aufgabe im Tagesblock.
 </div>
 `;
 
@@ -5299,15 +4840,8 @@ nextPanel
 container.appendChild(
 section(
 "OFFEN / LAUFEND / PAUSIERT",
-todayActive,
+active,
 {
-counter:
-todayActive.length +
-" offen",
-
-empty:
-"Keine offenen Aufgaben mehr im heutigen Tagesblock.",
-
 cardOptions: {
 todayDrag:
 true
@@ -5320,28 +4854,20 @@ true
 container.appendChild(
 section(
 "ERLEDIGT HEUTE",
-todayCompleted,
-{
-counter:
-todayCompleted.length +
-" erledigt",
-
-empty:
-"Heute noch nichts erledigt."
-}
+completed
 )
 );
 
 }
 
 
-/* =========================
+/* ======================================
    PRIORITÄT
-========================= */
+====================================== */
 
 function renderPriority(container) {
 
-const relevant =
+const active =
 tasks.filter(
 task =>
 [
@@ -5355,23 +4881,15 @@ task.status
 
 
 [
-[
-"🔴 HOHE PRIORITÄT",
-"high"
-],
-[
-"🟡 MITTLERE PRIORITÄT",
-"medium"
-],
-[
-"⚪ NORMALE PRIORITÄT",
-"normal"
+["🔴 HOHE PRIORITÄT","high"],
+["🟡 MITTLERE PRIORITÄT","medium"],
+["⚪ NORMALE PRIORITÄT","normal"]
 ]
-].forEach(
+.forEach(
 group => {
 
 const items =
-relevant.filter(
+active.filter(
 task =>
 task.priority ===
 group[1]
@@ -5383,12 +4901,6 @@ section(
 group[0],
 items,
 {
-counter:
-items.length,
-
-empty:
-"Keine Aufgaben in dieser Priorität.",
-
 cardOptions: {
 compactOnly:
 true,
@@ -5406,9 +4918,9 @@ true
 }
 
 
-/* =========================
+/* ======================================
    FÄLLIG
-========================= */
+====================================== */
 
 function renderDue(container) {
 
@@ -5425,128 +4937,58 @@ task.status
 );
 
 
-const warning =
+[
+["⚠️ HEUTE FÄLLIG","⚠️"],
+["🔷 SPÄTESTENS MORGEN","🔷"],
+["💠 FÜR MORGEN","💠"]
+]
+.forEach(
+group => {
+
+const items =
 active.filter(
 task =>
 dueSymbol(task) ===
-"⚠️"
+group[1]
 );
 
 
-const deadline =
-active.filter(
-task =>
-dueSymbol(task) ===
-"🔷"
-);
-
-
-const tomorrow =
-active.filter(
-task =>
-dueSymbol(task) ===
-"💠"
-);
-
-
-const filterOptions = {
+container.appendChild(
+section(
+group[0],
+items,
+{
+cardOptions: {
 compactOnly:
 true,
 
 filterTodayOnly:
 true
-};
-
-
-container.appendChild(
-section(
-"⚠️ HEUTE FÄLLIG",
-warning,
-{
-counter:
-warning.length,
-
-empty:
-"Keine Deadline für heute.",
-
-cardOptions:
-filterOptions
 }
-)
-);
-
-
-container.appendChild(
-section(
-"🔷 SPÄTESTENS MORGEN",
-deadline,
-{
-counter:
-deadline.length,
-
-empty:
-"Nix spätestens morgen fällig.",
-
-cardOptions:
-filterOptions
-}
-)
-);
-
-
-container.appendChild(
-section(
-"💠 FÜR MORGEN",
-tomorrow,
-{
-counter:
-tomorrow.length,
-
-empty:
-"Keine Aufgabe gezielt für morgen.",
-
-cardOptions:
-filterOptions
 }
 )
 );
 
 }
+);
+
+}
 
 
-/* =========================
+/* ======================================
    AKTIV
-========================= */
+====================================== */
 
 function renderActive(container) {
-
-const running =
-tasks.filter(
-task =>
-task.status ===
-"running"
-);
-
-
-const paused =
-tasks.filter(
-task =>
-task.status ===
-"paused"
-);
-
 
 container.appendChild(
 section(
 "▶️ LÄUFT",
-running,
-{
-counter:
-running.length,
-
-empty:
-"Aktuell läuft keine Aufgabe."
-}
+tasks.filter(
+task =>
+task.status ===
+"running"
+)
 )
 );
 
@@ -5554,27 +4996,26 @@ empty:
 container.appendChild(
 section(
 "⏸️ PAUSIERT",
-paused,
-{
-counter:
-paused.length,
-
-empty:
-"Keine pausierte Aufgabe."
-}
+tasks.filter(
+task =>
+task.status ===
+"paused"
+)
 )
 );
 
 }
 
 
-/* =========================
+/* ======================================
    ERLEDIGT
-========================= */
+====================================== */
 
 function renderCompleted(container) {
 
-const completed =
+container.appendChild(
+section(
+"ERLEDIGT · NOCH NICHT ARCHIVIERT",
 tasks
 .filter(
 task =>
@@ -5584,35 +5025,21 @@ task.status ===
 .sort(
 (a,b) =>
 new Date(
-b.completedAt || 0
+b.completedAt
 ) -
 new Date(
-a.completedAt || 0
+a.completedAt
 )
-);
-
-
-container.appendChild(
-section(
-"ERLEDIGT · NOCH NICHT ARCHIVIERT",
-completed,
-{
-counter:
-completed.length +
-" erledigt",
-
-empty:
-"Keine noch nicht archivierten erledigten Aufgaben."
-}
+)
 )
 );
 
 }
 
 
-/* =========================
+/* ======================================
    ARCHIV
-========================= */
+====================================== */
 
 function archiveCard(item) {
 
@@ -5629,12 +5056,14 @@ element.className =
 element.innerHTML = `
 
 <div class="archive-number">
+
 A${String(
 item.archiveNumber
 ).padStart(
 3,
 "0"
 )}
+
 </div>
 
 <div class="status-symbol">
@@ -5649,34 +5078,19 @@ item.text
 )}
 </div>
 
-${flags(item)}
-
-${
-item.completedAt
-? `
 <div class="task-meta">
 ${formatDateTime(
 item.completedAt,
 "ERLEDIGT"
 )}
 </div>
-`
-: ""
-}
 
-${
-item.activeDurationMs !==
-null
-? `
 <div class="duration">
 DAUER ·
 ${formatDuration(
 item.activeDurationMs
 )}
 </div>
-`
-: ""
-}
 
 </div>
 `;
@@ -5688,6 +5102,19 @@ return element;
 
 
 function renderArchive(container) {
+
+const archiveDates =
+[
+...new Set(
+archive
+.map(
+item =>
+item.completedDate
+)
+.filter(Boolean)
+)
+];
+
 
 const summary =
 document.createElement(
@@ -5701,22 +5128,51 @@ summary.className =
 
 summary.innerHTML = `
 
-<div class="archive-summary-title">
-ARCHIVIERTE AUFGABEN
+<div class="archive-summary-grid">
+
+<div class="archive-stat">
+
+<div class="archive-stat-label">
+AUFGABEN
 </div>
 
-<div class="archive-summary-number">
+<div class="archive-stat-value">
 ${archive.length}
 </div>
 
-<div class="task-meta">
-NÄCHSTE ARCHIVNUMMER ·
+</div>
+
+
+<div class="archive-stat">
+
+<div class="archive-stat-label">
+EINSATZTAGE
+</div>
+
+<div class="archive-stat-value">
+${archiveDates.length}
+</div>
+
+</div>
+
+
+<div class="archive-stat">
+
+<div class="archive-stat-label">
+NÄCHSTE NR.
+</div>
+
+<div class="archive-stat-value">
 A${String(
 nextArchiveNumber
 ).padStart(
 3,
 "0"
 )}
+</div>
+
+</div>
+
 </div>
 `;
 
@@ -5751,40 +5207,27 @@ empty
 
 } else {
 
-const sorted =
-[...archive]
-.sort(
-(a,b) =>
-Number(
-b.archiveNumber
-) -
-Number(
-a.archiveNumber
-)
-);
-
-
-const groups =
+const grouped =
 {};
 
 
-sorted.forEach(
+archive.forEach(
 item => {
 
-const key =
+const date =
 item.completedDate ||
 "unknown";
 
 
-if (!groups[key]) {
+if (!grouped[date]) {
 
-groups[key] =
+grouped[date] =
 [];
 
 }
 
 
-groups[key].push(
+grouped[date].push(
 item
 );
 
@@ -5793,43 +5236,161 @@ item
 
 
 Object.keys(
-groups
+grouped
 )
 .sort()
 .reverse()
 .forEach(
 dateKey => {
 
-const heading =
+const dayTasks =
+grouped[
+dateKey
+]
+.sort(
+(a,b) =>
+Number(
+a.archiveNumber
+) -
+Number(
+b.archiveNumber
+)
+);
+
+
+const activeMs =
+dayTasks.reduce(
+(sum,item) =>
+sum +
+(
+Number(
+item.activeDurationMs
+) || 0
+),
+0
+);
+
+
+const weight =
+getWeightSummaryForDate(
+dateKey,
+false
+);
+
+
+const block =
 document.createElement(
 "div"
 );
 
 
-heading.className =
-"archive-date-heading";
+block.className =
+"archive-day";
 
 
-heading.textContent =
-dateKey ===
+const header =
+document.createElement(
+"div"
+);
+
+
+header.className =
+"archive-day-header";
+
+
+let weightHtml =
+"";
+
+
+if (
+weight.totalMs > 0
+) {
+
+const lines =
+Object.entries(
+weight.byWeight
+)
+.sort(
+(a,b) =>
+Number(a[0]) -
+Number(b[0])
+)
+.map(
+entry => `
+
+<div class="archive-weight-line">
+
+${formatWeight(
+entry[0]
+)} kg ·
+${formatDuration(
+entry[1]
+)}
+
+</div>
+`
+)
+.join("");
+
+
+weightHtml = `
+
+<div class="archive-weight-box">
+
+<div class="archive-weight-total">
+
+🏋️ ZUSATZGEWICHT ·
+${formatDuration(
+weight.totalMs
+)}
+
+</div>
+
+${lines}
+
+</div>
+`;
+
+}
+
+
+header.innerHTML = `
+
+<div class="archive-day-title">
+
+${dateKey ===
 "unknown"
 ? "DATUM UNBEKANNT"
-: formatArchiveDate(
+: formatArchiveDayHeading(
 dateKey
+)}
+
+</div>
+
+<div class="archive-day-meta">
+
+${dayTasks.length}
+AUFGABEN ·
+AKTIVE ZEIT
+${formatDuration(
+activeMs
+)}
+
+</div>
+
+${weightHtml}
+`;
+
+
+block.appendChild(
+header
 );
 
 
-container.appendChild(
-heading
-);
-
-
-groups[
-dateKey
-].forEach(
+dayTasks.forEach(
 item => {
 
-container.appendChild(
+block.appendChild(
 archiveCard(
 item
 )
@@ -5838,17 +5399,241 @@ item
 }
 );
 
+
+container.appendChild(
+block
+);
+
 }
 );
 
 }
 
+
+/*
+   TESTMODUS BLEIBT DRIN
+*/
+
+const dev =
+document.createElement(
+"div"
+);
+
+
+dev.className =
+"dev-panel";
+
+
+dev.innerHTML = `
+
+<div class="dev-title">
+🧪 ARCHIV-TESTMODUS
+</div>
+
+<div class="dev-buttons">
+
+<button
+class="dev-button"
+onclick="createArchiveTestTask()"
+>
+TESTAUFGABE GESTERN
+</button>
+
+<button
+class="dev-button"
+onclick="runArchiveTest()"
+>
+ARCHIVIERUNG TESTEN
+</button>
+
+<button
+class="dev-button"
+onclick="createWeightArchiveTest()"
+>
+GEWICHT GESTERN TESTEN
+</button>
+
+</div>
+`;
+
+
+container.appendChild(
+dev
+);
+
 }
 
 
-/* =========================
+/* ======================================
+   ARCHIV TEST
+====================================== */
+
+function createArchiveTestTask() {
+
+const yesterday =
+addDays(
+getBerlinDateKey(),
+-1
+);
+
+
+tasks.push({
+
+id:
+Date.now(),
+
+text:
+"ARCHIVTEST · gestern erledigt",
+
+status:
+"completed",
+
+priority:
+"normal",
+
+optional:
+false,
+
+dueMode:
+"none",
+
+dueDate:
+null,
+
+todayDate:
+yesterday,
+
+todayOrder:
+null,
+
+startedAt:
+createTestISOForBerlinDate(
+yesterday,
+11,
+30
+),
+
+pausedAt:
+null,
+
+pauseTotalMs:
+0,
+
+completedAt:
+createTestISOForBerlinDate(
+yesterday,
+12,
+0
+),
+
+activeDurationMs:
+30 *
+60 *
+1000,
+
+abortedAt:
+null
+
+});
+
+
+saveTasks();
+
+render();
+
+}
+
+
+function runArchiveTest() {
+
+processDayTransition();
+
+render();
+
+}
+
+
+function createWeightArchiveTest() {
+
+const yesterday =
+addDays(
+getBerlinDateKey(),
+-1
+);
+
+
+weightPhases.push({
+
+id:
+Date.now(),
+
+weightKg:
+12.3,
+
+startedAt:
+createTestISOForBerlinDate(
+yesterday,
+10,
+0
+),
+
+endedAt:
+createTestISOForBerlinDate(
+yesterday,
+11,
+0
+),
+
+date:
+yesterday
+
+});
+
+
+weightPhases.push({
+
+id:
+Date.now() + 1,
+
+weightKg:
+13.1,
+
+startedAt:
+createTestISOForBerlinDate(
+yesterday,
+11,
+15
+),
+
+endedAt:
+createTestISOForBerlinDate(
+yesterday,
+11,
+45
+),
+
+date:
+yesterday
+
+});
+
+
+saveWeight();
+
+render();
+
+
+showInfoModal(
+"Gewichtstest angelegt",
+"Für gestern wurden 1:00 h mit 12,3 kg und 0:30 h mit 13,1 kg angelegt."
+);
+
+}
+
+
+/* ======================================
    RENDER
-========================= */
+====================================== */
 
 function render() {
 
@@ -5934,9 +5719,9 @@ container
 }
 
 
-/* =========================
-   LIVE-UPDATES
-========================= */
+/* ======================================
+   LIVE
+====================================== */
 
 function updateLiveTimers() {
 
@@ -5955,26 +5740,19 @@ element.dataset.taskId
 );
 
 
-if (!task) {
-return;
-}
-
+if (task) {
 
 element.textContent =
 "AKTIV · " +
 formatDuration(
-liveDuration(
-task
-)
+liveDuration(task)
 );
+
+}
 
 }
 );
 
-
-/*
-  ZUSATZGEWICHT LIVE
-*/
 
 if (
 weightState.isWearing
@@ -6006,16 +5784,12 @@ updateLiveTimers,
 );
 
 
-/* TAGESWECHSEL */
-
 setInterval(
 function() {
 
-const changed =
-processDayTransition();
-
-
-if (changed) {
+if (
+processDayTransition()
+) {
 
 renderWeightPanel();
 
@@ -6028,32 +5802,9 @@ render();
 );
 
 
-/* SICHTBARKEIT */
-
-document.addEventListener(
-"visibilitychange",
-function() {
-
-if (
-document.visibilityState ===
-"visible"
-) {
-
-processDayTransition();
-
-renderWeightPanel();
-
-render();
-
-}
-
-}
-);
-
-
-/* =========================
+/* ======================================
    MODAL
-========================= */
+====================================== */
 
 function closeModal() {
 
@@ -6063,23 +5814,6 @@ document
 )
 .innerHTML =
 "";
-
-}
-
-
-function closeModalOnBackdrop(
-event
-) {
-
-if (
-event.target.classList.contains(
-"modal-backdrop"
-)
-) {
-
-closeModal();
-
-}
 
 }
 
@@ -6095,10 +5829,7 @@ document
 )
 .innerHTML = `
 
-<div
-class="modal-backdrop"
-onclick="closeModalOnBackdrop(event)"
->
+<div class="modal-backdrop">
 
 <div class="modal">
 
@@ -6129,9 +5860,9 @@ Alles klar
 }
 
 
-/* =========================
+/* ======================================
    ENTER
-========================= */
+====================================== */
 
 document
 .getElementById(
@@ -6154,9 +5885,9 @@ addTask();
 );
 
 
-/* =========================
+/* ======================================
    START
-========================= */
+====================================== */
 
 processDayTransition();
 
