@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: A236 REPARIERT + BROWSERGETESTET · TABS · AUFGABEN · ARCHIVIMPORT · STATISTIK -->
+<!-- BUILD: A236 REPARIERT + MEHRTAGESSTATISTIK · ACTIVESEGMENTS · GEWICHT · TAGESZUORDNUNG -->
 
 <style>
 
@@ -3704,20 +3704,151 @@ dateKey,
 includeCurrent = false
 ) {
 
-const phases =
-weightPhases.filter(
-phase =>
-phase.date ===
+const bounds =
+getBerlinDayBoundsMs(
 dateKey
 );
+
+
+const phases =
+weightPhases
+.map(
+phase => {
+
+if (!phase) {
+return null;
+}
+
+
+if (
+phase.startedAt &&
+phase.endedAt &&
+bounds
+) {
+
+const startMs =
+new Date(
+phase.startedAt
+).getTime();
+
+
+const endMs =
+new Date(
+phase.endedAt
+).getTime();
+
+
+if (
+Number.isNaN(
+startMs
+) ||
+Number.isNaN(
+endMs
+)
+) {
+return null;
+}
+
+
+const clippedStart =
+Math.max(
+startMs,
+bounds.startMs
+);
+
+
+const clippedEnd =
+Math.min(
+endMs,
+bounds.endMs
+);
+
+
+if (
+clippedEnd <=
+clippedStart
+) {
+return null;
+}
+
+
+return {
+...phase,
+
+startedAt:
+new Date(
+clippedStart
+).toISOString(),
+
+endedAt:
+new Date(
+clippedEnd
+).toISOString(),
+
+originalStartedAt:
+phase.startedAt,
+
+originalEndedAt:
+phase.endedAt,
+
+date:
+dateKey
+};
+
+}
+
+
+/*
+  Historische Phasen können bewusst nur eine Tageszuordnung
+  und keine exakten ISO-Zeitpunkte besitzen. Diese bleiben über
+  das dokumentierte date-Feld verfügbar.
+*/
+return phase.date ===
+dateKey
+? phase
+: null;
+
+}
+)
+.filter(Boolean);
 
 
 if (
 includeCurrent &&
 weightState.isWearing &&
-getBerlinDateKeyFromISO(
+weightState.currentPhaseStartedAt &&
+bounds
+) {
+
+const currentStartMs =
+new Date(
 weightState.currentPhaseStartedAt
-) === dateKey
+).getTime();
+
+
+const nowMs =
+Date.now();
+
+
+const clippedStart =
+Math.max(
+currentStartMs,
+bounds.startMs
+);
+
+
+const clippedEnd =
+Math.min(
+nowMs,
+bounds.endMs
+);
+
+
+if (
+!Number.isNaN(
+currentStartMs
+) &&
+clippedEnd > clippedStart
 ) {
 
 phases.push({
@@ -3731,11 +3862,14 @@ weightState.currentPhaseWeightKg
 ),
 
 startedAt:
-weightState.currentPhaseStartedAt,
+new Date(
+clippedStart
+).toISOString(),
 
 endedAt:
-new Date()
-.toISOString(),
+new Date(
+clippedEnd
+).toISOString(),
 
 date:
 dateKey,
@@ -3747,11 +3881,12 @@ true
 
 }
 
+}
+
 
 return phases;
 
 }
-
 
 function getWeightSummaryForDate(
 dateKey,
@@ -3878,11 +4013,44 @@ false
 );
 
 
-const dayTasks =
+/*
+  MEHRTÄGIGE AUFGABEN:
+  Moderne Aufgaben werden nicht nach completedDate vorgefiltert.
+  Entscheidend ist, ob ihre echten activeSegments die Tragephasen
+  dieses Kalendertags schneiden. Historische Aufgaben ohne exakte
+  Segmente bleiben dagegen am dokumentierten completedDate.
+*/
+const modernTasks =
+archive.filter(
+task =>
+Array.isArray(
+task.activeSegments
+) &&
+task.activeSegments.some(
+segment =>
+segment &&
+segment.startedAt &&
+segment.endedAt
+)
+);
+
+
+const historicalTasksForDate =
 archive.filter(
 task =>
 task.completedDate ===
-dateKey
+dateKey &&
+!(
+Array.isArray(
+task.activeSegments
+) &&
+task.activeSegments.some(
+segment =>
+segment &&
+segment.startedAt &&
+segment.endedAt
+)
+)
 );
 
 
@@ -3898,7 +4066,7 @@ const exactByWeight =
 {};
 
 
-dayTasks.forEach(
+modernTasks.forEach(
 task => {
 
 const segments =
@@ -3994,7 +4162,7 @@ overlap;
 */
 
 const historicalTasks =
-dayTasks.filter(
+historicalTasksForDate.filter(
 task =>
 Number(
 task.historicalWeightKg
@@ -4313,10 +4481,17 @@ return 0;
 }
 
 
+/*
+  Moderne Archivaufgaben können über mehrere Kalendertage laufen.
+  Deshalb nicht nur die Gewichtstragephasen des Abschlusstags prüfen,
+  sondern alle gespeicherten Phasen gegen die echten Aktivsegmente.
+*/
 const phases =
-getWeightPhasesForDate(
-task.completedDate,
-false
+weightPhases.filter(
+phase =>
+phase &&
+phase.startedAt &&
+phase.endedAt
 );
 
 
@@ -11475,6 +11650,273 @@ render();
 }
 
 
+function getBerlinDayBoundsMs(
+dateKey
+) {
+
+if (!dateKey) {
+return null;
+}
+
+
+const nextDateKey =
+addDays(
+dateKey,
+1
+);
+
+
+const startIso =
+berlinLocalInputToISO(
+dateKey + "T00:00"
+);
+
+
+const endIso =
+berlinLocalInputToISO(
+nextDateKey + "T00:00"
+);
+
+
+if (
+!startIso ||
+!endIso
+) {
+return null;
+}
+
+
+const startMs =
+new Date(
+startIso
+).getTime();
+
+
+const endMs =
+new Date(
+endIso
+).getTime();
+
+
+if (
+Number.isNaN(
+startMs
+) ||
+Number.isNaN(
+endMs
+) ||
+endMs <= startMs
+) {
+return null;
+}
+
+
+return {
+startMs:
+startMs,
+
+endMs:
+endMs
+};
+
+}
+
+
+function getArchiveActiveBreakdownByDate(
+item
+) {
+
+const result =
+{};
+
+
+if (!item) {
+return result;
+}
+
+
+const segments =
+Array.isArray(
+item.activeSegments
+)
+? item.activeSegments.filter(
+segment =>
+segment &&
+segment.startedAt &&
+segment.endedAt
+)
+: [];
+
+
+/*
+  Historische Aufgaben besitzen häufig keine exakten Segmente.
+  Diese Daten werden bewusst NICHT rekonstruiert. In diesem Fall
+  bleibt die dokumentierte aktive Archivzeit am completedDate.
+*/
+if (
+segments.length === 0
+) {
+
+if (
+item.completedDate &&
+getArchiveAccountingActiveMs(
+item
+) > 0
+) {
+
+result[
+item.completedDate
+] =
+getArchiveAccountingActiveMs(
+item
+);
+
+}
+
+
+return result;
+
+}
+
+
+segments.forEach(
+segment => {
+
+const segmentStart =
+new Date(
+segment.startedAt
+).getTime();
+
+
+const segmentEnd =
+new Date(
+segment.endedAt
+).getTime();
+
+
+if (
+Number.isNaN(
+segmentStart
+) ||
+Number.isNaN(
+segmentEnd
+) ||
+segmentEnd <= segmentStart
+) {
+return;
+}
+
+
+let dateKey =
+getBerlinDateKeyFromISO(
+segment.startedAt
+);
+
+
+const finalDateKey =
+getBerlinDateKeyFromISO(
+new Date(
+segmentEnd - 1
+).toISOString()
+);
+
+
+if (
+!dateKey ||
+!finalDateKey
+) {
+return;
+}
+
+
+let guard =
+0;
+
+
+while (
+ dateKey <= finalDateKey &&
+ guard < 3700
+) {
+
+const bounds =
+getBerlinDayBoundsMs(
+dateKey
+);
+
+
+if (!bounds) {
+break;
+}
+
+
+const overlapMs =
+Math.max(
+0,
+Math.min(
+segmentEnd,
+bounds.endMs
+) -
+Math.max(
+segmentStart,
+bounds.startMs
+)
+);
+
+
+if (
+overlapMs > 0
+) {
+
+if (!result[dateKey]) {
+result[dateKey] =
+0;
+}
+
+
+result[dateKey] +=
+overlapMs;
+
+}
+
+
+dateKey =
+addDays(
+dateKey,
+1
+);
+
+
+guard +=
+1;
+
+}
+
+});
+
+
+return result;
+
+}
+
+
+function getArchiveActiveMsForDate(
+item,
+dateKey
+) {
+
+const breakdown =
+getArchiveActiveBreakdownByDate(
+item
+);
+
+
+return Number(
+breakdown[dateKey]
+) || 0;
+
+}
+
+
 function statisticsDateIsInPeriod(
 dateKey
 ) {
@@ -11587,7 +12029,7 @@ periodBar
    GRUNDDATEN
 ========================= */
 
-const completedTasks =
+const terminalArchiveTasks =
 archive.filter(
 item =>
 [
@@ -11596,24 +12038,147 @@ item =>
 ].includes(
 item.status
 )
-&&
+);
+
+
+/*
+  Aufgabenanzahl bleibt eine Abschluss-/Archivkennzahl.
+  Zeitkennzahlen werden dagegen bei modernen Aufgaben anhand der
+  tatsächlichen activeSegments auf ihre echten Kalendertage verteilt.
+*/
+const completedTasks =
+terminalArchiveTasks.filter(
+item =>
 statisticsDateIsInPeriod(
 item.completedDate
 )
 );
 
 
-const archiveDates =
-[
-...new Set(
-completedTasks
-.map(
-item =>
+const activeBreakdowns =
+new Map();
+
+
+terminalArchiveTasks.forEach(
+item => {
+
+activeBreakdowns.set(
+item,
+getArchiveActiveBreakdownByDate(
+item
+)
+);
+
+}
+);
+
+
+const dayStats =
+{};
+
+
+function ensureStatisticsDay(
+dateKey
+) {
+
+if (
+!dateKey ||
+!statisticsDateIsInPeriod(
+dateKey
+)
+) {
+return null;
+}
+
+
+if (!dayStats[dateKey]) {
+
+dayStats[dateKey] = {
+count:
+0,
+
+activeMs:
+0
+};
+
+}
+
+
+return dayStats[dateKey];
+
+}
+
+
+completedTasks.forEach(
+item => {
+
+const stats =
+ensureStatisticsDay(
 item.completedDate
-)
-.filter(Boolean)
-)
-];
+);
+
+
+if (stats) {
+stats.count +=
+1;
+}
+
+}
+);
+
+
+terminalArchiveTasks.forEach(
+item => {
+
+const breakdown =
+activeBreakdowns.get(
+item
+) || {};
+
+
+Object.entries(
+breakdown
+).forEach(
+entry => {
+
+const dateKey =
+entry[0];
+
+
+const durationMs =
+Number(
+entry[1]
+) || 0;
+
+
+if (
+durationMs <= 0
+) {
+return;
+}
+
+
+const stats =
+ensureStatisticsDay(
+dateKey
+);
+
+
+if (stats) {
+stats.activeMs +=
+durationMs;
+}
+
+});
+
+}
+);
+
+
+const archiveDates =
+Object.keys(
+dayStats
+);
 
 
 const totalTasks =
@@ -11625,11 +12190,15 @@ archiveDates.length;
 
 
 const activeTotalMs =
-completedTasks.reduce(
-(sum,item) =>
+Object.values(
+dayStats
+).reduce(
+(sum,stats) =>
 sum +
-getArchiveAccountingActiveMs(
-item
+(
+Number(
+stats.activeMs
+) || 0
 ),
 0
 );
@@ -11721,58 +12290,6 @@ deploymentDays > 0
 /* =========================
    TAGESSTATISTIK
 ========================= */
-
-const dayStats =
-{};
-
-
-completedTasks.forEach(
-item => {
-
-if (
-!item.completedDate
-) {
-return;
-}
-
-
-if (
-!dayStats[
-item.completedDate
-]
-) {
-
-dayStats[
-item.completedDate
-] = {
-
-count:
-0,
-
-activeMs:
-0
-
-};
-
-}
-
-
-dayStats[
-item.completedDate
-].count +=
-1;
-
-
-dayStats[
-item.completedDate
-].activeMs +=
-getArchiveAccountingActiveMs(
-item
-);
-
-}
-);
-
 
 /* PRODUKTIVSTER TAG */
 
