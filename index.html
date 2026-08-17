@@ -47,6 +47,14 @@
       text-align: center;
     }
 
+    h1 {
+      margin: 0;
+
+      font-size: clamp(28px, 8vw, 42px);
+      line-height: 1;
+      letter-spacing: -1.5px;
+    }
+
     .eyebrow {
       margin-bottom: 5px;
 
@@ -57,25 +65,17 @@
       color: #8c969f;
     }
 
-    h1 {
-      margin: 0;
-
-      font-size: clamp(28px, 8vw, 42px);
-      line-height: 1;
-      letter-spacing: -1.5px;
-    }
-
-    .subtitle {
+    .title-bottom {
       margin-top: 10px;
-
-      font-size: 14px;
-      color: #7f8991;
+      margin-bottom: 0;
+      letter-spacing: 2.5px;
     }
 
     /* EINGABE */
 
     .input-panel {
       padding: 14px;
+      margin-bottom: 26px;
 
       background: #171b1f;
 
@@ -84,14 +84,12 @@
 
       box-shadow:
         0 12px 30px rgba(0, 0, 0, 0.28);
-
-      margin-bottom: 26px;
     }
 
     #taskInput {
       width: 100%;
-
       padding: 16px;
+      margin-bottom: 10px;
 
       border: 1px solid #30373d;
       border-radius: 12px;
@@ -102,11 +100,10 @@
       color: white;
 
       font-size: 17px;
-
-      margin-bottom: 10px;
     }
 
-    #taskInput:focus {
+    #taskInput:focus,
+    .edit-input:focus {
       border-color: #7d8993;
     }
 
@@ -116,7 +113,6 @@
 
     .add-button {
       width: 100%;
-
       padding: 15px;
 
       border: 0;
@@ -131,13 +127,13 @@
       cursor: pointer;
     }
 
-    .add-button:active {
-      transform: scale(0.985);
+    /* BEREICHE */
+
+    .task-section {
+      margin-bottom: 30px;
     }
 
-    /* LISTENKOPF */
-
-    .list-header {
+    .section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -145,7 +141,7 @@
       margin: 0 4px 12px;
     }
 
-    .list-title {
+    .section-title {
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 2px;
@@ -153,7 +149,7 @@
       color: #8c969f;
     }
 
-    #taskCounter {
+    .counter {
       padding: 5px 9px;
 
       border: 1px solid #30363b;
@@ -165,7 +161,7 @@
       color: #aab1b7;
     }
 
-    /* AUFGABEN */
+    /* AUFGABE */
 
     .task {
       display: flex;
@@ -175,7 +171,6 @@
       min-height: 70px;
 
       padding: 10px;
-
       margin-bottom: 10px;
 
       background:
@@ -202,14 +197,12 @@
 
     .task-text {
       flex: 1;
-
       min-width: 0;
 
       padding: 0 4px;
 
       font-size: 17px;
       font-weight: 600;
-
       line-height: 1.3;
 
       word-break: break-word;
@@ -239,8 +232,10 @@
     }
 
     .icon-button:active,
-    .move-button:active {
-      transform: scale(0.92);
+    .move-button:active,
+    .edit-button:active,
+    .add-button:active {
+      transform: scale(0.96);
     }
 
     .move-buttons {
@@ -254,7 +249,6 @@
     .move-button {
       width: 30px;
       height: 25px;
-
       padding: 0;
 
       border: 1px solid #30363b;
@@ -268,10 +262,55 @@
       cursor: pointer;
     }
 
-    /* LEERE LISTE */
+    /* BEARBEITEN */
+
+    .edit-area {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .edit-input {
+      width: 100%;
+      padding: 11px;
+
+      border: 1px solid #30373d;
+      border-radius: 9px;
+
+      outline: none;
+
+      background: #0d1012;
+      color: white;
+
+      font-size: 16px;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 7px;
+
+      margin-top: 7px;
+    }
+
+    .edit-button {
+      flex: 1;
+
+      padding: 8px;
+
+      border: 1px solid #30363b;
+      border-radius: 8px;
+
+      background: #0e1113;
+      color: #d8dde0;
+
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    /* LEERE BEREICHE */
 
     .empty-message {
-      padding: 35px 20px;
+      padding: 25px 20px;
 
       border: 1px dashed #30363b;
       border-radius: 15px;
@@ -281,15 +320,78 @@
       color: #626c73;
     }
 
-    .empty-icon {
-      display: block;
+    /* LÖSCH-DIALOG */
 
-      margin-bottom: 10px;
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
 
-      font-size: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      padding: 20px;
+
+      background: rgba(0, 0, 0, 0.72);
+
+      z-index: 1000;
     }
 
-    /* KLEINE DISPLAYS */
+    .modal {
+      width: 100%;
+      max-width: 360px;
+
+      padding: 22px;
+
+      background: #191d20;
+
+      border: 1px solid #343b40;
+      border-radius: 18px;
+
+      box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    .modal h2 {
+      margin: 0 0 8px;
+
+      font-size: 20px;
+    }
+
+    .modal p {
+      margin: 0 0 20px;
+
+      color: #9ba3a9;
+      line-height: 1.4;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-button {
+      flex: 1;
+
+      padding: 12px;
+
+      border: 0;
+      border-radius: 10px;
+
+      font-weight: 800;
+
+      cursor: pointer;
+    }
+
+    .cancel-delete {
+      background: #30363b;
+      color: white;
+    }
+
+    .confirm-delete {
+      background: #e8ecef;
+      color: #101214;
+    }
 
     @media (max-width: 390px) {
 
@@ -327,14 +429,14 @@
     <header class="header">
 
       <h1>
-       MASTER OF DISASTER
+        MASTER OF DISASTER
       </h1>
 
       <div class="eyebrow title-bottom">
         WEEK-AND-END-TO-DO-DINGSI
       </div>
 
-    </header> 
+    </header>
 
 
     <section class="input-panel">
@@ -356,22 +458,53 @@
     </section>
 
 
-    <div class="list-header">
+    <section class="task-section">
 
-      <div class="list-title">
-        AUFGABEN
+      <div class="section-header">
+
+        <div class="section-title">
+          AUFGABEN
+        </div>
+
+        <div
+          class="counter"
+          id="openCounter"
+        >
+          0 offen
+        </div>
+
       </div>
 
-      <div id="taskCounter">
-        0 offen
+      <div id="openTaskList"></div>
+
+    </section>
+
+
+    <section class="task-section">
+
+      <div class="section-header">
+
+        <div class="section-title">
+          ERLEDIGT
+        </div>
+
+        <div
+          class="counter"
+          id="completedCounter"
+        >
+          0 erledigt
+        </div>
+
       </div>
 
-    </div>
+      <div id="completedTaskList"></div>
 
-
-    <div id="taskList"></div>
+    </section>
 
   </main>
+
+
+  <div id="modalContainer"></div>
 
 
   <script>
@@ -382,6 +515,8 @@
           "masterOfDisasterTasks"
         )
       ) || [];
+
+    let editingTaskId = null;
 
 
     function saveTasks() {
@@ -437,9 +572,165 @@
       task.completed =
         !task.completed;
 
+      editingTaskId = null;
+
       saveTasks();
 
       renderTasks();
+
+    }
+
+
+    function startEditing(id) {
+
+      editingTaskId = id;
+
+      renderTasks();
+
+      setTimeout(() => {
+
+        const input =
+          document.getElementById(
+            "edit-" + id
+          );
+
+        if (input) {
+
+          input.focus();
+
+          input.setSelectionRange(
+            input.value.length,
+            input.value.length
+          );
+
+        }
+
+      }, 0);
+
+    }
+
+
+    function cancelEditing() {
+
+      editingTaskId = null;
+
+      renderTasks();
+
+    }
+
+
+    function saveEdit(id) {
+
+      const task =
+        tasks.find(
+          task => task.id === id
+        );
+
+      const input =
+        document.getElementById(
+          "edit-" + id
+        );
+
+      if (!task || !input) {
+        return;
+      }
+
+      const text =
+        input.value.trim();
+
+      if (text === "") {
+        return;
+      }
+
+      task.text = text;
+
+      editingTaskId = null;
+
+      saveTasks();
+
+      renderTasks();
+
+    }
+
+
+    function askDelete(id) {
+
+      const task =
+        tasks.find(
+          task => task.id === id
+        );
+
+      if (!task) {
+        return;
+      }
+
+      const container =
+        document.getElementById(
+          "modalContainer"
+        );
+
+      container.innerHTML = `
+
+        <div
+          class="modal-backdrop"
+          onclick="closeDeleteModal(event)"
+        >
+
+          <div class="modal">
+
+            <h2>
+              Aufgabe löschen?
+            </h2>
+
+            <p>
+              „${escapeHtml(task.text)}“
+              wird endgültig gelöscht.
+            </p>
+
+            <div class="modal-actions">
+
+              <button
+                class="modal-button cancel-delete"
+                onclick="closeModal()"
+              >
+                Abbrechen
+              </button>
+
+              <button
+                class="modal-button confirm-delete"
+                onclick="deleteTask(${id})"
+              >
+                Löschen
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      `;
+
+    }
+
+
+    function closeDeleteModal(event) {
+
+      if (
+        event.target.classList.contains(
+          "modal-backdrop"
+        )
+      ) {
+        closeModal();
+      }
+
+    }
+
+
+    function closeModal() {
+
+      document.getElementById(
+        "modalContainer"
+      ).innerHTML = "";
 
     }
 
@@ -453,12 +744,14 @@
 
       saveTasks();
 
+      closeModal();
+
       renderTasks();
 
     }
 
 
-    function editTask(id) {
+    function moveTask(id, direction) {
 
       const task =
         tasks.find(
@@ -469,79 +762,50 @@
         return;
       }
 
-      const newText =
-        prompt(
-          "Aufgabe bearbeiten:",
-          task.text
+      const sameGroup =
+        tasks.filter(
+          item =>
+            item.completed ===
+            task.completed
         );
 
-      if (newText === null) {
-        return;
-      }
-
-      const cleanedText =
-        newText.trim();
-
-      if (cleanedText === "") {
-        return;
-      }
-
-      task.text =
-        cleanedText;
-
-      saveTasks();
-
-      renderTasks();
-
-    }
-
-
-    function moveTaskUp(id) {
-
-      const index =
-        tasks.findIndex(
-          task => task.id === id
+      const groupIndex =
+        sameGroup.findIndex(
+          item => item.id === id
         );
 
-      if (index <= 0) {
-        return;
-      }
-
-      [
-        tasks[index - 1],
-        tasks[index]
-      ] = [
-        tasks[index],
-        tasks[index - 1]
-      ];
-
-      saveTasks();
-
-      renderTasks();
-
-    }
-
-
-    function moveTaskDown(id) {
-
-      const index =
-        tasks.findIndex(
-          task => task.id === id
-        );
+      const targetGroupIndex =
+        groupIndex + direction;
 
       if (
-        index === -1 ||
-        index >= tasks.length - 1
+        targetGroupIndex < 0 ||
+        targetGroupIndex >=
+          sameGroup.length
       ) {
         return;
       }
 
+      const targetTask =
+        sameGroup[targetGroupIndex];
+
+      const realIndex =
+        tasks.findIndex(
+          item => item.id === id
+        );
+
+      const targetRealIndex =
+        tasks.findIndex(
+          item =>
+            item.id ===
+            targetTask.id
+        );
+
       [
-        tasks[index],
-        tasks[index + 1]
+        tasks[realIndex],
+        tasks[targetRealIndex]
       ] = [
-        tasks[index + 1],
-        tasks[index]
+        tasks[targetRealIndex],
+        tasks[realIndex]
       ];
 
       saveTasks();
@@ -556,137 +820,221 @@
       const div =
         document.createElement("div");
 
-      div.textContent =
-        text;
+      div.textContent = text;
 
       return div.innerHTML;
 
     }
 
 
-    function renderTasks() {
+    function createTaskElement(task) {
 
-      const taskList =
-        document.getElementById(
-          "taskList"
+      const taskElement =
+        document.createElement(
+          "div"
         );
 
-      const taskCounter =
+      taskElement.className =
+        "task" +
+        (
+          task.completed
+            ? " completed"
+            : ""
+        );
+
+
+      if (
+        editingTaskId === task.id
+      ) {
+
+        taskElement.innerHTML = `
+
+          <div class="edit-area">
+
+            <input
+              class="edit-input"
+              id="edit-${task.id}"
+              value="${escapeHtml(task.text)}"
+              onkeydown="
+                if(event.key === 'Enter') {
+                  saveEdit(${task.id})
+                }
+              "
+            >
+
+            <div class="edit-actions">
+
+              <button
+                class="edit-button"
+                onclick="saveEdit(${task.id})"
+              >
+                ✓ Speichern
+              </button>
+
+              <button
+                class="edit-button"
+                onclick="cancelEditing()"
+              >
+                × Abbrechen
+              </button>
+
+            </div>
+
+          </div>
+        `;
+
+        return taskElement;
+
+      }
+
+
+      taskElement.innerHTML = `
+
+        <div class="move-buttons">
+
+          <button
+            class="move-button"
+            onclick="moveTask(${task.id}, -1)"
+          >
+            ▲
+          </button>
+
+          <button
+            class="move-button"
+            onclick="moveTask(${task.id}, 1)"
+          >
+            ▼
+          </button>
+
+        </div>
+
+
+        <button
+          class="icon-button"
+          onclick="toggleTask(${task.id})"
+        >
+          ${task.completed ? "✅" : "⬜"}
+        </button>
+
+
+        <div class="task-text">
+          ${escapeHtml(task.text)}
+        </div>
+
+
+        <button
+          class="icon-button"
+          onclick="startEditing(${task.id})"
+        >
+          ✏️
+        </button>
+
+
+        <button
+          class="icon-button"
+          onclick="askDelete(${task.id})"
+        >
+          🗑️
+        </button>
+      `;
+
+      return taskElement;
+
+    }
+
+
+    function renderTasks() {
+
+      const openTaskList =
         document.getElementById(
-          "taskCounter"
+          "openTaskList"
+        );
+
+      const completedTaskList =
+        document.getElementById(
+          "completedTaskList"
         );
 
       const openTasks =
         tasks.filter(
           task => !task.completed
-        ).length;
+        );
 
-      taskCounter.textContent =
-        openTasks === 1
+      const completedTasks =
+        tasks.filter(
+          task => task.completed
+        );
+
+
+      document.getElementById(
+        "openCounter"
+      ).textContent =
+        openTasks.length === 1
           ? "1 offen"
-          : openTasks + " offen";
+          : openTasks.length +
+            " offen";
 
-      taskList.innerHTML = "";
+
+      document.getElementById(
+        "completedCounter"
+      ).textContent =
+        completedTasks.length === 1
+          ? "1 erledigt"
+          : completedTasks.length +
+            " erledigt";
 
 
-      if (tasks.length === 0) {
+      openTaskList.innerHTML = "";
 
-        taskList.innerHTML = `
+      completedTaskList.innerHTML = "";
+
+
+      if (
+        openTasks.length === 0
+      ) {
+
+        openTaskList.innerHTML = `
           <div class="empty-message">
-
-            <span class="empty-icon">
-              ☕
-            </span>
-
-            Nix zu tun.<br>
-            Verdächtig.
-
+            Nix offen. Verdächtig. 👀
           </div>
         `;
 
-        return;
+      } else {
+
+        openTasks.forEach(task => {
+
+          openTaskList.appendChild(
+            createTaskElement(task)
+          );
+
+        });
 
       }
 
 
-      tasks.forEach(task => {
+      if (
+        completedTasks.length === 0
+      ) {
 
-        const taskElement =
-          document.createElement(
-            "div"
-          );
-
-        taskElement.className =
-          "task" +
-          (
-            task.completed
-              ? " completed"
-              : ""
-          );
-
-
-        taskElement.innerHTML = `
-
-          <div class="move-buttons">
-
-            <button
-              class="move-button"
-              onclick="moveTaskUp(${task.id})"
-              aria-label="Nach oben"
-            >
-              ▲
-            </button>
-
-            <button
-              class="move-button"
-              onclick="moveTaskDown(${task.id})"
-              aria-label="Nach unten"
-            >
-              ▼
-            </button>
-
+        completedTaskList.innerHTML = `
+          <div class="empty-message">
+            Noch nix erledigt.
           </div>
-
-
-          <button
-            class="icon-button"
-            onclick="toggleTask(${task.id})"
-            aria-label="Erledigt"
-          >
-            ${task.completed ? "✅" : "⬜"}
-          </button>
-
-
-          <div class="task-text">
-            ${escapeHtml(task.text)}
-          </div>
-
-
-          <button
-            class="icon-button"
-            onclick="editTask(${task.id})"
-            aria-label="Bearbeiten"
-          >
-            ✏️
-          </button>
-
-
-          <button
-            class="icon-button"
-            onclick="deleteTask(${task.id})"
-            aria-label="Löschen"
-          >
-            🗑️
-          </button>
-
         `;
 
+      } else {
 
-        taskList.appendChild(
-          taskElement
+        completedTasks.forEach(
+          task => {
+
+            completedTaskList.appendChild(
+              createTaskElement(task)
+            );
+
+          }
         );
 
-      });
+      }
 
     }
 
