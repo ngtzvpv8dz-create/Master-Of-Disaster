@@ -195,17 +195,27 @@
       text-decoration: line-through;
     }
 
-    .task-text {
+    .task-content {
       flex: 1;
       min-width: 0;
+    }
 
-      padding: 0 4px;
-
+    .task-text {
       font-size: 17px;
       font-weight: 600;
       line-height: 1.3;
 
       word-break: break-word;
+    }
+
+    .task-meta {
+      margin-top: 5px;
+
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+
+      color: #72808a;
     }
 
     /* BUTTONS */
@@ -422,6 +432,10 @@
       .task-text {
         font-size: 16px;
       }
+
+      .task-meta {
+        font-size: 10px;
+      }
     }
   </style>
 </head>
@@ -550,7 +564,8 @@
       tasks.push({
         id: Date.now(),
         text: text,
-        completed: false
+        completed: false,
+        completedAt: null
       });
 
       saveTasks();
@@ -574,6 +589,8 @@
       }
 
       task.completed = true;
+      task.completedAt =
+        new Date().toISOString();
 
       editingTaskId = null;
 
@@ -598,7 +615,8 @@
       tasks.push({
         id: Date.now(),
         text: oldTask.text,
-        completed: false
+        completed: false,
+        completedAt: null
       });
 
       saveTasks();
@@ -852,6 +870,53 @@
     }
 
 
+    function formatCompletedAt(value) {
+
+      if (!value) {
+        return "";
+      }
+
+      const date =
+        new Date(value);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return "";
+      }
+
+      const datePart =
+        date.toLocaleDateString(
+          "de-DE",
+          {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+          }
+        );
+
+      const timePart =
+        date.toLocaleTimeString(
+          "de-DE",
+          {
+            hour: "2-digit",
+            minute: "2-digit"
+          }
+        );
+
+      return (
+        "ERLEDIGT · " +
+        datePart +
+        " · " +
+        timePart +
+        " UHR"
+      );
+
+    }
+
+
     function createTaskElement(task) {
 
       const taskElement =
@@ -927,8 +992,22 @@
             ✅
           </button>
 
-          <div class="task-text">
-            ${escapeHtml(task.text)}
+          <div class="task-content">
+
+            <div class="task-text">
+              ${escapeHtml(task.text)}
+            </div>
+
+            ${
+              task.completedAt
+                ? `
+                  <div class="task-meta">
+                    ${formatCompletedAt(task.completedAt)}
+                  </div>
+                `
+                : ""
+            }
+
           </div>
 
           <button
@@ -977,8 +1056,12 @@
           </button>
 
 
-          <div class="task-text">
-            ${escapeHtml(task.text)}
+          <div class="task-content">
+
+            <div class="task-text">
+              ${escapeHtml(task.text)}
+            </div>
+
           </div>
 
 
