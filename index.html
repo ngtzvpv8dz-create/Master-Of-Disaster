@@ -404,7 +404,7 @@
       color: #ad6666;
     }
 
-    /* KOMPAKTE ICON-AKTIONEN */
+    /* ICON-AKTIONEN */
 
     button {
       font-family: inherit;
@@ -471,6 +471,11 @@
     .today-button.selected {
       background: #14232c;
       border-color: #4c7490;
+    }
+
+    .filter-today-action {
+      margin-left: auto;
+      flex-shrink: 0;
     }
 
     .repeat-button {
@@ -553,7 +558,6 @@
 
     .dragging {
       opacity: 0.4;
-
       transform: scale(0.985);
     }
 
@@ -672,7 +676,6 @@
 
     .modal h2 {
       margin: 0 0 8px;
-
       font-size: 20px;
     }
 
@@ -742,7 +745,6 @@
 
       .status-symbol {
         width: 20px;
-
         font-size: 16px;
       }
 
@@ -1880,6 +1882,7 @@
       const task =
         getTask(id);
 
+
       if (!task) {
         return;
       }
@@ -1900,6 +1903,7 @@
 
       const task =
         getTask(id);
+
 
       if (!task) {
         return;
@@ -1924,6 +1928,7 @@
 
       const task =
         getTask(id);
+
 
       if (!task) {
         return;
@@ -1962,6 +1967,7 @@
 
       const task =
         getTask(id);
+
 
       if (!task) {
         return;
@@ -2206,6 +2212,7 @@
       const task =
         getTask(id);
 
+
       if (!task) {
         return;
       }
@@ -2264,6 +2271,7 @@
       const task =
         getTask(id);
 
+
       if (!task) {
         return;
       }
@@ -2310,6 +2318,7 @@
 
       const old =
         getTask(id);
+
 
       if (!old) {
         return;
@@ -2467,6 +2476,7 @@
       const task =
         getTask(id);
 
+
       if (!task) {
         return;
       }
@@ -2566,16 +2576,6 @@
 
     }
 
-
-    /*
-      NEUE STATUSSYMBOLE
-
-      offen      = ⬜
-      läuft      = ▶️
-      pausiert   = ⏸️
-      erledigt   = ✅
-      abgebrochen= ❌
-    */
 
     function statusSymbol(
       task
@@ -3027,7 +3027,7 @@
 
 
     /*
-      TOOLTIP / TITEL FÜR ICONS
+      ICON-BUTTON
     */
 
     function iconButton(
@@ -3063,7 +3063,8 @@
       const {
         todayDrag = false,
         showTodayButton = false,
-        compactOnly = false
+        compactOnly = false,
+        filterTodayOnly = false
       } = options;
 
 
@@ -3343,6 +3344,54 @@
       }
 
 
+      /*
+        SPEZIALFALL:
+        PRIORITÄT / FÄLLIG
+
+        Dort wird nur der HEUTE-Button
+        angezeigt.
+      */
+
+      let filterTodayAction =
+        "";
+
+
+      if (
+        filterTodayOnly &&
+        ![
+          "completed",
+          "aborted"
+        ].includes(
+          task.status
+        )
+      ) {
+
+        filterTodayAction = `
+
+          <div class="filter-today-action">
+
+            ${iconButton(
+              isTodayTask(task)
+                ? "📌"
+                : "📅",
+
+              isTodayTask(task)
+                ? "Aus dem heutigen Aufgabenblock entfernen"
+                : "Zum heutigen Aufgabenblock hinzufügen",
+
+              `toggleToday(${task.id})`,
+
+              isTodayTask(task)
+                ? "today-button selected"
+                : "today-button"
+            )}
+
+          </div>
+        `;
+
+      }
+
+
       let actions =
         "";
 
@@ -3371,10 +3420,13 @@
                       isTodayTask(task)
                         ? "📌"
                         : "📅",
+
                       isTodayTask(task)
                         ? "Ist im heutigen Aufgabenblock"
                         : "Für heute auswählen",
+
                       `toggleToday(${task.id})`,
+
                       isTodayTask(task)
                         ? "today-button selected"
                         : "today-button"
@@ -3556,6 +3608,8 @@
             <div class="task-text">
               ${escapeHtml(task.text)}
             </div>
+
+            ${filterTodayAction}
 
           </div>
 
@@ -3927,8 +3981,13 @@
                   "Keine Aufgaben in dieser Priorität.",
 
                 cardOptions: {
+
                   compactOnly:
+                    true,
+
+                  filterTodayOnly:
                     true
+
                 }
               }
             )
@@ -3985,6 +4044,17 @@
         );
 
 
+      const filterOptions = {
+
+        compactOnly:
+          true,
+
+        filterTodayOnly:
+          true
+
+      };
+
+
       container.appendChild(
         section(
           "⚠️ HEUTE FÄLLIG",
@@ -3994,7 +4064,10 @@
               warning.length,
 
             empty:
-              "Keine Deadline für heute."
+              "Keine Deadline für heute.",
+
+            cardOptions:
+              filterOptions
           }
         )
       );
@@ -4009,7 +4082,10 @@
               deadline.length,
 
             empty:
-              "Nix spätestens morgen fällig."
+              "Nix spätestens morgen fällig.",
+
+            cardOptions:
+              filterOptions
           }
         )
       );
@@ -4024,7 +4100,10 @@
               tomorrow.length,
 
             empty:
-              "Keine Aufgabe gezielt für morgen."
+              "Keine Aufgabe gezielt für morgen.",
+
+            cardOptions:
+              filterOptions
           }
         )
       );
