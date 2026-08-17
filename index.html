@@ -946,13 +946,13 @@ button {
   position: relative;
 
   margin-bottom: 16px;
-  padding-left: 10px;
+  padding-left: 15px;
 }
 
 
 /*
-  VERTIKALE VERBINDUNGSLINIE
-  VOM TAGESBLOCK ZU DEN AUFGABEN
+  SENKRECHTE VERBINDUNGSLINIE
+  BEGINNT DIREKT UNTER DEM TAGESBLOCK
 */
 
 .archive-day::before {
@@ -960,17 +960,16 @@ button {
 
   position: absolute;
 
-  left: 3px;
-  top: 42px;
-  bottom: 8px;
+  left: 7px;
+  top: 100%;
 
   width: 1px;
+  height: 0;
 
   background: #34414a;
 
   opacity: .75;
 }
-
 
 .archive-task {
   position: relative;
