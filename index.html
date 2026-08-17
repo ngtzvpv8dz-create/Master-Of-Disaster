@@ -161,7 +161,7 @@
       color: #aab1b7;
     }
 
-    /* AUFGABE */
+    /* AUFGABEN */
 
     .task {
       display: flex;
@@ -229,6 +229,10 @@
       font-size: 18px;
 
       cursor: pointer;
+    }
+
+    .icon-button:disabled {
+      cursor: default;
     }
 
     .icon-button:active,
@@ -569,8 +573,7 @@
         return;
       }
 
-      task.completed =
-        !task.completed;
+      task.completed = true;
 
       editingTaskId = null;
 
@@ -592,17 +595,16 @@
         return;
       }
 
-      const newTask = {
+      tasks.push({
         id: Date.now(),
         text: oldTask.text,
         completed: false
-      };
-
-      tasks.push(newTask);
+      });
 
       saveTasks();
 
       renderTasks();
+
     }
 
 
@@ -783,15 +785,13 @@
           task => task.id === id
         );
 
-      if (!task) {
+      if (!task || task.completed) {
         return;
       }
 
       const sameGroup =
         tasks.filter(
-          item =>
-            item.completed ===
-            task.completed
+          item => !item.completed
         );
 
       const groupIndex =
@@ -869,6 +869,7 @@
 
 
       if (
+        !task.completed &&
         editingTaskId === task.id
       ) {
 
@@ -913,71 +914,96 @@
       }
 
 
-      taskElement.innerHTML = `
+      if (task.completed) {
 
-        <div class="move-buttons">
-
-          <button
-            class="move-button"
-            onclick="moveTask(${task.id}, -1)"
-          >
-            ▲
-          </button>
+        taskElement.innerHTML = `
 
           <button
-            class="move-button"
-            onclick="moveTask(${task.id}, 1)"
+            class="icon-button"
+            aria-label="Erledigt"
+            title="Erledigt"
+            disabled
           >
-            ▼
+            ✅
           </button>
 
-        </div>
+          <div class="task-text">
+            ${escapeHtml(task.text)}
+          </div>
+
+          <button
+            class="icon-button"
+            onclick="repeatTask(${task.id})"
+            aria-label="Aufgabe wiederholen"
+            title="Wiederholen"
+          >
+            🔁
+          </button>
+
+        `;
+
+      } else {
+
+        taskElement.innerHTML = `
+
+          <div class="move-buttons">
+
+            <button
+              class="move-button"
+              onclick="moveTask(${task.id}, -1)"
+              aria-label="Nach oben"
+            >
+              ▲
+            </button>
+
+            <button
+              class="move-button"
+              onclick="moveTask(${task.id}, 1)"
+              aria-label="Nach unten"
+            >
+              ▼
+            </button>
+
+          </div>
 
 
-        ${task.completed
-  ? `
-    <button
-      class="icon-button"
-      onclick="repeatTask(${task.id})"
-      aria-label="Aufgabe wiederholen"
-      title="Wiederholen"
-    >
-      🔁
-    </button>
-  `
-  : `
-    <button
-      class="icon-button"
-      onclick="toggleTask(${task.id})"
-      aria-label="Aufgabe erledigen"
-      title="Erledigen"
-    >
-      ⬜
-    </button>
-  `
-}
+          <button
+            class="icon-button"
+            onclick="toggleTask(${task.id})"
+            aria-label="Aufgabe erledigen"
+            title="Erledigen"
+          >
+            ⬜
+          </button>
 
 
-        <div class="task-text">
-          ${escapeHtml(task.text)}
-        </div>
+          <div class="task-text">
+            ${escapeHtml(task.text)}
+          </div>
 
 
-        <button
-          class="icon-button"
-          onclick="startEditing(${task.id})"
-        >
-          ✏️
-        </button>
+          <button
+            class="icon-button"
+            onclick="startEditing(${task.id})"
+            aria-label="Bearbeiten"
+            title="Bearbeiten"
+          >
+            ✏️
+          </button>
 
 
-        <button
-          class="icon-button"
-          onclick="askDelete(${task.id})"
-        >
-          🗑️
-        </button>
-      `;
+          <button
+            class="icon-button"
+            onclick="askDelete(${task.id})"
+            aria-label="Löschen"
+            title="Löschen"
+          >
+            🗑️
+          </button>
+
+        `;
+
+      }
 
       return taskElement;
 
