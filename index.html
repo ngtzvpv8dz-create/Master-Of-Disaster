@@ -946,31 +946,40 @@ button {
   position: relative;
 
   margin-bottom: 16px;
-  padding-left: 15px;
 }
 
 
 /*
-  SENKRECHTE VERBINDUNGSLINIE
-  BEGINNT DIREKT UNTER DEM TAGESBLOCK
+  TAGESKOPF ÜBER DIE VOLLE BREITE
 */
 
-.archive-day::before {
+.archive-day-header {
+  position: relative;
+
+  width: 100%;
+}
+
+
+/*
+  KLEINE SENKRECHTE VERBINDUNG
+  DIREKT UNTER DEM TAGESKOPF
+*/
+
+.archive-day-header::after {
   content: "";
 
   position: absolute;
 
-  left: 7px;
+  left: 12px;
   top: 100%;
 
   width: 1px;
-  height: 0;
+  height: 7px;
 
   background: #34414a;
 
   opacity: .75;
 }
-
 .archive-task {
   position: relative;
 
@@ -979,10 +988,13 @@ button {
   min-height: 31px;
 
   padding: 4px 6px;
-  margin: 0 0 4px 7px;
+
+  /*
+    Platz für Verbindungslinie links
+  */
+  margin: 0 0 4px 20px;
 
   border: 1px solid #272e32;
-  border-left: 2px solid #34414a;
 
   border-radius: 7px;
 
@@ -994,11 +1006,14 @@ button {
     );
 }
 
-
 /*
   KLEINE QUERLINIE
   VON DER HAUPTLINIE
   ZUR AUFGABE
+*/
+
+/*
+  WAAGERECHTE LINIE ZUR AUFGABE
 */
 
 .archive-task::before {
@@ -1006,10 +1021,10 @@ button {
 
   position: absolute;
 
-  left: -15px;
+  left: -13px;
   top: 15px;
 
-  width: 12px;
+  width: 13px;
   height: 1px;
 
   background: #34414a;
@@ -1017,6 +1032,38 @@ button {
   opacity: .75;
 }
 
+
+/*
+  SENKRECHTE LINIE ZWISCHEN
+  DEN EINZELNEN AUFGABEN
+*/
+
+.archive-task::after {
+  content: "";
+
+  position: absolute;
+
+  left: -13px;
+  top: -6px;
+  bottom: -6px;
+
+  width: 1px;
+
+  background: #34414a;
+
+  opacity: .75;
+}
+
+/*
+  BEI DER LETZTEN AUFGABE
+  ENDET DIE SENKRECHTE LINIE
+  EXAKT AN DER QUERLINIE
+*/
+
+.archive-task:last-child::after {
+  bottom: auto;
+  height: 21px;
+}
 
 .archive-task .archive-number {
   width: 39px;
