@@ -5446,6 +5446,167 @@ repairNextArchiveNumber();
 
 
 /* ======================================
+   EINMALIGE BEREINIGUNG:
+   VERSEHENTLICHER TEST A237
+====================================== */
+
+function cleanupAccidentalMultiDayTestA237() {
+
+const migrationKey =
+"masterOfDisasterCleanupAccidentalA237V1";
+
+
+if (
+safeStorageGet(
+migrationKey
+) ===
+"done"
+) {
+
+return false;
+
+}
+
+
+const normalizedText = value =>
+String(
+value || ""
+)
+.replace(
+/[\u2010-\u2015\u2212]/g,
+"-"
+)
+.replace(
+/\s+/g,
+" "
+)
+.trim()
+.toLowerCase();
+
+
+const targetText =
+"test - mehrtägige aufgabe";
+
+
+const matchingArchiveItems =
+archive.filter(
+item =>
+Number(
+item.archiveNumber
+) === 237 &&
+normalizedText(
+item.text
+) === targetText &&
+item.completedDate ===
+"2026-08-17" &&
+Number(
+item.activeDurationMs
+) === 3600000
+);
+
+
+if (
+matchingArchiveItems.length !== 1
+) {
+
+/*
+  Sicherheitsbremse:
+  Nur exakt EIN eindeutig passender Testdatensatz
+  darf automatisch entfernt werden.
+*/
+safeStorageSet(
+migrationKey,
+"skipped"
+);
+
+return false;
+
+}
+
+
+const accidentalItem =
+matchingArchiveItems[0];
+
+
+archive =
+archive.filter(
+item =>
+item !== accidentalItem
+);
+
+
+if (
+accidentalItem.sourceTaskId
+) {
+
+tasks =
+tasks.filter(
+task =>
+task.id !==
+accidentalItem.sourceTaskId
+);
+
+}
+
+
+/*
+  Nach dem Entfernen von A237 muss die nächste
+  freie Archivnummer wieder aus dem realen Bestand
+  bestimmt werden. Keine Nummer wird verschoben.
+*/
+const highestArchiveNumber =
+archive.reduce(
+(max,item) =>
+Math.max(
+max,
+Number(
+item.archiveNumber
+) || 0
+),
+0
+);
+
+
+nextArchiveNumber =
+highestArchiveNumber + 1;
+
+
+safeStorageSet(
+"masterOfDisasterArchive",
+JSON.stringify(
+archive
+)
+);
+
+safeStorageSet(
+"masterOfDisasterTasks",
+JSON.stringify(
+tasks
+)
+);
+
+safeStorageSet(
+"masterOfDisasterNextArchiveNumber",
+String(
+nextArchiveNumber
+)
+);
+
+safeStorageSet(
+migrationKey,
+"done"
+);
+
+
+return true;
+
+}
+
+
+cleanupAccidentalMultiDayTestA237();
+
+
+/* ======================================
    ARCHIVIERUNG
 ====================================== */
 
