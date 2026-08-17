@@ -126,6 +126,10 @@
       cursor: pointer;
     }
 
+    .add-button:active {
+      transform: scale(0.98);
+    }
+
     /* BEREICHE */
 
     .task-section {
@@ -184,11 +188,6 @@
 
       box-shadow:
         0 8px 20px rgba(0, 0, 0, 0.18);
-
-      transition:
-        transform 0.15s ease,
-        opacity 0.15s ease,
-        border-color 0.15s ease;
     }
 
     .task.completed {
@@ -199,14 +198,17 @@
       text-decoration: line-through;
     }
 
-    .task.dragging {
-      opacity: 0.45;
-      transform: scale(0.985);
-      border-color: #587389;
-    }
+    .task-number {
+      width: 36px;
+      flex-shrink: 0;
 
-    .task.drag-over {
-      border-color: #5d7890;
+      text-align: center;
+
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+
+      color: #647887;
     }
 
     .task-content {
@@ -218,50 +220,18 @@
       font-size: 17px;
       font-weight: 600;
       line-height: 1.3;
+
       word-break: break-word;
     }
 
     .task-meta {
       margin-top: 5px;
 
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 700;
       letter-spacing: 0.7px;
 
-      color: #587b98;
-    }
-
-    /* DRAG-GRIFF */
-
-    .drag-handle {
-      width: 32px;
-      height: 44px;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      flex-shrink: 0;
-
-      border: 1px solid #30363b;
-      border-radius: 9px;
-
-      background: #0e1113;
-      color: #75808a;
-
-      font-size: 21px;
-      line-height: 1;
-
-      cursor: grab;
-
-      touch-action: none;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    .drag-handle:active {
-      cursor: grabbing;
-      transform: scale(0.95);
+      color: #4f8ec4;
     }
 
     /* BUTTONS */
@@ -292,8 +262,7 @@
     }
 
     .icon-button:active,
-    .edit-button:active,
-    .add-button:active {
+    .edit-button:active {
       transform: scale(0.96);
     }
 
@@ -394,6 +363,7 @@
 
     .modal p {
       margin: 0 0 20px;
+
       color: #9ba3a9;
       line-height: 1.4;
     }
@@ -405,6 +375,7 @@
 
     .modal-button {
       flex: 1;
+
       padding: 12px;
 
       border: 0;
@@ -436,16 +407,16 @@
         gap: 6px;
       }
 
+      .task-number {
+        width: 30px;
+        font-size: 10px;
+      }
+
       .icon-button {
         width: 38px;
         height: 40px;
-        font-size: 16px;
-      }
 
-      .drag-handle {
-        width: 29px;
-        height: 40px;
-        font-size: 19px;
+        font-size: 16px;
       }
 
       .task-text {
@@ -453,7 +424,7 @@
       }
 
       .task-meta {
-        font-size: 8.5px;
+        font-size: 7.5px;
       }
     }
   </style>
@@ -500,7 +471,7 @@
       <div class="section-header">
 
         <div class="section-title">
-          AUFGABEN
+          OFFENE UND LAUFENDE AUFGABEN
         </div>
 
         <div
@@ -555,9 +526,6 @@
 
     let editingTaskId = null;
 
-    let draggedTaskId = null;
-    let pointerDrag = null;
-
 
     function saveTasks() {
 
@@ -599,7 +567,7 @@
     }
 
 
-    function toggleTask(id) {
+    function completeTask(id) {
 
       const task =
         tasks.find(
@@ -611,6 +579,7 @@
       }
 
       task.completed = true;
+
       task.completedAt =
         new Date().toISOString();
 
@@ -877,351 +846,36 @@
     }
 
 
-    function reorderOpenTasks(
-      draggedId,
-      targetId
-    ) {
+    function formatTaskNumber(number) {
 
-      if (
-        draggedId === targetId
-      ) {
-        return;
+      if (number < 10) {
+        return "0" + number;
       }
 
-      const openTasks =
-        tasks.filter(
-          task => !task.completed
-        );
-
-      const draggedIndex =
-        openTasks.findIndex(
-          task =>
-            task.id === draggedId
-        );
-
-      const targetIndex =
-        openTasks.findIndex(
-          task =>
-            task.id === targetId
-        );
-
-      if (
-        draggedIndex === -1 ||
-        targetIndex === -1
-      ) {
-        return;
-      }
-
-      const [
-        draggedTask
-      ] =
-        openTasks.splice(
-          draggedIndex,
-          1
-        );
-
-      openTasks.splice(
-        targetIndex,
-        0,
-        draggedTask
-      );
-
-      let openIndex = 0;
-
-      tasks =
-        tasks.map(task => {
-
-          if (task.completed) {
-            return task;
-          }
-
-          const newTask =
-            openTasks[openIndex];
-
-          openIndex++;
-
-          return newTask;
-
-        });
-
-      saveTasks();
-
-      renderTasks();
+      return String(number);
 
     }
 
 
-    function setupMouseDrag(
-      taskElement,
-      task
-    ) {
+    function getDynamicTaskNumber(task) {
 
-      taskElement.addEventListener(
-        "dragover",
-        event => {
+      const index =
+        tasks.findIndex(
+          item => item.id === task.id
+        );
 
-          event.preventDefault();
+      if (index === -1) {
+        return "";
+      }
 
-          if (
-            draggedTaskId === null ||
-            draggedTaskId === task.id
-          ) {
-            return;
-          }
-
-          taskElement.classList.add(
-            "drag-over"
-          );
-
-        }
-      );
-
-
-      taskElement.addEventListener(
-        "dragleave",
-        () => {
-
-          taskElement.classList.remove(
-            "drag-over"
-          );
-
-        }
-      );
-
-
-      taskElement.addEventListener(
-        "drop",
-        event => {
-
-          event.preventDefault();
-
-          taskElement.classList.remove(
-            "drag-over"
-          );
-
-          if (
-            draggedTaskId === null
-          ) {
-            return;
-          }
-
-          reorderOpenTasks(
-            draggedTaskId,
-            task.id
-          );
-
-          draggedTaskId = null;
-
-        }
+      return formatTaskNumber(
+        index + 1
       );
 
     }
 
 
-    function startPointerDrag(
-      event,
-      taskId
-    ) {
-
-      if (
-        event.pointerType === "mouse"
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const taskElement =
-        event.currentTarget.closest(
-          ".task"
-        );
-
-      if (!taskElement) {
-        return;
-      }
-
-      pointerDrag = {
-        taskId: taskId,
-        element: taskElement,
-        pointerId: event.pointerId
-      };
-
-      event.currentTarget
-        .setPointerCapture(
-          event.pointerId
-        );
-
-      taskElement.classList.add(
-        "dragging"
-      );
-
-    }
-
-
-    function movePointerDrag(event) {
-
-      if (!pointerDrag) {
-        return;
-      }
-
-      if (
-        event.pointerId !==
-        pointerDrag.pointerId
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const element =
-        document.elementFromPoint(
-          event.clientX,
-          event.clientY
-        );
-
-      const targetTask =
-        element
-          ? element.closest(".task")
-          : null;
-
-      document
-        .querySelectorAll(
-          ".task.drag-over"
-        )
-        .forEach(item =>
-          item.classList.remove(
-            "drag-over"
-          )
-        );
-
-      if (
-        !targetTask ||
-        targetTask ===
-          pointerDrag.element
-      ) {
-        return;
-      }
-
-      const targetId =
-        Number(
-          targetTask.dataset.taskId
-        );
-
-      const targetData =
-        tasks.find(
-          task =>
-            task.id === targetId
-        );
-
-      if (
-        !targetData ||
-        targetData.completed
-      ) {
-        return;
-      }
-
-      targetTask.classList.add(
-        "drag-over"
-      );
-
-    }
-
-
-    function endPointerDrag(event) {
-
-      if (!pointerDrag) {
-        return;
-      }
-
-      if (
-        event.pointerId !==
-        pointerDrag.pointerId
-      ) {
-        return;
-      }
-
-      const element =
-        document.elementFromPoint(
-          event.clientX,
-          event.clientY
-        );
-
-      const targetTask =
-        element
-          ? element.closest(".task")
-          : null;
-
-      const draggedId =
-        pointerDrag.taskId;
-
-      pointerDrag.element.classList.remove(
-        "dragging"
-      );
-
-      document
-        .querySelectorAll(
-          ".task.drag-over"
-        )
-        .forEach(item =>
-          item.classList.remove(
-            "drag-over"
-          )
-        );
-
-      pointerDrag = null;
-
-      if (!targetTask) {
-        return;
-      }
-
-      const targetId =
-        Number(
-          targetTask.dataset.taskId
-        );
-
-      const targetData =
-        tasks.find(
-          task =>
-            task.id === targetId
-        );
-
-      if (
-        !targetData ||
-        targetData.completed
-      ) {
-        return;
-      }
-
-      reorderOpenTasks(
-        draggedId,
-        targetId
-      );
-
-    }
-
-
-    document.addEventListener(
-      "pointermove",
-      movePointerDrag,
-      {
-        passive: false
-      }
-    );
-
-
-    document.addEventListener(
-      "pointerup",
-      endPointerDrag
-    );
-
-
-    document.addEventListener(
-      "pointercancel",
-      endPointerDrag
-    );
-
-
-    function createTaskElement(task) {
+    function createOpenTaskElement(task) {
 
       const taskElement =
         document.createElement(
@@ -1229,23 +883,21 @@
         );
 
       taskElement.className =
-        "task" +
-        (
-          task.completed
-            ? " completed"
-            : ""
-        );
+        "task";
 
-      taskElement.dataset.taskId =
-        task.id;
+      const taskNumber =
+        getDynamicTaskNumber(task);
 
 
       if (
-        !task.completed &&
         editingTaskId === task.id
       ) {
 
         taskElement.innerHTML = `
+
+          <div class="task-number">
+            ${taskNumber}
+          </div>
 
           <div class="edit-area">
 
@@ -1286,168 +938,118 @@
       }
 
 
-      if (task.completed) {
+      taskElement.innerHTML = `
 
-        taskElement.innerHTML = `
+        <div class="task-number">
+          ${taskNumber}
+        </div>
 
-          <button
-            class="icon-button"
-            aria-label="Erledigt"
-            title="Erledigt"
-            disabled
-          >
-            ✅
-          </button>
 
-          <div class="task-content">
+        <button
+          class="icon-button"
+          onclick="completeTask(${task.id})"
+          aria-label="Aufgabe erledigen"
+          title="Erledigen"
+        >
+          ⬜
+        </button>
 
-            <div class="task-text">
-              ${escapeHtml(task.text)}
-            </div>
 
-            ${
-              task.completedAt
-                ? `
-                  <div class="task-meta">
-                    ${formatCompletedAt(task.completedAt)}
-                  </div>
-                `
-                : ""
-            }
+        <div class="task-content">
 
+          <div class="task-text">
+            ${escapeHtml(task.text)}
           </div>
 
-          <button
-            class="icon-button"
-            onclick="repeatTask(${task.id})"
-            aria-label="Aufgabe wiederholen"
-            title="Wiederholen"
-          >
-            🔁
-          </button>
+        </div>
 
-        `;
 
-      } else {
+        <button
+          class="icon-button"
+          onclick="startEditing(${task.id})"
+          aria-label="Bearbeiten"
+          title="Bearbeiten"
+        >
+          ✏️
+        </button>
 
-        taskElement.innerHTML = `
 
-          <div
-            class="drag-handle"
-            draggable="true"
-            aria-label="Aufgabe verschieben"
-            title="Verschieben"
-          >
-            ≡
+        <button
+          class="icon-button"
+          onclick="askDelete(${task.id})"
+          aria-label="Löschen"
+          title="Löschen"
+        >
+          🗑️
+        </button>
+
+      `;
+
+      return taskElement;
+
+    }
+
+
+    function createCompletedTaskElement(task) {
+
+      const taskElement =
+        document.createElement(
+          "div"
+        );
+
+      taskElement.className =
+        "task completed";
+
+      const taskNumber =
+        getDynamicTaskNumber(task);
+
+
+      taskElement.innerHTML = `
+
+        <div class="task-number">
+          ${taskNumber}
+        </div>
+
+
+        <button
+          class="icon-button"
+          aria-label="Erledigt"
+          title="Erledigt"
+          disabled
+        >
+          ✅
+        </button>
+
+
+        <div class="task-content">
+
+          <div class="task-text">
+            ${escapeHtml(task.text)}
           </div>
 
-          <button
-            class="icon-button"
-            onclick="toggleTask(${task.id})"
-            aria-label="Aufgabe erledigen"
-            title="Erledigen"
-          >
-            ⬜
-          </button>
-
-          <div class="task-content">
-
-            <div class="task-text">
-              ${escapeHtml(task.text)}
-            </div>
-
-          </div>
-
-          <button
-            class="icon-button"
-            onclick="startEditing(${task.id})"
-            aria-label="Bearbeiten"
-            title="Bearbeiten"
-          >
-            ✏️
-          </button>
-
-          <button
-            class="icon-button"
-            onclick="askDelete(${task.id})"
-            aria-label="Löschen"
-            title="Löschen"
-          >
-            🗑️
-          </button>
-
-        `;
-
-
-        const handle =
-          taskElement.querySelector(
-            ".drag-handle"
-          );
-
-
-        handle.addEventListener(
-          "dragstart",
-          event => {
-
-            draggedTaskId =
-              task.id;
-
-            taskElement.classList.add(
-              "dragging"
-            );
-
-            event.dataTransfer.effectAllowed =
-              "move";
-
-            event.dataTransfer.setData(
-              "text/plain",
-              String(task.id)
-            );
-
+          ${
+            task.completedAt
+              ? `
+                <div class="task-meta">
+                  ${formatCompletedAt(task.completedAt)}
+                </div>
+              `
+              : ""
           }
-        );
+
+        </div>
 
 
-        handle.addEventListener(
-          "dragend",
-          () => {
+        <button
+          class="icon-button"
+          onclick="repeatTask(${task.id})"
+          aria-label="Aufgabe wiederholen"
+          title="Wiederholen"
+        >
+          🔁
+        </button>
 
-            draggedTaskId = null;
-
-            taskElement.classList.remove(
-              "dragging"
-            );
-
-            document
-              .querySelectorAll(
-                ".task.drag-over"
-              )
-              .forEach(item =>
-                item.classList.remove(
-                  "drag-over"
-                )
-              );
-
-          }
-        );
-
-
-        handle.addEventListener(
-          "pointerdown",
-          event =>
-            startPointerDrag(
-              event,
-              task.id
-            )
-        );
-
-
-        setupMouseDrag(
-          taskElement,
-          task
-        );
-
-      }
+      `;
 
       return taskElement;
 
@@ -1466,10 +1068,12 @@
           "completedTaskList"
         );
 
+
       const openTasks =
         tasks.filter(
           task => !task.completed
         );
+
 
       const completedTasks =
         tasks.filter(
@@ -1515,7 +1119,7 @@
         openTasks.forEach(task => {
 
           openTaskList.appendChild(
-            createTaskElement(task)
+            createOpenTaskElement(task)
           );
 
         });
@@ -1535,15 +1139,13 @@
 
       } else {
 
-        completedTasks.forEach(
-          task => {
+        completedTasks.forEach(task => {
 
-            completedTaskList.appendChild(
-              createTaskElement(task)
-            );
+          completedTaskList.appendChild(
+            createCompletedTaskElement(task)
+          );
 
-          }
-        );
+        });
 
       }
 
