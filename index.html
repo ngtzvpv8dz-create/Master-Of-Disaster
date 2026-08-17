@@ -1203,18 +1203,30 @@ button {
 
 /* STATISTIK */
 
+.statistics-group {
+  margin-bottom: 22px;
+}
+
+.statistics-section-title {
+  margin: 0 3px 9px;
+
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+
+  color: #8c969f;
+}
+
 .statistics-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-
-  margin-bottom: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .statistics-card {
   min-width: 0;
 
-  padding: 12px;
+  padding: 10px;
 
   background:
     linear-gradient(
@@ -1224,49 +1236,105 @@ button {
     );
 
   border: 1px solid #30383e;
-  border-radius: 12px;
-}
-
-.statistics-card.wide {
-  grid-column: 1 / -1;
+  border-radius: 10px;
 }
 
 .statistics-label {
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 900;
-  letter-spacing: 1px;
+  letter-spacing: .8px;
 
   color: #71808a;
 }
 
 .statistics-value {
-  margin-top: 6px;
+  margin-top: 5px;
 
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 900;
 
   color: #e3e8eb;
+
+  word-break: break-word;
 }
 
 .statistics-sub {
-  margin-top: 4px;
+  margin-top: 3px;
 
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 700;
+  line-height: 1.25;
 
   color: #66757e;
 }
 
-.statistics-section-title {
-  margin: 4px 3px 10px;
 
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1.6px;
+/* REKORDE */
 
-  color: #8c969f;
+.statistics-records {
+  display: grid;
+  gap: 7px;
 }
 
+.statistics-record {
+  padding: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #191d20,
+      #111416
+    );
+
+  border: 1px solid #30383e;
+  border-radius: 10px;
+}
+
+.statistics-record-label {
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .9px;
+
+  color: #8b795c;
+}
+
+.statistics-record-value {
+  margin-top: 5px;
+
+  font-size: 14px;
+  font-weight: 900;
+
+  color: #e0e4e6;
+}
+
+.statistics-record-sub {
+  margin-top: 3px;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  color: #78838a;
+}
+
+
+/* ZUSATZGEWICHT */
+
+.statistics-weight-card .statistics-label {
+  color: #929e69;
+}
+
+.statistics-weight-card .statistics-value {
+  color: #dce5bc;
+}
+
+
+@media (max-width: 360px) {
+
+  .statistics-value {
+    font-size: 16px;
+  }
+
+}
 /* DEV */
 
 .dev-panel {
@@ -6501,10 +6569,15 @@ showInfoModal(
 
 function renderStatistics(container) {
 
+/* =========================
+   GRUNDDATEN
+========================= */
+
 const completedTasks =
 archive.filter(
 item =>
-item.status === "completed"
+item.status ===
+"completed"
 );
 
 
@@ -6525,6 +6598,10 @@ const totalTasks =
 completedTasks.length;
 
 
+const deploymentDays =
+archiveDates.length;
+
+
 const activeTotalMs =
 completedTasks.reduce(
 (sum,item) =>
@@ -6536,10 +6613,6 @@ item.activeDurationMs
 ),
 0
 );
-
-
-const deploymentDays =
-archiveDates.length;
 
 
 const averageTasksPerDay =
@@ -6559,9 +6632,229 @@ deploymentDays > 0
 ? activeTotalMs / deploymentDays
 : 0;
 
-/*
-  ZUSATZGEWICHT GESAMT
-*/
+
+/* =========================
+   TAGESSTATISTIK
+========================= */
+
+const dayStats =
+{};
+
+
+completedTasks.forEach(
+item => {
+
+if (
+!item.completedDate
+) {
+return;
+}
+
+
+if (
+!dayStats[
+item.completedDate
+]
+) {
+
+dayStats[
+item.completedDate
+] = {
+
+count:
+0,
+
+activeMs:
+0
+
+};
+
+}
+
+
+dayStats[
+item.completedDate
+].count +=
+1;
+
+
+dayStats[
+item.completedDate
+].activeMs +=
+Number(
+item.activeDurationMs
+) || 0;
+
+}
+);
+
+
+/* PRODUKTIVSTER TAG */
+
+let mostProductiveDate =
+null;
+
+
+let mostProductiveCount =
+0;
+
+
+Object.entries(
+dayStats
+)
+.forEach(
+entry => {
+
+const dateKey =
+entry[0];
+
+const stats =
+entry[1];
+
+
+if (
+stats.count >
+mostProductiveCount
+) {
+
+mostProductiveCount =
+stats.count;
+
+mostProductiveDate =
+dateKey;
+
+}
+
+}
+);
+
+
+/* LÄNGSTER EINSATZTAG */
+
+let longestDayDate =
+null;
+
+
+let longestDayMs =
+0;
+
+
+Object.entries(
+dayStats
+)
+.forEach(
+entry => {
+
+const dateKey =
+entry[0];
+
+const stats =
+entry[1];
+
+
+if (
+stats.activeMs >
+longestDayMs
+) {
+
+longestDayMs =
+stats.activeMs;
+
+longestDayDate =
+dateKey;
+
+}
+
+}
+);
+
+
+/* =========================
+   HÄUFIGSTE AUFGABE
+========================= */
+
+const taskFrequency =
+{};
+
+
+completedTasks.forEach(
+item => {
+
+const name =
+String(
+item.text || ""
+).trim();
+
+
+if (!name) {
+return;
+}
+
+
+if (
+!taskFrequency[
+name
+]
+) {
+
+taskFrequency[
+name
+] =
+0;
+
+}
+
+
+taskFrequency[
+name
+] +=
+1;
+
+}
+);
+
+
+let mostFrequentTask =
+null;
+
+
+let mostFrequentCount =
+0;
+
+
+Object.entries(
+taskFrequency
+)
+.forEach(
+entry => {
+
+const name =
+entry[0];
+
+const count =
+entry[1];
+
+
+if (
+count >
+mostFrequentCount
+) {
+
+mostFrequentTask =
+name;
+
+mostFrequentCount =
+count;
+
+}
+
+}
+);
+
+
+/* =========================
+   ZUSATZGEWICHT
+========================= */
 
 const weightDates =
 [
@@ -6626,16 +6919,22 @@ entry[1];
 
 
 if (
-!weightByKg[kg]
+!weightByKg[
+kg
+]
 ) {
 
-weightByKg[kg] =
+weightByKg[
+kg
+] =
 0;
 
 }
 
 
-weightByKg[kg] +=
+weightByKg[
+kg
+] +=
 duration;
 
 }
@@ -6652,6 +6951,11 @@ totalWeightMs -
 activeWithWeightMs
 );
 
+
+/* =========================
+   HAUPTAUSGABE
+========================= */
+
 const wrapper =
 document.createElement(
 "div"
@@ -6660,10 +6964,13 @@ document.createElement(
 
 wrapper.innerHTML = `
 
-<div class="statistics-section-title">
-GESAMTSTATISTIK
-</div>
+<!-- ÜBERBLICK -->
 
+<div class="statistics-group">
+
+<div class="statistics-section-title">
+ÜBERBLICK
+</div>
 
 <div class="statistics-grid">
 
@@ -6679,7 +6986,7 @@ ${totalTasks}
 </div>
 
 <div class="statistics-sub">
-ARCHIVIERT UND ERLEDIGT
+ARCHIVIERT
 </div>
 
 </div>
@@ -6696,13 +7003,13 @@ ${deploymentDays}
 </div>
 
 <div class="statistics-sub">
-TAGE MIT ARCHIVAUFGABEN
+ARCHIVIERTE TAGE
 </div>
 
 </div>
 
 
-<div class="statistics-card wide">
+<div class="statistics-card">
 
 <div class="statistics-label">
 ⏱ AKTIVE GESAMTZEIT
@@ -6715,7 +7022,7 @@ activeTotalMs
 </div>
 
 <div class="statistics-sub">
-SUMME ALLER ARCHIVIERTEN AUFGABEN
+ALLE AUFGABEN
 </div>
 
 </div>
@@ -6724,11 +7031,48 @@ SUMME ALLER ARCHIVIERTEN AUFGABEN
 <div class="statistics-card">
 
 <div class="statistics-label">
-📊 Ø AUFGABEN / TAG
+🏋️ TRAGEZEIT
 </div>
 
 <div class="statistics-value">
-${averageTasksPerDay.toFixed(1).replace(".",",")}
+${formatDuration(
+totalWeightMs
+)}
+</div>
+
+<div class="statistics-sub">
+ZUSATZGEWICHT GESAMT
+</div>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+<!-- DURCHSCHNITTE -->
+
+<div class="statistics-group">
+
+<div class="statistics-section-title">
+DURCHSCHNITTE
+</div>
+
+<div class="statistics-grid">
+
+
+<div class="statistics-card">
+
+<div class="statistics-label">
+📊 AUFGABEN / TAG
+</div>
+
+<div class="statistics-value">
+${averageTasksPerDay
+.toFixed(1)
+.replace(".",",")}
 </div>
 
 <div class="statistics-sub">
@@ -6741,7 +7085,7 @@ PRO EINSATZTAG
 <div class="statistics-card">
 
 <div class="statistics-label">
-⏱ Ø ZEIT / AUFGABE
+⏱ ZEIT / AUFGABE
 </div>
 
 <div class="statistics-value">
@@ -6751,16 +7095,16 @@ averageTimePerTask
 </div>
 
 <div class="statistics-sub">
-AKTIVE DURCHSCHNITTSZEIT
+AKTIVER DURCHSCHNITT
 </div>
 
 </div>
 
 
-<div class="statistics-card wide">
+<div class="statistics-card">
 
 <div class="statistics-label">
-📅 Ø AKTIVE ZEIT / TAG
+📅 AKTIVE ZEIT / TAG
 </div>
 
 <div class="statistics-value">
@@ -6771,24 +7115,6 @@ averageTimePerDay
 
 <div class="statistics-sub">
 PRO EINSATZTAG
-</div>
-
-</div>
-
-<div class="statistics-card wide">
-
-<div class="statistics-label">
-🏋️ ZUSATZGEWICHT · GESAMT
-</div>
-
-<div class="statistics-value">
-${formatDuration(
-totalWeightMs
-)}
-</div>
-
-<div class="statistics-sub">
-GESAMTE DOKUMENTIERTE TRAGEZEIT
 </div>
 
 </div>
@@ -6807,13 +7133,181 @@ activeWithWeightMs
 </div>
 
 <div class="statistics-sub">
-WÄHREND AKTIVER AUFGABEN
+WÄHREND AUFGABEN
 </div>
 
 </div>
 
 
-<div class="statistics-card">
+</div>
+
+</div>
+
+
+<!-- REKORDE -->
+
+<div class="statistics-group">
+
+<div class="statistics-section-title">
+REKORDE
+</div>
+
+<div class="statistics-records">
+
+
+<div class="statistics-record">
+
+<div class="statistics-record-label">
+🏆 PRODUKTIVSTER TAG
+</div>
+
+<div class="statistics-record-value">
+
+${
+mostProductiveDate
+? formatArchiveDayHeading(
+mostProductiveDate
+)
+: "NOCH KEINE DATEN"
+}
+
+</div>
+
+<div class="statistics-record-sub">
+
+${
+mostProductiveDate
+? mostProductiveCount +
+" erledigte Aufgaben"
+: ""
+}
+
+</div>
+
+</div>
+
+
+<div class="statistics-record">
+
+<div class="statistics-record-label">
+⏱ LÄNGSTER EINSATZTAG
+</div>
+
+<div class="statistics-record-value">
+
+${
+longestDayDate
+? formatArchiveDayHeading(
+longestDayDate
+)
+: "NOCH KEINE DATEN"
+}
+
+</div>
+
+<div class="statistics-record-sub">
+
+${
+longestDayDate
+? formatDuration(
+longestDayMs
+) +
+" aktive Zeit"
+: ""
+}
+
+</div>
+
+</div>
+
+
+<div class="statistics-record">
+
+<div class="statistics-record-label">
+🔁 HÄUFIGSTE AUFGABE
+</div>
+
+<div class="statistics-record-value">
+
+${
+mostFrequentTask
+? escapeHtml(
+mostFrequentTask
+)
+: "NOCH KEINE DATEN"
+}
+
+</div>
+
+<div class="statistics-record-sub">
+
+${
+mostFrequentTask
+? mostFrequentCount +
+"× erledigt"
+: ""
+}
+
+</div>
+
+</div>
+
+
+</div>
+
+</div>
+
+
+<!-- ZUSATZGEWICHT -->
+
+<div class="statistics-group">
+
+<div class="statistics-section-title">
+ZUSATZGEWICHT
+</div>
+
+<div class="statistics-grid">
+
+
+<div class="statistics-card statistics-weight-card">
+
+<div class="statistics-label">
+🏋️ TRAGEZEIT GESAMT
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+totalWeightMs
+)}
+</div>
+
+<div class="statistics-sub">
+DOKUMENTIERTE TRAGEZEIT
+</div>
+
+</div>
+
+
+<div class="statistics-card statistics-weight-card">
+
+<div class="statistics-label">
+💪 AKTIVE AUFGABEN
+</div>
+
+<div class="statistics-value">
+${formatDuration(
+activeWithWeightMs
+)}
+</div>
+
+<div class="statistics-sub">
+MIT ZUSATZGEWICHT
+</div>
+
+</div>
+
+
+<div class="statistics-card statistics-weight-card">
 
 <div class="statistics-label">
 🛋️ AUSSERHALB
@@ -6826,12 +7320,46 @@ weightOutsideActiveMs
 </div>
 
 <div class="statistics-sub">
-TRAGEZEIT AUSSERHALB AKTIVER AUFGABEN
+AUSSERHALB AKTIVER AUFGABEN
 </div>
 
 </div>
 
+
+<div class="statistics-card statistics-weight-card">
+
+<div class="statistics-label">
+📊 AKTIVER ANTEIL
 </div>
+
+<div class="statistics-value">
+
+${
+totalWeightMs > 0
+? (
+activeWithWeightMs /
+totalWeightMs *
+100
+)
+.toFixed(1)
+.replace(".",",") +
+" %"
+: "0,0 %"
+}
+
+</div>
+
+<div class="statistics-sub">
+DER TRAGEZEIT
+</div>
+
+</div>
+
+
+</div>
+
+</div>
+
 `;
 
 
@@ -6839,7 +7367,12 @@ container.appendChild(
 wrapper
 );
 
-  const weightEntries =
+
+/* =========================
+   GEWICHTSSTUFEN
+========================= */
+
+const weightEntries =
 Object.entries(
 weightByKg
 )
@@ -6851,7 +7384,8 @@ Number(b[0])
 
 
 if (
-weightEntries.length > 0
+weightEntries.length >
+0
 ) {
 
 const weightSection =
@@ -6860,10 +7394,14 @@ document.createElement(
 );
 
 
+weightSection.className =
+"statistics-group";
+
+
 weightSection.innerHTML = `
 
 <div class="statistics-section-title">
-🏋️ GEWICHTSSTUFEN
+GEWICHTSSTUFEN
 </div>
 
 <div class="statistics-grid">
@@ -6872,10 +7410,10 @@ ${weightEntries
 .map(
 entry => `
 
-<div class="statistics-card">
+<div class="statistics-card statistics-weight-card">
 
 <div class="statistics-label">
-${formatWeight(
+🏋️ ${formatWeight(
 entry[0]
 )} KG
 </div>
@@ -6907,7 +7445,6 @@ weightSection
 }
 
 }
-
 /* ======================================
    RENDER
 ====================================== */
