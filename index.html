@@ -56,11 +56,9 @@
 
     .eyebrow {
       margin-bottom: 5px;
-
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 4px;
-
       color: #8c969f;
     }
 
@@ -148,7 +146,6 @@
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 2px;
-
       color: #8c969f;
     }
 
@@ -169,7 +166,7 @@
     .task {
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 8px;
 
       min-height: 70px;
 
@@ -190,6 +187,17 @@
         0 8px 20px rgba(0, 0, 0, 0.18);
     }
 
+    .task.running {
+      border-color: #928832;
+      box-shadow:
+        0 0 0 1px rgba(200, 183, 65, 0.10),
+        0 8px 20px rgba(0, 0, 0, 0.18);
+    }
+
+    .task.paused {
+      border-color: #695f32;
+    }
+
     .task.completed {
       opacity: 0.55;
     }
@@ -203,17 +211,13 @@
       opacity: 0.5;
     }
 
-    .task.running {
-      border-color: #6c642d;
-    }
-
     .task-number {
-      width: 36px;
+      width: 34px;
       flex-shrink: 0;
 
       text-align: center;
 
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.8px;
 
@@ -229,9 +233,10 @@
       font-size: 17px;
       font-weight: 600;
       line-height: 1.3;
-
       word-break: break-word;
     }
+
+    /* META-INFOS */
 
     .task-meta {
       margin-top: 5px;
@@ -248,19 +253,33 @@
 
       font-size: 9px;
       font-weight: 800;
-      letter-spacing: 0.8px;
+      letter-spacing: 0.7px;
 
-      color: #9c9550;
+      color: #b3a94f;
+    }
+
+    .paused-meta {
+      color: #9e8d50;
     }
 
     .abort-meta {
       margin-top: 5px;
 
-      font-size: 9px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+
+      color: #a96666;
+    }
+
+    .duration {
+      margin-top: 4px;
+
+      font-size: 10px;
       font-weight: 800;
       letter-spacing: 0.8px;
 
-      color: #9f5e5e;
+      color: #70a5cf;
     }
 
     /* BUTTONS */
@@ -270,20 +289,34 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .icon-button {
-      width: 42px;
-      height: 42px;
-
+    .icon-button,
+    .action-button {
       flex-shrink: 0;
 
       border: 1px solid #30363b;
-      border-radius: 11px;
+      border-radius: 10px;
 
       background: #0e1113;
-
-      font-size: 18px;
+      color: #e1e5e8;
 
       cursor: pointer;
+    }
+
+    .icon-button {
+      width: 40px;
+      height: 40px;
+
+      font-size: 17px;
+    }
+
+    .action-button {
+      min-width: 40px;
+      height: 40px;
+
+      padding: 0 8px;
+
+      font-size: 15px;
+      font-weight: 800;
     }
 
     .icon-button:disabled {
@@ -291,31 +324,54 @@
     }
 
     .icon-button:active,
+    .action-button:active,
     .edit-button:active {
-      transform: scale(0.96);
+      transform: scale(0.95);
     }
 
-    /* STATUS-AKTIONEN */
+    .start-button {
+      border-color: #3e6047;
+    }
 
-    .status-actions {
+    .pause-button {
+      border-color: #776d36;
+    }
+
+    .finish-button {
+      border-color: #41604b;
+    }
+
+    .abort-button {
+      border-color: #6b3f3f;
+    }
+
+    /* AKTIONSZEILE */
+
+    .task-actions {
+      width: 100%;
+
       display: flex;
       gap: 6px;
-      flex-shrink: 0;
+
+      margin-top: 9px;
+
+      flex-wrap: wrap;
     }
 
-    .small-action-button {
-      min-width: 40px;
-      height: 40px;
+    .task-action-text {
+      flex: 1;
 
-      padding: 0 8px;
+      min-width: 82px;
+
+      padding: 8px 9px;
 
       border: 1px solid #30363b;
-      border-radius: 10px;
+      border-radius: 8px;
 
-      background: #0e1113;
-      color: #d8dde0;
+      background: #101315;
+      color: #d1d6d9;
 
-      font-size: 15px;
+      font-size: 11px;
       font-weight: 800;
 
       cursor: pointer;
@@ -346,7 +402,6 @@
     .edit-actions {
       display: flex;
       gap: 7px;
-
       margin-top: 7px;
     }
 
@@ -441,14 +496,19 @@
       cursor: pointer;
     }
 
-    .cancel-delete {
+    .cancel-modal {
       background: #30363b;
       color: white;
     }
 
-    .confirm-delete {
+    .confirm-modal {
       background: #e8ecef;
       color: #101214;
+    }
+
+    .danger-modal {
+      background: #7c3f3f;
+      color: white;
     }
 
     @media (max-width: 390px) {
@@ -459,39 +519,40 @@
       }
 
       .task {
-        gap: 6px;
+        gap: 5px;
       }
 
       .task-number {
-        width: 30px;
-        font-size: 10px;
+        width: 27px;
+        font-size: 9px;
       }
 
-      .icon-button {
-        width: 38px;
-        height: 40px;
+      .icon-button,
+      .action-button {
+        width: 36px;
+        min-width: 36px;
+        height: 38px;
 
-        font-size: 16px;
+        padding: 0 5px;
+
+        font-size: 14px;
       }
 
       .task-text {
         font-size: 16px;
       }
 
-      .task-meta {
+      .task-meta,
+      .abort-meta {
         font-size: 7.5px;
       }
 
-      .status-meta,
-      .abort-meta {
+      .status-meta {
         font-size: 8px;
       }
 
-      .small-action-button {
-        min-width: 36px;
-        height: 38px;
-        padding: 0 6px;
-        font-size: 14px;
+      .duration {
+        font-size: 9px;
       }
     }
   </style>
@@ -617,42 +678,40 @@
 
 
     /*
-      MIGRATION ALTER TESTDATEN
-
-      Frühere Versionen hatten nur:
-      completed: true / false
-
-      Jetzt nutzen wir:
-      status: open | running | paused | completed | aborted
-
-      Dadurch bleiben deine bisherigen Testaufgaben erhalten.
+      DATENMIGRATION
     */
 
     tasks = tasks.map(task => {
 
       if (!task.status) {
 
-        if (task.completed === true) {
-          task.status = "completed";
-        } else {
-          task.status = "open";
-        }
+        task.status =
+          task.completed === true
+            ? "completed"
+            : "open";
 
       }
 
-      if (
-        typeof task.completedAt ===
-        "undefined"
-      ) {
-        task.completedAt = null;
-      }
+      const defaults = {
+        startedAt: null,
+        pausedAt: null,
+        pauseTotalMs: 0,
+        completedAt: null,
+        activeDurationMs: null,
+        abortedAt: null
+      };
 
-      if (
-        typeof task.abortedAt ===
-        "undefined"
-      ) {
-        task.abortedAt = null;
-      }
+      Object.keys(defaults)
+        .forEach(key => {
+
+          if (
+            typeof task[key] ===
+            "undefined"
+          ) {
+            task[key] = defaults[key];
+          }
+
+        });
 
       return task;
 
@@ -688,8 +747,16 @@
       tasks.push({
         id: Date.now(),
         text: text,
+
         status: "open",
+
+        startedAt: null,
+        pausedAt: null,
+        pauseTotalMs: 0,
+
         completedAt: null,
+        activeDurationMs: null,
+
         abortedAt: null
       });
 
@@ -702,60 +769,329 @@
     }
 
 
-    function setTaskStatus(
-      id,
-      newStatus
-    ) {
+    /*
+      STARTEN
+    */
+
+    function startTask(id) {
 
       const task =
-        tasks.find(
-          task => task.id === id
-        );
+        getTask(id);
 
       if (!task) {
         return;
       }
 
-      task.status = newStatus;
+      const alreadyRunning =
+        tasks.find(
+          item =>
+            item.status === "running" &&
+            item.id !== id
+        );
 
-      if (newStatus === "completed") {
+      if (alreadyRunning) {
 
-        task.completedAt =
-          new Date().toISOString();
+        showInfoModal(
+          "Schon eine Aufgabe aktiv",
+          "Aktuell läuft bereits „" +
+          alreadyRunning.text +
+          "“. Pausiere oder beende sie zuerst."
+        );
 
-        task.abortedAt = null;
+        return;
+      }
 
-      } else if (
-        newStatus === "aborted"
+      const now =
+        new Date().toISOString();
+
+      task.status = "running";
+      task.startedAt = now;
+      task.pausedAt = null;
+      task.pauseTotalMs = 0;
+      task.completedAt = null;
+      task.activeDurationMs = null;
+      task.abortedAt = null;
+
+      saveTasks();
+      renderTasks();
+
+    }
+
+
+    /*
+      PAUSIEREN
+    */
+
+    function pauseTask(id) {
+
+      const task =
+        getTask(id);
+
+      if (
+        !task ||
+        task.status !== "running"
+      ) {
+        return;
+      }
+
+      task.status = "paused";
+
+      task.pausedAt =
+        new Date().toISOString();
+
+      saveTasks();
+      renderTasks();
+
+    }
+
+
+    /*
+      FORTSETZEN
+    */
+
+    function resumeTask(id) {
+
+      const task =
+        getTask(id);
+
+      if (
+        !task ||
+        task.status !== "paused"
+      ) {
+        return;
+      }
+
+      const alreadyRunning =
+        tasks.find(
+          item =>
+            item.status === "running" &&
+            item.id !== id
+        );
+
+      if (alreadyRunning) {
+
+        showInfoModal(
+          "Schon eine Aufgabe aktiv",
+          "Aktuell läuft bereits „" +
+          alreadyRunning.text +
+          "“. Pausiere oder beende sie zuerst."
+        );
+
+        return;
+      }
+
+      const now =
+        Date.now();
+
+      const pauseStart =
+        task.pausedAt
+          ? new Date(
+              task.pausedAt
+            ).getTime()
+          : now;
+
+      task.pauseTotalMs +=
+        Math.max(
+          0,
+          now - pauseStart
+        );
+
+      task.pausedAt = null;
+      task.status = "running";
+
+      saveTasks();
+      renderTasks();
+
+    }
+
+
+    /*
+      BEENDEN
+    */
+
+    function finishTask(id) {
+
+      const task =
+        getTask(id);
+
+      if (
+        !task ||
+        (
+          task.status !== "running" &&
+          task.status !== "paused"
+        )
+      ) {
+        return;
+      }
+
+      const now =
+        Date.now();
+
+      let pauseTotal =
+        task.pauseTotalMs || 0;
+
+      if (
+        task.status === "paused" &&
+        task.pausedAt
       ) {
 
-        task.abortedAt =
-          new Date().toISOString();
-
-        task.completedAt = null;
-
-      } else {
-
-        task.completedAt = null;
-        task.abortedAt = null;
+        pauseTotal +=
+          Math.max(
+            0,
+            now -
+            new Date(
+              task.pausedAt
+            ).getTime()
+          );
 
       }
 
-      editingTaskId = null;
+      const started =
+        task.startedAt
+          ? new Date(
+              task.startedAt
+            ).getTime()
+          : now;
+
+      const duration =
+        Math.max(
+          0,
+          now -
+          started -
+          pauseTotal
+        );
+
+      task.status =
+        "completed";
+
+      task.pauseTotalMs =
+        pauseTotal;
+
+      task.pausedAt =
+        null;
+
+      task.completedAt =
+        new Date(now)
+          .toISOString();
+
+      task.activeDurationMs =
+        duration;
+
+      task.abortedAt =
+        null;
+
+      editingTaskId =
+        null;
 
       saveTasks();
+      renderTasks();
+
+    }
+
+
+    /*
+      ABBRECHEN
+    */
+
+    function askAbort(id) {
+
+      const task =
+        getTask(id);
+
+      if (!task) {
+        return;
+      }
+
+      const container =
+        document.getElementById(
+          "modalContainer"
+        );
+
+      container.innerHTML = `
+
+        <div
+          class="modal-backdrop"
+          onclick="closeModalOnBackdrop(event)"
+        >
+
+          <div class="modal">
+
+            <h2>
+              Aufgabe abbrechen?
+            </h2>
+
+            <p>
+              „${escapeHtml(task.text)}“
+              wird endgültig als abgebrochen markiert.
+            </p>
+
+            <div class="modal-actions">
+
+              <button
+                class="modal-button cancel-modal"
+                onclick="closeModal()"
+              >
+                Zurück
+              </button>
+
+              <button
+                class="modal-button danger-modal"
+                onclick="abortTask(${id})"
+              >
+                Abbrechen
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      `;
+
+    }
+
+
+    function abortTask(id) {
+
+      const task =
+        getTask(id);
+
+      if (!task) {
+        return;
+      }
+
+      task.status =
+        "aborted";
+
+      task.abortedAt =
+        new Date().toISOString();
+
+      task.completedAt =
+        null;
+
+      task.activeDurationMs =
+        null;
+
+      editingTaskId =
+        null;
+
+      saveTasks();
+
+      closeModal();
 
       renderTasks();
 
     }
 
 
+    /*
+      WIEDERHOLEN
+    */
+
     function repeatTask(id) {
 
       const oldTask =
-        tasks.find(
-          task => task.id === id
-        );
+        getTask(id);
 
       if (!oldTask) {
         return;
@@ -764,24 +1100,33 @@
       tasks.push({
         id: Date.now(),
         text: oldTask.text,
+
         status: "open",
+
+        startedAt: null,
+        pausedAt: null,
+        pauseTotalMs: 0,
+
         completedAt: null,
+        activeDurationMs: null,
+
         abortedAt: null
       });
 
       saveTasks();
-
       renderTasks();
 
     }
 
 
+    /*
+      BEARBEITEN
+    */
+
     function startEditing(id) {
 
       const task =
-        tasks.find(
-          task => task.id === id
-        );
+        getTask(id);
 
       if (
         !task ||
@@ -821,7 +1166,6 @@
     function cancelEditing() {
 
       editingTaskId = null;
-
       renderTasks();
 
     }
@@ -830,9 +1174,7 @@
     function saveEdit(id) {
 
       const task =
-        tasks.find(
-          task => task.id === id
-        );
+        getTask(id);
 
       const input =
         document.getElementById(
@@ -855,18 +1197,19 @@
       editingTaskId = null;
 
       saveTasks();
-
       renderTasks();
 
     }
 
 
+    /*
+      LÖSCHEN
+    */
+
     function askDelete(id) {
 
       const task =
-        tasks.find(
-          task => task.id === id
-        );
+        getTask(id);
 
       if (!task) {
         return;
@@ -898,14 +1241,14 @@
             <div class="modal-actions">
 
               <button
-                class="modal-button cancel-delete"
+                class="modal-button cancel-modal"
                 onclick="closeModal()"
               >
                 Abbrechen
               </button>
 
               <button
-                class="modal-button confirm-delete"
+                class="modal-button danger-modal"
                 onclick="deleteTask(${id})"
               >
                 Löschen
@@ -917,90 +1260,6 @@
 
         </div>
       `;
-
-    }
-
-
-    function askAbort(id) {
-
-      const task =
-        tasks.find(
-          task => task.id === id
-        );
-
-      if (!task) {
-        return;
-      }
-
-      const container =
-        document.getElementById(
-          "modalContainer"
-        );
-
-      container.innerHTML = `
-
-        <div
-          class="modal-backdrop"
-          onclick="closeModalOnBackdrop(event)"
-        >
-
-          <div class="modal">
-
-            <h2>
-              Aufgabe abbrechen?
-            </h2>
-
-            <p>
-              „${escapeHtml(task.text)}“
-              wird als endgültig abgebrochen markiert.
-            </p>
-
-            <div class="modal-actions">
-
-              <button
-                class="modal-button cancel-delete"
-                onclick="closeModal()"
-              >
-                Zurück
-              </button>
-
-              <button
-                class="modal-button confirm-delete"
-                onclick="setTaskStatus(${id}, 'aborted'); closeModal();"
-              >
-                Abbrechen
-              </button>
-
-            </div>
-
-          </div>
-
-        </div>
-      `;
-
-    }
-
-
-    function closeModalOnBackdrop(
-      event
-    ) {
-
-      if (
-        event.target.classList.contains(
-          "modal-backdrop"
-        )
-      ) {
-        closeModal();
-      }
-
-    }
-
-
-    function closeModal() {
-
-      document.getElementById(
-        "modalContainer"
-      ).innerHTML = "";
 
     }
 
@@ -1021,14 +1280,133 @@
     }
 
 
+    /*
+      HILFSFUNKTIONEN
+    */
+
+    function getTask(id) {
+
+      return tasks.find(
+        task => task.id === id
+      );
+
+    }
+
+
     function escapeHtml(text) {
 
       const div =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       div.textContent = text;
 
       return div.innerHTML;
+
+    }
+
+
+    function closeModal() {
+
+      document.getElementById(
+        "modalContainer"
+      ).innerHTML = "";
+
+    }
+
+
+    function closeModalOnBackdrop(
+      event
+    ) {
+
+      if (
+        event.target.classList.contains(
+          "modal-backdrop"
+        )
+      ) {
+        closeModal();
+      }
+
+    }
+
+
+    function showInfoModal(
+      title,
+      text
+    ) {
+
+      const container =
+        document.getElementById(
+          "modalContainer"
+        );
+
+      container.innerHTML = `
+
+        <div
+          class="modal-backdrop"
+          onclick="closeModalOnBackdrop(event)"
+        >
+
+          <div class="modal">
+
+            <h2>
+              ${escapeHtml(title)}
+            </h2>
+
+            <p>
+              ${escapeHtml(text)}
+            </p>
+
+            <div class="modal-actions">
+
+              <button
+                class="modal-button confirm-modal"
+                onclick="closeModal()"
+              >
+                Alles klar
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      `;
+
+    }
+
+
+    function formatTaskNumber(
+      number
+    ) {
+
+      if (number < 10) {
+        return "0" + number;
+      }
+
+      return String(number);
+
+    }
+
+
+    function getDynamicTaskNumber(
+      task
+    ) {
+
+      const index =
+        tasks.findIndex(
+          item =>
+            item.id === task.id
+        );
+
+      if (index === -1) {
+        return "";
+      }
+
+      return formatTaskNumber(
+        index + 1
+      );
 
     }
 
@@ -1068,7 +1446,8 @@
           "de-DE",
           {
             hour: "2-digit",
-            minute: "2-digit"
+            minute: "2-digit",
+            second: "2-digit"
           }
         );
 
@@ -1084,88 +1463,94 @@
     }
 
 
-    function formatTaskNumber(
-      number
-    ) {
+    function formatDuration(ms) {
 
-      if (number < 10) {
-        return "0" + number;
-      }
-
-      return String(number);
-
-    }
-
-
-    function getDynamicTaskNumber(
-      task
-    ) {
-
-      const index =
-        tasks.findIndex(
-          item => item.id === task.id
-        );
-
-      if (index === -1) {
+      if (
+        ms === null ||
+        typeof ms === "undefined"
+      ) {
         return "";
       }
 
-      return formatTaskNumber(
-        index + 1
+      const totalSeconds =
+        Math.floor(
+          ms / 1000
+        );
+
+      const hours =
+        Math.floor(
+          totalSeconds / 3600
+        );
+
+      const minutes =
+        Math.floor(
+          (
+            totalSeconds % 3600
+          ) / 60
+        );
+
+      const seconds =
+        totalSeconds % 60;
+
+      return (
+        String(hours)
+          .padStart(2, "0") +
+        ":" +
+        String(minutes)
+          .padStart(2, "0") +
+        ":" +
+        String(seconds)
+          .padStart(2, "0")
       );
 
     }
 
 
-    function getStatusSymbol(
-      status
+    function getCurrentActiveDuration(
+      task
     ) {
 
-      switch (status) {
+      if (!task.startedAt) {
+        return 0;
+      }
 
-        case "running":
-        case "paused":
-          return "🟨";
+      let endTime =
+        Date.now();
 
-        case "completed":
-          return "✅";
+      let pauseTotal =
+        task.pauseTotalMs || 0;
 
-        case "aborted":
-          return "❌";
+      if (
+        task.status === "paused" &&
+        task.pausedAt
+      ) {
 
-        default:
-          return "⬜";
+        pauseTotal +=
+          Math.max(
+            0,
+            endTime -
+            new Date(
+              task.pausedAt
+            ).getTime()
+          );
 
       }
+
+      return Math.max(
+        0,
+        endTime -
+        new Date(
+          task.startedAt
+        ).getTime() -
+        pauseTotal
+      );
 
     }
 
 
-    function getStatusText(
-      status
-    ) {
-
-      switch (status) {
-
-        case "running":
-          return "BEGONNEN / LÄUFT";
-
-        case "paused":
-          return "PAUSIERT";
-
-        case "completed":
-          return "ERLEDIGT";
-
-        case "aborted":
-          return "ABGEBROCHEN";
-
-        default:
-          return "OFFEN";
-
-      }
-
-    }
-
+    /*
+      DARSTELLUNG AKTIVER AUFGABEN
+    */
 
     function createActiveTaskElement(
       task
@@ -1180,16 +1565,25 @@
         "task";
 
       if (
-        task.status === "running" ||
-        task.status === "paused"
+        task.status === "running"
       ) {
         taskElement.classList.add(
           "running"
         );
       }
 
-      const taskNumber =
-        getDynamicTaskNumber(task);
+      if (
+        task.status === "paused"
+      ) {
+        taskElement.classList.add(
+          "paused"
+        );
+      }
+
+      const number =
+        getDynamicTaskNumber(
+          task
+        );
 
 
       if (
@@ -1199,7 +1593,7 @@
         taskElement.innerHTML = `
 
           <div class="task-number">
-            ${taskNumber}
+            ${number}
           </div>
 
           <div class="edit-area">
@@ -1241,22 +1635,212 @@
       }
 
 
+      let statusSymbol = "⬜";
+
+      if (
+        task.status === "running" ||
+        task.status === "paused"
+      ) {
+        statusSymbol = "🟨";
+      }
+
+
+      let meta = "";
+
+
+      if (
+        task.status === "running"
+      ) {
+
+        meta = `
+
+          <div class="status-meta">
+            LÄUFT
+          </div>
+
+          <div class="task-meta">
+            ${formatDateTime(
+              task.startedAt,
+              "GESTARTET"
+            )}
+          </div>
+
+          <div
+            class="duration live-duration"
+            data-task-id="${task.id}"
+          >
+            AKTIV ·
+            ${formatDuration(
+              getCurrentActiveDuration(
+                task
+              )
+            )}
+          </div>
+        `;
+
+      }
+
+
+      if (
+        task.status === "paused"
+      ) {
+
+        meta = `
+
+          <div class="status-meta paused-meta">
+            PAUSIERT
+          </div>
+
+          <div class="task-meta">
+            ${formatDateTime(
+              task.startedAt,
+              "GESTARTET"
+            )}
+          </div>
+
+          <div
+            class="duration live-duration"
+            data-task-id="${task.id}"
+          >
+            AKTIV ·
+            ${formatDuration(
+              getCurrentActiveDuration(
+                task
+              )
+            )}
+          </div>
+        `;
+
+      }
+
+
+      let actions = "";
+
+
+      if (
+        task.status === "open"
+      ) {
+
+        actions = `
+
+          <div class="task-actions">
+
+            <button
+              class="task-action-text start-button"
+              onclick="startTask(${task.id})"
+            >
+              ▶ STARTEN
+            </button>
+
+            <button
+              class="task-action-text"
+              onclick="startEditing(${task.id})"
+            >
+              ✏️ BEARBEITEN
+            </button>
+
+            <button
+              class="task-action-text"
+              onclick="askDelete(${task.id})"
+            >
+              🗑 LÖSCHEN
+            </button>
+
+            <button
+              class="task-action-text abort-button"
+              onclick="askAbort(${task.id})"
+            >
+              ❌ ABBRECHEN
+            </button>
+
+          </div>
+        `;
+
+      }
+
+
+      if (
+        task.status === "running"
+      ) {
+
+        actions = `
+
+          <div class="task-actions">
+
+            <button
+              class="task-action-text pause-button"
+              onclick="pauseTask(${task.id})"
+            >
+              ⏸ PAUSE
+            </button>
+
+            <button
+              class="task-action-text finish-button"
+              onclick="finishTask(${task.id})"
+            >
+              ✅ BEENDEN
+            </button>
+
+            <button
+              class="task-action-text abort-button"
+              onclick="askAbort(${task.id})"
+            >
+              ❌ ABBRECHEN
+            </button>
+
+          </div>
+        `;
+
+      }
+
+
+      if (
+        task.status === "paused"
+      ) {
+
+        actions = `
+
+          <div class="task-actions">
+
+            <button
+              class="task-action-text start-button"
+              onclick="resumeTask(${task.id})"
+            >
+              ▶ FORTSETZEN
+            </button>
+
+            <button
+              class="task-action-text finish-button"
+              onclick="finishTask(${task.id})"
+            >
+              ✅ BEENDEN
+            </button>
+
+            <button
+              class="task-action-text abort-button"
+              onclick="askAbort(${task.id})"
+            >
+              ❌ ABBRECHEN
+            </button>
+
+          </div>
+        `;
+
+      }
+
+
       taskElement.innerHTML = `
 
         <div class="task-number">
-          ${taskNumber}
+          ${number}
         </div>
-
 
         <button
           class="icon-button"
           disabled
-          aria-label="${getStatusText(task.status)}"
-          title="${getStatusText(task.status)}"
         >
-          ${getStatusSymbol(task.status)}
+          ${statusSymbol}
         </button>
-
 
         <div class="task-content">
 
@@ -1264,88 +1848,52 @@
             ${escapeHtml(task.text)}
           </div>
 
-          ${
-            task.status === "running" ||
-            task.status === "paused"
-              ? `
-                <div class="status-meta">
-                  ${getStatusText(task.status)}
-                </div>
-              `
-              : ""
-          }
+          ${meta}
+
+          ${actions}
 
         </div>
-
-
-        <button
-          class="icon-button"
-          onclick="startEditing(${task.id})"
-          aria-label="Bearbeiten"
-          title="Bearbeiten"
-        >
-          ✏️
-        </button>
-
-
-        <button
-          class="icon-button"
-          onclick="askDelete(${task.id})"
-          aria-label="Löschen"
-          title="Löschen"
-        >
-          🗑️
-        </button>
-
-
-        <button
-          class="small-action-button"
-          onclick="askAbort(${task.id})"
-          aria-label="Aufgabe abbrechen"
-          title="Abbrechen"
-        >
-          ❌
-        </button>
-
       `;
+
 
       return taskElement;
 
     }
 
 
+    /*
+      ERLEDIGT
+    */
+
     function createCompletedTaskElement(
       task
     ) {
 
-      const taskElement =
+      const element =
         document.createElement(
           "div"
         );
 
-      taskElement.className =
+      element.className =
         "task completed";
 
-      const taskNumber =
-        getDynamicTaskNumber(task);
+      const number =
+        getDynamicTaskNumber(
+          task
+        );
 
-
-      taskElement.innerHTML = `
+      element.innerHTML = `
 
         <div class="task-number">
-          ${taskNumber}
+          ${number}
         </div>
-
 
         <button
           class="icon-button"
           disabled
-          aria-label="Erledigt"
-          title="Erledigt"
         >
           ✅
         </button>
-
 
         <div class="task-content">
 
@@ -1366,57 +1914,68 @@
               : ""
           }
 
-        </div>
+          ${
+            task.activeDurationMs !== null
+              ? `
+                <div class="duration">
+                  DAUER ·
+                  ${formatDuration(
+                    task.activeDurationMs
+                  )}
+                </div>
+              `
+              : ""
+          }
 
+        </div>
 
         <button
           class="icon-button"
           onclick="repeatTask(${task.id})"
-          aria-label="Aufgabe wiederholen"
           title="Wiederholen"
         >
           🔁
         </button>
-
       `;
 
-      return taskElement;
+      return element;
 
     }
 
+
+    /*
+      ABGEBROCHEN
+    */
 
     function createAbortedTaskElement(
       task
     ) {
 
-      const taskElement =
+      const element =
         document.createElement(
           "div"
         );
 
-      taskElement.className =
+      element.className =
         "task aborted";
 
-      const taskNumber =
-        getDynamicTaskNumber(task);
+      const number =
+        getDynamicTaskNumber(
+          task
+        );
 
-
-      taskElement.innerHTML = `
+      element.innerHTML = `
 
         <div class="task-number">
-          ${taskNumber}
+          ${number}
         </div>
-
 
         <button
           class="icon-button"
           disabled
-          aria-label="Abgebrochen"
-          title="Abgebrochen"
         >
           ❌
         </button>
-
 
         <div class="task-content">
 
@@ -1439,36 +1998,37 @@
 
         </div>
 
-
         <button
           class="icon-button"
           onclick="repeatTask(${task.id})"
-          aria-label="Aufgabe wiederholen"
           title="Wiederholen"
         >
           🔁
         </button>
-
       `;
 
-      return taskElement;
+      return element;
 
     }
 
 
+    /*
+      RENDERN
+    */
+
     function renderTasks() {
 
-      const activeTaskList =
+      const activeList =
         document.getElementById(
           "activeTaskList"
         );
 
-      const completedTaskList =
+      const completedList =
         document.getElementById(
           "completedTaskList"
         );
 
-      const abortedTaskList =
+      const abortedList =
         document.getElementById(
           "abortedTaskList"
         );
@@ -1487,28 +2047,17 @@
         tasks
           .filter(
             task =>
-              task.status === "completed"
+              task.status ===
+              "completed"
           )
           .sort(
-            (a, b) => {
-
-              const aTime =
-                a.completedAt
-                  ? new Date(
-                      a.completedAt
-                    ).getTime()
-                  : 0;
-
-              const bTime =
-                b.completedAt
-                  ? new Date(
-                      b.completedAt
-                    ).getTime()
-                  : 0;
-
-              return bTime - aTime;
-
-            }
+            (a, b) =>
+              new Date(
+                b.completedAt || 0
+              ) -
+              new Date(
+                a.completedAt || 0
+              )
           );
 
 
@@ -1516,28 +2065,17 @@
         tasks
           .filter(
             task =>
-              task.status === "aborted"
+              task.status ===
+              "aborted"
           )
           .sort(
-            (a, b) => {
-
-              const aTime =
-                a.abortedAt
-                  ? new Date(
-                      a.abortedAt
-                    ).getTime()
-                  : 0;
-
-              const bTime =
-                b.abortedAt
-                  ? new Date(
-                      b.abortedAt
-                    ).getTime()
-                  : 0;
-
-              return bTime - aTime;
-
-            }
+            (a, b) =>
+              new Date(
+                b.abortedAt || 0
+              ) -
+              new Date(
+                a.abortedAt || 0
+              )
           );
 
 
@@ -1547,10 +2085,15 @@
             task.status === "open"
         ).length;
 
-      const startedCount =
+      const runningCount =
         tasks.filter(
           task =>
-            task.status === "running" ||
+            task.status === "running"
+        ).length;
+
+      const pausedCount =
+        tasks.filter(
+          task =>
             task.status === "paused"
         ).length;
 
@@ -1560,40 +2103,36 @@
       ).textContent =
         openCount +
         " offen · " +
-        startedCount +
-        " begonnen";
+        runningCount +
+        " läuft · " +
+        pausedCount +
+        " pausiert";
 
 
       document.getElementById(
         "completedCounter"
       ).textContent =
-        completedTasks.length === 1
-          ? "1 erledigt"
-          : completedTasks.length +
-            " erledigt";
+        completedTasks.length +
+        " erledigt";
 
 
       document.getElementById(
         "abortedCounter"
       ).textContent =
-        abortedTasks.length === 1
-          ? "1 abgebrochen"
-          : abortedTasks.length +
-            " abgebrochen";
+        abortedTasks.length +
+        " abgebrochen";
 
 
-      activeTaskList.innerHTML = "";
-
-      completedTaskList.innerHTML = "";
-
-      abortedTaskList.innerHTML = "";
+      activeList.innerHTML = "";
+      completedList.innerHTML = "";
+      abortedList.innerHTML = "";
 
 
       if (
         activeTasks.length === 0
       ) {
 
-        activeTaskList.innerHTML = `
+        activeList.innerHTML = `
           <div class="empty-message">
             Nix offen. Verdächtig. 👀
           </div>
@@ -1601,13 +2140,17 @@
 
       } else {
 
-        activeTasks.forEach(task => {
+        activeTasks.forEach(
+          task => {
 
-          activeTaskList.appendChild(
-            createActiveTaskElement(task)
-          );
+            activeList.appendChild(
+              createActiveTaskElement(
+                task
+              )
+            );
 
-        });
+          }
+        );
 
       }
 
@@ -1616,7 +2159,7 @@
         completedTasks.length === 0
       ) {
 
-        completedTaskList.innerHTML = `
+        completedList.innerHTML = `
           <div class="empty-message">
             Noch nix erledigt.
           </div>
@@ -1624,15 +2167,17 @@
 
       } else {
 
-        completedTasks.forEach(task => {
+        completedTasks.forEach(
+          task => {
 
-          completedTaskList.appendChild(
-            createCompletedTaskElement(
-              task
-            )
-          );
+            completedList.appendChild(
+              createCompletedTaskElement(
+                task
+              )
+            );
 
-        });
+          }
+        );
 
       }
 
@@ -1641,7 +2186,7 @@
         abortedTasks.length === 0
       ) {
 
-        abortedTaskList.innerHTML = `
+        abortedList.innerHTML = `
           <div class="empty-message">
             Nix abgebrochen.
           </div>
@@ -1649,19 +2194,64 @@
 
       } else {
 
-        abortedTasks.forEach(task => {
+        abortedTasks.forEach(
+          task => {
 
-          abortedTaskList.appendChild(
-            createAbortedTaskElement(
-              task
-            )
-          );
+            abortedList.appendChild(
+              createAbortedTaskElement(
+                task
+              )
+            );
 
-        });
+          }
+        );
 
       }
 
     }
+
+
+    /*
+      LIVE-TIMER AKTUALISIEREN
+    */
+
+    function updateLiveTimers() {
+
+      document
+        .querySelectorAll(
+          ".live-duration"
+        )
+        .forEach(element => {
+
+          const id =
+            Number(
+              element.dataset.taskId
+            );
+
+          const task =
+            getTask(id);
+
+          if (!task) {
+            return;
+          }
+
+          element.textContent =
+            "AKTIV · " +
+            formatDuration(
+              getCurrentActiveDuration(
+                task
+              )
+            );
+
+        });
+
+    }
+
+
+    setInterval(
+      updateLiveTimers,
+      1000
+    );
 
 
     document
