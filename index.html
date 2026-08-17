@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0b0d0f">
-
+<meta name="theme-color" content="#0b0d0f">  
+  
 <title>Master of Disaster</title>
 
 <style>
@@ -4196,22 +4196,16 @@ task.activeDurationMs
 }
 
 
-let filterTodayButton =
-"";
-
-
-if (
-filterTodayOnly
-) {
-
-filterTodayButton =
+let todayToggleButton =
 iconButton(
 
 isTodayTask(task)
 ? "📌"
 : "📅",
 
-"Zu Heute",
+isTodayTask(task)
+? "Aus Heute entfernen"
+: "Zu Heute hinzufügen",
 
 `toggleToday(${task.id})`,
 
@@ -4220,9 +4214,6 @@ isTodayTask(task)
 : "today-button"
 
 );
-
-}
-
 
 let actions =
 "";
@@ -4248,7 +4239,7 @@ ${iconButton(
 
 ${
 showTodayButton
-? filterTodayButton
+? todayToggleButton
 : ""
 }
 
@@ -4386,7 +4377,7 @@ task.text
 
 ${
 filterTodayOnly
-? filterTodayButton
+? todayToggleButton
 : ""
 }
 
