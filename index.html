@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: A236 REPARIERT + MEHRTAGESSTATISTIK · ACTIVESEGMENTS · GEWICHT · TAGESZUORDNUNG -->
+<!-- BUILD: A236 REPARIERT + MEHRTAGESSTATISTIK + DEV-MEHRTAGESTEST · ACTIVESEGMENTS · GEWICHT · TAGESZUORDNUNG -->
 
 <style>
 
@@ -10786,6 +10786,20 @@ GEWICHT GESTERN TESTEN
 
 <button
 class="dev-button"
+onclick="createMultiDayStatisticsTest()"
+>
+🗓️ MEHRTAGES-TEST ERZEUGEN
+</button>
+
+<button
+class="dev-button"
+onclick="resetMultiDayStatisticsTest()"
+>
+🧹 MEHRTAGES-TEST LÖSCHEN
+</button>
+
+<button
+class="dev-button"
 onclick="createStatisticsDemoData()"
 >
 📊 STATISTIK-DEMODATEN
@@ -11230,6 +11244,333 @@ render();
 showInfoModal(
 "Testtag zurückgesetzt",
 "Alle künstlichen Archiv- und Zusatzgewichts-Testdaten von gestern wurden gelöscht."
+);
+
+}
+
+
+
+/* ======================================
+   MEHRTAGES-STATISTIKTEST
+====================================== */
+
+function removeMultiDayStatisticsTestData() {
+
+archive =
+archive.filter(
+item =>
+item.testMultiDayStatistics !==
+true
+);
+
+
+weightPhases =
+weightPhases.filter(
+phase =>
+phase.testMultiDayStatistics !==
+true
+);
+
+
+const highestArchiveNumber =
+archive.reduce(
+(max,item) =>
+Math.max(
+max,
+Number(
+item.archiveNumber
+) || 0
+),
+0
+);
+
+
+nextArchiveNumber =
+Math.max(
+highestArchiveNumber + 1,
+1
+);
+
+}
+
+
+function createMultiDayStatisticsTest() {
+
+/*
+  Der Test wird absichtlich relativ zu "heute" gebaut.
+  So kann er jederzeit erneut verwendet werden.
+
+  Tag 1 (gestern):
+  20:00-21:00 aktiv mit 12,3 kg
+
+  Tag 2 (heute):
+  20:00-20:30 aktiv mit 8,3 kg
+  20:30-21:00 aktiv ohne Zusatzgewicht
+
+  Erwartung:
+  Archiv gesamt 2:00:00 aktive Zeit,
+  davon 1:30:00 mit Zusatzgewicht.
+*/
+
+removeMultiDayStatisticsTestData();
+
+
+const today =
+getBerlinDateKey();
+
+
+const yesterday =
+addDays(
+today,
+-1
+);
+
+
+const firstStart =
+createTestISOForBerlinDate(
+yesterday,
+20,
+0
+);
+
+
+const firstEnd =
+createTestISOForBerlinDate(
+yesterday,
+21,
+0
+);
+
+
+const secondStart =
+createTestISOForBerlinDate(
+today,
+20,
+0
+);
+
+
+const secondMid =
+createTestISOForBerlinDate(
+today,
+20,
+30
+);
+
+
+const secondEnd =
+createTestISOForBerlinDate(
+today,
+21,
+0
+);
+
+
+const archiveNumber =
+nextArchiveNumber;
+
+
+archive.push({
+
+archiveNumber:
+archiveNumber,
+
+archiveId:
+"A-" + archiveNumber,
+
+text:
+"DEV · Mehrtages-Test 12,3 / 8,3 / ohne Gewicht",
+
+status:
+"completed",
+
+type:
+"work",
+
+priority:
+"normal",
+
+optional:
+false,
+
+dueMode:
+"none",
+
+dueDate:
+null,
+
+startedAt:
+firstStart,
+
+completedAt:
+secondEnd,
+
+completedDate:
+today,
+
+activeDurationMs:
+2 * 60 * 60 * 1000,
+
+leisureDurationMs:
+null,
+
+actualDurationMs:
+2 * 60 * 60 * 1000,
+
+cookingActiveDurationMs:
+null,
+
+cookingPassiveDurationMs:
+null,
+
+pauseTotalMs:
+23 * 60 * 60 * 1000,
+
+activeSegments:
+[
+  {
+    startedAt:
+    firstStart,
+
+    endedAt:
+    firstEnd
+  },
+  {
+    startedAt:
+    secondStart,
+
+    endedAt:
+    secondEnd
+  }
+],
+
+historicalWeightKg:
+null,
+
+historicalWeightNote:
+null,
+
+sourceNote:
+"DEV-Test für mehrtägige Aufgaben. Tag 1: 1:00 mit 12,3 kg; Tag 2: 0:30 mit 8,3 kg + 0:30 ohne Gewicht.",
+
+category:
+"DEV-Test",
+
+archiveAccountingActiveDurationMs:
+2 * 60 * 60 * 1000,
+
+unseparatedCookingDurationMs:
+null,
+
+overlapExcludedDurationMs:
+0,
+
+testMultiDayStatistics:
+true
+
+});
+
+
+nextArchiveNumber =
+archiveNumber + 1;
+
+
+weightPhases.push({
+
+id:
+Date.now(),
+
+weightKg:
+12.3,
+
+startedAt:
+firstStart,
+
+endedAt:
+firstEnd,
+
+date:
+yesterday,
+
+testMultiDayStatistics:
+true
+
+});
+
+
+weightPhases.push({
+
+id:
+Date.now() + 1,
+
+weightKg:
+8.3,
+
+startedAt:
+secondStart,
+
+endedAt:
+secondMid,
+
+date:
+today,
+
+testMultiDayStatistics:
+true
+
+});
+
+
+saveAll();
+
+renderWeightPanel();
+
+render();
+
+
+showInfoModal(
+"Mehrtages-Test erzeugt",
+"Künstliche Archivaufgabe angelegt: gestern 20:00-21:00 mit 12,3 kg; heute 20:00-20:30 mit 8,3 kg und 20:30-21:00 ohne Gewicht. Gesamt aktiv: 2:00:00. Der Test ist separat markiert und kann mit dem DEV-Löschknopf vollständig entfernt werden."
+);
+
+}
+
+
+function resetMultiDayStatisticsTest() {
+
+const hadArchiveTest =
+archive.some(
+item =>
+item.testMultiDayStatistics ===
+true
+);
+
+
+const hadWeightTest =
+weightPhases.some(
+phase =>
+phase.testMultiDayStatistics ===
+true
+);
+
+
+removeMultiDayStatisticsTestData();
+
+saveAll();
+
+renderWeightPanel();
+
+render();
+
+
+showInfoModal(
+"Mehrtages-Test gelöscht",
+(
+hadArchiveTest ||
+hadWeightTest
+)
+? "Nur die künstlichen Mehrtages-Testdaten wurden entfernt. Andere Archivaufgaben und Gewichtsdaten bleiben unverändert."
+: "Es waren keine künstlichen Mehrtages-Testdaten vorhanden."
 );
 
 }
