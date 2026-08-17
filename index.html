@@ -234,6 +234,63 @@
       word-break: break-word;
     }
 
+    /* PRIORITÄT */
+
+    .priority-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      margin-top: 7px;
+    }
+
+    .priority-label {
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+
+      color: #778087;
+    }
+
+    .priority-button {
+      min-width: 31px;
+      height: 28px;
+
+      padding: 0 6px;
+
+      border: 1px solid #30363b;
+      border-radius: 8px;
+
+      background: #101315;
+      color: white;
+
+      font-size: 13px;
+
+      cursor: pointer;
+
+      opacity: 0.45;
+    }
+
+    .priority-button.selected {
+      opacity: 1;
+      border-color: #69737a;
+      background: #20262a;
+    }
+
+    .priority-button:active {
+      transform: scale(0.94);
+    }
+
+    .priority-display {
+      margin-top: 6px;
+
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.7px;
+
+      color: #8f989f;
+    }
+
     /* META */
 
     .task-meta {
@@ -683,7 +740,14 @@
         completedAt: null,
         activeDurationMs: null,
         abortedAt: null,
-        abortedActiveDurationMs: null
+        abortedActiveDurationMs: null,
+
+        /*
+          NEU:
+          Jede bestehende Aufgabe bekommt
+          standardmäßig normale Priorität.
+        */
+        priority: "normal"
       };
 
       Object.keys(defaults)
@@ -726,6 +790,181 @@
 
 
     /*
+      PRIORITÄTEN
+    */
+
+    function setPriority(
+      id,
+      priority
+    ) {
+
+      const task =
+        getTask(id);
+
+      if (!task) {
+        return;
+      }
+
+      if (
+        task.status === "completed" ||
+        task.status === "aborted"
+      ) {
+        return;
+      }
+
+      const allowed =
+        [
+          "normal",
+          "medium",
+          "high"
+        ];
+
+      if (
+        !allowed.includes(
+          priority
+        )
+      ) {
+        return;
+      }
+
+      task.priority =
+        priority;
+
+      saveTasks();
+      renderTasks();
+
+    }
+
+
+    function getPrioritySymbol(
+      priority
+    ) {
+
+      if (
+        priority === "medium"
+      ) {
+        return "🟡";
+      }
+
+      if (
+        priority === "high"
+      ) {
+        return "🔴";
+      }
+
+      return "⚪";
+
+    }
+
+
+    function getPriorityName(
+      priority
+    ) {
+
+      if (
+        priority === "medium"
+      ) {
+        return "MITTEL";
+      }
+
+      if (
+        priority === "high"
+      ) {
+        return "HOCH";
+      }
+
+      return "NORMAL";
+
+    }
+
+
+    function createPriorityControls(
+      task
+    ) {
+
+      return `
+
+        <div class="priority-row">
+
+          <span class="priority-label">
+            PRIORITÄT
+          </span>
+
+          <button
+            class="priority-button
+            ${
+              task.priority === "normal"
+                ? "selected"
+                : ""
+            }"
+            onclick="setPriority(
+              ${task.id},
+              'normal'
+            )"
+            title="Normale Priorität"
+          >
+            ⚪
+          </button>
+
+          <button
+            class="priority-button
+            ${
+              task.priority === "medium"
+                ? "selected"
+                : ""
+            }"
+            onclick="setPriority(
+              ${task.id},
+              'medium'
+            )"
+            title="Mittlere Priorität"
+          >
+            🟡
+          </button>
+
+          <button
+            class="priority-button
+            ${
+              task.priority === "high"
+                ? "selected"
+                : ""
+            }"
+            onclick="setPriority(
+              ${task.id},
+              'high'
+            )"
+            title="Hohe Priorität"
+          >
+            🔴
+          </button>
+
+        </div>
+      `;
+
+    }
+
+
+    function createPriorityDisplay(
+      task
+    ) {
+
+      return `
+
+        <div class="priority-display">
+          ${getPrioritySymbol(
+            task.priority
+          )}
+          PRIORITÄT ·
+          ${getPriorityName(
+            task.priority
+          )}
+        </div>
+      `;
+
+    }
+
+
+    /*
       NEUE AUFGABE
     */
 
@@ -748,6 +987,12 @@
         text: text,
 
         status: "open",
+
+        /*
+          Neue Aufgaben sind gemäß
+          Regelwerk immer normal.
+        */
+        priority: "normal",
 
         startedAt: null,
         pausedAt: null,
@@ -1069,12 +1314,6 @@
         Date.now();
 
 
-      /*
-        Wurde die Aufgabe bereits gestartet,
-        wird die bis jetzt geleistete
-        aktive Zeit gespeichert.
-      */
-
       if (task.startedAt) {
 
         task.abortedActiveDurationMs =
@@ -1082,13 +1321,6 @@
             task,
             now
           );
-
-        /*
-          Falls während einer Pause
-          abgebrochen wird, wird die
-          laufende Pause ebenfalls
-          dokumentiert.
-        */
 
         if (
           task.status === "paused" &&
@@ -1107,11 +1339,6 @@
         }
 
       } else {
-
-        /*
-          Nie gestartet =
-          keine Arbeitszeit.
-        */
 
         task.abortedActiveDurationMs =
           null;
@@ -1148,7 +1375,7 @@
 
 
     /*
-      AKTIVE ZEIT BERECHNEN
+      ZEITBERECHNUNG
     */
 
     function calculateActiveDuration(
@@ -1168,13 +1395,6 @@
       let pauseTotal =
         task.pauseTotalMs || 0;
 
-
-      /*
-        Wenn die Aufgabe aktuell
-        pausiert ist, zählt die Zeit
-        seit pausedAt ebenfalls
-        als Pause.
-      */
 
       if (
         task.status === "paused" &&
@@ -1202,10 +1422,6 @@
 
     }
 
-
-    /*
-      AKTUELLE LIVE-DAUER
-    */
 
     function getCurrentActiveDuration(
       task
@@ -1237,6 +1453,14 @@
         text: oldTask.text,
 
         status: "open",
+
+        /*
+          Die Wiederholung übernimmt
+          die Priorität der Vorlage.
+        */
+        priority:
+          oldTask.priority ||
+          "normal",
 
         startedAt: null,
         pausedAt: null,
@@ -1497,7 +1721,7 @@
 
 
     /*
-      TEXT SICHER AUSGEBEN
+      HTML SICHER AUSGEBEN
     */
 
     function escapeHtml(text) {
@@ -1960,6 +2184,10 @@
             ${escapeHtml(task.text)}
           </div>
 
+          ${createPriorityControls(
+            task
+          )}
+
           ${meta}
 
           ${actions}
@@ -2011,6 +2239,10 @@
           <div class="task-text">
             ${escapeHtml(task.text)}
           </div>
+
+          ${createPriorityDisplay(
+            task
+          )}
 
           ${
             task.completedAt
@@ -2093,6 +2325,10 @@
           <div class="task-text">
             ${escapeHtml(task.text)}
           </div>
+
+          ${createPriorityDisplay(
+            task
+          )}
 
           ${
             task.abortedAt
