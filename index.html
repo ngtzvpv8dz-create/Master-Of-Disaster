@@ -49,7 +49,6 @@ body {
 
 h1 {
   margin: 0;
-
   font-size: clamp(28px, 8vw, 42px);
   line-height: 1;
   letter-spacing: -1.5px;
@@ -404,7 +403,7 @@ h1 {
   color: #ad6666;
 }
 
-/* ICONS */
+/* BUTTONS */
 
 button {
   font-family: inherit;
@@ -539,7 +538,7 @@ button {
   transition: width 0.25s ease;
 }
 
-/* NÄCHSTE AUFGABE */
+/* NEXT */
 
 .next-task-panel {
   padding: 13px;
@@ -757,6 +756,63 @@ button {
   color: #74818a;
 }
 
+/* TESTBEREICH */
+
+.dev-panel {
+  margin-top: 30px;
+
+  padding: 13px;
+
+  border: 1px dashed #5d4545;
+  border-radius: 13px;
+
+  background: #171313;
+}
+
+.dev-title {
+  margin-bottom: 5px;
+
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.3px;
+
+  color: #b97e7e;
+}
+
+.dev-description {
+  margin-bottom: 11px;
+
+  font-size: 10px;
+  line-height: 1.4;
+
+  color: #806f6f;
+}
+
+.dev-buttons {
+  display: flex;
+  gap: 7px;
+
+  flex-wrap: wrap;
+}
+
+.dev-button {
+  flex: 1;
+  min-width: 135px;
+
+  padding: 9px;
+
+  border: 1px solid #604545;
+  border-radius: 8px;
+
+  background: #211616;
+  color: #c99c9c;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  cursor: pointer;
+}
+
 /* MODAL */
 
 .modal-backdrop {
@@ -788,7 +844,6 @@ button {
 
 .modal h2 {
   margin: 0 0 8px;
-
   font-size: 20px;
 }
 
@@ -873,10 +928,6 @@ button {
     font-size: 12px;
   }
 
-  .next-task-name {
-    font-size: 15px;
-  }
-
 }
 </style>
 </head>
@@ -887,13 +938,13 @@ button {
 
 <header class="header">
 
-  <h1>
-    MASTER OF DISASTER
-  </h1>
+<h1>
+MASTER OF DISASTER
+</h1>
 
-  <div class="eyebrow">
-    WEEK-AND-END-TO-DO-DINGSI
-  </div>
+<div class="eyebrow">
+WEEK-AND-END-TO-DO-DINGSI
+</div>
 
 </header>
 
@@ -902,60 +953,32 @@ button {
 
 <nav class="tabs">
 
-<button
-  class="tab-button active"
-  data-tab="all"
-  onclick="switchTab('all')"
->
-  ALLE
+<button class="tab-button active" data-tab="all" onclick="switchTab('all')">
+ALLE
 </button>
 
-<button
-  class="tab-button"
-  data-tab="today"
-  onclick="switchTab('today')"
->
-  HEUTE
+<button class="tab-button" data-tab="today" onclick="switchTab('today')">
+HEUTE
 </button>
 
-<button
-  class="tab-button"
-  data-tab="priority"
-  onclick="switchTab('priority')"
->
-  PRIORITÄT
+<button class="tab-button" data-tab="priority" onclick="switchTab('priority')">
+PRIORITÄT
 </button>
 
-<button
-  class="tab-button"
-  data-tab="due"
-  onclick="switchTab('due')"
->
-  FÄLLIG
+<button class="tab-button" data-tab="due" onclick="switchTab('due')">
+FÄLLIG
 </button>
 
-<button
-  class="tab-button"
-  data-tab="active"
-  onclick="switchTab('active')"
->
-  AKTIV
+<button class="tab-button" data-tab="active" onclick="switchTab('active')">
+AKTIV
 </button>
 
-<button
-  class="tab-button"
-  data-tab="completed"
-  onclick="switchTab('completed')"
->
-  ERLEDIGT
+<button class="tab-button" data-tab="completed" onclick="switchTab('completed')">
+ERLEDIGT
 </button>
 
-<button
-  class="tab-button"
-  data-tab="archive"
-  onclick="switchTab('archive')"
->
-  ARCHIV
+<button class="tab-button" data-tab="archive" onclick="switchTab('archive')">
+ARCHIV
 </button>
 
 </nav>
@@ -963,47 +986,44 @@ button {
 </div>
 
 
-<section
-  class="input-panel"
-  id="inputPanel"
->
+<section class="input-panel" id="inputPanel">
 
 <input
-  type="text"
-  id="taskInput"
-  placeholder="Was steht an?"
-  autocomplete="off"
+type="text"
+id="taskInput"
+placeholder="Was steht an?"
+autocomplete="off"
 >
 
 
 <div class="option-row">
 
 <span class="option-label">
-  PRIORITÄT
+PRIORITÄT
 </span>
 
 <button
-  id="newPriorityNormal"
-  class="option-button selected"
-  onclick="setNewPriority('normal')"
+id="newPriorityNormal"
+class="option-button selected"
+onclick="setNewPriority('normal')"
 >
-  ⚪ NORMAL
+⚪ NORMAL
 </button>
 
 <button
-  id="newPriorityMedium"
-  class="option-button"
-  onclick="setNewPriority('medium')"
+id="newPriorityMedium"
+class="option-button"
+onclick="setNewPriority('medium')"
 >
-  🟡 MITTEL
+🟡 MITTEL
 </button>
 
 <button
-  id="newPriorityHigh"
-  class="option-button"
-  onclick="setNewPriority('high')"
+id="newPriorityHigh"
+class="option-button"
+onclick="setNewPriority('high')"
 >
-  🔴 HOCH
+🔴 HOCH
 </button>
 
 </div>
@@ -1012,15 +1032,15 @@ button {
 <div class="option-row">
 
 <span class="option-label">
-  OPTIONAL
+OPTIONAL
 </span>
 
 <button
-  id="newOptionalButton"
-  class="option-button"
-  onclick="toggleNewOptional()"
+id="newOptionalButton"
+class="option-button"
+onclick="toggleNewOptional()"
 >
-  🟣 NEIN
+🟣 NEIN
 </button>
 
 </div>
@@ -1029,41 +1049,38 @@ button {
 <div class="option-row">
 
 <span class="option-label">
-  FÄLLIG
+FÄLLIG
 </span>
 
 <button
-  id="newDueNone"
-  class="option-button selected"
-  onclick="setNewDue('none')"
+id="newDueNone"
+class="option-button selected"
+onclick="setNewDue('none')"
 >
-  —
+—
 </button>
 
 <button
-  id="newDueTomorrow"
-  class="option-button"
-  onclick="setNewDue('tomorrowOnly')"
+id="newDueTomorrow"
+class="option-button"
+onclick="setNewDue('tomorrowOnly')"
 >
-  💠 MORGEN
+💠 MORGEN
 </button>
 
 <button
-  id="newDueDeadline"
-  class="option-button"
-  onclick="setNewDue('deadline')"
+id="newDueDeadline"
+class="option-button"
+onclick="setNewDue('deadline')"
 >
-  🔷 BIS MORGEN
+🔷 BIS MORGEN
 </button>
 
 </div>
 
 
-<button
-  class="add-button"
-  onclick="addTask()"
->
-  + AUFGABE HINZUFÜGEN
+<button class="add-button" onclick="addTask()">
++ AUFGABE HINZUFÜGEN
 </button>
 
 </section>
@@ -1079,175 +1096,135 @@ button {
 
 <script>
 
-/*
-  AKTIVER BESTAND
-*/
+/* DATEN */
 
 let tasks =
-  JSON.parse(
-    localStorage.getItem(
-      "masterOfDisasterTasks"
-    )
-  ) || [];
+JSON.parse(
+localStorage.getItem(
+"masterOfDisasterTasks"
+)
+) || [];
 
-
-/*
-  ARCHIVBESTAND
-*/
 
 let archive =
-  JSON.parse(
-    localStorage.getItem(
-      "masterOfDisasterArchive"
-    )
-  ) || [];
+JSON.parse(
+localStorage.getItem(
+"masterOfDisasterArchive"
+)
+) || [];
 
-
-/*
-  NÄCHSTE ARCHIVNUMMER
-
-  Wird später beim Import unseres
-  echten Archivs automatisch auf
-  beispielsweise 214 gesetzt.
-*/
 
 let nextArchiveNumber =
-  Number(
-    localStorage.getItem(
-      "masterOfDisasterNextArchiveNumber"
-    )
-  ) || 1;
+Number(
+localStorage.getItem(
+"masterOfDisasterNextArchiveNumber"
+)
+) || 1;
 
 
-let currentTab =
-  "all";
+let currentTab = "all";
+
+let editingTaskId = null;
+
+let newTaskPriority = "normal";
+
+let newTaskOptional = false;
+
+let newTaskDueMode = "none";
+
+let dragState = null;
 
 
-let editingTaskId =
-  null;
+/* MIGRATION */
+
+tasks = tasks.map(task => {
+
+if (!task.status) {
+
+task.status =
+task.completed
+? "completed"
+: "open";
+
+}
 
 
-let newTaskPriority =
-  "normal";
+const defaults = {
+
+priority: "normal",
+
+optional: false,
+
+dueMode: "none",
+
+dueDate: null,
+
+todayDate: null,
+
+todayOrder: null,
+
+startedAt: null,
+
+pausedAt: null,
+
+pauseTotalMs: 0,
+
+completedAt: null,
+
+activeDurationMs: null,
+
+abortedAt: null,
+
+abortedActiveDurationMs: null
+
+};
 
 
-let newTaskOptional =
-  false;
+Object.keys(defaults).forEach(key => {
+
+if (
+typeof task[key] ===
+"undefined"
+) {
+
+task[key] =
+defaults[key];
+
+}
+
+});
 
 
-let newTaskDueMode =
-  "none";
+return task;
+
+});
 
 
-let dragState =
-  null;
-
-
-/*
-  MIGRATION AKTIVER DATEN
-*/
-
-tasks = tasks.map(
-  task => {
-
-    if (!task.status) {
-
-      task.status =
-        task.completed
-          ? "completed"
-          : "open";
-
-    }
-
-
-    const defaults = {
-
-      priority: "normal",
-
-      optional: false,
-
-      dueMode: "none",
-
-      dueDate: null,
-
-      todayDate: null,
-
-      todayOrder: null,
-
-      startedAt: null,
-
-      pausedAt: null,
-
-      pauseTotalMs: 0,
-
-      completedAt: null,
-
-      activeDurationMs: null,
-
-      abortedAt: null,
-
-      abortedActiveDurationMs: null
-
-    };
-
-
-    Object.keys(
-      defaults
-    ).forEach(
-      key => {
-
-        if (
-          typeof task[key] ===
-          "undefined"
-        ) {
-
-          task[key] =
-            defaults[key];
-
-        }
-
-      }
-    );
-
-
-    return task;
-
-  }
-);
-
-
-/*
-  ARCHIVNUMMER ABSICHERN
-
-  Wenn bereits Archivdaten existieren,
-  wird immer mindestens eine Nummer
-  über der höchsten vorhandenen
-  Archivnummer weitergemacht.
-*/
+/* ARCHIVNUMMER REPARIEREN */
 
 function repairNextArchiveNumber() {
 
-  const highest =
-    archive.reduce(
-      (max, item) =>
-        Math.max(
-          max,
-          Number(
-            item.archiveNumber
-          ) || 0
-        ),
-      0
-    );
+const highest =
+archive.reduce(
+(max,item) =>
+Math.max(
+max,
+Number(
+item.archiveNumber
+) || 0
+),
+0
+);
 
 
-  if (
-    nextArchiveNumber <= highest
-  ) {
+if (
+nextArchiveNumber <= highest
+) {
 
-    nextArchiveNumber =
-      highest + 1;
+nextArchiveNumber =
+highest + 1;
 
-  }
+}
 
 }
 
@@ -1255,4230 +1232,4260 @@ function repairNextArchiveNumber() {
 repairNextArchiveNumber();
 
 
-/*
-  SPEICHERN
-*/
+/* SPEICHERN */
 
 function saveTasks() {
 
-  localStorage.setItem(
-    "masterOfDisasterTasks",
-    JSON.stringify(tasks)
-  );
+localStorage.setItem(
+"masterOfDisasterTasks",
+JSON.stringify(tasks)
+);
 
 }
 
 
 function saveArchive() {
 
-  localStorage.setItem(
-    "masterOfDisasterArchive",
-    JSON.stringify(archive)
-  );
+localStorage.setItem(
+"masterOfDisasterArchive",
+JSON.stringify(archive)
+);
 
 
-  localStorage.setItem(
-    "masterOfDisasterNextArchiveNumber",
-    String(
-      nextArchiveNumber
-    )
-  );
+localStorage.setItem(
+"masterOfDisasterNextArchiveNumber",
+String(
+nextArchiveNumber
+)
+);
 
 }
 
 
 function saveAll() {
 
-  saveTasks();
-
-  saveArchive();
+saveTasks();
+saveArchive();
 
 }
 
 
 function getTask(id) {
 
-  return tasks.find(
-    task =>
-      task.id === id
-  );
+return tasks.find(
+task =>
+task.id === id
+);
 
 }
 
 
-/*
-  DATUM EUROPE / BERLIN
-*/
+/* DATUM */
 
 function getBerlinDateKey(
-  date = new Date()
+date = new Date()
 ) {
 
-  return new Intl
-    .DateTimeFormat(
-      "en-CA",
-      {
-        timeZone:
-          "Europe/Berlin",
+return new Intl.DateTimeFormat(
+"en-CA",
+{
+timeZone:
+"Europe/Berlin",
 
-        year:
-          "numeric",
+year:
+"numeric",
 
-        month:
-          "2-digit",
+month:
+"2-digit",
 
-        day:
-          "2-digit"
-      }
-    )
-    .format(
-      date
-    );
+day:
+"2-digit"
+}
+).format(date);
 
 }
 
 
-function getBerlinDateKeyFromISO(
-  value
+function getBerlinDateKeyFromISO(value) {
+
+if (!value) {
+return null;
+}
+
+
+const date =
+new Date(value);
+
+
+if (
+Number.isNaN(
+date.getTime()
+)
 ) {
-
-  if (!value) {
-    return null;
-  }
+return null;
+}
 
 
-  const date =
-    new Date(value);
-
-
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
-    return null;
-  }
-
-
-  return getBerlinDateKey(
-    date
-  );
+return getBerlinDateKey(date);
 
 }
 
 
 function addDays(
-  dateKey,
-  days
+dateKey,
+days
 ) {
 
-  const parts =
-    dateKey
-      .split("-")
-      .map(Number);
+const parts =
+dateKey
+.split("-")
+.map(Number);
 
 
-  const date =
-    new Date(
-      Date.UTC(
-        parts[0],
-        parts[1] - 1,
-        parts[2] + days,
-        12
-      )
-    );
+const date =
+new Date(
+Date.UTC(
+parts[0],
+parts[1] - 1,
+parts[2] + days,
+12
+)
+);
 
 
-  return (
-    date.getUTCFullYear() +
-    "-" +
-    String(
-      date.getUTCMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    ) +
-    "-" +
-    String(
-      date.getUTCDate()
-    ).padStart(
-      2,
-      "0"
-    )
-  );
+return (
+date.getUTCFullYear() +
+"-" +
+String(
+date.getUTCMonth() + 1
+).padStart(2,"0") +
+"-" +
+String(
+date.getUTCDate()
+).padStart(2,"0")
+);
 
 }
 
 
 /*
-  ARCHIVIEREN
+  ISO-ZEIT KÜNSTLICH AUF
+  BESTIMMTES BERLIN-DATUM SETZEN
+
+  Nur Testhilfe.
 */
 
-function archiveCompletedTask(
-  task
+function createTestISOForBerlinDate(
+dateKey,
+hour = 12,
+minute = 0
 ) {
 
-  const completionDate =
-    getBerlinDateKeyFromISO(
-      task.completedAt
-    );
+const parts =
+dateKey
+.split("-")
+.map(Number);
 
 
-  const archivedAt =
-    new Date()
-      .toISOString();
+/*
+  Mittags UTC ist für unseren Test
+  bewusst robust genug, weil wir nur
+  das Kalendertagesdatum brauchen.
+*/
 
-
-  const archivedTask = {
-
-    archiveNumber:
-      nextArchiveNumber,
-
-    archiveId:
-      "A-" +
-      nextArchiveNumber +
-      "-" +
-      task.id,
-
-    sourceTaskId:
-      task.id,
-
-    text:
-      task.text,
-
-    status:
-      "completed",
-
-    priority:
-      task.priority,
-
-    optional:
-      task.optional,
-
-    dueMode:
-      task.dueMode,
-
-    dueDate:
-      task.dueDate,
-
-    startedAt:
-      task.startedAt,
-
-    pauseTotalMs:
-      task.pauseTotalMs,
-
-    completedAt:
-      task.completedAt,
-
-    activeDurationMs:
-      task.activeDurationMs,
-
-    completedDate:
-      completionDate,
-
-    archivedAt:
-      archivedAt
-
-  };
-
-
-  archive.push(
-    archivedTask
-  );
-
-
-  nextArchiveNumber +=
-    1;
+return new Date(
+Date.UTC(
+parts[0],
+parts[1] - 1,
+parts[2],
+hour,
+minute,
+0
+)
+).toISOString();
 
 }
 
 
-/*
-  AUTOMATISCHER TAGESWECHSEL
-*/
+/* ARCHIVIERUNG */
+
+function archiveCompletedTask(task) {
+
+const completionDate =
+getBerlinDateKeyFromISO(
+task.completedAt
+);
+
+
+const archivedTask = {
+
+archiveNumber:
+nextArchiveNumber,
+
+archiveId:
+"A-" +
+nextArchiveNumber +
+"-" +
+task.id,
+
+sourceTaskId:
+task.id,
+
+text:
+task.text,
+
+status:
+"completed",
+
+priority:
+task.priority,
+
+optional:
+task.optional,
+
+dueMode:
+task.dueMode,
+
+dueDate:
+task.dueDate,
+
+startedAt:
+task.startedAt,
+
+pauseTotalMs:
+task.pauseTotalMs,
+
+completedAt:
+task.completedAt,
+
+activeDurationMs:
+task.activeDurationMs,
+
+completedDate:
+completionDate,
+
+archivedAt:
+new Date()
+.toISOString()
+
+};
+
+
+archive.push(
+archivedTask
+);
+
+
+nextArchiveNumber += 1;
+
+}
+
+
+/* TAGESWECHSEL */
 
 function processDayTransition() {
 
-  const today =
-    getBerlinDateKey();
+const today =
+getBerlinDateKey();
 
 
-  let changed =
-    false;
+let changed =
+false;
 
 
-  const remainingTasks =
-    [];
+const remaining =
+[];
 
 
-  tasks.forEach(
-    task => {
+tasks.forEach(task => {
 
-      /*
-        ERLEDIGTE AUFGABEN
-        VERGANGENER TAGE
-        → ARCHIV
-      */
+if (
+task.status ===
+"completed"
+) {
 
-      if (
-        task.status ===
-          "completed"
-      ) {
-
-        const completedDate =
-          getBerlinDateKeyFromISO(
-            task.completedAt
-          );
+const completedDate =
+getBerlinDateKeyFromISO(
+task.completedAt
+);
 
 
-        if (
-          completedDate &&
-          completedDate < today
-        ) {
+if (
+completedDate &&
+completedDate < today
+) {
 
-          archiveCompletedTask(
-            task
-          );
+archiveCompletedTask(
+task
+);
 
-          changed =
-            true;
+changed =
+true;
 
-          return;
+return;
 
-        }
+}
 
-      }
-
-
-      /*
-        ALTE HEUTE-ZUORDNUNG
-        BEI NICHT ARCHIVIERTEN
-        AUFGABEN ENTFERNEN.
-
-        OFFEN BLEIBT OFFEN.
-        PAUSIERT BLEIBT PAUSIERT.
-        LAUFEND BLEIBT LAUFEND.
-      */
-
-      if (
-        task.todayDate &&
-        task.todayDate < today
-      ) {
-
-        task.todayDate =
-          null;
-
-        task.todayOrder =
-          null;
-
-        changed =
-          true;
-
-      }
+}
 
 
-      remainingTasks.push(
-        task
-      );
+if (
+task.todayDate &&
+task.todayDate < today
+) {
 
-    }
-  );
+task.todayDate =
+null;
+
+task.todayOrder =
+null;
+
+changed =
+true;
+
+}
 
 
-  if (changed) {
+remaining.push(
+task
+);
 
-    tasks =
-      remainingTasks;
-
-
-    normalizeTodayOrder();
+});
 
 
-    saveAll();
+if (changed) {
 
-  }
+tasks =
+remaining;
+
+
+normalizeTodayOrder();
+
+
+saveAll();
+
+}
+
+
+return changed;
+
+}
+
+
+/* TESTFUNKTIONEN */
+
+function createArchiveTestTask() {
+
+const now =
+Date.now();
+
+
+tasks.push({
+
+id:
+now,
+
+text:
+"ARCHIVTEST · gestern erledigt",
+
+status:
+"completed",
+
+priority:
+"normal",
+
+optional:
+false,
+
+dueMode:
+"none",
+
+dueDate:
+null,
+
+todayDate:
+getBerlinDateKey(),
+
+todayOrder:
+null,
+
+startedAt:
+new Date(
+now - 15 * 60 * 1000
+).toISOString(),
+
+pausedAt:
+null,
+
+pauseTotalMs:
+0,
+
+completedAt:
+new Date(
+now
+).toISOString(),
+
+activeDurationMs:
+15 * 60 * 1000,
+
+abortedAt:
+null,
+
+abortedActiveDurationMs:
+null
+
+});
+
+
+/*
+  Jetzt Abschlussdatum künstlich
+  auf gestern schieben.
+*/
+
+const yesterday =
+addDays(
+getBerlinDateKey(),
+-1
+);
+
+
+const task =
+tasks[
+tasks.length - 1
+];
+
+
+task.completedAt =
+createTestISOForBerlinDate(
+yesterday,
+12,
+0
+);
+
+
+task.startedAt =
+createTestISOForBerlinDate(
+yesterday,
+11,
+45
+);
+
+
+task.todayDate =
+yesterday;
+
+
+saveTasks();
+
+
+showInfoModal(
+"Testaufgabe erstellt",
+"Die Testaufgabe ist künstlich als gestern erledigt gespeichert. Jetzt kannst du den Archiv-Test ausführen."
+);
+
+
+render();
+
+}
+
+
+function runArchiveTest() {
+
+const before =
+archive.length;
+
+
+const changed =
+processDayTransition();
+
+
+const archived =
+archive.length -
+before;
+
+
+render();
+
+
+if (
+changed &&
+archived > 0
+) {
+
+showInfoModal(
+"Archivtest erfolgreich",
+archived +
+" Aufgabe wurde ins Archiv verschoben. Schau jetzt im ARCHIV-Tab nach."
+);
+
+} else {
+
+showInfoModal(
+"Nichts archiviert",
+"Es wurde keine erledigte Aufgabe aus einem vergangenen Tag gefunden."
+);
+
+}
 
 }
 
 
 /*
-  TABS
+  TESTDATEN AUS ARCHIV LÖSCHEN
+
+  Nur Einträge, deren Text mit
+  ARCHIVTEST beginnt.
 */
+
+function removeArchiveTestData() {
+
+const before =
+archive.length;
+
+
+archive =
+archive.filter(
+item =>
+!String(
+item.text || ""
+).startsWith(
+"ARCHIVTEST"
+)
+);
+
+
+const removed =
+before -
+archive.length;
+
+
+/*
+  Archivnummer nicht rückwärts drehen.
+  Das wäre im echten Archiv verboten.
+
+  Für unsere Tests ist das sogar gut,
+  weil wir sehen, dass Nummern
+  niemals wiederverwendet werden.
+*/
+
+
+saveArchive();
+
+render();
+
+
+showInfoModal(
+"Testdaten entfernt",
+removed +
+" Archiv-Testeinträge wurden gelöscht. Die bereits vergebenen Archivnummern bleiben absichtlich verbraucht."
+);
+
+}
+
+
+/* TABS */
 
 function switchTab(tab) {
 
-  currentTab =
-    tab;
+currentTab =
+tab;
 
 
-  document
-    .querySelectorAll(
-      ".tab-button"
-    )
-    .forEach(
-      button => {
+document
+.querySelectorAll(
+".tab-button"
+)
+.forEach(button => {
 
-        button.classList.toggle(
-          "active",
-          button.dataset.tab ===
-            tab
-        );
+button.classList.toggle(
+"active",
+button.dataset.tab === tab
+);
 
-      }
-    );
+});
 
 
-  document
-    .getElementById(
-      "inputPanel"
-    )
-    .style.display =
-      tab === "all"
-        ? "block"
-        : "none";
+document
+.getElementById(
+"inputPanel"
+)
+.style.display =
+tab === "all"
+? "block"
+: "none";
 
 
-  editingTaskId =
-    null;
+editingTaskId =
+null;
 
 
-  processDayTransition();
+processDayTransition();
 
-  render();
+render();
 
 }
 
 
-/*
-  NEUE OPTIONEN
-*/
+/* NEUE OPTIONEN */
 
-function setNewPriority(
-  priority
-) {
+function setNewPriority(priority) {
 
-  newTaskPriority =
-    priority;
+newTaskPriority =
+priority;
 
-  updateNewOptions();
+updateNewOptions();
 
 }
 
 
 function toggleNewOptional() {
 
-  newTaskOptional =
-    !newTaskOptional;
+newTaskOptional =
+!newTaskOptional;
 
-  updateNewOptions();
+updateNewOptions();
 
 }
 
 
-function setNewDue(
-  mode
-) {
+function setNewDue(mode) {
 
-  newTaskDueMode =
-    mode;
+newTaskDueMode =
+mode;
 
-  updateNewOptions();
+updateNewOptions();
 
 }
 
 
 function updateNewOptions() {
 
-  [
-    "newPriorityNormal",
-    "newPriorityMedium",
-    "newPriorityHigh"
-  ].forEach(
-    id => {
+[
+"newPriorityNormal",
+"newPriorityMedium",
+"newPriorityHigh"
+].forEach(id => {
 
-      document
-        .getElementById(id)
-        .classList.remove(
-          "selected"
-        );
+document
+.getElementById(id)
+.classList.remove(
+"selected"
+);
 
-    }
-  );
+});
 
 
-  const priorityId =
-    newTaskPriority ===
-      "high"
-      ? "newPriorityHigh"
-      : newTaskPriority ===
-          "medium"
-        ? "newPriorityMedium"
-        : "newPriorityNormal";
+const priorityId =
+newTaskPriority === "high"
+? "newPriorityHigh"
+: newTaskPriority === "medium"
+? "newPriorityMedium"
+: "newPriorityNormal";
 
 
-  document
-    .getElementById(
-      priorityId
-    )
-    .classList.add(
-      "selected"
-    );
+document
+.getElementById(
+priorityId
+)
+.classList.add(
+"selected"
+);
 
 
-  const optional =
-    document.getElementById(
-      "newOptionalButton"
-    );
+const optional =
+document.getElementById(
+"newOptionalButton"
+);
 
 
-  optional.classList.toggle(
-    "selected",
-    newTaskOptional
-  );
+optional.classList.toggle(
+"selected",
+newTaskOptional
+);
 
 
-  optional.textContent =
-    newTaskOptional
-      ? "🟣 JA"
-      : "🟣 NEIN";
+optional.textContent =
+newTaskOptional
+? "🟣 JA"
+: "🟣 NEIN";
 
 
-  [
-    "newDueNone",
-    "newDueTomorrow",
-    "newDueDeadline"
-  ].forEach(
-    id => {
+[
+"newDueNone",
+"newDueTomorrow",
+"newDueDeadline"
+].forEach(id => {
 
-      document
-        .getElementById(id)
-        .classList.remove(
-          "selected"
-        );
+document
+.getElementById(id)
+.classList.remove(
+"selected"
+);
 
-    }
-  );
+});
 
 
-  const dueId =
-    newTaskDueMode ===
-      "tomorrowOnly"
-      ? "newDueTomorrow"
-      : newTaskDueMode ===
-          "deadline"
-        ? "newDueDeadline"
-        : "newDueNone";
+const dueId =
+newTaskDueMode ===
+"tomorrowOnly"
+? "newDueTomorrow"
+: newTaskDueMode ===
+"deadline"
+? "newDueDeadline"
+: "newDueNone";
 
 
-  document
-    .getElementById(
-      dueId
-    )
-    .classList.add(
-      "selected"
-    );
+document
+.getElementById(
+dueId
+)
+.classList.add(
+"selected"
+);
 
 }
 
 
 function resetNewOptions() {
 
-  newTaskPriority =
-    "normal";
+newTaskPriority =
+"normal";
 
-  newTaskOptional =
-    false;
+newTaskOptional =
+false;
 
-  newTaskDueMode =
-    "none";
+newTaskDueMode =
+"none";
 
 
-  updateNewOptions();
+updateNewOptions();
 
 }
 
 
-/*
-  AUFGABE ANLEGEN
-*/
+/* AUFGABE ANLEGEN */
 
 function addTask() {
 
-  const input =
-    document.getElementById(
-      "taskInput"
-    );
+const input =
+document.getElementById(
+"taskInput"
+);
 
 
-  const text =
-    input.value.trim();
+const text =
+input.value.trim();
 
 
-  if (!text) {
-    return;
-  }
+if (!text) {
+return;
+}
 
 
-  const today =
-    getBerlinDateKey();
+const today =
+getBerlinDateKey();
 
 
-  tasks.push({
+tasks.push({
 
-    id:
-      Date.now(),
+id:
+Date.now(),
 
-    text:
-      text,
+text:
+text,
 
-    status:
-      "open",
+status:
+"open",
 
-    priority:
-      newTaskPriority,
+priority:
+newTaskPriority,
 
-    optional:
-      newTaskOptional,
+optional:
+newTaskOptional,
 
-    dueMode:
-      newTaskDueMode,
+dueMode:
+newTaskDueMode,
 
-    dueDate:
-      newTaskDueMode ===
-        "none"
-        ? null
-        : addDays(
-            today,
-            1
-          ),
+dueDate:
+newTaskDueMode ===
+"none"
+? null
+: addDays(
+today,
+1
+),
 
-    todayDate:
-      null,
+todayDate:
+null,
 
-    todayOrder:
-      null,
+todayOrder:
+null,
 
-    startedAt:
-      null,
+startedAt:
+null,
 
-    pausedAt:
-      null,
+pausedAt:
+null,
 
-    pauseTotalMs:
-      0,
+pauseTotalMs:
+0,
 
-    completedAt:
-      null,
+completedAt:
+null,
 
-    activeDurationMs:
-      null,
+activeDurationMs:
+null,
 
-    abortedAt:
-      null,
+abortedAt:
+null,
 
-    abortedActiveDurationMs:
-      null
+abortedActiveDurationMs:
+null
 
-  });
-
-
-  input.value =
-    "";
+});
 
 
-  resetNewOptions();
+input.value =
+"";
 
-  saveTasks();
 
-  render();
+resetNewOptions();
+
+saveTasks();
+
+render();
 
 }
 
 
-/*
-  HEUTE
-*/
+/* HEUTE */
 
 function isTodayTask(task) {
 
-  return (
-    task.todayDate ===
-    getBerlinDateKey()
-  );
+return (
+task.todayDate ===
+getBerlinDateKey()
+);
 
 }
 
 
 function toggleToday(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (!task) {
-    return;
-  }
+if (!task) {
+return;
+}
 
 
-  const today =
-    getBerlinDateKey();
+const today =
+getBerlinDateKey();
 
 
-  if (
-    task.todayDate ===
-    today
-  ) {
+if (
+task.todayDate ===
+today
+) {
 
-    task.todayDate =
-      null;
+task.todayDate =
+null;
 
-    task.todayOrder =
-      null;
+task.todayOrder =
+null;
 
-  } else {
+} else {
 
-    const todays =
-      tasks.filter(
-        item =>
-          item.todayDate === today &&
-          item.status !==
-            "completed"
-      );
-
-
-    const highest =
-      todays.reduce(
-        (max, item) =>
-          Math.max(
-            max,
-            item.todayOrder || 0
-          ),
-        0
-      );
+const todays =
+tasks.filter(
+item =>
+item.todayDate ===
+today &&
+item.status !==
+"completed"
+);
 
 
-    task.todayDate =
-      today;
+const highest =
+todays.reduce(
+(max,item) =>
+Math.max(
+max,
+item.todayOrder || 0
+),
+0
+);
 
-    task.todayOrder =
-      highest + 1;
 
-  }
+task.todayDate =
+today;
+
+task.todayOrder =
+highest + 1;
+
+}
 
 
-  normalizeTodayOrder();
+normalizeTodayOrder();
 
-  saveTasks();
+saveTasks();
 
-  render();
+render();
 
 }
 
 
 function normalizeTodayOrder() {
 
-  const today =
-    getBerlinDateKey();
+const today =
+getBerlinDateKey();
 
 
-  const selected =
-    tasks
-      .filter(
-        task =>
-          task.todayDate ===
-            today &&
-          ![
-            "completed",
-            "aborted"
-          ].includes(
-            task.status
-          )
-      )
-      .sort(
-        (a,b) =>
-          (a.todayOrder || 0) -
-          (b.todayOrder || 0)
-      );
+const selected =
+tasks
+.filter(
+task =>
+task.todayDate ===
+today &&
+![
+"completed",
+"aborted"
+].includes(
+task.status
+)
+)
+.sort(
+(a,b) =>
+(a.todayOrder || 0) -
+(b.todayOrder || 0)
+);
 
 
-  selected.forEach(
-    (task,index) => {
+selected.forEach(
+(task,index) => {
 
-      task.todayOrder =
-        index + 1;
+task.todayOrder =
+index + 1;
 
-    }
-  );
+}
+);
 
 }
 
 
-/*
-  DRAG & DROP
-*/
+/* DRAG */
 
 function startTodayDrag(
-  event,
-  id
+event,
+id
 ) {
 
-  event.preventDefault();
+event.preventDefault();
 
 
-  const card =
-    event.currentTarget.closest(
-      ".task"
-    );
+const card =
+event.currentTarget.closest(
+".task"
+);
 
 
-  dragState = {
+dragState = {
 
-    id:
-      id,
+id:
+id,
 
-    pointerId:
-      event.pointerId,
+pointerId:
+event.pointerId,
 
-    card:
-      card
+card:
+card
 
-  };
-
-
-  event.currentTarget
-    .setPointerCapture(
-      event.pointerId
-    );
+};
 
 
-  card.classList.add(
-    "dragging"
-  );
+event.currentTarget
+.setPointerCapture(
+event.pointerId
+);
+
+
+card.classList.add(
+"dragging"
+);
 
 }
 
 
-function moveTodayDrag(
-  event
+function moveTodayDrag(event) {
+
+if (!dragState) {
+return;
+}
+
+
+if (
+event.pointerId !==
+dragState.pointerId
+) {
+return;
+}
+
+
+event.preventDefault();
+
+
+document
+.querySelectorAll(
+".drag-target"
+)
+.forEach(
+item =>
+item.classList.remove(
+"drag-target"
+)
+);
+
+
+const element =
+document.elementFromPoint(
+event.clientX,
+event.clientY
+);
+
+
+const target =
+element
+? element.closest(
+".today-task-active"
+)
+: null;
+
+
+if (
+target &&
+Number(
+target.dataset.id
+) !== dragState.id
 ) {
 
-  if (!dragState) {
-    return;
-  }
+target.classList.add(
+"drag-target"
+);
 
-
-  if (
-    event.pointerId !==
-    dragState.pointerId
-  ) {
-    return;
-  }
-
-
-  event.preventDefault();
-
-
-  document
-    .querySelectorAll(
-      ".drag-target"
-    )
-    .forEach(
-      item =>
-        item.classList.remove(
-          "drag-target"
-        )
-    );
-
-
-  const element =
-    document.elementFromPoint(
-      event.clientX,
-      event.clientY
-    );
-
-
-  const target =
-    element
-      ? element.closest(
-          ".today-task-active"
-        )
-      : null;
-
-
-  if (
-    target &&
-    Number(
-      target.dataset.id
-    ) !== dragState.id
-  ) {
-
-    target.classList.add(
-      "drag-target"
-    );
-
-  }
+}
 
 }
 
 
-function endTodayDrag(
-  event
+function endTodayDrag(event) {
+
+if (!dragState) {
+return;
+}
+
+
+if (
+event.pointerId !==
+dragState.pointerId
 ) {
-
-  if (!dragState) {
-    return;
-  }
+return;
+}
 
 
-  if (
-    event.pointerId !==
-    dragState.pointerId
-  ) {
-    return;
-  }
+const element =
+document.elementFromPoint(
+event.clientX,
+event.clientY
+);
 
 
-  const element =
-    document.elementFromPoint(
-      event.clientX,
-      event.clientY
-    );
+const target =
+element
+? element.closest(
+".today-task-active"
+)
+: null;
 
 
-  const target =
-    element
-      ? element.closest(
-          ".today-task-active"
-        )
-      : null;
+const draggedId =
+dragState.id;
 
 
-  const draggedId =
-    dragState.id;
+dragState.card
+.classList.remove(
+"dragging"
+);
 
 
-  dragState.card
-    .classList.remove(
-      "dragging"
-    );
+document
+.querySelectorAll(
+".drag-target"
+)
+.forEach(
+item =>
+item.classList.remove(
+"drag-target"
+)
+);
 
 
-  document
-    .querySelectorAll(
-      ".drag-target"
-    )
-    .forEach(
-      item =>
-        item.classList.remove(
-          "drag-target"
-        )
-    );
+dragState =
+null;
 
 
-  dragState =
-    null;
+if (!target) {
+return;
+}
 
 
-  if (!target) {
-    return;
-  }
+const targetId =
+Number(
+target.dataset.id
+);
 
 
-  const targetId =
-    Number(
-      target.dataset.id
-    );
+if (
+draggedId ===
+targetId
+) {
+return;
+}
 
 
-  if (
-    draggedId ===
-    targetId
-  ) {
-    return;
-  }
-
-
-  reorderToday(
-    draggedId,
-    targetId
-  );
+reorderToday(
+draggedId,
+targetId
+);
 
 }
 
 
 function reorderToday(
-  draggedId,
-  targetId
+draggedId,
+targetId
 ) {
 
-  const today =
-    getBerlinDateKey();
+const today =
+getBerlinDateKey();
 
 
-  const selected =
-    tasks
-      .filter(
-        task =>
-          task.todayDate ===
-            today &&
-          ![
-            "completed",
-            "aborted"
-          ].includes(
-            task.status
-          )
-      )
-      .sort(
-        (a,b) =>
-          (a.todayOrder || 0) -
-          (b.todayOrder || 0)
-      );
+const selected =
+tasks
+.filter(
+task =>
+task.todayDate ===
+today &&
+![
+"completed",
+"aborted"
+].includes(
+task.status
+)
+)
+.sort(
+(a,b) =>
+(a.todayOrder || 0) -
+(b.todayOrder || 0)
+);
 
 
-  const from =
-    selected.findIndex(
-      task =>
-        task.id ===
-        draggedId
-    );
+const from =
+selected.findIndex(
+task =>
+task.id ===
+draggedId
+);
 
 
-  const to =
-    selected.findIndex(
-      task =>
-        task.id ===
-        targetId
-    );
+const to =
+selected.findIndex(
+task =>
+task.id ===
+targetId
+);
 
 
-  if (
-    from === -1 ||
-    to === -1
-  ) {
-    return;
-  }
+if (
+from === -1 ||
+to === -1
+) {
+return;
+}
 
 
-  const [moved] =
-    selected.splice(
-      from,
-      1
-    );
+const [moved] =
+selected.splice(
+from,
+1
+);
 
 
-  selected.splice(
-    to,
-    0,
-    moved
-  );
+selected.splice(
+to,
+0,
+moved
+);
 
 
-  selected.forEach(
-    (task,index) => {
+selected.forEach(
+(task,index) => {
 
-      task.todayOrder =
-        index + 1;
+task.todayOrder =
+index + 1;
 
-    }
-  );
+}
+);
 
 
-  saveTasks();
+saveTasks();
 
-  render();
+render();
 
 }
 
 
 document.addEventListener(
-  "pointermove",
-  moveTodayDrag,
-  {
-    passive:
-      false
-  }
+"pointermove",
+moveTodayDrag,
+{
+passive:
+false
+}
 );
 
 
 document.addEventListener(
-  "pointerup",
-  endTodayDrag
+"pointerup",
+endTodayDrag
 );
 
 
 document.addEventListener(
-  "pointercancel",
-  endTodayDrag
+"pointercancel",
+endTodayDrag
 );
 
 
-/*
-  PRIORITÄT / OPTIONAL / FÄLLIG
-*/
+/* PRIORITÄTEN */
 
 function setPriority(
-  id,
-  priority
+id,
+priority
 ) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
+
+if (!task) {
+return;
+}
 
 
-  if (!task) {
-    return;
-  }
+task.priority =
+priority;
 
 
-  task.priority =
-    priority;
+saveTasks();
 
-
-  saveTasks();
-
-  render();
+render();
 
 }
 
 
 function toggleOptional(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
+
+if (!task) {
+return;
+}
 
 
-  if (!task) {
-    return;
-  }
+task.optional =
+!task.optional;
 
 
-  task.optional =
-    !task.optional;
+saveTasks();
 
-
-  saveTasks();
-
-  render();
+render();
 
 }
 
 
 function setDueMode(
-  id,
-  mode
+id,
+mode
 ) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
+
+if (!task) {
+return;
+}
 
 
-  if (!task) {
-    return;
-  }
+task.dueMode =
+mode;
 
 
-  task.dueMode =
-    mode;
+task.dueDate =
+mode === "none"
+? null
+: addDays(
+getBerlinDateKey(),
+1
+);
 
 
-  task.dueDate =
-    mode === "none"
-      ? null
-      : addDays(
-          getBerlinDateKey(),
-          1
-        );
+saveTasks();
 
-
-  saveTasks();
-
-  render();
+render();
 
 }
 
 
-/*
-  ZEIT
-*/
+/* TIMER */
 
 function startTask(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (!task) {
-    return;
-  }
+if (!task) {
+return;
+}
 
 
-  const running =
-    tasks.find(
-      item =>
-        item.status ===
-          "running" &&
-        item.id !== id
-    );
+const running =
+tasks.find(
+item =>
+item.status ===
+"running" &&
+item.id !== id
+);
 
 
-  if (running) {
+if (running) {
 
-    showInfoModal(
-      "Schon eine Aufgabe aktiv",
-      "Aktuell läuft bereits „" +
-      running.text +
-      "“. Pausiere oder beende sie zuerst."
-    );
+showInfoModal(
+"Schon eine Aufgabe aktiv",
+"Aktuell läuft bereits „" +
+running.text +
+"“. Pausiere oder beende sie zuerst."
+);
 
-    return;
+return;
 
-  }
-
-
-  task.status =
-    "running";
-
-  task.startedAt =
-    new Date()
-      .toISOString();
-
-  task.pausedAt =
-    null;
-
-  task.pauseTotalMs =
-    0;
+}
 
 
-  saveTasks();
+task.status =
+"running";
 
-  render();
+task.startedAt =
+new Date()
+.toISOString();
+
+task.pausedAt =
+null;
+
+task.pauseTotalMs =
+0;
+
+
+saveTasks();
+
+render();
 
 }
 
 
 function pauseTask(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (
-    !task ||
-    task.status !==
-      "running"
-  ) {
-    return;
-  }
+if (
+!task ||
+task.status !==
+"running"
+) {
+return;
+}
 
 
-  task.status =
-    "paused";
+task.status =
+"paused";
 
-  task.pausedAt =
-    new Date()
-      .toISOString();
+task.pausedAt =
+new Date()
+.toISOString();
 
 
-  saveTasks();
+saveTasks();
 
-  render();
+render();
 
 }
 
 
 function resumeTask(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (
-    !task ||
-    task.status !==
-      "paused"
-  ) {
-    return;
-  }
+if (
+!task ||
+task.status !==
+"paused"
+) {
+return;
+}
 
 
-  const running =
-    tasks.find(
-      item =>
-        item.status ===
-          "running" &&
-        item.id !== id
-    );
+const running =
+tasks.find(
+item =>
+item.status ===
+"running" &&
+item.id !== id
+);
 
 
-  if (running) {
+if (running) {
 
-    showInfoModal(
-      "Schon eine Aufgabe aktiv",
-      "Aktuell läuft bereits „" +
-      running.text +
-      "“. Pausiere oder beende sie zuerst."
-    );
+showInfoModal(
+"Schon eine Aufgabe aktiv",
+"Aktuell läuft bereits „" +
+running.text +
+"“. Pausiere oder beende sie zuerst."
+);
 
-    return;
+return;
 
-  }
-
-
-  const now =
-    Date.now();
+}
 
 
-  task.pauseTotalMs +=
-    Math.max(
-      0,
-      now -
-      new Date(
-        task.pausedAt
-      ).getTime()
-    );
+const now =
+Date.now();
 
 
-  task.pausedAt =
-    null;
+task.pauseTotalMs +=
+Math.max(
+0,
+now -
+new Date(
+task.pausedAt
+).getTime()
+);
 
-  task.status =
-    "running";
+
+task.pausedAt =
+null;
+
+task.status =
+"running";
 
 
-  saveTasks();
+saveTasks();
 
-  render();
+render();
 
 }
 
 
 function calculateActiveDuration(
-  task,
-  end
+task,
+end
 ) {
 
-  if (!task.startedAt) {
-    return 0;
-  }
+if (!task.startedAt) {
+return 0;
+}
 
 
-  let pause =
-    task.pauseTotalMs || 0;
+let pause =
+task.pauseTotalMs || 0;
 
 
-  if (
-    task.status ===
-      "paused" &&
-    task.pausedAt
-  ) {
+if (
+task.status ===
+"paused" &&
+task.pausedAt
+) {
 
-    pause +=
-      Math.max(
-        0,
-        end -
-        new Date(
-          task.pausedAt
-        ).getTime()
-      );
+pause +=
+Math.max(
+0,
+end -
+new Date(
+task.pausedAt
+).getTime()
+);
 
-  }
+}
 
 
-  return Math.max(
-    0,
-    end -
-    new Date(
-      task.startedAt
-    ).getTime() -
-    pause
-  );
+return Math.max(
+0,
+end -
+new Date(
+task.startedAt
+).getTime() -
+pause
+);
 
 }
 
 
 function liveDuration(task) {
 
-  return calculateActiveDuration(
-    task,
-    Date.now()
-  );
+return calculateActiveDuration(
+task,
+Date.now()
+);
 
 }
 
 
 function finishTask(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (
-    !task ||
-    ![
-      "running",
-      "paused"
-    ].includes(
-      task.status
-    )
-  ) {
-    return;
-  }
+if (
+!task ||
+![
+"running",
+"paused"
+].includes(
+task.status
+)
+) {
+return;
+}
 
 
-  const now =
-    Date.now();
+const now =
+Date.now();
 
 
-  task.activeDurationMs =
-    calculateActiveDuration(
-      task,
-      now
-    );
+task.activeDurationMs =
+calculateActiveDuration(
+task,
+now
+);
 
 
-  task.status =
-    "completed";
+task.status =
+"completed";
 
-  task.completedAt =
-    new Date(now)
-      .toISOString();
+task.completedAt =
+new Date(now)
+.toISOString();
 
-  task.pausedAt =
-    null;
+task.pausedAt =
+null;
 
 
-  normalizeTodayOrder();
+normalizeTodayOrder();
 
-  saveTasks();
+saveTasks();
 
-  render();
+render();
 
 }
 
 
-/*
-  ABBRUCH
-*/
+/* ABBRUCH */
 
 function askAbort(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (!task) {
-    return;
-  }
+if (!task) {
+return;
+}
 
 
-  document
-    .getElementById(
-      "modalContainer"
-    )
-    .innerHTML = `
+document
+.getElementById(
+"modalContainer"
+)
+.innerHTML = `
 
-      <div
-        class="modal-backdrop"
-        onclick="closeModalOnBackdrop(event)"
-      >
+<div
+class="modal-backdrop"
+onclick="closeModalOnBackdrop(event)"
+>
 
-        <div class="modal">
+<div class="modal">
 
-          <h2>
-            Aufgabe abbrechen?
-          </h2>
+<h2>
+Aufgabe abbrechen?
+</h2>
 
-          <p>
-            „${escapeHtml(task.text)}“
-            wird als abgebrochen markiert.
-          </p>
+<p>
+„${escapeHtml(task.text)}“
+wird als abgebrochen markiert.
+</p>
 
-          <div class="modal-actions">
+<div class="modal-actions">
 
-            <button
-              class="modal-button cancel-modal"
-              onclick="closeModal()"
-            >
-              Zurück
-            </button>
+<button
+class="modal-button cancel-modal"
+onclick="closeModal()"
+>
+Zurück
+</button>
 
-            <button
-              class="modal-button danger-modal"
-              onclick="abortTask(${id})"
-            >
-              Abbrechen
-            </button>
+<button
+class="modal-button danger-modal"
+onclick="abortTask(${id})"
+>
+Abbrechen
+</button>
 
-          </div>
+</div>
 
-        </div>
+</div>
 
-      </div>
-    `;
+</div>
+`;
 
 }
 
 
 function abortTask(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
+
+if (!task) {
+return;
+}
 
 
-  if (!task) {
-    return;
-  }
+const now =
+Date.now();
 
 
-  const now =
-    Date.now();
+task.abortedActiveDurationMs =
+task.startedAt
+? calculateActiveDuration(
+task,
+now
+)
+: null;
 
 
-  task.abortedActiveDurationMs =
-    task.startedAt
-      ? calculateActiveDuration(
-          task,
-          now
-        )
-      : null;
+task.status =
+"aborted";
+
+task.abortedAt =
+new Date(now)
+.toISOString();
+
+task.pausedAt =
+null;
 
 
-  task.status =
-    "aborted";
+task.todayDate =
+null;
 
-  task.abortedAt =
-    new Date(now)
-      .toISOString();
-
-  task.pausedAt =
-    null;
+task.todayOrder =
+null;
 
 
-  task.todayDate =
-    null;
+normalizeTodayOrder();
 
-  task.todayOrder =
-    null;
+closeModal();
 
+saveTasks();
 
-  normalizeTodayOrder();
-
-  closeModal();
-
-  saveTasks();
-
-  render();
+render();
 
 }
 
 
-/*
-  WIEDERHOLEN
-*/
+/* WIEDERHOLEN */
 
 function repeatTask(id) {
 
-  const old =
-    getTask(id);
+const old =
+getTask(id);
 
 
-  if (!old) {
-    return;
-  }
+if (!old) {
+return;
+}
 
 
-  tasks.push({
+tasks.push({
 
-    id:
-      Date.now(),
+id:
+Date.now(),
 
-    text:
-      old.text,
+text:
+old.text,
 
-    status:
-      "open",
+status:
+"open",
 
-    priority:
-      old.priority ||
-      "normal",
+priority:
+old.priority ||
+"normal",
 
-    optional:
-      old.optional ||
-      false,
+optional:
+old.optional ||
+false,
 
-    dueMode:
-      "none",
+dueMode:
+"none",
 
-    dueDate:
-      null,
+dueDate:
+null,
 
-    todayDate:
-      null,
+todayDate:
+null,
 
-    todayOrder:
-      null,
+todayOrder:
+null,
 
-    startedAt:
-      null,
+startedAt:
+null,
 
-    pausedAt:
-      null,
+pausedAt:
+null,
 
-    pauseTotalMs:
-      0,
+pauseTotalMs:
+0,
 
-    completedAt:
-      null,
+completedAt:
+null,
 
-    activeDurationMs:
-      null,
+activeDurationMs:
+null,
 
-    abortedAt:
-      null,
+abortedAt:
+null,
 
-    abortedActiveDurationMs:
-      null
+abortedActiveDurationMs:
+null
 
-  });
+});
 
 
-  saveTasks();
+saveTasks();
 
-  render();
+render();
 
 }
 
 
-/*
-  BEARBEITEN
-*/
+/* BEARBEITEN */
 
 function startEditing(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (
-    !task ||
-    task.status ===
-      "completed" ||
-    task.status ===
-      "aborted"
-  ) {
-    return;
-  }
+if (
+!task ||
+task.status ===
+"completed" ||
+task.status ===
+"aborted"
+) {
+return;
+}
 
 
-  editingTaskId =
-    id;
+editingTaskId =
+id;
 
 
-  render();
+render();
 
 }
 
 
 function cancelEditing() {
 
-  editingTaskId =
-    null;
+editingTaskId =
+null;
 
-  render();
+render();
 
 }
 
 
 function saveEdit(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  const input =
-    document.getElementById(
-      "edit-" + id
-    );
+const input =
+document.getElementById(
+"edit-" + id
+);
 
 
-  if (
-    !task ||
-    !input
-  ) {
-    return;
-  }
+if (
+!task ||
+!input
+) {
+return;
+}
 
 
-  const text =
-    input.value.trim();
+const text =
+input.value.trim();
 
 
-  if (!text) {
-    return;
-  }
+if (!text) {
+return;
+}
 
 
-  task.text =
-    text;
+task.text =
+text;
 
 
-  editingTaskId =
-    null;
+editingTaskId =
+null;
 
 
-  saveTasks();
+saveTasks();
 
-  render();
+render();
 
 }
 
 
-/*
-  LÖSCHEN
-*/
+/* LÖSCHEN */
 
 function askDelete(id) {
 
-  const task =
-    getTask(id);
+const task =
+getTask(id);
 
 
-  if (!task) {
-    return;
-  }
+if (!task) {
+return;
+}
 
 
-  document
-    .getElementById(
-      "modalContainer"
-    )
-    .innerHTML = `
+document
+.getElementById(
+"modalContainer"
+)
+.innerHTML = `
 
-      <div
-        class="modal-backdrop"
-        onclick="closeModalOnBackdrop(event)"
-      >
+<div
+class="modal-backdrop"
+onclick="closeModalOnBackdrop(event)"
+>
 
-        <div class="modal">
+<div class="modal">
 
-          <h2>
-            Aufgabe löschen?
-          </h2>
+<h2>
+Aufgabe löschen?
+</h2>
 
-          <p>
-            „${escapeHtml(task.text)}“
-            wird endgültig gelöscht.
-          </p>
+<p>
+„${escapeHtml(task.text)}“
+wird endgültig gelöscht.
+</p>
 
-          <div class="modal-actions">
+<div class="modal-actions">
 
-            <button
-              class="modal-button cancel-modal"
-              onclick="closeModal()"
-            >
-              Abbrechen
-            </button>
+<button
+class="modal-button cancel-modal"
+onclick="closeModal()"
+>
+Abbrechen
+</button>
 
-            <button
-              class="modal-button danger-modal"
-              onclick="deleteTask(${id})"
-            >
-              Löschen
-            </button>
+<button
+class="modal-button danger-modal"
+onclick="deleteTask(${id})"
+>
+Löschen
+</button>
 
-          </div>
+</div>
 
-        </div>
+</div>
 
-      </div>
-    `;
+</div>
+`;
 
 }
 
 
 function deleteTask(id) {
 
-  tasks =
-    tasks.filter(
-      task =>
-        task.id !== id
-    );
+tasks =
+tasks.filter(
+task =>
+task.id !== id
+);
 
 
-  normalizeTodayOrder();
+normalizeTodayOrder();
 
-  closeModal();
+closeModal();
 
-  saveTasks();
+saveTasks();
 
-  render();
-
-}
-
-
-/*
-  SYMBOLE
-*/
-
-function prioritySymbol(
-  priority
-) {
-
-  if (
-    priority ===
-    "high"
-  ) {
-    return "🔴";
-  }
-
-
-  if (
-    priority ===
-    "medium"
-  ) {
-    return "🟡";
-  }
-
-
-  return "⚪";
+render();
 
 }
 
 
-function statusSymbol(
-  task
+/* SYMBOLE */
+
+function prioritySymbol(priority) {
+
+if (
+priority ===
+"high"
 ) {
-
-  if (
-    task.status ===
-    "completed"
-  ) {
-    return "✅";
-  }
+return "🔴";
+}
 
 
-  if (
-    task.status ===
-    "aborted"
-  ) {
-    return "❌";
-  }
+if (
+priority ===
+"medium"
+) {
+return "🟡";
+}
 
 
-  if (
-    task.status ===
-    "running"
-  ) {
-    return "▶️";
-  }
-
-
-  if (
-    task.status ===
-    "paused"
-  ) {
-    return "⏸️";
-  }
-
-
-  return "⬜";
+return "⚪";
 
 }
 
 
-function dueSymbol(
-  task
+function statusSymbol(task) {
+
+if (
+task.status ===
+"completed"
+) {
+return "✅";
+}
+
+
+if (
+task.status ===
+"aborted"
+) {
+return "❌";
+}
+
+
+if (
+task.status ===
+"running"
+) {
+return "▶️";
+}
+
+
+if (
+task.status ===
+"paused"
+) {
+return "⏸️";
+}
+
+
+return "⬜";
+
+}
+
+
+function dueSymbol(task) {
+
+if (
+!task.dueDate ||
+task.dueMode ===
+"none"
+) {
+return "";
+}
+
+
+const today =
+getBerlinDateKey();
+
+
+if (
+task.dueMode ===
+"tomorrowOnly"
 ) {
 
-  if (
-    !task.dueDate ||
-    task.dueMode ===
-      "none"
-  ) {
-    return "";
-  }
+if (
+task.dueDate <= today
+) {
+return "";
+}
 
 
-  const today =
-    getBerlinDateKey();
+return "💠";
+
+}
 
 
-  if (
-    task.dueMode ===
-    "tomorrowOnly"
-  ) {
+if (
+task.dueMode ===
+"deadline"
+) {
 
-    if (
-      task.dueDate <= today
-    ) {
-      return "";
-    }
+return (
+task.dueDate <= today
+? "⚠️"
+: "🔷"
+);
 
-
-    return "💠";
-
-  }
+}
 
 
-  if (
-    task.dueMode ===
-    "deadline"
-  ) {
-
-    return (
-      task.dueDate <= today
-        ? "⚠️"
-        : "🔷"
-    );
-
-  }
-
-
-  return "";
+return "";
 
 }
 
 
 function flags(task) {
 
-  return `
+return `
 
-    <div class="compact-flags">
+<div class="compact-flags">
 
-      <span class="mini-flag">
-        ${prioritySymbol(
-          task.priority
-        )}
-      </span>
+<span class="mini-flag">
+${prioritySymbol(
+task.priority
+)}
+</span>
 
-      ${
-        task.optional
-          ? `
-            <span class="mini-flag">
-              🟣
-            </span>
-          `
-          : ""
-      }
+${
+task.optional
+? `
+<span class="mini-flag">
+🟣
+</span>
+`
+: ""
+}
 
-      ${
-        dueSymbol(task)
-          ? `
-            <span class="mini-flag">
-              ${dueSymbol(task)}
-            </span>
-          `
-          : ""
-      }
+${
+dueSymbol(task)
+? `
+<span class="mini-flag">
+${dueSymbol(task)}
+</span>
+`
+: ""
+}
 
-    </div>
-  `;
+</div>
+`;
 
 }
 
 
-/*
-  DYNAMISCHE NUMMER
-*/
+/* NUMMER */
 
-function dynamicNumber(
-  task
+function dynamicNumber(task) {
+
+const index =
+tasks.findIndex(
+item =>
+item.id ===
+task.id
+);
+
+
+if (
+index === -1
 ) {
-
-  const activeTasks =
-    tasks;
-
-
-  const index =
-    activeTasks.findIndex(
-      item =>
-        item.id === task.id
-    );
+return "";
+}
 
 
-  if (
-    index === -1
-  ) {
-    return "";
-  }
+const number =
+index + 1;
 
 
-  const number =
-    index + 1;
-
-
-  return number < 10
-    ? "0" + number
-    : String(number);
+return number < 10
+? "0" + number
+: String(number);
 
 }
 
 
-/*
-  FORMATIERUNG
-*/
+/* FORMAT */
 
 function escapeHtml(text) {
 
-  const div =
-    document.createElement(
-      "div"
-    );
+const div =
+document.createElement(
+"div"
+);
 
 
-  div.textContent =
-    text;
+div.textContent =
+text;
 
 
-  return div.innerHTML;
+return div.innerHTML;
 
 }
 
 
 function formatDuration(ms) {
 
-  if (
-    ms === null ||
-    typeof ms ===
-      "undefined"
-  ) {
-    return "";
-  }
+if (
+ms === null ||
+typeof ms ===
+"undefined"
+) {
+return "";
+}
 
 
-  const total =
-    Math.floor(
-      ms / 1000
-    );
+const total =
+Math.floor(
+ms / 1000
+);
 
 
-  const h =
-    Math.floor(
-      total / 3600
-    );
+const h =
+Math.floor(
+total / 3600
+);
 
 
-  const m =
-    Math.floor(
-      (
-        total %
-        3600
-      ) /
-      60
-    );
+const m =
+Math.floor(
+(
+total % 3600
+) / 60
+);
 
 
-  const s =
-    total %
-    60;
+const s =
+total % 60;
 
 
-  return (
-    String(h)
-      .padStart(
-        2,
-        "0"
-      ) +
-    ":" +
-    String(m)
-      .padStart(
-        2,
-        "0"
-      ) +
-    ":" +
-    String(s)
-      .padStart(
-        2,
-        "0"
-      )
-  );
+return (
+String(h).padStart(2,"0") +
+":" +
+String(m).padStart(2,"0") +
+":" +
+String(s).padStart(2,"0")
+);
 
 }
 
 
 function formatDateTime(
-  value,
-  label
+value,
+label
 ) {
 
-  if (!value) {
-    return "";
-  }
+if (!value) {
+return "";
+}
 
 
-  const date =
-    new Date(value);
+const date =
+new Date(value);
 
 
-  return (
-    label +
-    " · " +
-    date.toLocaleDateString(
-      "de-DE",
-      {
-        timeZone:
-          "Europe/Berlin"
-      }
-    ) +
-    " · " +
-    date.toLocaleTimeString(
-      "de-DE",
-      {
-        timeZone:
-          "Europe/Berlin",
+return (
+label +
+" · " +
+date.toLocaleDateString(
+"de-DE",
+{
+timeZone:
+"Europe/Berlin"
+}
+) +
+" · " +
+date.toLocaleTimeString(
+"de-DE",
+{
+timeZone:
+"Europe/Berlin",
 
-        hour:
-          "2-digit",
+hour:
+"2-digit",
 
-        minute:
-          "2-digit",
+minute:
+"2-digit",
 
-        second:
-          "2-digit"
-      }
-    ) +
-    " UHR"
-  );
+second:
+"2-digit"
+}
+) +
+" UHR"
+);
 
 }
 
 
 function formatArchiveDate(
-  dateKey
+dateKey
 ) {
 
-  if (!dateKey) {
-    return "UNBEKANNT";
-  }
+if (!dateKey) {
+return "UNBEKANNT";
+}
 
 
-  const parts =
-    dateKey
-      .split("-");
+const parts =
+dateKey.split("-");
 
 
-  return (
-    parts[2] +
-    "." +
-    parts[1] +
-    "." +
-    parts[0]
-  );
+return (
+parts[2] +
+"." +
+parts[1] +
+"." +
+parts[0]
+);
 
 }
 
 
-/*
-  EDIT OPTIONEN
-*/
+/* EDIT OPTIONEN */
 
 function editOptions(task) {
 
-  return `
+return `
 
-    <div class="edit-options">
+<div class="edit-options">
 
-      <div class="option-row">
+<div class="option-row">
 
-        <span class="option-label">
-          PRIORITÄT
-        </span>
+<span class="option-label">
+PRIORITÄT
+</span>
 
-        <button
-          class="option-button
-          ${
-            task.priority ===
-              "normal"
-              ? "selected"
-              : ""
-          }"
-          onclick="setPriority(
-            ${task.id},
-            'normal'
-          )"
-        >
-          ⚪ NORMAL
-        </button>
+<button
+class="option-button ${
+task.priority === "normal"
+? "selected"
+: ""
+}"
+onclick="setPriority(${task.id},'normal')"
+>
+⚪ NORMAL
+</button>
 
-        <button
-          class="option-button
-          ${
-            task.priority ===
-              "medium"
-              ? "selected"
-              : ""
-          }"
-          onclick="setPriority(
-            ${task.id},
-            'medium'
-          )"
-        >
-          🟡 MITTEL
-        </button>
+<button
+class="option-button ${
+task.priority === "medium"
+? "selected"
+: ""
+}"
+onclick="setPriority(${task.id},'medium')"
+>
+🟡 MITTEL
+</button>
 
-        <button
-          class="option-button
-          ${
-            task.priority ===
-              "high"
-              ? "selected"
-              : ""
-          }"
-          onclick="setPriority(
-            ${task.id},
-            'high'
-          )"
-        >
-          🔴 HOCH
-        </button>
+<button
+class="option-button ${
+task.priority === "high"
+? "selected"
+: ""
+}"
+onclick="setPriority(${task.id},'high')"
+>
+🔴 HOCH
+</button>
 
-      </div>
+</div>
 
 
-      <div class="option-row">
+<div class="option-row">
 
-        <span class="option-label">
-          OPTIONAL
-        </span>
+<span class="option-label">
+OPTIONAL
+</span>
 
-        <button
-          class="option-button
-          ${
-            task.optional
-              ? "selected"
-              : ""
-          }"
-          onclick="toggleOptional(
-            ${task.id}
-          )"
-        >
-          🟣
-          ${
-            task.optional
-              ? "JA"
-              : "NEIN"
-          }
-        </button>
+<button
+class="option-button ${
+task.optional
+? "selected"
+: ""
+}"
+onclick="toggleOptional(${task.id})"
+>
+🟣 ${
+task.optional
+? "JA"
+: "NEIN"
+}
+</button>
 
-      </div>
+</div>
 
 
-      <div class="option-row">
+<div class="option-row">
 
-        <span class="option-label">
-          FÄLLIG
-        </span>
+<span class="option-label">
+FÄLLIG
+</span>
 
-        <button
-          class="option-button
-          ${
-            task.dueMode ===
-              "none"
-              ? "selected"
-              : ""
-          }"
-          onclick="setDueMode(
-            ${task.id},
-            'none'
-          )"
-        >
-          —
-        </button>
+<button
+class="option-button ${
+task.dueMode === "none"
+? "selected"
+: ""
+}"
+onclick="setDueMode(${task.id},'none')"
+>
+—
+</button>
 
-        <button
-          class="option-button
-          ${
-            task.dueMode ===
-              "tomorrowOnly"
-              ? "selected"
-              : ""
-          }"
-          onclick="setDueMode(
-            ${task.id},
-            'tomorrowOnly'
-          )"
-        >
-          💠 MORGEN
-        </button>
+<button
+class="option-button ${
+task.dueMode === "tomorrowOnly"
+? "selected"
+: ""
+}"
+onclick="setDueMode(${task.id},'tomorrowOnly')"
+>
+💠 MORGEN
+</button>
 
-        <button
-          class="option-button
-          ${
-            task.dueMode ===
-              "deadline"
-              ? "selected"
-              : ""
-          }"
-          onclick="setDueMode(
-            ${task.id},
-            'deadline'
-          )"
-        >
-          🔷 BIS MORGEN
-        </button>
+<button
+class="option-button ${
+task.dueMode === "deadline"
+? "selected"
+: ""
+}"
+onclick="setDueMode(${task.id},'deadline')"
+>
+🔷 BIS MORGEN
+</button>
 
-      </div>
+</div>
 
-    </div>
-  `;
+</div>
+`;
 
 }
 
 
-/*
-  ICON
-*/
+/* ICON */
 
 function iconButton(
-  icon,
-  title,
-  onclick,
-  extraClass = ""
+icon,
+title,
+onclick,
+extraClass = ""
 ) {
 
-  return `
-    <button
-      class="icon-action ${extraClass}"
-      onclick="${onclick}"
-      title="${title}"
-      aria-label="${title}"
-    >
-      ${icon}
-    </button>
-  `;
+return `
+<button
+class="icon-action ${extraClass}"
+onclick="${onclick}"
+title="${title}"
+aria-label="${title}"
+>
+${icon}
+</button>
+`;
 
 }
 
 
-/*
-  TASK CARD
-*/
+/* TASK CARD */
 
 function taskCard(
-  task,
-  options = {}
+task,
+options = {}
 ) {
 
-  const {
-
-    todayDrag =
-      false,
-
-    showTodayButton =
-      false,
-
-    compactOnly =
-      false,
-
-    filterTodayOnly =
-      false
-
-  } = options;
-
-
-  const element =
-    document.createElement(
-      "div"
-    );
-
-
-  element.className =
-    "task";
-
-
-  if (
-    task.status ===
-    "running"
-  ) {
-    element.classList.add(
-      "running"
-    );
-  }
-
-
-  if (
-    task.status ===
-    "paused"
-  ) {
-    element.classList.add(
-      "paused"
-    );
-  }
-
-
-  if (
-    task.status ===
-    "completed"
-  ) {
-    element.classList.add(
-      "completed"
-    );
-  }
-
-
-  if (
-    task.status ===
-    "aborted"
-  ) {
-    element.classList.add(
-      "aborted"
-    );
-  }
-
-
-  if (
-    todayDrag &&
-    ![
-      "completed",
-      "aborted"
-    ].includes(
-      task.status
-    )
-  ) {
-
-    element.classList.add(
-      "today-task-active"
-    );
-
-    element.dataset.id =
-      task.id;
-
-  }
-
-
-  if (
-    editingTaskId ===
-    task.id
-  ) {
-
-    element.innerHTML = `
-
-      <div class="task-number">
-        ${dynamicNumber(task)}
-      </div>
-
-      <div class="status-symbol">
-        ${statusSymbol(task)}
-      </div>
-
-      <div class="edit-area">
-
-        <input
-          id="edit-${task.id}"
-          class="edit-input"
-          value="${escapeHtml(task.text)}"
-        >
-
-        ${editOptions(task)}
-
-        <div class="edit-actions">
-
-          <button
-            class="edit-button"
-            onclick="saveEdit(${task.id})"
-          >
-            ✓ SPEICHERN
-          </button>
-
-          <button
-            class="edit-button"
-            onclick="cancelEditing()"
-          >
-            × ABBRECHEN
-          </button>
-
-        </div>
-
-      </div>
-    `;
-
-
-    return element;
-
-  }
-
-
-  let leftDrag =
-    "";
-
-
-  if (
-    todayDrag &&
-    ![
-      "completed",
-      "aborted"
-    ].includes(
-      task.status
-    )
-  ) {
-
-    leftDrag = `
-
-      <div
-        class="drag-handle"
-        onpointerdown="
-          startTodayDrag(
-            event,
-            ${task.id}
-          )
-        "
-      >
-        ≡
-      </div>
-    `;
-
-  }
-
-
-  let meta =
-    "";
-
-
-  if (
-    task.status ===
-    "running"
-  ) {
-
-    meta = `
-
-      <div class="status-meta">
-        LÄUFT
-      </div>
-
-      <div
-        class="duration live-duration"
-        data-task-id="${task.id}"
-      >
-        AKTIV ·
-        ${formatDuration(
-          liveDuration(task)
-        )}
-      </div>
-    `;
-
-  }
-
-
-  if (
-    task.status ===
-    "paused"
-  ) {
-
-    meta = `
-
-      <div class="status-meta">
-        PAUSIERT
-      </div>
-
-      <div
-        class="duration live-duration"
-        data-task-id="${task.id}"
-      >
-        AKTIV ·
-        ${formatDuration(
-          liveDuration(task)
-        )}
-      </div>
-    `;
-
-  }
-
-
-  if (
-    task.status ===
-    "completed"
-  ) {
-
-    meta = `
-
-      ${
-        task.completedAt
-          ? `
-            <div class="task-meta">
-              ${formatDateTime(
-                task.completedAt,
-                "ERLEDIGT"
-              )}
-            </div>
-          `
-          : ""
-      }
-
-      ${
-        task.activeDurationMs !==
-          null
-          ? `
-            <div class="duration">
-              DAUER ·
-              ${formatDuration(
-                task.activeDurationMs
-              )}
-            </div>
-          `
-          : ""
-      }
-    `;
-
-  }
-
-
-  if (
-    task.status ===
-    "aborted"
-  ) {
-
-    meta = `
-
-      ${
-        task.abortedAt
-          ? `
-            <div class="abort-meta">
-              ${formatDateTime(
-                task.abortedAt,
-                "ABGEBROCHEN"
-              )}
-            </div>
-          `
-          : ""
-      }
-
-      ${
-        task.abortedActiveDurationMs !==
-          null
-          ? `
-            <div class="duration">
-              AKTIV BIS ABBRUCH ·
-              ${formatDuration(
-                task.abortedActiveDurationMs
-              )}
-            </div>
-          `
-          : ""
-      }
-    `;
-
-  }
-
-
-  let filterTodayAction =
-    "";
-
-
-  if (
-    filterTodayOnly &&
-    ![
-      "completed",
-      "aborted"
-    ].includes(
-      task.status
-    )
-  ) {
-
-    filterTodayAction = `
-
-      <div class="filter-today-action">
-
-        ${iconButton(
-
-          isTodayTask(task)
-            ? "📌"
-            : "📅",
-
-          isTodayTask(task)
-            ? "Aus Heute entfernen"
-            : "Zu Heute hinzufügen",
-
-          `toggleToday(${task.id})`,
-
-          isTodayTask(task)
-            ? "today-button selected"
-            : "today-button"
-
-        )}
-
-      </div>
-    `;
-
-  }
-
-
-  let actions =
-    "";
-
-
-  if (!compactOnly) {
-
-    if (
-      task.status ===
-      "open"
-    ) {
-
-      actions = `
-
-        <div class="icon-actions">
-
-          ${iconButton(
-            "▶️",
-            "Starten",
-            `startTask(${task.id})`,
-            "start-button"
-          )}
-
-          ${
-            showTodayButton
-              ? iconButton(
-
-                  isTodayTask(task)
-                    ? "📌"
-                    : "📅",
-
-                  isTodayTask(task)
-                    ? "Ist im heutigen Aufgabenblock"
-                    : "Für heute auswählen",
-
-                  `toggleToday(${task.id})`,
-
-                  isTodayTask(task)
-                    ? "today-button selected"
-                    : "today-button"
-
-                )
-              : ""
-          }
-
-          ${iconButton(
-            "✏️",
-            "Bearbeiten",
-            `startEditing(${task.id})`
-          )}
-
-          ${iconButton(
-            "🗑️",
-            "Löschen",
-            `askDelete(${task.id})`
-          )}
-
-          ${iconButton(
-            "❌",
-            "Abbrechen",
-            `askAbort(${task.id})`,
-            "abort-button"
-          )}
-
-          ${
-            todayDrag &&
-            isTodayTask(task)
-              ? iconButton(
-                  "➖",
-                  "Aus Heute entfernen",
-                  `toggleToday(${task.id})`,
-                  "today-button selected"
-                )
-              : ""
-          }
-
-        </div>
-      `;
-
-    }
-
-
-    if (
-      task.status ===
-      "running"
-    ) {
-
-      actions = `
-
-        <div class="icon-actions">
-
-          ${iconButton(
-            "⏸️",
-            "Pausieren",
-            `pauseTask(${task.id})`,
-            "pause-button"
-          )}
-
-          ${iconButton(
-            "✅",
-            "Beenden",
-            `finishTask(${task.id})`,
-            "finish-button"
-          )}
-
-          ${iconButton(
-            "❌",
-            "Abbrechen",
-            `askAbort(${task.id})`,
-            "abort-button"
-          )}
-
-          ${
-            todayDrag &&
-            isTodayTask(task)
-              ? iconButton(
-                  "➖",
-                  "Aus Heute entfernen",
-                  `toggleToday(${task.id})`,
-                  "today-button selected"
-                )
-              : ""
-          }
-
-        </div>
-      `;
-
-    }
-
-
-    if (
-      task.status ===
-      "paused"
-    ) {
-
-      actions = `
-
-        <div class="icon-actions">
-
-          ${iconButton(
-            "▶️",
-            "Fortsetzen",
-            `resumeTask(${task.id})`,
-            "start-button"
-          )}
-
-          ${iconButton(
-            "✅",
-            "Beenden",
-            `finishTask(${task.id})`,
-            "finish-button"
-          )}
-
-          ${iconButton(
-            "❌",
-            "Abbrechen",
-            `askAbort(${task.id})`,
-            "abort-button"
-          )}
-
-          ${
-            todayDrag &&
-            isTodayTask(task)
-              ? iconButton(
-                  "➖",
-                  "Aus Heute entfernen",
-                  `toggleToday(${task.id})`,
-                  "today-button selected"
-                )
-              : ""
-          }
-
-        </div>
-      `;
-
-    }
-
-  }
-
-
-  const repeat =
-    [
-      "completed",
-      "aborted"
-    ].includes(
-      task.status
-    )
-      ? `
-        <button
-          class="repeat-button"
-          onclick="repeatTask(${task.id})"
-          title="Wiederholen"
-        >
-          🔁
-        </button>
-      `
-      : "";
-
-
-  element.innerHTML = `
-
-    ${leftDrag}
-
-    <div class="task-number">
-      ${dynamicNumber(task)}
-    </div>
-
-    <div class="status-symbol">
-      ${statusSymbol(task)}
-    </div>
-
-    <div class="task-content">
-
-      <div class="task-main-row">
-
-        <div class="task-text">
-          ${escapeHtml(task.text)}
-        </div>
-
-        ${filterTodayAction}
-
-      </div>
-
-      ${flags(task)}
-
-      ${meta}
-
-      ${actions}
-
-    </div>
-
-    ${repeat}
-  `;
-
-
-  return element;
+const {
+todayDrag = false,
+showTodayButton = false,
+compactOnly = false,
+filterTodayOnly = false
+} = options;
+
+
+const element =
+document.createElement(
+"div"
+);
+
+
+element.className =
+"task";
+
+
+if (
+task.status ===
+"running"
+) {
+element.classList.add(
+"running"
+);
+}
+
+
+if (
+task.status ===
+"paused"
+) {
+element.classList.add(
+"paused"
+);
+}
+
+
+if (
+task.status ===
+"completed"
+) {
+element.classList.add(
+"completed"
+);
+}
+
+
+if (
+task.status ===
+"aborted"
+) {
+element.classList.add(
+"aborted"
+);
+}
+
+
+if (
+todayDrag &&
+![
+"completed",
+"aborted"
+].includes(
+task.status
+)
+) {
+
+element.classList.add(
+"today-task-active"
+);
+
+element.dataset.id =
+task.id;
 
 }
 
 
-/*
-  SECTION
-*/
+if (
+editingTaskId ===
+task.id
+) {
+
+element.innerHTML = `
+
+<div class="task-number">
+${dynamicNumber(task)}
+</div>
+
+<div class="status-symbol">
+${statusSymbol(task)}
+</div>
+
+<div class="edit-area">
+
+<input
+id="edit-${task.id}"
+class="edit-input"
+value="${escapeHtml(task.text)}"
+>
+
+${editOptions(task)}
+
+<div class="edit-actions">
+
+<button
+class="edit-button"
+onclick="saveEdit(${task.id})"
+>
+✓ SPEICHERN
+</button>
+
+<button
+class="edit-button"
+onclick="cancelEditing()"
+>
+× ABBRECHEN
+</button>
+
+</div>
+
+</div>
+`;
+
+
+return element;
+
+}
+
+
+let leftDrag =
+"";
+
+
+if (
+todayDrag &&
+![
+"completed",
+"aborted"
+].includes(
+task.status
+)
+) {
+
+leftDrag = `
+
+<div
+class="drag-handle"
+onpointerdown="
+startTodayDrag(
+event,
+${task.id}
+)
+"
+>
+≡
+</div>
+`;
+
+}
+
+
+let meta =
+"";
+
+
+if (
+task.status ===
+"running"
+) {
+
+meta = `
+
+<div class="status-meta">
+LÄUFT
+</div>
+
+<div
+class="duration live-duration"
+data-task-id="${task.id}"
+>
+AKTIV ·
+${formatDuration(
+liveDuration(task)
+)}
+</div>
+`;
+
+}
+
+
+if (
+task.status ===
+"paused"
+) {
+
+meta = `
+
+<div class="status-meta">
+PAUSIERT
+</div>
+
+<div
+class="duration live-duration"
+data-task-id="${task.id}"
+>
+AKTIV ·
+${formatDuration(
+liveDuration(task)
+)}
+</div>
+`;
+
+}
+
+
+if (
+task.status ===
+"completed"
+) {
+
+meta = `
+
+${
+task.completedAt
+? `
+<div class="task-meta">
+${formatDateTime(
+task.completedAt,
+"ERLEDIGT"
+)}
+</div>
+`
+: ""
+}
+
+${
+task.activeDurationMs !== null
+? `
+<div class="duration">
+DAUER ·
+${formatDuration(
+task.activeDurationMs
+)}
+</div>
+`
+: ""
+}
+`;
+
+}
+
+
+if (
+task.status ===
+"aborted"
+) {
+
+meta = `
+
+${
+task.abortedAt
+? `
+<div class="abort-meta">
+${formatDateTime(
+task.abortedAt,
+"ABGEBROCHEN"
+)}
+</div>
+`
+: ""
+}
+
+${
+task.abortedActiveDurationMs !== null
+? `
+<div class="duration">
+AKTIV BIS ABBRUCH ·
+${formatDuration(
+task.abortedActiveDurationMs
+)}
+</div>
+`
+: ""
+}
+`;
+
+}
+
+
+let filterTodayAction =
+"";
+
+
+if (
+filterTodayOnly &&
+![
+"completed",
+"aborted"
+].includes(
+task.status
+)
+) {
+
+filterTodayAction = `
+
+<div class="filter-today-action">
+
+${iconButton(
+
+isTodayTask(task)
+? "📌"
+: "📅",
+
+isTodayTask(task)
+? "Aus Heute entfernen"
+: "Zu Heute hinzufügen",
+
+`toggleToday(${task.id})`,
+
+isTodayTask(task)
+? "today-button selected"
+: "today-button"
+
+)}
+
+</div>
+`;
+
+}
+
+
+let actions =
+"";
+
+
+if (!compactOnly) {
+
+if (
+task.status ===
+"open"
+) {
+
+actions = `
+
+<div class="icon-actions">
+
+${iconButton(
+"▶️",
+"Starten",
+`startTask(${task.id})`,
+"start-button"
+)}
+
+${
+showTodayButton
+? iconButton(
+
+isTodayTask(task)
+? "📌"
+: "📅",
+
+isTodayTask(task)
+? "Ist im heutigen Aufgabenblock"
+: "Für heute auswählen",
+
+`toggleToday(${task.id})`,
+
+isTodayTask(task)
+? "today-button selected"
+: "today-button"
+
+)
+: ""
+}
+
+${iconButton(
+"✏️",
+"Bearbeiten",
+`startEditing(${task.id})`
+)}
+
+${iconButton(
+"🗑️",
+"Löschen",
+`askDelete(${task.id})`
+)}
+
+${iconButton(
+"❌",
+"Abbrechen",
+`askAbort(${task.id})`,
+"abort-button"
+)}
+
+${
+todayDrag &&
+isTodayTask(task)
+? iconButton(
+"➖",
+"Aus Heute entfernen",
+`toggleToday(${task.id})`,
+"today-button selected"
+)
+: ""
+}
+
+</div>
+`;
+
+}
+
+
+if (
+task.status ===
+"running"
+) {
+
+actions = `
+
+<div class="icon-actions">
+
+${iconButton(
+"⏸️",
+"Pausieren",
+`pauseTask(${task.id})`,
+"pause-button"
+)}
+
+${iconButton(
+"✅",
+"Beenden",
+`finishTask(${task.id})`,
+"finish-button"
+)}
+
+${iconButton(
+"❌",
+"Abbrechen",
+`askAbort(${task.id})`,
+"abort-button"
+)}
+
+${
+todayDrag &&
+isTodayTask(task)
+? iconButton(
+"➖",
+"Aus Heute entfernen",
+`toggleToday(${task.id})`,
+"today-button selected"
+)
+: ""
+}
+
+</div>
+`;
+
+}
+
+
+if (
+task.status ===
+"paused"
+) {
+
+actions = `
+
+<div class="icon-actions">
+
+${iconButton(
+"▶️",
+"Fortsetzen",
+`resumeTask(${task.id})`,
+"start-button"
+)}
+
+${iconButton(
+"✅",
+"Beenden",
+`finishTask(${task.id})`,
+"finish-button"
+)}
+
+${iconButton(
+"❌",
+"Abbrechen",
+`askAbort(${task.id})`,
+"abort-button"
+)}
+
+${
+todayDrag &&
+isTodayTask(task)
+? iconButton(
+"➖",
+"Aus Heute entfernen",
+`toggleToday(${task.id})`,
+"today-button selected"
+)
+: ""
+}
+
+</div>
+`;
+
+}
+
+}
+
+
+const repeat =
+[
+"completed",
+"aborted"
+].includes(
+task.status
+)
+? `
+<button
+class="repeat-button"
+onclick="repeatTask(${task.id})"
+title="Wiederholen"
+>
+🔁
+</button>
+`
+: "";
+
+
+element.innerHTML = `
+
+${leftDrag}
+
+<div class="task-number">
+${dynamicNumber(task)}
+</div>
+
+<div class="status-symbol">
+${statusSymbol(task)}
+</div>
+
+<div class="task-content">
+
+<div class="task-main-row">
+
+<div class="task-text">
+${escapeHtml(task.text)}
+</div>
+
+${filterTodayAction}
+
+</div>
+
+${flags(task)}
+
+${meta}
+
+${actions}
+
+</div>
+
+${repeat}
+`;
+
+
+return element;
+
+}
+
+
+/* SECTION */
 
 function section(
-  title,
-  items,
-  options = {}
+title,
+items,
+options = {}
 ) {
 
-  const {
-
-    counter =
-      "",
-
-    empty =
-      "Keine Aufgaben.",
-
-    cardOptions =
-      {}
-
-  } = options;
+const {
+counter = "",
+empty = "Keine Aufgaben.",
+cardOptions = {}
+} = options;
 
 
-  const wrapper =
-    document.createElement(
-      "section"
-    );
+const wrapper =
+document.createElement(
+"section"
+);
 
 
-  wrapper.className =
-    "section";
+wrapper.className =
+"section";
 
 
-  wrapper.innerHTML = `
+wrapper.innerHTML = `
 
-    <div class="section-header">
+<div class="section-header">
 
-      <div class="section-title">
-        ${title}
-      </div>
+<div class="section-title">
+${title}
+</div>
 
-      ${
-        counter
-          ? `
-            <div class="counter">
-              ${counter}
-            </div>
-          `
-          : ""
-      }
+${
+counter
+? `
+<div class="counter">
+${counter}
+</div>
+`
+: ""
+}
 
-    </div>
-  `;
-
-
-  if (
-    items.length ===
-    0
-  ) {
-
-    const emptyDiv =
-      document.createElement(
-        "div"
-      );
+</div>
+`;
 
 
-    emptyDiv.className =
-      "empty-message";
+if (
+items.length === 0
+) {
+
+const emptyDiv =
+document.createElement(
+"div"
+);
 
 
-    emptyDiv.textContent =
-      empty;
+emptyDiv.className =
+"empty-message";
 
 
-    wrapper.appendChild(
-      emptyDiv
-    );
+emptyDiv.textContent =
+empty;
 
 
-    return wrapper;
-
-  }
-
-
-  items.forEach(
-    task => {
-
-      wrapper.appendChild(
-        taskCard(
-          task,
-          cardOptions
-        )
-      );
-
-    }
-  );
+wrapper.appendChild(
+emptyDiv
+);
 
 
-  return wrapper;
+return wrapper;
+
+}
+
+
+items.forEach(task => {
+
+wrapper.appendChild(
+taskCard(
+task,
+cardOptions
+)
+);
+
+});
+
+
+return wrapper;
+
+}
+
+
+/* ALLE */
+
+function renderAll(container) {
+
+const active =
+tasks.filter(
+task =>
+[
+"open",
+"running",
+"paused"
+].includes(
+task.status
+)
+);
+
+
+const completed =
+tasks
+.filter(
+task =>
+task.status ===
+"completed"
+)
+.sort(
+(a,b) =>
+new Date(
+b.completedAt || 0
+) -
+new Date(
+a.completedAt || 0
+)
+);
+
+
+const aborted =
+tasks.filter(
+task =>
+task.status ===
+"aborted"
+);
+
+
+container.appendChild(
+section(
+"OFFENE UND LAUFENDE AUFGABEN",
+active,
+{
+counter:
+active.length +
+" aktiv",
+
+empty:
+"Nix offen. Verdächtig. 👀",
+
+cardOptions: {
+showTodayButton:
+true
+}
+}
+)
+);
+
+
+container.appendChild(
+section(
+"ERLEDIGT",
+completed,
+{
+counter:
+completed.length +
+" erledigt",
+
+empty:
+"Noch nix erledigt."
+}
+)
+);
+
+
+container.appendChild(
+section(
+"ABGEBROCHEN",
+aborted,
+{
+counter:
+aborted.length +
+" abgebrochen",
+
+empty:
+"Nix abgebrochen."
+}
+)
+);
+
+}
+
+
+/* HEUTE */
+
+function renderToday(container) {
+
+const today =
+getBerlinDateKey();
+
+
+const todayAll =
+tasks.filter(
+task =>
+task.todayDate ===
+today
+);
+
+
+const todayActive =
+todayAll
+.filter(
+task =>
+[
+"open",
+"running",
+"paused"
+].includes(
+task.status
+)
+)
+.sort(
+(a,b) =>
+(a.todayOrder || 0) -
+(b.todayOrder || 0)
+);
+
+
+const todayCompleted =
+todayAll
+.filter(
+task =>
+task.status ===
+"completed"
+)
+.sort(
+(a,b) =>
+new Date(
+b.completedAt || 0
+) -
+new Date(
+a.completedAt || 0
+)
+);
+
+
+const total =
+todayActive.length +
+todayCompleted.length;
+
+
+const completedCount =
+todayCompleted.length;
+
+
+const percent =
+total
+? Math.round(
+completedCount /
+total *
+100
+)
+: 0;
+
+
+const summary =
+document.createElement(
+"div"
+);
+
+
+summary.className =
+"today-summary";
+
+
+summary.innerHTML = `
+
+<div class="today-progress">
+
+<span>
+HEUTE ·
+${completedCount}/${total}
+ERLEDIGT
+</span>
+
+<span class="today-percentage">
+${percent} %
+</span>
+
+</div>
+
+<div class="today-progress-bar">
+
+<div
+class="today-progress-fill"
+style="width:${percent}%"
+></div>
+
+</div>
+`;
+
+
+container.appendChild(
+summary
+);
+
+
+const runningTask =
+todayActive.find(
+task =>
+task.status ===
+"running"
+);
+
+
+const nextTask =
+runningTask ||
+todayActive[0] ||
+null;
+
+
+const nextPanel =
+document.createElement(
+"div"
+);
+
+
+nextPanel.className =
+"next-task-panel";
+
+
+if (nextTask) {
+
+let label =
+"NÄCHSTE AUFGABE";
+
+
+if (
+nextTask.status ===
+"running"
+) {
+
+label =
+"AKTUELL LAUFENDE AUFGABE";
+
+}
+
+
+if (
+nextTask.status ===
+"paused"
+) {
+
+label =
+"NÄCHSTE AUFGABE · PAUSIERT";
+
+}
+
+
+nextPanel.innerHTML = `
+
+<div class="next-task-label">
+${label}
+</div>
+
+<div class="next-task-content">
+
+<div class="next-task-number">
+${dynamicNumber(
+nextTask
+)}
+</div>
+
+<div class="next-task-status">
+${statusSymbol(
+nextTask
+)}
+</div>
+
+<div class="next-task-name">
+${escapeHtml(
+nextTask.text
+)}
+</div>
+
+${
+nextTask.status ===
+"open"
+? iconButton(
+"▶️",
+"Starten",
+`startTask(${nextTask.id})`,
+"start-button"
+)
+: ""
+}
+
+${
+nextTask.status ===
+"paused"
+? iconButton(
+"▶️",
+"Fortsetzen",
+`resumeTask(${nextTask.id})`,
+"start-button"
+)
+: ""
+}
+
+</div>
+
+${flags(nextTask)}
+`;
+
+} else {
+
+nextPanel.innerHTML = `
+
+<div class="next-task-label">
+NÄCHSTE AUFGABE
+</div>
+
+<div class="next-task-empty">
+Keine offene Aufgabe im heutigen Tagesblock.
+</div>
+`;
+
+}
+
+
+container.appendChild(
+nextPanel
+);
+
+
+container.appendChild(
+section(
+"OFFEN / LAUFEND / PAUSIERT",
+todayActive,
+{
+counter:
+todayActive.length +
+" offen",
+
+empty:
+"Keine offenen Aufgaben mehr im heutigen Tagesblock.",
+
+cardOptions: {
+todayDrag:
+true
+}
+}
+)
+);
+
+
+container.appendChild(
+section(
+"ERLEDIGT HEUTE",
+todayCompleted,
+{
+counter:
+todayCompleted.length +
+" erledigt",
+
+empty:
+"Heute noch nichts erledigt."
+}
+)
+);
+
+}
+
+
+/* PRIORITÄT */
+
+function renderPriority(container) {
+
+const relevant =
+tasks.filter(
+task =>
+[
+"open",
+"running",
+"paused"
+].includes(
+task.status
+)
+);
+
+
+[
+[
+"🔴 HOHE PRIORITÄT",
+"high"
+],
+[
+"🟡 MITTLERE PRIORITÄT",
+"medium"
+],
+[
+"⚪ NORMALE PRIORITÄT",
+"normal"
+]
+].forEach(group => {
+
+const items =
+relevant.filter(
+task =>
+task.priority ===
+group[1]
+);
+
+
+container.appendChild(
+section(
+group[0],
+items,
+{
+counter:
+items.length,
+
+empty:
+"Keine Aufgaben in dieser Priorität.",
+
+cardOptions: {
+compactOnly:
+true,
+
+filterTodayOnly:
+true
+}
+}
+)
+);
+
+});
+
+}
+
+
+/* FÄLLIG */
+
+function renderDue(container) {
+
+const active =
+tasks.filter(
+task =>
+[
+"open",
+"running",
+"paused"
+].includes(
+task.status
+)
+);
+
+
+const warning =
+active.filter(
+task =>
+dueSymbol(task) ===
+"⚠️"
+);
+
+
+const deadline =
+active.filter(
+task =>
+dueSymbol(task) ===
+"🔷"
+);
+
+
+const tomorrow =
+active.filter(
+task =>
+dueSymbol(task) ===
+"💠"
+);
+
+
+const filterOptions = {
+compactOnly:
+true,
+
+filterTodayOnly:
+true
+};
+
+
+container.appendChild(
+section(
+"⚠️ HEUTE FÄLLIG",
+warning,
+{
+counter:
+warning.length,
+
+empty:
+"Keine Deadline für heute.",
+
+cardOptions:
+filterOptions
+}
+)
+);
+
+
+container.appendChild(
+section(
+"🔷 SPÄTESTENS MORGEN",
+deadline,
+{
+counter:
+deadline.length,
+
+empty:
+"Nix spätestens morgen fällig.",
+
+cardOptions:
+filterOptions
+}
+)
+);
+
+
+container.appendChild(
+section(
+"💠 FÜR MORGEN",
+tomorrow,
+{
+counter:
+tomorrow.length,
+
+empty:
+"Keine Aufgabe gezielt für morgen.",
+
+cardOptions:
+filterOptions
+}
+)
+);
+
+}
+
+
+/* AKTIV */
+
+function renderActive(container) {
+
+const running =
+tasks.filter(
+task =>
+task.status ===
+"running"
+);
+
+
+const paused =
+tasks.filter(
+task =>
+task.status ===
+"paused"
+);
+
+
+container.appendChild(
+section(
+"▶️ LÄUFT",
+running,
+{
+counter:
+running.length,
+
+empty:
+"Aktuell läuft keine Aufgabe."
+}
+)
+);
+
+
+container.appendChild(
+section(
+"⏸️ PAUSIERT",
+paused,
+{
+counter:
+paused.length,
+
+empty:
+"Keine pausierte Aufgabe."
+}
+)
+);
+
+}
+
+
+/* ERLEDIGT */
+
+function renderCompleted(container) {
+
+const completed =
+tasks
+.filter(
+task =>
+task.status ===
+"completed"
+)
+.sort(
+(a,b) =>
+new Date(
+b.completedAt || 0
+) -
+new Date(
+a.completedAt || 0
+)
+);
+
+
+container.appendChild(
+section(
+"ERLEDIGT · NOCH NICHT ARCHIVIERT",
+completed,
+{
+counter:
+completed.length +
+" erledigt",
+
+empty:
+"Keine noch nicht archivierten erledigten Aufgaben."
+}
+)
+);
+
+}
+
+
+/* ARCHIV CARD */
+
+function archiveCard(item) {
+
+const element =
+document.createElement(
+"div"
+);
+
+
+element.className =
+"task completed archive-task";
+
+
+element.innerHTML = `
+
+<div class="archive-number">
+A${String(
+item.archiveNumber
+).padStart(
+3,
+"0"
+)}
+</div>
+
+<div class="status-symbol">
+✅
+</div>
+
+<div class="task-content">
+
+<div class="task-text">
+${escapeHtml(
+item.text
+)}
+</div>
+
+${flags(item)}
+
+${
+item.completedAt
+? `
+<div class="task-meta">
+${formatDateTime(
+item.completedAt,
+"ERLEDIGT"
+)}
+</div>
+`
+: ""
+}
+
+${
+item.activeDurationMs !==
+null
+? `
+<div class="duration">
+DAUER ·
+${formatDuration(
+item.activeDurationMs
+)}
+</div>
+`
+: ""
+}
+
+</div>
+`;
+
+
+return element;
+
+}
+
+
+/* ARCHIV */
+
+function renderArchive(container) {
+
+const summary =
+document.createElement(
+"div"
+);
+
+
+summary.className =
+"archive-summary";
+
+
+summary.innerHTML = `
+
+<div class="archive-summary-title">
+ARCHIVIERTE AUFGABEN
+</div>
+
+<div class="archive-summary-number">
+${archive.length}
+</div>
+
+<div class="task-meta">
+NÄCHSTE ARCHIVNUMMER ·
+A${String(
+nextArchiveNumber
+).padStart(
+3,
+"0"
+)}
+</div>
+`;
+
+
+container.appendChild(
+summary
+);
+
+
+if (
+archive.length === 0
+) {
+
+const empty =
+document.createElement(
+"div"
+);
+
+
+empty.className =
+"empty-message";
+
+
+empty.textContent =
+"Archiv noch leer.";
+
+
+container.appendChild(
+empty
+);
+
+} else {
+
+const sorted =
+[...archive]
+.sort(
+(a,b) =>
+Number(
+b.archiveNumber
+) -
+Number(
+a.archiveNumber
+)
+);
+
+
+const groups = {};
+
+
+sorted.forEach(item => {
+
+const key =
+item.completedDate ||
+"unknown";
+
+
+if (!groups[key]) {
+
+groups[key] = [];
+
+}
+
+
+groups[key].push(
+item
+);
+
+});
+
+
+Object.keys(groups)
+.sort()
+.reverse()
+.forEach(dateKey => {
+
+const heading =
+document.createElement(
+"div"
+);
+
+
+heading.className =
+"archive-date-heading";
+
+
+heading.textContent =
+dateKey ===
+"unknown"
+? "DATUM UNBEKANNT"
+: formatArchiveDate(
+dateKey
+);
+
+
+container.appendChild(
+heading
+);
+
+
+groups[
+dateKey
+].forEach(item => {
+
+container.appendChild(
+archiveCard(
+item
+)
+);
+
+});
+
+});
 
 }
 
 
 /*
-  ALLE
+  VERSTECKTER ENTWICKLERBEREICH
+
+  Nur im Archiv sichtbar.
 */
 
-function renderAll(
-  container
-) {
-
-  const active =
-    tasks.filter(
-      task =>
-        [
-          "open",
-          "running",
-          "paused"
-        ].includes(
-          task.status
-        )
-    );
+const dev =
+document.createElement(
+"div"
+);
 
 
-  const completed =
-    tasks
-      .filter(
-        task =>
-          task.status ===
-          "completed"
-      )
-      .sort(
-        (a,b) =>
-          new Date(
-            b.completedAt || 0
-          ) -
-          new Date(
-            a.completedAt || 0
-          )
-      );
+dev.className =
+"dev-panel";
 
 
-  const aborted =
-    tasks.filter(
-      task =>
-        task.status ===
-        "aborted"
-    );
+dev.innerHTML = `
+
+<div class="dev-title">
+🧪 ARCHIV-TESTMODUS
+</div>
+
+<div class="dev-description">
+Nur für die Entwicklungsphase.
+Erstellt künstliche Testdaten,
+damit wir den Tageswechsel sofort
+prüfen können.
+</div>
+
+<div class="dev-buttons">
+
+<button
+class="dev-button"
+onclick="createArchiveTestTask()"
+>
+1 · TESTAUFGABE ERSTELLEN
+</button>
+
+<button
+class="dev-button"
+onclick="runArchiveTest()"
+>
+2 · ARCHIVIERUNG AUSLÖSEN
+</button>
+
+<button
+class="dev-button"
+onclick="removeArchiveTestData()"
+>
+TEST-ARCHIVDATEN LÖSCHEN
+</button>
+
+</div>
+`;
 
 
-  container.appendChild(
-    section(
-      "OFFENE UND LAUFENDE AUFGABEN",
-      active,
-      {
-        counter:
-          active.length +
-          " aktiv",
-
-        empty:
-          "Nix offen. Verdächtig. 👀",
-
-        cardOptions: {
-          showTodayButton:
-            true
-        }
-      }
-    )
-  );
-
-
-  container.appendChild(
-    section(
-      "ERLEDIGT",
-      completed,
-      {
-        counter:
-          completed.length +
-          " erledigt",
-
-        empty:
-          "Noch nix erledigt."
-      }
-    )
-  );
-
-
-  container.appendChild(
-    section(
-      "ABGEBROCHEN",
-      aborted,
-      {
-        counter:
-          aborted.length +
-          " abgebrochen",
-
-        empty:
-          "Nix abgebrochen."
-      }
-    )
-  );
+container.appendChild(
+dev
+);
 
 }
 
 
-/*
-  HEUTE
-*/
-
-function renderToday(
-  container
-) {
-
-  const today =
-    getBerlinDateKey();
-
-
-  const todayAll =
-    tasks.filter(
-      task =>
-        task.todayDate ===
-        today
-    );
-
-
-  const todayActive =
-    todayAll
-      .filter(
-        task =>
-          [
-            "open",
-            "running",
-            "paused"
-          ].includes(
-            task.status
-          )
-      )
-      .sort(
-        (a,b) =>
-          (a.todayOrder || 0) -
-          (b.todayOrder || 0)
-      );
-
-
-  const todayCompleted =
-    todayAll
-      .filter(
-        task =>
-          task.status ===
-          "completed"
-      )
-      .sort(
-        (a,b) =>
-          new Date(
-            b.completedAt || 0
-          ) -
-          new Date(
-            a.completedAt || 0
-          )
-      );
-
-
-  const total =
-    todayActive.length +
-    todayCompleted.length;
-
-
-  const completedCount =
-    todayCompleted.length;
-
-
-  const percent =
-    total
-      ? Math.round(
-          completedCount /
-          total *
-          100
-        )
-      : 0;
-
-
-  const summary =
-    document.createElement(
-      "div"
-    );
-
-
-  summary.className =
-    "today-summary";
-
-
-  summary.innerHTML = `
-
-    <div class="today-progress">
-
-      <span>
-        HEUTE ·
-        ${completedCount}/${total}
-        ERLEDIGT
-      </span>
-
-      <span class="today-percentage">
-        ${percent} %
-      </span>
-
-    </div>
-
-    <div class="today-progress-bar">
-
-      <div
-        class="today-progress-fill"
-        style="width:${percent}%"
-      ></div>
-
-    </div>
-  `;
-
-
-  container.appendChild(
-    summary
-  );
-
-
-  const runningTask =
-    todayActive.find(
-      task =>
-        task.status ===
-        "running"
-    );
-
-
-  const nextTask =
-    runningTask ||
-    todayActive[0] ||
-    null;
-
-
-  const nextPanel =
-    document.createElement(
-      "div"
-    );
-
-
-  nextPanel.className =
-    "next-task-panel";
-
-
-  if (nextTask) {
-
-    let label =
-      "NÄCHSTE AUFGABE";
-
-
-    if (
-      nextTask.status ===
-      "running"
-    ) {
-
-      label =
-        "AKTUELL LAUFENDE AUFGABE";
-
-    }
-
-
-    if (
-      nextTask.status ===
-      "paused"
-    ) {
-
-      label =
-        "NÄCHSTE AUFGABE · PAUSIERT";
-
-    }
-
-
-    nextPanel.innerHTML = `
-
-      <div class="next-task-label">
-        ${label}
-      </div>
-
-      <div class="next-task-content">
-
-        <div class="next-task-number">
-          ${dynamicNumber(
-            nextTask
-          )}
-        </div>
-
-        <div class="next-task-status">
-          ${statusSymbol(
-            nextTask
-          )}
-        </div>
-
-        <div class="next-task-name">
-          ${escapeHtml(
-            nextTask.text
-          )}
-        </div>
-
-        ${
-          nextTask.status ===
-            "open"
-            ? iconButton(
-                "▶️",
-                "Starten",
-                `startTask(${nextTask.id})`,
-                "start-button"
-              )
-            : ""
-        }
-
-        ${
-          nextTask.status ===
-            "paused"
-            ? iconButton(
-                "▶️",
-                "Fortsetzen",
-                `resumeTask(${nextTask.id})`,
-                "start-button"
-              )
-            : ""
-        }
-
-      </div>
-
-      ${flags(nextTask)}
-    `;
-
-  } else {
-
-    nextPanel.innerHTML = `
-
-      <div class="next-task-label">
-        NÄCHSTE AUFGABE
-      </div>
-
-      <div class="next-task-empty">
-        Keine offene Aufgabe im
-        heutigen Tagesblock.
-      </div>
-    `;
-
-  }
-
-
-  container.appendChild(
-    nextPanel
-  );
-
-
-  container.appendChild(
-    section(
-      "OFFEN / LAUFEND / PAUSIERT",
-      todayActive,
-      {
-        counter:
-          todayActive.length +
-          " offen",
-
-        empty:
-          "Keine offenen Aufgaben mehr im heutigen Tagesblock.",
-
-        cardOptions: {
-          todayDrag:
-            true
-        }
-      }
-    )
-  );
-
-
-  container.appendChild(
-    section(
-      "ERLEDIGT HEUTE",
-      todayCompleted,
-      {
-        counter:
-          todayCompleted.length +
-          " erledigt",
-
-        empty:
-          "Heute noch nichts erledigt."
-      }
-    )
-  );
-
-}
-
-
-/*
-  PRIORITÄT
-*/
-
-function renderPriority(
-  container
-) {
-
-  const relevant =
-    tasks.filter(
-      task =>
-        [
-          "open",
-          "running",
-          "paused"
-        ].includes(
-          task.status
-        )
-    );
-
-
-  [
-    [
-      "🔴 HOHE PRIORITÄT",
-      "high"
-    ],
-    [
-      "🟡 MITTLERE PRIORITÄT",
-      "medium"
-    ],
-    [
-      "⚪ NORMALE PRIORITÄT",
-      "normal"
-    ]
-  ].forEach(
-    group => {
-
-      const items =
-        relevant.filter(
-          task =>
-            task.priority ===
-            group[1]
-        );
-
-
-      container.appendChild(
-        section(
-          group[0],
-          items,
-          {
-            counter:
-              items.length,
-
-            empty:
-              "Keine Aufgaben in dieser Priorität.",
-
-            cardOptions: {
-
-              compactOnly:
-                true,
-
-              filterTodayOnly:
-                true
-
-            }
-          }
-        )
-      );
-
-    }
-  );
-
-}
-
-
-/*
-  FÄLLIG
-*/
-
-function renderDue(
-  container
-) {
-
-  const active =
-    tasks.filter(
-      task =>
-        [
-          "open",
-          "running",
-          "paused"
-        ].includes(
-          task.status
-        )
-    );
-
-
-  const warning =
-    active.filter(
-      task =>
-        dueSymbol(task) ===
-        "⚠️"
-    );
-
-
-  const deadline =
-    active.filter(
-      task =>
-        dueSymbol(task) ===
-        "🔷"
-    );
-
-
-  const tomorrow =
-    active.filter(
-      task =>
-        dueSymbol(task) ===
-        "💠"
-    );
-
-
-  const filterOptions = {
-
-    compactOnly:
-      true,
-
-    filterTodayOnly:
-      true
-
-  };
-
-
-  container.appendChild(
-    section(
-      "⚠️ HEUTE FÄLLIG",
-      warning,
-      {
-        counter:
-          warning.length,
-
-        empty:
-          "Keine Deadline für heute.",
-
-        cardOptions:
-          filterOptions
-      }
-    )
-  );
-
-
-  container.appendChild(
-    section(
-      "🔷 SPÄTESTENS MORGEN",
-      deadline,
-      {
-        counter:
-          deadline.length,
-
-        empty:
-          "Nix spätestens morgen fällig.",
-
-        cardOptions:
-          filterOptions
-      }
-    )
-  );
-
-
-  container.appendChild(
-    section(
-      "💠 FÜR MORGEN",
-      tomorrow,
-      {
-        counter:
-          tomorrow.length,
-
-        empty:
-          "Keine Aufgabe gezielt für morgen.",
-
-        cardOptions:
-          filterOptions
-      }
-    )
-  );
-
-}
-
-
-/*
-  AKTIV
-*/
-
-function renderActive(
-  container
-) {
-
-  const running =
-    tasks.filter(
-      task =>
-        task.status ===
-        "running"
-    );
-
-
-  const paused =
-    tasks.filter(
-      task =>
-        task.status ===
-        "paused"
-    );
-
-
-  container.appendChild(
-    section(
-      "▶️ LÄUFT",
-      running,
-      {
-        counter:
-          running.length,
-
-        empty:
-          "Aktuell läuft keine Aufgabe."
-      }
-    )
-  );
-
-
-  container.appendChild(
-    section(
-      "⏸️ PAUSIERT",
-      paused,
-      {
-        counter:
-          paused.length,
-
-        empty:
-          "Keine pausierte Aufgabe."
-      }
-    )
-  );
-
-}
-
-
-/*
-  ERLEDIGT
-*/
-
-function renderCompleted(
-  container
-) {
-
-  const completed =
-    tasks
-      .filter(
-        task =>
-          task.status ===
-          "completed"
-      )
-      .sort(
-        (a,b) =>
-          new Date(
-            b.completedAt || 0
-          ) -
-          new Date(
-            a.completedAt || 0
-          )
-      );
-
-
-  container.appendChild(
-    section(
-      "ERLEDIGT · NOCH NICHT ARCHIVIERT",
-      completed,
-      {
-        counter:
-          completed.length +
-          " erledigt",
-
-        empty:
-          "Keine noch nicht archivierten erledigten Aufgaben."
-      }
-    )
-  );
-
-}
-
-
-/*
-  ARCHIV-KARTE
-*/
-
-function archiveCard(
-  item
-) {
-
-  const element =
-    document.createElement(
-      "div"
-    );
-
-
-  element.className =
-    "task completed archive-task";
-
-
-  element.innerHTML = `
-
-    <div class="archive-number">
-      A${String(
-        item.archiveNumber
-      ).padStart(
-        3,
-        "0"
-      )}
-    </div>
-
-    <div class="status-symbol">
-      ✅
-    </div>
-
-    <div class="task-content">
-
-      <div class="task-text">
-        ${escapeHtml(
-          item.text
-        )}
-      </div>
-
-      ${flags(item)}
-
-      ${
-        item.completedAt
-          ? `
-            <div class="task-meta">
-              ${formatDateTime(
-                item.completedAt,
-                "ERLEDIGT"
-              )}
-            </div>
-          `
-          : ""
-      }
-
-      ${
-        item.activeDurationMs !==
-          null
-          ? `
-            <div class="duration">
-              DAUER ·
-              ${formatDuration(
-                item.activeDurationMs
-              )}
-            </div>
-          `
-          : ""
-      }
-
-    </div>
-  `;
-
-
-  return element;
-
-}
-
-
-/*
-  ARCHIV
-*/
-
-function renderArchive(
-  container
-) {
-
-  const summary =
-    document.createElement(
-      "div"
-    );
-
-
-  summary.className =
-    "archive-summary";
-
-
-  summary.innerHTML = `
-
-    <div class="archive-summary-title">
-      ARCHIVIERTE AUFGABEN
-    </div>
-
-    <div class="archive-summary-number">
-      ${archive.length}
-    </div>
-
-    <div class="task-meta">
-      NÄCHSTE ARCHIVNUMMER ·
-      A${String(
-        nextArchiveNumber
-      ).padStart(
-        3,
-        "0"
-      )}
-    </div>
-  `;
-
-
-  container.appendChild(
-    summary
-  );
-
-
-  if (
-    archive.length ===
-    0
-  ) {
-
-    const empty =
-      document.createElement(
-        "div"
-      );
-
-
-    empty.className =
-      "empty-message";
-
-
-    empty.textContent =
-      "Archiv noch leer.";
-
-
-    container.appendChild(
-      empty
-    );
-
-
-    return;
-
-  }
-
-
-  /*
-    NACH ABSCHLUSSDATUM
-    GRUPPIEREN
-  */
-
-  const sorted =
-    [...archive]
-      .sort(
-        (a,b) =>
-          Number(
-            b.archiveNumber
-          ) -
-          Number(
-            a.archiveNumber
-          )
-      );
-
-
-  const groups =
-    {};
-
-
-  sorted.forEach(
-    item => {
-
-      const key =
-        item.completedDate ||
-        "unknown";
-
-
-      if (!groups[key]) {
-
-        groups[key] =
-          [];
-
-      }
-
-
-      groups[key].push(
-        item
-      );
-
-    }
-  );
-
-
-  Object.keys(
-    groups
-  )
-    .sort()
-    .reverse()
-    .forEach(
-      dateKey => {
-
-        const heading =
-          document.createElement(
-            "div"
-          );
-
-
-        heading.className =
-          "archive-date-heading";
-
-
-        heading.textContent =
-          dateKey === "unknown"
-            ? "DATUM UNBEKANNT"
-            : formatArchiveDate(
-                dateKey
-              );
-
-
-        container.appendChild(
-          heading
-        );
-
-
-        groups[
-          dateKey
-        ].forEach(
-          item => {
-
-            container.appendChild(
-              archiveCard(
-                item
-              )
-            );
-
-          }
-        );
-
-      }
-    );
-
-}
-
-
-/*
-  RENDER
-*/
+/* RENDER */
 
 function render() {
 
-  const container =
-    document.getElementById(
-      "viewContainer"
-    );
+const container =
+document.getElementById(
+"viewContainer"
+);
 
 
-  container.innerHTML =
-    "";
+container.innerHTML =
+"";
 
 
-  if (
-    currentTab ===
-    "all"
-  ) {
-    renderAll(
-      container
-    );
-  }
+if (
+currentTab ===
+"all"
+) {
+renderAll(
+container
+);
+}
 
 
-  if (
-    currentTab ===
-    "today"
-  ) {
-    renderToday(
-      container
-    );
-  }
+if (
+currentTab ===
+"today"
+) {
+renderToday(
+container
+);
+}
 
 
-  if (
-    currentTab ===
-    "priority"
-  ) {
-    renderPriority(
-      container
-    );
-  }
+if (
+currentTab ===
+"priority"
+) {
+renderPriority(
+container
+);
+}
 
 
-  if (
-    currentTab ===
-    "due"
-  ) {
-    renderDue(
-      container
-    );
-  }
+if (
+currentTab ===
+"due"
+) {
+renderDue(
+container
+);
+}
 
 
-  if (
-    currentTab ===
-    "active"
-  ) {
-    renderActive(
-      container
-    );
-  }
+if (
+currentTab ===
+"active"
+) {
+renderActive(
+container
+);
+}
 
 
-  if (
-    currentTab ===
-    "completed"
-  ) {
-    renderCompleted(
-      container
-    );
-  }
+if (
+currentTab ===
+"completed"
+) {
+renderCompleted(
+container
+);
+}
 
 
-  if (
-    currentTab ===
-    "archive"
-  ) {
-    renderArchive(
-      container
-    );
-  }
+if (
+currentTab ===
+"archive"
+) {
+renderArchive(
+container
+);
+}
 
 }
 
 
-/*
-  LIVE TIMER
-*/
+/* LIVE TIMER */
 
 function updateLiveTimers() {
 
-  document
-    .querySelectorAll(
-      ".live-duration"
-    )
-    .forEach(
-      element => {
+document
+.querySelectorAll(
+".live-duration"
+)
+.forEach(element => {
 
-        const task =
-          getTask(
-            Number(
-              element.dataset.taskId
-            )
-          );
-
-
-        if (!task) {
-          return;
-        }
+const task =
+getTask(
+Number(
+element.dataset.taskId
+)
+);
 
 
-        element.textContent =
-          "AKTIV · " +
-          formatDuration(
-            liveDuration(
-              task
-            )
-          );
+if (!task) {
+return;
+}
 
-      }
-    );
+
+element.textContent =
+"AKTIV · " +
+formatDuration(
+liveDuration(
+task
+)
+);
+
+});
 
 }
 
 
-/*
-  TAGESWECHSEL REGELMÄSSIG
-  PRÜFEN
-
-  Wenn die Seite offen ist,
-  wird spätestens innerhalb
-  einer Minute reagiert.
-*/
+/* TAGESWECHSEL */
 
 setInterval(
-  function() {
+function() {
 
-    const beforeTasks =
-      tasks.length;
-
-
-    const beforeArchive =
-      archive.length;
+const changed =
+processDayTransition();
 
 
-    processDayTransition();
+if (changed) {
 
+render();
 
-    if (
-      beforeTasks !==
-        tasks.length ||
-      beforeArchive !==
-        archive.length
-    ) {
+}
 
-      render();
-
-    }
-
-  },
-  60000
+},
+60000
 );
 
 
-/*
-  LIVE TIMER
-*/
-
 setInterval(
-  updateLiveTimers,
-  1000
+updateLiveTimers,
+1000
 );
 
-
-/*
-  WENN APP / TAB WIEDER
-  SICHTBAR WIRD
-*/
 
 document.addEventListener(
-  "visibilitychange",
-  function() {
+"visibilitychange",
+function() {
 
-    if (
-      document.visibilityState ===
-      "visible"
-    ) {
+if (
+document.visibilityState ===
+"visible"
+) {
 
-      processDayTransition();
+processDayTransition();
 
-      render();
+render();
 
-    }
+}
 
-  }
+}
 );
 
 
-/*
-  MODAL
-*/
+/* MODAL */
 
 function closeModal() {
 
-  document
-    .getElementById(
-      "modalContainer"
-    )
-    .innerHTML =
-      "";
+document
+.getElementById(
+"modalContainer"
+)
+.innerHTML =
+"";
 
 }
 
 
 function closeModalOnBackdrop(
-  event
+event
 ) {
 
-  if (
-    event.target.classList.contains(
-      "modal-backdrop"
-    )
-  ) {
-    closeModal();
-  }
+if (
+event.target.classList.contains(
+"modal-backdrop"
+)
+) {
+
+closeModal();
+
+}
 
 }
 
 
 function showInfoModal(
-  title,
-  text
+title,
+text
 ) {
 
-  document
-    .getElementById(
-      "modalContainer"
-    )
-    .innerHTML = `
+document
+.getElementById(
+"modalContainer"
+)
+.innerHTML = `
 
-      <div
-        class="modal-backdrop"
-        onclick="closeModalOnBackdrop(event)"
-      >
+<div
+class="modal-backdrop"
+onclick="closeModalOnBackdrop(event)"
+>
 
-        <div class="modal">
+<div class="modal">
 
-          <h2>
-            ${escapeHtml(title)}
-          </h2>
+<h2>
+${escapeHtml(title)}
+</h2>
 
-          <p>
-            ${escapeHtml(text)}
-          </p>
+<p>
+${escapeHtml(text)}
+</p>
 
-          <div class="modal-actions">
+<div class="modal-actions">
 
-            <button
-              class="modal-button confirm-modal"
-              onclick="closeModal()"
-            >
-              Alles klar
-            </button>
+<button
+class="modal-button confirm-modal"
+onclick="closeModal()"
+>
+Alles klar
+</button>
 
-          </div>
+</div>
 
-        </div>
+</div>
 
-      </div>
-    `;
+</div>
+`;
 
 }
 
 
-/*
-  ENTER
-*/
+/* ENTER */
 
 document
-  .getElementById(
-    "taskInput"
-  )
-  .addEventListener(
-    "keydown",
-    event => {
+.getElementById(
+"taskInput"
+)
+.addEventListener(
+"keydown",
+event => {
 
-      if (
-        event.key ===
-        "Enter"
-      ) {
+if (
+event.key ===
+"Enter"
+) {
 
-        addTask();
+addTask();
 
-      }
+}
 
-    }
-  );
+}
+);
 
 
-/*
-  START
-
-  Direkt beim Laden wird geprüft,
-  ob seit dem letzten Besuch
-  ein Tageswechsel stattgefunden hat.
-*/
+/* START */
 
 processDayTransition();
 
