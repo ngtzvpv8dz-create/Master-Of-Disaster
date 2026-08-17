@@ -40,8 +40,6 @@
       margin: 0 auto;
     }
 
-    /* HEADER */
-
     .header {
       margin: 10px 0 30px;
       text-align: center;
@@ -69,8 +67,6 @@
       margin-bottom: 0;
       letter-spacing: 2.5px;
     }
-
-    /* EINGABE */
 
     .input-panel {
       padding: 14px;
@@ -130,8 +126,6 @@
       transform: scale(0.98);
     }
 
-    /* BEREICHE */
-
     .task-section {
       margin-bottom: 30px;
     }
@@ -163,8 +157,6 @@
       font-size: 12px;
       color: #aab1b7;
     }
-
-    /* AUFGABEN */
 
     .task {
       display: flex;
@@ -234,8 +226,6 @@
       color: #4f8ec4;
     }
 
-    /* BUTTONS */
-
     button {
       font-family: inherit;
       -webkit-tap-highlight-color: transparent;
@@ -265,8 +255,6 @@
     .edit-button:active {
       transform: scale(0.96);
     }
-
-    /* BEARBEITEN */
 
     .edit-area {
       flex: 1;
@@ -311,8 +299,6 @@
       cursor: pointer;
     }
 
-    /* LEERE BEREICHE */
-
     .empty-message {
       padding: 25px 20px;
 
@@ -323,8 +309,6 @@
 
       color: #626c73;
     }
-
-    /* LÖSCH-DIALOG */
 
     .modal-backdrop {
       position: fixed;
@@ -1076,9 +1060,31 @@
 
 
       const completedTasks =
-        tasks.filter(
-          task => task.completed
-        );
+        tasks
+          .filter(
+            task => task.completed
+          )
+          .sort(
+            (a, b) => {
+
+              const aTime =
+                a.completedAt
+                  ? new Date(
+                      a.completedAt
+                    ).getTime()
+                  : 0;
+
+              const bTime =
+                b.completedAt
+                  ? new Date(
+                      b.completedAt
+                    ).getTime()
+                  : 0;
+
+              return bTime - aTime;
+
+            }
+          );
 
 
       document.getElementById(
