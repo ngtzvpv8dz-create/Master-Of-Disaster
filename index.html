@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: A235 ZUSATZGEWICHT FIX + HISTORISCHE AKTIVZEITEN -->
+<!-- BUILD: A235 ARCHIV-GEWICHT EINFACH · HANTEL + DOKUMENTIERTES GEWICHT -->
 
 <style>
 
@@ -1397,6 +1397,28 @@ button {
 
   opacity: .75;
 }
+
+.archive-task-weight-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+
+  padding: 1px 5px;
+
+  border: 1px solid #3d484e;
+  border-radius: 999px;
+
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1.25;
+
+  color: #aeb9bf;
+  background: #151a1d;
+
+  white-space: nowrap;
+}
+
+
   
 .archive-number {
   width: 48px;
@@ -9423,6 +9445,323 @@ a.completedAt
    ARCHIV
 ====================================== */
 
+function getArchiveTaskWeightBadges(
+item
+) {
+
+if (!item) {
+return [];
+}
+
+
+/*
+  HISTORISCHE ARCHIVAUFGABEN:
+  historicalWeightKg bedeutet eine eindeutige
+  aufgabenbezogene Zuordnung aus dem alten Archiv.
+*/
+
+if (
+Number(
+item.historicalWeightKg
+) > 0
+) {
+
+return [
+  {
+    weightKg:
+    Number(
+    item.historicalWeightKg
+    ),
+
+    partial:
+    false,
+
+    durationMs:
+    getArchiveAccountingActiveMs(
+    item
+    )
+  }
+];
+
+}
+
+
+/*
+  NEUE / MODERNE AUFGABEN:
+  Gewicht exakt aus aktiven Segmenten und
+  gespeicherten Tragephasen ableiten.
+*/
+
+const segments =
+Array.isArray(
+item.activeSegments
+)
+? item.activeSegments
+: [];
+
+
+if (
+segments.length === 0
+) {
+return [];
+}
+
+
+const byWeight =
+{};
+
+
+let totalActiveMs =
+0;
+
+
+segments.forEach(
+segment => {
+
+if (
+!segment.startedAt ||
+!segment.endedAt
+) {
+return;
+}
+
+
+const segmentStart =
+new Date(
+segment.startedAt
+).getTime();
+
+
+const segmentEnd =
+new Date(
+segment.endedAt
+).getTime();
+
+
+if (
+Number.isNaN(
+segmentStart
+) ||
+Number.isNaN(
+segmentEnd
+)
+) {
+return;
+}
+
+
+totalActiveMs +=
+Math.max(
+0,
+segmentEnd -
+segmentStart
+);
+
+
+weightPhases.forEach(
+phase => {
+
+if (
+!phase.startedAt ||
+!phase.endedAt
+) {
+return;
+}
+
+
+const overlapMs =
+getOverlapMs(
+segment.startedAt,
+segment.endedAt,
+phase.startedAt,
+phase.endedAt
+);
+
+
+if (
+overlapMs <= 0
+) {
+return;
+}
+
+
+const key =
+String(
+Number(
+phase.weightKg
+)
+);
+
+
+if (
+!byWeight[
+key
+]
+) {
+
+byWeight[
+key
+] =
+0;
+
+}
+
+
+byWeight[
+key
+] +=
+overlapMs;
+
+});
+
+});
+
+
+const totalWeightedMs =
+Object.values(
+byWeight
+)
+.reduce(
+(sum,value) =>
+sum +
+value,
+0
+);
+
+
+if (
+totalWeightedMs <= 0
+) {
+return [];
+}
+
+
+const partial =
+totalActiveMs > 0 &&
+totalWeightedMs <
+totalActiveMs;
+
+
+return Object.entries(
+byWeight
+)
+.sort(
+(a,b) =>
+Number(
+a[0]
+) -
+Number(
+b[0]
+)
+)
+.map(
+entry => ({
+weightKg:
+Number(
+entry[0]
+),
+
+durationMs:
+entry[1],
+
+partial:
+partial
+})
+);
+
+}
+
+
+function renderArchiveTaskWeightBadges(
+item
+) {
+
+const badges =
+getArchiveTaskWeightBadges(
+item
+);
+
+
+if (
+badges.length === 0
+) {
+return "";
+}
+
+
+return badges
+.map(
+badge => {
+
+let weightText =
+formatWeight(
+badge.weightKg
+) +
+" kg";
+
+
+/*
+  Historische freie Gewichtsangaben wie "ca."
+  bevorzugen, wenn sie im Archiv vorhanden sind.
+*/
+
+const historicalNote =
+String(
+item.historicalWeightNote ||
+""
+)
+.trim();
+
+
+if (
+historicalNote
+) {
+
+const lower =
+historicalNote
+.toLowerCase();
+
+
+if (
+lower.includes(
+"ca."
+) ||
+lower.includes(
+"circa"
+) ||
+lower.includes(
+"ungefähr"
+)
+) {
+
+weightText =
+historicalNote;
+
+}
+
+}
+
+
+return `
+
+<span
+class="archive-task-weight-details"
+title="Mit Zusatzgewicht"
+>
+🏋️ ${escapeHtml(
+weightText
+)}
+</span>
+
+`;
+
+}
+)
+.join("");
+
+}
+
+
 function archiveCard(item) {
 
 const element =
@@ -9435,23 +9774,10 @@ element.className =
 "task completed archive-task";
 
 
-const weightOverlapMs =
-getArchiveTaskWeightOverlapMs(
+const weightIndicator =
+renderArchiveTaskWeightBadges(
 item
 );
-
-
-const weightIndicator =
-weightOverlapMs > 0
-? `
-<span
-class="archive-task-weight"
-title="Mit Zusatzgewicht · ${formatDuration(weightOverlapMs)}"
->
-🏋️
-</span>
-`
-: "";
 
 
 element.innerHTML = `
