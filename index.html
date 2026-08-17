@@ -5747,6 +5747,13 @@ onclick="createWeightArchiveTest()"
 GEWICHT GESTERN TESTEN
 </button>
 
+<button
+class="dev-button"
+onclick="resetYesterdayTestDay()"
+>
+🧹 TESTTAG ZURÜCKSETZEN
+</button>
+
 </div>
 `;
 
@@ -5942,6 +5949,128 @@ showInfoModal(
 
 }
 
+  function resetYesterdayTestDay() {
+
+const yesterday =
+addDays(
+getBerlinDateKey(),
+-1
+);
+
+
+/*
+  AKTIVE, NOCH NICHT ARCHIVIERTE
+  ARCHIVTEST-AUFGABEN LÖSCHEN
+*/
+
+tasks =
+tasks.filter(
+task => {
+
+const taskDate =
+getBerlinDateKeyFromISO(
+task.completedAt
+);
+
+
+const isTestTask =
+String(
+task.text || ""
+).startsWith(
+"ARCHIVTEST"
+);
+
+
+return !(
+isTestTask &&
+taskDate === yesterday
+);
+
+}
+);
+
+
+/*
+  ARCHIVIERTE TESTAUFGABEN
+  VON GESTERN LÖSCHEN
+*/
+
+archive =
+archive.filter(
+item => {
+
+const isTestTask =
+String(
+item.text || ""
+).startsWith(
+"ARCHIVTEST"
+);
+
+
+return !(
+isTestTask &&
+item.completedDate === yesterday
+);
+
+}
+);
+
+
+/*
+  ALLE GEWICHTS-TESTPHASEN
+  VON GESTERN LÖSCHEN
+
+  WICHTIG:
+  Das ist nur unser DEV-Testknopf.
+*/
+
+weightPhases =
+weightPhases.filter(
+phase =>
+phase.date !== yesterday
+);
+
+
+/*
+  TEST-ARCHIVNUMMERN WIEDER
+  AUF DEN TATSÄCHLICHEN BESTAND
+  ZURÜCKSETZEN.
+
+  NUR FÜR DIE TESTPHASE!
+*/
+
+const highestArchiveNumber =
+archive.reduce(
+(max,item) =>
+Math.max(
+max,
+Number(
+item.archiveNumber
+) || 0
+),
+0
+);
+
+
+nextArchiveNumber =
+highestArchiveNumber + 1;
+
+
+normalizeTodayOrder();
+
+saveAll();
+
+renderWeightPanel();
+
+render();
+
+
+showInfoModal(
+"Testtag zurückgesetzt",
+"Alle künstlichen Archiv- und Zusatzgewichts-Testdaten von gestern wurden gelöscht."
+);
+
+}
 
 /* ======================================
    RENDER
