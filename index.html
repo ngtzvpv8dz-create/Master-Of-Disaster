@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Master of Disaster</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .app {
+      max-width: 500px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 15px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+    <h1>MASTER OF DISASTER</h1>
+
+    <input
+      type="text"
+      id="taskInput"
+      placeholder="Neue Aufgabe..."
+    >
+
+    <button onclick="addTask()">
+      + Aufgabe hinzufügen
+    </button>
+  </div>
+
+  <script>
+    function addTask() {
+      const input = document.getElementById("taskInput");
+
+      if (input.value.trim() !== "") {
+        alert("Neue Aufgabe: " + input.value);
+        input.value = "";
+      }
+    }
+  </script>
+
+</body>
+</html>
