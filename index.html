@@ -43,6 +43,18 @@
       border-radius: 10px;
       cursor: pointer;
     }
+
+    #taskList {
+      margin-top: 20px;
+    }
+
+    .task {
+      background: #222;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
   </style>
 </head>
 
@@ -60,16 +72,28 @@
     <button onclick="addTask()">
       + Aufgabe hinzufügen
     </button>
+
+    <div id="taskList"></div>
   </div>
 
   <script>
     function addTask() {
       const input = document.getElementById("taskInput");
+      const taskList = document.getElementById("taskList");
 
-      if (input.value.trim() !== "") {
-        alert("Neue Aufgabe: " + input.value);
-        input.value = "";
+      const text = input.value.trim();
+
+      if (text === "") {
+        return;
       }
+
+      const task = document.createElement("div");
+      task.className = "task";
+      task.textContent = text;
+
+      taskList.appendChild(task);
+
+      input.value = "";
     }
   </script>
 
