@@ -904,7 +904,7 @@ button {
 }
 
 .archive-day-title {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .8px;
 
@@ -942,16 +942,50 @@ button {
   color: #7e8b68;
 }
 
+.archive-day {
+  position: relative;
+
+  margin-bottom: 16px;
+  padding-left: 10px;
+}
+
+
+/*
+  VERTIKALE VERBINDUNGSLINIE
+  VOM TAGESBLOCK ZU DEN AUFGABEN
+*/
+
+.archive-day::before {
+  content: "";
+
+  position: absolute;
+
+  left: 3px;
+  top: 42px;
+  bottom: 8px;
+
+  width: 1px;
+
+  background: #34414a;
+
+  opacity: .75;
+}
+
+
 .archive-task {
+  position: relative;
+
   opacity: .72;
 
-  min-height: 38px;
+  min-height: 31px;
 
-  padding: 6px 7px;
-  margin: 0 0 5px 8px;
+  padding: 4px 6px;
+  margin: 0 0 4px 7px;
 
-  border-left: 3px solid #34414a;
-  border-radius: 8px;
+  border: 1px solid #272e32;
+  border-left: 2px solid #34414a;
+
+  border-radius: 7px;
 
   background:
     linear-gradient(
@@ -961,45 +995,88 @@ button {
     );
 }
 
-.archive-task .archive-number {
-  width: 43px;
 
-  font-size: 9px;
+/*
+  KLEINE QUERLINIE
+  VON DER HAUPTLINIE
+  ZUR AUFGABE
+*/
+
+.archive-task::before {
+  content: "";
+
+  position: absolute;
+
+  left: -15px;
+  top: 15px;
+
+  width: 12px;
+  height: 1px;
+
+  background: #34414a;
+
+  opacity: .75;
 }
+
+
+.archive-task .archive-number {
+  width: 39px;
+
+  font-size: 8px;
+}
+
 
 .archive-task .status-symbol {
-  width: 20px;
+  width: 18px;
 
-  font-size: 14px;
+  font-size: 12px;
 }
+
+
+.archive-task .task-content {
+  min-width: 0;
+}
+
+
+.archive-task .task-main-row {
+  gap: 4px;
+}
+
 
 .archive-task .task-text {
-  font-size: 13px;
-  line-height: 1.15;
+  font-size: 10.5px;
+  font-weight: 650;
+  line-height: 1.1;
 }
+
 
 .archive-task .task-meta {
   margin-top: 2px;
 
   font-size: 6.5px;
+  line-height: 1.1;
 }
+
 
 .archive-task .duration {
   margin-top: 1px;
 
-  font-size: 7.5px;
+  font-size: 6.5px;
+  font-weight: 700;
+  line-height: 1.1;
 }
+
 
 .archive-task-weight {
   flex-shrink: 0;
 
-  margin-left: 5px;
+  margin-left: 3px;
 
-  font-size: 11px;
+  font-size: 9px;
 
-  opacity: .78;
+  opacity: .75;
 }
-
+  
 .archive-number {
   width: 48px;
   flex-shrink: 0;
