@@ -6,11 +6,16 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
+<!-- BUILD: STATISTIK-GRUPPEN + DESKTOP-LAYOUT -->
 
 <style>
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -1204,17 +1209,31 @@ button {
 /* STATISTIK */
 
 .statistics-group {
-  margin-bottom: 22px;
+  margin-bottom: 18px;
+  padding: 11px;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(24,32,39,.78),
+      rgba(12,15,17,.78)
+    );
+
+  border: 1px solid #293238;
+  border-radius: 13px;
 }
 
 .statistics-section-title {
-  margin: 0 3px 9px;
+  margin: 0 1px 10px;
+  padding-bottom: 7px;
+
+  border-bottom: 1px solid #2c353a;
 
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 1.5px;
 
-  color: #8c969f;
+  color: #a1adb5;
 }
 
 .statistics-grid {
@@ -1444,6 +1463,84 @@ button {
 .danger-modal {
   background: #7c3f3f;
   color: white;
+}
+
+/* DESKTOP / LAPTOP */
+
+@media (min-width: 760px) {
+
+  body {
+    padding: 28px 24px 60px;
+  }
+
+  .app {
+    max-width: 980px;
+  }
+
+  .header {
+    margin-bottom: 20px;
+  }
+
+  .tabs-wrapper {
+    position: sticky;
+    top: 10px;
+
+    margin: 0 0 22px;
+    padding: 10px;
+
+    border: 1px solid #2b3237;
+    border-radius: 14px;
+
+    background: rgba(14,17,19,.94);
+  }
+
+  .tabs {
+    justify-content: center;
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .tab-button {
+    padding: 9px 13px;
+  }
+
+  .input-panel,
+  .weight-panel,
+  #viewContainer {
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .statistics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .statistics-records {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .statistics-record {
+    min-width: 0;
+  }
+
+  .archive-summary,
+  .archive-day,
+  .dev-panel {
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (min-width: 760px) and (max-width: 980px) {
+  .statistics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .statistics-records {
+    grid-template-columns: 1fr;
+  }
 }
 
 </style>
