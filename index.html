@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: STATISTIK-GRUPPEN + DESKTOP-LAYOUT -->
+<!-- BUILD: AUFGABENTYPEN + AUTOCOMPLETE |  STATISTIK-GRUPPEN + DESKTOP-LAYOUT -->
 
 <style>
 
@@ -237,6 +237,122 @@ h1 {
   font-weight: 900;
 
   cursor: pointer;
+}
+
+
+/* AUFGABENTYP + AUTOVERGÄNZUNG */
+
+.task-input-wrap {
+  position: relative;
+}
+
+.task-suggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% - 8px);
+
+  z-index: 120;
+
+  display: none;
+
+  max-height: 260px;
+  overflow-y: auto;
+
+  padding: 6px;
+
+  background: rgba(14,17,19,.99);
+
+  border: 1px solid #343c42;
+  border-radius: 11px;
+
+  box-shadow:
+    0 14px 32px rgba(0,0,0,.38);
+}
+
+.task-suggestions.visible {
+  display: block;
+}
+
+.task-suggestion {
+  width: 100%;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 10px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #dce1e4;
+
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-suggestion:hover,
+.task-suggestion:focus {
+  outline: none;
+  background: #1b2226;
+}
+
+.task-suggestion-name {
+  min-width: 0;
+
+  font-size: 12px;
+  font-weight: 750;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-suggestion-source {
+  flex-shrink: 0;
+
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .6px;
+
+  color: #65747d;
+}
+
+.task-type-badge {
+  display: inline-flex;
+  align-items: center;
+
+  margin-top: 3px;
+  margin-right: 4px;
+
+  padding: 2px 5px;
+
+  border: 1px solid #343c42;
+  border-radius: 999px;
+
+  font-size: 6.5px;
+  font-weight: 900;
+  letter-spacing: .55px;
+
+  color: #7d8b94;
+}
+
+.task-type-badge.leisure {
+  border-color: #4a4262;
+  color: #a797c5;
+}
+
+.task-leisure-duration {
+  margin-top: 2px;
+
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: .5px;
+
+  color: #a58bc6;
 }
 
 /* ZUSATZGEWICHT */
@@ -1362,6 +1478,309 @@ button {
   }
 
 }
+
+
+/* AUFGABENANALYSE */
+
+.task-analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+
+  margin-bottom: 8px;
+}
+
+.task-analysis-count {
+  flex-shrink: 0;
+
+  padding: 4px 7px;
+
+  border: 1px solid #30383e;
+  border-radius: 20px;
+
+  background: #111619;
+
+  font-size: 7px;
+  font-weight: 900;
+
+  color: #7f8b93;
+}
+
+.task-analysis-list {
+  display: grid;
+  gap: 6px;
+}
+
+.task-analysis-item {
+  overflow: hidden;
+
+  border: 1px solid #2d363c;
+  border-radius: 10px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #171d21,
+      #101416
+    );
+}
+
+.task-analysis-item[open] {
+  border-color: #3d4b54;
+}
+
+.task-analysis-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  min-height: 43px;
+  padding: 8px 10px;
+
+  cursor: pointer;
+  list-style: none;
+
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.task-analysis-summary::-webkit-details-marker {
+  display: none;
+}
+
+.task-analysis-chevron {
+  flex: 0 0 14px;
+
+  font-size: 9px;
+  color: #71818a;
+
+  transition: transform .18s ease;
+}
+
+.task-analysis-item[open] .task-analysis-chevron {
+  transform: rotate(90deg);
+}
+
+.task-analysis-name {
+  flex: 1;
+  min-width: 0;
+
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+
+  color: #dce2e5;
+
+  word-break: break-word;
+}
+
+.task-analysis-badges {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+
+  flex-shrink: 0;
+}
+
+.task-analysis-badge {
+  padding: 4px 6px;
+
+  border: 1px solid #334048;
+  border-radius: 20px;
+
+  background: #12181c;
+
+  font-size: 7px;
+  font-weight: 900;
+
+  color: #92a0a8;
+}
+
+.task-analysis-badge.weight {
+  border-color: #465239;
+  color: #aebb7c;
+}
+
+.task-analysis-body {
+  padding: 0 10px 10px 32px;
+}
+
+.task-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+
+  padding-top: 8px;
+
+  border-top: 1px solid #273036;
+}
+
+.task-analysis-stat {
+  min-width: 0;
+
+  padding: 7px;
+
+  border: 1px solid #293238;
+  border-radius: 8px;
+
+  background: #101416;
+}
+
+.task-analysis-stat-label {
+  font-size: 6.5px;
+  font-weight: 900;
+  letter-spacing: .65px;
+
+  color: #65737c;
+}
+
+.task-analysis-stat-value {
+  margin-top: 3px;
+
+  font-size: 11px;
+  font-weight: 900;
+
+  color: #d7dde1;
+}
+
+.task-analysis-stat.weight .task-analysis-stat-label {
+  color: #84925f;
+}
+
+.task-analysis-stat.weight .task-analysis-stat-value {
+  color: #cbd7a2;
+}
+
+@media (min-width: 760px) {
+
+  .task-analysis-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .task-analysis-summary {
+    min-height: 46px;
+  }
+
+  .task-analysis-name {
+    font-size: 12px;
+  }
+}
+
+
+/* STATISTIK-ZEITRAUM */
+
+.statistics-period-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  margin-bottom: 18px;
+
+  padding: 8px;
+
+  background: #111518;
+
+  border: 1px solid #2d353a;
+  border-radius: 11px;
+}
+
+.statistics-period-button {
+  flex: 1;
+  min-width: 90px;
+
+  padding: 8px 10px;
+
+  border: 1px solid #31393f;
+  border-radius: 8px;
+
+  background: #151a1e;
+  color: #7e8991;
+
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .7px;
+
+  cursor: pointer;
+}
+
+.statistics-period-button.active {
+  background: #e4e9ec;
+  color: #111416;
+
+  border-color: #e4e9ec;
+}
+
+
+/* TOP-LISTEN */
+
+.statistics-toplist {
+  display: grid;
+  gap: 6px;
+}
+
+.statistics-topitem {
+  display: grid;
+  grid-template-columns: 28px minmax(0,1fr) auto;
+  gap: 8px;
+  align-items: center;
+
+  padding: 8px 9px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #171c20,
+      #111416
+    );
+
+  border: 1px solid #2c3439;
+  border-radius: 9px;
+}
+
+.statistics-toprank {
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+
+  color: #87959e;
+}
+
+.statistics-topname {
+  min-width: 0;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+
+  color: #d8dde0;
+
+  word-break: break-word;
+}
+
+.statistics-topvalue {
+  font-size: 9px;
+  font-weight: 900;
+
+  color: #91a6b4;
+
+  text-align: right;
+  white-space: nowrap;
+}
+
+.statistics-empty-small {
+  padding: 10px;
+
+  border: 1px dashed #30383d;
+  border-radius: 9px;
+
+  color: #657078;
+
+  font-size: 9px;
+  text-align: center;
+}
+
 /* DEV */
 
 .dev-panel {
@@ -1612,12 +2031,44 @@ STATISTIK
 
 <section class="input-panel" id="inputPanel">
 
+<div class="task-input-wrap">
+
 <input
 id="taskInput"
 type="text"
 placeholder="Was steht an?"
 autocomplete="off"
 >
+
+<div
+id="taskSuggestions"
+class="task-suggestions"
+></div>
+
+</div>
+
+<div class="option-row">
+
+<span class="option-label">TYP</span>
+
+<button
+id="newTypeWork"
+class="option-button selected"
+onclick="setNewTaskType('work')"
+>
+🔧 ARBEIT
+</button>
+
+<button
+id="newTypeLeisure"
+class="option-button"
+onclick="setNewTaskType('leisure')"
+>
+🎮 FREIZEIT
+</button>
+
+</div>
+
 
 <div class="option-row">
 
@@ -1790,8 +2241,14 @@ false;
 let newTaskDueMode =
 "none";
 
+let newTaskType =
+"work";
+
 let dragState =
 null;
+
+let statisticsPeriod =
+"all";
 
 
 /* ======================================
@@ -1846,6 +2303,15 @@ null,
 activeDurationMs:
 null,
 
+leisureDurationMs:
+null,
+
+actualDurationMs:
+null,
+
+activeSegments:
+[],
+
 abortedAt:
 null,
 
@@ -1853,7 +2319,16 @@ abortedActiveDurationMs:
 null,
 
 activeSegments:
-[]
+[],
+
+type:
+"work",
+
+leisureDurationMs:
+null,
+
+actualDurationMs:
+null
 
 };
 
@@ -3173,6 +3648,9 @@ task.id,
 text:
 task.text,
 
+type:
+task.type || "work",
+
 status:
 "completed",
 
@@ -3199,6 +3677,12 @@ task.completedAt,
 
 activeDurationMs:
 task.activeDurationMs,
+
+leisureDurationMs:
+task.leisureDurationMs,
+
+actualDurationMs:
+task.actualDurationMs,
 
 activeSegments:
 Array.isArray(
@@ -3374,6 +3858,58 @@ render();
    NEUE AUFGABE
 ====================================== */
 
+function setNewTaskType(
+type
+) {
+
+newTaskType =
+type;
+
+
+updateNewOptions();
+
+}
+
+
+function setTaskType(
+id,
+type
+) {
+
+const task =
+getTask(
+id
+);
+
+
+if (!task) {
+return;
+}
+
+
+task.type =
+type;
+
+
+saveTasks();
+
+render();
+
+}
+
+
+function taskTypeLabel(
+type
+) {
+
+return type ===
+"leisure"
+? "🎮 FREIZEIT"
+: "🔧 ARBEIT";
+
+}
+
+
 function setNewPriority(priority) {
 
 newTaskPriority =
@@ -3405,6 +3941,54 @@ updateNewOptions();
 
 
 function updateNewOptions() {
+
+[
+"newTypeWork",
+"newTypeLeisure"
+].forEach(
+id => {
+
+const element =
+document.getElementById(
+id
+);
+
+
+if (element) {
+
+element.classList.remove(
+"selected"
+);
+
+}
+
+}
+);
+
+
+const taskTypeId =
+newTaskType ===
+"leisure"
+? "newTypeLeisure"
+: "newTypeWork";
+
+
+const taskTypeButton =
+document.getElementById(
+taskTypeId
+);
+
+
+if (
+taskTypeButton
+) {
+
+taskTypeButton.classList.add(
+"selected"
+);
+
+}
+
 
 [
 "newPriorityNormal",
@@ -3509,6 +4093,9 @@ false;
 newTaskDueMode =
 "none";
 
+newTaskType =
+"work";
+
 
 updateNewOptions();
 
@@ -3539,6 +4126,9 @@ Date.now(),
 
 text:
 text,
+
+type:
+newTaskType,
 
 status:
 "open",
@@ -3586,13 +4176,25 @@ abortedAt:
 null,
 
 abortedActiveDurationMs:
-null
+null,
+
+leisureDurationMs:
+null,
+
+actualDurationMs:
+null,
+
+activeSegments:
+[]
 
 });
 
 
 input.value =
 "";
+
+
+hideTaskSuggestions();
 
 
 resetNewOptions();
@@ -4345,11 +4947,37 @@ const now =
 Date.now();
 
 
-task.activeDurationMs =
+const completedDurationMs =
 calculateActiveDuration(
 task,
 now
 );
+
+
+task.actualDurationMs =
+completedDurationMs;
+
+
+if (
+task.type ===
+"leisure"
+) {
+
+task.leisureDurationMs =
+completedDurationMs;
+
+task.activeDurationMs =
+0;
+
+} else {
+
+task.activeDurationMs =
+completedDurationMs;
+
+task.leisureDurationMs =
+null;
+
+}
 
 
 task.status =
@@ -5003,6 +5631,21 @@ task.status ===
 "completed"
 ) {
 
+const completedDuration =
+task.type ===
+"leisure"
+? (
+Number(
+task.leisureDurationMs
+) || 0
+)
+: (
+Number(
+task.activeDurationMs
+) || 0
+);
+
+
 meta = `
 
 <div class="task-meta">
@@ -5012,12 +5655,27 @@ task.completedAt,
 )}
 </div>
 
+${
+task.type ===
+"leisure"
+? `
+<div class="task-leisure-duration">
+FREIZEIT ·
+${formatDuration(
+completedDuration
+)}
+</div>
+`
+: `
 <div class="duration">
 DAUER ·
 ${formatDuration(
-task.activeDurationMs
+completedDuration
 )}
 </div>
+`
+}
+
 `;
 
 }
@@ -5212,6 +5870,16 @@ filterTodayOnly
 
 ${flags(task)}
 
+<span class="task-type-badge ${
+task.type === "leisure"
+? "leisure"
+: ""
+}">
+${taskTypeLabel(
+task.type
+)}
+</span>
+
 ${meta}
 
 ${actions}
@@ -5251,6 +5919,36 @@ return element;
 function editOptions(task) {
 
 return `
+
+<div class="option-row">
+
+<span class="option-label">
+TYP
+</span>
+
+<button
+class="option-button ${
+task.type !== "leisure"
+? "selected"
+: ""
+}"
+onclick="setTaskType(${task.id},'work')"
+>
+🔧 ARBEIT
+</button>
+
+<button
+class="option-button ${
+task.type === "leisure"
+? "selected"
+: ""
+}"
+onclick="setTaskType(${task.id},'leisure')"
+>
+🎮 FREIZEIT
+</button>
+
+</div>
 
 <div class="option-row">
 
@@ -5921,6 +6619,16 @@ ${weightIndicator}
 
 </div>
 
+<span class="task-type-badge ${
+item.type === "leisure"
+? "leisure"
+: ""
+}">
+${taskTypeLabel(
+item.type
+)}
+</span>
+
 <div class="task-meta">
 ${formatDateTime(
 item.completedAt,
@@ -5928,12 +6636,28 @@ item.completedAt,
 )}
 </div>
 
+${
+item.type ===
+"leisure"
+? `
+<div class="task-leisure-duration">
+FREIZEIT ·
+${formatDuration(
+Number(
+item.leisureDurationMs
+) || 0
+)}
+</div>
+`
+: `
 <div class="duration">
 DAUER ·
 ${formatDuration(
 item.activeDurationMs
 )}
 </div>
+`
+}
 
 </div>
 `;
@@ -6345,6 +7069,20 @@ GEWICHT GESTERN TESTEN
 
 <button
 class="dev-button"
+onclick="createStatisticsDemoData()"
+>
+📊 STATISTIK-DEMODATEN
+</button>
+
+<button
+class="dev-button"
+onclick="resetStatisticsDemoData()"
+>
+🧹 STATISTIK-DEMODATEN LÖSCHEN
+</button>
+
+<button
+class="dev-button"
 onclick="resetYesterdayTestDay()"
 >
 🧹 TESTTAG ZURÜCKSETZEN
@@ -6381,6 +7119,9 @@ Date.now(),
 
 text:
 "ARCHIVTEST · gestern erledigt",
+
+type:
+"work",
 
 status:
 "completed",
@@ -6668,11 +7409,529 @@ showInfoModal(
 
 }
 
+
+/* ======================================
+   STATISTIK-DEMODATEN
+====================================== */
+
+function createStatisticsDemoData() {
+
+const demoMarker =
+"[TEST]";
+
+
+/*
+  Vorhandene Statistik-Demodaten zuerst
+  entfernen, damit der Knopf beliebig oft
+  gedrückt werden kann, ohne alles zu
+  vervielfachen.
+*/
+
+archive =
+archive.filter(
+item =>
+!String(
+item.text || ""
+).includes(
+demoMarker
+)
+);
+
+
+weightPhases =
+weightPhases.filter(
+phase =>
+phase.testStatisticsDemo !==
+true
+);
+
+
+const today =
+getBerlinDateKey();
+
+
+const demoDays = [
+  {
+    offset: -2,
+    tasks: [
+      ["Küche aufräumen [TEST]", 22],
+      ["Wäsche zusammenlegen [TEST]", 18],
+      ["Küche aufräumen [TEST]", 16],
+      ["Wohnzimmer saugen [TEST]", 27],
+      ["Bad putzen [TEST]", 34]
+    ],
+    weights: [
+      [12.3, 9, 0, 10, 10],
+      [13.1, 10, 20, 11, 5]
+    ]
+  },
+
+  {
+    offset: -4,
+    tasks: [
+      ["Küche aufräumen [TEST]", 14],
+      ["Papierkram erledigen [TEST]", 41],
+      ["Wohnzimmer saugen [TEST]", 23],
+      ["Müll rausbringen [TEST]", 9],
+      ["Küche aufräumen [TEST]", 19],
+      ["Bad putzen [TEST]", 29],
+      ["Wäsche zusammenlegen [TEST]", 21]
+    ],
+    weights: [
+      [12.3, 8, 40, 10, 0]
+    ]
+  },
+
+  {
+    offset: -7,
+    tasks: [
+      ["Küche aufräumen [TEST]", 31],
+      ["Wohnzimmer saugen [TEST]", 19],
+      ["Müll rausbringen [TEST]", 7],
+      ["Papierkram erledigen [TEST]", 52]
+    ],
+    weights: [
+      [13.1, 10, 0, 11, 30]
+    ]
+  },
+
+  {
+    offset: -10,
+    tasks: [
+      ["Bad putzen [TEST]", 38],
+      ["Küche aufräumen [TEST]", 17],
+      ["Wäsche zusammenlegen [TEST]", 15],
+      ["Müll rausbringen [TEST]", 6],
+      ["Wohnzimmer saugen [TEST]", 25],
+      ["Küche aufräumen [TEST]", 13]
+    ],
+    weights: [
+      [12.3, 9, 15, 10, 45],
+      [13.1, 11, 0, 11, 40]
+    ]
+  }
+];
+
+
+let idSeed =
+Date.now();
+
+
+demoDays.forEach(
+day => {
+
+const dateKey =
+addDays(
+today,
+day.offset
+);
+
+
+let cursorMinutes =
+8 * 60 + 15;
+
+
+day.tasks.forEach(
+taskData => {
+
+const taskText =
+taskData[0];
+
+const durationMinutes =
+taskData[1];
+
+
+const startHour =
+Math.floor(
+cursorMinutes / 60
+);
+
+
+const startMinute =
+cursorMinutes % 60;
+
+
+const endMinutes =
+cursorMinutes +
+durationMinutes;
+
+
+const endHour =
+Math.floor(
+endMinutes / 60
+);
+
+
+const endMinute =
+endMinutes % 60;
+
+
+const startedAt =
+createTestISOForBerlinDate(
+dateKey,
+startHour,
+startMinute
+);
+
+
+const completedAt =
+createTestISOForBerlinDate(
+dateKey,
+endHour,
+endMinute
+);
+
+
+archive.push({
+
+archiveNumber:
+nextArchiveNumber,
+
+archiveId:
+"TEST-STAT-" +
+nextArchiveNumber +
+"-" +
+idSeed,
+
+sourceTaskId:
+"TEST-STAT-" +
+idSeed,
+
+text:
+taskText,
+
+type:
+"work",
+
+status:
+"completed",
+
+priority:
+"normal",
+
+optional:
+false,
+
+dueMode:
+"none",
+
+dueDate:
+null,
+
+startedAt:
+startedAt,
+
+pauseTotalMs:
+0,
+
+completedAt:
+completedAt,
+
+activeDurationMs:
+durationMinutes *
+60 *
+1000,
+
+activeSegments:
+[
+  {
+    startedAt:
+    startedAt,
+
+    endedAt:
+    completedAt
+  }
+],
+
+completedDate:
+dateKey,
+
+archivedAt:
+new Date()
+.toISOString(),
+
+testStatisticsDemo:
+true
+
+});
+
+
+nextArchiveNumber +=
+1;
+
+
+idSeed +=
+1;
+
+
+/*
+  Kleine Pause zwischen den Aufgaben,
+  damit die Zeitsegmente realistisch
+  getrennt sind.
+*/
+
+cursorMinutes =
+endMinutes + 12;
+
+}
+);
+
+
+day.weights.forEach(
+weightData => {
+
+const weightKg =
+weightData[0];
+
+const startHour =
+weightData[1];
+
+const startMinute =
+weightData[2];
+
+const endHour =
+weightData[3];
+
+const endMinute =
+weightData[4];
+
+
+weightPhases.push({
+
+id:
+idSeed++,
+
+weightKg:
+weightKg,
+
+startedAt:
+createTestISOForBerlinDate(
+dateKey,
+startHour,
+startMinute
+),
+
+endedAt:
+createTestISOForBerlinDate(
+dateKey,
+endHour,
+endMinute
+),
+
+date:
+dateKey,
+
+testStatisticsDemo:
+true
+
+});
+
+}
+);
+
+}
+);
+
+
+repairNextArchiveNumber();
+
+saveAll();
+
+renderWeightPanel();
+
+render();
+
+
+showInfoModal(
+"Statistik-Demodaten angelegt",
+"Es wurden 22 klar mit [TEST] markierte Archivaufgaben auf vier Testtage verteilt. Wiederkehrende Aufgaben, unterschiedliche Zeiten und Zusatzgewichtsdaten machen Rekorde, Durchschnitte und die Aufgabenanalyse sichtbar."
+);
+
+}
+
+
+function resetStatisticsDemoData() {
+
+archive =
+archive.filter(
+item =>
+!(
+item.testStatisticsDemo ===
+true
+||
+String(
+item.text || ""
+).includes(
+"[TEST]"
+)
+)
+);
+
+
+weightPhases =
+weightPhases.filter(
+phase =>
+phase.testStatisticsDemo !==
+true
+);
+
+
+const highestArchiveNumber =
+archive.reduce(
+(max,item) =>
+Math.max(
+max,
+Number(
+item.archiveNumber
+) || 0
+),
+0
+);
+
+
+nextArchiveNumber =
+highestArchiveNumber + 1;
+
+
+saveAll();
+
+renderWeightPanel();
+
+render();
+
+
+showInfoModal(
+"Statistik-Demodaten gelöscht",
+"Alle mit [TEST] gekennzeichneten Statistik-Demodaten wurden wieder entfernt."
+);
+
+}
+
+
 /* ======================================
    STATISTIK
 ====================================== */
 
+function setStatisticsPeriod(
+period
+) {
+
+statisticsPeriod =
+period;
+
+
+render();
+
+}
+
+
+function statisticsDateIsInPeriod(
+dateKey
+) {
+
+if (
+statisticsPeriod ===
+"all"
+) {
+return true;
+}
+
+
+if (!dateKey) {
+return false;
+}
+
+
+const today =
+getBerlinDateKey();
+
+
+const days =
+statisticsPeriod ===
+"7d"
+? 7
+: 30;
+
+
+const firstDate =
+addDays(
+today,
+-(days - 1)
+);
+
+
+return (
+dateKey >=
+firstDate
+&&
+dateKey <=
+today
+);
+
+}
+
+
 function renderStatistics(container) {
+
+/* =========================
+   ZEITRAUM
+========================= */
+
+const periodBar =
+document.createElement(
+"div"
+);
+
+
+periodBar.className =
+"statistics-period-bar";
+
+
+periodBar.innerHTML = `
+
+<button
+class="statistics-period-button ${
+statisticsPeriod ===
+"all"
+? "active"
+: ""
+}"
+onclick="setStatisticsPeriod('all')"
+>
+GESAMT
+</button>
+
+<button
+class="statistics-period-button ${
+statisticsPeriod ===
+"7d"
+? "active"
+: ""
+}"
+onclick="setStatisticsPeriod('7d')"
+>
+LETZTE 7 TAGE
+</button>
+
+<button
+class="statistics-period-button ${
+statisticsPeriod ===
+"30d"
+? "active"
+: ""
+}"
+onclick="setStatisticsPeriod('30d')"
+>
+LETZTE 30 TAGE
+</button>
+
+`;
+
+
+container.appendChild(
+periodBar
+);
+
 
 /* =========================
    GRUNDDATEN
@@ -6683,6 +7942,10 @@ archive.filter(
 item =>
 item.status ===
 "completed"
+&&
+statisticsDateIsInPeriod(
+item.completedDate
+)
 );
 
 
@@ -6714,6 +7977,27 @@ sum +
 (
 Number(
 item.activeDurationMs
+) || 0
+),
+0
+);
+
+
+const leisureTasks =
+completedTasks.filter(
+item =>
+item.type ===
+"leisure"
+);
+
+
+const leisureTotalMs =
+leisureTasks.reduce(
+(sum,item) =>
+sum +
+(
+Number(
+item.leisureDurationMs
 ) || 0
 ),
 0
@@ -6875,10 +8159,10 @@ dateKey;
 
 
 /* =========================
-   HÄUFIGSTE AUFGABE
+   AUFGABEN-GRUPPIERUNG
 ========================= */
 
-const taskFrequency =
+const groupedTasks =
 {};
 
 
@@ -6897,64 +8181,119 @@ return;
 
 
 if (
-!taskFrequency[
+!groupedTasks[
 name
 ]
 ) {
 
-taskFrequency[
+groupedTasks[
 name
-] =
-0;
+] = {
+
+name:
+name,
+
+count:
+0,
+
+totalMs:
+0,
+
+durations:
+[],
+
+weightCount:
+0,
+
+weightMs:
+0
+
+};
 
 }
 
 
-taskFrequency[
+const group =
+groupedTasks[
 name
-] +=
-1;
+];
 
-}
+
+const duration =
+item.type ===
+"leisure"
+? (
+Number(
+item.leisureDurationMs
+) || 0
+)
+: (
+Number(
+item.activeDurationMs
+) || 0
 );
 
 
-let mostFrequentTask =
-null;
+group.count +=
+1;
 
-
-let mostFrequentCount =
-0;
-
-
-Object.entries(
-taskFrequency
-)
-.forEach(
-entry => {
-
-const name =
-entry[0];
-
-const count =
-entry[1];
+group.totalMs +=
+duration;
 
 
 if (
-count >
-mostFrequentCount
+duration > 0
 ) {
 
-mostFrequentTask =
-name;
+group.durations.push(
+duration
+);
 
-mostFrequentCount =
-count;
+}
+
+
+const weightOverlap =
+getArchiveTaskWeightOverlapMs(
+item
+);
+
+
+if (
+weightOverlap >
+0
+) {
+
+group.weightCount +=
+1;
+
+group.weightMs +=
+weightOverlap;
 
 }
 
 }
 );
+
+
+const taskGroups =
+Object.values(
+groupedTasks
+);
+
+
+/* HÄUFIGSTE AUFGABE */
+
+const mostFrequent =
+[...taskGroups]
+.sort(
+(a,b) =>
+b.count -
+a.count
+||
+b.totalMs -
+a.totalMs
+)[0] ||
+null;
 
 
 /* =========================
@@ -6969,7 +8308,13 @@ weightPhases
 phase =>
 phase.date
 )
-.filter(Boolean)
+.filter(
+dateKey =>
+dateKey &&
+statisticsDateIsInPeriod(
+dateKey
+)
+)
 )
 ];
 
@@ -7069,8 +8414,6 @@ document.createElement(
 
 wrapper.innerHTML = `
 
-<!-- ÜBERBLICK -->
-
 <div class="statistics-group">
 
 <div class="statistics-section-title">
@@ -7079,85 +8422,39 @@ wrapper.innerHTML = `
 
 <div class="statistics-grid">
 
+<div class="statistics-card">
+<div class="statistics-label">✅ AUFGABEN</div>
+<div class="statistics-value">${totalTasks}</div>
+<div class="statistics-sub">ARCHIVIERT</div>
+</div>
 
 <div class="statistics-card">
-
-<div class="statistics-label">
-✅ AUFGABEN
+<div class="statistics-label">📅 EINSATZTAGE</div>
+<div class="statistics-value">${deploymentDays}</div>
+<div class="statistics-sub">ARCHIVIERTE TAGE</div>
 </div>
-
-<div class="statistics-value">
-${totalTasks}
-</div>
-
-<div class="statistics-sub">
-ARCHIVIERT
-</div>
-
-</div>
-
 
 <div class="statistics-card">
-
-<div class="statistics-label">
-📅 EINSATZTAGE
+<div class="statistics-label">⏱ AKTIVE GESAMTZEIT</div>
+<div class="statistics-value">${formatDuration(activeTotalMs)}</div>
+<div class="statistics-sub">ARBEITSZEIT</div>
 </div>
-
-<div class="statistics-value">
-${deploymentDays}
-</div>
-
-<div class="statistics-sub">
-ARCHIVIERTE TAGE
-</div>
-
-</div>
-
 
 <div class="statistics-card">
-
-<div class="statistics-label">
-⏱ AKTIVE GESAMTZEIT
+<div class="statistics-label">🎮 FREIZEIT</div>
+<div class="statistics-value">${formatDuration(leisureTotalMs)}</div>
+<div class="statistics-sub">${leisureTasks.length} FREIZEIT-AUFGABEN</div>
 </div>
-
-<div class="statistics-value">
-${formatDuration(
-activeTotalMs
-)}
-</div>
-
-<div class="statistics-sub">
-ALLE AUFGABEN
-</div>
-
-</div>
-
 
 <div class="statistics-card">
-
-<div class="statistics-label">
-🏋️ TRAGEZEIT
-</div>
-
-<div class="statistics-value">
-${formatDuration(
-totalWeightMs
-)}
-</div>
-
-<div class="statistics-sub">
-ZUSATZGEWICHT GESAMT
+<div class="statistics-label">🏋️ TRAGEZEIT</div>
+<div class="statistics-value">${formatDuration(totalWeightMs)}</div>
+<div class="statistics-sub">ZUSATZGEWICHT GESAMT</div>
 </div>
 
 </div>
-
-
 </div>
 
-</div>
-
-
-<!-- DURCHSCHNITTE -->
 
 <div class="statistics-group">
 
@@ -7167,89 +8464,33 @@ DURCHSCHNITTE
 
 <div class="statistics-grid">
 
+<div class="statistics-card">
+<div class="statistics-label">📊 AUFGABEN / TAG</div>
+<div class="statistics-value">${averageTasksPerDay.toFixed(1).replace(".",",")}</div>
+<div class="statistics-sub">PRO EINSATZTAG</div>
+</div>
 
 <div class="statistics-card">
-
-<div class="statistics-label">
-📊 AUFGABEN / TAG
+<div class="statistics-label">⏱ ZEIT / AUFGABE</div>
+<div class="statistics-value">${formatDuration(averageTimePerTask)}</div>
+<div class="statistics-sub">AKTIVER DURCHSCHNITT</div>
 </div>
-
-<div class="statistics-value">
-${averageTasksPerDay
-.toFixed(1)
-.replace(".",",")}
-</div>
-
-<div class="statistics-sub">
-PRO EINSATZTAG
-</div>
-
-</div>
-
 
 <div class="statistics-card">
-
-<div class="statistics-label">
-⏱ ZEIT / AUFGABE
+<div class="statistics-label">📅 AKTIVE ZEIT / TAG</div>
+<div class="statistics-value">${formatDuration(averageTimePerDay)}</div>
+<div class="statistics-sub">PRO EINSATZTAG</div>
 </div>
-
-<div class="statistics-value">
-${formatDuration(
-averageTimePerTask
-)}
-</div>
-
-<div class="statistics-sub">
-AKTIVER DURCHSCHNITT
-</div>
-
-</div>
-
 
 <div class="statistics-card">
-
-<div class="statistics-label">
-📅 AKTIVE ZEIT / TAG
-</div>
-
-<div class="statistics-value">
-${formatDuration(
-averageTimePerDay
-)}
-</div>
-
-<div class="statistics-sub">
-PRO EINSATZTAG
+<div class="statistics-label">🏋️ AKTIV MIT GEWICHT</div>
+<div class="statistics-value">${formatDuration(activeWithWeightMs)}</div>
+<div class="statistics-sub">WÄHREND AUFGABEN</div>
 </div>
 
 </div>
-
-
-<div class="statistics-card">
-
-<div class="statistics-label">
-🏋️ AKTIV MIT GEWICHT
 </div>
 
-<div class="statistics-value">
-${formatDuration(
-activeWithWeightMs
-)}
-</div>
-
-<div class="statistics-sub">
-WÄHREND AUFGABEN
-</div>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-<!-- REKORDE -->
 
 <div class="statistics-group">
 
@@ -7259,111 +8500,51 @@ REKORDE
 
 <div class="statistics-records">
 
+<div class="statistics-record">
+<div class="statistics-record-label">🏆 PRODUKTIVSTER TAG</div>
+<div class="statistics-record-value">${
+mostProductiveDate
+? formatArchiveDayHeading(mostProductiveDate)
+: "NOCH KEINE DATEN"
+}</div>
+<div class="statistics-record-sub">${
+mostProductiveDate
+? mostProductiveCount + " erledigte Aufgaben"
+: ""
+}</div>
+</div>
 
 <div class="statistics-record">
-
-<div class="statistics-record-label">
-🏆 PRODUKTIVSTER TAG
-</div>
-
-<div class="statistics-record-value">
-
-${
-mostProductiveDate
-? formatArchiveDayHeading(
-mostProductiveDate
-)
+<div class="statistics-record-label">⏱ LÄNGSTER EINSATZTAG</div>
+<div class="statistics-record-value">${
+longestDayDate
+? formatArchiveDayHeading(longestDayDate)
 : "NOCH KEINE DATEN"
-}
-
-</div>
-
-<div class="statistics-record-sub">
-
-${
-mostProductiveDate
-? mostProductiveCount +
-" erledigte Aufgaben"
+}</div>
+<div class="statistics-record-sub">${
+longestDayDate
+? formatDuration(longestDayMs) + " aktive Zeit"
 : ""
-}
-
+}</div>
 </div>
-
-</div>
-
 
 <div class="statistics-record">
-
-<div class="statistics-record-label">
-⏱ LÄNGSTER EINSATZTAG
-</div>
-
-<div class="statistics-record-value">
-
-${
-longestDayDate
-? formatArchiveDayHeading(
-longestDayDate
-)
+<div class="statistics-record-label">🔁 HÄUFIGSTE AUFGABE</div>
+<div class="statistics-record-value">${
+mostFrequent
+? escapeHtml(mostFrequent.name)
 : "NOCH KEINE DATEN"
-}
-
-</div>
-
-<div class="statistics-record-sub">
-
-${
-longestDayDate
-? formatDuration(
-longestDayMs
-) +
-" aktive Zeit"
+}</div>
+<div class="statistics-record-sub">${
+mostFrequent
+? mostFrequent.count + "× erledigt"
 : ""
-}
-
+}</div>
 </div>
 
 </div>
-
-
-<div class="statistics-record">
-
-<div class="statistics-record-label">
-🔁 HÄUFIGSTE AUFGABE
 </div>
 
-<div class="statistics-record-value">
-
-${
-mostFrequentTask
-? escapeHtml(
-mostFrequentTask
-)
-: "NOCH KEINE DATEN"
-}
-
-</div>
-
-<div class="statistics-record-sub">
-
-${
-mostFrequentTask
-? mostFrequentCount +
-"× erledigt"
-: ""
-}
-
-</div>
-
-</div>
-
-
-</div>
-
-</div>
-
-
-<!-- ZUSATZGEWICHT -->
 
 <div class="statistics-group">
 
@@ -7373,73 +8554,27 @@ ZUSATZGEWICHT
 
 <div class="statistics-grid">
 
+<div class="statistics-card statistics-weight-card">
+<div class="statistics-label">🏋️ TRAGEZEIT GESAMT</div>
+<div class="statistics-value">${formatDuration(totalWeightMs)}</div>
+<div class="statistics-sub">DOKUMENTIERTE TRAGEZEIT</div>
+</div>
 
 <div class="statistics-card statistics-weight-card">
-
-<div class="statistics-label">
-🏋️ TRAGEZEIT GESAMT
+<div class="statistics-label">💪 AKTIVE AUFGABEN</div>
+<div class="statistics-value">${formatDuration(activeWithWeightMs)}</div>
+<div class="statistics-sub">MIT ZUSATZGEWICHT</div>
 </div>
-
-<div class="statistics-value">
-${formatDuration(
-totalWeightMs
-)}
-</div>
-
-<div class="statistics-sub">
-DOKUMENTIERTE TRAGEZEIT
-</div>
-
-</div>
-
 
 <div class="statistics-card statistics-weight-card">
-
-<div class="statistics-label">
-💪 AKTIVE AUFGABEN
+<div class="statistics-label">🛋️ AUSSERHALB</div>
+<div class="statistics-value">${formatDuration(weightOutsideActiveMs)}</div>
+<div class="statistics-sub">AUSSERHALB AKTIVER AUFGABEN</div>
 </div>
-
-<div class="statistics-value">
-${formatDuration(
-activeWithWeightMs
-)}
-</div>
-
-<div class="statistics-sub">
-MIT ZUSATZGEWICHT
-</div>
-
-</div>
-
 
 <div class="statistics-card statistics-weight-card">
-
-<div class="statistics-label">
-🛋️ AUSSERHALB
-</div>
-
-<div class="statistics-value">
-${formatDuration(
-weightOutsideActiveMs
-)}
-</div>
-
-<div class="statistics-sub">
-AUSSERHALB AKTIVER AUFGABEN
-</div>
-
-</div>
-
-
-<div class="statistics-card statistics-weight-card">
-
-<div class="statistics-label">
-📊 AKTIVER ANTEIL
-</div>
-
-<div class="statistics-value">
-
-${
+<div class="statistics-label">📊 AKTIVER ANTEIL</div>
+<div class="statistics-value">${
 totalWeightMs > 0
 ? (
 activeWithWeightMs /
@@ -7450,19 +8585,11 @@ totalWeightMs *
 .replace(".",",") +
 " %"
 : "0,0 %"
-}
-
-</div>
-
-<div class="statistics-sub">
-DER TRAGEZEIT
+}</div>
+<div class="statistics-sub">DER TRAGEZEIT</div>
 </div>
 
 </div>
-
-
-</div>
-
 </div>
 
 `;
@@ -7516,23 +8643,9 @@ ${weightEntries
 entry => `
 
 <div class="statistics-card statistics-weight-card">
-
-<div class="statistics-label">
-🏋️ ${formatWeight(
-entry[0]
-)} KG
-</div>
-
-<div class="statistics-value">
-${formatDuration(
-entry[1]
-)}
-</div>
-
-<div class="statistics-sub">
-TRAGEZEIT
-</div>
-
+<div class="statistics-label">🏋️ ${formatWeight(entry[0])} KG</div>
+<div class="statistics-value">${formatDuration(entry[1])}</div>
+<div class="statistics-sub">TRAGEZEIT</div>
 </div>
 
 `
@@ -7549,7 +8662,418 @@ weightSection
 
 }
 
+
+/* =========================
+   TOP-LISTEN
+========================= */
+
+function createTopListSection(
+title,
+items,
+valueFormatter
+) {
+
+const section =
+document.createElement(
+"div"
+);
+
+
+section.className =
+"statistics-group";
+
+
+const content =
+items.length
+? items
+.map(
+(item,index) => `
+
+<div class="statistics-topitem">
+
+<div class="statistics-toprank">
+#${index + 1}
+</div>
+
+<div class="statistics-topname">
+${escapeHtml(
+item.name
+)}
+</div>
+
+<div class="statistics-topvalue">
+${valueFormatter(
+item
+)}
+</div>
+
+</div>
+
+`
+)
+.join("")
+: `
+<div class="statistics-empty-small">
+Noch nicht genügend Daten.
+</div>
+`;
+
+
+section.innerHTML = `
+
+<div class="statistics-section-title">
+${title}
+</div>
+
+<div class="statistics-toplist">
+${content}
+</div>
+`;
+
+
+container.appendChild(
+section
+);
+
 }
+
+
+createTopListSection(
+
+"TOP 5 · HÄUFIGSTE AUFGABEN",
+
+[...taskGroups]
+.sort(
+(a,b) =>
+b.count -
+a.count
+||
+b.totalMs -
+a.totalMs
+)
+.slice(
+0,
+5
+),
+
+item =>
+item.count +
+"×"
+
+);
+
+
+createTopListSection(
+
+"TOP 5 · ZEITINTENSIVSTE AUFGABEN",
+
+[...taskGroups]
+.sort(
+(a,b) =>
+b.totalMs -
+a.totalMs
+)
+.slice(
+0,
+5
+),
+
+item =>
+formatDuration(
+item.totalMs
+)
+
+);
+
+
+const recurringTasks =
+taskGroups
+.filter(
+item =>
+item.count >=
+2
+);
+
+
+createTopListSection(
+
+"TOP 5 · SCHNELLSTE WIEDERKEHRENDE AUFGABEN",
+
+[...recurringTasks]
+.map(
+item => ({
+...item,
+
+averageMs:
+item.totalMs /
+item.count
+})
+)
+.sort(
+(a,b) =>
+a.averageMs -
+b.averageMs
+)
+.slice(
+0,
+5
+),
+
+item =>
+"Ø " +
+formatDuration(
+item.averageMs
+)
+
+);
+
+
+/* TOP-TAGE NACH AUFGABEN */
+
+const topDaysByCount =
+Object.entries(
+dayStats
+)
+.map(
+entry => ({
+
+dateKey:
+entry[0],
+
+name:
+formatArchiveDayHeading(
+entry[0]
+),
+
+value:
+entry[1].count
+
+})
+)
+.sort(
+(a,b) =>
+b.value -
+a.value
+)
+.slice(
+0,
+5
+);
+
+
+createTopListSection(
+
+"TOP 5 · TAGE NACH AUFGABENANZAHL",
+
+topDaysByCount,
+
+item =>
+item.value +
+" Aufgaben"
+
+);
+
+
+/* TOP-TAGE NACH ZEIT */
+
+const topDaysByTime =
+Object.entries(
+dayStats
+)
+.map(
+entry => ({
+
+dateKey:
+entry[0],
+
+name:
+formatArchiveDayHeading(
+entry[0]
+),
+
+value:
+entry[1].activeMs
+
+})
+)
+.sort(
+(a,b) =>
+b.value -
+a.value
+)
+.slice(
+0,
+5
+);
+
+
+createTopListSection(
+
+"TOP 5 · TAGE NACH AKTIVER ZEIT",
+
+topDaysByTime,
+
+item =>
+formatDuration(
+item.value
+)
+
+);
+
+
+/* =========================
+   AUFGABENANALYSE
+========================= */
+
+if (
+taskGroups.length >
+0
+) {
+
+const analysis =
+document.createElement(
+"div"
+);
+
+
+analysis.className =
+"statistics-group";
+
+
+const sortedGroups =
+[...taskGroups]
+.sort(
+(a,b) =>
+b.count -
+a.count
+||
+b.totalMs -
+a.totalMs
+);
+
+
+analysis.innerHTML = `
+
+<div class="statistics-section-title">
+AUFGABENANALYSE
+</div>
+
+<div class="task-analysis-list">
+
+${sortedGroups
+.map(
+group => {
+
+const average =
+group.count > 0
+? group.totalMs /
+group.count
+: 0;
+
+
+const fastest =
+group.durations.length
+? Math.min(
+...group.durations
+)
+: 0;
+
+
+const slowest =
+group.durations.length
+? Math.max(
+...group.durations
+)
+: 0;
+
+
+const weightPercent =
+group.count > 0
+? group.weightCount /
+group.count *
+100
+: 0;
+
+
+return `
+
+<details class="task-analysis-item">
+
+<summary class="task-analysis-summary">
+
+<span class="task-analysis-name">
+${escapeHtml(
+group.name
+)}
+</span>
+
+<span class="task-analysis-count">
+${group.count}×
+</span>
+
+</summary>
+
+<div class="task-analysis-details">
+
+<div class="task-analysis-detail">
+<span>GESAMTZEIT</span>
+<strong>${formatDuration(group.totalMs)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>DURCHSCHNITT</span>
+<strong>${formatDuration(average)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>⚡ SCHNELLSTE</span>
+<strong>${formatDuration(fastest)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🐌 LÄNGSTE</span>
+<strong>${formatDuration(slowest)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🏋️ MIT GEWICHT</span>
+<strong>${group.weightCount}×</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🏋️ ANTEIL</span>
+<strong>${weightPercent.toFixed(1).replace(".",",")} %</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🏋️ AKTIVE ZEIT</span>
+<strong>${formatDuration(group.weightMs)}</strong>
+</div>
+
+</div>
+
+</details>
+
+`;
+
+}
+)
+.join("")}
+
+</div>
+`;
+
+
+container.appendChild(
+analysis
+);
+
+}
+
+}
+
+
+
 /* ======================================
    RENDER
 ====================================== */
@@ -7788,9 +9312,352 @@ Alles klar
 }
 
 
+
+/* ======================================
+   AUFGABEN-AUTOVERGÄNZUNG
+====================================== */
+
+function normalizeSuggestionText(
+value
+) {
+
+return String(
+value || ""
+)
+.trim()
+.toLocaleLowerCase(
+"de-DE"
+);
+
+}
+
+
+function getKnownTaskSuggestions(
+query
+) {
+
+const normalizedQuery =
+normalizeSuggestionText(
+query
+);
+
+
+if (
+normalizedQuery.length <
+1
+) {
+
+return [];
+
+}
+
+
+const known =
+new Map();
+
+
+function addKnown(
+item,
+source
+) {
+
+const name =
+String(
+item.text || ""
+).trim();
+
+
+if (!name) {
+return;
+}
+
+
+const key =
+normalizeSuggestionText(
+name
+);
+
+
+if (
+!known.has(
+key
+)
+) {
+
+known.set(
+key,
+{
+name:
+name,
+
+source:
+source
+}
+);
+
+}
+
+}
+
+
+tasks.forEach(
+item =>
+addKnown(
+item,
+"AKTIV"
+)
+);
+
+
+archive.forEach(
+item =>
+addKnown(
+item,
+"ARCHIV"
+)
+);
+
+
+return [
+...known.values()
+]
+.map(
+item => {
+
+const normalizedName =
+normalizeSuggestionText(
+item.name
+);
+
+
+let rank =
+999;
+
+
+if (
+normalizedName ===
+normalizedQuery
+) {
+
+rank =
+0;
+
+} else if (
+normalizedName.startsWith(
+normalizedQuery
+)
+) {
+
+rank =
+1;
+
+} else if (
+normalizedName.includes(
+normalizedQuery
+)
+) {
+
+rank =
+2;
+
+}
+
+
+return {
+...item,
+rank:
+rank
+};
+
+}
+)
+.filter(
+item =>
+item.rank <
+999
+)
+.sort(
+(a,b) =>
+a.rank -
+b.rank
+||
+a.name.localeCompare(
+b.name,
+"de-DE"
+)
+)
+.slice(
+0,
+8
+);
+
+}
+
+
+function hideTaskSuggestions() {
+
+const box =
+document.getElementById(
+"taskSuggestions"
+);
+
+
+if (!box) {
+return;
+}
+
+
+box.classList.remove(
+"visible"
+);
+
+
+box.innerHTML =
+"";
+
+}
+
+
+function selectTaskSuggestion(
+encodedName
+) {
+
+const input =
+document.getElementById(
+"taskInput"
+);
+
+
+if (!input) {
+return;
+}
+
+
+input.value =
+decodeURIComponent(
+encodedName
+);
+
+
+hideTaskSuggestions();
+
+
+input.focus();
+
+}
+
+
+function renderTaskSuggestions() {
+
+const input =
+document.getElementById(
+"taskInput"
+);
+
+
+const box =
+document.getElementById(
+"taskSuggestions"
+);
+
+
+if (
+!input ||
+!box
+) {
+return;
+}
+
+
+const suggestions =
+getKnownTaskSuggestions(
+input.value
+);
+
+
+if (
+suggestions.length ===
+0
+) {
+
+hideTaskSuggestions();
+
+return;
+
+}
+
+
+box.innerHTML =
+suggestions
+.map(
+item => `
+
+<button
+type="button"
+class="task-suggestion"
+onmousedown="event.preventDefault()"
+onclick="selectTaskSuggestion('${encodeURIComponent(
+item.name
+)}')"
+>
+
+<span class="task-suggestion-name">
+${escapeHtml(
+item.name
+)}
+</span>
+
+<span class="task-suggestion-source">
+${item.source}
+</span>
+
+</button>
+
+`
+)
+.join("");
+
+
+box.classList.add(
+"visible"
+);
+
+}
+
 /* ======================================
    ENTER
 ====================================== */
+
+document
+.getElementById(
+"taskInput"
+)
+.addEventListener(
+"input",
+renderTaskSuggestions
+);
+
+
+document
+.addEventListener(
+"click",
+event => {
+
+const wrap =
+event.target.closest(
+".task-input-wrap"
+);
+
+
+if (!wrap) {
+
+hideTaskSuggestions();
+
+}
+
+}
+);
+
 
 document
 .getElementById(
@@ -7804,6 +9671,8 @@ if (
 event.key ===
 "Enter"
 ) {
+
+hideTaskSuggestions();
 
 addTask();
 
