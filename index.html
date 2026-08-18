@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V377 · PWA · SUPABASE-VERBINDUNGSTEST · BACKUP-RESTORE · DATENPRUEFUNG -->
+<!-- BUILD: V378 · PWA · SUPABASE-DIAGNOSE · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -3270,13 +3270,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V377";
+"V378";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"16:56";
+"21:50";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -18250,7 +18250,10 @@ detail:
 "Supabase ist eingebunden, wurde in dieser Sitzung aber noch nicht geprüft.",
 
 email:
-null
+null,
+
+diagnostics:
+[]
 };
 
 
@@ -18265,7 +18268,14 @@ supabaseDevState = {
 status,
 label,
 detail,
-email
+email,
+
+diagnostics:
+Array.isArray(
+supabaseDevState.diagnostics
+)
+? supabaseDevState.diagnostics
+: []
 };
 
 
@@ -18403,6 +18413,309 @@ error &&
 error.message
 ? error.message
 : "Supabase konnte nicht initialisiert werden."
+);
+
+}
+
+}
+
+
+
+function getSupabaseSafeConfigSummary() {
+
+const config =
+window.SUPABASE_CONFIG ||
+{};
+
+
+const url =
+String(
+config.url || ""
+).trim();
+
+
+const key =
+String(
+config.publishableKey || ""
+).trim();
+
+
+let parsedUrl =
+null;
+
+
+try {
+
+parsedUrl =
+new URL(
+url
+);
+
+} catch (
+error
+) {
+
+parsedUrl =
+null;
+
+}
+
+
+return {
+url,
+keyPrefix:
+key
+? key.slice(
+0,
+18
+) + "…"
+: "",
+
+libraryLoaded:
+Boolean(
+window.supabase &&
+typeof window.supabase.createClient ===
+"function"
+),
+
+configPresent:
+Boolean(
+url &&
+key
+),
+
+urlValid:
+Boolean(
+parsedUrl &&
+parsedUrl.protocol ===
+"https:" &&
+parsedUrl.hostname.endsWith(
+".supabase.co"
+) &&
+(
+parsedUrl.pathname ===
+"/" ||
+parsedUrl.pathname ===
+""
+)
+),
+
+host:
+parsedUrl
+? parsedUrl.hostname
+: null,
+
+path:
+parsedUrl
+? parsedUrl.pathname
+: null,
+
+keyLooksPublishable:
+key.startsWith(
+"sb_publishable_"
+)
+};
+
+}
+
+
+async function runSupabaseDiagnostics() {
+
+const checks =
+[];
+
+
+const summary =
+getSupabaseSafeConfigSummary();
+
+
+checks.push(
+"Bibliothek: " +
+(
+summary.libraryLoaded
+? "OK"
+: "FEHLT"
+)
+);
+
+
+checks.push(
+"Config: " +
+(
+summary.configPresent
+? "OK"
+: "FEHLT"
+)
+);
+
+
+checks.push(
+"URL-Host: " +
+(
+summary.host ||
+"UNGÜLTIG"
+)
+);
+
+
+checks.push(
+"URL-Pfad: " +
+(
+summary.path ||
+"—"
+)
+);
+
+
+checks.push(
+"Basis-URL: " +
+(
+summary.urlValid
+? "OK"
+: "FEHLER"
+)
+);
+
+
+checks.push(
+"Key-Präfix: " +
+(
+summary.keyLooksPublishable
+? "OK · " +
+summary.keyPrefix
+: "FEHLER"
+)
+);
+
+
+if (
+!summary.libraryLoaded ||
+!summary.configPresent ||
+!summary.urlValid ||
+!summary.keyLooksPublishable
+) {
+
+supabaseDevState.diagnostics =
+checks;
+
+
+setSupabaseDevState(
+"error",
+"DIAGNOSE FEHLGESCHLAGEN ❌",
+"Lokale Supabase-Konfiguration ist nicht sauber. Details unten anzeigen."
+);
+
+
+return;
+
+}
+
+
+try {
+
+const settingsUrl =
+summary.url.replace(
+/\/+$/,
+""
+) +
+"/auth/v1/settings";
+
+
+const response =
+await fetch(
+settingsUrl,
+{
+method:
+"GET",
+
+headers: {
+apikey:
+window.SUPABASE_CONFIG.publishableKey
+}
+}
+);
+
+
+checks.push(
+"Auth-Endpunkt: HTTP " +
+String(
+response.status
+)
+);
+
+
+const responseText =
+await response
+.text();
+
+
+if (
+response.ok
+) {
+
+checks.push(
+"Auth-Server: ERREICHBAR"
+);
+
+} else {
+
+checks.push(
+"Auth-Antwort: " +
+responseText.slice(
+0,
+180
+)
+);
+
+}
+
+
+supabaseDevState.diagnostics =
+checks;
+
+
+setSupabaseDevState(
+response.ok
+? "ok"
+: "error",
+
+response.ok
+? "DIAGNOSE OK ✅"
+: "AUTH-ENDPUNKT FEHLER ❌",
+
+response.ok
+? "Project URL, Publishable Key und Supabase-Auth-Endpunkt sind technisch erreichbar. Wenn der Login danach noch scheitert, liegt der Fehler im Login-Schritt selbst."
+: "Der direkte Auth-Endpunkt hat einen Fehler geliefert. Die Diagnosewerte stehen unten."
+);
+
+} catch (
+error
+) {
+
+checks.push(
+"Fetch-Fehler: " +
+(
+error &&
+error.message
+? error.message
+: String(
+error
+)
+)
+);
+
+
+supabaseDevState.diagnostics =
+checks;
+
+
+setSupabaseDevState(
+"error",
+"DIREKTER AUTH-TEST FEHLER ❌",
+error &&
+error.message
+? error.message
+: "Unbekannter Fehler beim direkten Auth-Test."
 );
 
 }
@@ -18856,6 +19169,29 @@ supabaseDevState.email
 }
 </div>
 
+${
+Array.isArray(
+supabaseDevState.diagnostics
+) &&
+supabaseDevState.diagnostics.length > 0
+? `
+<div class="supabase-status-detail" style="margin-top:8px;padding:8px;border:1px solid #30383e;border-radius:8px;background:#0f1315;">
+${supabaseDevState.diagnostics
+.map(
+item =>
+"• " +
+escapeHtml(
+item
+)
+)
+.join(
+"<br>"
+)}
+</div>
+`
+: ""
+}
+
 <div class="supabase-dev-actions">
 
 <button
@@ -18870,6 +19206,13 @@ class="supabase-dev-button"
 onclick="testSupabaseConnection()"
 >
 🔌 VERBINDUNG TESTEN
+</button>
+
+<button
+class="supabase-dev-button"
+onclick="runSupabaseDiagnostics()"
+>
+🩺 DIAGNOSE
 </button>
 
 <button
