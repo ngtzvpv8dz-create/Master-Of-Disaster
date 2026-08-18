@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: A236 REPARIERT + MEHRTAGESSTATISTIK + DEV-MEHRTAGESTEST · ACTIVESEGMENTS · GEWICHT · TAGESZUORDNUNG -->
+<!-- BUILD: V362 · DEV-TAB · THEMES · BUILD-INFO · DATENPRÜFUNG · BACKUP -->
 
 <style>
 
@@ -2234,6 +2234,326 @@ button {
   align-self: center;
 }
 
+
+/* ======================================
+   V362 THEMES / DESIGN-SYSTEM
+====================================== */
+
+:root {
+  --bg-1: #15191d;
+  --bg-2: #0b0d0f;
+  --bg-3: #070809;
+
+  --panel: #171b1f;
+  --panel-2: #121619;
+  --panel-3: #0d1012;
+
+  --border: #292f34;
+  --border-strong: #30373d;
+
+  --text: #f3f3f3;
+  --muted: #8c969f;
+  --muted-2: #7f8990;
+
+  --accent: #e8ecef;
+  --accent-text: #101214;
+
+  --danger: #7c3f3f;
+  --danger-soft: #241718;
+
+  --dev-border: #604545;
+  --dev-bg: #171313;
+  --dev-text: #c99c9c;
+
+  --shadow: rgba(0,0,0,0.22);
+}
+
+body {
+  background:
+    linear-gradient(
+      180deg,
+      var(--bg-1) 0%,
+      var(--bg-2) 45%,
+      var(--bg-3) 100%
+    ) !important;
+
+  color: var(--text) !important;
+}
+
+.tabs-wrapper,
+.input-panel,
+.weight-panel,
+.task,
+.archive-summary,
+.archive-day,
+.statistics-card,
+.statistics-record,
+.statistics-analysis,
+.dev-panel {
+  border-color: var(--border) !important;
+}
+
+.tabs-wrapper,
+.input-panel,
+.weight-panel,
+.statistics-card,
+.statistics-record,
+.statistics-analysis {
+  background: var(--panel) !important;
+}
+
+.tab-button {
+  background: var(--panel-2) !important;
+  color: var(--muted-2) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.tab-button.active {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+  border-color: var(--accent) !important;
+}
+
+#taskInput,
+.time-edit-input,
+.edit-input,
+.edit-textarea,
+.option-button {
+  background: var(--panel-3) !important;
+  color: var(--text) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.option-button.selected {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+}
+
+.eyebrow,
+.option-label,
+.task-meta,
+.statistics-label,
+.statistics-sub,
+.archive-stat-label,
+.dev-title {
+  color: var(--muted) !important;
+}
+
+.dev-panel {
+  background: var(--dev-bg) !important;
+  border-color: var(--dev-border) !important;
+}
+
+.dev-button {
+  background: var(--danger-soft) !important;
+  color: var(--dev-text) !important;
+  border-color: var(--dev-border) !important;
+}
+
+body[data-theme="clean-light"] {
+  --bg-1: #f7f7f4;
+  --bg-2: #eceeea;
+  --bg-3: #e3e6e2;
+
+  --panel: #ffffff;
+  --panel-2: #f3f4f1;
+  --panel-3: #ffffff;
+
+  --border: #d7dbd5;
+  --border-strong: #c8cec6;
+
+  --text: #1a1e1b;
+  --muted: #69716b;
+  --muted-2: #6e766f;
+
+  --accent: #1f2722;
+  --accent-text: #ffffff;
+
+  --danger: #a85f5f;
+  --danger-soft: #f7e9e9;
+
+  --dev-border: #d4b0b0;
+  --dev-bg: #fff6f6;
+  --dev-text: #925858;
+
+  --shadow: rgba(0,0,0,0.08);
+}
+
+body[data-theme="pastel-gradient"] {
+  --bg-1: #efe8ff;
+  --bg-2: #e4f3ec;
+  --bg-3: #f9efe1;
+
+  --panel: rgba(255,255,255,.72);
+  --panel-2: rgba(255,255,255,.58);
+  --panel-3: rgba(255,255,255,.80);
+
+  --border: #cfc8db;
+  --border-strong: #bfb7cc;
+
+  --text: #40394a;
+  --muted: #756c80;
+  --muted-2: #756c80;
+
+  --accent: #6c5b7b;
+  --accent-text: #ffffff;
+
+  --danger: #a46778;
+  --danger-soft: #f5e5ea;
+
+  --dev-border: #caa9b4;
+  --dev-bg: rgba(255,245,249,.8);
+  --dev-text: #8b6170;
+}
+
+body[data-theme="industrial-steel"] {
+  --bg-1: #20262b;
+  --bg-2: #151a1e;
+  --bg-3: #0d1114;
+
+  --panel: #1e252a;
+  --panel-2: #171d21;
+  --panel-3: #111619;
+
+  --border: #38434a;
+  --border-strong: #46535b;
+
+  --text: #edf2f5;
+  --muted: #9aa9b2;
+  --muted-2: #8e9da6;
+
+  --accent: #9db6c5;
+  --accent-text: #10161a;
+
+  --danger: #7b4e4e;
+  --danger-soft: #251b1b;
+
+  --dev-border: #695454;
+  --dev-bg: #1b1717;
+  --dev-text: #c2a0a0;
+}
+
+body[data-theme="neon-night"] {
+  --bg-1: #11111a;
+  --bg-2: #080811;
+  --bg-3: #040408;
+
+  --panel: #14141f;
+  --panel-2: #101019;
+  --panel-3: #0b0b12;
+
+  --border: #2f3150;
+  --border-strong: #41466a;
+
+  --text: #f1f4ff;
+  --muted: #9aa1c7;
+  --muted-2: #8c93b8;
+
+  --accent: #7cf1e5;
+  --accent-text: #07100f;
+
+  --danger: #a34e71;
+  --danger-soft: #25121b;
+
+  --dev-border: #66415a;
+  --dev-bg: #17101a;
+  --dev-text: #d59ab9;
+}
+
+.dev-build-card {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-2);
+}
+
+.dev-build-title {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .8px;
+  margin-bottom: 8px;
+}
+
+.dev-build-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.dev-build-item {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-3);
+}
+
+.dev-build-label {
+  font-size: 7px;
+  font-weight: 900;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.dev-build-value {
+  font-size: 10px;
+  font-weight: 900;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.theme-button {
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.theme-button.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.theme-preview {
+  display: block;
+  height: 10px;
+  margin-top: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(127,127,127,.25);
+}
+
+.preview-dark {
+  background: linear-gradient(90deg,#15191d,#070809);
+}
+
+.preview-light {
+  background: linear-gradient(90deg,#ffffff,#e3e6e2);
+}
+
+.preview-pastel {
+  background: linear-gradient(90deg,#efe8ff,#e4f3ec,#f9efe1);
+}
+
+.preview-steel {
+  background: linear-gradient(90deg,#20262b,#9db6c5);
+}
+
+.preview-neon {
+  background: linear-gradient(90deg,#11111a,#7cf1e5,#8d75ff);
+}
+
 </style>
 </head>
 
@@ -2286,6 +2606,10 @@ ARCHIV
 
 <button class="tab-button" data-tab="statistics" onclick="switchTab('statistics')">
 STATISTIK
+</button>
+
+<button class="tab-button" data-tab="dev" onclick="switchTab('dev')">
+DEV
 </button>
 
 </nav>
@@ -3054,6 +3378,148 @@ added,
 skipped:
 skipped
 };
+
+}
+
+
+
+/* ======================================
+   V362 APP-INFO / THEME
+====================================== */
+
+const APP_VERSION =
+"V362";
+
+const APP_BUILD_DATE =
+"18.08.2026";
+
+const APP_BUILD_TIME =
+"11:11";
+
+const APP_BUILD_LABEL =
+APP_BUILD_DATE +
+" · " +
+APP_BUILD_TIME +
+" Uhr";
+
+const THEME_STORAGE_KEY =
+"masterOfDisasterTheme";
+
+const availableThemes =
+[
+  {
+    id:
+    "disaster-dark",
+
+    name:
+    "Disaster Dark",
+
+    previewClass:
+    "preview-dark"
+  },
+  {
+    id:
+    "clean-light",
+
+    name:
+    "Clean Light",
+
+    previewClass:
+    "preview-light"
+  },
+  {
+    id:
+    "pastel-gradient",
+
+    name:
+    "Pastel Gradient",
+
+    previewClass:
+    "preview-pastel"
+  },
+  {
+    id:
+    "industrial-steel",
+
+    name:
+    "Industrial Steel",
+
+    previewClass:
+    "preview-steel"
+  },
+  {
+    id:
+    "neon-night",
+
+    name:
+    "Neon Night",
+
+    previewClass:
+    "preview-neon"
+  }
+];
+
+
+function getCurrentTheme() {
+
+return (
+safeStorageGet(
+THEME_STORAGE_KEY
+) ||
+"disaster-dark"
+);
+
+}
+
+
+function applyTheme(
+themeId
+) {
+
+const valid =
+availableThemes.some(
+theme =>
+theme.id ===
+themeId
+);
+
+
+const selected =
+valid
+? themeId
+: "disaster-dark";
+
+
+document.body.setAttribute(
+"data-theme",
+selected
+);
+
+
+safeStorageSet(
+THEME_STORAGE_KEY,
+selected
+);
+
+
+if (
+currentTab ===
+"dev"
+) {
+
+render();
+
+}
+
+}
+
+
+function initializeTheme() {
+
+document.body.setAttribute(
+"data-theme",
+getCurrentTheme()
+);
 
 }
 
@@ -12146,121 +12612,8 @@ block
 }
 
 
-/*
-   TESTMODUS BLEIBT DRIN
-*/
-
-const dev =
-document.createElement(
-"div"
-);
-
-
-dev.className =
-"dev-panel";
-
-
-dev.innerHTML = `
-
-<div class="dev-title">
-🧪 ARCHIV-TESTMODUS
-</div>
-
-<div class="dev-buttons">
-
-<button
-class="dev-button"
-onclick="runDataIntegrityCheck(true)"
->
-🔍 DATEN PRÜFEN
-</button>
-
-<button
-class="dev-button"
-onclick="exportCompleteBackup()"
->
-💾 KOMPLETT-BACKUP
-</button>
-
-<button
-class="dev-button"
-onclick="askImportBundledArchiveA235()"
->
-📦 A236 FINAL IMPORTIEREN
-</button>
-
-<button
-class="dev-button"
-onclick="createArchiveTestTask()"
->
-TESTAUFGABE GESTERN
-</button>
-
-<button
-class="dev-button"
-onclick="runArchiveTest()"
->
-ARCHIVIERUNG TESTEN
-</button>
-
-<button
-class="dev-button"
-onclick="createWeightArchiveTest()"
->
-GEWICHT GESTERN TESTEN
-</button>
-
-<button
-class="dev-button"
-onclick="createMultiDayStatisticsTest()"
->
-🗓️ MEHRTAGES-TEST ERZEUGEN
-</button>
-
-<button
-class="dev-button"
-onclick="resetMultiDayStatisticsTest()"
->
-🧹 MEHRTAGES-TEST LÖSCHEN
-</button>
-
-<button
-class="dev-button"
-onclick="createStatisticsDemoData()"
->
-📊 STATISTIK-DEMODATEN
-</button>
-
-<button
-class="dev-button"
-onclick="resetStatisticsDemoData()"
->
-🧹 STATISTIK-DEMODATEN LÖSCHEN
-</button>
-
-<button
-class="dev-button"
-onclick="simulateDayTransitionForTesting()"
->
-🕛 TAGESWECHSEL SIMULIEREN
-</button>
-
-<button
-class="dev-button"
-onclick="resetYesterdayTestDay()"
->
-🧹 TESTTAG ZURÜCKSETZEN
-</button>
-
-</div>
-`;
-
-
-container.appendChild(
-dev
-);
-
 }
+
 
 
 
@@ -15869,6 +16222,242 @@ analysis
 
 
 
+
+/* ======================================
+   DEV
+====================================== */
+
+function renderDev(
+container
+) {
+
+const integrity =
+collectDataIntegrityReport();
+
+
+const panel =
+document.createElement(
+"div"
+);
+
+
+panel.className =
+"dev-panel";
+
+
+const currentTheme =
+getCurrentTheme();
+
+
+panel.innerHTML = `
+
+<div class="dev-title">
+🧪 DEVELOPER / DIAGNOSE
+</div>
+
+<div class="dev-build-card">
+
+<div class="dev-build-title">
+APP-INFO
+</div>
+
+<div class="dev-build-grid">
+
+<div class="dev-build-item">
+<div class="dev-build-label">VERSION</div>
+<div class="dev-build-value">${APP_VERSION}</div>
+</div>
+
+<div class="dev-build-item">
+<div class="dev-build-label">BUILD</div>
+<div class="dev-build-value">${APP_BUILD_LABEL}</div>
+</div>
+
+<div class="dev-build-item">
+<div class="dev-build-label">ARCHIVSTAND</div>
+<div class="dev-build-value">A${String(
+Math.max(
+0,
+nextArchiveNumber - 1
+)
+).padStart(
+3,
+"0"
+)}</div>
+</div>
+
+<div class="dev-build-item">
+<div class="dev-build-label">NÄCHSTE ARCHIVNR.</div>
+<div class="dev-build-value">A${String(
+nextArchiveNumber
+).padStart(
+3,
+"0"
+)}</div>
+</div>
+
+<div class="dev-build-item">
+<div class="dev-build-label">AUFGABENBESTAND</div>
+<div class="dev-build-value">${tasks.length}</div>
+</div>
+
+<div class="dev-build-item">
+<div class="dev-build-label">DATENPRÜFUNG</div>
+<div class="dev-build-value">${
+integrity.ok
+? "✅ SAUBER"
+: "❌ FEHLER"
+}</div>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="dev-build-card">
+
+<div class="dev-build-title">
+🎨 DESIGN / FARBSCHMA
+</div>
+
+<div class="theme-grid">
+
+${availableThemes
+.map(
+theme => `
+
+<button
+class="theme-button ${
+theme.id ===
+currentTheme
+? "active"
+: ""
+}"
+onclick="applyTheme('${theme.id}')"
+>
+
+${theme.name}
+
+<span class="theme-preview ${theme.previewClass}"></span>
+
+</button>
+
+`
+)
+.join("")}
+
+</div>
+
+</div>
+
+
+<div class="dev-build-card">
+
+<div class="dev-build-title">
+🔧 DATEN / TEST / BACKUP
+</div>
+
+<div class="dev-buttons">
+
+<button
+class="dev-button"
+onclick="runDataIntegrityCheck(true)"
+>
+🔍 DATEN PRÜFEN
+</button>
+
+<button
+class="dev-button"
+onclick="exportCompleteBackup()"
+>
+💾 KOMPLETT-BACKUP
+</button>
+
+<button
+class="dev-button"
+onclick="askImportBundledArchiveA235()"
+>
+📦 A236 FINAL IMPORTIEREN
+</button>
+
+<button
+class="dev-button"
+onclick="createArchiveTestTask()"
+>
+TESTAUFGABE GESTERN
+</button>
+
+<button
+class="dev-button"
+onclick="runArchiveTest()"
+>
+ARCHIVIERUNG TESTEN
+</button>
+
+<button
+class="dev-button"
+onclick="createWeightArchiveTest()"
+>
+GEWICHT GESTERN TESTEN
+</button>
+
+<button
+class="dev-button"
+onclick="createMultiDayStatisticsTest()"
+>
+🗓️ MEHRTAGES-TEST ERZEUGEN
+</button>
+
+<button
+class="dev-button"
+onclick="resetMultiDayStatisticsTest()"
+>
+🧹 MEHRTAGES-TEST LÖSCHEN
+</button>
+
+<button
+class="dev-button"
+onclick="createStatisticsDemoData()"
+>
+📊 STATISTIK-DEMODATEN
+</button>
+
+<button
+class="dev-button"
+onclick="resetStatisticsDemoData()"
+>
+🧹 STATISTIK-DEMODATEN LÖSCHEN
+</button>
+
+<button
+class="dev-button"
+onclick="simulateDayTransitionForTesting()"
+>
+🕛 TAGESWECHSEL SIMULIEREN
+</button>
+
+<button
+class="dev-button"
+onclick="resetYesterdayTestDay()"
+>
+🧹 TESTTAG ZURÜCKSETZEN
+</button>
+
+</div>
+
+</div>
+
+`;
+
+
+container.appendChild(
+panel
+);
+
+}
+
+
 /* ======================================
    RENDER
 ====================================== */
@@ -15959,6 +16548,16 @@ currentTab ===
 "statistics"
 ) {
 renderStatistics(
+container
+);
+}
+
+
+if (
+currentTab ===
+"dev"
+) {
+renderDev(
 container
 );
 }
@@ -16572,6 +17171,9 @@ addTask();
 /* ======================================
    START
 ====================================== */
+
+initializeTheme();
+
 
 const masterV361ImportResult =
 importMasterV361ActiveTasksOnce();
