@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V384 · PWA · SUPABASE-ERSTIMPORT · LIVE-SYNC · CLOUD-STARTCHECK · BACKUP-RESTORE · DATENPRUEFUNG -->
+<!-- BUILD: V385 · PWA · SUPABASE-ERSTIMPORT · LIVE-SYNC · CLOUD-STARTCHECK-FIX · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -2431,6 +2431,18 @@ button {
 }
 
 
+/* V385 – Cloud-Startcheck Button sauber auf eigener Zeile */
+.supabase-startcheck-action {
+  width: 100%;
+  min-height: 44px;
+  margin: 10px 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 9px;
+}
+
 /* ======================================
    V380 – SUPABASE MIGRATIONS-PREFLIGHT
 ====================================== */
@@ -3371,13 +3383,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V384";
+"V385";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"23:34";
+"23:36";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -18912,14 +18924,14 @@ async function runSupabaseCloudStartCheck(manual = true) {
 const client = getSupabaseClient();
 if (!client) {
 supabaseCloudStartCheckState = { status:"warn", label:"OFFLINE / KEIN CLIENT ⚠️", detail:"Lokale Daten bleiben führend. Es wird nichts aus der Cloud geladen.", checkedAt:new Date().toISOString(), counts:null };
-renderDevPanel();
+render();
 return supabaseCloudStartCheckState;
 }
 try {
 const { data:sessionData, error:sessionError } = await client.auth.getSession();
 if (sessionError || !sessionData || !sessionData.session || !sessionData.session.user) {
 supabaseCloudStartCheckState = { status:"warn", label:"NICHT ANGEMELDET ⚠️", detail:"Kein Cloud-Vergleich möglich. Local bleibt Master.", checkedAt:new Date().toISOString(), counts:null };
-renderDevPanel();
+render();
 return supabaseCloudStartCheckState;
 }
 const userId = sessionData.session.user.id;
@@ -18943,11 +18955,11 @@ detail:matches
 checkedAt:new Date().toISOString(),
 counts
 };
-renderDevPanel();
+render();
 return supabaseCloudStartCheckState;
 } catch(error) {
 supabaseCloudStartCheckState = { status:"error", label:"STARTCHECK-FEHLER ❌", detail:error && error.message ? error.message : "Unbekannter Fehler.", checkedAt:new Date().toISOString(), counts:null };
-renderDevPanel();
+render();
 return supabaseCloudStartCheckState;
 }
 }
@@ -19656,7 +19668,7 @@ ${escapeHtml(supabaseCloudStartCheckState.detail)}
 ${supabaseCloudStartCheckState.checkedAt ? `<div class="supabase-status-detail" style="margin-top:8px;">GEPRÜFT · ${escapeHtml(formatSupabaseSyncTimestamp(supabaseCloudStartCheckState.checkedAt))}</div>` : ""}
 ${supabaseCloudStartCheckState.counts ? `<div class="supabase-preflight-table-list">${Object.entries(supabaseCloudStartCheckState.counts).map(([name,count]) => `<div class="supabase-preflight-table"><span>${escapeHtml(name)}</span><strong>${count}</strong></div>`).join("")}</div>` : ""}
 </div>
-<button class="supabase-dev-button secondary" onclick="runSupabaseCloudStartCheck(true)">☁️ LOCAL ↔ CLOUD VERGLEICHEN</button>
+<button class="supabase-dev-button secondary supabase-startcheck-action" onclick="runSupabaseCloudStartCheck(true)">☁️ LOCAL ↔ CLOUD VERGLEICHEN</button>
 <div class="supabase-preflight-title">🔄 LIVE-SYNC · LOCAL → CLOUD</div>
 <div class="supabase-preflight-summary ${
 supabaseLiveSyncState.status === "ok" ? "ok" : supabaseLiveSyncState.status === "error" ? "error" : supabaseLiveSyncState.status === "running" || supabaseLiveSyncState.status === "warn" ? "warn" : ""
