@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V382 · PWA · SUPABASE-ERSTIMPORT · LIVE-SYNC · BACKUP-RESTORE · DATENPRUEFUNG -->
+<!-- BUILD: V384 · PWA · SUPABASE-ERSTIMPORT · LIVE-SYNC · CLOUD-STARTCHECK · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -3371,13 +3371,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V382";
+"V384";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"23:11";
+"23:34";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -18900,6 +18900,58 @@ modal.innerHTML = `
    LOCALSTORAGE BLEIBT SICHERHEITSNETZ / MASTER
 ====================================== */
 
+let supabaseCloudStartCheckState = {
+status:"idle",
+label:"NOCH NICHT GEPRÜFT",
+detail:"Read-only Vergleich zwischen lokalem Kernbestand und Supabase.",
+checkedAt:null,
+counts:null
+};
+
+async function runSupabaseCloudStartCheck(manual = true) {
+const client = getSupabaseClient();
+if (!client) {
+supabaseCloudStartCheckState = { status:"warn", label:"OFFLINE / KEIN CLIENT ⚠️", detail:"Lokale Daten bleiben führend. Es wird nichts aus der Cloud geladen.", checkedAt:new Date().toISOString(), counts:null };
+renderDevPanel();
+return supabaseCloudStartCheckState;
+}
+try {
+const { data:sessionData, error:sessionError } = await client.auth.getSession();
+if (sessionError || !sessionData || !sessionData.session || !sessionData.session.user) {
+supabaseCloudStartCheckState = { status:"warn", label:"NICHT ANGEMELDET ⚠️", detail:"Kein Cloud-Vergleich möglich. Local bleibt Master.", checkedAt:new Date().toISOString(), counts:null };
+renderDevPanel();
+return supabaseCloudStartCheckState;
+}
+const userId = sessionData.session.user.id;
+const tableNames=["app_state","tasks","task_active_segments","task_cooking_segments","archive_entries","archive_active_segments","weight_phases","legacy_metadata"];
+const counts={};
+for (const table of tableNames) {
+const { count, error } = await client.from(table).select("*",{count:"exact",head:true}).eq("user_id",userId);
+if (error) throw new Error(table + ": " + error.message);
+counts[table]=Number(count || 0);
+}
+const localTasks=tasks.filter(task => !isTestTask(task)).length;
+const localArchive=archive.filter(item => !isArchivedTest(item)).length;
+const localWeights=Array.isArray(weightPhases) ? weightPhases.length : 0;
+const matches = counts.app_state === 1 && counts.tasks === localTasks && counts.archive_entries === localArchive && counts.weight_phases === localWeights;
+supabaseCloudStartCheckState = {
+status:matches ? "ok" : "warn",
+label:matches ? "LOCAL ↔ CLOUD KERNBESTAND OK ✅" : "ABWEICHUNG ERKANNT ⚠️",
+detail:matches
+? `Local und Cloud stimmen bei Tasks (${localTasks}), Archiv (${localArchive}) und Gewichtsphasen (${localWeights}) überein. Local bleibt weiterhin Master; kein Cloud→Local-Schreiben.`
+: `Local: ${localTasks} Tasks · ${localArchive} Archiv · ${localWeights} Gewicht. Cloud: ${counts.tasks} Tasks · ${counts.archive_entries} Archiv · ${counts.weight_phases} Gewicht. Aus Sicherheitsgründen wird nichts automatisch überschrieben.`,
+checkedAt:new Date().toISOString(),
+counts
+};
+renderDevPanel();
+return supabaseCloudStartCheckState;
+} catch(error) {
+supabaseCloudStartCheckState = { status:"error", label:"STARTCHECK-FEHLER ❌", detail:error && error.message ? error.message : "Unbekannter Fehler.", checkedAt:new Date().toISOString(), counts:null };
+renderDevPanel();
+return supabaseCloudStartCheckState;
+}
+}
+
 let supabaseLiveSyncTimer = null;
 let supabaseLiveSyncRunning = false;
 let supabaseLiveSyncPending = false;
@@ -19062,6 +19114,8 @@ const taskSegmentRows = [];
 const cookingRows = [];
 
 for (const task of tasks) {
+/* Explizite DEV-Testaufgaben bleiben lokal und werden nicht in die produktiven Cloud-Tabellen gespiegelt. */
+if (isTestTask(task)) continue;
 const legacyId = Number(task && task.id);
 if (!Number.isInteger(legacyId)) continue;
 localIds.add(legacyId);
@@ -19595,6 +19649,14 @@ V382 nutzt den verifizierten Erstimport als Basis. localStorage bleibt Master; l
 
 
 <div class="supabase-preflight-card" style="margin-top:14px;">
+<div class="supabase-preflight-title">☁️ CLOUD-STARTCHECK · READ ONLY</div>
+<div class="supabase-preflight-status ${supabaseCloudStartCheckState.status === "ok" ? "ok" : supabaseCloudStartCheckState.status === "error" ? "error" : "warn"}">
+<strong>${escapeHtml(supabaseCloudStartCheckState.label)}</strong><br>
+${escapeHtml(supabaseCloudStartCheckState.detail)}
+${supabaseCloudStartCheckState.checkedAt ? `<div class="supabase-status-detail" style="margin-top:8px;">GEPRÜFT · ${escapeHtml(formatSupabaseSyncTimestamp(supabaseCloudStartCheckState.checkedAt))}</div>` : ""}
+${supabaseCloudStartCheckState.counts ? `<div class="supabase-preflight-table-list">${Object.entries(supabaseCloudStartCheckState.counts).map(([name,count]) => `<div class="supabase-preflight-table"><span>${escapeHtml(name)}</span><strong>${count}</strong></div>`).join("")}</div>` : ""}
+</div>
+<button class="supabase-dev-button secondary" onclick="runSupabaseCloudStartCheck(true)">☁️ LOCAL ↔ CLOUD VERGLEICHEN</button>
 <div class="supabase-preflight-title">🔄 LIVE-SYNC · LOCAL → CLOUD</div>
 <div class="supabase-preflight-summary ${
 supabaseLiveSyncState.status === "ok" ? "ok" : supabaseLiveSyncState.status === "error" ? "error" : supabaseLiveSyncState.status === "running" || supabaseLiveSyncState.status === "warn" ? "warn" : ""
