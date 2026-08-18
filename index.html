@@ -2214,6 +2214,26 @@ button {
   font-size: 7px;
 }
 
+
+.test-task-delete-button,
+.archive-test-delete-button {
+  flex-shrink: 0;
+  padding: 7px 9px;
+  border: 1px solid #6a4c4c;
+  border-radius: 8px;
+  background: #241718;
+  color: #e0aaaa;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .4px;
+  cursor: pointer;
+}
+
+.archive-test-delete-button {
+  margin-left: 6px;
+  align-self: center;
+}
+
 </style>
 </head>
 
@@ -6221,14 +6241,16 @@ return true;
 
 
 /* ======================================
-   EINMALIGE BEREINIGUNG:
-   VERSEHENTLICHE „KÜCHE (TEST)“-AUFGABE
+   SICHERE EINMALIGE BEREINIGUNG:
+   „KÜCHE (TEST)“
 ====================================== */
 
-function cleanupAccidentalKitchenTestOnce() {
+function cleanupAccidentalKitchenTestSafely() {
+
+try {
 
 const migrationKey =
-"masterOfDisasterCleanupKitchenTestV1";
+"masterOfDisasterCleanupKitchenTestSafeV2";
 
 
 if (
@@ -6296,10 +6318,8 @@ item.text
 
 
 const changed =
-tasks.length !==
-beforeTasks ||
-archive.length !==
-beforeArchive;
+tasks.length !== beforeTasks ||
+archive.length !== beforeArchive;
 
 
 if (
@@ -6327,26 +6347,7 @@ nextArchiveNumber =
 highestRealArchiveNumber + 1;
 
 
-safeStorageSet(
-"masterOfDisasterTasks",
-JSON.stringify(
-tasks
-)
-);
-
-safeStorageSet(
-"masterOfDisasterArchive",
-JSON.stringify(
-archive
-)
-);
-
-safeStorageSet(
-"masterOfDisasterNextArchiveNumber",
-String(
-nextArchiveNumber
-)
-);
+saveAll();
 
 }
 
@@ -6358,6 +6359,19 @@ migrationKey,
 
 
 return changed;
+
+} catch (
+error
+) {
+
+console.error(
+"Sichere Testbereinigung fehlgeschlagen:",
+error
+);
+
+return false;
+
+}
 
 }
 
@@ -10310,11 +10324,11 @@ task
 )
 ? `
 <button
-class="repeat-button"
+class="test-task-delete-button"
 title="Testaufgabe dauerhaft löschen"
 onclick="askDelete(${task.id})"
 >
-🗑️
+🗑️ TEST LÖSCHEN
 </button>
 `
 : ""
@@ -11549,11 +11563,11 @@ item
 )
 ? `
 <button
-class="repeat-button"
-title="Testaufgabe aus Archiv löschen"
+class="archive-test-delete-button"
+title="Testaufgabe vollständig aus Archiv und Statistik löschen"
 onclick="askDeleteArchivedTest('${item.archiveId}')"
 >
-🗑️
+🗑️ TEST LÖSCHEN
 </button>
 `
 : ""
@@ -11649,12 +11663,6 @@ item
 );
 
 
-/*
-  Falls eine ältere fehlerhafte Version einer Testaufgabe bereits
-  versehentlich eine echte A-Nummer gegeben hatte, bestimmen wir
-  die nächste freie Archivnummer aus dem verbleibenden echten Archiv.
-  Bestehende echte Archivnummern werden dabei niemals verschoben.
-*/
 const highestRealArchiveNumber =
 archive.reduce(
 (max,item) =>
@@ -11837,36 +11845,24 @@ dateKey
 (a,b) => {
 
 if (
-isArchivedTest(
-a
-) &&
-!isArchivedTest(
-b
-)
+a.isTestArchive &&
+!b.isTestArchive
 ) {
 return 1;
 }
 
 
 if (
-!isArchivedTest(
-a
-) &&
-isArchivedTest(
-b
-)
+!a.isTestArchive &&
+b.isTestArchive
 ) {
 return -1;
 }
 
 
 if (
-isArchivedTest(
-a
-) &&
-isArchivedTest(
-b
-)
+a.isTestArchive &&
+b.isTestArchive
 ) {
 
 return String(
@@ -14873,3 +14869,1125 @@ item.name
 ${valueFormatter(
 item
 )}
+</div>
+
+</div>
+
+`
+)
+.join("")
+: `
+<div class="statistics-empty-small">
+Noch nicht genügend Daten.
+</div>
+`;
+
+
+section.innerHTML = `
+
+<div class="statistics-section-title">
+${title}
+</div>
+
+<div class="statistics-toplist">
+${content}
+</div>
+`;
+
+
+container.appendChild(
+section
+);
+
+}
+
+
+createTopListSection(
+
+"TOP 5 · HÄUFIGSTE AUFGABEN",
+
+[...taskGroups]
+.sort(
+(a,b) =>
+b.count -
+a.count
+||
+b.totalMs -
+a.totalMs
+)
+.slice(
+0,
+5
+),
+
+item =>
+item.count +
+"×"
+
+);
+
+
+createTopListSection(
+
+"TOP 5 · ZEITINTENSIVSTE AUFGABEN",
+
+[...taskGroups]
+.sort(
+(a,b) =>
+b.totalMs -
+a.totalMs
+)
+.slice(
+0,
+5
+),
+
+item =>
+formatDuration(
+item.totalMs
+)
+
+);
+
+
+const recurringTasks =
+taskGroups
+.filter(
+item =>
+item.count >=
+2
+);
+
+
+createTopListSection(
+
+"TOP 5 · SCHNELLSTE WIEDERKEHRENDE AUFGABEN",
+
+[...recurringTasks]
+.map(
+item => ({
+...item,
+
+averageMs:
+item.totalMs /
+item.count
+})
+)
+.sort(
+(a,b) =>
+a.averageMs -
+b.averageMs
+)
+.slice(
+0,
+5
+),
+
+item =>
+"Ø " +
+formatDuration(
+item.averageMs
+)
+
+);
+
+
+/* TOP-TAGE NACH AUFGABEN */
+
+const topDaysByCount =
+Object.entries(
+dayStats
+)
+.map(
+entry => ({
+
+dateKey:
+entry[0],
+
+name:
+formatArchiveDayHeading(
+entry[0]
+),
+
+value:
+entry[1].count
+
+})
+)
+.sort(
+(a,b) =>
+b.value -
+a.value
+)
+.slice(
+0,
+5
+);
+
+
+createTopListSection(
+
+"TOP 5 · TAGE NACH AUFGABENANZAHL",
+
+topDaysByCount,
+
+item =>
+item.value +
+" Aufgaben"
+
+);
+
+
+/* TOP-TAGE NACH ZEIT */
+
+const topDaysByTime =
+Object.entries(
+dayStats
+)
+.map(
+entry => ({
+
+dateKey:
+entry[0],
+
+name:
+formatArchiveDayHeading(
+entry[0]
+),
+
+value:
+entry[1].activeMs
+
+})
+)
+.sort(
+(a,b) =>
+b.value -
+a.value
+)
+.slice(
+0,
+5
+);
+
+
+createTopListSection(
+
+"TOP 5 · TAGE NACH AKTIVER ZEIT",
+
+topDaysByTime,
+
+item =>
+formatDuration(
+item.value
+)
+
+);
+
+
+/* =========================
+   AUFGABENANALYSE
+========================= */
+
+if (
+taskGroups.length >
+0
+) {
+
+const analysis =
+document.createElement(
+"div"
+);
+
+
+analysis.className =
+"statistics-group";
+
+
+const sortedGroups =
+[...taskGroups]
+.sort(
+(a,b) =>
+b.count -
+a.count
+||
+b.totalMs -
+a.totalMs
+);
+
+
+analysis.innerHTML = `
+
+<div class="statistics-section-title">
+AUFGABENANALYSE
+</div>
+
+<div class="task-analysis-list">
+
+${sortedGroups
+.map(
+group => {
+
+const average =
+group.count > 0
+? group.totalMs /
+group.count
+: 0;
+
+
+const fastest =
+group.durations.length
+? Math.min(
+...group.durations
+)
+: 0;
+
+
+const slowest =
+group.durations.length
+? Math.max(
+...group.durations
+)
+: 0;
+
+
+const weightPercent =
+group.count > 0
+? group.weightCount /
+group.count *
+100
+: 0;
+
+
+return `
+
+<details class="task-analysis-item">
+
+<summary class="task-analysis-summary">
+
+<span class="task-analysis-name">
+${escapeHtml(
+group.name
+)}
+</span>
+
+<span class="task-analysis-count">
+${group.count}×
+</span>
+
+</summary>
+
+<div class="task-analysis-details">
+
+<div class="task-analysis-detail">
+<span>GESAMTZEIT</span>
+<strong>${formatDuration(group.totalMs)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>DURCHSCHNITT</span>
+<strong>${formatDuration(average)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>⚡ SCHNELLSTE</span>
+<strong>${formatDuration(fastest)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🐌 LÄNGSTE</span>
+<strong>${formatDuration(slowest)}</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🏋️ MIT GEWICHT</span>
+<strong>${group.weightCount}×</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🏋️ ANTEIL</span>
+<strong>${weightPercent.toFixed(1).replace(".",",")} %</strong>
+</div>
+
+<div class="task-analysis-detail">
+<span>🏋️ AKTIVE ZEIT</span>
+<strong>${formatDuration(group.weightMs)}</strong>
+</div>
+
+</div>
+
+</details>
+
+`;
+
+}
+)
+.join("")}
+
+</div>
+`;
+
+
+container.appendChild(
+analysis
+);
+
+}
+
+}
+
+
+
+/* ======================================
+   RENDER
+====================================== */
+
+function render() {
+
+const container =
+document.getElementById(
+"viewContainer"
+);
+
+
+container.innerHTML =
+"";
+
+
+if (
+currentTab ===
+"all"
+) {
+renderAll(
+container
+);
+}
+
+
+if (
+currentTab ===
+"today"
+) {
+renderToday(
+container
+);
+}
+
+
+if (
+currentTab ===
+"priority"
+) {
+renderPriority(
+container
+);
+}
+
+
+if (
+currentTab ===
+"due"
+) {
+renderDue(
+container
+);
+}
+
+
+if (
+currentTab ===
+"active"
+) {
+renderActive(
+container
+);
+}
+
+
+if (
+currentTab ===
+"completed"
+) {
+renderCompleted(
+container
+);
+}
+
+
+if (
+currentTab ===
+"archive"
+) {
+renderArchive(
+container
+);
+}
+
+if (
+currentTab ===
+"statistics"
+) {
+renderStatistics(
+container
+);
+}
+
+}
+
+
+/* ======================================
+   LIVE
+====================================== */
+
+function updateLiveTimers() {
+
+document
+.querySelectorAll(
+".live-duration"
+)
+.forEach(
+element => {
+
+const task =
+getTask(
+Number(
+element.dataset.taskId
+)
+);
+
+
+if (task) {
+
+const kind =
+element.dataset.liveKind ||
+"work";
+
+
+if (
+kind ===
+"leisure"
+) {
+
+element.textContent =
+"FREIZEIT · " +
+formatDuration(
+liveDuration(task)
+);
+
+} else {
+
+element.textContent =
+"AKTIV · " +
+formatDuration(
+liveDuration(task)
+);
+
+}
+
+}
+
+}
+);
+
+
+document
+.querySelectorAll(
+".live-cooking-active"
+)
+.forEach(
+element => {
+
+const task =
+getTask(
+Number(
+element.dataset.taskId
+)
+);
+
+
+if (task) {
+
+const result =
+calculateCookingDurations(
+task,
+new Date()
+.toISOString()
+);
+
+
+element.textContent =
+formatDuration(
+result.activeMs
+);
+
+}
+
+}
+);
+
+
+document
+.querySelectorAll(
+".live-cooking-passive"
+)
+.forEach(
+element => {
+
+const task =
+getTask(
+Number(
+element.dataset.taskId
+)
+);
+
+
+if (task) {
+
+const result =
+calculateCookingDurations(
+task,
+new Date()
+.toISOString()
+);
+
+
+element.textContent =
+formatDuration(
+result.passiveMs
+);
+
+}
+
+}
+);
+
+
+if (
+weightState.isWearing
+) {
+
+const el =
+document.getElementById(
+"weightLiveDuration"
+);
+
+
+if (el) {
+
+el.textContent =
+formatDuration(
+getCurrentWeightDurationMs()
+);
+
+}
+
+}
+
+}
+
+
+setInterval(
+updateLiveTimers,
+1000
+);
+
+
+setInterval(
+function() {
+
+if (
+processDayTransition()
+) {
+
+renderWeightPanel();
+
+render();
+
+}
+
+},
+60000
+);
+
+
+/* ======================================
+   MODAL
+====================================== */
+
+function closeModal() {
+
+document
+.getElementById(
+"modalContainer"
+)
+.innerHTML =
+"";
+
+}
+
+
+function showInfoModal(
+title,
+text
+) {
+
+document
+.getElementById(
+"modalContainer"
+)
+.innerHTML = `
+
+<div class="modal-backdrop">
+
+<div class="modal">
+
+<h2>
+${escapeHtml(title)}
+</h2>
+
+<p>
+${escapeHtml(text)}
+</p>
+
+<div class="modal-actions">
+
+<button
+class="modal-button confirm-modal"
+onclick="closeModal()"
+>
+Alles klar
+</button>
+
+</div>
+
+</div>
+
+</div>
+`;
+
+}
+
+
+
+/* ======================================
+   AUFGABEN-AUTOVERGÄNZUNG
+====================================== */
+
+function normalizeSuggestionText(
+value
+) {
+
+return String(
+value || ""
+)
+.trim()
+.toLocaleLowerCase(
+"de-DE"
+);
+
+}
+
+
+function getKnownTaskSuggestions(
+query
+) {
+
+const normalizedQuery =
+normalizeSuggestionText(
+query
+);
+
+
+if (
+normalizedQuery.length <
+1
+) {
+
+return [];
+
+}
+
+
+const known =
+new Map();
+
+
+function addKnown(
+item,
+source
+) {
+
+const name =
+String(
+item.text || ""
+).trim();
+
+
+if (!name) {
+return;
+}
+
+
+const key =
+normalizeSuggestionText(
+name
+);
+
+
+if (
+!known.has(
+key
+)
+) {
+
+known.set(
+key,
+{
+name:
+name,
+
+source:
+source
+}
+);
+
+}
+
+}
+
+
+tasks.forEach(
+item =>
+addKnown(
+item,
+"AKTIV"
+)
+);
+
+
+archive.forEach(
+item =>
+addKnown(
+item,
+"ARCHIV"
+)
+);
+
+
+return [
+...known.values()
+]
+.map(
+item => {
+
+const normalizedName =
+normalizeSuggestionText(
+item.name
+);
+
+
+let rank =
+999;
+
+
+if (
+normalizedName ===
+normalizedQuery
+) {
+
+rank =
+0;
+
+} else if (
+normalizedName.startsWith(
+normalizedQuery
+)
+) {
+
+rank =
+1;
+
+} else if (
+normalizedName.includes(
+normalizedQuery
+)
+) {
+
+rank =
+2;
+
+}
+
+
+return {
+...item,
+rank:
+rank
+};
+
+}
+)
+.filter(
+item =>
+item.rank <
+999
+)
+.sort(
+(a,b) =>
+a.rank -
+b.rank
+||
+a.name.localeCompare(
+b.name,
+"de-DE"
+)
+)
+.slice(
+0,
+8
+);
+
+}
+
+
+function hideTaskSuggestions() {
+
+const box =
+document.getElementById(
+"taskSuggestions"
+);
+
+
+if (!box) {
+return;
+}
+
+
+box.classList.remove(
+"visible"
+);
+
+
+box.innerHTML =
+"";
+
+}
+
+
+function selectTaskSuggestion(
+encodedName
+) {
+
+const input =
+document.getElementById(
+"taskInput"
+);
+
+
+if (!input) {
+return;
+}
+
+
+input.value =
+decodeURIComponent(
+encodedName
+);
+
+
+hideTaskSuggestions();
+
+
+input.focus();
+
+}
+
+
+function renderTaskSuggestions() {
+
+const input =
+document.getElementById(
+"taskInput"
+);
+
+
+const box =
+document.getElementById(
+"taskSuggestions"
+);
+
+
+if (
+!input ||
+!box
+) {
+return;
+}
+
+
+const suggestions =
+getKnownTaskSuggestions(
+input.value
+);
+
+
+if (
+suggestions.length ===
+0
+) {
+
+hideTaskSuggestions();
+
+return;
+
+}
+
+
+box.innerHTML =
+suggestions
+.map(
+item => `
+
+<button
+type="button"
+class="task-suggestion"
+onmousedown="event.preventDefault()"
+onclick="selectTaskSuggestion('${encodeURIComponent(
+item.name
+)}')"
+>
+
+<span class="task-suggestion-name">
+${escapeHtml(
+item.name
+)}
+</span>
+
+<span class="task-suggestion-source">
+${item.source}
+</span>
+
+</button>
+
+`
+)
+.join("");
+
+
+box.classList.add(
+"visible"
+);
+
+}
+
+/* ======================================
+   ENTER
+====================================== */
+
+document
+.getElementById(
+"taskInput"
+)
+.addEventListener(
+"input",
+renderTaskSuggestions
+);
+
+
+document
+.addEventListener(
+"click",
+event => {
+
+const wrap =
+event.target.closest(
+".task-input-wrap"
+);
+
+
+if (!wrap) {
+
+hideTaskSuggestions();
+
+}
+
+}
+);
+
+
+document
+.getElementById(
+"taskInput"
+)
+.addEventListener(
+"keydown",
+event => {
+
+if (
+event.key ===
+"Enter"
+) {
+
+hideTaskSuggestions();
+
+addTask();
+
+}
+
+}
+);
+
+
+/* ======================================
+   START
+====================================== */
+
+const masterV361ImportResult =
+importMasterV361ActiveTasksOnce();
+
+
+if (
+masterV361ImportResult.added > 0
+) {
+
+console.info(
+"Master V361 importiert:",
+masterV361ImportResult.added,
+"aktive Aufgaben."
+);
+
+}
+
+
+processDayTransition();
+
+saveAll();
+
+updateNewOptions();
+
+renderWeightPanel();
+
+render();
+
+
+setTimeout(
+() => {
+
+if (
+cleanupAccidentalKitchenTestSafely()
+) {
+
+renderWeightPanel();
+
+render();
+
+}
+
+},
+0
+);
+
+</script>
+
+</body>
+</html>
