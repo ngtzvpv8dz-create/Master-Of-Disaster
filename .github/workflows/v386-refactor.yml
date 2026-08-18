@@ -1,0 +1,103 @@
+name: V386 Refactor
+
+on:
+  push:
+    branches:
+      - v386-cloud-local-compare
+    paths:
+      - .github/workflows/v386-refactor.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v386-cloud-local-compare
+
+      - name: Split monolithic index and prepare V386
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
+
+          # Extract the single large inline stylesheet.
+          style_match = re.search(r'<style>\s*(.*?)\s*</style>', html, flags=re.S)
+          if not style_match:
+              raise SystemExit('Main <style> block not found')
+          css = style_match.group(1).rstrip() + '\n'
+
+          old_button = '''/* V385 – Cloud-Startcheck Button sauber auf eigener Zeile */
+          .supabase-startcheck-action {
+            width: 100%;
+            min-height: 44px;
+            margin: 10px 0 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 9px;
+          }'''
+          new_button = '''/* V386 – Cloud/Lokal-Vergleich: volle, ruhige Aktionszeile */
+          .supabase-startcheck-action {
+            width: 100%;
+            min-width: 0;
+            min-height: 48px;
+            margin: 10px 0 18px;
+            padding: 11px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            white-space: normal;
+            line-height: 1.25;
+            font-size: 9px;
+          }'''
+          if old_button not in css:
+              raise SystemExit('V385 startcheck CSS block not found')
+          css = css.replace(old_button, new_button, 1)
+          Path('app.css').write_text(css, encoding='utf-8')
+          html = html[:style_match.start()] + '<link rel="stylesheet" href="./app.css?v=386">' + html[style_match.end():]
+
+          # Extract the large application script, but leave the tiny service-worker script inline.
+          inline_scripts = list(re.finditer(r'<script>(.*?)</script>', html, flags=re.S))
+          if not inline_scripts:
+              raise SystemExit('Main inline <script> block not found')
+          main_script = max(inline_scripts, key=lambda m: len(m.group(1)))
+          js = main_script.group(1).strip() + '\n'
+          js = js.replace('const APP_VERSION =\n"V385";', 'const APP_VERSION =\n"V386";', 1)
+          js = js.replace('const APP_BUILD_DATE =\n"18.08.2026";', 'const APP_BUILD_DATE =\n"19.08.2026";', 1)
+          js = re.sub(r'const APP_BUILD_TIME =\n"[0-9]{2}:[0-9]{2}";', 'const APP_BUILD_TIME =\n"00:24";', js, count=1)
+          if 'const APP_VERSION =\n"V386";' not in js:
+              raise SystemExit('APP_VERSION update failed')
+          Path('app.js').write_text(js, encoding='utf-8')
+          html = html[:main_script.start()] + '<script src="./app.js?v=386"></script>' + html[main_script.end():]
+
+          html = html.replace(
+              '<!-- BUILD: V385 · PWA · SUPABASE-ERSTIMPORT · LIVE-SYNC · CLOUD-STARTCHECK-FIX · BACKUP-RESTORE · DATENPRUEFUNG -->',
+              '<!-- BUILD: V386 · MODULAR-CSS-JS · CLOUD-LOCAL-UI · PWA · SUPABASE-ERSTIMPORT · LIVE-SYNC · BACKUP-RESTORE · DATENPRUEFUNG -->',
+              1
+          )
+          index_path.write_text(html, encoding='utf-8')
+
+          # Sanity checks: index should now be small and external files substantial.
+          if index_path.stat().st_size > 30000:
+              raise SystemExit(f'index.html unexpectedly large: {index_path.stat().st_size}')
+          if Path('app.css').stat().st_size < 20000:
+              raise SystemExit('app.css unexpectedly small')
+          if Path('app.js').stat().st_size < 100000:
+              raise SystemExit('app.js unexpectedly small')
+
+      - name: Commit generated V386 files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html app.css app.js
+          git commit -m "refactor: split app CSS and JS for V386"
+          git push origin v386-cloud-local-compare
