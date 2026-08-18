@@ -9182,24 +9182,169 @@ dueSymbol(task) +
 
 function dynamicNumber(task) {
 
-const index =
-tasks.findIndex(
+/*
+  MASTER V361 – DYNAMISCHE NUMMERIERUNG
+
+  Archivnummern und aktive Aufgabennummern sind getrennte
+  Nummernräume. Die sichtbare aktive Nummerierung beginnt
+  immer bei der aktuell nächsten freien Archivnummer.
+
+  Beispiel:
+  Archiv A001–A236
+  nextArchiveNumber = 237
+  aktive Aufgaben = 237, 238, 239, ...
+
+  Terminale Aufgaben (completed / aborted), die technisch bis
+  zur Archivierung noch im tasks-Array liegen können, verändern
+  die Nummerierung der weiterhin aktiven Aufgaben nicht.
+*/
+
+const activeTasks =
+tasks.filter(
+item =>
+![
+"completed",
+"aborted"
+].includes(
+item.status
+)
+);
+
+
+const activeIndex =
+activeTasks.findIndex(
 item =>
 item.id ===
 task.id
 );
 
 
-const number =
-index + 1;
+if (
+activeIndex >= 0
+) {
 
-
-return number < 10
-? "0" + number
-: number;
+return (
+nextArchiveNumber +
+activeIndex
+);
 
 }
 
+
+/*
+  Fallback für terminale Aufgaben, solange sie vor der
+  Archivierung noch dargestellt werden.
+*/
+const terminalTasks =
+tasks.filter(
+item =>
+[
+"completed",
+"aborted"
+].includes(
+item.status
+)
+);
+
+
+const terminalIndex =
+terminalTasks.findIndex(
+item =>
+item.id ===
+task.id
+);
+
+
+if (
+terminalIndex >= 0
+) {
+
+return (
+nextArchiveNumber +
+activeTasks.length +
+terminalIndex
+);
+
+}
+
+
+return "?";
+
+}
+
+
+
+/* ======================================
+   MASTER-REGELREFERENZ V361
+   Stand: vom Nutzer übergebener Regelgruppen-Export.
+   Dieser Block ist Dokumentation/Referenz und verändert
+   für sich allein keine Laufzeitlogik.
+====================================== */
+
+const masterRuleReferenceV361 = Object.freeze({
+version:
+"V361",
+
+dynamicNumbering:
+Object.freeze({
+activeNumbersArePermanentIds:
+false,
+renumberAfterTaskListChange:
+true,
+archiveNumberSpaceIndependent:
+true,
+archiveNumbersNeverReused:
+true
+}),
+
+statuses:
+Object.freeze([
+"open",
+"running",
+"paused",
+"completed",
+"aborted"
+]),
+
+priorities:
+Object.freeze([
+"normal",
+"medium",
+"high"
+]),
+
+coreAccounting:
+Object.freeze({
+abortedCountsAsCompletedForProgress:
+false,
+machineRuntimeCountsAsActive:
+false,
+passiveCookingCountsAsActive:
+false,
+leisureCountsAsActive:
+false,
+historicalDurationMayExistWithoutExactTimestamps:
+true,
+protectHistoricalPartialTimeFromDoubleCounting:
+true
+}),
+
+weight:
+Object.freeze({
+vestKg:
+8.3,
+cuffsKg:
+4.0,
+fullKg:
+12.3,
+weightChangeStartsNewPhase:
+true,
+wearingTimeIndependentFromTaskTime:
+true,
+historicalWeightValuesMustNotBeRecalculated:
+true
+})
+});
 
 /* ======================================
    BUTTON
