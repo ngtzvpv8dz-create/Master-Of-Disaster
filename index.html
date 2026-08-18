@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V362 · DEV-TAB · THEMES · BUILD-INFO · DATENPRÜFUNG · BACKUP -->
+<!-- BUILD: V363 · THEMES-KOMPLETT · DEV-TAB · BUILD-INFO · DATENPRÜFUNG · BACKUP -->
 
 <style>
 
@@ -2266,6 +2266,21 @@ button {
   --dev-text: #c99c9c;
 
   --shadow: rgba(0,0,0,0.22);
+
+  --task-bg: #171b1f;
+  --task-bg-running: #192127;
+  --task-bg-paused: #1d1b16;
+  --task-bg-completed: #151918;
+  --archive-bg: #15191d;
+
+  --chip-bg: #121619;
+  --chip-text: #aab3b9;
+
+  --button-bg: #151a1e;
+  --button-text: #d9dee1;
+
+  --modal-bg: #191d20;
+  --modal-text: #f3f3f3;
 }
 
 body {
@@ -2377,6 +2392,22 @@ body[data-theme="clean-light"] {
   --dev-text: #925858;
 
   --shadow: rgba(0,0,0,0.08);
+
+  --task-bg: #ffffff;
+  --task-bg-running: #edf5f1;
+  --task-bg-paused: #fff8e9;
+  --task-bg-completed: #f3f5f2;
+  --archive-bg: #ffffff;
+
+  --chip-bg: #f0f2ef;
+  --chip-text: #4e5750;
+
+  --button-bg: #f2f4f1;
+  --button-text: #222824;
+
+  --modal-bg: #ffffff;
+  --modal-text: #1a1e1b;
+
 }
 
 body[data-theme="pastel-gradient"] {
@@ -2404,6 +2435,22 @@ body[data-theme="pastel-gradient"] {
   --dev-border: #caa9b4;
   --dev-bg: rgba(255,245,249,.8);
   --dev-text: #8b6170;
+
+  --task-bg: rgba(255,255,255,.76);
+  --task-bg-running: rgba(229,247,240,.86);
+  --task-bg-paused: rgba(255,244,222,.88);
+  --task-bg-completed: rgba(245,243,250,.78);
+  --archive-bg: rgba(255,255,255,.74);
+
+  --chip-bg: rgba(255,255,255,.58);
+  --chip-text: #665c70;
+
+  --button-bg: rgba(255,255,255,.62);
+  --button-text: #40394a;
+
+  --modal-bg: rgba(255,255,255,.96);
+  --modal-text: #40394a;
+
 }
 
 body[data-theme="industrial-steel"] {
@@ -2431,6 +2478,22 @@ body[data-theme="industrial-steel"] {
   --dev-border: #695454;
   --dev-bg: #1b1717;
   --dev-text: #c2a0a0;
+
+  --task-bg: #1e252a;
+  --task-bg-running: #213039;
+  --task-bg-paused: #28251d;
+  --task-bg-completed: #1a201f;
+  --archive-bg: #1d2429;
+
+  --chip-bg: #171d21;
+  --chip-text: #b5c1c8;
+
+  --button-bg: #182026;
+  --button-text: #e1e8ec;
+
+  --modal-bg: #1e252a;
+  --modal-text: #edf2f5;
+
 }
 
 body[data-theme="neon-night"] {
@@ -2458,6 +2521,22 @@ body[data-theme="neon-night"] {
   --dev-border: #66415a;
   --dev-bg: #17101a;
   --dev-text: #d59ab9;
+
+  --task-bg: #14141f;
+  --task-bg-running: #102327;
+  --task-bg-paused: #241b16;
+  --task-bg-completed: #121920;
+  --archive-bg: #12131d;
+
+  --chip-bg: #101019;
+  --chip-text: #b9c1ef;
+
+  --button-bg: #10131d;
+  --button-text: #edf0ff;
+
+  --modal-bg: #14141f;
+  --modal-text: #f1f4ff;
+
 }
 
 .dev-build-card {
@@ -2553,6 +2632,219 @@ body[data-theme="neon-night"] {
 .preview-neon {
   background: linear-gradient(90deg,#11111a,#7cf1e5,#8d75ff);
 }
+
+
+/* ======================================
+   V363 – VOLLSTÄNDIGE THEME-ABDECKUNG
+====================================== */
+
+/* Aufgaben / Karten */
+.task,
+.task-card,
+.today-task,
+.priority-task,
+.due-task,
+.active-task,
+.completed-task,
+.archive-task {
+  background: var(--task-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 6px 18px var(--shadow) !important;
+}
+
+.task.running,
+.task-card.running,
+.today-task.running,
+.active-task.running {
+  background: var(--task-bg-running) !important;
+}
+
+.task.paused,
+.task-card.paused,
+.today-task.paused {
+  background: var(--task-bg-paused) !important;
+}
+
+.task.completed,
+.task-card.completed,
+.completed-task,
+.archive-task {
+  background: var(--task-bg-completed) !important;
+}
+
+/* Archiv */
+.archive-day,
+.archive-summary {
+  background: var(--archive-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.archive-day-header,
+.archive-day-title,
+.archive-task-title,
+.archive-task-meta,
+.archive-stat-value,
+.archive-number {
+  color: var(--text) !important;
+}
+
+/* Statistiken */
+.statistics-card,
+.statistics-record,
+.statistics-analysis,
+.statistics-topitem,
+.statistics-empty-small {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.statistics-value,
+.statistics-topname,
+.statistics-topvalue,
+.statistics-record-value {
+  color: var(--text) !important;
+}
+
+/* Chips / Badges / kleine Labels */
+.status-badge,
+.priority-badge,
+.task-chip,
+.meta-chip,
+.archive-task-weight-details,
+.task-type,
+.task-priority,
+.task-due,
+.task-optional,
+.task-duration {
+  background: var(--chip-bg) !important;
+  color: var(--chip-text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Buttons */
+.task button,
+.task-card button,
+.archive-task button,
+.action-button,
+.icon-button,
+.option-button,
+.time-action-button,
+.repeat-button,
+.test-task-delete-button,
+.archive-test-delete-button,
+.statistics-period-button {
+  background: var(--button-bg) !important;
+  color: var(--button-text) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.action-button:hover,
+.icon-button:hover,
+.theme-button:hover,
+.dev-button:hover {
+  filter: brightness(1.05);
+}
+
+/* Eingaben */
+input,
+textarea,
+select {
+  background: var(--panel-3) !important;
+  color: var(--text) !important;
+  border-color: var(--border-strong) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted) !important;
+}
+
+/* Modal */
+.modal {
+  background: var(--modal-bg) !important;
+  color: var(--modal-text) !important;
+  border-color: var(--border) !important;
+}
+
+.modal p,
+.modal h2,
+.modal label {
+  color: var(--modal-text) !important;
+}
+
+.cancel-modal {
+  background: var(--button-bg) !important;
+  color: var(--button-text) !important;
+}
+
+.confirm-modal {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+}
+
+/* Header / Bereiche */
+.header,
+.section-title,
+.section-subtitle,
+.task-title,
+.task-text,
+.completed-title,
+.archive-day-heading-row,
+.weight-panel,
+.input-panel {
+  color: var(--text) !important;
+}
+
+/* Gewicht */
+.weight-panel,
+.weight-summary,
+.weight-state,
+.weight-phase,
+.weight-card {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Hellere Themes brauchen subtilere Schatten und Glasflächen */
+body[data-theme="clean-light"] .task,
+body[data-theme="clean-light"] .archive-day,
+body[data-theme="clean-light"] .statistics-card,
+body[data-theme="pastel-gradient"] .task,
+body[data-theme="pastel-gradient"] .archive-day,
+body[data-theme="pastel-gradient"] .statistics-card {
+  box-shadow: 0 6px 18px rgba(65,70,68,.10) !important;
+}
+
+/* Pastell: auch Tagesblöcke leicht transluzent */
+body[data-theme="pastel-gradient"] .archive-day,
+body[data-theme="pastel-gradient"] .archive-summary,
+body[data-theme="pastel-gradient"] .task,
+body[data-theme="pastel-gradient"] .statistics-card,
+body[data-theme="pastel-gradient"] .statistics-record {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Neon: dezente Akzentlinie statt Voll-Kirmes */
+body[data-theme="neon-night"] .task,
+body[data-theme="neon-night"] .archive-day,
+body[data-theme="neon-night"] .statistics-card {
+  box-shadow:
+    0 0 0 1px rgba(124,241,229,.05),
+    0 8px 22px rgba(0,0,0,.30) !important;
+}
+
+/* Light/Pastel: Dev-Bereich ebenfalls passend */
+body[data-theme="clean-light"] .dev-panel,
+body[data-theme="pastel-gradient"] .dev-panel {
+  background: var(--dev-bg) !important;
+  color: var(--text) !important;
+}
+
 
 </style>
 </head>
@@ -3388,13 +3680,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V362";
+"V363";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"11:11";
+"11:18";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
