@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V380 · DEV-BEREINIGUNG · PWA · SUPABASE-PREFLIGHT · BACKUP-RESTORE · DATENPRUEFUNG -->
+<!-- BUILD: V381 · PWA · SUPABASE-ERSTIMPORT · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -3371,13 +3371,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V380";
+"V381";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"22:44";
+"23:01";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -18392,6 +18392,502 @@ render();
 }
 
 
+
+/* ======================================
+   V381 – KONTROLLIERTER SUPABASE-ERSTIMPORT
+   LOCALSTORAGE BLEIBT MASTER
+====================================== */
+
+let supabaseInitialImportState = {
+status: "idle",
+label: "NOCH NICHT GESTARTET",
+detail: "Der Erstimport schreibt eine einmalige Cloud-Kopie und verifiziert sie anschließend. localStorage bleibt weiterhin die führende Datenquelle.",
+counts: null,
+verified: false,
+finishedAt: null
+};
+
+
+function importNumberOrNull(value) {
+const number = Number(value);
+return Number.isFinite(number) ? number : null;
+}
+
+
+function importNonNegativeNumberOrNull(value) {
+const number = Number(value);
+return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+
+function importPositiveNumberOrNull(value) {
+const number = Number(value);
+return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+
+function createSupabaseImportUuid() {
+if (window.crypto && typeof window.crypto.randomUUID === "function") {
+return window.crypto.randomUUID();
+}
+return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, character => {
+const random = Math.random() * 16 | 0;
+const value = character === "x" ? random : (random & 0x3 | 0x8);
+return value.toString(16);
+});
+}
+
+
+function importSegmentDurationMs(segment) {
+const explicit = importNonNegativeNumberOrNull(segment && segment.durationMs);
+if (explicit !== null) {
+return explicit;
+}
+const start = Date.parse(segment && segment.startedAt ? segment.startedAt : "");
+const end = Date.parse(segment && segment.endedAt ? segment.endedAt : "");
+if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
+return end - start;
+}
+return null;
+}
+
+
+function getRealArchiveForSupabaseImport() {
+return archive.filter(item => !isArchivedTest(item));
+}
+
+
+function getSupabaseImportExpectedCounts() {
+const realArchive = getRealArchiveForSupabaseImport();
+let taskActiveSegments = 0;
+let taskCookingSegments = 0;
+let archiveActiveSegments = 0;
+
+tasks.forEach(task => {
+if (Array.isArray(task && task.activeSegments)) {
+task.activeSegments.forEach(segment => {
+if (segment && segment.startedAt) {
+taskActiveSegments += 1;
+}
+});
+}
+if (Array.isArray(task && task.cookingSegments)) {
+task.cookingSegments.forEach(segment => {
+if (segment && segment.startedAt && ["active","passive"].includes(segment.mode)) {
+taskCookingSegments += 1;
+}
+});
+}
+});
+
+realArchive.forEach(item => {
+if (Array.isArray(item && item.activeSegments)) {
+item.activeSegments.forEach(segment => {
+if (segment && segment.startedAt && segment.endedAt) {
+archiveActiveSegments += 1;
+}
+});
+}
+});
+
+return {
+app_state: 1,
+tasks: tasks.length,
+task_active_segments: taskActiveSegments,
+task_cooking_segments: taskCookingSegments,
+archive_entries: realArchive.length,
+archive_active_segments: archiveActiveSegments,
+weight_phases: Array.isArray(weightPhases) ? weightPhases.filter(phase => phase && importPositiveNumberOrNull(phase.weightKg) !== null && phase.startedAt).length : 0,
+legacy_metadata: 2
+};
+}
+
+
+async function rollbackSupabaseInitialImport(client,userId) {
+const tables = [
+"legacy_metadata",
+"weight_phases",
+"archive_entries",
+"tasks",
+"app_state"
+];
+const rollbackErrors = [];
+for (const tableName of tables) {
+const { error } = await client.from(tableName).delete().eq("user_id",userId);
+if (error) {
+rollbackErrors.push(tableName + ": " + (error.message || "Rollback-Fehler"));
+}
+}
+return rollbackErrors;
+}
+
+
+async function verifySupabaseInitialImport(client,userId,expectedCounts) {
+const actualCounts = {};
+for (const tableName of SUPABASE_EXPECTED_TABLES) {
+const { count, error } = await client
+.from(tableName)
+.select("*", { count: "exact", head: true });
+if (error) {
+throw new Error("Verifikation " + tableName + ": " + (error.message || "Lesefehler"));
+}
+actualCounts[tableName] = Number.isFinite(Number(count)) ? Number(count) : 0;
+}
+
+for (const [tableName,expected] of Object.entries(expectedCounts)) {
+if (actualCounts[tableName] !== expected) {
+throw new Error("Verifikation fehlgeschlagen: " + tableName + " hat " + actualCounts[tableName] + " Zeilen, erwartet " + expected + ".");
+}
+}
+
+const { data: stateRows, error: stateError } = await client
+.from("app_state")
+.select("user_id,next_archive_number,schema_version,app_version")
+.eq("user_id",userId)
+.limit(1);
+if (stateError) {
+throw stateError;
+}
+const stateRow = Array.isArray(stateRows) && stateRows.length ? stateRows[0] : null;
+if (!stateRow || Number(stateRow.next_archive_number) !== Number(nextArchiveNumber)) {
+throw new Error("Verifikation fehlgeschlagen: next_archive_number stimmt nicht mit dem lokalen Stand überein.");
+}
+
+const { data: manifestRows, error: manifestError } = await client
+.from("legacy_metadata")
+.select("key,payload")
+.eq("user_id",userId)
+.eq("key","initial_import_manifest_v1")
+.limit(1);
+if (manifestError) {
+throw manifestError;
+}
+if (!Array.isArray(manifestRows) || !manifestRows.length) {
+throw new Error("Verifikation fehlgeschlagen: Import-Manifest fehlt.");
+}
+
+return actualCounts;
+}
+
+
+async function performSupabaseInitialImport() {
+supabaseInitialImportState = {
+status: "running",
+label: "ERSTIMPORT LÄUFT…",
+detail: "Lokale Daten werden kontrolliert nach Supabase kopiert. Bitte diese Seite jetzt nicht schließen.",
+counts: null,
+verified: false,
+finishedAt: null
+};
+if (currentTab === "dev") {
+render();
+}
+
+let client = null;
+let userId = null;
+let writingStarted = false;
+
+try {
+const integrity = collectDataIntegrityReport();
+if (!integrity || !integrity.ok) {
+throw new Error("Lokale Datenprüfung ist nicht sauber. Erstimport abgebrochen.");
+}
+
+client = getSupabaseClient();
+const { data: sessionData, error: sessionError } = await client.auth.getSession();
+if (sessionError) {
+throw sessionError;
+}
+const session = sessionData && sessionData.session ? sessionData.session : null;
+if (!session || !session.user || !session.user.id) {
+throw new Error("Supabase-Login fehlt.");
+}
+userId = session.user.id;
+
+/* Letzter Sicherheitscheck unmittelbar vor dem ersten Schreiben. */
+for (const tableName of SUPABASE_EXPECTED_TABLES) {
+const { count, error } = await client.from(tableName).select("*", { count: "exact", head: true });
+if (error) {
+throw new Error("Cloud-Check " + tableName + ": " + (error.message || "Lesefehler"));
+}
+if ((Number(count) || 0) !== 0) {
+throw new Error("Erstimport gesperrt: " + tableName + " ist nicht leer.");
+}
+}
+
+const importedAt = new Date().toISOString();
+const expectedCounts = getSupabaseImportExpectedCounts();
+const completeBackup = createCompleteBackupPayload();
+const realArchive = getRealArchiveForSupabaseImport();
+
+const appStateRow = {
+user_id: userId,
+next_archive_number: nextArchiveNumber,
+current_tab: currentTab,
+new_task_priority: newTaskPriority,
+new_task_type: newTaskType,
+statistics_period: statisticsPeriod,
+ui_settings: {
+weightState: weightState,
+importSource: {
+appVersion: APP_VERSION,
+importedAt: importedAt,
+localStorageRemainsMaster: true
+}
+},
+schema_version: 1,
+app_version: APP_VERSION
+};
+
+const taskRows = [];
+const taskSegmentRows = [];
+const cookingSegmentRows = [];
+
+tasks.forEach((task,index) => {
+const cloudTaskId = createSupabaseImportUuid();
+taskRows.push({
+id: cloudTaskId,
+user_id: userId,
+legacy_task_id: Number.isInteger(Number(task && task.id)) ? Number(task.id) : null,
+source_master_version: task && task.sourceMasterVersion ? String(task.sourceMasterVersion) : null,
+source_master_dynamic_number: Number.isInteger(Number(task && task.sourceMasterDynamicNumber)) ? Number(task.sourceMasterDynamicNumber) : null,
+text: String(task && task.text ? task.text : "Unbenannte Aufgabe"),
+status: ["open","running","paused","completed","aborted"].includes(task && task.status) ? task.status : "open",
+type: ["work","leisure","selfrunner","cooking"].includes(task && task.type) ? task.type : "work",
+priority: ["normal","medium","high"].includes(task && task.priority) ? task.priority : "normal",
+optional: Boolean(task && task.optional),
+due_mode: ["none","tomorrowOnly","deadline"].includes(task && task.dueMode) ? task.dueMode : "none",
+due_date: task && task.dueDate ? task.dueDate : null,
+today_date: task && task.todayDate ? task.todayDate : null,
+today_order: Number.isInteger(Number(task && task.todayOrder)) ? Number(task.todayOrder) : null,
+plan_duration_ms: importNonNegativeNumberOrNull(task && task.planDurationMs),
+started_at: task && task.startedAt ? task.startedAt : null,
+paused_at: task && task.pausedAt ? task.pausedAt : null,
+completed_at: task && task.completedAt ? task.completedAt : null,
+aborted_at: task && task.abortedAt ? task.abortedAt : null,
+pause_total_ms: importNonNegativeNumberOrNull(task && task.pauseTotalMs) || 0,
+active_duration_ms: importNonNegativeNumberOrNull(task && task.activeDurationMs),
+actual_duration_ms: importNonNegativeNumberOrNull(task && task.actualDurationMs),
+leisure_duration_ms: importNonNegativeNumberOrNull(task && task.leisureDurationMs),
+passive_duration_ms: importNonNegativeNumberOrNull(task && task.passiveDurationMs),
+cooking_active_duration_ms: importNonNegativeNumberOrNull(task && task.cookingActiveDurationMs),
+cooking_passive_duration_ms: importNonNegativeNumberOrNull(task && task.cookingPassiveDurationMs),
+cooking_mode: ["active","passive"].includes(task && task.cookingMode) ? task.cookingMode : "active",
+aborted_active_duration_ms: importNonNegativeNumberOrNull(task && task.abortedActiveDurationMs),
+imported_historical_progress_duration_ms: importNonNegativeNumberOrNull(task && task.importedHistoricalProgressDurationMs) || 0,
+historical_already_archived_duration_ms: importNonNegativeNumberOrNull(task && task.historicalAlreadyArchivedDurationMs) || 0,
+historical_unallocated_accounting_ms: importNonNegativeNumberOrNull(task && task.historicalUnallocatedAccountingMs) || 0,
+historical_accounting_by_date: task && task.historicalAccountingByDate && typeof task.historicalAccountingByDate === "object" ? task.historicalAccountingByDate : {},
+historical_accounting_segments: Array.isArray(task && task.historicalAccountingSegments) ? task.historicalAccountingSegments : [],
+historical_time_parts: Array.isArray(task && task.historicalTimeParts) ? task.historicalTimeParts : [],
+weight_info: task && task.weightInfo ? task.weightInfo : null,
+source_notes: Array.isArray(task && task.sourceNotes) ? task.sourceNotes : task && task.sourceNote ? [task.sourceNote] : [],
+notes: task && task.notes ? String(task.notes) : null
+});
+
+if (Array.isArray(task && task.activeSegments)) {
+task.activeSegments.forEach(segment => {
+if (!segment || !segment.startedAt) {
+return;
+}
+taskSegmentRows.push({
+user_id: userId,
+task_id: cloudTaskId,
+started_at: segment.startedAt,
+ended_at: segment.endedAt || null,
+duration_ms: importSegmentDurationMs(segment),
+weight_kg: importPositiveNumberOrNull(segment.weightKg),
+metadata: { raw: segment, localTaskIndex: index }
+});
+});
+}
+
+if (Array.isArray(task && task.cookingSegments)) {
+task.cookingSegments.forEach(segment => {
+if (!segment || !segment.startedAt || !["active","passive"].includes(segment.mode)) {
+return;
+}
+cookingSegmentRows.push({
+user_id: userId,
+task_id: cloudTaskId,
+mode: segment.mode,
+started_at: segment.startedAt,
+ended_at: segment.endedAt || null,
+duration_ms: importSegmentDurationMs(segment)
+});
+});
+}
+});
+
+const archiveRows = [];
+const archiveSegmentRows = [];
+realArchive.forEach(item => {
+const cloudArchiveId = createSupabaseImportUuid();
+const archiveNumber = Number(item && item.archiveNumber);
+archiveRows.push({
+id: cloudArchiveId,
+user_id: userId,
+archive_number: archiveNumber,
+legacy_archive_id: item && item.archiveId ? String(item.archiveId) : "A-" + archiveNumber,
+source_task_id: null,
+text: String(item && item.text ? item.text : "Unbenannte Archivaufgabe"),
+status: ["completed","aborted"].includes(item && item.status) ? item.status : "completed",
+type: ["work","leisure","selfrunner","cooking"].includes(item && item.type) ? item.type : "work",
+priority: ["normal","medium","high"].includes(item && item.priority) ? item.priority : "normal",
+optional: Boolean(item && item.optional),
+due_mode: item && item.dueMode ? String(item.dueMode) : "none",
+due_date: item && item.dueDate ? item.dueDate : null,
+started_at: item && item.startedAt ? item.startedAt : null,
+completed_at: item && item.completedAt ? item.completedAt : null,
+completed_date: item && item.completedDate ? item.completedDate : getBerlinDateKey(),
+active_duration_ms: importNonNegativeNumberOrNull(item && item.activeDurationMs),
+actual_duration_ms: importNonNegativeNumberOrNull(item && item.actualDurationMs),
+leisure_duration_ms: importNonNegativeNumberOrNull(item && item.leisureDurationMs),
+cooking_active_duration_ms: importNonNegativeNumberOrNull(item && item.cookingActiveDurationMs),
+cooking_passive_duration_ms: importNonNegativeNumberOrNull(item && item.cookingPassiveDurationMs),
+unseparated_cooking_duration_ms: importNonNegativeNumberOrNull(item && item.unseparatedCookingDurationMs),
+pause_total_ms: importNonNegativeNumberOrNull(item && item.pauseTotalMs) || 0,
+archive_accounting_active_duration_ms: importNonNegativeNumberOrNull(item && item.archiveAccountingActiveDurationMs),
+overlap_excluded_duration_ms: importNonNegativeNumberOrNull(item && item.overlapExcludedDurationMs) || 0,
+historical_weight_kg: importPositiveNumberOrNull(item && item.historicalWeightKg),
+historical_weight_note: item && item.historicalWeightNote ? String(item.historicalWeightNote) : null,
+weighted_active_duration_ms: importNonNegativeNumberOrNull(item && item.weightedActiveDurationMs),
+category: item && item.category ? String(item.category) : null,
+source_note: item && item.sourceNote ? String(item.sourceNote) : null,
+historical_data: {
+raw: item,
+legacySourceTaskId: item && item.sourceTaskId !== undefined ? item.sourceTaskId : null
+},
+is_test_archive: false,
+archived_at: item && item.archivedAt ? item.archivedAt : item && item.completedAt ? item.completedAt : importedAt
+});
+
+if (Array.isArray(item && item.activeSegments)) {
+item.activeSegments.forEach(segment => {
+if (!segment || !segment.startedAt || !segment.endedAt) {
+return;
+}
+archiveSegmentRows.push({
+user_id: userId,
+archive_entry_id: cloudArchiveId,
+started_at: segment.startedAt,
+ended_at: segment.endedAt,
+duration_ms: importSegmentDurationMs(segment) || 0,
+metadata: { raw: segment, archiveNumber: archiveNumber }
+});
+});
+}
+});
+
+const weightRows = (Array.isArray(weightPhases) ? weightPhases : []).filter(phase => phase && importPositiveNumberOrNull(phase.weightKg) !== null && phase.startedAt).map(phase => ({
+user_id: userId,
+legacy_phase_id: Number.isInteger(Number(phase.id)) ? Number(phase.id) : null,
+weight_kg: importPositiveNumberOrNull(phase.weightKg),
+started_at: phase.startedAt,
+ended_at: phase.endedAt || null,
+phase_date: phase.date || (phase.startedAt ? getBerlinDateKey(new Date(phase.startedAt)) : null),
+source: phase.source ? String(phase.source) : "local-first-import",
+metadata: { raw: phase }
+}));
+
+const manifestPayload = {
+format: "Master of Disaster Supabase Initial Import Manifest",
+schemaVersion: 1,
+sourceAppVersion: APP_VERSION,
+importedAt: importedAt,
+localStorageRemainsMaster: true,
+expectedCounts: expectedCounts,
+localIntegrity: {
+ok: Boolean(integrity.ok),
+errors: Array.isArray(integrity.errors) ? integrity.errors.length : 0,
+warnings: Array.isArray(integrity.warnings) ? integrity.warnings.length : 0
+},
+nextArchiveNumber: nextArchiveNumber
+};
+
+writingStarted = true;
+let result;
+result = await client.from("app_state").insert([appStateRow]);
+if (result.error) throw result.error;
+if (taskRows.length) { result = await client.from("tasks").insert(taskRows); if (result.error) throw result.error; }
+if (taskSegmentRows.length) { result = await client.from("task_active_segments").insert(taskSegmentRows); if (result.error) throw result.error; }
+if (cookingSegmentRows.length) { result = await client.from("task_cooking_segments").insert(cookingSegmentRows); if (result.error) throw result.error; }
+if (archiveRows.length) { result = await client.from("archive_entries").insert(archiveRows); if (result.error) throw result.error; }
+if (archiveSegmentRows.length) { result = await client.from("archive_active_segments").insert(archiveSegmentRows); if (result.error) throw result.error; }
+if (weightRows.length) { result = await client.from("weight_phases").insert(weightRows); if (result.error) throw result.error; }
+result = await client.from("legacy_metadata").insert([
+{ user_id: userId, key: "initial_import_complete_backup_v1", payload: completeBackup },
+{ user_id: userId, key: "initial_import_manifest_v1", payload: manifestPayload }
+]);
+if (result.error) throw result.error;
+
+const verifiedCounts = await verifySupabaseInitialImport(client,userId,expectedCounts);
+
+supabaseInitialImportState = {
+status: "ok",
+label: "ERSTIMPORT VERIFIZIERT ✅",
+detail: "Die Cloud-Kopie wurde vollständig geschrieben und über Tabellenzählungen, app_state und Import-Manifest verifiziert. localStorage bleibt weiterhin Master.",
+counts: verifiedCounts,
+verified: true,
+finishedAt: new Date().toISOString()
+};
+
+await runSupabaseMigrationPreflight();
+if (currentTab === "dev") {
+render();
+}
+showInfoModal("Supabase-Erstimport erfolgreich","Die lokale Datenbasis wurde nach Supabase kopiert und verifiziert. Die App arbeitet weiterhin aus localStorage; es wurde noch keine laufende Cloud-Synchronisation aktiviert.");
+
+} catch (error) {
+let rollbackMessage = "";
+if (writingStarted && client && userId) {
+const rollbackErrors = await rollbackSupabaseInitialImport(client,userId);
+rollbackMessage = rollbackErrors.length
+? " Automatischer Rollback war nicht vollständig: " + rollbackErrors.join(" | ")
+: " Bereits geschriebene Importdaten wurden automatisch wieder entfernt.";
+}
+supabaseInitialImportState = {
+status: "error",
+label: "ERSTIMPORT FEHLGESCHLAGEN ❌",
+detail: (error && error.message ? error.message : "Unbekannter Importfehler.") + rollbackMessage,
+counts: null,
+verified: false,
+finishedAt: new Date().toISOString()
+};
+if (currentTab === "dev") {
+render();
+}
+showInfoModal("Supabase-Erstimport fehlgeschlagen",supabaseInitialImportState.detail);
+}
+}
+
+
+async function prepareSupabaseInitialImport() {
+/* Backup vor riskantem Schreibschritt automatisch auslösen. */
+exportCompleteBackup();
+
+await runSupabaseMigrationPreflight();
+if (supabasePreflightState.status !== "ok" || supabasePreflightState.cloudEmpty !== true) {
+showInfoModal("Erstimport nicht freigegeben","Der unmittelbar vorher ausgeführte Preflight ist nicht grün oder die Cloud ist nicht leer. Es wurde nichts geschrieben.");
+return;
+}
+
+const modal = document.getElementById("modalContainer");
+modal.innerHTML = `
+<div class="modal-backdrop">
+<div class="modal">
+<h2>☁️ Supabase-Erstimport</h2>
+<p>Das Komplett-Backup wurde gerade ausgelöst. Jetzt werden ${tasks.length} Aufgaben, ${getRealArchiveForSupabaseImport().length} echte Archivaufgaben, ${Array.isArray(weightPhases) ? weightPhases.length : 0} Gewichtsphasen und die zugehörigen Segmente einmalig in deinen aktuell leeren Supabase-Bereich kopiert.</p>
+<p><strong>localStorage bleibt danach weiterhin Master.</strong> Bei einem Importfehler versucht V381 automatisch, die bereits geschriebenen Importdaten wieder zu entfernen.</p>
+<div class="modal-actions">
+<button class="modal-button cancel-modal" onclick="closeModal()">ABBRECHEN</button>
+<button class="modal-button confirm-modal" onclick="closeModal();performSupabaseInitialImport()">ERSTIMPORT STARTEN</button>
+</div>
+</div>
+</div>`;
+}
+
+
 function renderDev(
 container
 ) {
@@ -18682,6 +19178,57 @@ onclick="runSupabaseMigrationPreflight()"
 >
 🧪 MIGRATIONS-CHECK STARTEN
 </button>
+</div>
+
+</div>
+
+
+<div class="supabase-preflight-card" style="margin-top:14px;">
+
+<div class="supabase-preflight-title">
+🚀 ERSTIMPORT · LOCAL → SUPABASE
+</div>
+
+<div class="supabase-preflight-summary ${
+supabaseInitialImportState.status === "ok"
+? "ok"
+: supabaseInitialImportState.status === "error"
+? "error"
+: supabaseInitialImportState.status === "running"
+? "warn"
+: ""
+}">
+<strong>${escapeHtml(supabaseInitialImportState.label)}</strong><br>
+${escapeHtml(supabaseInitialImportState.detail)}
+</div>
+
+${
+supabaseInitialImportState.counts
+? `
+<div class="supabase-preflight-table-list">
+${Object.entries(supabaseInitialImportState.counts).map(([name,count]) => `
+<div class="supabase-preflight-table">
+<strong>${escapeHtml(name)}</strong>
+<span>✅ ${count} Zeilen verifiziert</span>
+</div>
+`).join("")}
+</div>
+`
+: ""
+}
+
+<div class="supabase-dev-actions">
+<button
+class="supabase-dev-button primary"
+onclick="prepareSupabaseInitialImport()"
+${supabaseInitialImportState.status === "running" ? "disabled" : ""}
+>
+🚀 KONTROLLIERTEN ERSTIMPORT STARTEN
+</button>
+</div>
+
+<div class="supabase-status-detail" style="margin-top:8px;">
+V381 aktiviert noch keine laufende Cloud-Synchronisation. Normale App-Speicherung bleibt unverändert lokal.
 </div>
 
 </div>
