@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V368 · STABIL-UI-POLISH · NEON-NIGHT-2 · INPUT-FIX · INTERAKTIONEN -->
+<!-- BUILD: V369 · NEON2-BUTTONS · OPEN-STATUS-RING · STABIL-UI-POLISH -->
 
 <style>
 
@@ -3782,6 +3782,174 @@ body[data-theme="industrial-steel"] .dev-build-item {
   background: linear-gradient(130deg,rgba(7,75,86,.88),rgba(54,37,103,.86),rgba(96,29,80,.84)) !important;
 }
 
+
+/* ======================================
+   V369 – NEON NIGHT 2 TASK-ACTIONS + OPEN STATUS
+====================================== */
+
+/* Offene Aufgabe: kein hässliches weißes Emoji-Quadrat mehr.
+   Der Statusplatz bleibt für die stabile Karten-Geometrie erhalten,
+   wird aber als dezenter Neon-Ring dargestellt. */
+body[data-theme="industrial-steel"] .task.open .status-symbol {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+
+  border: 2px dashed #3ef0d2;
+  border-radius: 50%;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(62,240,210,.10) 0%,
+      rgba(62,240,210,0) 72%
+    );
+
+  box-shadow:
+    0 0 9px rgba(62,240,210,.20);
+
+  color: transparent !important;
+}
+
+/* Andere Statuswerte bleiben als echte Symbole erhalten. */
+body[data-theme="industrial-steel"] .task.running .status-symbol,
+body[data-theme="industrial-steel"] .task.paused .status-symbol,
+body[data-theme="industrial-steel"] .task.completed .status-symbol,
+body[data-theme="industrial-steel"] .task.aborted .status-symbol {
+  width: 25px;
+  height: auto;
+  flex: 0 0 25px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit !important;
+}
+
+/* Alle Action-Buttons bekommen echte Verläufe. */
+body[data-theme="industrial-steel"] .icon-action {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(12,72,81,.96),
+      rgba(49,36,100,.94),
+      rgba(89,28,77,.92)
+    ) !important;
+
+  border-color: rgba(74,224,231,.42) !important;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.025),
+    0 0 10px rgba(69,220,230,.08);
+}
+
+/* Start / Weiter: Grün -> Cyan */
+body[data-theme="industrial-steel"] .start-button {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(36,205,142,.95) 0%,
+      rgba(18,184,180,.94) 52%,
+      rgba(33,116,190,.92) 100%
+    ) !important;
+
+  border-color: rgba(91,255,180,.56) !important;
+}
+
+/* Zeit: Blau -> Violett */
+body[data-theme="industrial-steel"] .time-action-button {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(25,132,191,.94) 0%,
+      rgba(59,82,190,.94) 52%,
+      rgba(109,50,174,.92) 100%
+    ) !important;
+
+  border-color: rgba(112,179,255,.52) !important;
+}
+
+/* Bearbeiten: Violett -> Magenta */
+body[data-theme="industrial-steel"] .edit-icon-button {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(104,52,181,.94) 0%,
+      rgba(176,44,157,.94) 52%,
+      rgba(221,56,126,.92) 100%
+    ) !important;
+
+  border-color: rgba(245,96,193,.52) !important;
+}
+
+/* Löschen: Blau -> Violett */
+body[data-theme="industrial-steel"] .delete-icon-button {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(33,102,194,.94) 0%,
+      rgba(63,70,179,.94) 50%,
+      rgba(107,52,165,.92) 100%
+    ) !important;
+
+  border-color: rgba(93,161,255,.50) !important;
+}
+
+/* Beenden: Neon-Grün -> Türkis */
+body[data-theme="industrial-steel"] .finish-button {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(67,221,112,.95) 0%,
+      rgba(49,201,139,.95) 52%,
+      rgba(30,166,161,.93) 100%
+    ) !important;
+
+  border-color: rgba(107,255,147,.58) !important;
+}
+
+/* Pause: Gold -> Violett, damit sie klar anders aussieht. */
+body[data-theme="industrial-steel"] .pause-button {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(176,125,45,.94) 0%,
+      rgba(130,81,115,.94) 52%,
+      rgba(88,57,156,.92) 100%
+    ) !important;
+
+  border-color: rgba(231,183,83,.52) !important;
+}
+
+/* Abbruch: Magenta -> Rot */
+body[data-theme="industrial-steel"] .abort-button {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(177,47,104,.95) 0%,
+      rgba(204,46,81,.95) 50%,
+      rgba(222,55,62,.94) 100%
+    ) !important;
+
+  border-color: rgba(255,92,128,.56) !important;
+}
+
+/* Heute-Zuweisung bleibt bei aktivem Zustand grün-cyan. */
+body[data-theme="industrial-steel"] .today-button.selected {
+  background:
+    linear-gradient(
+      135deg,
+      #75ff75 0%,
+      #39f1a9 45%,
+      #32e9e9 100%
+    ) !important;
+
+  color: #05130b !important;
+
+  box-shadow:
+    0 0 12px rgba(85,255,141,.28),
+    0 0 22px rgba(50,233,233,.14) !important;
+}
+
 </style>
 </head>
 
@@ -4616,13 +4784,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V368";
+"V369";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"12:07";
+"12:14";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -11153,7 +11321,7 @@ return "☕";
 }
 
 
-return "⬜";
+return "";
 
 }
 
@@ -11776,13 +11944,15 @@ showTodayButton
 ${iconButton(
 "✏️",
 "Bearbeiten",
-`startEditing(${task.id})`
+`startEditing(${task.id})`,
+"edit-icon-button"
 )}
 
 ${iconButton(
 "🗑️",
 "Löschen",
-`askDelete(${task.id})`
+`askDelete(${task.id})`,
+"delete-icon-button"
 )}
 
 ${iconButton(
