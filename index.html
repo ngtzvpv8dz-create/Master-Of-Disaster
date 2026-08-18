@@ -2203,6 +2203,17 @@ button {
   }
 }
 
+
+.archive-test-task {
+  border-color: #665b37;
+}
+
+.archive-test-task .archive-number {
+  width: 48px;
+  color: #d2bd73;
+  font-size: 7px;
+}
+
 </style>
 </head>
 
@@ -5982,18 +5993,49 @@ cleanupAccidentalMultiDayTestA237();
    ARCHIVIERUNG
 ====================================== */
 
+function isTestTask(
+task
+) {
+
+return Boolean(
+task &&
+/\(test\)/i.test(
+String(
+task.text || ""
+)
+)
+);
+
+}
+
+
 function archiveCompletedTask(task) {
+
+const testTask =
+isTestTask(
+task
+);
+
 
 archive.push({
 
 archiveNumber:
-nextArchiveNumber,
+testTask
+? null
+: nextArchiveNumber,
 
 archiveId:
+testTask
+? "TEST-" + task.id
+: (
 "A-" +
 nextArchiveNumber +
 "-" +
-task.id,
+task.id
+),
+
+isTestArchive:
+testTask,
 
 sourceTaskId:
 task.id,
@@ -6144,8 +6186,17 @@ new Date()
 });
 
 
+if (
+!testTask
+) {
+
 nextArchiveNumber +=
 1;
+
+}
+
+
+return true;
 
 }
 
@@ -6192,14 +6243,22 @@ terminalDate &&
 terminalDate < today
 ) {
 
+const archived =
 archiveCompletedTask(
 task
 );
+
+
+if (
+archived
+) {
 
 changed =
 true;
 
 return;
+
+}
 
 }
 
@@ -7865,6 +7924,65 @@ Date.now()
 }
 
 
+function hasValidCompletionDuration(
+task,
+durationMs
+) {
+
+/*
+  MASTER V361 – ABSCHLUSSREGEL
+
+  Normale Aufgaben, Freizeit und Kochen dürfen nur abgeschlossen
+  werden, wenn tatsächlich eine positive Dauer dokumentiert ist.
+
+  Selbstläufer sind die ausdrückliche Ausnahme, weil deren
+  autonome Laufzeit nicht als persönliche aktive Arbeitszeit zählt.
+*/
+
+if (!task) {
+return false;
+}
+
+
+if (
+task.type ===
+"selfrunner"
+) {
+
+return true;
+
+}
+
+
+return (
+Number(
+durationMs
+) > 0
+);
+
+}
+
+
+function showMissingCompletionDuration(
+task
+) {
+
+showInfoModal(
+"Dauer fehlt",
+task &&
+task.type ===
+"leisure"
+? "Diese Freizeitaufgabe wurde noch nicht mit einer tatsächlichen Dauer erfasst. Starte sie zuerst oder trage über die Zeitkorrektur eine Start- und Endzeit mit positiver Dauer ein."
+: task &&
+task.type ===
+"cooking"
+? "Diese Kochaufgabe hat noch keine tatsächliche Dauer. Starte sie zuerst oder trage über die Zeitkorrektur eine Start- und Endzeit mit positiver Dauer ein."
+: "Diese Aufgabe wurde noch nicht begonnen. Eine normale Aufgabe kann nicht mit 00:00:00 als erledigt abgeschlossen werden. Starte sie zuerst oder trage eine tatsächliche Dauer über die Zeitkorrektur ein."
+);
+
+}
+
+
 function finishTask(id) {
 
 const task =
@@ -7885,6 +8003,22 @@ calculateActiveDuration(
 task,
 now
 );
+
+
+if (
+!hasValidCompletionDuration(
+task,
+completedDurationMs
+)
+) {
+
+showMissingCompletionDuration(
+task
+);
+
+return;
+
+}
 
 
 task.actualDurationMs =
@@ -8269,6 +8403,21 @@ return;
 }
 
 
+if (
+endMs !== null &&
+endMs ===
+startMs
+) {
+
+showMissingCompletionDuration(
+task
+);
+
+return;
+
+}
+
+
 /*
   Wurde die Startzeit verändert oder gab es
   vorher noch keine, bauen wir die Segmente
@@ -8550,8 +8699,32 @@ return;
 
 /*
   START + ENDE:
-  Aufgabe wird abgeschlossen.
+  Aufgabe wird nur abgeschlossen, wenn eine positive
+  tatsächliche Dauer entsteht.
 */
+
+const manualCompletionDurationMs =
+sumTaskSegmentsMs(
+task,
+endIso
+);
+
+
+if (
+!hasValidCompletionDuration(
+task,
+manualCompletionDurationMs
+)
+) {
+
+showMissingCompletionDuration(
+task
+);
+
+return;
+
+}
+
 
 task.completedAt =
 endIso;
@@ -8566,10 +8739,7 @@ null;
 
 
 task.actualDurationMs =
-sumTaskSegmentsMs(
-task,
-endIso
-);
+manualCompletionDurationMs;
 
 
 if (
@@ -9973,6 +10143,21 @@ ${
 task.status
 )
 ? `
+${
+isTestTask(
+task
+)
+? `
+<button
+class="repeat-button"
+title="Testaufgabe dauerhaft löschen"
+onclick="askDelete(${task.id})"
+>
+🗑️
+</button>
+`
+: ""
+}
 <button
 class="repeat-button"
 onclick="repeatTask(${task.id})"
@@ -10228,7 +10413,14 @@ tasks
 .filter(
 task =>
 task.status ===
-"completed"
+"completed" ||
+(
+task.status ===
+"aborted" &&
+isTestTask(
+task
+)
+)
 )
 .sort(
 (a,b) =>
@@ -10637,15 +10829,24 @@ tasks
 .filter(
 task =>
 task.status ===
-"completed"
+"completed" ||
+(
+task.status ===
+"aborted" &&
+isTestTask(
+task
+)
+)
 )
 .sort(
 (a,b) =>
 new Date(
-b.completedAt
+b.completedAt ||
+b.abortedAt
 ) -
 new Date(
-a.completedAt
+a.completedAt ||
+a.abortedAt
 )
 )
 )
@@ -11025,7 +11226,12 @@ document.createElement(
 
 
 element.className =
-"task completed archive-task";
+"task completed archive-task" +
+(
+item.isTestArchive
+? " archive-test-task"
+: ""
+);
 
 
 const weightIndicator =
@@ -11038,12 +11244,19 @@ element.innerHTML = `
 
 <div class="archive-number">
 
-A${String(
+${
+item.isTestArchive
+? "🧪 TEST"
+: (
+"A" +
+String(
 item.archiveNumber
 ).padStart(
 3,
 "0"
-)}
+)
+)
+}
 
 </div>
 
@@ -11164,10 +11377,114 @@ item.activeDurationMs
 }
 
 </div>
+
+${
+item.isTestArchive
+? `
+<button
+class="repeat-button"
+title="Testaufgabe aus Archiv löschen"
+onclick="askDeleteArchivedTest('${item.archiveId}')"
+>
+🗑️
+</button>
+`
+: ""
+}
+
 `;
 
 
 return element;
+
+}
+
+
+function askDeleteArchivedTest(
+archiveId
+) {
+
+const item =
+archive.find(
+entry =>
+entry.archiveId ===
+archiveId
+);
+
+
+if (
+!item ||
+!item.isTestArchive
+) {
+
+return;
+
+}
+
+
+document.getElementById(
+"modalContainer"
+).innerHTML = `
+
+<div class="modal-backdrop">
+
+<div class="modal">
+
+<h2>Testaufgabe löschen?</h2>
+
+<p>
+Diese Testaufgabe wird vollständig aus dem Archiv entfernt.
+Danach verschwindet sie auch wieder aus der Statistik.
+</p>
+
+<div class="modal-actions">
+
+<button
+class="modal-button cancel-modal"
+onclick="closeModal()"
+>
+ABBRECHEN
+</button>
+
+<button
+class="modal-button danger-modal"
+onclick="deleteArchivedTest('${archiveId}')"
+>
+LÖSCHEN
+</button>
+
+</div>
+
+</div>
+
+</div>
+`;
+
+}
+
+
+function deleteArchivedTest(
+archiveId
+) {
+
+archive =
+archive.filter(
+item =>
+!(
+item.archiveId ===
+archiveId &&
+item.isTestArchive
+)
+);
+
+
+closeModal();
+
+saveAll();
+
+renderWeightPanel();
+
+render();
 
 }
 
@@ -11319,13 +11636,50 @@ grouped[
 dateKey
 ]
 .sort(
-(a,b) =>
+(a,b) => {
+
+if (
+a.isTestArchive &&
+!b.isTestArchive
+) {
+return 1;
+}
+
+
+if (
+!a.isTestArchive &&
+b.isTestArchive
+) {
+return -1;
+}
+
+
+if (
+a.isTestArchive &&
+b.isTestArchive
+) {
+
+return String(
+a.archivedAt || ""
+).localeCompare(
+String(
+b.archivedAt || ""
+)
+);
+
+}
+
+
+return (
 Number(
 a.archiveNumber
 ) -
 Number(
 b.archiveNumber
 )
+);
+
+}
 );
 
 
