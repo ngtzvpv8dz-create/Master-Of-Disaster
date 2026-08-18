@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V370 · STANDARD-DESIGN · DEV-TAB · BUILD-INFO · DATENPRÜFUNG · BACKUP -->
+<!-- BUILD: V371 · STANDARD-DESIGN · DEV-APPINFO-FIX · DATENPRÜFUNG · BACKUP -->
 
 <style>
 
@@ -2237,6 +2237,78 @@ button {
 
 
 
+
+/* ======================================
+   V371 – APP-INFO KACHELN REPARIERT
+====================================== */
+
+.dev-build-card {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #3a2a2a;
+  border-radius: 12px;
+  background: #171313;
+}
+
+.dev-build-title {
+  margin-bottom: 10px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .8px;
+  color: #f0e9e9;
+}
+
+.dev-build-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100%;
+}
+
+.dev-build-item {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #3d3232;
+  border-radius: 10px;
+  background:
+    linear-gradient(
+      135deg,
+      #1d1818,
+      #141212
+    );
+}
+
+.dev-build-label {
+  margin-bottom: 4px;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .65px;
+  color: #a99292;
+  text-transform: uppercase;
+}
+
+.dev-build-value {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: #f4eeee;
+  word-break: break-word;
+}
+
+@media (max-width: 430px) {
+  .dev-build-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .dev-build-item {
+    padding: 9px;
+  }
+
+  .dev-build-value {
+    font-size: 11px;
+  }
+}
+
 </style>
 </head>
 
@@ -3071,13 +3143,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V370";
+"V371";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"12:27";
+"13:24";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
