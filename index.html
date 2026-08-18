@@ -1,12 +1,20 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#151111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Master of Disaster">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V375 · STANDARD-DESIGN · BACKUP-RESTORE · ERWEITERTE-DATENPRUEFUNG · ZEITREGEL-AB-A237 -->
+<!-- BUILD: V376 · STANDARD-DESIGN · PWA-GRUNDGERUEST · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -3147,13 +3155,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V375";
+"V376";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"14:22";
+"14:44";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -19064,6 +19072,17 @@ render();
 0
 );
 
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("./sw.js").catch(function (error) {
+      console.warn("Service Worker konnte nicht registriert werden:", error);
+    });
+  });
+}
 </script>
 
 </body>
