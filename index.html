@@ -12170,6 +12170,20 @@ dev.innerHTML = `
 
 <button
 class="dev-button"
+onclick="runDataIntegrityCheck(true)"
+>
+🔍 DATEN PRÜFEN
+</button>
+
+<button
+class="dev-button"
+onclick="exportCompleteBackup()"
+>
+💾 KOMPLETT-BACKUP
+</button>
+
+<button
+class="dev-button"
 onclick="askImportBundledArchiveA235()"
 >
 📦 A236 FINAL IMPORTIEREN
@@ -12248,6 +12262,623 @@ dev
 
 }
 
+
+
+
+function collectDataIntegrityReport() {
+
+const errors = [];
+const warnings = [];
+const info = [];
+
+const realArchive =
+archive.filter(
+item =>
+!isArchivedTest(
+item
+)
+);
+
+
+const archiveNumbers =
+realArchive
+.map(
+item =>
+Number(
+item.archiveNumber
+)
+)
+.filter(
+Number.isFinite
+);
+
+
+const seenArchiveNumbers =
+new Set();
+
+
+archiveNumbers.forEach(
+number => {
+
+if (
+seenArchiveNumbers.has(
+number
+)
+) {
+
+errors.push(
+"Doppelte Archivnummer A" +
+String(number).padStart(3,"0")
+);
+
+}
+
+
+seenArchiveNumbers.add(
+number
+);
+
+}
+);
+
+
+const highestArchiveNumber =
+archiveNumbers.length
+? Math.max(
+...archiveNumbers
+)
+: 0;
+
+
+if (
+nextArchiveNumber !==
+highestArchiveNumber + 1
+) {
+
+errors.push(
+"nextArchiveNumber ist " +
+nextArchiveNumber +
+", erwartet wird " +
+(highestArchiveNumber + 1) +
+"."
+);
+
+}
+
+
+const taskIds =
+new Set();
+
+
+tasks.forEach(
+task => {
+
+if (
+taskIds.has(
+task.id
+)
+) {
+
+errors.push(
+"Doppelte technische Task-ID: " +
+task.id
+);
+
+}
+
+
+taskIds.add(
+task.id
+);
+
+
+if (
+![
+"open",
+"running",
+"paused",
+"completed",
+"aborted"
+].includes(
+task.status
+)
+) {
+
+errors.push(
+"Unbekannter Aufgabenstatus bei „" +
+task.text +
+"“: " +
+task.status
+);
+
+}
+
+
+if (
+task.status ===
+"running"
+) {
+
+const openSegments =
+Array.isArray(
+task.activeSegments
+)
+? task.activeSegments.filter(
+segment =>
+segment &&
+segment.startedAt &&
+!segment.endedAt
+)
+: [];
+
+
+if (
+openSegments.length !==
+1
+) {
+
+errors.push(
+"Laufende Aufgabe „" +
+task.text +
+"“ hat " +
+openSegments.length +
+" offene aktive Segmente statt genau 1."
+);
+
+}
+
+}
+
+
+if (
+Array.isArray(
+task.activeSegments
+)
+) {
+
+task.activeSegments.forEach(
+(segment,index) => {
+
+const start =
+segment &&
+segment.startedAt
+? new Date(
+segment.startedAt
+).getTime()
+: NaN;
+
+
+const end =
+segment &&
+segment.endedAt
+? new Date(
+segment.endedAt
+).getTime()
+: null;
+
+
+if (
+!Number.isFinite(
+start
+)
+) {
+
+errors.push(
+"Ungültiger Segmentstart bei „" +
+task.text +
+"“, Segment " +
+(index + 1) +
+"."
+);
+
+}
+
+
+if (
+end !== null &&
+(
+!Number.isFinite(
+end
+) ||
+end <
+start
+)
+) {
+
+errors.push(
+"Ungültiges Segmentende bei „" +
+task.text +
+"“, Segment " +
+(index + 1) +
+"."
+);
+
+}
+
+}
+);
+
+}
+
+}
+);
+
+
+let runningCount =
+tasks.filter(
+task =>
+task.status ===
+"running"
+).length;
+
+
+if (
+runningCount > 1
+) {
+
+errors.push(
+runningCount +
+" Aufgaben sind gleichzeitig als laufend markiert."
+);
+
+}
+
+
+weightPhases.forEach(
+(phase,index) => {
+
+const start =
+phase &&
+phase.startedAt
+? new Date(
+phase.startedAt
+).getTime()
+: NaN;
+
+
+const end =
+phase &&
+phase.endedAt
+? new Date(
+phase.endedAt
+).getTime()
+: null;
+
+
+if (
+!Number.isFinite(
+start
+)
+) {
+
+errors.push(
+"Ungültiger Start in Gewichtsphase " +
+(index + 1) +
+"."
+);
+
+}
+
+
+if (
+end !== null &&
+(
+!Number.isFinite(
+end
+) ||
+end <
+start
+)
+) {
+
+errors.push(
+"Ungültiges Ende in Gewichtsphase " +
+(index + 1) +
+"."
+);
+
+}
+
+
+if (
+!Number.isFinite(
+Number(
+phase.weightKg
+)
+) ||
+Number(
+phase.weightKg
+) <= 0
+) {
+
+warnings.push(
+"Gewichtsphase " +
+(index + 1) +
+" besitzt kein plausibles positives Gewicht."
+);
+
+}
+
+}
+);
+
+
+const openWeightPhases =
+weightPhases.filter(
+phase =>
+phase &&
+phase.startedAt &&
+!phase.endedAt
+).length;
+
+
+if (
+weightState.isWearing &&
+openWeightPhases !==
+1
+) {
+
+errors.push(
+"Zusatzgewicht ist als getragen markiert, aber es existieren " +
+openWeightPhases +
+" offene Gewichtsphasen."
+);
+
+}
+
+
+if (
+!weightState.isWearing &&
+openWeightPhases > 0
+) {
+
+warnings.push(
+"Es existieren offene Gewichtsphasen, obwohl aktuell kein Zusatzgewicht als getragen markiert ist."
+);
+
+}
+
+
+info.push(
+tasks.length +
+" aktive/terminale Aufgaben im Aufgabenbestand."
+);
+
+info.push(
+realArchive.length +
+" echte Archivaufgaben."
+);
+
+info.push(
+archive.filter(
+isArchivedTest
+).length +
+" Testeinträge im Archiv."
+);
+
+info.push(
+weightPhases.length +
+" Gewichtstragephasen."
+);
+
+info.push(
+"Nächste echte Archivnummer: A" +
+String(
+nextArchiveNumber
+).padStart(
+3,
+"0"
+)
+);
+
+
+return {
+ok:
+errors.length === 0,
+
+checkedAt:
+new Date().toISOString(),
+
+errors,
+warnings,
+info
+};
+
+}
+
+
+function runDataIntegrityCheck(
+showModal = true
+) {
+
+const report =
+collectDataIntegrityReport();
+
+
+if (
+showModal
+) {
+
+const title =
+report.ok
+? (
+report.warnings.length
+? "Datenprüfung: Hinweise"
+: "Datenprüfung: sauber"
+)
+: "Datenprüfung: Fehler";
+
+
+const lines =
+[
+...report.errors.map(
+value =>
+"❌ " + value
+),
+...report.warnings.map(
+value =>
+"⚠️ " + value
+),
+...report.info.map(
+value =>
+"• " + value
+)
+];
+
+
+showInfoModal(
+title,
+lines.join(
+"\n"
+)
+);
+
+}
+
+
+return report;
+
+}
+
+
+function createCompleteBackupPayload() {
+
+const integrity =
+collectDataIntegrityReport();
+
+
+return {
+format:
+"Master of Disaster Complete Backup",
+
+schemaVersion:
+1,
+
+masterVersion:
+"V361",
+
+exportedAt:
+new Date().toISOString(),
+
+berlinDate:
+getBerlinDateKey(),
+
+integrityReport:
+integrity,
+
+state: {
+tasks:
+tasks,
+
+archive:
+archive,
+
+nextArchiveNumber:
+nextArchiveNumber,
+
+weightState:
+weightState,
+
+weightPhases:
+weightPhases,
+
+uiState: {
+currentTab:
+currentTab,
+
+newTaskPriority:
+newTaskPriority,
+
+newTaskType:
+newTaskType,
+
+statisticsPeriod:
+statisticsPeriod
+}
+}
+};
+
+}
+
+
+function exportCompleteBackup() {
+
+const payload =
+createCompleteBackupPayload();
+
+
+const json =
+JSON.stringify(
+payload,
+null,
+2
+);
+
+
+const blob =
+new Blob(
+[
+json
+],
+{
+type:
+"application/json;charset=utf-8"
+}
+);
+
+
+const url =
+URL.createObjectURL(
+blob
+);
+
+
+const link =
+document.createElement(
+"a"
+);
+
+
+link.href =
+url;
+
+
+link.download =
+"Master-of-Disaster-BACKUP-" +
+getBerlinDateKey() +
+".json";
+
+
+document.body.appendChild(
+link
+);
+
+
+link.click();
+
+
+link.remove();
+
+
+setTimeout(
+() =>
+URL.revokeObjectURL(
+url
+),
+1000
+);
+
+
+showInfoModal(
+payload.integrityReport.ok
+? "Komplett-Backup erstellt"
+: "Backup erstellt – Datenprüfung beachten",
+payload.integrityReport.ok
+? "Der vollständige App-Zustand wurde als JSON exportiert. Die automatische Datenprüfung meldet keine kritischen Fehler."
+: "Der vollständige Zustand wurde trotzdem exportiert, aber die Datenprüfung hat Fehler gefunden. Dieses Backup bitte nicht als sauberen Datenbank-Referenzstand behandeln."
+);
+
+}
 
 
 function simulateDayTransitionForTesting() {
