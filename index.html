@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V371 · STANDARD-DESIGN · DEV-APPINFO-FIX · DATENPRÜFUNG · BACKUP -->
+<!-- BUILD: V372 · STANDARD-DESIGN · DEV-APPINFO-INLINE-FIX · DATENPRÜFUNG · BACKUP -->
 
 <style>
 
@@ -3143,13 +3143,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V371";
+"V372";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"13:24";
+"13:29";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -15886,27 +15886,27 @@ panel.innerHTML = `
 🧪 DEVELOPER / DIAGNOSE
 </div>
 
-<div class="dev-build-card">
+<div class="dev-build-card" style="margin-bottom:14px;padding:12px;border:1px solid #3a2a2a;border-radius:12px;background:#171313;">
 
-<div class="dev-build-title">
+<div class="dev-build-title" style="margin-bottom:10px;font-size:10px;font-weight:900;letter-spacing:.8px;color:#f0e9e9;">
 APP-INFO
 </div>
 
-<div class="dev-build-grid">
+<div class="dev-build-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;">
 
-<div class="dev-build-item">
-<div class="dev-build-label">VERSION</div>
-<div class="dev-build-value">${APP_VERSION}</div>
+<div class="dev-build-item" style="min-width:0;padding:10px;border:1px solid #3d3232;border-radius:10px;background:linear-gradient(135deg,#1d1818,#141212);">
+<div class="dev-build-label" style="margin-bottom:4px;font-size:7px;font-weight:900;letter-spacing:.65px;color:#a99292;text-transform:uppercase;">VERSION</div>
+<div class="dev-build-value" style="font-size:12px;font-weight:900;line-height:1.2;color:#f4eeee;word-break:break-word;">${APP_VERSION}</div>
 </div>
 
-<div class="dev-build-item">
-<div class="dev-build-label">BUILD</div>
-<div class="dev-build-value">${APP_BUILD_LABEL}</div>
+<div class="dev-build-item" style="min-width:0;padding:10px;border:1px solid #3d3232;border-radius:10px;background:linear-gradient(135deg,#1d1818,#141212);">
+<div class="dev-build-label" style="margin-bottom:4px;font-size:7px;font-weight:900;letter-spacing:.65px;color:#a99292;text-transform:uppercase;">BUILD</div>
+<div class="dev-build-value" style="font-size:12px;font-weight:900;line-height:1.2;color:#f4eeee;word-break:break-word;">${APP_BUILD_LABEL}</div>
 </div>
 
-<div class="dev-build-item">
-<div class="dev-build-label">ARCHIVSTAND</div>
-<div class="dev-build-value">A${String(
+<div class="dev-build-item" style="min-width:0;padding:10px;border:1px solid #3d3232;border-radius:10px;background:linear-gradient(135deg,#1d1818,#141212);">
+<div class="dev-build-label" style="margin-bottom:4px;font-size:7px;font-weight:900;letter-spacing:.65px;color:#a99292;text-transform:uppercase;">ARCHIVSTAND</div>
+<div class="dev-build-value" style="font-size:12px;font-weight:900;line-height:1.2;color:#f4eeee;word-break:break-word;">A${String(
 Math.max(
 0,
 nextArchiveNumber - 1
@@ -15917,9 +15917,9 @@ nextArchiveNumber - 1
 )}</div>
 </div>
 
-<div class="dev-build-item">
-<div class="dev-build-label">NÄCHSTE ARCHIVNR.</div>
-<div class="dev-build-value">A${String(
+<div class="dev-build-item" style="min-width:0;padding:10px;border:1px solid #3d3232;border-radius:10px;background:linear-gradient(135deg,#1d1818,#141212);">
+<div class="dev-build-label" style="margin-bottom:4px;font-size:7px;font-weight:900;letter-spacing:.65px;color:#a99292;text-transform:uppercase;">NÄCHSTE ARCHIVNR.</div>
+<div class="dev-build-value" style="font-size:12px;font-weight:900;line-height:1.2;color:#f4eeee;word-break:break-word;">A${String(
 nextArchiveNumber
 ).padStart(
 3,
@@ -15927,14 +15927,14 @@ nextArchiveNumber
 )}</div>
 </div>
 
-<div class="dev-build-item">
-<div class="dev-build-label">AUFGABENBESTAND</div>
-<div class="dev-build-value">${tasks.length}</div>
+<div class="dev-build-item" style="min-width:0;padding:10px;border:1px solid #3d3232;border-radius:10px;background:linear-gradient(135deg,#1d1818,#141212);">
+<div class="dev-build-label" style="margin-bottom:4px;font-size:7px;font-weight:900;letter-spacing:.65px;color:#a99292;text-transform:uppercase;">AUFGABENBESTAND</div>
+<div class="dev-build-value" style="font-size:12px;font-weight:900;line-height:1.2;color:#f4eeee;word-break:break-word;">${tasks.length}</div>
 </div>
 
-<div class="dev-build-item">
-<div class="dev-build-label">DATENPRÜFUNG</div>
-<div class="dev-build-value">${
+<div class="dev-build-item" style="min-width:0;padding:10px;border:1px solid #3d3232;border-radius:10px;background:linear-gradient(135deg,#1d1818,#141212);">
+<div class="dev-build-label" style="margin-bottom:4px;font-size:7px;font-weight:900;letter-spacing:.65px;color:#a99292;text-transform:uppercase;">DATENPRÜFUNG</div>
+<div class="dev-build-value" style="font-size:12px;font-weight:900;line-height:1.2;color:#f4eeee;word-break:break-word;">${
 integrity.ok
 ? "✅ SAUBER"
 : "❌ FEHLER"
