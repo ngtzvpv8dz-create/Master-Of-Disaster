@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V381 · PWA · SUPABASE-ERSTIMPORT · BACKUP-RESTORE · DATENPRUEFUNG -->
+<!-- BUILD: V382 · PWA · SUPABASE-ERSTIMPORT · LIVE-SYNC · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -3371,13 +3371,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V381";
+"V382";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"23:01";
+"23:11";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -3397,6 +3397,8 @@ safeStorageSet(
 JSON.stringify(tasks)
 );
 
+scheduleSupabaseLiveSync("tasks");
+
 }
 
 
@@ -3415,6 +3417,8 @@ nextArchiveNumber
 )
 );
 
+scheduleSupabaseLiveSync("archive");
+
 }
 
 
@@ -3430,6 +3434,8 @@ safeStorageSet(
 "masterOfDisasterWeightPhases",
 JSON.stringify(weightPhases)
 );
+
+scheduleSupabaseLiveSync("weight");
 
 }
 
@@ -18394,7 +18400,7 @@ render();
 
 
 /* ======================================
-   V381 – KONTROLLIERTER SUPABASE-ERSTIMPORT
+   V381/V382 – KONTROLLIERTER SUPABASE-ERSTIMPORT
    LOCALSTORAGE BLEIBT MASTER
 ====================================== */
 
@@ -18878,13 +18884,367 @@ modal.innerHTML = `
 <div class="modal">
 <h2>☁️ Supabase-Erstimport</h2>
 <p>Das Komplett-Backup wurde gerade ausgelöst. Jetzt werden ${tasks.length} Aufgaben, ${getRealArchiveForSupabaseImport().length} echte Archivaufgaben, ${Array.isArray(weightPhases) ? weightPhases.length : 0} Gewichtsphasen und die zugehörigen Segmente einmalig in deinen aktuell leeren Supabase-Bereich kopiert.</p>
-<p><strong>localStorage bleibt danach weiterhin Master.</strong> Bei einem Importfehler versucht V381 automatisch, die bereits geschriebenen Importdaten wieder zu entfernen.</p>
+<p><strong>localStorage bleibt danach weiterhin Master.</strong> Bei einem Importfehler versucht V382 automatisch, die bereits geschriebenen Importdaten wieder zu entfernen.</p>
 <div class="modal-actions">
 <button class="modal-button cancel-modal" onclick="closeModal()">ABBRECHEN</button>
 <button class="modal-button confirm-modal" onclick="closeModal();performSupabaseInitialImport()">ERSTIMPORT STARTEN</button>
 </div>
 </div>
 </div>`;
+}
+
+
+
+/* ======================================
+   V382 – LAUFENDE LOCAL → CLOUD-SYNCHRONISATION
+   LOCALSTORAGE BLEIBT SICHERHEITSNETZ / MASTER
+====================================== */
+
+let supabaseLiveSyncTimer = null;
+let supabaseLiveSyncRunning = false;
+let supabaseLiveSyncPending = false;
+let supabaseLiveSyncReasons = new Set();
+let supabaseLiveSyncState = {
+status: "idle",
+label: "BEREIT",
+detail: "Lokale Änderungen werden nach erfolgreichem Erstimport automatisch nach Supabase gespiegelt. localStorage bleibt weiterhin Master.",
+lastSyncAt: null,
+lastReason: null,
+counts: null
+};
+
+
+function formatSupabaseSyncTimestamp(value) {
+const date = new Date(value);
+if (!Number.isFinite(date.getTime())) return String(value || "");
+return new Intl.DateTimeFormat("de-DE", {
+timeZone:"Europe/Berlin",
+day:"2-digit", month:"2-digit", year:"numeric",
+hour:"2-digit", minute:"2-digit", second:"2-digit",
+hour12:false
+}).format(date);
+}
+
+
+function scheduleSupabaseLiveSync(reason = "local-save") {
+if (reason) {
+supabaseLiveSyncReasons.add(String(reason));
+}
+if (supabaseLiveSyncRunning) {
+supabaseLiveSyncPending = true;
+return;
+}
+if (supabaseLiveSyncTimer) {
+clearTimeout(supabaseLiveSyncTimer);
+}
+supabaseLiveSyncTimer = setTimeout(() => {
+supabaseLiveSyncTimer = null;
+runSupabaseLiveSync(false);
+}, 900);
+}
+
+
+async function getLiveSyncSessionAndManifest(client) {
+const { data: sessionData, error: sessionError } = await client.auth.getSession();
+if (sessionError) throw sessionError;
+const session = sessionData && sessionData.session ? sessionData.session : null;
+if (!session || !session.user || !session.user.id) {
+return { ready: false, reason: "Supabase-Login fehlt." };
+}
+const userId = session.user.id;
+const { data: manifestRows, error: manifestError } = await client
+.from("legacy_metadata")
+.select("key")
+.eq("user_id", userId)
+.eq("key", "initial_import_manifest_v1")
+.limit(1);
+if (manifestError) throw manifestError;
+if (!Array.isArray(manifestRows) || !manifestRows.length) {
+return { ready: false, reason: "Der verifizierte Erstimport wurde für diesen Benutzer nicht gefunden." };
+}
+return { ready: true, session, userId };
+}
+
+
+function buildLiveTaskRow(task,userId,cloudTaskId) {
+return {
+id: cloudTaskId,
+user_id: userId,
+legacy_task_id: Number.isInteger(Number(task && task.id)) ? Number(task.id) : null,
+source_master_version: task && task.sourceMasterVersion ? String(task.sourceMasterVersion) : null,
+source_master_dynamic_number: Number.isInteger(Number(task && task.sourceMasterDynamicNumber)) ? Number(task.sourceMasterDynamicNumber) : null,
+text: String(task && task.text ? task.text : "Unbenannte Aufgabe"),
+status: ["open","running","paused","completed","aborted"].includes(task && task.status) ? task.status : "open",
+type: ["work","leisure","selfrunner","cooking"].includes(task && task.type) ? task.type : "work",
+priority: ["normal","medium","high"].includes(task && task.priority) ? task.priority : "normal",
+optional: Boolean(task && task.optional),
+due_mode: ["none","tomorrowOnly","deadline"].includes(task && task.dueMode) ? task.dueMode : "none",
+due_date: task && task.dueDate ? task.dueDate : null,
+today_date: task && task.todayDate ? task.todayDate : null,
+today_order: Number.isInteger(Number(task && task.todayOrder)) ? Number(task.todayOrder) : null,
+plan_duration_ms: importNonNegativeNumberOrNull(task && task.planDurationMs),
+started_at: task && task.startedAt ? task.startedAt : null,
+paused_at: task && task.pausedAt ? task.pausedAt : null,
+completed_at: task && task.completedAt ? task.completedAt : null,
+aborted_at: task && task.abortedAt ? task.abortedAt : null,
+pause_total_ms: importNonNegativeNumberOrNull(task && task.pauseTotalMs) || 0,
+active_duration_ms: importNonNegativeNumberOrNull(task && task.activeDurationMs),
+actual_duration_ms: importNonNegativeNumberOrNull(task && task.actualDurationMs),
+leisure_duration_ms: importNonNegativeNumberOrNull(task && task.leisureDurationMs),
+passive_duration_ms: importNonNegativeNumberOrNull(task && task.passiveDurationMs),
+cooking_active_duration_ms: importNonNegativeNumberOrNull(task && task.cookingActiveDurationMs),
+cooking_passive_duration_ms: importNonNegativeNumberOrNull(task && task.cookingPassiveDurationMs),
+cooking_mode: ["active","passive"].includes(task && task.cookingMode) ? task.cookingMode : "active",
+aborted_active_duration_ms: importNonNegativeNumberOrNull(task && task.abortedActiveDurationMs),
+imported_historical_progress_duration_ms: importNonNegativeNumberOrNull(task && task.importedHistoricalProgressDurationMs) || 0,
+historical_already_archived_duration_ms: importNonNegativeNumberOrNull(task && task.historicalAlreadyArchivedDurationMs) || 0,
+historical_unallocated_accounting_ms: importNonNegativeNumberOrNull(task && task.historicalUnallocatedAccountingMs) || 0,
+historical_accounting_by_date: task && task.historicalAccountingByDate && typeof task.historicalAccountingByDate === "object" ? task.historicalAccountingByDate : {},
+historical_accounting_segments: Array.isArray(task && task.historicalAccountingSegments) ? task.historicalAccountingSegments : [],
+historical_time_parts: Array.isArray(task && task.historicalTimeParts) ? task.historicalTimeParts : [],
+weight_info: task && task.weightInfo ? task.weightInfo : null,
+source_notes: Array.isArray(task && task.sourceNotes) ? task.sourceNotes : task && task.sourceNote ? [task.sourceNote] : [],
+notes: task && task.notes ? String(task.notes) : null
+};
+}
+
+
+function buildLiveArchiveRow(item,userId,cloudArchiveId,syncedAt) {
+const archiveNumber = Number(item && item.archiveNumber);
+return {
+id: cloudArchiveId,
+user_id: userId,
+archive_number: archiveNumber,
+legacy_archive_id: item && item.archiveId ? String(item.archiveId) : "A-" + archiveNumber,
+source_task_id: null,
+text: String(item && item.text ? item.text : "Unbenannte Archivaufgabe"),
+status: ["completed","aborted"].includes(item && item.status) ? item.status : "completed",
+type: ["work","leisure","selfrunner","cooking"].includes(item && item.type) ? item.type : "work",
+priority: ["normal","medium","high"].includes(item && item.priority) ? item.priority : "normal",
+optional: Boolean(item && item.optional),
+due_mode: item && item.dueMode ? String(item.dueMode) : "none",
+due_date: item && item.dueDate ? item.dueDate : null,
+started_at: item && item.startedAt ? item.startedAt : null,
+completed_at: item && item.completedAt ? item.completedAt : null,
+completed_date: item && item.completedDate ? item.completedDate : getBerlinDateKey(),
+active_duration_ms: importNonNegativeNumberOrNull(item && item.activeDurationMs),
+actual_duration_ms: importNonNegativeNumberOrNull(item && item.actualDurationMs),
+leisure_duration_ms: importNonNegativeNumberOrNull(item && item.leisureDurationMs),
+cooking_active_duration_ms: importNonNegativeNumberOrNull(item && item.cookingActiveDurationMs),
+cooking_passive_duration_ms: importNonNegativeNumberOrNull(item && item.cookingPassiveDurationMs),
+unseparated_cooking_duration_ms: importNonNegativeNumberOrNull(item && item.unseparatedCookingDurationMs),
+pause_total_ms: importNonNegativeNumberOrNull(item && item.pauseTotalMs) || 0,
+archive_accounting_active_duration_ms: importNonNegativeNumberOrNull(item && item.archiveAccountingActiveDurationMs),
+overlap_excluded_duration_ms: importNonNegativeNumberOrNull(item && item.overlapExcludedDurationMs) || 0,
+historical_weight_kg: importPositiveNumberOrNull(item && item.historicalWeightKg),
+historical_weight_note: item && item.historicalWeightNote ? String(item.historicalWeightNote) : null,
+weighted_active_duration_ms: importNonNegativeNumberOrNull(item && item.weightedActiveDurationMs),
+category: item && item.category ? String(item.category) : null,
+source_note: item && item.sourceNote ? String(item.sourceNote) : null,
+historical_data: { raw: item, legacySourceTaskId: item && item.sourceTaskId !== undefined ? item.sourceTaskId : null },
+is_test_archive: false,
+archived_at: item && item.archivedAt ? item.archivedAt : item && item.completedAt ? item.completedAt : syncedAt
+};
+}
+
+
+async function syncTasksToSupabase(client,userId) {
+const { data: existingRows, error: existingError } = await client
+.from("tasks")
+.select("id,legacy_task_id")
+.eq("user_id", userId);
+if (existingError) throw existingError;
+const existing = Array.isArray(existingRows) ? existingRows : [];
+const idByLegacy = new Map(existing.map(row => [Number(row.legacy_task_id), row.id]));
+const localIds = new Set();
+const taskRows = [];
+const taskSegmentRows = [];
+const cookingRows = [];
+
+for (const task of tasks) {
+const legacyId = Number(task && task.id);
+if (!Number.isInteger(legacyId)) continue;
+localIds.add(legacyId);
+const cloudId = idByLegacy.get(legacyId) || createSupabaseImportUuid();
+taskRows.push(buildLiveTaskRow(task,userId,cloudId));
+if (Array.isArray(task.activeSegments)) {
+for (const segment of task.activeSegments) {
+if (!segment || !segment.startedAt) continue;
+taskSegmentRows.push({ user_id:userId, task_id:cloudId, started_at:segment.startedAt, ended_at:segment.endedAt || null, duration_ms:importSegmentDurationMs(segment), weight_kg:importPositiveNumberOrNull(segment.weightKg), metadata:{ raw:segment, liveSync:true } });
+}
+}
+if (Array.isArray(task.cookingSegments)) {
+for (const segment of task.cookingSegments) {
+if (!segment || !segment.startedAt || !["active","passive"].includes(segment.mode)) continue;
+cookingRows.push({ user_id:userId, task_id:cloudId, mode:segment.mode, started_at:segment.startedAt, ended_at:segment.endedAt || null, duration_ms:importSegmentDurationMs(segment) });
+}
+}
+}
+
+/* Kindzeilen zuerst entfernen, damit FK-Regeln das Entfernen lokaler Aufgaben nicht blockieren. */
+let result = await client.from("task_active_segments").delete().eq("user_id",userId);
+if (result.error) throw result.error;
+result = await client.from("task_cooking_segments").delete().eq("user_id",userId);
+if (result.error) throw result.error;
+
+const removedIds = existing.filter(row => !localIds.has(Number(row.legacy_task_id))).map(row => row.id);
+if (removedIds.length) {
+const { error } = await client.from("tasks").delete().in("id", removedIds).eq("user_id",userId);
+if (error) throw error;
+}
+for (const row of taskRows) {
+const known = idByLegacy.has(Number(row.legacy_task_id));
+const query = known ? client.from("tasks").update(row).eq("id",row.id).eq("user_id",userId) : client.from("tasks").insert([row]);
+const { error } = await query;
+if (error) throw error;
+}
+if (taskSegmentRows.length) { result = await client.from("task_active_segments").insert(taskSegmentRows); if (result.error) throw result.error; }
+if (cookingRows.length) { result = await client.from("task_cooking_segments").insert(cookingRows); if (result.error) throw result.error; }
+return { tasks:taskRows.length, task_active_segments:taskSegmentRows.length, task_cooking_segments:cookingRows.length };
+}
+
+
+async function syncArchiveToSupabase(client,userId) {
+const realArchive = getRealArchiveForSupabaseImport();
+const { data: existingRows, error: existingError } = await client
+.from("archive_entries")
+.select("id,archive_number")
+.eq("user_id",userId);
+if (existingError) throw existingError;
+const existing = Array.isArray(existingRows) ? existingRows : [];
+const idByNumber = new Map(existing.map(row => [Number(row.archive_number), row.id]));
+const localNumbers = new Set();
+const archiveRows = [];
+const segmentRows = [];
+const syncedAt = new Date().toISOString();
+for (const item of realArchive) {
+const number = Number(item && item.archiveNumber);
+if (!Number.isInteger(number)) continue;
+localNumbers.add(number);
+const cloudId = idByNumber.get(number) || createSupabaseImportUuid();
+archiveRows.push(buildLiveArchiveRow(item,userId,cloudId,syncedAt));
+if (Array.isArray(item.activeSegments)) {
+for (const segment of item.activeSegments) {
+if (!segment || !segment.startedAt || !segment.endedAt) continue;
+segmentRows.push({ user_id:userId, archive_entry_id:cloudId, started_at:segment.startedAt, ended_at:segment.endedAt, duration_ms:importSegmentDurationMs(segment) || 0, metadata:{ raw:segment, archiveNumber:number, liveSync:true } });
+}
+}
+}
+/* Archivsegmente zuerst entfernen, bevor eventuell Archivzeilen entfallen. */
+let result = await client.from("archive_active_segments").delete().eq("user_id",userId);
+if (result.error) throw result.error;
+const removedIds = existing.filter(row => !localNumbers.has(Number(row.archive_number))).map(row => row.id);
+if (removedIds.length) {
+const { error } = await client.from("archive_entries").delete().in("id",removedIds).eq("user_id",userId);
+if (error) throw error;
+}
+for (const row of archiveRows) {
+const known = idByNumber.has(Number(row.archive_number));
+const query = known ? client.from("archive_entries").update(row).eq("id",row.id).eq("user_id",userId) : client.from("archive_entries").insert([row]);
+const { error } = await query;
+if (error) throw error;
+}
+if (segmentRows.length) { result = await client.from("archive_active_segments").insert(segmentRows); if (result.error) throw result.error; }
+return { archive_entries:archiveRows.length, archive_active_segments:segmentRows.length };
+}
+
+
+async function syncWeightToSupabase(client,userId) {
+const weightRows = (Array.isArray(weightPhases) ? weightPhases : [])
+.filter(phase => phase && importPositiveNumberOrNull(phase.weightKg) !== null && phase.startedAt)
+.map(phase => ({ user_id:userId, legacy_phase_id:Number.isInteger(Number(phase.id)) ? Number(phase.id) : null, weight_kg:importPositiveNumberOrNull(phase.weightKg), started_at:phase.startedAt, ended_at:phase.endedAt || null, phase_date:phase.date || getBerlinDateKey(new Date(phase.startedAt)), source:phase.source ? String(phase.source) : "live-sync", metadata:{ raw:phase, liveSync:true } }));
+let result = await client.from("weight_phases").delete().eq("user_id",userId);
+if (result.error) throw result.error;
+if (weightRows.length) { result = await client.from("weight_phases").insert(weightRows); if (result.error) throw result.error; }
+return { weight_phases:weightRows.length };
+}
+
+
+async function syncAppStateToSupabase(client,userId) {
+const row = {
+user_id:userId,
+next_archive_number:nextArchiveNumber,
+current_tab:currentTab,
+new_task_priority:newTaskPriority,
+new_task_type:newTaskType,
+statistics_period:statisticsPeriod,
+ui_settings:{ weightState:weightState, liveSync:{ appVersion:APP_VERSION, syncedAt:new Date().toISOString(), localStorageRemainsMaster:true } },
+schema_version:1,
+app_version:APP_VERSION
+};
+const { data: existing, error: readError } = await client.from("app_state").select("user_id").eq("user_id",userId).limit(1);
+if (readError) throw readError;
+const result = Array.isArray(existing) && existing.length
+? await client.from("app_state").update(row).eq("user_id",userId)
+: await client.from("app_state").insert([row]);
+if (result.error) throw result.error;
+return { app_state:1 };
+}
+
+
+async function verifySupabaseLiveSync(client,userId,expected) {
+const checks = {};
+for (const tableName of ["app_state","tasks","task_active_segments","task_cooking_segments","archive_entries","archive_active_segments","weight_phases"]) {
+const { count, error } = await client.from(tableName).select("*",{ count:"exact", head:true });
+if (error) throw error;
+checks[tableName] = Number(count) || 0;
+if (expected[tableName] !== undefined && checks[tableName] !== expected[tableName]) {
+throw new Error("Sync-Verifikation: " + tableName + " hat " + checks[tableName] + " Zeilen, lokal erwartet " + expected[tableName] + ".");
+}
+}
+const { data: stateRows, error: stateError } = await client.from("app_state").select("next_archive_number,app_version").eq("user_id",userId).limit(1);
+if (stateError) throw stateError;
+if (!Array.isArray(stateRows) || !stateRows.length || Number(stateRows[0].next_archive_number) !== Number(nextArchiveNumber)) {
+throw new Error("Sync-Verifikation: next_archive_number stimmt nicht.");
+}
+return checks;
+}
+
+
+async function runSupabaseLiveSync(manual = false) {
+if (supabaseLiveSyncRunning) {
+supabaseLiveSyncPending = true;
+return;
+}
+supabaseLiveSyncRunning = true;
+const reasons = Array.from(supabaseLiveSyncReasons);
+supabaseLiveSyncReasons.clear();
+supabaseLiveSyncState = { ...supabaseLiveSyncState, status:"running", label:"SYNCHRONISIERE…", detail:"Lokaler Stand wird nach Supabase gespiegelt und anschließend gezählt.", lastReason:reasons.join(", ") || (manual ? "manuell" : "auto") };
+if (currentTab === "dev") render();
+try {
+const integrity = collectDataIntegrityReport();
+if (!integrity || !integrity.ok) throw new Error("Lokale Datenprüfung meldet Fehler. Cloud-Sync wurde aus Sicherheitsgründen gestoppt.");
+const client = getSupabaseClient();
+const readiness = await getLiveSyncSessionAndManifest(client);
+if (!readiness.ready) {
+supabaseLiveSyncState = { ...supabaseLiveSyncState, status:"warn", label:"SYNC PAUSIERT ⚠️", detail:readiness.reason + " Lokale Speicherung funktioniert weiter; nach Login kann manuell nachsynchronisiert werden." };
+return;
+}
+const userId = readiness.userId;
+const taskCounts = await syncTasksToSupabase(client,userId);
+const archiveCounts = await syncArchiveToSupabase(client,userId);
+const weightCounts = await syncWeightToSupabase(client,userId);
+const stateCounts = await syncAppStateToSupabase(client,userId);
+const expected = { ...stateCounts, ...taskCounts, ...archiveCounts, ...weightCounts };
+const verified = await verifySupabaseLiveSync(client,userId,expected);
+supabaseLiveSyncState = {
+status:"ok",
+label:"CLOUD SYNCHRON ✅",
+detail:"Lokaler Stand wurde erfolgreich nach Supabase gespiegelt und verifiziert. localStorage bleibt weiterhin Master.",
+lastSyncAt:new Date().toISOString(),
+lastReason:reasons.join(", ") || (manual ? "manuell" : "auto"),
+counts:verified
+};
+} catch (error) {
+supabaseLiveSyncState = { ...supabaseLiveSyncState, status:"error", label:"SYNC-FEHLER ❌", detail:(error && error.message) ? error.message : "Unbekannter Cloud-Sync-Fehler." };
+} finally {
+supabaseLiveSyncRunning = false;
+if (currentTab === "dev") render();
+if (supabaseLiveSyncPending) {
+supabaseLiveSyncPending = false;
+scheduleSupabaseLiveSync("nachlauf");
+}
+}
 }
 
 
@@ -19228,9 +19588,26 @@ ${supabaseInitialImportState.status === "running" ? "disabled" : ""}
 </div>
 
 <div class="supabase-status-detail" style="margin-top:8px;">
-V381 aktiviert noch keine laufende Cloud-Synchronisation. Normale App-Speicherung bleibt unverändert lokal.
+V382 nutzt den verifizierten Erstimport als Basis. localStorage bleibt Master; laufende Änderungen werden im separaten Live-Sync-Bereich nach Supabase gespiegelt.
 </div>
 
+</div>
+
+
+<div class="supabase-preflight-card" style="margin-top:14px;">
+<div class="supabase-preflight-title">🔄 LIVE-SYNC · LOCAL → CLOUD</div>
+<div class="supabase-preflight-summary ${
+supabaseLiveSyncState.status === "ok" ? "ok" : supabaseLiveSyncState.status === "error" ? "error" : supabaseLiveSyncState.status === "running" || supabaseLiveSyncState.status === "warn" ? "warn" : ""
+}">
+<strong>${escapeHtml(supabaseLiveSyncState.label)}</strong><br>
+${escapeHtml(supabaseLiveSyncState.detail)}
+</div>
+${supabaseLiveSyncState.lastSyncAt ? `<div class="supabase-status-detail" style="margin-top:8px;">LETZTER SYNC · ${escapeHtml(formatSupabaseSyncTimestamp(supabaseLiveSyncState.lastSyncAt))}${supabaseLiveSyncState.lastReason ? ` · ${escapeHtml(supabaseLiveSyncState.lastReason)}` : ""}</div>` : ""}
+${supabaseLiveSyncState.counts ? `<div class="supabase-preflight-table-list">${Object.entries(supabaseLiveSyncState.counts).map(([name,count]) => `<div class="supabase-preflight-table"><strong>${escapeHtml(name)}</strong><span>✅ ${count} Zeilen</span></div>`).join("")}</div>` : ""}
+<div class="supabase-dev-actions">
+<button class="supabase-dev-button primary" onclick="runSupabaseLiveSync(true)" ${supabaseLiveSyncState.status === "running" ? "disabled" : ""}>🔄 JETZT SYNCHRONISIEREN</button>
+</div>
+<div class="supabase-status-detail" style="margin-top:8px;">V382: Normale App-Speicherung erfolgt weiterhin zuerst lokal. Nach jeder lokalen Änderung wird der aktuelle Stand automatisch nach Supabase gespiegelt. Bei Cloud-Fehlern bleibt die App lokal benutzbar.</div>
 </div>
 
 
