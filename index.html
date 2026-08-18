@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V376 · STANDARD-DESIGN · PWA-GRUNDGERUEST · BACKUP-RESTORE · DATENPRUEFUNG -->
+<!-- BUILD: V377 · PWA · SUPABASE-VERBINDUNGSTEST · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -2317,6 +2317,119 @@ button {
   }
 }
 
+
+/* ======================================
+   V377 – SUPABASE VERBINDUNGSSTATUS
+====================================== */
+
+.supabase-dev-card {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #33404a;
+  border-radius: 12px;
+  background:
+    linear-gradient(
+      135deg,
+      #141a1e,
+      #101315
+    );
+}
+
+.supabase-dev-title {
+  margin-bottom: 9px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .8px;
+  color: #dce6eb;
+}
+
+.supabase-status-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.supabase-status-dot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 9px;
+  border-radius: 50%;
+  background: #6b7378;
+}
+
+.supabase-status-dot.ok {
+  background: #63b77a;
+  box-shadow: 0 0 8px rgba(99,183,122,.28);
+}
+
+.supabase-status-dot.warn {
+  background: #c5a75b;
+  box-shadow: 0 0 8px rgba(197,167,91,.24);
+}
+
+.supabase-status-dot.error {
+  background: #c76a6a;
+  box-shadow: 0 0 8px rgba(199,106,106,.24);
+}
+
+.supabase-status-detail {
+  margin-bottom: 10px;
+  font-size: 8px;
+  line-height: 1.45;
+  color: #81909a;
+  word-break: break-word;
+}
+
+.supabase-dev-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.supabase-dev-button {
+  flex: 1;
+  min-width: 118px;
+  padding: 9px;
+  border: 1px solid #43515b;
+  border-radius: 8px;
+  background: #151b1f;
+  color: #cdd8de;
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.supabase-dev-button.primary {
+  border-color: #3d654b;
+  background: #142019;
+  color: #cde2d3;
+}
+
+.supabase-dev-button.danger {
+  border-color: #694848;
+  background: #211616;
+  color: #ddb0b0;
+}
+
+.supabase-login-grid {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.supabase-login-input {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #343c42;
+  border-radius: 9px;
+  background: #0d1012;
+  color: #e7ecef;
+  font-size: 14px;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase-config.js"></script>  
@@ -3157,13 +3270,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V376";
+"V377";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"14:44";
+"16:56";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -18116,6 +18229,504 @@ analysis
    DEV
 ====================================== */
 
+
+/* ======================================
+   V377 – SUPABASE VERBINDUNGSTEST
+   NOCH KEINE DATENMIGRATION
+====================================== */
+
+let supabaseClient =
+null;
+
+
+let supabaseDevState = {
+status:
+"unknown",
+
+label:
+"NOCH NICHT GETESTET",
+
+detail:
+"Supabase ist eingebunden, wurde in dieser Sitzung aber noch nicht geprüft.",
+
+email:
+null
+};
+
+
+function setSupabaseDevState(
+status,
+label,
+detail,
+email = null
+) {
+
+supabaseDevState = {
+status,
+label,
+detail,
+email
+};
+
+
+if (
+currentTab ===
+"dev"
+) {
+
+render();
+
+}
+
+}
+
+
+function getSupabaseClient() {
+
+if (
+supabaseClient
+) {
+
+return supabaseClient;
+
+}
+
+
+if (
+!window.supabase ||
+typeof window.supabase.createClient !==
+"function"
+) {
+
+throw new Error(
+"Supabase-Bibliothek wurde nicht geladen."
+);
+
+}
+
+
+if (
+!window.SUPABASE_CONFIG ||
+!window.SUPABASE_CONFIG.url ||
+!window.SUPABASE_CONFIG.publishableKey
+) {
+
+throw new Error(
+"supabase-config.js fehlt oder ist unvollständig."
+);
+
+}
+
+
+supabaseClient =
+window.supabase.createClient(
+window.SUPABASE_CONFIG.url,
+window.SUPABASE_CONFIG.publishableKey,
+{
+auth: {
+persistSession:
+true,
+
+autoRefreshToken:
+true,
+
+detectSessionInUrl:
+true
+}
+}
+);
+
+
+return supabaseClient;
+
+}
+
+
+async function refreshSupabaseSessionStatus() {
+
+try {
+
+const client =
+getSupabaseClient();
+
+
+const {
+data,
+error
+} =
+await client.auth.getSession();
+
+
+if (error) {
+throw error;
+}
+
+
+const session =
+data &&
+data.session
+? data.session
+: null;
+
+
+if (!session) {
+
+setSupabaseDevState(
+"warn",
+"BEREIT · NICHT ANGEMELDET",
+"Bibliothek und Konfiguration wurden geladen. Für den echten RLS-Datenbanktest musst du dich noch mit deinem Master-of-Disaster-App-Benutzer anmelden."
+);
+
+return;
+
+}
+
+
+setSupabaseDevState(
+"warn",
+"ANGEMELDET · TEST AUSSTEHEND",
+"Supabase-Login erkannt. Jetzt kann der Datenbank-/RLS-Test ausgeführt werden.",
+session.user &&
+session.user.email
+? session.user.email
+: null
+);
+
+} catch (
+error
+) {
+
+setSupabaseDevState(
+"error",
+"KONFIGURATIONSFEHLER",
+error &&
+error.message
+? error.message
+: "Supabase konnte nicht initialisiert werden."
+);
+
+}
+
+}
+
+
+function showSupabaseLoginModal() {
+
+document
+.getElementById(
+"modalContainer"
+)
+.innerHTML = `
+
+<div class="modal-backdrop">
+
+<div class="modal">
+
+<h2>
+Supabase anmelden
+</h2>
+
+<p>
+Melde dich mit dem Master-of-Disaster-App-Benutzer an, den du gerade in Supabase angelegt hast.
+</p>
+
+<div class="supabase-login-grid">
+
+<input
+id="supabaseLoginEmail"
+class="supabase-login-input"
+type="email"
+autocomplete="username"
+placeholder="E-Mail-Adresse"
+>
+
+<input
+id="supabaseLoginPassword"
+class="supabase-login-input"
+type="password"
+autocomplete="current-password"
+placeholder="Passwort"
+>
+
+</div>
+
+<div class="modal-actions">
+
+<button
+class="modal-button cancel-modal"
+onclick="closeModal()"
+>
+ABBRECHEN
+</button>
+
+<button
+class="modal-button confirm-modal"
+onclick="performSupabaseLogin()"
+>
+ANMELDEN
+</button>
+
+</div>
+
+</div>
+
+</div>
+`;
+
+}
+
+
+async function performSupabaseLogin() {
+
+const emailInput =
+document.getElementById(
+"supabaseLoginEmail"
+);
+
+
+const passwordInput =
+document.getElementById(
+"supabaseLoginPassword"
+);
+
+
+const email =
+emailInput
+? emailInput.value.trim()
+: "";
+
+
+const password =
+passwordInput
+? passwordInput.value
+: "";
+
+
+if (
+!email ||
+!password
+) {
+
+showInfoModal(
+"Login unvollständig",
+"Bitte E-Mail-Adresse und Passwort eingeben."
+);
+
+return;
+
+}
+
+
+try {
+
+const client =
+getSupabaseClient();
+
+
+const {
+data,
+error
+} =
+await client.auth.signInWithPassword({
+email,
+password
+});
+
+
+if (error) {
+throw error;
+}
+
+
+closeModal();
+
+
+setSupabaseDevState(
+"warn",
+"ANGEMELDET · TEST AUSSTEHEND",
+"Login erfolgreich. Jetzt bitte „VERBINDUNG TESTEN“ drücken.",
+data &&
+data.user &&
+data.user.email
+? data.user.email
+: email
+);
+
+} catch (
+error
+) {
+
+showInfoModal(
+"Supabase-Login fehlgeschlagen",
+error &&
+error.message
+? error.message
+: "Anmeldung nicht möglich."
+);
+
+}
+
+}
+
+
+async function testSupabaseConnection() {
+
+setSupabaseDevState(
+"warn",
+"TEST LÄUFT…",
+"Supabase Auth und RLS-Datenzugriff werden geprüft.",
+supabaseDevState.email
+);
+
+
+try {
+
+const client =
+getSupabaseClient();
+
+
+const {
+data: sessionData,
+error: sessionError
+} =
+await client.auth.getSession();
+
+
+if (sessionError) {
+throw sessionError;
+}
+
+
+const session =
+sessionData &&
+sessionData.session
+? sessionData.session
+: null;
+
+
+if (!session) {
+
+setSupabaseDevState(
+"warn",
+"NICHT ANGEMELDET",
+"Die technische Supabase-Konfiguration ist geladen, aber für den RLS-Test fehlt der App-Login."
+);
+
+showSupabaseLoginModal();
+
+return;
+
+}
+
+
+/*
+  Bewusst nur LESEN:
+  Es werden keine Aufgaben, Archivdaten oder Einstellungen geschrieben.
+  Eine leere Ergebnisliste ist ebenfalls Erfolg, solange RLS/API keinen Fehler melden.
+*/
+const {
+data,
+error
+} =
+await client
+.from(
+"app_state"
+)
+.select(
+"user_id, next_archive_number, app_version"
+)
+.limit(
+1
+);
+
+
+if (error) {
+throw error;
+}
+
+
+const rowCount =
+Array.isArray(
+data
+)
+? data.length
+: 0;
+
+
+setSupabaseDevState(
+"ok",
+"VERBUNDEN ✅",
+rowCount > 0
+? "Auth, Data API und RLS funktionieren. Eigener app_state-Datensatz ist lesbar."
+: "Auth, Data API und RLS funktionieren. app_state ist für deinen Benutzer aktuell noch leer, was vor der Migration korrekt ist.",
+session.user &&
+session.user.email
+? session.user.email
+: null
+);
+
+} catch (
+error
+) {
+
+setSupabaseDevState(
+"error",
+"VERBINDUNGSFEHLER ❌",
+error &&
+error.message
+? error.message
+: "Unbekannter Supabase-Fehler.",
+supabaseDevState.email
+);
+
+}
+
+}
+
+
+async function supabaseLogout() {
+
+try {
+
+const client =
+getSupabaseClient();
+
+
+const {
+error
+} =
+await client.auth.signOut();
+
+
+if (error) {
+throw error;
+}
+
+
+setSupabaseDevState(
+"warn",
+"BEREIT · NICHT ANGEMELDET",
+"Abgemeldet. Bibliothek und Konfiguration bleiben verfügbar."
+);
+
+} catch (
+error
+) {
+
+setSupabaseDevState(
+"error",
+"ABMELDEN FEHLGESCHLAGEN",
+error &&
+error.message
+? error.message
+: "Supabase-Abmeldung nicht möglich."
+);
+
+}
+
+}
+
+
 function renderDev(
 container
 ) {
@@ -18195,6 +18806,78 @@ integrity.ok
 : "❌ FEHLER"
 }</div>
 </div>
+
+</div>
+
+</div>
+
+
+
+<div class="supabase-dev-card">
+
+<div class="supabase-dev-title">
+☁️ SUPABASE / ONLINE-DATENBANK
+</div>
+
+<div class="supabase-status-line">
+
+<span class="supabase-status-dot ${
+supabaseDevState.status ===
+"ok"
+? "ok"
+: supabaseDevState.status ===
+"warn"
+? "warn"
+: supabaseDevState.status ===
+"error"
+? "error"
+: ""
+}"></span>
+
+<span>
+${escapeHtml(
+supabaseDevState.label
+)}
+</span>
+
+</div>
+
+<div class="supabase-status-detail">
+${escapeHtml(
+supabaseDevState.detail
+)}
+${
+supabaseDevState.email
+? "<br>USER · " +
+escapeHtml(
+supabaseDevState.email
+)
+: ""
+}
+</div>
+
+<div class="supabase-dev-actions">
+
+<button
+class="supabase-dev-button primary"
+onclick="showSupabaseLoginModal()"
+>
+🔐 ANMELDEN
+</button>
+
+<button
+class="supabase-dev-button"
+onclick="testSupabaseConnection()"
+>
+🔌 VERBINDUNG TESTEN
+</button>
+
+<button
+class="supabase-dev-button danger"
+onclick="supabaseLogout()"
+>
+🚪 ABMELDEN
+</button>
 
 </div>
 
@@ -19055,6 +19738,16 @@ updateNewOptions();
 renderWeightPanel();
 
 render();
+
+
+setTimeout(
+() => {
+
+refreshSupabaseSessionStatus();
+
+},
+0
+);
 
 
 setTimeout(
