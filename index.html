@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V379 · DEV-BEREINIGUNG · PWA · SUPABASE-DIAGNOSE · BACKUP-RESTORE · DATENPRUEFUNG -->
+<!-- BUILD: V380 · DEV-BEREINIGUNG · PWA · SUPABASE-PREFLIGHT · BACKUP-RESTORE · DATENPRUEFUNG -->
 
 <style>
 
@@ -2430,6 +2430,107 @@ button {
   font-size: 14px;
 }
 
+
+/* ======================================
+   V380 – SUPABASE MIGRATIONS-PREFLIGHT
+====================================== */
+
+.supabase-preflight-card {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #3b4650;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#14191d,#101315);
+}
+
+.supabase-preflight-title {
+  margin-bottom: 9px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .8px;
+  color: #dce6eb;
+}
+
+.supabase-preflight-summary {
+  margin-bottom: 10px;
+  padding: 9px;
+  border: 1px solid #303940;
+  border-radius: 9px;
+  background: #0f1315;
+  font-size: 8px;
+  line-height: 1.5;
+  color: #93a0a8;
+}
+
+.supabase-preflight-summary.ok {
+  border-color: #3d654b;
+  color: #b9d6c1;
+}
+
+.supabase-preflight-summary.warn {
+  border-color: #6a5b35;
+  color: #d6c28d;
+}
+
+.supabase-preflight-summary.error {
+  border-color: #694848;
+  color: #ddb0b0;
+}
+
+.supabase-preflight-grid {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.supabase-preflight-item {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #2f383e;
+  border-radius: 8px;
+  background: #111619;
+}
+
+.supabase-preflight-label {
+  margin-bottom: 3px;
+  font-size: 6.5px;
+  font-weight: 900;
+  letter-spacing: .65px;
+  color: #75838c;
+}
+
+.supabase-preflight-value {
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.25;
+  color: #dbe1e4;
+  word-break: break-word;
+}
+
+.supabase-preflight-table-list {
+  display: grid;
+  gap: 5px;
+  margin: 9px 0 10px;
+}
+
+.supabase-preflight-table {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid #2d353a;
+  border-radius: 7px;
+  background: #101416;
+  font-size: 7.5px;
+  font-weight: 800;
+  color: #8f9ba3;
+}
+
+.supabase-preflight-table strong {
+  color: #d4dce0;
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./supabase-config.js"></script>  
@@ -3270,13 +3371,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V379";
+"V380";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"21:50";
+"22:44";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -17990,6 +18091,307 @@ error.message
 }
 
 
+/* ======================================
+   V380 – SUPABASE MIGRATIONS-PREFLIGHT
+   READ ONLY · KEINE DATENMIGRATION
+====================================== */
+
+const SUPABASE_EXPECTED_SCHEMA_VERSION =
+"V1";
+
+const SUPABASE_EXPECTED_TABLES =
+[
+"app_state",
+"tasks",
+"task_active_segments",
+"task_cooking_segments",
+"archive_entries",
+"archive_active_segments",
+"weight_phases",
+"legacy_metadata"
+];
+
+let supabasePreflightState = {
+status: "idle",
+label: "NOCH NICHT GEPRÜFT",
+detail: "Der Preflight liest lokale Kennzahlen und prüft die erwarteten Supabase-Tabellen. Es werden keine Daten geschrieben.",
+userEmail: null,
+userId: null,
+local: null,
+tables: [],
+cloudRowTotal: null,
+cloudEmpty: null,
+schemaVersion: SUPABASE_EXPECTED_SCHEMA_VERSION,
+checkedAt: null
+};
+
+
+function getSupabaseMigrationLocalSummary() {
+
+const integrity =
+collectDataIntegrityReport();
+
+const realArchive =
+archive.filter(
+item =>
+!isArchivedTest(
+item
+)
+);
+
+const highestArchiveNumber =
+realArchive.reduce(
+(maxValue,item) => {
+
+const value =
+Number(
+item && item.archiveNumber
+);
+
+return Number.isFinite(value)
+? Math.max(maxValue,value)
+: maxValue;
+
+},
+0
+);
+
+const taskActiveSegments =
+tasks.reduce(
+(sum,task) =>
+sum +
+(
+Array.isArray(
+task && task.activeSegments
+)
+? task.activeSegments.length
+: 0
+),
+0
+);
+
+const taskCookingSegments =
+tasks.reduce(
+(sum,task) =>
+sum +
+(
+Array.isArray(
+task && task.cookingSegments
+)
+? task.cookingSegments.length
+: 0
+),
+0
+);
+
+const archiveActiveSegments =
+realArchive.reduce(
+(sum,item) =>
+sum +
+(
+Array.isArray(
+item && item.activeSegments
+)
+? item.activeSegments.length
+: 0
+),
+0
+);
+
+return {
+taskCount: tasks.length,
+archiveCount: realArchive.length,
+highestArchiveNumber,
+nextArchiveNumber,
+weightPhaseCount: Array.isArray(weightPhases) ? weightPhases.length : 0,
+weightIsWearing: Boolean(weightState && weightState.isWearing),
+weightCurrentKg: weightState && Number.isFinite(Number(weightState.currentWeightKg))
+? Number(weightState.currentWeightKg)
+: null,
+taskActiveSegments,
+taskCookingSegments,
+archiveActiveSegments,
+integrityOk: Boolean(integrity && integrity.ok),
+integrityErrors: integrity && Array.isArray(integrity.errors) ? integrity.errors.length : 0,
+integrityWarnings: integrity && Array.isArray(integrity.warnings) ? integrity.warnings.length : 0
+};
+
+}
+
+
+async function runSupabaseMigrationPreflight() {
+
+supabasePreflightState = {
+...supabasePreflightState,
+status: "running",
+label: "PREFLIGHT LÄUFT…",
+detail: "Lokale Daten und alle erwarteten Supabase-Tabellen werden ausschließlich lesend geprüft.",
+local: getSupabaseMigrationLocalSummary(),
+tables: [],
+cloudRowTotal: null,
+cloudEmpty: null,
+checkedAt: null
+};
+
+if (currentTab === "dev") {
+render();
+}
+
+try {
+
+const client =
+getSupabaseClient();
+
+const {
+data: sessionData,
+error: sessionError
+} =
+await client.auth.getSession();
+
+if (sessionError) {
+throw sessionError;
+}
+
+const session =
+sessionData && sessionData.session
+? sessionData.session
+: null;
+
+if (!session) {
+
+supabasePreflightState = {
+...supabasePreflightState,
+status: "warn",
+label: "LOGIN FEHLT",
+detail: "Für den RLS- und Tabellencheck ist eine Supabase-Anmeldung erforderlich. Es wurde nichts geschrieben."
+};
+
+if (currentTab === "dev") {
+render();
+}
+
+showSupabaseLoginModal();
+return;
+
+}
+
+const tableResults =
+[];
+
+for (const tableName of SUPABASE_EXPECTED_TABLES) {
+
+const {
+count,
+error
+} =
+await client
+.from(tableName)
+.select("*", {
+count: "exact",
+head: true
+});
+
+if (error) {
+
+tableResults.push({
+name: tableName,
+ok: false,
+count: null,
+error: error.message || "Unbekannter Tabellenfehler"
+});
+
+continue;
+
+}
+
+tableResults.push({
+name: tableName,
+ok: true,
+count: Number.isFinite(Number(count)) ? Number(count) : 0,
+error: null
+});
+
+}
+
+const failedTables =
+tableResults.filter(
+item => !item.ok
+);
+
+const cloudRowTotal =
+tableResults.reduce(
+(sum,item) =>
+sum +
+(
+item.ok && Number.isFinite(item.count)
+? item.count
+: 0
+),
+0
+);
+
+const local =
+getSupabaseMigrationLocalSummary();
+
+const cloudEmpty =
+failedTables.length === 0 &&
+cloudRowTotal === 0;
+
+const ready =
+failedTables.length === 0 &&
+local.integrityOk &&
+cloudEmpty;
+
+let detail =
+"";
+
+if (failedTables.length > 0) {
+detail = "Mindestens eine erwartete Tabelle ist unter dem angemeldeten Benutzer nicht lesbar oder fehlt. Erst Schema/RLS korrigieren.";
+} else if (!local.integrityOk) {
+detail = "Die Supabase-Struktur ist lesbar, aber die lokale Datenintegritätsprüfung meldet Fehler. Vor einer Migration zuerst lokale Daten bereinigen.";
+} else if (!cloudEmpty) {
+detail = "Alle Tabellen sind lesbar, aber dein eigener Cloud-Bereich ist nicht leer. Vor dem Erstimport muss geklärt werden, ob dort bereits echte Daten liegen.";
+} else {
+detail = "Alle 8 erwarteten Tabellen sind unter RLS lesbar, dein eigener Cloud-Bereich ist leer und die lokale Datenprüfung ist sauber. Bereit für einen kontrollierten Erstimport in einem späteren Build.";
+}
+
+supabasePreflightState = {
+status: ready ? "ok" : failedTables.length > 0 || !local.integrityOk ? "error" : "warn",
+label: ready ? "BEREIT FÜR ERSTIMPORT ✅" : "PREFLIGHT NICHT FREIGEGEBEN",
+detail,
+userEmail: session.user && session.user.email ? session.user.email : null,
+userId: session.user && session.user.id ? session.user.id : null,
+local,
+tables: tableResults,
+cloudRowTotal,
+cloudEmpty,
+schemaVersion: SUPABASE_EXPECTED_SCHEMA_VERSION,
+checkedAt: new Date().toISOString()
+};
+
+if (currentTab === "dev") {
+render();
+}
+
+} catch (error) {
+
+supabasePreflightState = {
+...supabasePreflightState,
+status: "error",
+label: "PREFLIGHT FEHLGESCHLAGEN ❌",
+detail: error && error.message ? error.message : "Unbekannter Fehler beim Supabase-Migrations-Preflight.",
+checkedAt: new Date().toISOString()
+};
+
+if (currentTab === "dev") {
+render();
+}
+
+}
+
+}
+
+
 function renderDev(
 container
 ) {
@@ -18172,6 +18574,114 @@ onclick="supabaseLogout()"
 🚪 ABMELDEN
 </button>
 
+</div>
+
+</div>
+
+
+
+<div class="supabase-preflight-card">
+
+<div class="supabase-preflight-title">
+☁️ MIGRATIONS-CHECK · READ ONLY
+</div>
+
+<div class="supabase-preflight-summary ${
+supabasePreflightState.status === "ok"
+? "ok"
+: supabasePreflightState.status === "error"
+? "error"
+: supabasePreflightState.status === "warn"
+? "warn"
+: ""
+}">
+<strong>${escapeHtml(supabasePreflightState.label)}</strong><br>
+${escapeHtml(supabasePreflightState.detail)}
+</div>
+
+${
+supabasePreflightState.local
+? `
+<div class="supabase-preflight-grid">
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">LOKALE AUFGABEN</div>
+<div class="supabase-preflight-value">${supabasePreflightState.local.taskCount}</div>
+</div>
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">ECHTES ARCHIV</div>
+<div class="supabase-preflight-value">${supabasePreflightState.local.archiveCount} · höchstes A${supabasePreflightState.local.highestArchiveNumber}</div>
+</div>
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">NÄCHSTE ARCHIVNR.</div>
+<div class="supabase-preflight-value">A${supabasePreflightState.local.nextArchiveNumber}</div>
+</div>
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">GEWICHTSPHASEN</div>
+<div class="supabase-preflight-value">${supabasePreflightState.local.weightPhaseCount}</div>
+</div>
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">AKTIVSEGMENTE TASKS</div>
+<div class="supabase-preflight-value">${supabasePreflightState.local.taskActiveSegments}</div>
+</div>
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">AKTIVSEGMENTE ARCHIV</div>
+<div class="supabase-preflight-value">${supabasePreflightState.local.archiveActiveSegments}</div>
+</div>
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">KOCHSEGMENTE TASKS</div>
+<div class="supabase-preflight-value">${supabasePreflightState.local.taskCookingSegments}</div>
+</div>
+
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">DATENPRÜFUNG</div>
+<div class="supabase-preflight-value">${supabasePreflightState.local.integrityOk ? "✅ OK" : "❌ FEHLER"} · ${supabasePreflightState.local.integrityWarnings} Hinweise</div>
+</div>
+
+</div>
+`
+: ""
+}
+
+${
+Array.isArray(supabasePreflightState.tables) && supabasePreflightState.tables.length
+? `
+<div class="supabase-preflight-table-list">
+${supabasePreflightState.tables.map(item => `
+<div class="supabase-preflight-table">
+<strong>${escapeHtml(item.name)}</strong>
+<span>${item.ok ? "✅ lesbar · " + item.count + " Zeilen" : "❌ " + escapeHtml(item.error || "Fehler")}</span>
+</div>
+`).join("")}
+</div>
+`
+: ""
+}
+
+<div class="supabase-preflight-grid">
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">ERWARTETES SCHEMA</div>
+<div class="supabase-preflight-value">${escapeHtml(supabasePreflightState.schemaVersion)}</div>
+</div>
+<div class="supabase-preflight-item">
+<div class="supabase-preflight-label">CLOUD-STATUS</div>
+<div class="supabase-preflight-value">${supabasePreflightState.cloudEmpty === true ? "LEER ✅" : supabasePreflightState.cloudEmpty === false ? String(supabasePreflightState.cloudRowTotal) + " Zeilen ⚠️" : "NOCH NICHT GEPRÜFT"}</div>
+</div>
+</div>
+
+<div class="supabase-dev-actions">
+<button
+class="supabase-dev-button primary"
+onclick="runSupabaseMigrationPreflight()"
+>
+🧪 MIGRATIONS-CHECK STARTEN
+</button>
 </div>
 
 </div>
