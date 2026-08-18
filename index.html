@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V363 · THEMES-KOMPLETT · DEV-TAB · BUILD-INFO · DATENPRÜFUNG · BACKUP -->
+<!-- BUILD: V364 · THEMES-VOLLSTÄNDIG · NEON-GRADIENT · DEV-TAB · DATENPRÜFUNG · BACKUP -->
 
 <style>
 
@@ -2846,6 +2846,366 @@ body[data-theme="pastel-gradient"] .dev-panel {
 }
 
 
+
+/* ======================================
+   V364 – THEME-LÜCKEN SCHLIESSEN
+   HEUTE · ARCHIV · STATISTIK · SPEZIALBLÖCKE
+====================================== */
+
+.today-summary,
+.next-task-panel,
+.archive-stat,
+.archive-day-header,
+.statistics-group,
+.statistics-period-bar,
+.task-analysis-item,
+.task-analysis-stat,
+.task-analysis-count,
+.task-analysis-badge,
+.task-suggestions,
+.empty-state,
+.section-empty,
+.weight-summary,
+.weight-state,
+.weight-phase,
+.weight-card {
+  background: var(--panel) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.next-task-panel {
+  background:
+    linear-gradient(
+      135deg,
+      var(--panel),
+      var(--panel-2)
+    ) !important;
+}
+
+.archive-day-header {
+  background:
+    linear-gradient(
+      135deg,
+      var(--panel),
+      var(--panel-2)
+    ) !important;
+}
+
+.archive-stat,
+.task-analysis-stat,
+.task-analysis-count,
+.task-analysis-badge,
+.statistics-period-bar,
+.task-suggestions {
+  background: var(--panel-2) !important;
+}
+
+.statistics-group,
+.task-analysis-item {
+  background:
+    linear-gradient(
+      135deg,
+      var(--panel),
+      var(--panel-2)
+    ) !important;
+}
+
+.task-suggestion {
+  color: var(--text) !important;
+}
+
+.task-suggestion:hover,
+.task-suggestion:focus {
+  background: var(--panel-2) !important;
+}
+
+.today-progress-bar {
+  background: var(--panel-2) !important;
+}
+
+.today-progress-fill {
+  background: var(--accent) !important;
+}
+
+.archive-task-list::before,
+.archive-task::before {
+  background: var(--border-strong) !important;
+}
+
+.archive-task:last-child::after {
+  background: var(--archive-bg) !important;
+}
+
+.archive-stat-label,
+.archive-day-meta,
+.today-summary-label,
+.today-summary-value,
+.next-task-label,
+.next-task-title,
+.statistics-group-title,
+.task-analysis-title,
+.task-analysis-detail,
+.task-analysis-count,
+.task-analysis-badge {
+  color: var(--text) !important;
+}
+
+.statistics-period-button.active,
+.today-button.selected,
+.cooking-mode-button.active,
+.cooking-mode-button.passive-active {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Statusbezogene Kartenfarben für alle Ansichten */
+.task.open {
+  background: var(--task-bg) !important;
+}
+
+.task.running {
+  background: var(--task-bg-running) !important;
+}
+
+.task.paused {
+  background: var(--task-bg-paused) !important;
+}
+
+.task.completed,
+.task.aborted {
+  background: var(--task-bg-completed) !important;
+}
+
+/* Light: alle großen Flächen wirklich hell */
+body[data-theme="clean-light"] .today-summary,
+body[data-theme="clean-light"] .next-task-panel,
+body[data-theme="clean-light"] .archive-day-header,
+body[data-theme="clean-light"] .archive-stat,
+body[data-theme="clean-light"] .statistics-group,
+body[data-theme="clean-light"] .statistics-period-bar,
+body[data-theme="clean-light"] .task-analysis-item,
+body[data-theme="clean-light"] .task-analysis-stat,
+body[data-theme="clean-light"] .task-analysis-count,
+body[data-theme="clean-light"] .task-analysis-badge {
+  background: #ffffff !important;
+  color: #1a1e1b !important;
+}
+
+/* Pastell: durchgängige Glas-/Pastellflächen */
+body[data-theme="pastel-gradient"] .today-summary,
+body[data-theme="pastel-gradient"] .next-task-panel,
+body[data-theme="pastel-gradient"] .archive-day-header,
+body[data-theme="pastel-gradient"] .archive-stat,
+body[data-theme="pastel-gradient"] .statistics-group,
+body[data-theme="pastel-gradient"] .statistics-period-bar,
+body[data-theme="pastel-gradient"] .task-analysis-item,
+body[data-theme="pastel-gradient"] .task-analysis-stat,
+body[data-theme="pastel-gradient"] .task-analysis-count,
+body[data-theme="pastel-gradient"] .task-analysis-badge {
+  background: rgba(255,255,255,.68) !important;
+  color: #40394a !important;
+  border-color: rgba(124,103,142,.20) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body[data-theme="pastel-gradient"] .task {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.78),
+      rgba(246,240,255,.72)
+    ) !important;
+}
+
+body[data-theme="pastel-gradient"] .task.paused {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,247,226,.88),
+      rgba(247,238,255,.74)
+    ) !important;
+}
+
+body[data-theme="pastel-gradient"] .task.running {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(225,249,240,.88),
+      rgba(239,232,255,.76)
+    ) !important;
+}
+
+body[data-theme="pastel-gradient"] .archive-task {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.74),
+      rgba(237,248,244,.70)
+    ) !important;
+}
+
+/* Industrial: sichtbarer Stahlcharakter */
+body[data-theme="industrial-steel"] .statistics-group,
+body[data-theme="industrial-steel"] .archive-day-header,
+body[data-theme="industrial-steel"] .next-task-panel {
+  background:
+    linear-gradient(
+      135deg,
+      #263139,
+      #182027
+    ) !important;
+}
+
+/* ======================================
+   NEON NIGHT – MEHR NEON, WENIGER SCHWARZ
+====================================== */
+
+body[data-theme="neon-night"] {
+  background:
+    radial-gradient(
+      circle at 15% 15%,
+      rgba(0,255,220,.22) 0%,
+      rgba(0,255,220,0) 34%
+    ),
+    radial-gradient(
+      circle at 85% 25%,
+      rgba(145,90,255,.28) 0%,
+      rgba(145,90,255,0) 38%
+    ),
+    radial-gradient(
+      circle at 50% 88%,
+      rgba(0,130,255,.18) 0%,
+      rgba(0,130,255,0) 40%
+    ),
+    linear-gradient(
+      145deg,
+      #111629 0%,
+      #15102a 42%,
+      #071c22 100%
+    ) !important;
+  background-attachment: fixed !important;
+}
+
+body[data-theme="neon-night"] {
+  --panel: rgba(23,24,49,.86);
+  --panel-2: rgba(18,19,39,.86);
+  --panel-3: rgba(12,14,31,.90);
+
+  --task-bg: rgba(28,29,58,.90);
+  --task-bg-running: rgba(12,52,58,.90);
+  --task-bg-paused: rgba(56,34,53,.90);
+  --task-bg-completed: rgba(24,27,48,.88);
+  --archive-bg: rgba(20,22,47,.88);
+
+  --border: rgba(112,113,189,.48);
+  --border-strong: rgba(124,241,229,.46);
+
+  --chip-bg: rgba(28,31,63,.86);
+  --chip-text: #d5d9ff;
+
+  --button-bg: rgba(25,29,58,.92);
+  --button-text: #f4f6ff;
+}
+
+body[data-theme="neon-night"] .task,
+body[data-theme="neon-night"] .archive-task {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(41,38,82,.92),
+      rgba(15,45,57,.88)
+    ) !important;
+  border-color: rgba(124,241,229,.40) !important;
+  box-shadow:
+    0 0 0 1px rgba(124,241,229,.06),
+    0 0 16px rgba(124,241,229,.08),
+    0 10px 24px rgba(0,0,0,.28) !important;
+}
+
+body[data-theme="neon-night"] .task.paused {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(79,42,78,.92),
+      rgba(39,31,67,.90)
+    ) !important;
+  border-color: rgba(214,112,255,.42) !important;
+}
+
+body[data-theme="neon-night"] .task.running {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(12,72,75,.93),
+      rgba(43,37,91,.91)
+    ) !important;
+  border-color: rgba(124,241,229,.68) !important;
+  box-shadow:
+    0 0 20px rgba(124,241,229,.15),
+    0 10px 24px rgba(0,0,0,.30) !important;
+}
+
+body[data-theme="neon-night"] .today-summary,
+body[data-theme="neon-night"] .next-task-panel,
+body[data-theme="neon-night"] .archive-day,
+body[data-theme="neon-night"] .archive-day-header,
+body[data-theme="neon-night"] .archive-stat,
+body[data-theme="neon-night"] .statistics-group,
+body[data-theme="neon-night"] .statistics-card,
+body[data-theme="neon-night"] .statistics-record,
+body[data-theme="neon-night"] .statistics-period-bar,
+body[data-theme="neon-night"] .task-analysis-item,
+body[data-theme="neon-night"] .task-analysis-stat {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(37,31,76,.88),
+      rgba(16,48,61,.82)
+    ) !important;
+  border-color: rgba(130,117,255,.35) !important;
+}
+
+body[data-theme="neon-night"] .tab-button.active,
+body[data-theme="neon-night"] .theme-button.active,
+body[data-theme="neon-night"] .statistics-period-button.active {
+  box-shadow:
+    0 0 14px rgba(124,241,229,.42),
+    0 0 26px rgba(141,117,255,.22);
+}
+
+body[data-theme="neon-night"] .archive-task-list::before,
+body[data-theme="neon-night"] .archive-task::before {
+  background:
+    linear-gradient(
+      180deg,
+      #7cf1e5,
+      #8d75ff
+    ) !important;
+  box-shadow: 0 0 7px rgba(124,241,229,.32);
+}
+
+/* Modals und Vorschläge nicht als schwarze Inseln */
+body[data-theme="clean-light"] .modal,
+body[data-theme="pastel-gradient"] .modal {
+  box-shadow: 0 18px 45px rgba(60,60,60,.18);
+}
+
+body[data-theme="neon-night"] .modal {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(37,31,76,.98),
+      rgba(15,47,60,.98)
+    ) !important;
+  border-color: rgba(124,241,229,.44) !important;
+  box-shadow:
+    0 0 28px rgba(124,241,229,.15),
+    0 18px 50px rgba(0,0,0,.42);
+}
+
 </style>
 </head>
 
@@ -3680,13 +4040,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V363";
+"V364";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"11:18";
+"11:29";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
