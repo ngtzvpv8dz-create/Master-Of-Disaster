@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V372 · STANDARD-DESIGN · DEV-APPINFO-INLINE-FIX · DATENPRÜFUNG · BACKUP -->
+<!-- BUILD: V373 · STANDARD-DESIGN · BACKUP-RESTORE · DEV-APPINFO · DATENPRÜFUNG -->
 
 <style>
 
@@ -2737,6 +2737,10 @@ let statisticsPeriod =
 "all";
 
 
+let pendingRestoreBackup =
+null;
+
+
 /* ======================================
    MIGRATION
 ====================================== */
@@ -3143,13 +3147,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V372";
+"V373";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"13:29";
+"14:06";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
@@ -12868,6 +12872,1239 @@ payload.integrityReport.ok
 }
 
 
+
+/* ======================================
+   V373 – KOMPLETT-BACKUP WIEDERHERSTELLEN
+====================================== */
+
+function validateCompleteBackupPayload(
+payload
+) {
+
+const errors =
+[];
+
+
+const warnings =
+[];
+
+
+if (
+!payload ||
+typeof payload !==
+"object"
+) {
+
+errors.push(
+"Die Datei enthält kein gültiges Backup-Objekt."
+);
+
+return {
+ok:
+false,
+
+errors,
+warnings,
+
+summary:
+null
+};
+
+}
+
+
+if (
+payload.format !==
+"Master of Disaster Complete Backup"
+) {
+
+errors.push(
+"Unbekanntes Backup-Format."
+);
+
+}
+
+
+if (
+Number(
+payload.schemaVersion
+) !==
+1
+) {
+
+errors.push(
+"Nicht unterstützte Backup-Schema-Version: " +
+String(
+payload.schemaVersion
+)
+);
+
+}
+
+
+if (
+!payload.state ||
+typeof payload.state !==
+"object"
+) {
+
+errors.push(
+"Der Backup-Zustand (state) fehlt."
+);
+
+return {
+ok:
+false,
+
+errors,
+warnings,
+
+summary:
+null
+};
+
+}
+
+
+const state =
+payload.state;
+
+
+if (
+!Array.isArray(
+state.tasks
+)
+) {
+
+errors.push(
+"tasks fehlt oder ist keine Liste."
+);
+
+}
+
+
+if (
+!Array.isArray(
+state.archive
+)
+) {
+
+errors.push(
+"archive fehlt oder ist keine Liste."
+);
+
+}
+
+
+if (
+!Array.isArray(
+state.weightPhases
+)
+) {
+
+errors.push(
+"weightPhases fehlt oder ist keine Liste."
+);
+
+}
+
+
+if (
+!state.weightState ||
+typeof state.weightState !==
+"object" ||
+Array.isArray(
+state.weightState
+)
+) {
+
+errors.push(
+"weightState fehlt oder ist ungültig."
+);
+
+}
+
+
+const nextNumber =
+Number(
+state.nextArchiveNumber
+);
+
+
+if (
+!Number.isInteger(
+nextNumber
+) ||
+nextNumber < 1
+) {
+
+errors.push(
+"nextArchiveNumber ist ungültig."
+);
+
+}
+
+
+if (
+errors.length > 0
+) {
+
+return {
+ok:
+false,
+
+errors,
+warnings,
+
+summary:
+null
+};
+
+}
+
+
+/*
+  Archivnummern und nächste Archivnummer prüfen.
+*/
+const realArchive =
+state.archive.filter(
+item =>
+!(
+item &&
+(
+item.isTestArchive ===
+true ||
+/\(\s*test\s*\)/i.test(
+String(
+item.text || ""
+)
+)
+)
+)
+);
+
+
+const archiveNumbers =
+realArchive
+.map(
+item =>
+Number(
+item &&
+item.archiveNumber
+)
+)
+.filter(
+Number.isFinite
+);
+
+
+const seenArchiveNumbers =
+new Set();
+
+
+archiveNumbers.forEach(
+number => {
+
+if (
+seenArchiveNumbers.has(
+number
+)
+) {
+
+errors.push(
+"Doppelte Archivnummer A" +
+String(
+number
+).padStart(
+3,
+"0"
+)
+);
+
+}
+
+
+seenArchiveNumbers.add(
+number
+);
+
+}
+);
+
+
+const highestArchiveNumber =
+archiveNumbers.length > 0
+? Math.max(
+...archiveNumbers
+)
+: 0;
+
+
+if (
+nextNumber !==
+highestArchiveNumber + 1
+) {
+
+errors.push(
+"nextArchiveNumber ist A" +
+String(
+nextNumber
+).padStart(
+3,
+"0"
+) +
+", erwartet wird A" +
+String(
+highestArchiveNumber + 1
+).padStart(
+3,
+"0"
+) +
+"."
+);
+
+}
+
+
+/*
+  Technische Task-IDs und Status prüfen.
+*/
+const seenTaskIds =
+new Set();
+
+
+state.tasks.forEach(
+task => {
+
+if (
+!task ||
+typeof task !==
+"object"
+) {
+
+errors.push(
+"Mindestens ein Task-Eintrag ist ungültig."
+);
+
+return;
+
+}
+
+
+if (
+seenTaskIds.has(
+task.id
+)
+) {
+
+errors.push(
+"Doppelte technische Task-ID: " +
+String(
+task.id
+)
+);
+
+}
+
+
+seenTaskIds.add(
+task.id
+);
+
+
+if (
+![
+"open",
+"running",
+"paused",
+"completed",
+"aborted"
+].includes(
+task.status
+)
+) {
+
+errors.push(
+"Unbekannter Status bei „" +
+String(
+task.text || "ohne Namen"
+) +
+"“: " +
+String(
+task.status
+)
+);
+
+}
+
+
+/*
+  Segmente nur strukturell prüfen.
+*/
+if (
+Array.isArray(
+task.activeSegments
+)
+) {
+
+task.activeSegments.forEach(
+(segment,index) => {
+
+if (
+!segment ||
+!segment.startedAt
+) {
+
+errors.push(
+"Ungültiges Aktivsegment bei „" +
+String(
+task.text || "ohne Namen"
+) +
+"“, Segment " +
+String(
+index + 1
+) +
+"."
+);
+
+return;
+
+}
+
+
+const startMs =
+new Date(
+segment.startedAt
+).getTime();
+
+
+const endMs =
+segment.endedAt
+? new Date(
+segment.endedAt
+).getTime()
+: null;
+
+
+if (
+!Number.isFinite(
+startMs
+)
+) {
+
+errors.push(
+"Ungültiger Segmentstart bei „" +
+String(
+task.text || "ohne Namen"
+) +
+"“."
+);
+
+}
+
+
+if (
+endMs !== null &&
+(
+!Number.isFinite(
+endMs
+) ||
+endMs <
+startMs
+)
+) {
+
+errors.push(
+"Ungültiges Segmentende bei „" +
+String(
+task.text || "ohne Namen"
+) +
+"“."
+);
+
+}
+
+}
+);
+
+}
+
+}
+);
+
+
+/*
+  Mehr als eine laufende Aufgabe wäre inkonsistent.
+*/
+const runningCount =
+state.tasks.filter(
+task =>
+task &&
+task.status ===
+"running"
+).length;
+
+
+if (
+runningCount > 1
+) {
+
+errors.push(
+String(
+runningCount
+) +
+" Aufgaben sind gleichzeitig als laufend gespeichert."
+);
+
+}
+
+
+/*
+  Gewichtstragephasen prüfen.
+*/
+state.weightPhases.forEach(
+(phase,index) => {
+
+if (
+!phase ||
+!phase.startedAt
+) {
+
+errors.push(
+"Ungültige Gewichtsphase " +
+String(
+index + 1
+) +
+"."
+);
+
+return;
+
+}
+
+
+const startMs =
+new Date(
+phase.startedAt
+).getTime();
+
+
+const endMs =
+phase.endedAt
+? new Date(
+phase.endedAt
+).getTime()
+: null;
+
+
+if (
+!Number.isFinite(
+startMs
+)
+) {
+
+errors.push(
+"Ungültiger Start in Gewichtsphase " +
+String(
+index + 1
+) +
+"."
+);
+
+}
+
+
+if (
+endMs !== null &&
+(
+!Number.isFinite(
+endMs
+) ||
+endMs <
+startMs
+)
+) {
+
+errors.push(
+"Ungültiges Ende in Gewichtsphase " +
+String(
+index + 1
+) +
+"."
+);
+
+}
+
+
+if (
+!Number.isFinite(
+Number(
+phase.weightKg
+)
+) ||
+Number(
+phase.weightKg
+) <= 0
+) {
+
+warnings.push(
+"Gewichtsphase " +
+String(
+index + 1
+) +
+" besitzt kein plausibles positives Gewicht."
+);
+
+}
+
+}
+);
+
+
+const testArchiveCount =
+state.archive.filter(
+item =>
+item &&
+(
+item.isTestArchive ===
+true ||
+/\(\s*test\s*\)/i.test(
+String(
+item.text || ""
+)
+)
+)
+).length;
+
+
+return {
+ok:
+errors.length === 0,
+
+errors,
+warnings,
+
+summary: {
+tasks:
+state.tasks.length,
+
+archive:
+realArchive.length,
+
+testArchive:
+testArchiveCount,
+
+weightPhases:
+state.weightPhases.length,
+
+nextArchiveNumber:
+nextNumber,
+
+exportedAt:
+payload.exportedAt || null,
+
+masterVersion:
+payload.masterVersion || null
+}
+};
+
+}
+
+
+function selectBackupForRestore() {
+
+const input =
+document.createElement(
+"input"
+);
+
+
+input.type =
+"file";
+
+
+input.accept =
+".json,application/json";
+
+
+input.style.display =
+"none";
+
+
+input.addEventListener(
+"change",
+() => {
+
+const file =
+input.files &&
+input.files[0];
+
+
+if (!file) {
+
+input.remove();
+
+return;
+
+}
+
+
+const reader =
+new FileReader();
+
+
+reader.onload =
+() => {
+
+try {
+
+const payload =
+JSON.parse(
+String(
+reader.result || ""
+)
+);
+
+
+const validation =
+validateCompleteBackupPayload(
+payload
+);
+
+
+if (
+!validation.ok
+) {
+
+pendingRestoreBackup =
+null;
+
+
+showInfoModal(
+"Backup abgelehnt",
+[
+"Die Datei wurde NICHT eingespielt.",
+"",
+...validation.errors.map(
+value =>
+"❌ " + value
+),
+...validation.warnings.map(
+value =>
+"⚠️ " + value
+)
+].join(
+"\n"
+)
+);
+
+
+return;
+
+}
+
+
+pendingRestoreBackup =
+payload;
+
+
+showRestoreBackupConfirmation(
+file.name,
+validation
+);
+
+} catch (
+error
+) {
+
+pendingRestoreBackup =
+null;
+
+
+showInfoModal(
+"Backup abgelehnt",
+"Die ausgewählte Datei ist kein gültiges JSON-Backup. Es wurde nichts verändert."
+);
+
+} finally {
+
+input.remove();
+
+}
+
+};
+
+
+reader.onerror =
+() => {
+
+pendingRestoreBackup =
+null;
+
+
+input.remove();
+
+
+showInfoModal(
+"Backup konnte nicht gelesen werden",
+"Es wurde nichts verändert."
+);
+
+};
+
+
+reader.readAsText(
+file
+);
+
+}
+);
+
+
+document.body.appendChild(
+input
+);
+
+
+input.click();
+
+}
+
+
+function showRestoreBackupConfirmation(
+fileName,
+validation
+) {
+
+const summary =
+validation.summary;
+
+
+const warningText =
+validation.warnings.length > 0
+? (
+"<div style='margin-top:10px;color:#d7b56d;'>" +
+validation.warnings.map(
+value =>
+"⚠️ " +
+escapeHtml(
+value
+)
+).join(
+"<br>"
+) +
+"</div>"
+)
+: "";
+
+
+document.getElementById(
+"modalContainer"
+).innerHTML = `
+
+<div class="modal-backdrop">
+
+<div class="modal">
+
+<h2>Komplett-Backup wiederherstellen?</h2>
+
+<p>
+Die Datei wurde geprüft und ist strukturell gültig.
+Beim Wiederherstellen wird der aktuelle lokale App-Zustand
+durch den Backup-Zustand ersetzt.
+</p>
+
+<div style="
+margin:12px 0;
+padding:10px;
+border:1px solid #30383e;
+border-radius:10px;
+background:#111416;
+font-size:11px;
+line-height:1.55;
+">
+
+<strong>${escapeHtml(
+fileName
+)}</strong><br>
+
+Aufgaben: ${summary.tasks}<br>
+Archiv: ${summary.archive}<br>
+Testarchiv: ${summary.testArchive}<br>
+Gewichtsphasen: ${summary.weightPhases}<br>
+Nächste Archivnummer: A${String(
+summary.nextArchiveNumber
+).padStart(
+3,
+"0"
+)}
+
+${
+summary.exportedAt
+? "<br>Exportiert: " +
+escapeHtml(
+String(
+summary.exportedAt
+)
+)
+: ""
+}
+
+${warningText}
+
+</div>
+
+<p>
+<strong>Wichtig:</strong>
+Dieser Vorgang überschreibt die aktuell gespeicherten Aufgaben,
+das Archiv und die Gewichtsdaten.
+</p>
+
+<div class="modal-actions">
+
+<button
+class="modal-button cancel-modal"
+onclick="cancelBackupRestore()"
+>
+ABBRECHEN
+</button>
+
+<button
+class="modal-button danger-modal"
+onclick="restorePendingBackup()"
+>
+WIEDERHERSTELLEN
+</button>
+
+</div>
+
+</div>
+
+</div>
+`;
+
+}
+
+
+function cancelBackupRestore() {
+
+pendingRestoreBackup =
+null;
+
+
+closeModal();
+
+}
+
+
+function restorePendingBackup() {
+
+if (
+!pendingRestoreBackup
+) {
+
+showInfoModal(
+"Kein Backup ausgewählt",
+"Es liegt kein geprüftes Backup zur Wiederherstellung bereit."
+);
+
+return;
+
+}
+
+
+const validation =
+validateCompleteBackupPayload(
+pendingRestoreBackup
+);
+
+
+if (
+!validation.ok
+) {
+
+pendingRestoreBackup =
+null;
+
+
+showInfoModal(
+"Wiederherstellung abgebrochen",
+"Das Backup hat die erneute Sicherheitsprüfung nicht bestanden. Es wurde nichts verändert."
+);
+
+return;
+
+}
+
+
+/*
+  Sicherheitsnetz:
+  Den aktuellen Zustand vor dem Überschreiben zusätzlich
+  im localStorage ablegen. Falls der Speicher dafür zu klein ist,
+  darf die eigentliche Wiederherstellung trotzdem fortfahren.
+*/
+try {
+
+safeStorageSet(
+"masterOfDisasterPreRestoreBackup",
+JSON.stringify(
+createCompleteBackupPayload()
+)
+);
+
+} catch (
+error
+) {
+
+console.warn(
+"Pre-Restore-Sicherheitskopie konnte nicht zusätzlich gespeichert werden."
+);
+
+}
+
+
+const state =
+pendingRestoreBackup.state;
+
+
+/*
+  Neue Arrays/Objekte erzeugen, damit das eingelesene JSON
+  nicht versehentlich weiter als Referenz verwendet wird.
+*/
+tasks =
+JSON.parse(
+JSON.stringify(
+state.tasks
+)
+);
+
+
+archive =
+JSON.parse(
+JSON.stringify(
+state.archive
+)
+);
+
+
+nextArchiveNumber =
+Number(
+state.nextArchiveNumber
+);
+
+
+weightState =
+JSON.parse(
+JSON.stringify(
+state.weightState
+)
+);
+
+
+weightPhases =
+JSON.parse(
+JSON.stringify(
+state.weightPhases
+)
+);
+
+
+/*
+  Sichere UI-Einstellungen übernehmen, sofern vorhanden.
+*/
+const uiState =
+state.uiState &&
+typeof state.uiState ===
+"object"
+? state.uiState
+: {};
+
+
+if (
+[
+"all",
+"today",
+"priority",
+"due",
+"active",
+"completed",
+"archive",
+"statistics",
+"dev"
+].includes(
+uiState.currentTab
+)
+) {
+
+currentTab =
+uiState.currentTab;
+
+} else {
+
+currentTab =
+"all";
+
+}
+
+
+if (
+[
+"normal",
+"medium",
+"high"
+].includes(
+uiState.newTaskPriority
+)
+) {
+
+newTaskPriority =
+uiState.newTaskPriority;
+
+}
+
+
+if (
+[
+"work",
+"leisure",
+"selfrunner",
+"cooking"
+].includes(
+uiState.newTaskType
+)
+) {
+
+newTaskType =
+uiState.newTaskType;
+
+}
+
+
+if (
+[
+"all",
+"today",
+"7",
+"30"
+].includes(
+String(
+uiState.statisticsPeriod
+)
+)
+) {
+
+statisticsPeriod =
+uiState.statisticsPeriod;
+
+}
+
+
+/*
+  V361-Import als erledigt markieren.
+  Dadurch wird ein wiederhergestellter Aufgabenbestand auf einem
+  frischen Browser nicht beim nächsten Laden nochmals dupliziert.
+*/
+safeStorageSet(
+"masterOfDisasterMasterV361ActiveTasksImported",
+"done"
+);
+
+
+pendingRestoreBackup =
+null;
+
+
+saveAll();
+
+
+closeModal();
+
+
+editingTaskId =
+null;
+
+
+editingWeight =
+false;
+
+
+/*
+  Tab-Markierung und Eingabepanel ohne processDayTransition
+  aktualisieren. Ein Restore darf nicht unmittelbar beim Einspielen
+  historische Daten durch Tageswechsel-Logik verändern.
+*/
+document
+.querySelectorAll(
+".tab-button"
+)
+.forEach(
+button => {
+
+button.classList.toggle(
+"active",
+button.dataset.tab ===
+currentTab
+);
+
+}
+);
+
+
+const inputPanel =
+document.getElementById(
+"inputPanel"
+);
+
+
+if (
+inputPanel
+) {
+
+inputPanel.style.display =
+currentTab ===
+"all"
+? "block"
+: "none";
+
+}
+
+
+updateNewOptions();
+
+renderWeightPanel();
+
+render();
+
+
+const finalReport =
+collectDataIntegrityReport();
+
+
+showInfoModal(
+finalReport.ok
+? "Backup wiederhergestellt"
+: "Backup wiederhergestellt – Prüfung beachten",
+finalReport.ok
+? (
+"Der komplette lokale Zustand wurde wiederhergestellt. " +
+validation.summary.tasks +
+" Aufgaben, " +
+validation.summary.archive +
+" Archivaufgaben und " +
+validation.summary.weightPhases +
+" Gewichtsphasen sind geladen."
+)
+: (
+"Der Backup-Zustand wurde geladen, aber die anschließende Datenprüfung meldet Auffälligkeiten:\n" +
+finalReport.errors.join(
+"\n"
+)
+)
+);
+
+}
+
+
 function simulateDayTransitionForTesting() {
 
 const completedToday =
@@ -15966,6 +17203,14 @@ class="dev-button"
 onclick="exportCompleteBackup()"
 >
 💾 KOMPLETT-BACKUP
+</button>
+
+
+<button
+class="dev-button"
+onclick="selectBackupForRestore()"
+>
+♻️ BACKUP WIEDERHERSTELLEN
 </button>
 
 <button
