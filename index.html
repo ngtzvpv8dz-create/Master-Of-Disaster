@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0d0f">  
   
 <title>Master of Disaster</title>
-<!-- BUILD: V365 · MODALS-THEMED · THEMES-VOLLSTÄNDIG · DEV-TAB · DATENPRÜFUNG · BACKUP -->
+<!-- BUILD: V366 · INPUT-FIX · INDUSTRIAL-NEON · MODALS-THEMED · DEV-TAB · BACKUP -->
 
 <style>
 
@@ -3424,6 +3424,186 @@ body[data-theme="neon-night"] .time-edit-grid {
   border-color: rgba(124,241,229,.28) !important;
 }
 
+
+/* ======================================
+   V366 – ZEITFELDER SAUBER EINPASSEN
+   + INDUSTRIAL -> STÄRKERES NEON-THEME
+====================================== */
+
+/* Formularfelder dürfen niemals rechts aus ihrem Container drücken. */
+.modal *,
+.time-edit-grid *,
+.modal input,
+.modal textarea,
+.modal select,
+.modal .time-edit-input {
+  box-sizing: border-box !important;
+}
+
+.modal input,
+.modal textarea,
+.modal select,
+.modal .time-edit-input {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Gleicher Innenabstand links und rechts im Zeitformular. */
+.time-edit-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.modal .time-edit-row,
+.modal .time-edit-field,
+.modal .form-field,
+.modal .field-group {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* INDUSTRIAL STEEL wird zur kräftigeren Neon-Alternative.
+   Neon Night selbst bleibt unverändert. */
+body[data-theme="industrial-steel"] {
+  background:
+    radial-gradient(
+      circle at 12% 14%,
+      rgba(0,235,255,.30) 0%,
+      rgba(0,235,255,0) 31%
+    ),
+    radial-gradient(
+      circle at 88% 20%,
+      rgba(255,35,170,.28) 0%,
+      rgba(255,35,170,0) 34%
+    ),
+    radial-gradient(
+      circle at 68% 82%,
+      rgba(115,60,255,.34) 0%,
+      rgba(115,60,255,0) 39%
+    ),
+    linear-gradient(
+      132deg,
+      #071c27 0%,
+      #162c48 27%,
+      #3a164c 57%,
+      #161433 78%,
+      #052c32 100%
+    ) !important;
+  background-attachment: fixed !important;
+
+  --panel: rgba(20,38,55,.84);
+  --panel-2: rgba(40,25,61,.84);
+  --panel-3: rgba(10,25,40,.90);
+
+  --task-bg: rgba(18,43,60,.90);
+  --task-bg-running: rgba(4,74,79,.90);
+  --task-bg-paused: rgba(78,31,68,.90);
+  --task-bg-completed: rgba(32,28,57,.88);
+  --archive-bg: rgba(20,35,56,.88);
+
+  --border: rgba(75,207,226,.40);
+  --border-strong: rgba(255,79,190,.52);
+
+  --chip-bg: rgba(22,35,56,.86);
+  --chip-text: #e5eaff;
+
+  --button-bg: rgba(29,35,65,.92);
+  --button-text: #f6f7ff;
+
+  --modal-bg: rgba(27,39,65,.98);
+  --modal-text: #f7f8ff;
+}
+
+body[data-theme="industrial-steel"] .task,
+body[data-theme="industrial-steel"] .archive-task {
+  background:
+    linear-gradient(
+      128deg,
+      rgba(11,70,80,.92),
+      rgba(45,37,94,.90) 52%,
+      rgba(92,27,76,.90)
+    ) !important;
+  border-color: rgba(67,230,238,.48) !important;
+  box-shadow:
+    0 0 18px rgba(0,230,255,.11),
+    0 0 28px rgba(255,45,180,.07),
+    0 10px 28px rgba(0,0,0,.30) !important;
+}
+
+body[data-theme="industrial-steel"] .task.paused {
+  background:
+    linear-gradient(
+      128deg,
+      rgba(83,31,75,.94),
+      rgba(51,35,99,.91),
+      rgba(16,58,72,.88)
+    ) !important;
+  border-color: rgba(255,74,190,.48) !important;
+}
+
+body[data-theme="industrial-steel"] .task.running {
+  background:
+    linear-gradient(
+      128deg,
+      rgba(3,89,94,.94),
+      rgba(38,49,113,.92),
+      rgba(75,29,100,.90)
+    ) !important;
+  border-color: rgba(50,245,235,.66) !important;
+}
+
+body[data-theme="industrial-steel"] .today-summary,
+body[data-theme="industrial-steel"] .next-task-panel,
+body[data-theme="industrial-steel"] .archive-day,
+body[data-theme="industrial-steel"] .archive-day-header,
+body[data-theme="industrial-steel"] .archive-stat,
+body[data-theme="industrial-steel"] .statistics-group,
+body[data-theme="industrial-steel"] .statistics-card,
+body[data-theme="industrial-steel"] .statistics-record,
+body[data-theme="industrial-steel"] .statistics-period-bar,
+body[data-theme="industrial-steel"] .task-analysis-item,
+body[data-theme="industrial-steel"] .task-analysis-stat,
+body[data-theme="industrial-steel"] .dev-panel {
+  background:
+    linear-gradient(
+      132deg,
+      rgba(12,62,74,.86),
+      rgba(47,37,91,.84) 50%,
+      rgba(83,29,74,.82)
+    ) !important;
+  border-color: rgba(89,213,235,.36) !important;
+}
+
+body[data-theme="industrial-steel"] .modal {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(11,65,77,.98),
+      rgba(48,36,94,.98) 50%,
+      rgba(84,27,74,.98)
+    ) !important;
+  border-color: rgba(76,235,238,.52) !important;
+  box-shadow:
+    0 0 22px rgba(0,230,255,.13),
+    0 0 40px rgba(255,45,180,.10),
+    0 22px 60px rgba(0,0,0,.44) !important;
+}
+
+body[data-theme="industrial-steel"] .tab-button.active,
+body[data-theme="industrial-steel"] .theme-button.active,
+body[data-theme="industrial-steel"] .statistics-period-button.active {
+  box-shadow:
+    0 0 15px rgba(0,235,255,.32),
+    0 0 28px rgba(255,45,180,.18);
+}
+
 </style>
 </head>
 
@@ -4258,13 +4438,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V365";
+"V366";
 
 const APP_BUILD_DATE =
 "18.08.2026";
 
 const APP_BUILD_TIME =
-"11:38";
+"11:43";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
