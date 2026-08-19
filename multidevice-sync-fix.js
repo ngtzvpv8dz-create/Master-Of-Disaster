@@ -1,5 +1,7 @@
-/* MULTI-DEVICE SYNC FIX · V398 stable hotfix 3
-   Adds passive cloud polling so an already-open second device receives cloud-only changes.
+/* MULTI-DEVICE SYNC FIX · V398 stable hotfix 4
+   Passive cloud polling + correct offline reconnect baseline handling.
+   A device that uploads queued offline changes now establishes the uploaded state as its safe baseline;
+   other unchanged devices can then auto-pull that cloud-only change.
 */
 (function () {
   const DIRTY_KEY = "masterOfDisasterCloudSyncPendingV396";
@@ -113,18 +115,39 @@
       return {handled:false};
     } finally { preflightBusy = false; }
   }
+
   const guardedRun = runSupabaseLiveSync;
   runSupabaseLiveSync = async function(manual=false) {
-    try { const result = await preflightAndMaybePull(); if (result.handled) return; }
-    catch(error) { console.warn("Multi-device preflight failed; existing safe sync guard takes over:",error); }
-    return guardedRun(manual);
+    const wasDirty = safeStorageGet(DIRTY_KEY) === "1";
+    try {
+      const result = await preflightAndMaybePull();
+      if (result.handled) return;
+    } catch(error) {
+      console.warn("Multi-device preflight failed; existing safe sync guard takes over:",error);
+    }
+    const result = await guardedRun(manual);
+    /* Critical offline-first case: if this run flushed a queued local edit successfully,
+       the uploaded local state is now the safe baseline. Without this, the originating device
+       can retain the pre-offline baseline and other devices may refuse a legitimate cloud-only pull. */
+    if (wasDirty && navigator.onLine && safeStorageGet(DIRTY_KEY) !== "1") {
+      try {
+        const remote = await remoteSnapshot();
+        const local = await localHash();
+        if (remote && remote.hash === local) markSafe(remote.hash);
+      } catch(error) {
+        console.warn("Post-offline-sync baseline verification failed:",error);
+      }
+    }
+    return result;
   };
+
   async function checkCloudOnlyChange() {
     if (document.visibilityState === "hidden") return;
     try { await preflightAndMaybePull(); } catch(error) { console.warn("Cloud-only check failed:",error); }
   }
   window.addEventListener("load",()=>setTimeout(checkCloudOnlyChange,250));
   window.addEventListener("focus",()=>setTimeout(checkCloudOnlyChange,350));
+  window.addEventListener("online",()=>setTimeout(checkCloudOnlyChange,1200));
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") setTimeout(checkCloudOnlyChange,350); });
-  setInterval(checkCloudOnlyChange, 3000);
+  setInterval(checkCloudOnlyChange,3000);
 })();
