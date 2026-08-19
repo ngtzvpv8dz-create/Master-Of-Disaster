@@ -1,0 +1,35 @@
+name: V390 metadata updater
+on:
+  push:
+    branches: [v390-conflict-actions]
+permissions:
+  contents: write
+jobs:
+  update:
+    if: "!contains(github.event.head_commit.message, '[v390-meta]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v390-conflict-actions
+      - name: Update app metadata
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app.js')
+          s=p.read_text()
+          s=s.replace('const APP_VERSION =\n"V389";', 'const APP_VERSION =\n"V390";', 1)
+          s=s.replace('const APP_BUILD_DATE =\n"19.08.2026";', 'const APP_BUILD_DATE =\n"19.08.2026";', 1)
+          import re
+          s=re.sub(r'const APP_BUILD_TIME =\n"[^"]+";', 'const APP_BUILD_TIME =\n"05:10";', s, count=1)
+          p.write_text(s)
+          PY
+          node --check app.js
+          node --check conflict-actions-v390.js
+      - name: Commit metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js
+          git diff --cached --quiet || git commit -m "build: V390 metadata [v390-meta]"
+          git push origin HEAD:v390-conflict-actions
