@@ -13,10 +13,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Syntax check sync core
-        run: node --check sync-core-v399.js
+      - name: Syntax check iPhone backup core
+        run: node --check iphone-backup-v400.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V399 runtime and sync decisions
+      - name: Verify live V400 runtime
         run: |
           cat > smoke.js <<'JS'
           const { chromium } = require('playwright');
@@ -26,31 +26,22 @@ jobs:
             const page=await browser.newPage();
             const errors=[];
             page.on('pageerror',e=>errors.push(e.message));
-            let result={status:'FAIL',version:'unknown',today:false,dev:false,weightHiddenInDev:false,syncCore:false,oldSyncLayersGone:false,decisionTests:false,deployAttempts:0,errors:[]};
+            let result={status:'FAIL',version:'unknown',today:false,dev:false,weightHiddenInDev:false,iphoneBackup:false,oldSyncLayersGone:false,noConflictStack:false,deployAttempts:0,errors:[]};
             try{
               let live=false;
               for(let i=1;i<=18;i++){
                 result.deployAttempts=i;
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                live=await page.evaluate(()=>typeof window.__modSyncDecisionV399==='function');
+                live=await page.evaluate(()=>!!window.__modIphoneBackupV400);
                 if(live) break;
                 await page.waitForTimeout(10000);
               }
-              if(!live) throw new Error('V399 sync core not deployed after retry window');
-              result.syncCore=true;
+              if(!live) throw new Error('V400 iPhone backup core not deployed after retry window');
+              result.iphoneBackup=true;
               await page.waitForSelector('[data-tab="today"]',{timeout:15000});
-              result.decisionTests=await page.evaluate(()=>{
-                const d=window.__modSyncDecisionV399;
-                return d('A','A','A',false)==='equal' &&
-                  d('A','B','A',false)==='pull' &&
-                  d('B','A','A',true)==='push' &&
-                  d('B','C','A',true)==='conflict' &&
-                  d('B','C',null,true)==='conflict';
-              });
-              result.oldSyncLayersGone=await page.evaluate(()=>{
-                const srcs=Array.from(document.scripts).map(s=>s.src||'').join('\n');
-                return !/offline-sync-v396|offline-conflict-v398|multidevice-sync-fix/.test(srcs) && /sync-core-v399/.test(srcs);
-              });
+              const scripts=await page.evaluate(()=>Array.from(document.scripts).map(s=>s.src||'').join('\n'));
+              result.oldSyncLayersGone=!/sync-core-v399|offline-sync-v396|offline-conflict-v398|multidevice-sync-fix/.test(scripts);
+              result.noConflictStack=!/conflict-center\.js|conflict-filter-v388|weight-conflict-v392|conflict-actions-v390/.test(scripts);
               await page.click('[data-tab="today"]');
               await page.waitForTimeout(300);
               result.today=await page.locator('[data-tab="today"]').evaluate(e=>e.classList.contains('active'));
@@ -60,9 +51,9 @@ jobs:
               result.weightHiddenInDev=await page.locator('#weightContainer').evaluate(e=>getComputedStyle(e).display==='none');
               const body=await page.locator('body').innerText();
               const matches=body.match(/V\d{3}/g)||[];
-              result.version=matches.includes('V399')?'V399':(matches[0]||'unknown');
+              result.version=matches.includes('V400')?'V400':(matches[0]||'unknown');
               result.errors=errors;
-              result.status=(result.today&&result.dev&&result.weightHiddenInDev&&result.syncCore&&result.oldSyncLayersGone&&result.decisionTests&&result.version==='V399'&&!errors.length)?'PASS':'FAIL';
+              result.status=(result.today&&result.dev&&result.weightHiddenInDev&&result.iphoneBackup&&result.oldSyncLayersGone&&result.noConflictStack&&result.version==='V400'&&!errors.length)?'PASS':'FAIL';
             }catch(e){result.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(result,null,2));
             console.log(result);
