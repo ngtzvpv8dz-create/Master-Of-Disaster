@@ -2,10 +2,11 @@
    Ziel: Ein Gerät, localStorage ist Master. Supabase ist ausschließlich Sicherung.
    - Keine Multi-Device-Synchronisation.
    - Kein automatisches Cloud→Local.
-   - Jede lokale Änderung wird lokal sofort gespeichert und bei Online-Verbindung als Komplett-Snapshot gesichert.
+   - Jede lokale Änderung wird lokal sofort gespeichert.
+   - Cloud-Backup erfolgt gebündelt 10 Sekunden nach der LETZTEN lokalen Änderung, nicht als Endlosschleife.
    - Offline-Änderungen bleiben pending und werden beim Wieder-online-Gehen automatisch gesichert.
    - Nach jedem Upload wird der Cloud-Snapshot zurückgelesen und vollständig verifiziert.
-   - Zusätzlich wird pro Kalendertag ein Tages-Backup in Supabase geführt.
+   - Zusätzlich wird pro Kalendertag ein Tages-Backup in Supabase geführt und am selben Tag auf den letzten sicheren Stand aktualisiert.
 */
 (function(){
   const LIVE_KEY="live_complete_backup_v1";
@@ -13,6 +14,7 @@
   const PENDING_KEY="masterOfDisasterIphoneBackupPendingV400";
   const LAST_OK_KEY="masterOfDisasterIphoneBackupLastOkV400";
   const LAST_DAILY_KEY="masterOfDisasterIphoneBackupDailyDateV400";
+  const AUTO_BACKUP_DELAY_MS=10000;
   let busy=false;
   let timer=null;
 
@@ -97,6 +99,7 @@
 
   async function backupNow(manual=false){
     if(busy) return;
+    if(timer){ clearTimeout(timer); timer=null; }
     if(!navigator.onLine){
       setPending(true);
       setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderungen sind lokal gespeichert. Das Cloud-Backup wird automatisch nachgeholt, sobald das iPhone wieder online ist.","v400-offline");
@@ -143,8 +146,10 @@
       addStatus();
       return;
     }
+    /* Debounce: Jede weitere Änderung innerhalb der 10 Sekunden startet die Wartezeit neu. */
     if(timer) clearTimeout(timer);
-    timer=setTimeout(()=>{timer=null;backupNow(false);},600);
+    timer=setTimeout(()=>{timer=null;backupNow(false);},AUTO_BACKUP_DELAY_MS);
+    addStatus();
   }
 
   /* Alte Sync-Timer aus app.js stoppen; ab hier gibt es nur noch Backup, keinen Cloud-Pull. */
@@ -161,7 +166,7 @@
     ["offlineSyncStatusV396","syncStatusV399","iphoneBackupStatusV400"].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
     const button=Array.from(document.querySelectorAll("button")).find(btn=>/JETZT SYNCHRONISIEREN|JETZT SICHERN/i.test(btn.textContent||""));
     if(!button||!button.parentElement) return;
-    button.textContent="☁️ JETZT SICHERN";
+    button.textContent="☁️ JETZT SICHERN · SOFORT";
     const box=document.createElement("div");
     box.id="iphoneBackupStatusV400";
     box.style.cssText="margin-top:10px;padding:10px;border:1px solid #30383e;border-radius:10px;background:#0f1315;font-size:10px;line-height:1.55;";
@@ -170,6 +175,7 @@
     box.innerHTML=`<strong>📱 IPHONE · LOCAL MASTER · V400</strong><br>`+
       `NETZ · ${navigator.onLine?"ONLINE ✅":"OFFLINE ⚠️"}<br>`+
       `CLOUD-BACKUP AUSSTEHEND · ${isPending()?"JA ⚠️":"NEIN ✅"}<br>`+
+      `AUTO-BACKUP · 10 SEK. NACH LETZTER ÄNDERUNG ✅<br>`+
       `LETZTES SICHERES CLOUD-BACKUP · ${escapeHtml(String(shown))}<br>`+
       `<span style="opacity:.72">Supabase ist Sicherung. Kein automatisches Cloud→Local und keine Geräte-Synchronisation.</span>`;
     button.insertAdjacentElement("afterend",box);
@@ -183,10 +189,11 @@
     if(currentTab==="dev") setTimeout(addStatus,0);
   };
 
+  /* Geschlossene App: JavaScript läuft nicht. Beim nächsten Öffnen/Fokus wird ein Pending-Backup nachgeholt. */
   window.addEventListener("online",()=>setTimeout(()=>{if(isPending())backupNow(false);},600));
   window.addEventListener("focus",()=>setTimeout(()=>{if(isPending()&&navigator.onLine)backupNow(false);},350));
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&isPending()&&navigator.onLine)setTimeout(()=>backupNow(false),350);});
   window.addEventListener("load",()=>setTimeout(()=>{addStatus();if(isPending()&&navigator.onLine)backupNow(false);},500));
 
-  window.__modIphoneBackupV400={backupNow,isPending,berlinDateKey};
+  window.__modIphoneBackupV400={backupNow,isPending,berlinDateKey,autoBackupDelayMs:AUTO_BACKUP_DELAY_MS};
 })();
