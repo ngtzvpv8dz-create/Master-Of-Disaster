@@ -1,12 +1,12 @@
 /* V398 · OFFLINE-RECONNECT KONFLIKTSTOPP
-   - Wenn V396 beim Wiederverbinden parallele Cloud-Aenderungen erkennt,
-     wird der Sync sichtbar angehalten.
-   - DEV/Konfliktzentrale wird automatisch geoeffnet.
-   - Kein automatisches Ueberschreiben einer Seite.
+   - Konflikt-UI wird nur noch fuer einen AKTUELL bestaetigten echten Parallelkonflikt geoeffnet.
+   - Alte/stale cloud-change-guard-Zustaende aus V396/V398 loesen beim App-Start KEIN Popup mehr aus.
+   - Der Multi-Device-Preflight entscheidet zuerst, ob Cloud-only automatisch uebernommen werden kann.
 */
 (function () {
   const originalRun = runSupabaseLiveSync;
   let conflictUiBusy = false;
+  let confirmedConflictThisRun = false;
 
   function isCloudChangeStop() {
     const state = supabaseLiveSyncState || {};
@@ -24,7 +24,7 @@
   }
 
   async function exposeConflictCenter() {
-    if (conflictUiBusy) return;
+    if (conflictUiBusy || !confirmedConflictThisRun) return;
     conflictUiBusy = true;
     try {
       if (typeof runSupabaseCloudStartCheck === "function") {
@@ -33,9 +33,7 @@
       activateDevTab();
       setTimeout(() => {
         const center = document.getElementById("cloudConflictCenter");
-        if (center && typeof center.scrollIntoView === "function") {
-          center.scrollIntoView({ behavior:"smooth", block:"start" });
-        }
+        if (center && typeof center.scrollIntoView === "function") center.scrollIntoView({ behavior:"smooth", block:"start" });
       }, 120);
       showInfoModal(
         "Sync angehalten · Konflikt erkannt ⚠️",
@@ -49,16 +47,28 @@
   }
 
   runSupabaseLiveSync = async function (manual=false) {
-    await originalRun(manual);
+    /* Ein alter UI-State darf niemals schon vor dem aktuellen Sync-Lauf ein Popup erzeugen. */
+    confirmedConflictThisRun = false;
     if (isCloudChangeStop()) {
-      await exposeConflictCenter();
+      supabaseLiveSyncState = {
+        ...supabaseLiveSyncState,
+        status:"warn",
+        label:"SYNC-STATUS WIRD GEPRÜFT …",
+        detail:"Lokaler und Cloud-Stand werden neu bewertet.",
+        lastReason:"preflight-recheck"
+      };
     }
+
+    await originalRun(manual);
+
+    confirmedConflictThisRun = isCloudChangeStop();
+    if (confirmedConflictThisRun) await exposeConflictCenter();
   };
 
   const originalRender = render;
   render = function () {
     originalRender();
-    if (currentTab === "dev" && isCloudChangeStop()) {
+    if (currentTab === "dev" && confirmedConflictThisRun && isCloudChangeStop()) {
       setTimeout(() => {
         const center = document.getElementById("cloudConflictCenter");
         if (center) center.classList.add("warn");
