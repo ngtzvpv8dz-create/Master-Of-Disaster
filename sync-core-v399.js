@@ -12,7 +12,6 @@
   const POLL_MS = 3000;
   let busy = false;
   let timer = null;
-  let pollTimer = null;
 
   function domainState(state) {
     state = state && typeof state === "object" ? state : {};
@@ -92,9 +91,7 @@
     }
     const next = Number(state.nextArchiveNumber);
     if (!Number.isInteger(next) || next < 1) throw new Error("Cloud-Snapshot hat ungültige Archivnummer.");
-
     try { safeStorageSet(PRE_PULL_KEY, JSON.stringify(createCompleteBackupPayload())); } catch (_) {}
-
     const values = {
       masterOfDisasterTasks: JSON.stringify(state.tasks),
       masterOfDisasterArchive: JSON.stringify(state.archive),
@@ -102,9 +99,7 @@
       masterOfDisasterWeightPhases: JSON.stringify(state.weightPhases),
       masterOfDisasterNextArchiveNumber: String(next)
     };
-    if (!Object.entries(values).map(([k,v]) => safeStorageSet(k,v)).every(Boolean)) {
-      throw new Error("Cloud-Stand konnte lokal nicht vollständig gespeichert werden.");
-    }
+    if (!Object.entries(values).map(([k,v]) => safeStorageSet(k,v)).every(Boolean)) throw new Error("Cloud-Stand konnte lokal nicht vollständig gespeichert werden.");
     safeStorageSet("masterOfDisasterMasterV361ActiveTasksImported", "done");
     tasks = JSON.parse(values.masterOfDisasterTasks);
     archive = JSON.parse(values.masterOfDisasterArchive);
@@ -123,14 +118,7 @@
   }
 
   function setState(status, label, detail, reason) {
-    supabaseLiveSyncState = {
-      ...(supabaseLiveSyncState || {}),
-      status,
-      label,
-      detail,
-      lastReason: reason,
-      lastSyncAt: new Date().toISOString()
-    };
+    supabaseLiveSyncState = { ...(supabaseLiveSyncState || {}), status, label, detail, lastReason:reason, lastSyncAt:new Date().toISOString() };
     if (currentTab === "dev" && typeof render === "function") render();
   }
 
@@ -148,20 +136,29 @@
 
   window.__modSyncDecisionV399 = decide;
 
+  async function pushAllDomainTables(client, userId) {
+    if (typeof syncTasksToSupabase !== "function" || typeof syncArchiveToSupabase !== "function" || typeof syncWeightToSupabase !== "function" || typeof syncAppStateToSupabase !== "function") {
+      throw new Error("Supabase-Syncfunktionen sind nicht vollständig geladen.");
+    }
+    const taskCounts = await syncTasksToSupabase(client, userId);
+    const archiveCounts = await syncArchiveToSupabase(client, userId);
+    const weightCounts = await syncWeightToSupabase(client, userId);
+    /* cloud-backup-restore-v394 wraps this function and writes the complete LIVE_KEY snapshot after app_state. */
+    const stateCounts = await syncAppStateToSupabase(client, userId);
+    const expected = { ...stateCounts, ...taskCounts, ...archiveCounts, ...weightCounts };
+    if (typeof verifySupabaseLiveSync === "function") await verifySupabaseLiveSync(client, userId, expected);
+    return expected;
+  }
+
   async function pushLocal(remote) {
     const s = remote && remote.client ? remote : await session();
     if (!s) throw new Error("Supabase-Login fehlt.");
-
-    /* Base sync writes normalized tables. The V395 wrapper also refreshes the complete live snapshot. */
-    await syncAppStateToSupabase(s.client, s.userId);
-
+    await pushAllDomainTables(s.client, s.userId);
     const verifyRemote = await remoteSnapshot();
     const local = await localSnapshot();
-    if (!verifyRemote || !verifyRemote.hash || verifyRemote.hash !== local.hash) {
-      throw new Error("Cloud-Verifikation nach Upload fehlgeschlagen. Local und Cloud sind danach nicht identisch.");
-    }
+    if (!verifyRemote || !verifyRemote.hash || verifyRemote.hash !== local.hash) throw new Error("Cloud-Verifikation nach Upload fehlgeschlagen. Local und Cloud sind danach nicht identisch.");
     markSafe(local.hash);
-    setState("ok", "LOCAL ↔ CLOUD SYNCHRON ✅", "Lokaler Stand wurde hochgeladen und anschließend gegen den vollständigen Cloud-Snapshot verifiziert.", "v399-push-verified");
+    setState("ok", "LOCAL ↔ CLOUD SYNCHRON ✅", "Alle Supabase-Domänentabellen und der vollständige Cloud-Snapshot wurden geschrieben und anschließend gegen Local verifiziert.", "v399-push-verified");
   }
 
   async function pullRemote(remote) {
@@ -174,7 +171,7 @@
     markSafe(remote.hash);
     if (typeof renderWeightPanel === "function" && (currentTab === "all" || currentTab === "today")) renderWeightPanel();
     if (typeof render === "function") render();
-    setState("ok", "CLOUD-ÄNDERUNG AUTOMATISCH ÜBERNOMMEN ✅", "Dieses Gerät war lokal unverändert. Der neuere Cloud-Stand wurde vollständig übernommen und verifiziert.", "v399-pull-verified");
+    setState("ok", "CLOUD-ÄNDERUNG AUTOMATISCH ÜBERNOMMEN ✅", "Dieses Gerät war lokal unverändert. Der neuere vollständige Cloud-Stand wurde übernommen und verifiziert.", "v399-pull-verified");
   }
 
   async function exposeConflict() {
@@ -184,17 +181,10 @@
         const check = await runSupabaseCloudStartCheck(false);
         count = check && Array.isArray(check.conflicts) ? check.conflicts.length : null;
       }
-    } catch (error) {
-      console.warn("V399 Konfliktdetail-Check fehlgeschlagen:", error);
-    }
-    setState(
-      "warn",
-      "SYNC ANGEHALTEN · ECHTER STANDUNTERSCHIED ⚠️",
-      count === 0
-        ? "Der vollständige Local-/Cloud-Snapshot ist unterschiedlich, obwohl der ältere Detailfilter keine fachliche Abweichung meldet. Es wird bewusst NICHT automatisch überschrieben."
-        : "Local und Cloud haben sich seit der letzten sicheren Basis beide verändert. Es wird NICHT automatisch überschrieben.",
-      "v399-conflict"
-    );
+    } catch (error) { console.warn("V399 Konfliktdetail-Check fehlgeschlagen:", error); }
+    setState("warn", "SYNC ANGEHALTEN · ECHTER STANDUNTERSCHIED ⚠️", count === 0
+      ? "Der vollständige Local-/Cloud-Snapshot ist unterschiedlich, obwohl der ältere Detailfilter keine fachliche Abweichung meldet. Es wird bewusst NICHT automatisch überschrieben."
+      : "Local und Cloud haben sich seit der letzten sicheren Basis beide verändert. Es wird NICHT automatisch überschrieben.", "v399-conflict");
   }
 
   async function syncOnce(manual=false) {
@@ -212,7 +202,7 @@
       const action = decide(local.hash, remote.hash, baseline(), isPending());
       if (action === "equal") {
         markSafe(local.hash);
-        setState("ok", "LOCAL ↔ CLOUD SYNCHRON ✅", "Vollständiger Local- und Cloud-Snapshot sind byte-semantisch identisch.", "v399-equal");
+        setState("ok", "LOCAL ↔ CLOUD SYNCHRON ✅", "Vollständiger Local- und Cloud-Snapshot sind inhaltlich identisch.", "v399-equal");
       } else if (action === "pull") {
         await pullRemote(remote);
       } else if (action === "push" || action === "initialize-push") {
@@ -233,9 +223,7 @@
 
   function schedule(reason="local-save") {
     setPending(true);
-    if (reason) {
-      try { supabaseLiveSyncReasons.add(String(reason)); } catch (_) {}
-    }
+    if (reason) { try { supabaseLiveSyncReasons.add(String(reason)); } catch (_) {} }
     if (!navigator.onLine) {
       setState("warn", "OFFLINE · LOKAL GESPEICHERT 📱", "Änderung ist lokal gespeichert und für späteren Cloud-Sync vorgemerkt.", "v399-offline-pending");
       addStatusBox();
@@ -245,12 +233,8 @@
     timer = setTimeout(() => { timer = null; syncOnce(false); }, 450);
   }
 
-  /* Disable any base timer that app.js may have scheduled during initial saveAll(). */
   try {
-    if (typeof supabaseLiveSyncTimer !== "undefined" && supabaseLiveSyncTimer) {
-      clearTimeout(supabaseLiveSyncTimer);
-      supabaseLiveSyncTimer = null;
-    }
+    if (typeof supabaseLiveSyncTimer !== "undefined" && supabaseLiveSyncTimer) { clearTimeout(supabaseLiveSyncTimer); supabaseLiveSyncTimer = null; }
     if (typeof supabaseLiveSyncReasons !== "undefined" && supabaseLiveSyncReasons && typeof supabaseLiveSyncReasons.clear === "function") supabaseLiveSyncReasons.clear();
   } catch (_) {}
 
@@ -259,10 +243,8 @@
 
   function addStatusBox() {
     if (currentTab !== "dev") return;
-    const old = document.getElementById("offlineSyncStatusV396");
-    if (old) old.remove();
-    const existing = document.getElementById("syncStatusV399");
-    if (existing) existing.remove();
+    const old = document.getElementById("offlineSyncStatusV396"); if (old) old.remove();
+    const existing = document.getElementById("syncStatusV399"); if (existing) existing.remove();
     const button = Array.from(document.querySelectorAll("button")).find(btn => /JETZT SYNCHRONISIEREN/i.test(btn.textContent || ""));
     if (!button || !button.parentElement) return;
     const box = document.createElement("div");
@@ -270,10 +252,7 @@
     box.style.cssText = "margin-top:10px;padding:10px;border:1px solid #30383e;border-radius:10px;background:#0f1315;font-size:10px;line-height:1.55;";
     const last = safeStorageGet(LAST_OK_KEY);
     const lastText = last && typeof formatSupabaseSyncTimestamp === "function" ? formatSupabaseSyncTimestamp(last) : (last || "NOCH KEINER");
-    box.innerHTML = `<strong>📱 OFFLINE-FIRST · SYNC CORE V399</strong><br>` +
-      `NETZ · ${navigator.onLine ? "ONLINE ✅" : "OFFLINE ⚠️"}<br>` +
-      `AUSSTEHENDER CLOUD-SYNC · ${isPending() ? "JA ⚠️" : "NEIN ✅"}<br>` +
-      `LETZTER SICHERER SYNC · ${escapeHtml(String(lastText))}`;
+    box.innerHTML = `<strong>📱 OFFLINE-FIRST · SYNC CORE V399</strong><br>NETZ · ${navigator.onLine ? "ONLINE ✅" : "OFFLINE ⚠️"}<br>AUSSTEHENDER CLOUD-SYNC · ${isPending() ? "JA ⚠️" : "NEIN ✅"}<br>LETZTER SICHERER SYNC · ${escapeHtml(String(lastText))}`;
     button.insertAdjacentElement("afterend", box);
   }
 
@@ -286,11 +265,8 @@
   };
 
   async function runReadOnlyDiagnostics() {
-    try {
-      if (typeof runSupabaseCloudStartCheck === "function") await runSupabaseCloudStartCheck(false);
-    } catch (error) {
-      console.warn("V399 Read-only Cloud-Check:", error);
-    }
+    try { if (typeof runSupabaseCloudStartCheck === "function") await runSupabaseCloudStartCheck(false); }
+    catch (error) { console.warn("V399 Read-only Cloud-Check:", error); }
   }
 
   function foregroundCheck() {
@@ -302,12 +278,8 @@
   window.addEventListener("load", () => setTimeout(foregroundCheck, 500));
   window.addEventListener("online", () => setTimeout(foregroundCheck, 500));
   window.addEventListener("focus", () => setTimeout(foregroundCheck, 250));
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") setTimeout(foregroundCheck, 250);
-  });
-  pollTimer = setInterval(() => {
-    if (document.visibilityState !== "hidden") syncOnce(false);
-  }, POLL_MS);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") setTimeout(foregroundCheck, 250); });
+  setInterval(() => { if (document.visibilityState !== "hidden") syncOnce(false); }, POLL_MS);
 
   window.__modSyncCoreV399 = {
     syncOnce,
