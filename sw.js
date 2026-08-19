@@ -1,12 +1,13 @@
-const CACHE_NAME = "master-of-disaster-v389";
+const CACHE_NAME = "master-of-disaster-v390";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./app.css?v=389",
-  "./app.js?v=389",
-  "./conflict-center.css?v=389",
-  "./conflict-center.js?v=389",
-  "./conflict-filter-v388.js?v=389",
+  "./app.css?v=390",
+  "./app.js?v=390",
+  "./conflict-center.css?v=390",
+  "./conflict-center.js?v=390",
+  "./conflict-filter-v388.js?v=390",
+  "./conflict-actions-v390.js?v=390",
   "./manifest.webmanifest",
   "./supabase-config.js",
   "./master-of-disaster-192.png",
@@ -40,7 +41,8 @@ self.addEventListener("fetch", event => {
     requestUrl.pathname.endsWith("/app.css") ||
     requestUrl.pathname.endsWith("/conflict-center.js") ||
     requestUrl.pathname.endsWith("/conflict-center.css") ||
-    requestUrl.pathname.endsWith("/conflict-filter-v388.js")
+    requestUrl.pathname.endsWith("/conflict-filter-v388.js") ||
+    requestUrl.pathname.endsWith("/conflict-actions-v390.js")
   );
 
   if (isNavigation || isAppAsset) {
