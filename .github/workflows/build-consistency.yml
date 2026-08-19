@@ -14,33 +14,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify version, cache and asset wiring
+      - name: Verify V400 shell and simplified sync wiring
         shell: python
         run: |
           from pathlib import Path
           import re
 
-          app = Path("app.js").read_text(encoding="utf-8")
           index = Path("index.html").read_text(encoding="utf-8")
           sw = Path("sw.js").read_text(encoding="utf-8")
+          iphone = Path("iphone-backup-v400.js").read_text(encoding="utf-8")
 
-          app_v = re.search(r'const APP_VERSION =\s*\n?"V(\d+)";', app)
           html_v = re.search(r'<!-- BUILD: V(\d+) ·', index)
           cache_v = re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"', sw)
-          if not app_v or not html_v or not cache_v:
+          if not html_v or not cache_v:
               raise SystemExit("Build metadata missing")
+          if html_v.group(1) != "400" or cache_v.group(1) != "400":
+              raise SystemExit(f"Expected V400, got html={html_v.group(1)} sw={cache_v.group(1)}")
 
-          versions = {"app.js": app_v.group(1), "index.html": html_v.group(1), "sw.js": cache_v.group(1)}
-          if len(set(versions.values())) != 1:
-              raise SystemExit(f"Version mismatch: {versions}")
+          required = ["iphone-backup-v400.js?v=400", "app.js?v=400", "app.css?v=400"]
+          for marker in required:
+              if marker not in index:
+                  raise SystemExit(f"Missing V400 asset: {marker}")
 
-          expected = app_v.group(1)
-          assets = re.findall(r'(?:app\.css|conflict-center\.css|app\.js|conflict-center\.js|conflict-filter-v388\.js)\?v=(\d+)', index)
-          if not assets or any(v != expected for v in assets):
-              raise SystemExit(f"Asset cache-buster mismatch: expected {expected}, got {assets}")
+          forbidden = ["sync-core-v399", "offline-sync-v396", "offline-conflict-v398", "multidevice-sync-fix", "conflict-center.js", "conflict-filter-v388.js", "weight-conflict-v392.js", "conflict-actions-v390.js"]
+          for marker in forbidden:
+              if marker in index:
+                  raise SystemExit(f"Old sync/conflict layer still loaded: {marker}")
 
-          for marker in ["APP_BUILD_DATE", "APP_BUILD_TIME"]:
-              if marker not in app:
-                  raise SystemExit(f"Missing {marker}")
+          for marker in ["localStorage ist Master", "Kein automatisches Cloud→Local", "daily_complete_backup_v400_"]:
+              if marker not in iphone:
+                  raise SystemExit(f"Missing V400 behavior marker: {marker}")
 
-          print(f"Build V{expected} consistency OK")
+          print("Build V400 iPhone-only backup wiring OK")
