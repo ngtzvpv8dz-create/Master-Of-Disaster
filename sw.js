@@ -1,13 +1,14 @@
-const CACHE_NAME = "master-of-disaster-v391";
+const CACHE_NAME = "master-of-disaster-v392";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./app.css?v=391",
-  "./app.js?v=391",
-  "./conflict-center.css?v=391",
-  "./conflict-center.js?v=391",
-  "./conflict-filter-v388.js?v=391",
-  "./conflict-actions-v390.js?v=391",
+  "./app.css?v=392",
+  "./app.js?v=392",
+  "./conflict-center.css?v=392",
+  "./conflict-center.js?v=392",
+  "./conflict-filter-v388.js?v=392",
+  "./weight-conflict-v392.js?v=392",
+  "./conflict-actions-v390.js?v=392",
   "./manifest.webmanifest",
   "./supabase-config.js",
   "./master-of-disaster-192.png",
@@ -42,6 +43,7 @@ self.addEventListener("fetch", event => {
     requestUrl.pathname.endsWith("/conflict-center.js") ||
     requestUrl.pathname.endsWith("/conflict-center.css") ||
     requestUrl.pathname.endsWith("/conflict-filter-v388.js") ||
+    requestUrl.pathname.endsWith("/weight-conflict-v392.js") ||
     requestUrl.pathname.endsWith("/conflict-actions-v390.js")
   );
 
