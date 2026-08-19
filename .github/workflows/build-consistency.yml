@@ -1,0 +1,46 @@
+name: Build Consistency Guard
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify version, cache and asset wiring
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          app = Path("app.js").read_text(encoding="utf-8")
+          index = Path("index.html").read_text(encoding="utf-8")
+          sw = Path("sw.js").read_text(encoding="utf-8")
+
+          app_v = re.search(r'const APP_VERSION =\s*\n?"V(\d+)";', app)
+          html_v = re.search(r'<!-- BUILD: V(\d+) ·', index)
+          cache_v = re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"', sw)
+          if not app_v or not html_v or not cache_v:
+              raise SystemExit("Build metadata missing")
+
+          versions = {"app.js": app_v.group(1), "index.html": html_v.group(1), "sw.js": cache_v.group(1)}
+          if len(set(versions.values())) != 1:
+              raise SystemExit(f"Version mismatch: {versions}")
+
+          expected = app_v.group(1)
+          assets = re.findall(r'(?:app\.css|conflict-center\.css|app\.js|conflict-center\.js|conflict-filter-v388\.js)\?v=(\d+)', index)
+          if not assets or any(v != expected for v in assets):
+              raise SystemExit(f"Asset cache-buster mismatch: expected {expected}, got {assets}")
+
+          for marker in ["APP_BUILD_DATE", "APP_BUILD_TIME"]:
+              if marker not in app:
+                  raise SystemExit(f"Missing {marker}")
+
+          print(f"Build V{expected} consistency OK")
