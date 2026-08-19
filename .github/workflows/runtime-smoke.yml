@@ -1,0 +1,38 @@
+name: Runtime Smoke
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+      - name: Verify live tabs
+        run: |
+          cat > smoke.js <<'JS'
+          const { chromium } = require('playwright');
+          const fs=require('fs');
+          (async()=>{const browser=await chromium.launch({headless:true});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));let result={status:'FAIL',version:'unknown',today:false,dev:false,errors:[]};try{await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});await page.waitForSelector('[data-tab="today"]',{timeout:15000});await page.click('[data-tab="today"]');await page.waitForTimeout(300);result.today=await page.locator('[data-tab="today"]').evaluate(e=>e.classList.contains('active'));await page.click('[data-tab="dev"]');await page.waitForTimeout(300);result.dev=await page.locator('[data-tab="dev"]').evaluate(e=>e.classList.contains('active'));const body=await page.locator('body').innerText();const m=body.match(/V\d{3}/);if(m)result.version=m[0];result.errors=errors;result.status=(result.today&&result.dev&&!errors.length)?'PASS':'FAIL';}catch(e){result.errors.push(String(e.stack||e));}fs.writeFileSync('runtime-status.txt',JSON.stringify(result,null,2));console.log(result);await browser.close();})();
+          JS
+          node smoke.js
+      - name: Publish result
+        if: always()
+        run: |
+          git init /tmp/status
+          cd /tmp/status
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp "$GITHUB_WORKSPACE/runtime-status.txt" .
+          git add runtime-status.txt
+          git commit -m "Runtime smoke result"
+          git branch -M runtime-status
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin runtime-status
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
