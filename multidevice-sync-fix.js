@@ -1,6 +1,5 @@
-/* MULTI-DEVICE SYNC FIX · V398 stable hotfix 2
-   One-time migration of stale V396 conflict markers plus normal cloud-only auto-pull.
-   Existing local state is backed up before the migration pull.
+/* MULTI-DEVICE SYNC FIX · V398 stable hotfix 3
+   Adds passive cloud polling so an already-open second device receives cloud-only changes.
 */
 (function () {
   const DIRTY_KEY = "masterOfDisasterCloudSyncPendingV396";
@@ -86,8 +85,6 @@
   }
   async function migrateOldGuardState(remote, local) {
     if (safeStorageGet(MIGRATION_KEY) === "done") return false;
-    /* V396 left stale dirty/baseline markers on devices even when the user had made no new edit.
-       Preserve the entire local state, then establish the current live cloud snapshot as the new baseline once. */
     try { safeStorageSet(PRE_PULL_BACKUP_KEY, JSON.stringify(createCompleteBackupPayload())); } catch (_) {}
     if (local !== remote.hash) applyRemoteState(remote.payload);
     markSafe(remote.hash);
@@ -122,8 +119,12 @@
     catch(error) { console.warn("Multi-device preflight failed; existing safe sync guard takes over:",error); }
     return guardedRun(manual);
   };
-  async function checkCloudOnlyChange() { try { await preflightAndMaybePull(); } catch(error) { console.warn("Cloud-only check failed:",error); } }
+  async function checkCloudOnlyChange() {
+    if (document.visibilityState === "hidden") return;
+    try { await preflightAndMaybePull(); } catch(error) { console.warn("Cloud-only check failed:",error); }
+  }
   window.addEventListener("load",()=>setTimeout(checkCloudOnlyChange,250));
   window.addEventListener("focus",()=>setTimeout(checkCloudOnlyChange,350));
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") setTimeout(checkCloudOnlyChange,350); });
+  setInterval(checkCloudOnlyChange, 3000);
 })();
