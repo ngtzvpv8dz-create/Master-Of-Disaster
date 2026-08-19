@@ -1,4 +1,4 @@
-const CACHE_NAME = "master-of-disaster-v398";
+const CACHE_NAME = "master-of-disaster-v399";
 const APP_SHELL = ["./","./index.html","./app.css?v=398","./app.js?v=398","./conflict-center.css?v=398","./weight-integrity-v393.js?v=398","./conflict-center.js?v=398","./conflict-filter-v388.js?v=398","./weight-conflict-v392.js?v=398","./conflict-actions-v390.js?v=398","./build-label-v393.js?v=398","./cloud-backup-restore-v394.js?v=398","./offline-sync-v396.js?v=398","./full-backup-v397.js?v=398","./offline-conflict-v398.js?v=398","./manifest.webmanifest","./supabase-config.js","./master-of-disaster-192.png","./master-of-disaster-512.png","./apple-touch-icon.png?v=398","https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"];
 self.addEventListener("install",event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)).catch(()=>{}));});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
