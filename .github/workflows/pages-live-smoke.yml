@@ -1,0 +1,66 @@
+name: Live Pages Smoke Test
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-pages-smoke
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe deployed GitHub Pages until V401 is live
+        id: probe
+        shell: bash
+        run: |
+          set +e
+          URL="https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/"
+          STATUS="FAIL"
+          DETECTED="unknown"
+          : > /tmp/live.html
+          for i in $(seq 1 30); do
+            curl -fsSL --retry 2 --connect-timeout 10 "${URL}?pages_probe=${GITHUB_SHA}_${i}" -o /tmp/live.html
+            if grep -q 'BUILD: V401' /tmp/live.html || grep -q 'v=401r3' /tmp/live.html; then
+              STATUS="PASS"
+              DETECTED="V401"
+              break
+            fi
+            if grep -q 'BUILD: V392' /tmp/live.html || grep -q 'v=392' /tmp/live.html; then DETECTED="V392"; fi
+            if grep -q 'BUILD: V393' /tmp/live.html || grep -q 'v=393' /tmp/live.html; then DETECTED="V393"; fi
+            if grep -q 'BUILD: V395' /tmp/live.html || grep -q 'v=395' /tmp/live.html; then DETECTED="V395"; fi
+            sleep 10
+          done
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "detected=$DETECTED" >> "$GITHUB_OUTPUT"
+          echo "STATUS=$STATUS" > /tmp/pages-status.txt
+          echo "DETECTED=$DETECTED" >> /tmp/pages-status.txt
+          echo "CHECKED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /tmp/pages-status.txt
+          echo "SOURCE_SHA=$GITHUB_SHA" >> /tmp/pages-status.txt
+          grep -o 'BUILD: V[0-9][0-9][0-9][^<]*' /tmp/live.html | head -n 1 >> /tmp/pages-status.txt || true
+
+      - name: Publish probe result branch
+        shell: bash
+        run: |
+          git init /tmp/statusrepo
+          cd /tmp/statusrepo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp /tmp/pages-status.txt ./pages-status.txt
+          git add pages-status.txt
+          git commit -m "Live Pages probe: ${{ steps.probe.outputs.status }} ${{ steps.probe.outputs.detected }}"
+          git branch -M pages-status
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin pages-status
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fail if live page is not V401
+        if: steps.probe.outputs.status != 'PASS'
+        run: exit 1
