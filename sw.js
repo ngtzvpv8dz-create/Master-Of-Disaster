@@ -1,5 +1,60 @@
-const CACHE_NAME = "master-of-disaster-v401";
-const APP_SHELL = ["./","./index.html","./app.css?v=401","./app.js?v=401","./conflict-center.css?v=401","./weight-integrity-v393.js?v=401","./conflict-center.js?v=401","./conflict-filter-v388.js?v=401","./weight-conflict-v392.js?v=401","./conflict-actions-v390.js?v=401","./cloud-backup-restore-v394.js?v=401","./offline-sync-v396.js?v=401","./full-backup-v397.js?v=401","./offline-conflict-v398.js?v=401","./build-label-v400.js?v=401","./manifest.webmanifest","./supabase-config.js","./master-of-disaster-192.png","./master-of-disaster-512.png","./apple-touch-icon.png?v=401","https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"];
-self.addEventListener("install",event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)).catch(()=>{}));});
-self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
-self.addEventListener("fetch",event=>{if(event.request.method!=="GET")return;const requestUrl=new URL(event.request.url);const isNavigation=event.request.mode==="navigate";const isAppAsset=requestUrl.origin===self.location.origin&&["/index.html","/app.js","/app.css","/conflict-center.js","/conflict-center.css","/conflict-filter-v388.js","/weight-conflict-v392.js","/weight-integrity-v393.js","/conflict-actions-v390.js","/cloud-backup-restore-v394.js","/offline-sync-v396.js","/full-backup-v397.js","/offline-conflict-v398.js","/build-label-v400.js","/manifest.webmanifest","/master-of-disaster-192.png","/master-of-disaster-512.png","/apple-touch-icon.png"].some(path=>requestUrl.pathname.endsWith(path));if(isNavigation||isAppAsset){event.respondWith(fetch(event.request,{cache:"no-store"}).then(response=>{if(response&&response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(event.request,copy)).catch(()=>{});}return response;}).catch(()=>caches.match(event.request).then(hit=>hit||caches.match("./index.html")||caches.match("./"))));return;}event.respondWith(caches.match(event.request).then(hit=>hit||fetch(event.request).then(response=>{if(response&&response.ok&&requestUrl.origin===self.location.origin){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put(event.request,copy)).catch(()=>{});}return response;})));});
+/* Master of Disaster service worker
+   Recovery mode: data stays local/Supabase, but application code is NEVER served from Cache Storage.
+   This prevents old app shells (V392/V393/V395) from taking control again.
+*/
+const CACHE_NAME = "master-of-disaster-static-v401-recovery";
+const STATIC_ONLY = [
+  "./master-of-disaster-192.png",
+  "./master-of-disaster-512.png",
+  "./apple-touch-icon.png"
+];
+
+self.addEventListener("install", event => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.map(key => caches.delete(key))))
+      .then(() => caches.open(CACHE_NAME))
+      .then(cache => cache.addAll(STATIC_ONLY))
+      .catch(() => {})
+  );
+});
+
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
+
+  const url = new URL(event.request.url);
+  const sameOrigin = url.origin === self.location.origin;
+
+  // HTML, JS, CSS, manifest and config must always come from the network.
+  // No fallback to an old cached app shell.
+  if (
+    event.request.mode === "navigate" ||
+    (sameOrigin && /\.(?:html|js|css|webmanifest)$/i.test(url.pathname)) ||
+    (sameOrigin && url.pathname.endsWith("/"))
+  ) {
+    event.respondWith(fetch(event.request, { cache: "no-store" }));
+    return;
+  }
+
+  // Only harmless static images may be cached.
+  if (sameOrigin && /\.(?:png|jpg|jpeg|webp|svg|ico)$/i.test(url.pathname)) {
+    event.respondWith(
+      caches.match(event.request).then(hit => hit || fetch(event.request).then(response => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
+        }
+        return response;
+      }))
+    );
+  }
+});
