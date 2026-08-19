@@ -1,12 +1,14 @@
-/* V394 · CLOUD SNAPSHOT BACKUP + RESTORE
-   - Jeder erfolgreiche Live-Sync schreibt einen vollständigen aktuellen App-Snapshot nach Supabase.
-   - DEV bekommt einen manuellen CLOUD → LOCAL Restore mit Fallback auf den initialen Komplett-Backup.
-   - Lokal bleibt die Arbeitskopie; Restore überschreibt erst nach ausdrücklicher Bestätigung.
+/* V395 · CLOUD SNAPSHOT BACKUP + STABILER RESTORE
+   - Vollständiger Live-Snapshot nach erfolgreichem Cloud-Sync.
+   - CLOUD → LOCAL Restore ohne erzwungenen Reload.
+   - Nach Restore wird erst lokal geprüft, dann gezielt Cloud-Status aktualisiert.
+   - Transiente iOS/WebKit-Netzfehler (TypeError: Load failed) werden verständlich behandelt.
 */
 (function () {
   const LIVE_KEY = "live_complete_backup_v1";
   const INITIAL_KEY = "initial_import_complete_backup_v1";
   let restoreBusy = false;
+  let suppressSnapshotWrite = false;
 
   async function getCloudSession() {
     const client = getSupabaseClient();
@@ -19,25 +21,19 @@
   }
 
   async function writeLiveSnapshot(client, userId) {
+    if (suppressSnapshotWrite) return null;
     const payload = createCompleteBackupPayload();
     if (!payload || !payload.state) throw new Error("Lokaler Komplett-Snapshot konnte nicht erstellt werden.");
-    payload.masterVersion = "V394";
+    payload.masterVersion = "V395";
     payload.cloudSnapshotVersion = 1;
     payload.cloudSnapshotSavedAt = new Date().toISOString();
-
-    let result = await client.from("legacy_metadata")
-      .delete()
-      .eq("user_id", userId)
-      .eq("key", LIVE_KEY);
+    let result = await client.from("legacy_metadata").delete().eq("user_id", userId).eq("key", LIVE_KEY);
     if (result.error) throw result.error;
-
     result = await client.from("legacy_metadata").insert([{ user_id:userId, key:LIVE_KEY, payload }]);
     if (result.error) throw result.error;
     return payload;
   }
 
-  /* In den bestehenden Live-Sync einklinken. So bleibt LOCAL-first unverändert,
-     aber nach jedem Cloud-Sync existiert zusätzlich ein vollständiger Restore-Punkt. */
   if (typeof syncAppStateToSupabase === "function") {
     const originalSyncAppState = syncAppStateToSupabase;
     syncAppStateToSupabase = async function (client, userId) {
@@ -48,36 +44,21 @@
   }
 
   function validateBackupPayload(payload) {
-    if (!payload || typeof payload !== "object" || !payload.state || typeof payload.state !== "object") {
-      throw new Error("Cloud-Backup hat kein gültiges App-State-Format.");
-    }
+    if (!payload || typeof payload !== "object" || !payload.state || typeof payload.state !== "object") throw new Error("Cloud-Backup hat kein gültiges App-State-Format.");
     const state = payload.state;
-    if (!Array.isArray(state.tasks) || !Array.isArray(state.archive) || !Array.isArray(state.weightPhases)) {
-      throw new Error("Cloud-Backup ist unvollständig (Tasks/Archiv/Gewichtsphasen fehlen).");
-    }
-    if (!state.weightState || typeof state.weightState !== "object") {
-      throw new Error("Cloud-Backup enthält keinen gültigen Zusatzgewichtsstatus.");
-    }
+    if (!Array.isArray(state.tasks) || !Array.isArray(state.archive) || !Array.isArray(state.weightPhases)) throw new Error("Cloud-Backup ist unvollständig (Tasks/Archiv/Gewichtsphasen fehlen).");
+    if (!state.weightState || typeof state.weightState !== "object") throw new Error("Cloud-Backup enthält keinen gültigen Zusatzgewichtsstatus.");
     const next = Number(state.nextArchiveNumber);
     if (!Number.isInteger(next) || next < 1) throw new Error("Cloud-Backup enthält keine gültige nächste Archivnummer.");
     return state;
   }
 
   async function readBestCloudSnapshot(client, userId) {
-    let result = await client.from("legacy_metadata")
-      .select("key,payload")
-      .eq("user_id", userId)
-      .eq("key", LIVE_KEY)
-      .limit(1);
+    let result = await client.from("legacy_metadata").select("key,payload").eq("user_id", userId).eq("key", LIVE_KEY).limit(1);
     if (result.error) throw result.error;
     let row = Array.isArray(result.data) ? result.data[0] : null;
     if (row && row.payload) return { key:LIVE_KEY, payload:row.payload };
-
-    result = await client.from("legacy_metadata")
-      .select("key,payload")
-      .eq("user_id", userId)
-      .eq("key", INITIAL_KEY)
-      .limit(1);
+    result = await client.from("legacy_metadata").select("key,payload").eq("user_id", userId).eq("key", INITIAL_KEY).limit(1);
     if (result.error) throw result.error;
     row = Array.isArray(result.data) ? result.data[0] : null;
     if (row && row.payload) return { key:INITIAL_KEY, payload:row.payload };
@@ -94,29 +75,36 @@
   }
 
   function persistRestoredState(state) {
-    /* Absichtlich direkt in localStorage schreiben. Erst nach vollständigem Schreiben
-       werden die In-Memory-Werte gesetzt. Dadurch gibt es keinen halben Restore. */
     const serialized = {
-      tasks: JSON.stringify(state.tasks),
-      archive: JSON.stringify(state.archive),
-      weightState: JSON.stringify(state.weightState),
-      weightPhases: JSON.stringify(state.weightPhases),
-      nextArchiveNumber: String(Number(state.nextArchiveNumber))
+      tasks: JSON.stringify(state.tasks), archive: JSON.stringify(state.archive), weightState: JSON.stringify(state.weightState),
+      weightPhases: JSON.stringify(state.weightPhases), nextArchiveNumber: String(Number(state.nextArchiveNumber))
     };
     const ok = [
-      safeStorageSet("masterOfDisasterTasks", serialized.tasks),
-      safeStorageSet("masterOfDisasterArchive", serialized.archive),
-      safeStorageSet("masterOfDisasterWeightState", serialized.weightState),
-      safeStorageSet("masterOfDisasterWeightPhases", serialized.weightPhases),
-      safeStorageSet("masterOfDisasterNextArchiveNumber", serialized.nextArchiveNumber)
+      safeStorageSet("masterOfDisasterTasks", serialized.tasks), safeStorageSet("masterOfDisasterArchive", serialized.archive),
+      safeStorageSet("masterOfDisasterWeightState", serialized.weightState), safeStorageSet("masterOfDisasterWeightPhases", serialized.weightPhases),
+      safeStorageSet("masterOfDisasterNextArchiveNumber", serialized.nextArchiveNumber),
+      safeStorageSet("masterOfDisasterMasterV361ActiveTasksImported", "done")
     ].every(Boolean);
     if (!ok) throw new Error("Lokaler Speicher konnte nicht vollständig geschrieben werden.");
+    tasks = JSON.parse(serialized.tasks); archive = JSON.parse(serialized.archive); weightState = JSON.parse(serialized.weightState);
+    weightPhases = JSON.parse(serialized.weightPhases); nextArchiveNumber = Number(serialized.nextArchiveNumber);
+  }
 
-    tasks = JSON.parse(serialized.tasks);
-    archive = JSON.parse(serialized.archive);
-    weightState = JSON.parse(serialized.weightState);
-    weightPhases = JSON.parse(serialized.weightPhases);
-    nextArchiveNumber = Number(serialized.nextArchiveNumber);
+  function friendlyNetworkError(error) {
+    const text = error && error.message ? error.message : String(error || "");
+    if (/load failed|failed to fetch|network/i.test(text)) return "Die Cloud war beim Nachcheck kurz nicht erreichbar. Der Restore selbst ist lokal vollständig gespeichert und geprüft. Bitte Verbindung prüfen und anschließend manuell synchronisieren.";
+    return text || "Unbekannter Fehler.";
+  }
+
+  async function postRestoreCloudCheck() {
+    try {
+      suppressSnapshotWrite = true;
+      if (typeof runSupabaseCloudStartCheck === "function") await runSupabaseCloudStartCheck(false);
+    } catch (error) {
+      console.warn("Cloud-Nachcheck nach Restore nicht möglich:", error);
+    } finally {
+      suppressSnapshotWrite = false;
+    }
   }
 
   async function restoreCloudToLocal() {
@@ -128,67 +116,63 @@
       const state = validateBackupPayload(found.payload);
       const cloudText = snapshotSummary(found.payload);
       const sourceLabel = found.key === LIVE_KEY ? "aktueller Live-Snapshot" : "initialer Import-Snapshot (Fallback)";
-      const ok = window.confirm(
-        `CLOUD → LOCAL WIEDERHERSTELLEN?\n\nCloud (${sourceLabel}):\n${cloudText}\n\nAktuell lokal:\n${localSummary()}\n\nDer lokale App-Zustand wird vollständig durch diesen Cloud-Snapshot ersetzt. Supabase selbst wird dabei NICHT verändert.`
-      );
+      const ok = window.confirm(`CLOUD → LOCAL WIEDERHERSTELLEN?\n\nCloud (${sourceLabel}):\n${cloudText}\n\nAktuell lokal:\n${localSummary()}\n\nDer lokale App-Zustand wird vollständig durch diesen Cloud-Snapshot ersetzt. Supabase selbst wird dabei NICHT verändert.`);
       if (!ok) return;
+      try { safeStorageSet("masterOfDisasterPreCloudRestoreBackup", JSON.stringify(createCompleteBackupPayload())); }
+      catch (e) { console.warn("Pre-Restore-Sicherung konnte nicht geschrieben werden:", e); }
 
-      /* Sicherheitskopie des jetzigen Local-Standes für diese Browser-Sitzung. */
-      try {
-        safeStorageSet("masterOfDisasterPreCloudRestoreBackup", JSON.stringify(createCompleteBackupPayload()));
-      } catch (e) {
-        console.warn("Pre-Restore-Sicherung konnte nicht geschrieben werden:", e);
-      }
+      /* Während des Restore niemals versehentlich Local→Cloud losschicken. */
+      if (supabaseLiveSyncTimer) { clearTimeout(supabaseLiveSyncTimer); supabaseLiveSyncTimer = null; }
+      supabaseLiveSyncReasons.clear();
+      supabaseLiveSyncPending = false;
 
       persistRestoredState(state);
       const integrity = collectDataIntegrityReport();
-      if (!integrity || !integrity.ok) {
-        throw new Error("Cloud-Daten wurden lokal geschrieben, aber die Datenprüfung meldet Fehler: " + (integrity && integrity.errors ? integrity.errors.join(" | ") : "unbekannt"));
-      }
+      if (!integrity || !integrity.ok) throw new Error("Cloud-Daten wurden lokal geschrieben, aber die Datenprüfung meldet Fehler: " + (integrity && integrity.errors ? integrity.errors.join(" | ") : "unbekannt"));
 
       renderWeightPanel();
       render();
-      showInfoModal("Cloud-Restore erfolgreich ✅", `${cloudText}\n\nQuelle: ${sourceLabel}.\nLokale Datenprüfung: sauber. Die App wird jetzt neu geladen.`);
-      setTimeout(() => window.location.reload(), 900);
+      supabaseLiveSyncState = {
+        ...supabaseLiveSyncState,
+        status:"ok",
+        label:"CLOUD-RESTORE LOKAL OK ✅",
+        detail:"Cloud-Snapshot wurde lokal vollständig eingespielt und geprüft. Es wurde beim Restore nichts zurück in die Cloud geschrieben.",
+        lastReason:"cloud-restore"
+      };
+      if (currentTab === "dev") render();
+      await postRestoreCloudCheck();
+      showInfoModal("Cloud-Restore erfolgreich ✅", `${cloudText}\n\nQuelle: ${sourceLabel}.\nLokale Datenprüfung: sauber. Kein Reload nötig. Jetzt kann der Cloud-Sync separat getestet werden.`);
     } catch (error) {
       console.error("Cloud → Local Restore fehlgeschlagen:", error);
-      showInfoModal("Cloud-Restore fehlgeschlagen", error && error.message ? error.message : String(error));
+      showInfoModal("Cloud-Restore fehlgeschlagen", friendlyNetworkError(error));
     } finally {
       restoreBusy = false;
     }
   }
 
   function addRestoreButton() {
-    if (currentTab !== "dev") return;
-    if (document.getElementById("cloudRestoreV394")) return;
+    if (currentTab !== "dev" || document.getElementById("cloudRestoreV395")) return;
     const syncButton = Array.from(document.querySelectorAll("button")).find(btn => /JETZT SYNCHRONISIEREN/i.test(btn.textContent || ""));
     const compareButton = document.querySelector(".supabase-startcheck-action");
     const anchor = syncButton || compareButton;
     if (!anchor || !anchor.parentElement) return;
     const button = document.createElement("button");
-    button.id = "cloudRestoreV394";
-    button.className = anchor.className || "option-button";
-    button.type = "button";
-    button.textContent = "☁️ CLOUD → LOCAL WIEDERHERSTELLEN";
-    button.style.marginTop = "10px";
-    button.onclick = restoreCloudToLocal;
+    button.id = "cloudRestoreV395"; button.className = anchor.className || "option-button"; button.type = "button";
+    button.textContent = "☁️ CLOUD → LOCAL WIEDERHERSTELLEN"; button.style.marginTop = "10px"; button.onclick = restoreCloudToLocal;
     anchor.insertAdjacentElement("afterend", button);
   }
 
   const originalRender = render;
-  render = function () {
-    originalRender();
-    if (currentTab === "dev") setTimeout(addRestoreButton, 0);
-  };
+  render = function () { originalRender(); if (currentTab === "dev") setTimeout(addRestoreButton, 0); };
   window.addEventListener("load", () => setTimeout(addRestoreButton, 200));
 
-  /* V394 sichtbare Build-Info, solange app.js als großer Kern nicht für einen Metadaten-Bump neu geschrieben werden muss. */
   const applyBuildLabel = () => {
     document.querySelectorAll("*").forEach(el => {
       if (el.children.length) return;
       let text = el.textContent || "";
-      if (text.includes("V393")) text = text.replaceAll("V393", "V394");
-      if (text.includes("19.08.2026") && text.includes("05:38")) text = text.replace("05:38", "06:18");
+      if (text.includes("V393")) text = text.replaceAll("V393", "V395");
+      if (text.includes("V394")) text = text.replaceAll("V394", "V395");
+      if (text.includes("19.08.2026") && (text.includes("05:38") || text.includes("06:18"))) text = text.replace(/05:38|06:18/, "08:23");
       if (text !== el.textContent) el.textContent = text;
     });
   };
