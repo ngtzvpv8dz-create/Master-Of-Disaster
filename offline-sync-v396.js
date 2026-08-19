@@ -1,9 +1,8 @@
-/* V396 · OFFLINE-FIRST SYNC-SCHUTZ
-   - Jede lokale Aenderung wird dauerhaft als ausstehend markiert.
-   - Offline bleibt die App voll lokal nutzbar; kein Cloud-Fehler-Spam.
-   - Bei Rueckkehr der Verbindung wird automatisch nachsynchronisiert.
-   - Vor einem Push wird geprueft, ob sich der Cloud-Snapshot seit dem letzten sicheren Sync veraendert hat.
-   - Hat sich die Cloud parallel veraendert, wird NICHT blind ueberschrieben, sondern die Konfliktzentrale gestartet.
+/* V399 · OFFLINE-FIRST SYNC-SCHUTZ
+   Multi-Device-Fix: Vor einem Konflikt wird nicht nur die alte lokale Baseline,
+   sondern auch der AKTUELLE Local↔Cloud-Inhalt verglichen.
+   Sind Local und Cloud bereits identisch, wird die Baseline still aktualisiert.
+   Damit erzeugt ein Sync von iPhone -> Cloud beim Mac keinen Phantomkonflikt.
 */
 (function () {
   const DIRTY_KEY = "masterOfDisasterCloudSyncPendingV396";
@@ -12,13 +11,8 @@
   const LIVE_KEY = "live_complete_backup_v1";
   let resumeRunning = false;
 
-  function isDirty() {
-    return safeStorageGet(DIRTY_KEY) === "1";
-  }
-
-  function setDirty(value) {
-    safeStorageSet(DIRTY_KEY, value ? "1" : "0");
-  }
+  function isDirty() { return safeStorageGet(DIRTY_KEY) === "1"; }
+  function setDirty(value) { safeStorageSet(DIRTY_KEY, value ? "1" : "0"); }
 
   function syncDomainState(state) {
     state = state && typeof state === "object" ? state : {};
@@ -47,7 +41,6 @@
       const hash = await window.crypto.subtle.digest("SHA-256", data);
       return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,"0")).join("");
     }
-    /* Fallback nur fuer sehr alte WebViews. */
     let h = 2166136261;
     for (let i=0;i<text.length;i+=1) { h ^= text.charCodeAt(i); h = Math.imul(h,16777619); }
     return "fnv1a-" + (h >>> 0).toString(16).padStart(8,"0");
@@ -93,10 +86,20 @@
   async function cloudChangedSinceBaseline() {
     const remote = await readRemoteLiveSnapshot();
     if (!remote.ready) return { safe:false, reason:remote.reason, remote:null };
+
+    const localHash = await currentLocalHash();
     const baseline = safeStorageGet(BASELINE_KEY);
 
+    /* V399: Entscheidend fuer mehrere Geraete.
+       Wenn der aktuelle lokale Inhalt bereits exakt dem Cloud-Snapshot entspricht,
+       ist KEIN Konflikt vorhanden, selbst wenn die geraetespezifische Baseline alt ist. */
+    if (localHash === remote.hash) {
+      safeStorageSet(BASELINE_KEY, remote.hash);
+      safeStorageSet(LAST_OK_KEY, new Date().toISOString());
+      return { safe:true, remote, alreadyEqual:true };
+    }
+
     if (!baseline) {
-      /* Erster V396-Lauf: Vollvergleich als sichere Baseline-Ermittlung. */
       if (typeof runSupabaseCloudStartCheck === "function") {
         const check = await runSupabaseCloudStartCheck(false);
         const conflicts = check && Array.isArray(check.conflicts) ? check.conflicts : null;
@@ -108,8 +111,17 @@
     }
 
     if (baseline !== remote.hash) {
-      if (typeof runSupabaseCloudStartCheck === "function") await runSupabaseCloudStartCheck(false);
-      return { safe:false, reason:"Die Cloud wurde seit dem letzten sicheren Sync veraendert. Automatisches Ueberschreiben wurde blockiert.", remote };
+      /* Erst jetzt liegt wirklich die Konstellation vor:
+         Local != Cloud UND Cloud != letzter sicherer Geraetestand. */
+      if (typeof runSupabaseCloudStartCheck === "function") {
+        const check = await runSupabaseCloudStartCheck(false);
+        const conflicts = check && Array.isArray(check.conflicts) ? check.conflicts : null;
+        if (conflicts && conflicts.length === 0) {
+          safeStorageSet(BASELINE_KEY, remote.hash);
+          return { safe:true, remote, comparisonEqual:true };
+        }
+      }
+      return { safe:false, reason:"Die Cloud und dieses Geraet wurden seit dem letzten sicheren Sync unterschiedlich veraendert. Automatisches Ueberschreiben wurde blockiert.", remote };
     }
     return { safe:true, remote };
   }
@@ -141,7 +153,7 @@
           supabaseLiveSyncState = {
             ...supabaseLiveSyncState,
             status:"warn",
-            label:"SYNC ANGEHALTEN · CLOUD GEÄNDERT ⚠️",
+            label:"SYNC ANGEHALTEN · ECHTER KONFLIKT ⚠️",
             detail:(guard.reason || "Parallele Cloud-Aenderung erkannt.") + " Bitte LOCAL ↔ CLOUD VERGLEICHEN und Konflikte aufloesen.",
             lastReason:"cloud-change-guard"
           };
@@ -171,7 +183,7 @@
         safeStorageSet(BASELINE_KEY, await currentLocalHash());
         safeStorageSet(LAST_OK_KEY, new Date().toISOString());
       } catch (error) {
-        console.warn("V396 Sync-Baseline konnte nicht gespeichert werden:", error);
+        console.warn("V399 Sync-Baseline konnte nicht gespeichert werden:", error);
       }
     } else if (needsProtection) {
       setDirty(true);
@@ -208,7 +220,7 @@
     box.id = "offlineSyncStatusV396";
     box.style.cssText = "margin-top:10px;padding:10px;border:1px solid #30383e;border-radius:10px;background:#0f1315;font-size:10px;line-height:1.55;";
     const last = safeStorageGet(LAST_OK_KEY);
-    box.innerHTML = `<strong>📱 OFFLINE-FIRST V396</strong><br>` +
+    box.innerHTML = `<strong>📱 OFFLINE-FIRST V399</strong><br>` +
       `NETZ · ${navigator.onLine ? "ONLINE ✅" : "OFFLINE ⚠️"}<br>` +
       `AUSSTEHENDER CLOUD-SYNC · ${isDirty() ? "JA ⚠️" : "NEIN ✅"}` +
       (last ? `<br>LETZTER SICHERER SYNC · ${escapeHtml(formatSupabaseSyncTimestamp(last))}` : "");
@@ -221,17 +233,4 @@
     if (currentTab === "dev") setTimeout(addOfflineSyncStatus,0);
   };
   window.addEventListener("load", () => setTimeout(addOfflineSyncStatus,250));
-
-  /* Sichtbare Build-Metadaten auf V396 anheben. */
-  const applyBuildLabel = () => {
-    document.querySelectorAll("*").forEach(el => {
-      if (el.children.length) return;
-      let text = el.textContent || "";
-      if (text.includes("V395")) text = text.replaceAll("V395","V396");
-      if (text.includes("19.08.2026") && text.includes("08:23")) text = text.replace("08:23","09:12");
-      if (text !== el.textContent) el.textContent = text;
-    });
-  };
-  new MutationObserver(applyBuildLabel).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
-  applyBuildLabel();
 })();
