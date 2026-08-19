@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V400 shell and simplified sync wiring
+      - name: Verify V401 shell and simplified DEV wiring
         shell: python
         run: |
           from pathlib import Path
@@ -23,26 +23,31 @@ jobs:
           index = Path("index.html").read_text(encoding="utf-8")
           sw = Path("sw.js").read_text(encoding="utf-8")
           iphone = Path("iphone-backup-v400.js").read_text(encoding="utf-8")
+          dev = Path("dev-cleanup-v401.js").read_text(encoding="utf-8")
 
           html_v = re.search(r'<!-- BUILD: V(\d+) ·', index)
           cache_v = re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"', sw)
           if not html_v or not cache_v:
               raise SystemExit("Build metadata missing")
-          if html_v.group(1) != "400" or cache_v.group(1) != "400":
-              raise SystemExit(f"Expected V400, got html={html_v.group(1)} sw={cache_v.group(1)}")
+          if html_v.group(1) != "401" or cache_v.group(1) != "401":
+              raise SystemExit(f"Expected V401, got html={html_v.group(1)} sw={cache_v.group(1)}")
 
-          required = ["iphone-backup-v400.js?v=400", "app.js?v=400", "app.css?v=400"]
+          required = ["iphone-backup-v400.js?v=401-2352", "dev-cleanup-v401.js?v=401-2352", "app.js?v=401", "app.css?v=401"]
           for marker in required:
               if marker not in index:
-                  raise SystemExit(f"Missing V400 asset: {marker}")
+                  raise SystemExit(f"Missing V401 asset: {marker}")
 
           forbidden = ["sync-core-v399", "offline-sync-v396", "offline-conflict-v398", "multidevice-sync-fix", "conflict-center.js", "conflict-filter-v388.js", "weight-conflict-v392.js", "conflict-actions-v390.js"]
           for marker in forbidden:
               if marker in index:
                   raise SystemExit(f"Old sync/conflict layer still loaded: {marker}")
 
-          for marker in ["localStorage ist Master", "Kein automatisches Cloud→Local", "daily_complete_backup_v400_"]:
+          for marker in ["localStorage ist Master", "Kein automatisches Cloud→Local", "AUTO_BACKUP_DELAY_MS=10000"]:
               if marker not in iphone:
-                  raise SystemExit(f"Missing V400 behavior marker: {marker}")
+                  raise SystemExit(f"Missing iPhone backup behavior marker: {marker}")
 
-          print("Build V400 iPhone-only backup wiring OK")
+          for marker in ["MIGRATIONS-CHECK", "KONTROLLIERTEN ERSTIMPORT", "LOCAL ↔ CLOUD VERGLEICHEN", "VERBINDUNG TESTEN"]:
+              if marker in dev:
+                  raise SystemExit(f"Obsolete DEV control still visible: {marker}")
+
+          print("Build V401 iPhone-only backup + DEV cleanup wiring OK")
