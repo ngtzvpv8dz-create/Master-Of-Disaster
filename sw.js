@@ -1,4 +1,4 @@
-const CACHE_NAME = "master-of-disaster-v389";
+const CACHE_NAME = "master-of-disaster-v388";
 const APP_SHELL = [
   "./",
   "./index.html",
