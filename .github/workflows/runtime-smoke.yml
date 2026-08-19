@@ -13,12 +13,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Syntax check V401 modules
+      - name: Syntax check active modules
         run: |
           node --check iphone-backup-v400.js
           node --check dev-cleanup-v401.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V401 runtime
+      - name: Verify live V402 runtime
         run: |
           cat > smoke.js <<'JS'
           const { chromium } = require('playwright');
@@ -34,10 +34,11 @@ jobs:
                 result.deployAttempts=i;
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
                 live=await page.evaluate(()=>!!window.__modIphoneBackupV401);
-                if(live) break;
+                const body=await page.locator('body').innerText();
+                if(live && /\bV402\b/.test(body)) break;
                 await page.waitForTimeout(10000);
               }
-              if(!live) throw new Error('V401 iPhone backup core not deployed after retry window');
+              if(!live) throw new Error('iPhone backup core not deployed after retry window');
               result.iphoneBackup=true;
               await page.waitForSelector('[data-tab="today"]',{timeout:15000});
               await page.click('[data-tab="today"]'); await page.waitForTimeout(250);
@@ -46,11 +47,11 @@ jobs:
               result.dev=await page.locator('[data-tab="dev"]').evaluate(e=>e.classList.contains('active'));
               result.weightHiddenInDev=await page.locator('#weightContainer').evaluate(e=>getComputedStyle(e).display==='none');
               const body=await page.locator('body').innerText();
-              result.version=/\bV401\b/.test(body)?'V401':'unknown';
+              result.version=/\bV402\b/.test(body)?'V402':'unknown';
               result.devClean=/IPHONE \/ CLOUD-BACKUP/.test(body)&&/CLOUD-SICHERUNG/.test(body);
               result.obsoleteDevGone=!/MIGRATIONS-CHECK|KONTROLLIERTEN ERSTIMPORT|LOCAL ↔ CLOUD VERGLEICHEN|VERBINDUNG TESTEN/.test(body);
               result.errors=errors;
-              result.status=(result.today&&result.dev&&result.weightHiddenInDev&&result.iphoneBackup&&result.devClean&&result.obsoleteDevGone&&result.version==='V401'&&!errors.length)?'PASS':'FAIL';
+              result.status=(result.today&&result.dev&&result.weightHiddenInDev&&result.iphoneBackup&&result.devClean&&result.obsoleteDevGone&&result.version==='V402'&&!errors.length)?'PASS':'FAIL';
             }catch(e){result.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(result,null,2)); console.log(result);
             await browser.close(); if(result.status!=='PASS') process.exitCode=1;
