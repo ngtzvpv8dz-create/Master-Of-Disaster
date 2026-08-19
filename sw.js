@@ -1,12 +1,12 @@
-const CACHE_NAME = "master-of-disaster-v388";
+const CACHE_NAME = "master-of-disaster-v389";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./app.css?v=388",
-  "./app.js?v=388",
-  "./conflict-center.css?v=388",
-  "./conflict-center.js?v=388",
-  "./conflict-filter-v388.js?v=388",
+  "./app.css?v=389",
+  "./app.js?v=389",
+  "./conflict-center.css?v=389",
+  "./conflict-center.js?v=389",
+  "./conflict-filter-v388.js?v=389",
   "./manifest.webmanifest",
   "./supabase-config.js",
   "./master-of-disaster-192.png",
