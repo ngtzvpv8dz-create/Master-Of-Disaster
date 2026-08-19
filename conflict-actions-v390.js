@@ -1,5 +1,6 @@
-/* V390: Sichere Konfliktauflösung pro Datensatz.
-   Phase 1: Zusatzgewichts-Konflikte sind scharf. Andere Konflikttypen bleiben bewusst gesperrt. */
+/* V391: Sichere Konfliktauflösung pro Datensatz.
+   Phase 1: Zusatzgewichts-Konflikte sind scharf. Andere Konflikttypen bleiben bewusst gesperrt.
+   Fix: historische Cloud-Gewichtsphasen ohne legacy_phase_id werden korrekt als Phase 0 behandelt. */
 (function () {
   function conflictPhaseId(item) {
     const match = String(item && item.title || "").match(/Gewichtsphase\s+(-?\d+)/i);
@@ -20,17 +21,51 @@
     return (Array.isArray(weightPhases) ? weightPhases : []).find(p => Number(p && p.id) === Number(id)) || null;
   }
 
-  async function takeCloudWeight(item) {
-    const phaseId = conflictPhaseId(item);
-    if (!Number.isInteger(phaseId)) throw new Error("Gewichtsphase konnte nicht bestimmt werden.");
-    const { client, userId } = await getSessionContext();
-    const { data, error } = await client.from("weight_phases")
+  async function findCloudWeightRow(client, userId, phaseId) {
+    let result = await client.from("weight_phases")
       .select("*")
       .eq("user_id", userId)
       .eq("legacy_phase_id", phaseId)
       .limit(1);
-    if (error) throw error;
-    const row = Array.isArray(data) ? data[0] : null;
+    if (result.error) throw result.error;
+    let row = Array.isArray(result.data) ? result.data[0] : null;
+
+    // Alte importierte Phasen können legacy_phase_id = null haben.
+    // Der Vergleich bildet null historisch als numerische Phase 0 ab.
+    if (!row && phaseId === 0) {
+      result = await client.from("weight_phases")
+        .select("*")
+        .eq("user_id", userId)
+        .is("legacy_phase_id", null)
+        .order("started_at", { ascending: true })
+        .limit(1);
+      if (result.error) throw result.error;
+      row = Array.isArray(result.data) ? result.data[0] : null;
+    }
+    return row;
+  }
+
+  async function deleteCloudWeightRows(client, userId, phaseId) {
+    let result = await client.from("weight_phases")
+      .delete()
+      .eq("user_id", userId)
+      .eq("legacy_phase_id", phaseId);
+    if (result.error) throw result.error;
+
+    if (phaseId === 0) {
+      result = await client.from("weight_phases")
+        .delete()
+        .eq("user_id", userId)
+        .is("legacy_phase_id", null);
+      if (result.error) throw result.error;
+    }
+  }
+
+  async function takeCloudWeight(item) {
+    const phaseId = conflictPhaseId(item);
+    if (!Number.isInteger(phaseId)) throw new Error("Gewichtsphase konnte nicht bestimmt werden.");
+    const { client, userId } = await getSessionContext();
+    const row = await findCloudWeightRow(client, userId, phaseId);
     if (!row) throw new Error("Cloud-Gewichtsphase ist nicht mehr vorhanden. Bitte neu vergleichen.");
 
     const raw = row.metadata && row.metadata.raw && typeof row.metadata.raw === "object"
@@ -65,11 +100,7 @@
     const local = localWeightPhaseById(phaseId);
     const { client, userId } = await getSessionContext();
 
-    let result = await client.from("weight_phases")
-      .delete()
-      .eq("user_id", userId)
-      .eq("legacy_phase_id", phaseId);
-    if (result.error) throw result.error;
+    await deleteCloudWeightRows(client, userId, phaseId);
 
     if (local) {
       const row = {
@@ -82,7 +113,7 @@
         source: local.source ? String(local.source) : "conflict-local-wins",
         metadata: { raw: local, conflictResolution: "local" }
       };
-      result = await client.from("weight_phases").insert([row]);
+      const result = await client.from("weight_phases").insert([row]);
       if (result.error) throw result.error;
     }
   }
@@ -93,7 +124,7 @@
     const item = conflicts[index];
     if (!item) return;
     if (item.kindLabel !== "ZUSATZGEWICHT") {
-      showInfoModal("Noch gesperrt", "Dieser Konflikttyp ist noch absichtlich read-only. Zusatzgewichts-Konflikte sind in V390 bereits sicher auflösbar.");
+      showInfoModal("Noch gesperrt", "Dieser Konflikttyp ist noch absichtlich read-only. Zusatzgewichts-Konflikte sind bereits sicher auflösbar.");
       return;
     }
 
@@ -133,7 +164,7 @@
         buttons[0].onclick = () => resolveConflict(index, "local");
         buttons[1].onclick = () => resolveConflict(index, "cloud");
         const note = card.querySelector(".cloud-conflict-readonly");
-        if (note) note.textContent = "V390 · EINZELKONFLIKT AKTIV · MIT SICHERHEITSABFRAGE";
+        if (note) note.textContent = "V391 · EINZELKONFLIKT AKTIV · NULL-ID-FIX · MIT SICHERHEITSABFRAGE";
       }
     });
   }
