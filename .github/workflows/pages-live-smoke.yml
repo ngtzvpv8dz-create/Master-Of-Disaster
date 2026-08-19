@@ -16,31 +16,51 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe deployed GitHub Pages until V401 is live
+      - name: Probe deployed GitHub Pages until complete V401 recovery shell is live
         id: probe
         shell: bash
         run: |
           set +e
-          URL="https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/"
+          URL="https://ngtzvpv8dz-create.github.io/Master-Of-Disaster"
           STATUS="FAIL"
           DETECTED="unknown"
+          DETAILS=""
           : > /tmp/live.html
+          : > /tmp/build-label.js
+          : > /tmp/sw.js
+
           for i in $(seq 1 30); do
-            curl -fsSL --retry 2 --connect-timeout 10 "${URL}?pages_probe=${GITHUB_SHA}_${i}" -o /tmp/live.html
-            if grep -q 'BUILD: V401' /tmp/live.html || grep -q 'v=401r3' /tmp/live.html; then
+            TOKEN="${GITHUB_SHA}_${i}"
+            curl -fsSL --retry 2 --connect-timeout 10 "${URL}/?pages_probe=${TOKEN}" -o /tmp/live.html
+            curl -fsSL --retry 2 --connect-timeout 10 "${URL}/build-label-v400.js?pages_probe=${TOKEN}" -o /tmp/build-label.js
+            curl -fsSL --retry 2 --connect-timeout 10 "${URL}/sw.js?pages_probe=${TOKEN}" -o /tmp/sw.js
+
+            INDEX_OK=0
+            LABEL_OK=0
+            SW_OK=0
+            grep -q 'BUILD: V401' /tmp/live.html && grep -q 'v=401r3' /tmp/live.html && INDEX_OK=1
+            grep -q 'BUILD_VERSION = "V401"' /tmp/build-label.js && grep -q "dev-build-item" /tmp/build-label.js && LABEL_OK=1
+            grep -q 'master-of-disaster-static-v401-recovery' /tmp/sw.js && grep -q 'cache: "no-store"' /tmp/sw.js && SW_OK=1
+
+            if [ "$INDEX_OK" = "1" ] && [ "$LABEL_OK" = "1" ] && [ "$SW_OK" = "1" ]; then
               STATUS="PASS"
               DETECTED="V401"
+              DETAILS="index=ok build-label=ok service-worker=ok"
               break
             fi
+
             if grep -q 'BUILD: V392' /tmp/live.html || grep -q 'v=392' /tmp/live.html; then DETECTED="V392"; fi
             if grep -q 'BUILD: V393' /tmp/live.html || grep -q 'v=393' /tmp/live.html; then DETECTED="V393"; fi
             if grep -q 'BUILD: V395' /tmp/live.html || grep -q 'v=395' /tmp/live.html; then DETECTED="V395"; fi
+            DETAILS="index=${INDEX_OK} build-label=${LABEL_OK} service-worker=${SW_OK}"
             sleep 10
           done
+
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "detected=$DETECTED" >> "$GITHUB_OUTPUT"
           echo "STATUS=$STATUS" > /tmp/pages-status.txt
           echo "DETECTED=$DETECTED" >> /tmp/pages-status.txt
+          echo "DETAILS=$DETAILS" >> /tmp/pages-status.txt
           echo "CHECKED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /tmp/pages-status.txt
           echo "SOURCE_SHA=$GITHUB_SHA" >> /tmp/pages-status.txt
           grep -o 'BUILD: V[0-9][0-9][0-9][^<]*' /tmp/live.html | head -n 1 >> /tmp/pages-status.txt || true
@@ -61,6 +81,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fail if live page is not V401
+      - name: Fail if live page is not the complete V401 recovery shell
         if: steps.probe.outputs.status != 'PASS'
         run: exit 1
