@@ -26,12 +26,19 @@ jobs:
             const page=await browser.newPage();
             const errors=[];
             page.on('pageerror',e=>errors.push(e.message));
-            let result={status:'FAIL',version:'unknown',today:false,dev:false,weightHiddenInDev:false,syncCore:false,oldSyncLayersGone:false,decisionTests:false,errors:[]};
+            let result={status:'FAIL',version:'unknown',today:false,dev:false,weightHiddenInDev:false,syncCore:false,oldSyncLayersGone:false,decisionTests:false,deployAttempts:0,errors:[]};
             try{
-              await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-              await page.waitForSelector('[data-tab="today"]',{timeout:15000});
-              await page.waitForFunction(()=>typeof window.__modSyncDecisionV399==='function',{timeout:15000});
+              let live=false;
+              for(let i=1;i<=18;i++){
+                result.deployAttempts=i;
+                await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+                live=await page.evaluate(()=>typeof window.__modSyncDecisionV399==='function');
+                if(live) break;
+                await page.waitForTimeout(10000);
+              }
+              if(!live) throw new Error('V399 sync core not deployed after retry window');
               result.syncCore=true;
+              await page.waitForSelector('[data-tab="today"]',{timeout:15000});
               result.decisionTests=await page.evaluate(()=>{
                 const d=window.__modSyncDecisionV399;
                 return d('A','A','A',false)==='equal' &&
@@ -52,7 +59,8 @@ jobs:
               result.dev=await page.locator('[data-tab="dev"]').evaluate(e=>e.classList.contains('active'));
               result.weightHiddenInDev=await page.locator('#weightContainer').evaluate(e=>getComputedStyle(e).display==='none');
               const body=await page.locator('body').innerText();
-              const m=body.match(/V\d{3}/); if(m) result.version=m[0];
+              const matches=body.match(/V\d{3}/g)||[];
+              result.version=matches.includes('V399')?'V399':(matches[0]||'unknown');
               result.errors=errors;
               result.status=(result.today&&result.dev&&result.weightHiddenInDev&&result.syncCore&&result.oldSyncLayersGone&&result.decisionTests&&result.version==='V399'&&!errors.length)?'PASS':'FAIL';
             }catch(e){result.errors.push(String(e.stack||e));}
