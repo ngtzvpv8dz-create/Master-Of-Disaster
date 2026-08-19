@@ -32,7 +32,7 @@ jobs:
           if html_v.group(1) != "401" or cache_v.group(1) != "401":
               raise SystemExit(f"Expected V401, got html={html_v.group(1)} sw={cache_v.group(1)}")
 
-          required = ["iphone-backup-v400.js?v=401-2352", "dev-cleanup-v401.js?v=401-2352", "app.js?v=401", "app.css?v=401"]
+          required = ["iphone-backup-v400.js?v=401-2352", "dev-cleanup-v401.js?v=401-2356", "app.js?v=401", "app.css?v=401"]
           for marker in required:
               if marker not in index:
                   raise SystemExit(f"Missing V401 asset: {marker}")
