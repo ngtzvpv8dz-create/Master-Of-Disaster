@@ -1,4 +1,4 @@
-/* V400 · IPHONE-FIRST OFFLINE BACKUP
+/* V401 · IPHONE-FIRST OFFLINE BACKUP
    Ziel: Ein Gerät, localStorage ist Master. Supabase ist ausschließlich Sicherung.
    - Keine Multi-Device-Synchronisation.
    - Kein automatisches Cloud→Local.
@@ -11,6 +11,7 @@
 (function(){
   const LIVE_KEY="live_complete_backup_v1";
   const DAILY_PREFIX="daily_complete_backup_v400_";
+  /* V400-Schlüssel bleiben absichtlich bestehen, damit bestehender Pending-/Last-OK-Status nicht verloren geht. */
   const PENDING_KEY="masterOfDisasterIphoneBackupPendingV400";
   const LAST_OK_KEY="masterOfDisasterIphoneBackupLastOkV400";
   const LAST_DAILY_KEY="masterOfDisasterIphoneBackupDailyDateV400";
@@ -30,9 +31,9 @@
   function payload(){
     const p=createCompleteBackupPayload();
     if(!p||!p.state) throw new Error("Lokaler Komplett-Snapshot konnte nicht erstellt werden.");
-    p.masterVersion="V400";
+    p.masterVersion="V401";
     p.backupMode="iphone-local-master";
-    p.cloudSnapshotVersion=400;
+    p.cloudSnapshotVersion=401;
     p.cloudSnapshotSavedAt=new Date().toISOString();
     return p;
   }
@@ -102,7 +103,7 @@
     if(timer){ clearTimeout(timer); timer=null; }
     if(!navigator.onLine){
       setPending(true);
-      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderungen sind lokal gespeichert. Das Cloud-Backup wird automatisch nachgeholt, sobald das iPhone wieder online ist.","v400-offline");
+      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderungen sind lokal gespeichert. Das Cloud-Backup wird automatisch nachgeholt, sobald das iPhone wieder online ist.","v401-offline");
       addStatus();
       return;
     }
@@ -111,7 +112,7 @@
       const s=await session();
       if(!s){
         setPending(true);
-        setUi("warn","CLOUD-BACKUP WARTET","Supabase-Login fehlt. Lokal ist alles gespeichert.","v400-no-session");
+        setUi("warn","CLOUD-BACKUP WARTET","Supabase-Login fehlt. Lokal ist alles gespeichert.","v401-no-session");
         return;
       }
       const p=payload();
@@ -126,12 +127,12 @@
       safeStorageSet(LAST_DAILY_KEY,day);
       safeStorageSet(LAST_OK_KEY,new Date().toISOString());
       setPending(false);
-      setUi("ok","IPHONE-BACKUP SICHER ✅","Lokaler iPhone-Stand wurde vollständig in Supabase gesichert und zurückgelesen verifiziert. Keine Multi-Device-Synchronisation aktiv.",manual?"v400-manual-backup":"v400-auto-backup");
+      setUi("ok","IPHONE-BACKUP SICHER ✅","Lokaler iPhone-Stand wurde vollständig in Supabase gesichert und zurückgelesen verifiziert. Keine Multi-Device-Synchronisation aktiv.",manual?"v401-manual-backup":"v401-auto-backup");
     }catch(error){
       setPending(true);
       const text=error&&error.message?error.message:String(error||"Unbekannter Backup-Fehler");
-      setUi("warn","CLOUD-BACKUP AUSSTEHEND · LOKAL SICHER 📱",text,"v400-backup-error");
-      console.warn("V400 iPhone backup:",error);
+      setUi("warn","CLOUD-BACKUP AUSSTEHEND · LOKAL SICHER 📱",text,"v401-backup-error");
+      console.warn("V401 iPhone backup:",error);
     }finally{
       busy=false;
       addStatus();
@@ -142,17 +143,15 @@
     setPending(true);
     if(reason){ try{supabaseLiveSyncReasons.add(String(reason));}catch(_){} }
     if(!navigator.onLine){
-      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderung lokal gespeichert. Cloud-Backup wartet auf Internet.","v400-offline-pending");
+      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderung lokal gespeichert. Cloud-Backup wartet auf Internet.","v401-offline-pending");
       addStatus();
       return;
     }
-    /* Debounce: Jede weitere Änderung innerhalb der 10 Sekunden startet die Wartezeit neu. */
     if(timer) clearTimeout(timer);
     timer=setTimeout(()=>{timer=null;backupNow(false);},AUTO_BACKUP_DELAY_MS);
     addStatus();
   }
 
-  /* Alte Sync-Timer aus app.js stoppen; ab hier gibt es nur noch Backup, keinen Cloud-Pull. */
   try{
     if(typeof supabaseLiveSyncTimer!=="undefined"&&supabaseLiveSyncTimer){clearTimeout(supabaseLiveSyncTimer);supabaseLiveSyncTimer=null;}
     if(typeof supabaseLiveSyncReasons!=="undefined"&&supabaseLiveSyncReasons&&supabaseLiveSyncReasons.clear)supabaseLiveSyncReasons.clear();
@@ -163,16 +162,16 @@
 
   function addStatus(){
     if(currentTab!=="dev") return;
-    ["offlineSyncStatusV396","syncStatusV399","iphoneBackupStatusV400"].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+    ["offlineSyncStatusV396","syncStatusV399","iphoneBackupStatusV400","iphoneBackupStatusV401"].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
     const button=Array.from(document.querySelectorAll("button")).find(btn=>/JETZT SYNCHRONISIEREN|JETZT SICHERN/i.test(btn.textContent||""));
     if(!button||!button.parentElement) return;
     button.textContent="☁️ JETZT SICHERN · SOFORT";
     const box=document.createElement("div");
-    box.id="iphoneBackupStatusV400";
+    box.id="iphoneBackupStatusV401";
     box.style.cssText="margin-top:10px;padding:10px;border:1px solid #30383e;border-radius:10px;background:#0f1315;font-size:10px;line-height:1.55;";
     const last=safeStorageGet(LAST_OK_KEY);
     const shown=last&&typeof formatSupabaseSyncTimestamp==="function"?formatSupabaseSyncTimestamp(last):(last||"NOCH KEINS");
-    box.innerHTML=`<strong>📱 IPHONE · LOCAL MASTER · V400</strong><br>`+
+    box.innerHTML=`<strong>📱 IPHONE · LOCAL MASTER · V401</strong><br>`+
       `NETZ · ${navigator.onLine?"ONLINE ✅":"OFFLINE ⚠️"}<br>`+
       `CLOUD-BACKUP AUSSTEHEND · ${isPending()?"JA ⚠️":"NEIN ✅"}<br>`+
       `AUTO-BACKUP · 10 SEK. NACH LETZTER ÄNDERUNG ✅<br>`+
@@ -189,11 +188,10 @@
     if(currentTab==="dev") setTimeout(addStatus,0);
   };
 
-  /* Geschlossene App: JavaScript läuft nicht. Beim nächsten Öffnen/Fokus wird ein Pending-Backup nachgeholt. */
   window.addEventListener("online",()=>setTimeout(()=>{if(isPending())backupNow(false);},600));
   window.addEventListener("focus",()=>setTimeout(()=>{if(isPending()&&navigator.onLine)backupNow(false);},350));
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&isPending()&&navigator.onLine)setTimeout(()=>backupNow(false),350);});
   window.addEventListener("load",()=>setTimeout(()=>{addStatus();if(isPending()&&navigator.onLine)backupNow(false);},500));
 
-  window.__modIphoneBackupV400={backupNow,isPending,berlinDateKey,autoBackupDelayMs:AUTO_BACKUP_DELAY_MS};
+  window.__modIphoneBackupV401={backupNow,isPending,berlinDateKey,autoBackupDelayMs:AUTO_BACKUP_DELAY_MS};
 })();
