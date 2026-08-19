@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V401 shell and simplified DEV wiring
+      - name: Verify V402 shell and cleaned repository
         shell: python
         run: |
           from pathlib import Path
@@ -29,18 +29,23 @@ jobs:
           cache_v = re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"', sw)
           if not html_v or not cache_v:
               raise SystemExit("Build metadata missing")
-          if html_v.group(1) != "401" or cache_v.group(1) != "401":
-              raise SystemExit(f"Expected V401, got html={html_v.group(1)} sw={cache_v.group(1)}")
+          if html_v.group(1) != "402" or cache_v.group(1) != "402":
+              raise SystemExit(f"Expected V402, got html={html_v.group(1)} sw={cache_v.group(1)}")
 
-          required = ["iphone-backup-v400.js?v=401-2352", "dev-cleanup-v401.js?v=401-2356", "app.js?v=401", "app.css?v=401"]
+          required = ["iphone-backup-v400.js?v=402-0007", "dev-cleanup-v401.js?v=402-0007", "app.js?v=402", "app.css?v=402"]
           for marker in required:
               if marker not in index:
-                  raise SystemExit(f"Missing V401 asset: {marker}")
+                  raise SystemExit(f"Missing V402 asset: {marker}")
 
-          forbidden = ["sync-core-v399", "offline-sync-v396", "offline-conflict-v398", "multidevice-sync-fix", "conflict-center.js", "conflict-filter-v388.js", "weight-conflict-v392.js", "conflict-actions-v390.js"]
-          for marker in forbidden:
-              if marker in index:
-                  raise SystemExit(f"Old sync/conflict layer still loaded: {marker}")
+          obsolete = [
+            "ROLLBACK-V398-RECOVERY.txt","conflict-actions-v390.js","conflict-center.css","conflict-center.js",
+            "conflict-filter-v388.js","multidevice-sync-fix.js","offline-conflict-v398.js","offline-sync-v396.js",
+            "sync-core-v399.js","weight-conflict-v392.js","build-label-v393.js",
+            ".github/workflows/v389-conflict-semantics.yml"
+          ]
+          leftovers = [p for p in obsolete if Path(p).exists()]
+          if leftovers:
+              raise SystemExit(f"Obsolete files still present: {leftovers}")
 
           for marker in ["localStorage ist Master", "Kein automatisches Cloud→Local", "AUTO_BACKUP_DELAY_MS=10000"]:
               if marker not in iphone:
@@ -50,4 +55,4 @@ jobs:
               if marker in dev:
                   raise SystemExit(f"Obsolete DEV control still visible: {marker}")
 
-          print("Build V401 iPhone-only backup + DEV cleanup wiring OK")
+          print("Build V402 cleanup OK")
