@@ -617,13 +617,13 @@ skipped
 ====================================== */
 
 const APP_VERSION =
-"V399";
+"V400";
 
 const APP_BUILD_DATE =
 "19.08.2026";
 
 const APP_BUILD_TIME =
-"22:54";
+"23:21";
 
 const APP_BUILD_LABEL =
 APP_BUILD_DATE +
