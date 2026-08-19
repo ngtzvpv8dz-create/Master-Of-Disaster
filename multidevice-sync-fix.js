@@ -1,7 +1,8 @@
-/* MULTI-DEVICE SYNC FIX · V398 stable hotfix 4
-   Passive cloud polling + correct offline reconnect baseline handling.
-   A device that uploads queued offline changes now establishes the uploaded state as its safe baseline;
-   other unchanged devices can then auto-pull that cloud-only change.
+/* MULTI-DEVICE SYNC FIX · V398 stable hotfix 5
+   - Passive cloud polling for already-open devices.
+   - Correct offline reconnect baseline handling.
+   - Clears stale cloud-change-guard UI state once Local and Cloud are proven identical.
+   - Enforces the weight panel only on ALLE and HEUTE, never DEV/other tabs.
 */
 (function () {
   const DIRTY_KEY = "masterOfDisasterCloudSyncPendingV396";
@@ -22,6 +23,7 @@
       weightPhases: Array.isArray(state.weightPhases) ? state.weightPhases : []
     };
   }
+
   function canonical(value) {
     if (Array.isArray(value)) return value.map(canonical);
     if (value && typeof value === "object") {
@@ -31,6 +33,7 @@
     }
     return value === undefined ? null : value;
   }
+
   async function sha256(text) {
     if (window.crypto && window.crypto.subtle && typeof TextEncoder !== "undefined") {
       const data = new TextEncoder().encode(text);
@@ -41,11 +44,16 @@
     for (let i=0;i<text.length;i+=1) { h ^= text.charCodeAt(i); h = Math.imul(h,16777619); }
     return "fnv1a-" + (h >>> 0).toString(16).padStart(8,"0");
   }
-  async function hashState(state) { return sha256(JSON.stringify(canonical(domainState(state)))); }
+
+  async function hashState(state) {
+    return sha256(JSON.stringify(canonical(domainState(state))));
+  }
+
   async function localHash() {
     const payload = createCompleteBackupPayload();
     return hashState(payload && payload.state ? payload.state : {});
   }
+
   async function remoteSnapshot() {
     const client = getSupabaseClient();
     if (!client) return null;
@@ -53,15 +61,22 @@
     if (sessionError) throw sessionError;
     const user = sessionData && sessionData.session && sessionData.session.user;
     if (!user || !user.id) return null;
-    const { data, error } = await client.from("legacy_metadata").select("payload").eq("user_id",user.id).eq("key",LIVE_KEY).limit(1);
+    const { data, error } = await client.from("legacy_metadata")
+      .select("payload")
+      .eq("user_id",user.id)
+      .eq("key",LIVE_KEY)
+      .limit(1);
     if (error) throw error;
     const row = Array.isArray(data) && data.length ? data[0] : null;
     if (!row || !row.payload || !row.payload.state) return null;
     return { payload:row.payload, hash:await hashState(row.payload.state) };
   }
+
   function applyRemoteState(payload) {
     const state = payload && payload.state;
-    if (!state || !Array.isArray(state.tasks) || !Array.isArray(state.archive) || !Array.isArray(state.weightPhases) || !state.weightState) throw new Error("Cloud-Snapshot ist unvollständig.");
+    if (!state || !Array.isArray(state.tasks) || !Array.isArray(state.archive) || !Array.isArray(state.weightPhases) || !state.weightState) {
+      throw new Error("Cloud-Snapshot ist unvollständig.");
+    }
     const next = Number(state.nextArchiveNumber);
     if (!Number.isInteger(next) || next < 1) throw new Error("Cloud-Snapshot hat ungültige Archivnummer.");
     const values = {
@@ -74,46 +89,105 @@
     const ok = Object.entries(values).map(([k,v]) => safeStorageSet(k,v)).every(Boolean);
     if (!ok) throw new Error("Cloud-Stand konnte lokal nicht vollständig gespeichert werden.");
     safeStorageSet("masterOfDisasterMasterV361ActiveTasksImported","done");
-    tasks = JSON.parse(values.masterOfDisasterTasks); archive = JSON.parse(values.masterOfDisasterArchive);
-    weightState = JSON.parse(values.masterOfDisasterWeightState); weightPhases = JSON.parse(values.masterOfDisasterWeightPhases); nextArchiveNumber = next;
+    tasks = JSON.parse(values.masterOfDisasterTasks);
+    archive = JSON.parse(values.masterOfDisasterArchive);
+    weightState = JSON.parse(values.masterOfDisasterWeightState);
+    weightPhases = JSON.parse(values.masterOfDisasterWeightPhases);
+    nextArchiveNumber = next;
   }
+
   function markSafe(hash) {
-    safeStorageSet(BASELINE_KEY,hash); safeStorageSet(DIRTY_KEY,"0"); safeStorageSet(LAST_OK_KEY,new Date().toISOString());
+    safeStorageSet(BASELINE_KEY,hash);
+    safeStorageSet(DIRTY_KEY,"0");
+    safeStorageSet(LAST_OK_KEY,new Date().toISOString());
   }
+
+  function clearStaleConflictState(label) {
+    const state = supabaseLiveSyncState || {};
+    const stale = state.lastReason === "cloud-change-guard" || state.lastReason === "preflight-recheck" || /SYNC ANGEHALTEN|CLOUD GEÄNDERT|CLOUD GEAENDERT/i.test(String(state.label || ""));
+    if (!stale) return;
+    supabaseLiveSyncState = {
+      ...state,
+      status:"ok",
+      label:label || "LOCAL ↔ CLOUD SYNCHRON ✅",
+      detail:"Lokaler und Cloud-Stand wurden erneut geprüft und sind inhaltlich identisch. Ein alter Konfliktstatus wurde verworfen.",
+      lastReason:"multidevice-equal"
+    };
+  }
+
+  function enforceWeightPanelVisibility() {
+    const container = document.getElementById("weightContainer");
+    if (!container) return;
+    const allowed = currentTab === "all" || currentTab === "today";
+    container.style.display = allowed ? "" : "none";
+  }
+
   function renderPulled(label) {
-    supabaseLiveSyncState = {...supabaseLiveSyncState,status:"ok",label:label || "CLOUD-ÄNDERUNG AUTOMATISCH ÜBERNOMMEN ✅",detail:"Dieses Gerät wurde auf den aktuellen Cloud-Stand gebracht. Lokale Änderungen wurden dabei nicht in die Cloud geschrieben.",lastReason:"cloud-only-auto-pull"};
-    if (typeof renderWeightPanel === "function") renderWeightPanel();
+    supabaseLiveSyncState = {
+      ...supabaseLiveSyncState,
+      status:"ok",
+      label:label || "CLOUD-ÄNDERUNG AUTOMATISCH ÜBERNOMMEN ✅",
+      detail:"Dieses Gerät wurde auf den aktuellen Cloud-Stand gebracht. Lokale Änderungen wurden dabei nicht in die Cloud geschrieben.",
+      lastReason:"cloud-only-auto-pull"
+    };
+    if (typeof renderWeightPanel === "function" && (currentTab === "all" || currentTab === "today")) renderWeightPanel();
     if (typeof render === "function") render();
+    enforceWeightPanelVisibility();
   }
+
   async function migrateOldGuardState(remote, local) {
     if (safeStorageGet(MIGRATION_KEY) === "done") return false;
     try { safeStorageSet(PRE_PULL_BACKUP_KEY, JSON.stringify(createCompleteBackupPayload())); } catch (_) {}
     if (local !== remote.hash) applyRemoteState(remote.payload);
     markSafe(remote.hash);
     safeStorageSet(MIGRATION_KEY,"done");
+    clearStaleConflictState("MULTI-GERÄTE-BASIS AKTUALISIERT ✅");
     renderPulled(local === remote.hash ? "MULTI-GERÄTE-BASIS AKTUALISIERT ✅" : "CLOUD-STAND SICHER ÜBERNOMMEN ✅");
     return true;
   }
+
   async function preflightAndMaybePull() {
     if (preflightBusy || !navigator.onLine) return {handled:false};
     preflightBusy = true;
     try {
-      const remote = await remoteSnapshot(); if (!remote) return {handled:false};
+      const remote = await remoteSnapshot();
+      if (!remote) return {handled:false};
       const local = await localHash();
+
       if (await migrateOldGuardState(remote,local)) return {handled:true,pulled:local!==remote.hash};
+
       const baseline = safeStorageGet(BASELINE_KEY);
-      if (!baseline && local === remote.hash) { markSafe(remote.hash); return {handled:true,pulled:false}; }
+      if (!baseline && local === remote.hash) {
+        markSafe(remote.hash);
+        clearStaleConflictState();
+        if (typeof render === "function" && currentTab === "dev") render();
+        enforceWeightPanelVisibility();
+        return {handled:true,pulled:false};
+      }
       if (!baseline) return {handled:false};
-      if (local === remote.hash) { markSafe(remote.hash); return {handled:true,pulled:false}; }
+
+      if (local === remote.hash) {
+        markSafe(remote.hash);
+        clearStaleConflictState();
+        if (typeof render === "function" && currentTab === "dev") render();
+        enforceWeightPanelVisibility();
+        return {handled:true,pulled:false};
+      }
+
       if (local === baseline && remote.hash !== baseline) {
         try { safeStorageSet(PRE_PULL_BACKUP_KEY, JSON.stringify(createCompleteBackupPayload())); } catch (_) {}
         applyRemoteState(remote.payload);
         const integrity = typeof collectDataIntegrityReport === "function" ? collectDataIntegrityReport() : {ok:true};
         if (integrity && integrity.ok === false) throw new Error("Automatisch übernommener Cloud-Stand besteht die Datenprüfung nicht.");
-        markSafe(remote.hash); renderPulled(); return {handled:true,pulled:true};
+        markSafe(remote.hash);
+        renderPulled();
+        return {handled:true,pulled:true};
       }
+
       return {handled:false};
-    } finally { preflightBusy = false; }
+    } finally {
+      preflightBusy = false;
+    }
   }
 
   const guardedRun = runSupabaseLiveSync;
@@ -125,29 +199,43 @@
     } catch(error) {
       console.warn("Multi-device preflight failed; existing safe sync guard takes over:",error);
     }
+
     const result = await guardedRun(manual);
-    /* Critical offline-first case: if this run flushed a queued local edit successfully,
-       the uploaded local state is now the safe baseline. Without this, the originating device
-       can retain the pre-offline baseline and other devices may refuse a legitimate cloud-only pull. */
+
     if (wasDirty && navigator.onLine && safeStorageGet(DIRTY_KEY) !== "1") {
       try {
         const remote = await remoteSnapshot();
         const local = await localHash();
-        if (remote && remote.hash === local) markSafe(remote.hash);
+        if (remote && remote.hash === local) {
+          markSafe(remote.hash);
+          clearStaleConflictState();
+        }
       } catch(error) {
         console.warn("Post-offline-sync baseline verification failed:",error);
       }
     }
+    enforceWeightPanelVisibility();
     return result;
+  };
+
+  const renderBeforeVisibilityGuard = render;
+  render = function () {
+    renderBeforeVisibilityGuard();
+    enforceWeightPanelVisibility();
   };
 
   async function checkCloudOnlyChange() {
     if (document.visibilityState === "hidden") return;
-    try { await preflightAndMaybePull(); } catch(error) { console.warn("Cloud-only check failed:",error); }
+    try { await preflightAndMaybePull(); }
+    catch(error) { console.warn("Cloud-only check failed:",error); }
+    enforceWeightPanelVisibility();
   }
+
   window.addEventListener("load",()=>setTimeout(checkCloudOnlyChange,250));
   window.addEventListener("focus",()=>setTimeout(checkCloudOnlyChange,350));
   window.addEventListener("online",()=>setTimeout(checkCloudOnlyChange,1200));
-  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") setTimeout(checkCloudOnlyChange,350); });
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible") setTimeout(checkCloudOnlyChange,350);
+  });
   setInterval(checkCloudOnlyChange,3000);
 })();
