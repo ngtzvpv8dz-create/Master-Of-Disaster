@@ -1,16 +1,11 @@
-/* V399 visible build metadata. */
+/* V399 visible build metadata, targeted only at the DEV build card. */
 (function(){
   const VERSION="V399";
-  const DATE="19.08.2026";
-  const TIME="22:49";
+  const BUILD="19.08.2026 · 22:49 Uhr";
   const apply=()=>{
-    document.querySelectorAll("*").forEach(el=>{
-      if(el.children.length) return;
-      let t=el.textContent||"";
-      if(/V3(?:82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98)/.test(t)) t=t.replace(/V3(?:82|83|84|85|86|87|88|89|90|91|92|93|94|95|96|97|98)/g,VERSION);
-      if(t.includes(DATE) && /\b\d{2}:\d{2}\b/.test(t) && /V399|BUILD|VERSION/i.test(t)) t=t.replace(/\b\d{2}:\d{2}\b/,TIME);
-      if(t!==el.textContent) el.textContent=t;
-    });
+    const values=document.querySelectorAll('.dev-build-grid .dev-build-value');
+    if(values[0] && values[0].textContent!==VERSION) values[0].textContent=VERSION;
+    if(values[1] && values[1].textContent!==BUILD) values[1].textContent=BUILD;
   };
   new MutationObserver(apply).observe(document.documentElement,{subtree:true,childList:true,characterData:true});
   apply();
