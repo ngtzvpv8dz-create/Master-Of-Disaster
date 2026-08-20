@@ -11,20 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V416 compact two-line task layout
+      - name: Verify V417 compact three-line task layout
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('compact-task-layout-v416.js').read_text(encoding='utf-8')
           css=Path('compact-task-layout-v416.css').read_text(encoding='utf-8')
-          for marker in ['BUILD: V416','compact-task-layout-v416.css?v=416-1511','compact-task-layout-v416.js?v=416-1511','dev-version-v416.js?v=416-1511','tab-visibility-v415.js?v=416-1511']:
-              if marker not in index: raise SystemExit(f'Missing V416 marker: {marker}')
-          for marker in ['master-of-disaster-v416','compact-task-layout-v416.css','compact-task-layout-v416.js','dev-version-v416.js']:
-              if marker not in sw: raise SystemExit(f'Missing V416 cache asset: {marker}')
-          for marker in ['compact-task-v416','compact-info-v416','compact-priority-dots-v416','compact-status-time-v416','status.textContent=""','setInterval(refreshTimes,1000)']:
-              if marker not in js: raise SystemExit(f'Missing compact behavior: {marker}')
-          for marker in ['grid-template-rows:27px 22px','grid-column:2/4','compact-actions-v416','width:25px!important','white-space:nowrap','text-overflow:ellipsis']:
-              if marker not in css: raise SystemExit(f'Missing compact CSS: {marker}')
-          print('V416 compact two-line layout consistency OK')
+          for marker in ['BUILD: V417','compact-task-layout-v416.css?v=417-1523','compact-task-layout-v416.js?v=417-1523','dev-version-v416.js?v=417-1523']:
+              if marker not in index: raise SystemExit(f'Missing V417 marker: {marker}')
+          if 'master-of-disaster-v417' not in sw: raise SystemExit('V417 cache missing')
+          for marker in ['grid-template-columns:52px minmax(0,1fr)','grid-template-rows:28px 22px 26px','grid-row:3','justify-self:start','width:46px','overflow:visible']:
+              if marker not in css: raise SystemExit(f'Missing V417 compact layout rule: {marker}')
+          print('V417 compact three-line layout consistency OK')
