@@ -1,0 +1,24 @@
+name: V428 Direct Archive Category Test
+on:
+  push:
+    branches: [ fix/v428-archive-category-direct ]
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+      - name: Exercise real DEV simulated day transition
+        run: |
+          cat > test.js <<'JS'
+          const {chromium}=require('playwright'),fs=require('fs');
+          (async()=>{const b=await chromium.launch({headless:true});const p=await b.newPage({viewport:{width:390,height:844}});await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());try{await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?t='+Date.now(),{waitUntil:'networkidle',timeout:60000});await p.addScriptTag({content:fs.readFileSync('archive-category-v413.js','utf8')});const out=await p.evaluate(()=>{tasks=[{id:88428,text:'V428 Tageswechsel (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,completedAt:'2026-08-20T22:00:00+02:00',completedDate:'2026-08-20',activeDurationMs:60000,actualDurationMs:60000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>String(x.sourceTaskId)==='88428'||x.text==='V428 Tageswechsel (TEST)');return {category:a?.category||null,removed:!tasks.some(x=>x.id===88428),module:window.__modArchiveCategoryV413?.version};});console.log('V428_DIRECT '+JSON.stringify(out));if(out.category!=='Handwerk'||!out.removed||out.module!=='V428')process.exitCode=1;}finally{await b.close();}})();
+          JS
+          node test.js
