@@ -1,0 +1,2 @@
+/* V418 · DEV build label alignment */
+(function(){function patch(){try{if(typeof currentTab!=="undefined"&&currentTab!=="dev")return;}catch(_){}const vals=document.querySelectorAll(".dev-build-value");if(vals[0])vals[0].textContent="V418";if(vals[1])vals[1].textContent="20.08.2026 · 15:51 Uhr";}const prev=typeof render==="function"?render:null;if(prev){render=function(){const r=prev.apply(this,arguments);setTimeout(patch,0);return r;};}window.addEventListener("load",()=>setTimeout(patch,400));})();
