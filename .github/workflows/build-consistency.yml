@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V410 category edit UI
+      - name: Verify V411 category edit UI
         shell: python
         run: |
           from pathlib import Path
@@ -27,17 +27,18 @@ jobs:
           iphone=Path('iphone-backup-v400.js').read_text(encoding='utf-8')
           html_v=re.search(r'<!-- BUILD: V(\d+) ·',index)
           cache_v=re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"',sw)
-          if not html_v or not cache_v or html_v.group(1)!='410' or cache_v.group(1)!='410': raise SystemExit('Expected V410 metadata')
-          for marker in ['categories.js?v=410-1335','categories.css?v=410-1335','dev-version-v410.js?v=410-1335','app.js?v=410']:
-              if marker not in index: raise SystemExit(f'Missing V410 asset: {marker}')
+          if not html_v or not cache_v or html_v.group(1)!='411' or cache_v.group(1)!='411': raise SystemExit('Expected V411 metadata')
+          for marker in ['categories.js?v=411-1340','categories.css?v=411-1340','dev-version-v411.js?v=411-1340','app.js?v=411']:
+              if marker not in index: raise SystemExit(f'Missing V411 asset: {marker}')
           for forbidden in ['categories-v409.js','categories-v409.css','categories-v405.js','categories-v406.js','ux-fixes-v408.js']:
               if forbidden in index: raise SystemExit(f'Legacy category patch still active: {forbidden}')
-          for marker in ['category-inline-v410','editCategoryRowV410','ALLE GLEICHNAMIGEN','category-title-edit-v410','insertBefore(edit,abort)','insertBefore(abort,del)']:
-              if marker not in cat: raise SystemExit(f'Missing V410 behavior: {marker}')
-          if 'categoryManageV409' in cat or 'openPicker' in cat: raise SystemExit('Old direct-assignment UI still present')
+          for marker in ['taskIdFromCard','category-inline-v411','editCategoryRowV411','ALLE GLEICHNAMIGEN','category-title-edit-v411','insertBefore(edit,abort)','insertBefore(abort,del)']:
+              if marker not in cat: raise SystemExit(f'Missing V411 behavior: {marker}')
+          if 'openPicker' in cat: raise SystemExit('Old direct-assignment UI still present')
           if 'pointer-events:none' not in css: raise SystemExit('Inline category badge must be non-interactive')
+          if 'category-title-edit-v411{' in css: raise SystemExit('Edit action must inherit native icon-action sizing')
           for marker in ['isAdministrativeTest','hasStarted(task) && !isAdministrativeTest(task)']:
               if marker not in stats: raise SystemExit(f'Missing delete rule: {marker}')
           for marker in ['localStorage ist Master','AUTO_BACKUP_DELAY_MS=10000']:
               if marker not in iphone: raise SystemExit(f'Missing backup behavior: {marker}')
-          print('Build V410 category edit UI OK')
+          print('Build V411 id-safe category edit UI OK')
