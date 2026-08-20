@@ -14,30 +14,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V407 shell and UX rules
+      - name: Verify V408 task-card UX
         shell: python
         run: |
           from pathlib import Path
           import re
-
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          ux=Path('ux-fixes-v407.js').read_text(encoding='utf-8')
+          ux=Path('ux-fixes-v408.js').read_text(encoding='utf-8')
+          css=Path('ux-fixes-v408.css').read_text(encoding='utf-8')
           stats=Path('stats-and-rules-v403.js').read_text(encoding='utf-8')
           iphone=Path('iphone-backup-v400.js').read_text(encoding='utf-8')
           html_v=re.search(r'<!-- BUILD: V(\d+) ·',index)
           cache_v=re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"',sw)
-          if not html_v or not cache_v or html_v.group(1)!='407' or cache_v.group(1)!='407':
-              raise SystemExit(f'Expected V407, got html={html_v.group(1) if html_v else None} sw={cache_v.group(1) if cache_v else None}')
-          required=['ux-fixes-v407.js?v=407-1214','ux-fixes-v407.css?v=407-1214','dev-version-v407.js?v=407-1214','categories-v406.js?v=407-1214','app.js?v=407']
-          for marker in required:
-              if marker not in index: raise SystemExit(f'Missing V407 asset: {marker}')
-          for marker in ['ux-fixes-v407.js','ux-fixes-v407.css','dev-version-v407.js']:
-              if marker not in sw: raise SystemExit(f'Missing cached V407 asset: {marker}')
-          for marker in ['openCategoryPicker','category-choice-v407','title-edit-v407-button','AUFGABE UMBENENNEN','ALLE GLEICHNAMIGEN']:
-              if marker not in ux: raise SystemExit(f'Missing V407 UX behavior: {marker}')
+          if not html_v or not cache_v or html_v.group(1)!='408' or cache_v.group(1)!='408':
+              raise SystemExit('Expected V408 metadata')
+          for marker in ['ux-fixes-v408.js?v=408-1240','ux-fixes-v408.css?v=408-1240','dev-version-v408.js?v=408-1240','app.js?v=408']:
+              if marker not in index: raise SystemExit(f'Missing V408 asset: {marker}')
+          for marker in ['OHNE KATEGORIE','openPicker','actionParent','title-edit-v408-button','ALLE GLEICHNAMIGEN']:
+              if marker not in ux: raise SystemExit(f'Missing V408 UX behavior: {marker}')
+          for marker in ['position:absolute','top:10px','right:10px']:
+              if marker not in css: raise SystemExit(f'Missing V408 badge placement: {marker}')
           for marker in ['isAdministrativeTest','hasStarted(task) && !isAdministrativeTest(task)']:
               if marker not in stats: raise SystemExit(f'Missing delete rule: {marker}')
           for marker in ['localStorage ist Master','AUTO_BACKUP_DELAY_MS=10000']:
               if marker not in iphone: raise SystemExit(f'Missing backup behavior: {marker}')
-          print('Build V407 direct category picker + active title editing OK')
+          print('Build V408 task-card category + edit UX OK')
