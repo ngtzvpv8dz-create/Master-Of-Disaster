@@ -11,16 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V415 input panel visibility
+      - name: Verify V416 compact two-line task layout
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          tab=Path('tab-visibility-v415.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V415','tab-visibility-v415.js?v=415-1440','dev-version-v415.js?v=415-1440','app.js?v=415']:
-              if marker not in index: raise SystemExit(f'Missing V415 marker: {marker}')
-          if 'master-of-disaster-v415' not in sw: raise SystemExit('V415 cache missing')
-          for marker in ['currentTab==="all"','panel.style.display','syncInputPanel','switchTab=function']:
-              if marker not in tab: raise SystemExit(f'V415 tab behavior missing: {marker}')
-          print('V415 input-panel visibility consistency OK')
+          js=Path('compact-task-layout-v416.js').read_text(encoding='utf-8')
+          css=Path('compact-task-layout-v416.css').read_text(encoding='utf-8')
+          for marker in ['BUILD: V416','compact-task-layout-v416.css?v=416-1511','compact-task-layout-v416.js?v=416-1511','dev-version-v416.js?v=416-1511','tab-visibility-v415.js?v=416-1511']:
+              if marker not in index: raise SystemExit(f'Missing V416 marker: {marker}')
+          for marker in ['master-of-disaster-v416','compact-task-layout-v416.css','compact-task-layout-v416.js','dev-version-v416.js']:
+              if marker not in sw: raise SystemExit(f'Missing V416 cache asset: {marker}')
+          for marker in ['compact-task-v416','compact-info-v416','compact-priority-dots-v416','compact-status-time-v416','status.textContent=""','setInterval(refreshTimes,1000)']:
+              if marker not in js: raise SystemExit(f'Missing compact behavior: {marker}')
+          for marker in ['grid-template-rows:27px 22px','grid-column:2/4','compact-actions-v416','width:25px!important','white-space:nowrap','text-overflow:ellipsis']:
+              if marker not in css: raise SystemExit(f'Missing compact CSS: {marker}')
+          print('V416 compact two-line layout consistency OK')
