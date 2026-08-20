@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V402 shell and cleaned repository
+      - name: Verify V404 shell and task rules
         shell: python
         run: |
           from pathlib import Path
@@ -24,18 +24,19 @@ jobs:
           sw = Path("sw.js").read_text(encoding="utf-8")
           iphone = Path("iphone-backup-v400.js").read_text(encoding="utf-8")
           dev = Path("dev-cleanup-v401.js").read_text(encoding="utf-8")
+          stats = Path("stats-and-rules-v403.js").read_text(encoding="utf-8")
 
           html_v = re.search(r'<!-- BUILD: V(\d+) ·', index)
           cache_v = re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"', sw)
           if not html_v or not cache_v:
               raise SystemExit("Build metadata missing")
-          if html_v.group(1) != "402" or cache_v.group(1) != "402":
-              raise SystemExit(f"Expected V402, got html={html_v.group(1)} sw={cache_v.group(1)}")
+          if html_v.group(1) != "404" or cache_v.group(1) != "404":
+              raise SystemExit(f"Expected V404, got html={html_v.group(1)} sw={cache_v.group(1)}")
 
-          required = ["iphone-backup-v400.js?v=402-0007", "dev-cleanup-v401.js?v=402-0007", "app.js?v=402", "app.css?v=402"]
+          required = ["stats-and-rules-v403.js?v=404-0913", "iphone-backup-v400.js?v=404-0913", "dev-cleanup-v401.js?v=404-0913", "app.js?v=404", "app.css?v=404"]
           for marker in required:
               if marker not in index:
-                  raise SystemExit(f"Missing V402 asset: {marker}")
+                  raise SystemExit(f"Missing V404 asset: {marker}")
 
           obsolete = [
             "ROLLBACK-V398-RECOVERY.txt","conflict-actions-v390.js","conflict-center.css","conflict-center.js",
@@ -55,4 +56,8 @@ jobs:
               if marker in dev:
                   raise SystemExit(f"Obsolete DEV control still visible: {marker}")
 
-          print("Build V402 cleanup OK")
+          for marker in ["isAdministrativeTest", "hasStarted(task) && !isAdministrativeTest(task)", "V404"]:
+              if marker not in stats:
+                  raise SystemExit(f"Missing V404 test-delete rule marker: {marker}")
+
+          print("Build V404 test-delete exception + normal delete guard OK")
