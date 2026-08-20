@@ -2,6 +2,8 @@ name: V427 Archive Category Test
 on:
   push:
     branches: [ fix/v427-archive-category ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 permissions:
   contents: read
