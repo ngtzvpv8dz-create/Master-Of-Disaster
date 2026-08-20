@@ -1,6 +1,32 @@
-/* V427 · ARCHIV-KATEGORIE DIREKT ÜBER BESTEHENDES BADGE + TRANSFER-SCHUTZ */
+/* V428 · ARCHIV-KATEGORIE DIREKT ÜBER BESTEHENDES BADGE + DIREKTER ARCHIVTRANSFER-SCHUTZ */
 (function(){
-  const BUILD_VERSION="V427";
+  const BUILD_VERSION="V428";
+
+  function preserveCategoryForArchivedTask(task,beforeLen){
+    if(!task||!task.category||!Array.isArray(archive))return false;
+    const category=String(task.category);
+    const recent=archive.slice(Math.max(0,Number(beforeLen)||0));
+    let row=recent.find(item=>String(item&&item.sourceTaskId)===String(task.id));
+    if(!row)row=[...archive].reverse().find(item=>String(item&&item.sourceTaskId)===String(task.id));
+    if(!row)row=[...archive].reverse().find(item=>String(item&&item.text||"")===String(task.text||"")&&!item.category);
+    if(!row)return false;
+    if(row.category===category)return false;
+    row.category=category;
+    if(typeof saveArchive==="function")saveArchive();
+    return true;
+  }
+
+  if(typeof archiveCompletedTask==="function"&&!archiveCompletedTask.__v428Wrapped){
+    const originalArchiveCompletedTask=archiveCompletedTask;
+    archiveCompletedTask=function(task){
+      const snapshot=task?{id:task.id,text:task.text,category:task.category?String(task.category):null}:null;
+      const beforeLen=Array.isArray(archive)?archive.length:0;
+      const result=originalArchiveCompletedTask.apply(this,arguments);
+      if(snapshot&&snapshot.category)preserveCategoryForArchivedTask(snapshot,beforeLen);
+      return result;
+    };
+    archiveCompletedTask.__v428Wrapped=true;
+  }
 
   function enhanceArchiveBadges(){
     const container=document.getElementById("viewContainer");
@@ -39,35 +65,6 @@
     });
   }
 
-  const previousProcessDayTransition=typeof processDayTransition==="function"?processDayTransition:null;
-  if(previousProcessDayTransition){
-    processDayTransition=function(){
-      const categoriesByTaskId=new Map((Array.isArray(tasks)?tasks:[]).map(task=>[
-        String(task?.id),
-        task?.category?String(task.category):null
-      ]));
-
-      const result=previousProcessDayTransition.apply(this,arguments);
-      let categoryRestored=false;
-
-      (Array.isArray(archive)?archive:[]).forEach(item=>{
-        const category=item?.sourceTaskId!=null
-          ? categoriesByTaskId.get(String(item.sourceTaskId))
-          : null;
-        if(category&&!item.category){
-          item.category=category;
-          categoryRestored=true;
-        }
-      });
-
-      if(categoryRestored&&typeof saveArchive==="function"){
-        saveArchive();
-      }
-
-      return result;
-    };
-  }
-
   const previousRender=typeof render==="function"?render:null;
   if(previousRender){
     render=function(){
@@ -77,6 +74,6 @@
     };
   }
 
-  window.__modArchiveCategoryV413={version:BUILD_VERSION,enhanceArchiveBadges};
+  window.__modArchiveCategoryV413={version:BUILD_VERSION,enhanceArchiveBadges,preserveCategoryForArchivedTask};
   window.addEventListener("load",()=>setTimeout(enhanceArchiveBadges,150));
 })();
