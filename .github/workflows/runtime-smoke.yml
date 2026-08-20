@@ -1,49 +1,101 @@
-name: Runtime Smoke
+name: V426 Regression Suite
 on:
   push:
-    branches: [ main ]
+    branches: [ test/v426-regression-suite ]
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
-  smoke:
+  regression:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check priority-header-v424.js && node --check visible-icon-fix-v423.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V426 priority tab headers
+      - name: Run isolated browser regression
         run: |
-          cat > smoke.js <<'JS'
-          const {chromium}=require('playwright'),fs=require('fs');
-          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});const r={status:'FAIL',version:'V426',module:false,headers:false,labels:false,colors:false,aligned:false,ringsLeft:false,countersRight:false,optionalSame:false,iconFixIntact:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V426/.test(await p.content())&&await p.evaluate(()=>window.__modPriorityHeaderV424?.version==='V426')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V426 not deployed');r.module=true;
-          await p.evaluate(()=>switchTab('priority'));await p.waitForTimeout(700);
-          const data=await p.locator('#viewContainer > .section').evaluateAll(secs=>secs.slice(0,4).map(s=>{const h=s.querySelector('.priority-header-v426'),l=h?.querySelector('.priority-label-v426'),ring=h?.querySelector('.priority-ring-v426'),c=h?.querySelector('.priority-count-v426'),t=s.querySelector('.task .task-text');const cs=l?getComputedStyle(l):null;return {text:l?.textContent.trim(),color:cs?.color,font:cs?.fontFamily,size:cs?.fontSize,weight:cs?.fontWeight,spacing:cs?.letterSpacing,labelLeft:l?.getBoundingClientRect().left,taskLeft:t?.getBoundingClientRect().left,ringLeft:ring?.getBoundingClientRect().left,countRight:c?.getBoundingClientRect().right,ringColor:ring?getComputedStyle(ring).borderTopColor:null}}));
-          r.headers=data.length===4&&data.every(x=>x.text);
-          r.labels=JSON.stringify(data.map(x=>x.text))===JSON.stringify(['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL']);
-          const expected=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];r.colors=data.every((x,i)=>x.color===expected[i]&&x.ringColor===expected[i]);
-          r.aligned=data.every(x=>x.taskLeft==null||Math.abs(x.labelLeft-x.taskLeft)<=2);
-          r.ringsLeft=data.every((x,i,a)=>i===0||Math.abs(x.ringLeft-a[0].ringLeft)<=2);
-          r.countersRight=data.every(x=>x.countRight>350);
-          const o=data[3];r.optionalSame=!!o&&data.every(x=>x.font===o.font&&x.size===o.size&&x.weight===o.weight&&x.spacing===o.spacing);
-          r.iconFixIntact=await p.evaluate(()=>window.__modVisibleIconFixV423?.version==='V423');
-          r.dueModelIntact=await p.evaluate(()=>window.__modActionIconsV416?.version==='V418'&&typeof setNewDueDateV418==='function'&&typeof setTaskDueDateV418==='function');
-          r.status=Object.entries(r).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';}catch(e){r.errors.push(String(e.stack||e))}fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1})();
+          cat > regression.js <<'JS'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:390,height:844}});
+            const page=await context.newPage();
+            await page.route('**/*',route=>{
+              const u=route.request().url();
+              if(/supabase\.co|supabase\.in/.test(u)) return route.abort();
+              return route.continue();
+            });
+            const out={};
+            try{
+              await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?regression='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              out.version=await page.evaluate(()=>/BUILD: V426/.test(document.documentElement.innerHTML));
+              await page.evaluate(()=>{tasks=[];archive=[];saveTasks();saveArchive();switchTab('all');render();});
+
+              async function add(text,priority,due){
+                return await page.evaluate(({text,priority,due})=>{
+                  document.getElementById('taskInput').value=text;
+                  setNewPriority(priority);
+                  setNewDueDateV418(due||'');
+                  addTask();
+                  return tasks.find(t=>t.text===text)?.id||null;
+                },{text,priority,due});
+              }
+              const future=await add('Regression Zukunft (TEST)','high','2027-03-22');
+              const past=await add('Regression Vergangenheit (TEST)','medium','2026-08-09');
+              const optional=await add('Regression Optional (TEST)','optional','');
+              const plain=await add('Regression Offen (TEST)','normal','');
+
+              const created=await page.evaluate(({future,past,optional})=>{
+                const f=getTask(future),p=getTask(past),o=getTask(optional);
+                return {future:f&&f.dueDate==='2027-03-22'&&f.priority==='high',past:p&&p.dueDate==='2026-08-09',optional:o&&o.priority==='optional'&&o.optional===true};
+              },{future,past,optional});
+              out.freeDueDate=created.future;out.optionalPriority=created.optional;
+
+              await page.evaluate(()=>switchTab('all')); await page.waitForTimeout(300);
+              out.fullDueYear=await page.locator('#viewContainer').evaluate(el=>el.textContent.includes('22.03.2027')&&el.textContent.includes('09.08.2026'));
+              out.dueRings=await page.evaluate(({future,past})=>{
+                const cards=[...document.querySelectorAll('#viewContainer .task')];
+                const cardFor=id=>cards.find(c=>c.textContent.includes(getTask(id)?.text||'__none__'));
+                const a=cardFor(future)?.querySelector('.due-ring-v417');
+                const b=cardFor(past)?.querySelector('.due-ring-v417');
+                return !!a&&a.classList.contains('upcoming')&&!!b&&b.classList.contains('overdue')&&b.textContent.includes('!');
+              },{future,past});
+
+              await page.evaluate(()=>switchTab('due')); await page.waitForTimeout(300);
+              out.dueSorted=await page.locator('#viewContainer .task-text').evaluateAll(els=>{const xs=els.map(e=>e.textContent.trim());return xs.indexOf('Regression Vergangenheit (TEST)')<xs.indexOf('Regression Zukunft (TEST)');});
+
+              await page.evaluate(id=>{startTask(id);},future); await page.waitForTimeout(30); await page.evaluate(id=>pauseTask(id),future);
+              out.startPause=await page.evaluate(id=>getTask(id)?.status==='paused',future);
+              out.startedDeleteHidden=await page.evaluate(id=>{
+                switchTab('all');render();
+                const card=[...document.querySelectorAll('#viewContainer .task')].find(c=>c.textContent.includes(getTask(id)?.text||''));
+                return !!card && ![...card.querySelectorAll('button')].some(b=>/deleteTask|löschen|loeschen/i.test((b.getAttribute('onclick')||'')+' '+(b.getAttribute('aria-label')||'')));
+              },future);
+
+              const before=await page.evaluate(id=>{const t=getTask(id);return {status:t.status,segments:JSON.stringify(t.activeSegments||[]),startedAt:t.startedAt,pause:t.pauseTotalMs||0};},future);
+              await page.evaluate(id=>{startEditing(id);const inp=document.querySelector('.edit-area input');if(!inp)throw new Error('edit input missing');inp.value='Regression Zukunft Umbenannt (TEST)';saveEdit(id);},future);
+              out.editPreservesRuntime=await page.evaluate(({id,before})=>{const t=getTask(id);return t.text==='Regression Zukunft Umbenannt (TEST)'&&t.status===before.status&&JSON.stringify(t.activeSegments||[])===before.segments&&t.startedAt===before.startedAt&&(t.pauseTotalMs||0)===before.pause;},{id:future,before});
+
+              const countBeforeDelete=await page.evaluate(()=>tasks.length);
+              await page.evaluate(id=>deleteTask(id),plain);
+              out.unstartedDelete=await page.evaluate(({id,n})=>!getTask(id)&&tasks.length===n-1,{id:plain,n:countBeforeDelete});
+
+              await page.evaluate(id=>setTaskDueDateV418(id,''),past);
+              out.dueRemove=await page.evaluate(id=>{const t=getTask(id);return t&&t.dueDate===null&&t.dueMode==='none';},past);
+
+              out.priorityHeaders=await page.evaluate(()=>{switchTab('priority');render();return true;}); await page.waitForTimeout(300);
+              Object.assign(out,await page.locator('#viewContainer > .section').evaluateAll(secs=>{
+                const data=secs.slice(0,4).map(s=>{const h=s.querySelector('.priority-header-v426'),l=h?.querySelector('.priority-label-v426'),r=h?.querySelector('.priority-ring-v426'),c=h?.querySelector('.priority-count-v426'),t=s.querySelector('.task .task-text');return {text:l?.textContent.trim(),color:l?getComputedStyle(l).color:null,labelLeft:l?.getBoundingClientRect().left,taskLeft:t?.getBoundingClientRect().left,ringLeft:r?.getBoundingClientRect().left,countRight:c?.getBoundingClientRect().right};});
+                return {priorityHeaderCount:data.length===4,priorityHeaderAlignment:data.every(x=>x.taskLeft==null||Math.abs(x.labelLeft-x.taskLeft)<=2),priorityHeaderRingsLeft:data.every((x,i,a)=>i===0||Math.abs(x.ringLeft-a[0].ringLeft)<=2),priorityHeaderCountersRight:data.every(x=>x.countRight>350),priorityHeaderColors:JSON.stringify(data.map(x=>x.color))===JSON.stringify(['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'])};
+              }));
+
+              const required=['version','freeDueDate','optionalPriority','fullDueYear','dueRings','dueSorted','startPause','startedDeleteHidden','editPreservesRuntime','unstartedDelete','dueRemove','priorityHeaderCount','priorityHeaderAlignment','priorityHeaderRingsLeft','priorityHeaderCountersRight','priorityHeaderColors'];
+              out.pass=required.every(k=>out[k]===true);
+              console.log(JSON.stringify(out,null,2));
+              if(!out.pass)process.exitCode=1;
+            }catch(e){console.error(e.stack||e);process.exitCode=1;}finally{await browser.close();}
+          })();
           JS
-          node smoke.js
-      - name: Publish result
-        if: always()
-        run: |
-          git init /tmp/status && cd /tmp/status
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          cp "$GITHUB_WORKSPACE/runtime-status.txt" .
-          git add runtime-status.txt && git commit -m "Runtime smoke result"
-          git branch -M runtime-status
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push --force origin runtime-status
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          node regression.js
