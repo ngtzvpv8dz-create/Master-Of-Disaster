@@ -1,0 +1,1 @@
+V419 icon audit: task type badges; category badges/admin/modal; weight edit; active/paused/completed/archive statuses; statistics headings; DEV cloud/diagnostic/backup/data/day-change controls; common edit/delete/check/calendar/clock/play/coffee symbols. Due tab is rendered sorted ascending by dueDate.
