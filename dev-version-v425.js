@@ -1,2 +1,0 @@
-/* V425 · DEV build label */
-(function(){function patch(){if(typeof currentTab!=="undefined"&&currentTab!=="dev")return;const vals=document.querySelectorAll(".dev-build-value");if(vals[0])vals[0].textContent="V425";if(vals[1])vals[1].textContent="20.08.2026 · 21:15 Uhr";}const prev=typeof render==="function"?render:null;if(prev){render=function(){const r=prev.apply(this,arguments);setTimeout(patch,0);return r;};}window.addEventListener("load",()=>setTimeout(patch,400));})();
