@@ -11,16 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V414 archive category modal
+      - name: Verify V415 input panel visibility
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          css=Path('categories.css').read_text(encoding='utf-8')
-          for marker in ['BUILD: V414','categories.css?v=414-1429','dev-version-v414.js?v=414-1429']:
-              if marker not in index: raise SystemExit(f'Missing V414 marker: {marker}')
-          if 'master-of-disaster-v414' not in sw: raise SystemExit('V414 cache missing')
-          for marker in ['.modal-overlay{position:fixed','inset:0','align-items:center','justify-content:center','z-index:2000']:
-              if marker not in css: raise SystemExit(f'Modal CSS missing: {marker}')
-          print('V414 modal consistency OK')
+          tab=Path('tab-visibility-v415.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V415','tab-visibility-v415.js?v=415-1440','dev-version-v415.js?v=415-1440','app.js?v=415']:
+              if marker not in index: raise SystemExit(f'Missing V415 marker: {marker}')
+          if 'master-of-disaster-v415' not in sw: raise SystemExit('V415 cache missing')
+          for marker in ['currentTab==="all"','panel.style.display','syncInputPanel','switchTab=function']:
+              if marker not in tab: raise SystemExit(f'V415 tab behavior missing: {marker}')
+          print('V415 input-panel visibility consistency OK')
