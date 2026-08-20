@@ -36,7 +36,7 @@ jobs:
           for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','priority-header-v426']:
               if marker not in priority_js+priority_css: raise SystemExit(f'Priority regression: {marker}')
           if 'margin-left:auto' in priority_css: raise SystemExit('Old right-shifting label rule returned')
-          if 'completed-cleanup-v429' not in cleanup: raise SystemExit('V429 completed cleanup regression')
+          if '__modCompletedCleanupV429' not in cleanup or "version:'V429'" not in cleanup: raise SystemExit('V429 completed cleanup regression')
           if 'V430' not in dev or '23:29 Uhr' not in dev: raise SystemExit('V430 DEV label mismatch')
           print('V430 weight backfill consistency OK')
       - name: JavaScript syntax
