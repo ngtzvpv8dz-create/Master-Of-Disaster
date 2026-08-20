@@ -1,10 +1,11 @@
-/* V403 · LOESCHREGELN + ERWEITERTE STATISTIK
-   - Nie gestartete Aufgaben duerfen vollstaendig geloescht werden.
-   - Sobald eine Aufgabe jemals gestartet / Zeit erfasst wurde, ist Loeschen gesperrt; dann bleibt nur Abbrechen.
+/* V404 · LOESCHREGELN + ERWEITERTE STATISTIK
+   - Nie gestartete normale Aufgaben duerfen vollstaendig geloescht werden.
+   - Sobald eine normale Aufgabe jemals gestartet / Zeit erfasst wurde, ist Loeschen gesperrt; dann bleibt nur Abbrechen.
+   - (TEST)-Aufgaben bleiben als administrative Ausnahme jederzeit vollstaendig loeschbar, damit Testdaten Archiv/Statistik nicht verunreinigen.
    - Erweiterte, formatneutrale Statistikbasis fuer spaetere Diagramme/Poster/Reports.
 */
 (function(){
-  const BUILD_VERSION="V403";
+  const BUILD_VERSION="V404";
   let extPeriod="all";
 
   function num(v){ const n=Number(v); return Number.isFinite(n)?n:0; }
@@ -18,13 +19,17 @@
     if(Array.isArray(task.cookingSegments)&&task.cookingSegments.length) return true;
     return false;
   }
+  function isAdministrativeTest(task){
+    if(typeof isTestTask==="function") return Boolean(isTestTask(task));
+    return Boolean(task&&/\(\s*test\s*\)/i.test(String(task.text||"")));
+  }
 
   const originalDeleteTask=typeof deleteTask==="function"?deleteTask:null;
   if(originalDeleteTask){
     deleteTask=function(id){
       const task=typeof getTask==="function"?getTask(id):(Array.isArray(tasks)?tasks.find(t=>t&&t.id===id):null);
       if(!task) return originalDeleteTask(id);
-      if(hasStarted(task)){
+      if(hasStarted(task) && !isAdministrativeTest(task)){
         if(typeof showInfoModal==="function") showInfoModal("Löschen nicht mehr möglich","Diese Aufgabe wurde bereits gestartet oder enthält erfasste Zeit. Sie bleibt deshalb dokumentierbar und kann nur noch abgebrochen werden.");
         return;
       }
@@ -125,7 +130,7 @@
     const avg=s.durations.length?s.totalActive/s.durations.length:0;
     const completionRate=pct(s.completed.length,s.rows.length);
     section.innerHTML=`
-      <div class="statistics-group"><div class="statistics-section-title">📊 ERWEITERTE AUSWERTUNG · V403</div>
+      <div class="statistics-group"><div class="statistics-section-title">📊 ERWEITERTE AUSWERTUNG · ${BUILD_VERSION}</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px;">${periodButtons.map(([k,l])=>`<button class="option-button ${extPeriod===k?"selected":""}" data-ext-period="${k}">${l}</button>`).join("")}</div>
         <div class="statistics-grid">
           ${card("ARCHIV-EINTRÄGE",s.rows.length,"im gewählten Zeitraum")}${card("ERLEDIGT",s.completed.length,completionRate+" Abschlussquote")}${card("ABGEBROCHEN",s.aborted.length,pct(s.aborted.length,s.rows.length)+" Abbruchquote")}${card("AKTIVE TAGE",s.activeDays,"Tage mit dokumentierter Aktivität")}
@@ -152,5 +157,5 @@
   if(originalRenderStatistics){
     renderStatistics=function(container){ originalRenderStatistics(container); inject(container); };
   }
-  window.__modStatsV403={compute,hasStarted,setPeriod:(p)=>{extPeriod=p;}};
+  window.__modStatsV403={compute,hasStarted,isAdministrativeTest,setPeriod:(p)=>{extPeriod=p;}};
 })();
