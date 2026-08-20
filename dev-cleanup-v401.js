@@ -1,9 +1,9 @@
-/* V405 · DEV CLEANUP
+/* V406 · DEV CLEANUP
    Force-rendered simplified DEV area for the iPhone-local-master build.
 */
 (function(){
-  const BUILD_VERSION="V405";
-  const BUILD_LABEL="20.08.2026 · 11:23 Uhr";
+  const BUILD_VERSION="V406";
+  const BUILD_LABEL="20.08.2026 · 11:45 Uhr";
 
   function loggedIn(){ return Boolean(supabaseDevState && supabaseDevState.email); }
 
@@ -63,7 +63,7 @@
     if(authRefreshBusy) return;
     authRefreshBusy=true;
     try{ await refreshSupabaseSessionStatus(); }
-    catch(e){ console.warn("V405 auth refresh:",e); }
+    catch(e){ console.warn("V406 auth refresh:",e); }
     finally{ authRefreshBusy=false; }
   }
 
