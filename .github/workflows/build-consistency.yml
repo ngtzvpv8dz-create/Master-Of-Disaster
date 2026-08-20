@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V416 monochrome action icons
+      - name: Verify V417 priority due and edit polish
         shell: python
         run: |
           from pathlib import Path
@@ -19,10 +19,12 @@ jobs:
           sw=Path('sw.js').read_text(encoding='utf-8')
           js=Path('action-icons-v416.js').read_text(encoding='utf-8')
           css=Path('action-icons-v416.css').read_text(encoding='utf-8')
-          for marker in ['BUILD: V416','action-icons-v416.css?v=416-1621','action-icons-v416.js?v=416-1621','dev-version-v416.js?v=416-1621']:
-              if marker not in index: raise SystemExit(f'Missing V416 marker: {marker}')
-          for marker in ['master-of-disaster-v416-icons','action-icons-v416.css','action-icons-v416.js','dev-version-v416.js']:
-              if marker not in sw: raise SystemExit(f'Missing V416 cache marker: {marker}')
-          for marker in ['calendarPin','due-alert-circle-v416','coffee','mono-action-v416','requestAnimationFrame']:
-              if marker not in js+css: raise SystemExit(f'Missing V416 icon behavior: {marker}')
-          print('V416 monochrome icon consistency OK')
+          dev=Path('dev-version-v417.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V417','action-icons-v416.css?v=417-1636','action-icons-v416.js?v=417-1636','dev-version-v417.js?v=417-1636']:
+              if marker not in index: raise SystemExit(f'Missing V417 marker: {marker}')
+          for marker in ['master-of-disaster-v417-polish','dev-version-v417.js','action-icons-v416.js']:
+              if marker not in sw: raise SystemExit(f'Missing V417 cache marker: {marker}')
+          for marker in ['priority-ring-v417','due-ring-v417','due-date-v417',".edit-area","task.status==='open'"]:
+              if marker not in js+css: raise SystemExit(f'Missing V417 UI behavior: {marker}')
+          if 'V417' not in dev or '16:36 Uhr' not in dev: raise SystemExit('V417 DEV label mismatch')
+          print('V417 priority/due/edit consistency OK')
