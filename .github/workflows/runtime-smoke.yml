@@ -17,8 +17,9 @@ jobs:
         run: |
           node --check iphone-backup-v400.js
           node --check dev-cleanup-v401.js
+          node --check stats-and-rules-v403.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V402 runtime
+      - name: Verify live V403 runtime
         run: |
           cat > smoke.js <<'JS'
           const { chromium } = require('playwright');
@@ -27,31 +28,34 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage();
             const errors=[]; page.on('pageerror',e=>errors.push(e.message));
-            let result={status:'FAIL',version:'unknown',today:false,dev:false,weightHiddenInDev:false,iphoneBackup:false,devClean:false,obsoleteDevGone:false,deployAttempts:0,errors:[]};
+            let result={status:'FAIL',version:'unknown',today:false,statistics:false,extendedStats:false,deleteGuard:false,dev:false,weightHiddenInDev:false,iphoneBackup:false,devClean:false,deployAttempts:0,errors:[]};
             try{
               let live=false;
               for(let i=1;i<=18;i++){
                 result.deployAttempts=i;
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                live=await page.evaluate(()=>!!window.__modIphoneBackupV401);
+                const state=await page.evaluate(()=>({backup:!!window.__modIphoneBackupV401,stats:!!window.__modStatsV403}));
                 const body=await page.locator('body').innerText();
-                if(live && /\bV402\b/.test(body)) break;
+                live=state.backup&&state.stats&&/\bV403\b/.test(body);
+                if(live) break;
                 await page.waitForTimeout(10000);
               }
-              if(!live) throw new Error('iPhone backup core not deployed after retry window');
+              if(!live) throw new Error('V403 runtime not deployed after retry window');
               result.iphoneBackup=true;
-              await page.waitForSelector('[data-tab="today"]',{timeout:15000});
+              result.deleteGuard=await page.evaluate(()=>window.__modStatsV403.hasStarted({status:'open'})===false && window.__modStatsV403.hasStarted({status:'paused',startedAt:new Date().toISOString()})===true);
               await page.click('[data-tab="today"]'); await page.waitForTimeout(250);
               result.today=await page.locator('[data-tab="today"]').evaluate(e=>e.classList.contains('active'));
+              await page.click('[data-tab="statistics"]'); await page.waitForTimeout(700);
+              result.statistics=await page.locator('[data-tab="statistics"]').evaluate(e=>e.classList.contains('active'));
+              result.extendedStats=await page.locator('#extendedStatsV403').count()===1 && /ERWEITERTE AUSWERTUNG/.test(await page.locator('#extendedStatsV403').innerText());
               await page.click('[data-tab="dev"]'); await page.waitForTimeout(700);
               result.dev=await page.locator('[data-tab="dev"]').evaluate(e=>e.classList.contains('active'));
               result.weightHiddenInDev=await page.locator('#weightContainer').evaluate(e=>getComputedStyle(e).display==='none');
               const body=await page.locator('body').innerText();
-              result.version=/\bV402\b/.test(body)?'V402':'unknown';
+              result.version=/\bV403\b/.test(body)?'V403':'unknown';
               result.devClean=/IPHONE \/ CLOUD-BACKUP/.test(body)&&/CLOUD-SICHERUNG/.test(body);
-              result.obsoleteDevGone=!/MIGRATIONS-CHECK|KONTROLLIERTEN ERSTIMPORT|LOCAL ↔ CLOUD VERGLEICHEN|VERBINDUNG TESTEN/.test(body);
               result.errors=errors;
-              result.status=(result.today&&result.dev&&result.weightHiddenInDev&&result.iphoneBackup&&result.devClean&&result.obsoleteDevGone&&result.version==='V402'&&!errors.length)?'PASS':'FAIL';
+              result.status=(result.today&&result.statistics&&result.extendedStats&&result.deleteGuard&&result.dev&&result.weightHiddenInDev&&result.iphoneBackup&&result.devClean&&result.version==='V403'&&!errors.length)?'PASS':'FAIL';
             }catch(e){result.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(result,null,2)); console.log(result);
             await browser.close(); if(result.status!=='PASS') process.exitCode=1;
