@@ -11,26 +11,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V428 archive category preservation
+      - name: Verify V430 weight backfill and regressions
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          weight=Path('weight-backfill-v430.js').read_text(encoding='utf-8')
+          weight_css=Path('weight-backfill-v430.css').read_text(encoding='utf-8')
           priority_js=Path('priority-header-v424.js').read_text(encoding='utf-8')
           priority_css=Path('priority-header-v424.css').read_text(encoding='utf-8')
           archive_js=Path('archive-category-v413.js').read_text(encoding='utf-8')
-          dev=Path('dev-version-v428.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V428','archive-category-v413.js?v=428-2258','dev-version-v428.js?v=428-2258']:
-              if marker not in index: raise SystemExit(f'Missing V428 marker: {marker}')
-          for marker in ['master-of-disaster-v428-archive-category-direct','dev-version-v428.js']:
-              if marker not in sw: raise SystemExit(f'Missing V428 cache marker: {marker}')
-          for marker in ['archiveCompletedTask.__v428Wrapped','preserveCategoryForArchivedTask','sourceTaskId','saveArchive','BUILD_VERSION="V428"']:
-              if marker not in archive_js: raise SystemExit(f'Missing direct archive category preservation behavior: {marker}')
+          cleanup=Path('completed-cleanup-v429.js').read_text(encoding='utf-8')
+          dev=Path('dev-version-v430.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V430','weight-backfill-v430.css?v=430-2329','weight-backfill-v430.js?v=430-2329','dev-version-v430.js?v=430-2329']:
+              if marker not in index: raise SystemExit(f'Missing V430 marker: {marker}')
+          for marker in ['master-of-disaster-v430-weight-backfill','weight-backfill-v430.js','weight-backfill-v430.css','dev-version-v430.js']:
+              if marker not in sw: raise SystemExit(f'Missing V430 cache marker: {marker}')
+          for marker in ['openWeightBackfillV430','saveWeightBackfillV430','manual-backfill','manuallyEntered','berlinLocalInputToISO','saveWeight','Überschneidung erkannt']:
+              if marker not in weight: raise SystemExit(f'Missing weight backfill behavior: {marker}')
+          if 'weight-backfill-button-v430' not in weight_css: raise SystemExit('Missing V430 weight backfill styling')
+          for marker in ['archiveCompletedTask.__v428Wrapped','preserveCategoryForArchivedTask']:
+              if marker not in archive_js: raise SystemExit(f'V428 archive category regression: {marker}')
           for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','priority-header-v426']:
-              if marker not in priority_js+priority_css: raise SystemExit(f'Priority V426 regression: {marker}')
+              if marker not in priority_js+priority_css: raise SystemExit(f'Priority regression: {marker}')
           if 'margin-left:auto' in priority_css: raise SystemExit('Old right-shifting label rule returned')
-          if 'V428' not in dev or '22:58 Uhr' not in dev: raise SystemExit('V428 DEV label mismatch')
-          print('V428 archive category preservation OK')
+          if '__modCompletedCleanupV429' not in cleanup or "version:'V429'" not in cleanup: raise SystemExit('V429 completed cleanup regression')
+          if 'V430' not in dev or '23:29 Uhr' not in dev: raise SystemExit('V430 DEV label mismatch')
+          print('V430 weight backfill consistency OK')
       - name: JavaScript syntax
-        run: node --check archive-category-v413.js && node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v428.js
+        run: node --check weight-backfill-v430.js && node --check archive-category-v413.js && node --check priority-header-v424.js && node --check completed-cleanup-v429.js && node --check dev-version-v430.js
