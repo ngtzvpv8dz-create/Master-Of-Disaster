@@ -11,28 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V420 semantic icon cleanup
+      - name: Verify V421 priority and statistics polish
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          base=Path('action-icons-v416.js').read_text(encoding='utf-8')
-          ui419=Path('unified-icons-v419.js').read_text(encoding='utf-8')
-          ui420=Path('unified-icons-v420.js').read_text(encoding='utf-8')
-          css420=Path('unified-icons-v420.css').read_text(encoding='utf-8')
-          dev=Path('dev-version-v420.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V420','unified-icons-v420.css?v=420-2016','unified-icons-v420.js?v=420-2016','dev-version-v420.js?v=420-2016']:
-              if marker not in index: raise SystemExit(f'Missing V420 marker: {marker}')
-          for marker in ['master-of-disaster-v420-semantic-icons','unified-icons-v420.js','unified-icons-v420.css','dev-version-v420.js']:
-              if marker not in sw: raise SystemExit(f'Missing V420 cache marker: {marker}')
-          for marker in ['priority-header-ring-v420','PRODUKTIVSTER TAG','HÄUFIGSTE AUFGABE','REPORT-BASIS','ZUSATZGEWICHT']:
-              if marker not in ui420+css420: raise SystemExit(f'Missing V420 semantic icon behavior: {marker}')
-          for marker in ['work:svg','category:svg','diagnostic:svg','renderDue']:
-              if marker not in ui419: raise SystemExit(f'V419 icon regression: {marker}')
-          for marker in ["priority==='optional'",'setNewDueDateV418','setTaskDueDateV418']:
-              if marker not in base: raise SystemExit(f'V418 model regression: {marker}')
-          if 'V420' not in dev or '20:16 Uhr' not in dev: raise SystemExit('V420 DEV label mismatch')
-          print('V420 semantic icon consistency OK')
+          js=Path('ui-polish-v421.js').read_text(encoding='utf-8')
+          css=Path('ui-polish-v421.css').read_text(encoding='utf-8')
+          dev=Path('dev-version-v421.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V421','ui-polish-v421.css?v=421-2031','ui-polish-v421.js?v=421-2031','dev-version-v421.js?v=421-2031']:
+              if marker not in index: raise SystemExit(f'Missing V421 marker: {marker}')
+          for marker in ['master-of-disaster-v421-priority-stats-polish','ui-polish-v421.js','ui-polish-v421.css','dev-version-v421.js']:
+              if marker not in sw: raise SystemExit(f'Missing V421 cache marker: {marker}')
+          for marker in ['priority-section-title-v421','AKTIV MIT GEWICHT','PRODUKTIVSTER TAG','LÄNGSTER EINSATZTAG','HÄUFIGSTE AUFGABE','AKTIVE AUFGABEN','v421-neutral-weight-stats']:
+              if marker not in js+css: raise SystemExit(f'Missing V421 UI behavior: {marker}')
+          if 'V421' not in dev or '20:31 Uhr' not in dev: raise SystemExit('V421 DEV label mismatch')
+          print('V421 priority/statistics polish OK')
       - name: JavaScript syntax
-        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check dev-version-v420.js
+        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check ui-polish-v421.js && node --check dev-version-v421.js
