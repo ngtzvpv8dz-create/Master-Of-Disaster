@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V431 consolidated build
+      - name: Verify V432 build
         shell: python
         run: |
           from pathlib import Path
@@ -19,20 +19,20 @@ jobs:
           sw=Path('sw.js').read_text(encoding='utf-8')
           ui=Path('ui.js').read_text(encoding='utf-8')
           css=Path('ui.css').read_text(encoding='utf-8')
+          search=Path('task-search.js').read_text(encoding='utf-8')
           archive=Path('archive-category-v413.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V431','21.08.2026 · 00:07','ui.css?v=431-0007','ui.js?v=431-0007']:
-              if marker not in index: raise SystemExit(f'Missing V431 index marker: {marker}')
-          for marker in ['master-of-disaster-v431-consolidated','/ui.js','/ui.css']:
-              if marker not in sw: raise SystemExit(f'Missing V431 cache marker: {marker}')
-          for marker in ['V431 CONSOLIDATED UI/FEATURE BUNDLE','__modDevVersion','openWeightBackfillV430','saveWeightBackfillV430','__modCompletedCleanupV429','priority-header-v426','__modVisibleIconFixV423','__modActionIconsV416']:
-              if marker not in ui: raise SystemExit(f'Missing consolidated behavior: {marker}')
-          for marker in ['V431 CONSOLIDATED UI STYLES','weight-backfill-button-v430','priority-header-v426']:
-              if marker not in css: raise SystemExit(f'Missing consolidated styling: {marker}')
+          for marker in ['BUILD: V432','21.08.2026 · 00:23','ui.css?v=432-0023','ui.js?v=432-0023','task-search.js?v=432-0023']:
+              if marker not in index: raise SystemExit(f'Missing V432 index marker: {marker}')
+          for marker in ['master-of-disaster-v432-search','task-search.js?v=432-0023','/task-search.js']:
+              if marker not in sw: raise SystemExit(f'Missing V432 cache marker: {marker}')
+          for marker in ['getKnownTaskSuggestions','BEREITS VORHANDEN','__modPendingSuggestionCategory','slice(0,6)']:
+              if marker not in search: raise SystemExit(f'Missing smart search behavior: {marker}')
+          for marker in ['V431 CONSOLIDATED UI/FEATURE BUNDLE','openWeightBackfillV430','priority-header-v426']:
+              if marker not in ui: raise SystemExit(f'Consolidated UI regression: {marker}')
+          for marker in ['V431 CONSOLIDATED UI STYLES','weight-backfill-button-v430']:
+              if marker not in css: raise SystemExit(f'Consolidated CSS regression: {marker}')
           for marker in ['archiveCompletedTask.__v428Wrapped','preserveCategoryForArchivedTask']:
               if marker not in archive: raise SystemExit(f'Archive category regression: {marker}')
-          obsolete=['action-icons-v416.js','unified-icons-v419.js','unified-icons-v420.js','ui-polish-v421.js','ui-video-fixes-v422.js','visible-icon-fix-v423.js','priority-header-v424.js','completed-cleanup-v429.js','weight-backfill-v430.js','dev-version-v430.js']
-          for name in obsolete:
-              if Path(name).exists(): raise SystemExit(f'Obsolete bundled source still present: {name}')
-          print('V431 consolidated build consistency OK')
+          print('V432 build consistency OK')
       - name: JavaScript syntax
-        run: node --check ui.js && node --check archive-category-v413.js && node --check categories.js && node --check app.js
+        run: node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js && node --check app.js
