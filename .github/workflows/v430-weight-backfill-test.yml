@@ -1,0 +1,50 @@
+name: V430 Weight Backfill Test
+on:
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --check weight-backfill-v430.js
+      - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+      - name: Exercise manual weight entry
+        run: |
+          python3 -m http.server 8000 >/tmp/mod-http.log 2>&1 &
+          cat > /tmp/test.js <<'JS'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage({viewport:{width:390,height:844}});
+            await p.goto('http://127.0.0.1:8000/?v430test=1',{waitUntil:'networkidle',timeout:60000});
+            await p.waitForFunction(()=>window.__modWeightBackfillV430?.version==='V430');
+            const result={button:false,saved:false,duration:false,metadata:false,overlapBlocked:false};
+            result.button=await p.locator('.weight-backfill-button-v430').count()===1;
+            await p.evaluate(()=>{weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentPhaseStartedAt=null;saveWeight();});
+            await p.locator('.weight-backfill-button-v430').click();
+            await p.locator('#weightBackfillKgV430').fill('5,5');
+            await p.locator('#weightBackfillStartV430').fill('2026-08-20T20:00');
+            await p.locator('#weightBackfillEndV430').fill('2026-08-20T21:00');
+            await p.locator('.weight-backfill-primary-v430').click();
+            const data=await p.evaluate(()=>({count:weightPhases.length,phase:weightPhases[0],summary:getWeightSummaryForDate('2026-08-20',false)}));
+            result.saved=data.count===1&&Number(data.phase?.weightKg)===5.5;
+            result.duration=data.summary.totalMs===3600000;
+            result.metadata=data.phase?.source==='manual-backfill'&&data.phase?.manuallyEntered===true;
+            await p.evaluate(()=>openWeightBackfillV430());
+            await p.locator('#weightBackfillKgV430').fill('7');
+            await p.locator('#weightBackfillStartV430').fill('2026-08-20T20:30');
+            await p.locator('#weightBackfillEndV430').fill('2026-08-20T21:30');
+            await p.locator('.weight-backfill-primary-v430').click();
+            result.overlapBlocked=await p.evaluate(()=>weightPhases.length===1);
+            console.log(JSON.stringify(result));
+            await b.close();
+            if(!Object.values(result).every(Boolean))process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+          node /tmp/test.js
