@@ -1,6 +1,6 @@
-/* V413 · ARCHIV-KATEGORIE DIREKT ÜBER BESTEHENDES BADGE */
+/* V427 · ARCHIV-KATEGORIE DIREKT ÜBER BESTEHENDES BADGE + TRANSFER-SCHUTZ */
 (function(){
-  const BUILD_VERSION="V413";
+  const BUILD_VERSION="V427";
 
   function enhanceArchiveBadges(){
     const container=document.getElementById("viewContainer");
@@ -37,6 +37,35 @@
         if(event.key==="Enter"||event.key===" ")openEditor(event);
       });
     });
+  }
+
+  const previousProcessDayTransition=typeof processDayTransition==="function"?processDayTransition:null;
+  if(previousProcessDayTransition){
+    processDayTransition=function(){
+      const categoriesByTaskId=new Map((Array.isArray(tasks)?tasks:[]).map(task=>[
+        String(task?.id),
+        task?.category?String(task.category):null
+      ]));
+
+      const result=previousProcessDayTransition.apply(this,arguments);
+      let categoryRestored=false;
+
+      (Array.isArray(archive)?archive:[]).forEach(item=>{
+        const category=item?.sourceTaskId!=null
+          ? categoriesByTaskId.get(String(item.sourceTaskId))
+          : null;
+        if(category&&!item.category){
+          item.category=category;
+          categoryRestored=true;
+        }
+      });
+
+      if(categoryRestored&&typeof saveArchive==="function"){
+        saveArchive();
+      }
+
+      return result;
+    };
   }
 
   const previousRender=typeof render==="function"?render:null;
