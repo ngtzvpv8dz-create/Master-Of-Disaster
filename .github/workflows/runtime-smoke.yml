@@ -13,16 +13,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check ui-polish-v421.js
+      - run: node --check visible-icon-fix-v423.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V421 priority and statistics polish
+      - name: Verify live V423 visible icon and color fix
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
-          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});const r={status:'FAIL',version:'V421',module:false,priorityLayout:false,priorityColors:false,statsIcons:false,weightNeutral:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V421/.test(await p.content())&&await p.evaluate(()=>window.__modUiPolishV421?.version==='V421')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V421 not deployed');r.module=true;
-          await p.evaluate(()=>switchTab('priority'));await p.waitForTimeout(300);r.priorityLayout=await p.locator('.priority-section-title-v421').count()>=4&&await p.locator('.priority-counter-v421').count()>=4;r.priorityColors=await p.locator('.priority-ring-v421.high,.priority-ring-v421.medium,.priority-ring-v421.normal,.priority-ring-v421.optional').count()>=4;
-          await p.evaluate(()=>switchTab('statistics'));await p.waitForTimeout(400);r.statsIcons=await p.locator('.v421-weight-icon,.v421-trophy-icon,.v421-clock-icon,.v421-repeat-icon,.v421-active-icon,.v421-home-icon').count()>=4;r.weightNeutral=await p.locator('.v421-neutral-weight-stats').count()>=1;
-          r.dueModelIntact=await p.evaluate(()=>window.__modActionIconsV416?.version==='V418'&&typeof setNewDueDateV418==='function'&&typeof setTaskDueDateV418==='function');r.status=Object.entries(r).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';}catch(e){r.errors.push(String(e.stack||e))}fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1})();
+          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});const r={status:'FAIL',version:'V423',module:false,recordIcons:false,recordNeutral:false,weightIcons:false,archiveWeight:false,noLegacyRecordEmoji:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V423/.test(await p.content())&&await p.evaluate(()=>window.__modVisibleIconFixV423?.version==='V423')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V423 not deployed');r.module=true;
+          await p.evaluate(()=>switchTab('statistics'));await p.waitForTimeout(500);
+          r.recordIcons=await p.locator('.statistics-record-label.v423-fixed-label svg').count()>=3;
+          r.recordNeutral=await p.locator('.statistics-record-label').evaluateAll(els=>els.length>=3&&els.every(el=>getComputedStyle(el).color==='rgb(140, 150, 159)'));
+          r.noLegacyRecordEmoji=await p.locator('.statistics-record-label').evaluateAll(els=>els.every(el=>!/[🏆🏋💪🛋🕒⏱🔁📊🧱⚖🎖🥇🏅]/u.test(el.textContent||'')));
+          r.weightIcons=await p.locator('.statistics-label.v423-fixed-label .v423-icon').count()>=4;
+          await p.evaluate(()=>switchTab('archive'));await p.waitForTimeout(500);
+          const archiveCount=await p.locator('.archive-task-weight-details').count();r.archiveWeight=archiveCount===0||await p.locator('.archive-task-weight-details.v423-fixed-label svg').count()===archiveCount;
+          r.dueModelIntact=await p.evaluate(()=>window.__modActionIconsV416?.version==='V418'&&typeof setNewDueDateV418==='function'&&typeof setTaskDueDateV418==='function');
+          r.status=Object.entries(r).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';}catch(e){r.errors.push(String(e.stack||e))}fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1})();
           JS
           node smoke.js
       - name: Publish result
