@@ -11,16 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V417 compact three-line task layout
+      - name: Verify V418 Variant 3 task styling
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          css=Path('compact-task-layout-v416.css').read_text(encoding='utf-8')
-          for marker in ['BUILD: V417','compact-task-layout-v416.css?v=417-1523','compact-task-layout-v416.js?v=417-1523','dev-version-v416.js?v=417-1523']:
-              if marker not in index: raise SystemExit(f'Missing V417 marker: {marker}')
-          if 'master-of-disaster-v417' not in sw: raise SystemExit('V417 cache missing')
-          for marker in ['grid-template-columns:52px minmax(0,1fr)','grid-template-rows:28px 22px 26px','grid-row:3','justify-self:start','width:46px','overflow:visible']:
-              if marker not in css: raise SystemExit(f'Missing V417 compact layout rule: {marker}')
-          print('V417 compact three-line layout consistency OK')
+          css=Path('task-style-v418.css').read_text(encoding='utf-8')
+          js=Path('interaction-v418.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V418','task-style-v418.css?v=418-1551','interaction-v418.js?v=418-1551','dev-version-v418.js?v=418-1551']:
+              if marker not in index: raise SystemExit(f'Missing V418 marker: {marker}')
+          for marker in ['master-of-disaster-v418','task-style-v418.css','interaction-v418.js','dev-version-v418.js']:
+              if marker not in sw: raise SystemExit(f'Missing V418 cache asset: {marker}')
+          for marker in ['grid-template-rows:30px 24px 27px','border-bottom:1px solid','v418-action-icon','press-feedback-v418']:
+              if marker not in css: raise SystemExit(f'Missing V418 style: {marker}')
+          for marker in ['navigator.vibrate','pointerdown','v418-meta-icon','decorate','feedback']:
+              if marker not in js: raise SystemExit(f'Missing V418 interaction: {marker}')
+          print('V418 consistency OK')
