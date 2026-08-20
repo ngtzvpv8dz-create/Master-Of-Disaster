@@ -1,0 +1,4 @@
+MASTER OF DISASTER · RESTORE MARKER
+Restored from full backup created 20.08.2026 14:52:08 Europe/Berlin.
+Target application code/design: V415.
+Purpose: create a new main commit so GitHub Pages redeploys the restored tree instead of continuing to serve the later V418 deployment.
