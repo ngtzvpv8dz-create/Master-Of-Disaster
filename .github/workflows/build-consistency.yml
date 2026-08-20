@@ -11,24 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V423 visible icon fix
+      - name: Verify V424 exact priority headers
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('visible-icon-fix-v423.js').read_text(encoding='utf-8')
-          css=Path('visible-icon-fix-v423.css').read_text(encoding='utf-8')
+          js=Path('priority-header-v424.js').read_text(encoding='utf-8')
+          css=Path('priority-header-v424.css').read_text(encoding='utf-8')
           dev=Path('dev-version-v423.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V423','visible-icon-fix-v423.css?v=423-2054','visible-icon-fix-v423.js?v=423-2054','dev-version-v423.js?v=423-2054']:
-              if marker not in index: raise SystemExit(f'Missing V423 marker: {marker}')
-          for marker in ['master-of-disaster-v423-visible-icon-fix','visible-icon-fix-v423.js','visible-icon-fix-v423.css','dev-version-v423.js']:
-              if marker not in sw: raise SystemExit(f'Missing V423 cache marker: {marker}')
-          for marker in ['statistics-record-label','archive-task-weight-details','archive-weight-total','PRODUKTIVSTER TAG','LÄNGSTER EINSATZTAG','HÄUFIGSTE AUFGABE','AKTIVE AUFGABEN']:
-              if marker not in js: raise SystemExit(f'Missing real-selector behavior: {marker}')
-          for marker in ['statistics-record-label','statistics-record-value','statistics-section-title','statistics-weight-card']:
-              if marker not in css: raise SystemExit(f'Missing neutral style override: {marker}')
-          if 'V423' not in dev or '20:54 Uhr' not in dev: raise SystemExit('V423 DEV label mismatch')
-          print('V423 visible icon fix consistency OK')
+          for marker in ['BUILD: V424','priority-header-v424.css?v=424-2104','priority-header-v424.js?v=424-2104']:
+              if marker not in index: raise SystemExit(f'Missing V424 marker: {marker}')
+          for marker in ['master-of-disaster-v424-priority-header-exact','priority-header-v424.js','priority-header-v424.css']:
+              if marker not in sw: raise SystemExit(f'Missing V424 cache marker: {marker}')
+          for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','taskLeft','--title-offset-v424']:
+              if marker not in js+css: raise SystemExit(f'Missing V424 priority behavior: {marker}')
+          if 'V424' not in dev or '21:04 Uhr' not in dev: raise SystemExit('V424 DEV label mismatch')
+          print('V424 priority header consistency OK')
       - name: JavaScript syntax
-        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check ui-polish-v421.js && node --check ui-video-fixes-v422.js && node --check visible-icon-fix-v423.js && node --check dev-version-v423.js
+        run: node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v423.js
