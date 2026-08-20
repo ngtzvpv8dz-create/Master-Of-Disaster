@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V417 priority due and edit polish
+      - name: Verify V418 priority and due-date model
         shell: python
         run: |
           from pathlib import Path
@@ -19,12 +19,15 @@ jobs:
           sw=Path('sw.js').read_text(encoding='utf-8')
           js=Path('action-icons-v416.js').read_text(encoding='utf-8')
           css=Path('action-icons-v416.css').read_text(encoding='utf-8')
-          dev=Path('dev-version-v417.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V417','action-icons-v416.css?v=417-1636','action-icons-v416.js?v=417-1636','dev-version-v417.js?v=417-1636']:
-              if marker not in index: raise SystemExit(f'Missing V417 marker: {marker}')
-          for marker in ['master-of-disaster-v417-polish','dev-version-v417.js','action-icons-v416.js']:
-              if marker not in sw: raise SystemExit(f'Missing V417 cache marker: {marker}')
-          for marker in ['priority-ring-v417','due-ring-v417','due-date-v417',".edit-area","task.status==='open'"]:
-              if marker not in js+css: raise SystemExit(f'Missing V417 UI behavior: {marker}')
-          if 'V417' not in dev or '16:36 Uhr' not in dev: raise SystemExit('V417 DEV label mismatch')
-          print('V417 priority/due/edit consistency OK')
+          dev=Path('dev-version-v418.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V418','action-icons-v416.css?v=418-1702','action-icons-v416.js?v=418-1702','dev-version-v418.js?v=418-1702']:
+              if marker not in index: raise SystemExit(f'Missing V418 marker: {marker}')
+          for marker in ['master-of-disaster-v418-due-model','dev-version-v418.js','action-icons-v416.js']:
+              if marker not in sw: raise SystemExit(f'Missing V418 cache marker: {marker}')
+          for marker in ["priority==='optional'",'setNewDueDateV418','setTaskDueDateV418','formatDue','due-ring-v417','priority-choice-ring-v418']:
+              if marker not in js+css: raise SystemExit(f'Missing V418 behavior: {marker}')
+          if '.priority-ring-v417.optional' not in css: raise SystemExit('Optional ring style missing')
+          if 'V418' not in dev or '17:02 Uhr' not in dev: raise SystemExit('V418 DEV label mismatch')
+          print('V418 priority/free-due consistency OK')
+      - name: JavaScript syntax
+        run: node --check action-icons-v416.js && node --check dev-version-v418.js
