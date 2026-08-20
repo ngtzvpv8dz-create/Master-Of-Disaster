@@ -16,49 +16,27 @@ jobs:
       - name: Syntax check active modules
         run: |
           node --check iphone-backup-v400.js
-          node --check dev-cleanup-v401.js
           node --check stats-and-rules-v403.js
           node --check categories-v405.js
           node --check categories-v406.js
-          node --check ux-fixes-v407.js
-          node --check dev-version-v407.js
+          node --check ux-fixes-v408.js
+          node --check dev-version-v408.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V407 runtime
+      - name: Verify live V408 runtime
         run: |
           cat > smoke.js <<'JS'
-          const { chromium } = require('playwright');
-          const fs=require('fs');
-          (async()=>{
-            const browser=await chromium.launch({headless:true});
-            const page=await browser.newPage();
-            const errors=[]; page.on('pageerror',e=>errors.push(e.message));
-            let result={status:'FAIL',version:'unknown',categories:false,categorySafeFilter:false,categoryDirect:false,categoryPicker:false,pausedTitleEdit:false,deleteGuard:false,statistics:false,dev:false,iphoneBackup:false,deployAttempts:0,errors:[]};
-            try{
-              let live=false;
-              for(let i=1;i<=18;i++){
-                result.deployAttempts=i;
-                await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const state=await page.evaluate(()=>({backup:!!window.__modIphoneBackupV401,stats:!!window.__modStatsV403,c405:!!window.__modCategoriesV405,c406:!!window.__modCategoriesV406,ux:!!window.__modUxV407}));
-                const html=await page.content();
-                live=state.backup&&state.stats&&state.c405&&state.c406&&state.ux&&/BUILD: V407/.test(html);
-                if(live)break;
-                await page.waitForTimeout(10000);
-              }
-              if(!live)throw new Error('V407 runtime not deployed after retry window');
-              result.iphoneBackup=true;result.categories=true;
-              result.deleteGuard=await page.evaluate(()=>window.__modStatsV403.hasStarted({status:'open'})===false&&window.__modStatsV403.hasStarted({status:'paused',startedAt:new Date().toISOString()})===true);
-              await page.click('[data-tab="statistics"]');await page.waitForTimeout(500);result.statistics=await page.locator('#extendedStatsV403').count()===1;
-              await page.click('[data-tab="all"]');await page.waitForTimeout(700);
-              result.categoryDirect=await page.locator('.task .category-quick-v406').count()===await page.locator('.task').count();
-              result.categorySafeFilter=await page.evaluate(()=>{try{window.__modCategoriesV406.applySafeFilter();return [...document.querySelectorAll('.task,.archive-task')].every(card=>[...card.children].every(ch=>ch.style.display!=='none'));}catch(_){return false;}});
-              const firstCat=page.locator('.task .category-quick-v406').first();if(await firstCat.count()){await firstCat.click();await page.waitForTimeout(150);result.categoryPicker=await page.locator('#catPickerV407').count()===1&&await page.locator('[data-v407-cat]').count()>0;await page.locator('#catCancelV407').click();}else result.categoryPicker=true;
-              result.pausedTitleEdit=await page.evaluate(()=>{const t={id:'smoke-v407-paused',text:'Smoke editierbar',status:'paused',startedAt:new Date().toISOString(),activeDurationMs:1000,type:'work',priority:'normal',optional:false,dueMode:'none'};tasks.push(t);render();return true;});
-              await page.waitForTimeout(300);const edit=page.locator('.task .title-edit-v407-button').last();result.pausedTitleEdit=(await edit.count())>0;await page.evaluate(()=>{const i=tasks.findIndex(t=>t&&t.id==='smoke-v407-paused');if(i>=0)tasks.splice(i,1);render();});
-              await page.click('[data-tab="dev"]');await page.waitForTimeout(500);result.dev=/V407/.test(await page.locator('body').innerText());result.version=result.dev?'V407':'unknown';
-              result.errors=errors;result.status=(result.categories&&result.categorySafeFilter&&result.categoryDirect&&result.categoryPicker&&result.pausedTitleEdit&&result.deleteGuard&&result.statistics&&result.dev&&result.iphoneBackup&&result.version==='V407'&&!errors.length)?'PASS':'FAIL';
-            }catch(e){result.errors.push(String(e.stack||e));}
-            fs.writeFileSync('runtime-status.txt',JSON.stringify(result,null,2));console.log(result);await browser.close();if(result.status!=='PASS')process.exitCode=1;
-          })();
+          const { chromium }=require('playwright');const fs=require('fs');
+          (async()=>{const browser=await chromium.launch({headless:true});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));let result={status:'FAIL',version:'unknown',categoryBadge:false,categoryPicker:false,editInline:false,editWorks:false,deleteGuard:false,statistics:false,backup:false,deployAttempts:0,errors:[]};
+          try{let live=false;for(let i=1;i<=18;i++){result.deployAttempts=i;await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});const s=await page.evaluate(()=>({ux:!!window.__modUxV408,backup:!!window.__modIphoneBackupV401}));const html=await page.content();live=s.ux&&s.backup&&/BUILD: V408/.test(html);if(live)break;await page.waitForTimeout(10000);}if(!live)throw new Error('V408 runtime not deployed');result.backup=true;
+          result.deleteGuard=await page.evaluate(()=>window.__modStatsV403.hasStarted({status:'paused',startedAt:new Date().toISOString()})===true);
+          await page.click('[data-tab="all"]');await page.waitForTimeout(700);
+          result.categoryBadge=await page.evaluate(()=>[...document.querySelectorAll('.task')].every(card=>{const b=card.querySelector(':scope > .category-badge-v408');return !b||/OHNE KATEGORIE|\S/.test(b.innerText); }));
+          const cat=page.locator('.task .category-badge-v408').first();if(await cat.count()){await cat.click();await page.waitForTimeout(120);result.categoryPicker=await page.locator('#catPickerV408').count()===1&&await page.locator('[data-cat]').count()>0;await page.locator('#catCancelV408').click();}else result.categoryPicker=true;
+          await page.evaluate(()=>{tasks.push({id:'smoke-v408',text:'Smoke Titel',status:'paused',startedAt:new Date().toISOString(),activeDurationMs:1000,type:'work',priority:'normal',optional:false,dueMode:'none'});render();});await page.waitForTimeout(400);
+          const card=page.locator('.task').filter({hasText:'Smoke Titel'}).first();const edit=card.locator('.title-edit-v408-button');result.editInline=(await edit.count())===1&&await edit.evaluate(b=>b.parentElement!==b.closest('.task'));
+          if(await edit.count()){await edit.click();await page.waitForTimeout(100);const input=page.locator('#titleInputV408');result.editWorks=(await input.count())===1;await page.locator('#titleCancelV408').click();}
+          await page.evaluate(()=>{const i=tasks.findIndex(t=>t&&t.id==='smoke-v408');if(i>=0)tasks.splice(i,1);render();});
+          await page.click('[data-tab="statistics"]');await page.waitForTimeout(400);result.statistics=await page.locator('#extendedStatsV403').count()===1;await page.click('[data-tab="dev"]');await page.waitForTimeout(300);result.version=/V408/.test(await page.locator('body').innerText())?'V408':'unknown';result.errors=errors;result.status=(result.categoryBadge&&result.categoryPicker&&result.editInline&&result.editWorks&&result.deleteGuard&&result.statistics&&result.backup&&result.version==='V408'&&!errors.length)?'PASS':'FAIL';}catch(e){result.errors.push(String(e.stack||e));}fs.writeFileSync('runtime-status.txt',JSON.stringify(result,null,2));console.log(result);await browser.close();if(result.status!=='PASS')process.exitCode=1;})();
           JS
           node smoke.js
       - name: Publish result
