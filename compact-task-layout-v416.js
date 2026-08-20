@@ -3,12 +3,13 @@
   const BUILD_VERSION="V416";
 
   function clean(value){return String(value??"").trim();}
+  function taskList(){try{return Array.isArray(tasks)?tasks:[];}catch(_){return [];}}
 
   function rowForCard(card){
     const api=window.__modCategoriesV412;
     if(api&&typeof api.rowForCard==="function")return api.rowForCard(card);
     const text=clean(card.querySelector(".task-text")?.textContent);
-    return (window.tasks||[]).find?.(task=>clean(task?.text)===text)||null;
+    return taskList().find(task=>clean(task?.text)===text)||null;
   }
 
   function dueText(task){
@@ -107,9 +108,10 @@
   }
 
   function refreshTimes(){
+    const list=taskList();
     document.querySelectorAll(".compact-status-time-v416[data-compact-time-id]").forEach(el=>{
       const id=Number(el.dataset.compactTimeId);
-      const task=(window.tasks||[]).find?.(item=>Number(item?.id)===id);
+      const task=list.find(item=>Number(item?.id)===id);
       if(task)el.textContent=durationText(task);
     });
   }
