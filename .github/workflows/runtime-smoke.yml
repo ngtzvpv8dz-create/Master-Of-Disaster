@@ -15,20 +15,20 @@ jobs:
           node-version: '20'
       - run: node --check priority-header-v424.js && node --check visible-icon-fix-v423.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V425 priority headers match OPTIONAL
+      - name: Verify live V426 priority tab headers
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
-          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});const r={status:'FAIL',version:'V425',module:false,headers:false,sameTypography:false,sameGeometry:false,colors:false,countersRight:false,iconFixIntact:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V425/.test(await p.content())&&await p.evaluate(()=>window.__modPriorityHeaderV424?.version==='V425')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V425 not deployed');r.module=true;
+          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});const r={status:'FAIL',version:'V426',module:false,headers:false,labels:false,colors:false,aligned:false,ringsLeft:false,countersRight:false,optionalSame:false,iconFixIntact:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V426/.test(await p.content())&&await p.evaluate(()=>window.__modPriorityHeaderV424?.version==='V426')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V426 not deployed');r.module=true;
           await p.evaluate(()=>switchTab('priority'));await p.waitForTimeout(700);
-          const data=await p.locator('.priority-header-v425').evaluateAll(h=>h.map(x=>{const l=x.querySelector('.priority-label-v425'),ring=x.querySelector('.priority-ring-v425'),c=x.querySelector('.priority-count-v425'),s=getComputedStyle(l);return {text:l?.textContent.trim(),font:s.fontFamily,size:s.fontSize,weight:s.fontWeight,spacing:s.letterSpacing,top:l?.getBoundingClientRect().top,left:ring?.getBoundingClientRect().left,labelRight:l?.getBoundingClientRect().right,countRight:c?.getBoundingClientRect().right,color:s.color,ringColor:getComputedStyle(ring).borderTopColor}}));
-          r.headers=data.length>=4;
-          const opt=data.find(x=>x.text==='OPTIONAL');
-          r.sameTypography=!!opt&&data.every(x=>x.font===opt.font&&x.size===opt.size&&x.weight===opt.weight&&x.spacing===opt.spacing);
-          r.sameGeometry=!!opt&&data.every(x=>Math.abs(x.left-opt.left)<=2&&Math.abs(x.labelRight-opt.labelRight)<=40);
-          const expected={'HOHE PRIORITÄT':'rgb(216, 91, 91)','MITTLERE PRIORITÄT':'rgb(211, 170, 69)','NORMALE PRIORITÄT':'rgb(243, 243, 243)','OPTIONAL':'rgb(166, 106, 216)'};
-          r.colors=data.every(x=>x.color===expected[x.text]&&x.ringColor===expected[x.text]);
+          const data=await p.locator('#viewContainer > .section').evaluateAll(secs=>secs.slice(0,4).map(s=>{const h=s.querySelector('.priority-header-v426'),l=h?.querySelector('.priority-label-v426'),ring=h?.querySelector('.priority-ring-v426'),c=h?.querySelector('.priority-count-v426'),t=s.querySelector('.task .task-text');const cs=l?getComputedStyle(l):null;return {text:l?.textContent.trim(),color:cs?.color,font:cs?.fontFamily,size:cs?.fontSize,weight:cs?.fontWeight,spacing:cs?.letterSpacing,labelLeft:l?.getBoundingClientRect().left,taskLeft:t?.getBoundingClientRect().left,ringLeft:ring?.getBoundingClientRect().left,countRight:c?.getBoundingClientRect().right,ringColor:ring?getComputedStyle(ring).borderTopColor:null}}));
+          r.headers=data.length===4&&data.every(x=>x.text);
+          r.labels=JSON.stringify(data.map(x=>x.text))===JSON.stringify(['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL']);
+          const expected=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];r.colors=data.every((x,i)=>x.color===expected[i]&&x.ringColor===expected[i]);
+          r.aligned=data.every(x=>x.taskLeft==null||Math.abs(x.labelLeft-x.taskLeft)<=2);
+          r.ringsLeft=data.every((x,i,a)=>i===0||Math.abs(x.ringLeft-a[0].ringLeft)<=2);
           r.countersRight=data.every(x=>x.countRight>350);
+          const o=data[3];r.optionalSame=!!o&&data.every(x=>x.font===o.font&&x.size===o.size&&x.weight===o.weight&&x.spacing===o.spacing);
           r.iconFixIntact=await p.evaluate(()=>window.__modVisibleIconFixV423?.version==='V423');
           r.dueModelIntact=await p.evaluate(()=>window.__modActionIconsV416?.version==='V418'&&typeof setNewDueDateV418==='function'&&typeof setTaskDueDateV418==='function');
           r.status=Object.entries(r).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';}catch(e){r.errors.push(String(e.stack||e))}fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1})();
