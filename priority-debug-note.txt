@@ -1,0 +1,1 @@
+V425 diagnosis: priority header patch relied on title text and did not normalize all four sections consistently. V426 will rebuild all four priority headers by their fixed section order and actual task-title geometry.
