@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V412 category tab and archive edit
+      - name: Verify V413 archive category badge interaction
         shell: python
         run: |
           from pathlib import Path
@@ -19,20 +19,21 @@ jobs:
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
           cat=Path('categories.js').read_text(encoding='utf-8')
-          css=Path('categories.css').read_text(encoding='utf-8')
+          archive_patch=Path('archive-category-v413.js').read_text(encoding='utf-8')
           stats=Path('stats-and-rules-v403.js').read_text(encoding='utf-8')
           iphone=Path('iphone-backup-v400.js').read_text(encoding='utf-8')
           html_v=re.search(r'<!-- BUILD: V(\d+) ·',index)
           cache_v=re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"',sw)
-          if not html_v or not cache_v or html_v.group(1)!='412' or cache_v.group(1)!='412': raise SystemExit('Expected V412 metadata')
-          for marker in ['data-tab="categories"','categories.js?v=412-1349','categories.css?v=412-1349','dev-version-v412.js?v=412-1349','app.js?v=412']:
-              if marker not in index: raise SystemExit(f'Missing V412 asset/tab: {marker}')
-          for marker in ['renderCategoryTab','openArchiveCategoryEditor','archive-category-edit-v412','category-inline-v412','editCategoryRowV412','insertBefore(edit,abort)','insertBefore(abort,del)']:
-              if marker not in cat: raise SystemExit(f'Missing V412 behavior: {marker}')
-          if 'categoryManagerOpenV412' in cat: raise SystemExit('Category toolbar must not contain manage button')
-          if 'pointer-events:none' not in css: raise SystemExit('Normal inline category badge must remain passive')
+          if not html_v or not cache_v or html_v.group(1)!='413' or cache_v.group(1)!='413': raise SystemExit('Expected V413 metadata')
+          for marker in ['data-tab="categories"','categories.js?v=413-1413','archive-category-v413.js?v=413-1413','dev-version-v413.js?v=413-1413','app.js?v=413']:
+              if marker not in index: raise SystemExit(f'Missing V413 asset/tab: {marker}')
+          for marker in ['openArchiveCategoryEditor','category-inline-v412']:
+              if marker not in cat: raise SystemExit(f'Missing base category behavior: {marker}')
+          for marker in ['archive-category-edit-v412','archive-category-click-v413','openArchiveCategoryEditor','pointerEvents="auto"']:
+              if marker not in archive_patch: raise SystemExit(f'Missing V413 archive interaction: {marker}')
+          if 'remove()' not in archive_patch: raise SystemExit('Legacy extra archive category button must be removed')
           for marker in ['isAdministrativeTest','hasStarted(task) && !isAdministrativeTest(task)']:
               if marker not in stats: raise SystemExit(f'Missing delete rule: {marker}')
           for marker in ['localStorage ist Master','AUTO_BACKUP_DELAY_MS=10000']:
               if marker not in iphone: raise SystemExit(f'Missing backup behavior: {marker}')
-          print('Build V412 category tab + archive-only category edit OK')
+          print('Build V413 archive category badge interaction OK')
