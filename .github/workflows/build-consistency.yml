@@ -11,23 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V426 priority tab rebuild
+      - name: Verify V427 archive category preservation
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('priority-header-v424.js').read_text(encoding='utf-8')
-          css=Path('priority-header-v424.css').read_text(encoding='utf-8')
-          dev=Path('dev-version-v426.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V426','priority-header-v424.css?v=426-2136','priority-header-v424.js?v=426-2136','dev-version-v426.js?v=426-2136']:
-              if marker not in index: raise SystemExit(f'Missing V426 marker: {marker}')
-          for marker in ['master-of-disaster-v426-priority-source-cleanup','dev-version-v426.js']:
-              if marker not in sw: raise SystemExit(f'Missing V426 cache marker: {marker}')
-          for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','slice(0,4)','priority-label-offset-v426','priority-header-v426']:
-              if marker not in js+css: raise SystemExit(f'Missing V426 priority behavior: {marker}')
-          if 'margin-left:auto' in css: raise SystemExit('Old right-shifting label rule still present')
-          if 'V426' not in dev or '21:36 Uhr' not in dev: raise SystemExit('V426 DEV label mismatch')
-          print('V426 priority tab rebuild OK')
+          priority_js=Path('priority-header-v424.js').read_text(encoding='utf-8')
+          priority_css=Path('priority-header-v424.css').read_text(encoding='utf-8')
+          archive_js=Path('archive-category-v413.js').read_text(encoding='utf-8')
+          dev=Path('dev-version-v427.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V427','archive-category-v413.js?v=427-2246','dev-version-v427.js?v=427-2246']:
+              if marker not in index: raise SystemExit(f'Missing V427 marker: {marker}')
+          for marker in ['master-of-disaster-v427-archive-category-preserve','dev-version-v427.js']:
+              if marker not in sw: raise SystemExit(f'Missing V427 cache marker: {marker}')
+          for marker in ['categoriesByTaskId','sourceTaskId','item.category=category','saveArchive','BUILD_VERSION="V427"']:
+              if marker not in archive_js: raise SystemExit(f'Missing archive category preservation behavior: {marker}')
+          for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','priority-header-v426']:
+              if marker not in priority_js+priority_css: raise SystemExit(f'Priority V426 regression: {marker}')
+          if 'margin-left:auto' in priority_css: raise SystemExit('Old right-shifting label rule returned')
+          if 'V427' not in dev or '22:46 Uhr' not in dev: raise SystemExit('V427 DEV label mismatch')
+          print('V427 archive category preservation OK')
       - name: JavaScript syntax
-        run: node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v426.js
+        run: node --check archive-category-v413.js && node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v427.js
