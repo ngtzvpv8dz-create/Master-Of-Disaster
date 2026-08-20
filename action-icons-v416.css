@@ -1,0 +1,13 @@
+/* V416 · SCHLICHTE MONOCHROME ACTION-ICONS */
+.mono-action-v416{display:inline-flex!important;align-items:center!important;justify-content:center!important;color:#d8dde1!important;background:#101315!important;border-color:#30363b!important;box-shadow:none!important}
+.mono-action-v416 .action-svg-v416{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.mono-action-v416[data-icon-v416="calendarPin"]{color:#e2e6e9!important;border-color:#4a5359!important;background:#171c1f!important}
+.mono-action-v416[data-icon-v416="check"]{color:#dfe5e1!important}
+.mono-action-v416[data-icon-v416="trash"],.mono-action-v416[data-icon-v416="cancel"]{color:#d5d9dc!important}
+.mono-action-v416:active{transform:scale(.91);filter:brightness(1.35)}
+.mono-status-v416{display:flex!important;align-items:center;justify-content:center;color:#d7dde0!important}
+.mono-status-v416 .action-svg-v416{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
+.due-inline-v416{display:inline-flex;vertical-align:-2px;margin-right:3px;color:#d7dde0}
+.due-inline-v416 .action-svg-v416{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.due-inline-v416 .due-alert-circle-v416{fill:#d84d4d;stroke:#f0a0a0;stroke-width:1}
+.due-inline-v416 .due-alert-mark-v416{stroke:white;stroke-width:1.7}
