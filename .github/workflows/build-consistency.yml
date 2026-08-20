@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V427 archive category preservation
+      - name: Verify V428 archive category preservation
         shell: python
         run: |
           from pathlib import Path
@@ -20,17 +20,17 @@ jobs:
           priority_js=Path('priority-header-v424.js').read_text(encoding='utf-8')
           priority_css=Path('priority-header-v424.css').read_text(encoding='utf-8')
           archive_js=Path('archive-category-v413.js').read_text(encoding='utf-8')
-          dev=Path('dev-version-v427.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V427','archive-category-v413.js?v=427-2246','dev-version-v427.js?v=427-2246']:
-              if marker not in index: raise SystemExit(f'Missing V427 marker: {marker}')
-          for marker in ['master-of-disaster-v427-archive-category-preserve','dev-version-v427.js']:
-              if marker not in sw: raise SystemExit(f'Missing V427 cache marker: {marker}')
-          for marker in ['categoriesByTaskId','sourceTaskId','item.category=category','saveArchive','BUILD_VERSION="V427"']:
-              if marker not in archive_js: raise SystemExit(f'Missing archive category preservation behavior: {marker}')
+          dev=Path('dev-version-v428.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V428','archive-category-v413.js?v=428-2258','dev-version-v428.js?v=428-2258']:
+              if marker not in index: raise SystemExit(f'Missing V428 marker: {marker}')
+          for marker in ['master-of-disaster-v428-archive-category-direct','dev-version-v428.js']:
+              if marker not in sw: raise SystemExit(f'Missing V428 cache marker: {marker}')
+          for marker in ['archiveCompletedTask.__v428Wrapped','preserveCategoryForArchivedTask','sourceTaskId','saveArchive','BUILD_VERSION="V428"']:
+              if marker not in archive_js: raise SystemExit(f'Missing direct archive category preservation behavior: {marker}')
           for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','priority-header-v426']:
               if marker not in priority_js+priority_css: raise SystemExit(f'Priority V426 regression: {marker}')
           if 'margin-left:auto' in priority_css: raise SystemExit('Old right-shifting label rule returned')
-          if 'V427' not in dev or '22:46 Uhr' not in dev: raise SystemExit('V427 DEV label mismatch')
-          print('V427 archive category preservation OK')
+          if 'V428' not in dev or '22:58 Uhr' not in dev: raise SystemExit('V428 DEV label mismatch')
+          print('V428 archive category preservation OK')
       - name: JavaScript syntax
-        run: node --check archive-category-v413.js && node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v427.js
+        run: node --check archive-category-v413.js && node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v428.js
