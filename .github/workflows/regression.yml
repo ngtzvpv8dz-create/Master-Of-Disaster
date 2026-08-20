@@ -41,7 +41,7 @@ jobs:
             r.priority=heads.length===4&&heads.every((x,i)=>x.label===labels[i]&&x.color===colors[i]&&x.ring===colors[i]&&x.countRight>350);
             const transfer=await p.evaluate(()=>{tasks=[{id:43101,text:'Kategorie Transfer (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Kategorie Transfer (TEST)');return {category:a?.category,removed:!tasks.some(x=>x.id===43101)};});
             r.archiveCategory=transfer.category==='Handwerk'&&transfer.removed;
-            await p.evaluate(()=>{switchTab('all');weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentPhaseStartedAt=null;saveWeight();render();}); await p.waitForTimeout(200);
+            await p.evaluate(()=>{const m=document.getElementById('modalContainer');if(m)m.innerHTML='';switchTab('all');weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentPhaseStartedAt=null;saveWeight();render();}); await p.waitForTimeout(200);
             r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
             await p.locator('.weight-backfill-button-v430').click();
             await p.locator('#weightBackfillKgV430').fill('5,5');
