@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V424 exact priority headers
+      - name: Verify V425 priority headers match OPTIONAL
         shell: python
         run: |
           from pathlib import Path
@@ -19,14 +19,14 @@ jobs:
           sw=Path('sw.js').read_text(encoding='utf-8')
           js=Path('priority-header-v424.js').read_text(encoding='utf-8')
           css=Path('priority-header-v424.css').read_text(encoding='utf-8')
-          dev=Path('dev-version-v423.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V424','priority-header-v424.css?v=424-2104','priority-header-v424.js?v=424-2104']:
-              if marker not in index: raise SystemExit(f'Missing V424 marker: {marker}')
-          for marker in ['master-of-disaster-v424-priority-header-exact','priority-header-v424.js','priority-header-v424.css']:
-              if marker not in sw: raise SystemExit(f'Missing V424 cache marker: {marker}')
-          for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','taskLeft','--title-offset-v424']:
-              if marker not in js+css: raise SystemExit(f'Missing V424 priority behavior: {marker}')
-          if 'V424' not in dev or '21:04 Uhr' not in dev: raise SystemExit('V424 DEV label mismatch')
-          print('V424 priority header consistency OK')
+          dev=Path('dev-version-v425.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V425','priority-header-v424.css?v=425-2115','priority-header-v424.js?v=425-2115','dev-version-v425.js?v=425-2115']:
+              if marker not in index: raise SystemExit(f'Missing V425 marker: {marker}')
+          for marker in ['master-of-disaster-v425-priority-match-optional','priority-header-v424.js','priority-header-v424.css']:
+              if marker not in sw: raise SystemExit(f'Missing V425 cache marker: {marker}')
+          for marker in ['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL','margin-left:auto','priority-header-v425']:
+              if marker not in js+css: raise SystemExit(f'Missing V425 priority behavior: {marker}')
+          if 'V425' not in dev or '21:15 Uhr' not in dev: raise SystemExit('V425 DEV label mismatch')
+          print('V425 priority headers match OPTIONAL OK')
       - name: JavaScript syntax
-        run: node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v423.js
+        run: node --check priority-header-v424.js && node --check visible-icon-fix-v423.js && node --check dev-version-v425.js

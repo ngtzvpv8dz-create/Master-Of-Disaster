@@ -15,16 +15,20 @@ jobs:
           node-version: '20'
       - run: node --check priority-header-v424.js && node --check visible-icon-fix-v423.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V424 priority header alignment and colors
+      - name: Verify live V425 priority headers match OPTIONAL
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
-          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});const r={status:'FAIL',version:'V424',module:false,headers:false,colors:false,aligned:false,countersRight:false,iconFixIntact:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V424/.test(await p.content())&&await p.evaluate(()=>window.__modPriorityHeaderV424?.version==='V424')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V424 not deployed');r.module=true;
+          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});const r={status:'FAIL',version:'V425',module:false,headers:false,sameTypography:false,sameGeometry:false,colors:false,countersRight:false,iconFixIntact:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V425/.test(await p.content())&&await p.evaluate(()=>window.__modPriorityHeaderV424?.version==='V425')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V425 not deployed');r.module=true;
           await p.evaluate(()=>switchTab('priority'));await p.waitForTimeout(700);
-          r.headers=await p.locator('.priority-header-v424 .priority-label-v424').count()>=4;
-          r.colors=await p.locator('.priority-header-v424').evaluateAll(h=>h.length>=4&&h.every(x=>getComputedStyle(x.querySelector('.priority-label-v424')).color===getComputedStyle(x.querySelector('.priority-ring-v424')).borderTopColor));
-          r.aligned=await p.locator('.section').evaluateAll(secs=>{const pairs=secs.map(s=>[s.querySelector('.priority-label-v424'),s.querySelector('.task .task-text')]).filter(([a,b])=>a&&b);return pairs.length>=3&&pairs.every(([a,b])=>Math.abs(a.getBoundingClientRect().left-b.getBoundingClientRect().left)<=2)});
-          r.countersRight=await p.locator('.priority-count-v424').evaluateAll(els=>els.length>=4&&els.every(e=>e.getBoundingClientRect().right>350));
+          const data=await p.locator('.priority-header-v425').evaluateAll(h=>h.map(x=>{const l=x.querySelector('.priority-label-v425'),ring=x.querySelector('.priority-ring-v425'),c=x.querySelector('.priority-count-v425'),s=getComputedStyle(l);return {text:l?.textContent.trim(),font:s.fontFamily,size:s.fontSize,weight:s.fontWeight,spacing:s.letterSpacing,top:l?.getBoundingClientRect().top,left:ring?.getBoundingClientRect().left,labelRight:l?.getBoundingClientRect().right,countRight:c?.getBoundingClientRect().right,color:s.color,ringColor:getComputedStyle(ring).borderTopColor}}));
+          r.headers=data.length>=4;
+          const opt=data.find(x=>x.text==='OPTIONAL');
+          r.sameTypography=!!opt&&data.every(x=>x.font===opt.font&&x.size===opt.size&&x.weight===opt.weight&&x.spacing===opt.spacing);
+          r.sameGeometry=!!opt&&data.every(x=>Math.abs(x.left-opt.left)<=2&&Math.abs(x.labelRight-opt.labelRight)<=40);
+          const expected={'HOHE PRIORITÄT':'rgb(216, 91, 91)','MITTLERE PRIORITÄT':'rgb(211, 170, 69)','NORMALE PRIORITÄT':'rgb(243, 243, 243)','OPTIONAL':'rgb(166, 106, 216)'};
+          r.colors=data.every(x=>x.color===expected[x.text]&&x.ringColor===expected[x.text]);
+          r.countersRight=data.every(x=>x.countRight>350);
           r.iconFixIntact=await p.evaluate(()=>window.__modVisibleIconFixV423?.version==='V423');
           r.dueModelIntact=await p.evaluate(()=>window.__modActionIconsV416?.version==='V418'&&typeof setNewDueDateV418==='function'&&typeof setTaskDueDateV418==='function');
           r.status=Object.entries(r).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';}catch(e){r.errors.push(String(e.stack||e))}fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1})();
