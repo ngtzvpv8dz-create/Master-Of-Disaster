@@ -11,25 +11,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V419 unified icon system
+      - name: Verify V420 semantic icon cleanup
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
           base=Path('action-icons-v416.js').read_text(encoding='utf-8')
-          ui=Path('unified-icons-v419.js').read_text(encoding='utf-8')
-          css=Path('unified-icons-v419.css').read_text(encoding='utf-8')
-          dev=Path('dev-version-v418.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V419','unified-icons-v419.css?v=419-1752','unified-icons-v419.js?v=419-1752']:
-              if marker not in index: raise SystemExit(f'Missing V419 marker: {marker}')
-          for marker in ['master-of-disaster-v419-unified-icons','unified-icons-v419.js','unified-icons-v419.css']:
-              if marker not in sw: raise SystemExit(f'Missing V419 cache marker: {marker}')
-          for marker in ['work:svg','leisure:svg','selfrunner:svg','cooking:svg','category:svg','diagnostic:svg','database:svg','renderDue']:
-              if marker not in ui: raise SystemExit(f'Missing unified icon behavior: {marker}')
+          ui419=Path('unified-icons-v419.js').read_text(encoding='utf-8')
+          ui420=Path('unified-icons-v420.js').read_text(encoding='utf-8')
+          css420=Path('unified-icons-v420.css').read_text(encoding='utf-8')
+          dev=Path('dev-version-v420.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V420','unified-icons-v420.css?v=420-2016','unified-icons-v420.js?v=420-2016','dev-version-v420.js?v=420-2016']:
+              if marker not in index: raise SystemExit(f'Missing V420 marker: {marker}')
+          for marker in ['master-of-disaster-v420-semantic-icons','unified-icons-v420.js','unified-icons-v420.css','dev-version-v420.js']:
+              if marker not in sw: raise SystemExit(f'Missing V420 cache marker: {marker}')
+          for marker in ['priority-header-ring-v420','PRODUKTIVSTER TAG','HÄUFIGSTE AUFGABE','REPORT-BASIS','ZUSATZGEWICHT']:
+              if marker not in ui420+css420: raise SystemExit(f'Missing V420 semantic icon behavior: {marker}')
+          for marker in ['work:svg','category:svg','diagnostic:svg','renderDue']:
+              if marker not in ui419: raise SystemExit(f'V419 icon regression: {marker}')
           for marker in ["priority==='optional'",'setNewDueDateV418','setTaskDueDateV418']:
               if marker not in base: raise SystemExit(f'V418 model regression: {marker}')
-          if 'V419' not in dev or '17:52 Uhr' not in dev: raise SystemExit('V419 DEV label mismatch')
-          print('V419 unified icon consistency OK')
+          if 'V420' not in dev or '20:16 Uhr' not in dev: raise SystemExit('V420 DEV label mismatch')
+          print('V420 semantic icon consistency OK')
       - name: JavaScript syntax
-        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check dev-version-v418.js
+        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check dev-version-v420.js
