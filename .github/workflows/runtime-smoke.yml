@@ -13,18 +13,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check archive-category-v413.js && node --check priority-header-v424.js && node --check visible-icon-fix-v423.js
+      - run: node --check ui.js && node --check archive-category-v413.js && node --check categories.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V428 simulated day transition keeps category
+      - name: Verify live V431 consolidated build
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
-          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());const r={status:'FAIL',version:'V428',module:false,simulatedArchiveCategory:false,simulatedArchiveRemoved:false,archiveBadgeEditor:false,headers:false,colors:false,aligned:false,ringsLeft:false,countersRight:false,iconFixIntact:false,dueModelIntact:false,errors:[]};try{let live=false;for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V428/.test(await p.content())&&await p.evaluate(()=>window.__modArchiveCategoryV413?.version==='V428')){live=true;break;}await p.waitForTimeout(10000);}if(!live)throw new Error('V428 not deployed');r.module=true;
-          const transfer=await p.evaluate(()=>{tasks=[{id:991828,text:'Archiv Kategorie Simulation (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>String(x.sourceTaskId)==='991828'||x.text==='Archiv Kategorie Simulation (TEST)');return {category:a?.category||null,removed:!tasks.some(x=>x.id===991828)};});r.simulatedArchiveCategory=transfer.category==='Handwerk';r.simulatedArchiveRemoved=transfer.removed;
-          await p.evaluate(()=>{switchTab('archive');render();});await p.waitForTimeout(300);r.archiveBadgeEditor=await p.evaluate(()=>typeof window.__modArchiveCategoryV413?.enhanceArchiveBadges==='function');
-          await p.evaluate(()=>{tasks=[];archive=[];saveTasks();saveArchive();switchTab('priority');render();});await p.waitForTimeout(500);
-          const data=await p.locator('#viewContainer > .section').evaluateAll(secs=>secs.slice(0,4).map(s=>{const h=s.querySelector('.priority-header-v426'),l=h?.querySelector('.priority-label-v426'),ring=h?.querySelector('.priority-ring-v426'),c=h?.querySelector('.priority-count-v426'),t=s.querySelector('.task .task-text');return {text:l?.textContent.trim(),color:l?getComputedStyle(l).color:null,labelLeft:l?.getBoundingClientRect().left,taskLeft:t?.getBoundingClientRect().left,ringLeft:ring?.getBoundingClientRect().left,countRight:c?.getBoundingClientRect().right,ringColor:ring?getComputedStyle(ring).borderTopColor:null}}));
-          r.headers=data.length===4&&JSON.stringify(data.map(x=>x.text))===JSON.stringify(['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL']);const expected=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];r.colors=data.every((x,i)=>x.color===expected[i]&&x.ringColor===expected[i]);r.aligned=data.every(x=>x.taskLeft==null||Math.abs(x.labelLeft-x.taskLeft)<=2);r.ringsLeft=data.every((x,i,a)=>i===0||Math.abs(x.ringLeft-a[0].ringLeft)<=2);r.countersRight=data.every(x=>x.countRight>350);r.iconFixIntact=await p.evaluate(()=>window.__modVisibleIconFixV423?.version==='V423');r.dueModelIntact=await p.evaluate(()=>window.__modActionIconsV416?.version==='V418'&&typeof setNewDueDateV418==='function'&&typeof setTaskDueDateV418==='function');r.status=Object.entries(r).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';}catch(e){r.errors.push(String(e.stack||e))}fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1})();
+          (async()=>{
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage({viewport:{width:390,height:844}});
+            await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
+            const r={status:'FAIL',version:'V431',live:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
+            try{
+              for(let i=0;i<18;i++){
+                await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+                if(/BUILD: V431/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V431')){r.live=true;break;}
+                await p.waitForTimeout(10000);
+              }
+              if(!r.live)throw new Error('V431 not deployed');
+              r.bundle=await p.evaluate(()=>!!(window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430));
+              await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();});await p.waitForTimeout(350);
+              const heads=await p.locator('#viewContainer .priority-header-v426').evaluateAll(xs=>xs.map(x=>({t:x.querySelector('.priority-label-v426')?.textContent.trim(),c:getComputedStyle(x.querySelector('.priority-label-v426')).color,r:getComputedStyle(x.querySelector('.priority-ring-v426')).borderTopColor,n:x.querySelector('.priority-count-v426').getBoundingClientRect().right})));
+              const labels=['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL'],colors=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];
+              r.priority=heads.length===4&&heads.every((x,i)=>x.t===labels[i]&&x.c===colors[i]&&x.r===colors[i]&&x.n>350);
+              const transfer=await p.evaluate(()=>{tasks=[{id:43199,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,removed:!tasks.some(x=>x.id===43199)};});
+              r.archiveCategory=transfer.cat==='Handwerk'&&transfer.removed;
+              await p.evaluate(()=>{switchTab('all');render();});await p.waitForTimeout(200);
+              r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
+              r.status=['live','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
+            }catch(e){r.errors.push(String(e.stack||e));}
+            fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));
+            await b.close(); if(r.status!=='PASS')process.exitCode=1;
+          })();
           JS
           node smoke.js
       - name: Publish result

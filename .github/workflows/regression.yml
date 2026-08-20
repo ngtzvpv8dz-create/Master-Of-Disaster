@@ -1,0 +1,63 @@
+name: Regression
+on:
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node --check ui.js && node --check archive-category-v413.js && node --check categories.js
+      - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+      - name: Exercise consolidated iPhone workflow
+        run: |
+          python3 -m http.server 8000 >/tmp/mod-http.log 2>&1 &
+          cat > /tmp/regression.js <<'JS'
+          const {chromium}=require(process.cwd()+'/node_modules/playwright');
+          (async()=>{
+            const b=await chromium.launch({headless:true});
+            const p=await b.newPage({viewport:{width:390,height:844}});
+            const errors=[]; p.on('pageerror',e=>errors.push(String(e)));
+            await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
+            await p.goto('http://127.0.0.1:8000/?v431test='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await p.waitForFunction(()=>window.__modDevVersion?.version==='V431');
+            const r={build:false,bundle:false,inputVisibility:false,priority:false,archiveCategory:false,weightBackfill:false,weightDuration:false,overlapBlocked:false,repeatCleanup:false,noPageErrors:false};
+            r.build=/BUILD: V431/.test(await p.content());
+            r.bundle=await p.evaluate(()=>window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430);
+            await p.evaluate(()=>{switchTab('all');render();}); await p.waitForTimeout(100);
+            const allDisplay=await p.locator('#inputPanel').evaluate(e=>getComputedStyle(e).display);
+            await p.evaluate(()=>{switchTab('today');render();}); await p.waitForTimeout(100);
+            const todayDisplay=await p.locator('#inputPanel').evaluate(e=>getComputedStyle(e).display);
+            r.inputVisibility=allDisplay!=='none'&&todayDisplay==='none';
+            await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();}); await p.waitForTimeout(300);
+            const heads=await p.locator('#viewContainer .priority-header-v426').evaluateAll(xs=>xs.map(x=>({label:x.querySelector('.priority-label-v426')?.textContent.trim(),color:getComputedStyle(x.querySelector('.priority-label-v426')).color,ring:getComputedStyle(x.querySelector('.priority-ring-v426')).borderTopColor,countRight:x.querySelector('.priority-count-v426').getBoundingClientRect().right})));
+            const labels=['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL'];
+            const colors=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];
+            r.priority=heads.length===4&&heads.every((x,i)=>x.label===labels[i]&&x.color===colors[i]&&x.ring===colors[i]&&x.countRight>350);
+            const transfer=await p.evaluate(()=>{tasks=[{id:43101,text:'Kategorie Transfer (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Kategorie Transfer (TEST)');return {category:a?.category,removed:!tasks.some(x=>x.id===43101)};});
+            r.archiveCategory=transfer.category==='Handwerk'&&transfer.removed;
+            await p.evaluate(()=>{const m=document.getElementById('modalContainer');if(m)m.innerHTML='';switchTab('all');weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentPhaseStartedAt=null;saveWeight();render();}); await p.waitForTimeout(200);
+            r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
+            await p.locator('.weight-backfill-button-v430').click();
+            await p.locator('#weightBackfillKgV430').fill('5,5');
+            await p.locator('#weightBackfillStartV430').fill('2026-08-20T20:00');
+            await p.locator('#weightBackfillEndV430').fill('2026-08-20T21:00');
+            await p.locator('.weight-backfill-primary-v430').click();
+            const w=await p.evaluate(()=>({count:weightPhases.length,total:getWeightSummaryForDate('2026-08-20',false).totalMs,manual:weightPhases[0]?.manuallyEntered}));
+            r.weightDuration=w.count===1&&w.total===3600000&&w.manual===true;
+            await p.evaluate(()=>openWeightBackfillV430());
+            await p.locator('#weightBackfillKgV430').fill('7'); await p.locator('#weightBackfillStartV430').fill('2026-08-20T20:30'); await p.locator('#weightBackfillEndV430').fill('2026-08-20T21:30'); await p.locator('.weight-backfill-primary-v430').click();
+            r.overlapBlocked=await p.evaluate(()=>weightPhases.length===1);
+            r.repeatCleanup=await p.evaluate(()=>window.__modCompletedCleanupV429?.version==='V429');
+            r.noPageErrors=errors.length===0;
+            console.log(JSON.stringify({r,errors},null,2));
+            await b.close();
+            if(!Object.values(r).every(Boolean))process.exit(1);
+          })().catch(e=>{console.error(e);process.exit(1)});
+          JS
+          node /tmp/regression.js
