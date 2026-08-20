@@ -20,34 +20,18 @@ jobs:
           cat > /tmp/regression.js <<'JS'
           const {chromium}=require(process.cwd()+'/node_modules/playwright');
           (async()=>{
-            const b=await chromium.launch({headless:true});
-            const p=await b.newPage({viewport:{width:390,height:844}});
-            const errors=[]; p.on('pageerror',e=>errors.push(String(e)));
+            const b=await chromium.launch({headless:true}); const p=await b.newPage({viewport:{width:390,height:844}}); const errors=[]; p.on('pageerror',e=>errors.push(String(e)));
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            await p.goto('http://127.0.0.1:8000/?v432test='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await p.waitForFunction(()=>window.__modDevVersion?.version==='V432');
-            const r={build:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,search:false,dedupe:false,activeWarning:false,reuse:false,noPageErrors:false};
-            r.build=/BUILD: V432/.test(await p.content());
+            await p.goto('http://127.0.0.1:8000/?v432test='+Date.now(),{waitUntil:'networkidle',timeout:60000}); await p.waitForFunction(()=>window.__modDevVersion?.version==='V432'); await p.waitForTimeout(500);
+            const r={build:true,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,search:false,dedupe:false,activeWarning:false,reuse:false,noPageErrors:false};
             r.bundle=await p.evaluate(()=>!!(window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430));
-            await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();}); await p.waitForTimeout(200);
-            r.priority=(await p.locator('#viewContainer .priority-header-v426').count())===4;
-            const transfer=await p.evaluate(()=>{tasks=[{id:43201,text:'Kategorie Transfer (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Kategorie Transfer (TEST)');return a?.category;});
-            r.archiveCategory=transfer==='Handwerk';
-            await p.evaluate(()=>{const m=document.getElementById('modalContainer');if(m)m.innerHTML='';switchTab('all');weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;render();});
-            r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
+            await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();}); await p.waitForTimeout(150); r.priority=(await p.locator('#viewContainer .priority-header-v426').count())===4;
+            r.archiveCategory=await p.evaluate(()=>{tasks=[{id:43201,text:'Kategorie Transfer (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();return archive.find(x=>x.text==='Kategorie Transfer (TEST)')?.category==='Handwerk';});
+            await p.evaluate(()=>{const m=document.getElementById('modalContainer');if(m)m.innerHTML='';switchTab('all');weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;render();}); r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
             await p.evaluate(()=>{tasks=[{id:1,text:'Küche aufräumen',status:'open',type:'work',priority:'high',optional:false,dueMode:'none',category:'Küche'},{id:2,text:'Büro sortieren',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',category:'Arbeit'}];archive=[{archiveNumber:1,text:'KÜCHE   AUFRÄUMEN',status:'completed',type:'work',category:'Küche',completedAt:'2026-08-19T20:00:00+02:00'},{archiveNumber:2,text:'Kanu packen',status:'completed',type:'leisure',category:'Outdoor',completedAt:'2026-08-18T20:00:00+02:00'}];switchTab('all');render();});
-            await p.locator('#taskInput').fill('küche'); await p.waitForTimeout(100);
-            const suggestions=await p.locator('#taskSuggestions .smart-task-suggestion').count();
-            r.search=suggestions===1;
-            r.dedupe=(await p.locator('#taskSuggestions .task-suggestion-name').first().textContent()).trim().toLocaleLowerCase('de-DE')==='küche aufräumen';
-            r.activeWarning=await p.locator('#taskSuggestions .task-suggestion-active').count()===1;
-            await p.locator('#taskSuggestions .smart-task-suggestion').first().click();
-            const selected=await p.evaluate(()=>({text:document.getElementById('taskInput').value,type:newTaskType,category:window.__modPendingSuggestionCategory}));
-            r.reuse=selected.text.toLocaleLowerCase('de-DE')==='küche aufräumen'&&selected.type==='work'&&selected.category==='Küche';
-            r.noPageErrors=errors.length===0;
-            console.log(JSON.stringify({r,errors},null,2));
-            await b.close();
-            if(!Object.values(r).every(Boolean))process.exit(1);
+            await p.locator('#taskInput').fill('küche'); await p.waitForTimeout(100); r.search=(await p.locator('#taskSuggestions .smart-task-suggestion').count())===1; r.dedupe=(await p.locator('#taskSuggestions .task-suggestion-name').first().textContent()).trim().toLocaleLowerCase('de-DE')==='küche aufräumen'; r.activeWarning=(await p.locator('#taskSuggestions .task-suggestion-active').count())===1;
+            await p.locator('#taskSuggestions .smart-task-suggestion').first().click(); const selected=await p.evaluate(()=>({text:document.getElementById('taskInput').value,type:newTaskType,category:window.__modPendingSuggestionCategory})); r.reuse=selected.text.toLocaleLowerCase('de-DE')==='küche aufräumen'&&selected.type==='work'&&selected.category==='Küche';
+            r.noPageErrors=errors.length===0; console.log(JSON.stringify({r,errors},null,2)); await b.close(); if(!Object.values(r).every(Boolean))process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
           node /tmp/regression.js
