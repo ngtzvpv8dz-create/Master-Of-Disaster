@@ -19,8 +19,9 @@ jobs:
           node --check dev-cleanup-v401.js
           node --check stats-and-rules-v403.js
           node --check categories-v405.js
+          node --check categories-v406.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V405 runtime
+      - name: Verify live V406 runtime
         run: |
           cat > smoke.js <<'JS'
           const { chromium } = require('playwright');
@@ -29,19 +30,19 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage();
             const errors=[]; page.on('pageerror',e=>errors.push(e.message));
-            let result={status:'FAIL',version:'unknown',today:false,statistics:false,extendedStats:false,deleteGuard:false,categories:false,categoryUi:false,categoryRetro:false,dev:false,weightHiddenInDev:false,iphoneBackup:false,devClean:false,deployAttempts:0,errors:[]};
+            let result={status:'FAIL',version:'unknown',today:false,statistics:false,extendedStats:false,deleteGuard:false,categories:false,categoryUi:false,categoryRetro:false,categorySafeFilter:false,categoryDirect:false,dev:false,weightHiddenInDev:false,iphoneBackup:false,devClean:false,deployAttempts:0,errors:[]};
             try{
               let live=false;
               for(let i=1;i<=18;i++){
                 result.deployAttempts=i;
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const state=await page.evaluate(()=>({backup:!!window.__modIphoneBackupV401,stats:!!window.__modStatsV403,cats:!!window.__modCategoriesV405}));
+                const state=await page.evaluate(()=>({backup:!!window.__modIphoneBackupV401,stats:!!window.__modStatsV403,cats405:!!window.__modCategoriesV405,cats406:!!window.__modCategoriesV406}));
                 const html=await page.content();
-                live=state.backup&&state.stats&&state.cats&&/BUILD: V405/.test(html);
+                live=state.backup&&state.stats&&state.cats405&&state.cats406&&/BUILD: V406/.test(html);
                 if(live) break;
                 await page.waitForTimeout(10000);
               }
-              if(!live) throw new Error('V405 runtime not deployed after retry window');
+              if(!live) throw new Error('V406 runtime not deployed after retry window');
               result.iphoneBackup=true;
               result.categories=true;
               result.deleteGuard=await page.evaluate(()=>window.__modStatsV403.hasStarted({status:'open'})===false && window.__modStatsV403.hasStarted({status:'paused',startedAt:new Date().toISOString()})===true);
@@ -49,7 +50,7 @@ jobs:
                 const a={id:'smoke-cat-1',text:'Smoke Kategorie',status:'open',category:null};
                 const b={archiveNumber:999999,text:' smoke   kategorie ',status:'completed',category:null};
                 tasks.push(a); archive.push(b);
-                const changed=window.__modCategoriesV405.setAllByName('SMOKE KATEGORIE','Smoke-Test');
+                const changed=window.__modCategoriesV406.setAllByName('SMOKE KATEGORIE','Smoke-Test');
                 const ok=changed===2&&a.category==='Smoke-Test'&&b.category==='Smoke-Test';
                 tasks.splice(tasks.indexOf(a),1); archive.splice(archive.indexOf(b),1);
                 return ok;
@@ -59,16 +60,24 @@ jobs:
               await page.click('[data-tab="statistics"]'); await page.waitForTimeout(700);
               result.statistics=await page.locator('[data-tab="statistics"]').evaluate(e=>e.classList.contains('active'));
               result.extendedStats=await page.locator('#extendedStatsV403').count()===1 && /ERWEITERTE AUSWERTUNG/.test(await page.locator('#extendedStatsV403').innerText());
-              await page.click('[data-tab="all"]'); await page.waitForTimeout(400);
+              await page.click('[data-tab="all"]'); await page.waitForTimeout(600);
               result.categoryUi=await page.locator('#categoryRowV405').count()===1 && await page.locator('#categoryToolbarV405').count()===1;
+              const taskCount=await page.locator('.task').count();
+              result.categoryDirect=taskCount===0 || await page.locator('.task .category-quick-v406').count()===taskCount;
+              result.categorySafeFilter=await page.evaluate(()=>{
+                try{
+                  window.__modCategoriesV406.applySafeFilter();
+                  return [...document.querySelectorAll('.task,.archive-task')].every(card=>[...card.children].every(ch=>ch.style.display!== 'none'));
+                }catch(_){return false;}
+              });
               await page.click('[data-tab="dev"]'); await page.waitForTimeout(700);
               result.dev=await page.locator('[data-tab="dev"]').evaluate(e=>e.classList.contains('active'));
               result.weightHiddenInDev=await page.locator('#weightContainer').evaluate(e=>getComputedStyle(e).display==='none');
               const body=await page.locator('body').innerText();
-              result.version=/\bV405\b/.test(body)?'V405':'unknown';
+              result.version=/\bV406\b/.test(body)?'V406':'unknown';
               result.devClean=/IPHONE \/ CLOUD-BACKUP/.test(body)&&/CLOUD-SICHERUNG/.test(body);
               result.errors=errors;
-              result.status=(result.today&&result.statistics&&result.extendedStats&&result.deleteGuard&&result.categories&&result.categoryUi&&result.categoryRetro&&result.dev&&result.weightHiddenInDev&&result.iphoneBackup&&result.devClean&&result.version==='V405'&&!errors.length)?'PASS':'FAIL';
+              result.status=(result.today&&result.statistics&&result.extendedStats&&result.deleteGuard&&result.categories&&result.categoryUi&&result.categoryRetro&&result.categorySafeFilter&&result.categoryDirect&&result.dev&&result.weightHiddenInDev&&result.iphoneBackup&&result.devClean&&result.version==='V406'&&!errors.length)?'PASS':'FAIL';
             }catch(e){result.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(result,null,2)); console.log(result);
             await browser.close(); if(result.status!=='PASS') process.exitCode=1;
