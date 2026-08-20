@@ -1,1 +1,0 @@
-V428 fixes category preservation in the actual archiveCompletedTask path used by DEV simulated day transition and restores archive category badge editing behavior.
