@@ -1,0 +1,1 @@
+Acceptance: V419 assets load; task type/category/weight/archive/statistics/DEV emoji icons are replaced by line SVGs; priority remains ring-based; due tab is date-sorted; existing task/category/backup data are not mutated by icon patch.

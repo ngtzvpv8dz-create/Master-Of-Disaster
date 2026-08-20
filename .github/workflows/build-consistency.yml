@@ -11,23 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V418 priority and due-date model
+      - name: Verify V419 unified icon system
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('action-icons-v416.js').read_text(encoding='utf-8')
-          css=Path('action-icons-v416.css').read_text(encoding='utf-8')
+          base=Path('action-icons-v416.js').read_text(encoding='utf-8')
+          ui=Path('unified-icons-v419.js').read_text(encoding='utf-8')
+          css=Path('unified-icons-v419.css').read_text(encoding='utf-8')
           dev=Path('dev-version-v418.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V418','action-icons-v416.css?v=418-1702','action-icons-v416.js?v=418-1702','dev-version-v418.js?v=418-1702']:
-              if marker not in index: raise SystemExit(f'Missing V418 marker: {marker}')
-          for marker in ['master-of-disaster-v418-due-model','dev-version-v418.js','action-icons-v416.js']:
-              if marker not in sw: raise SystemExit(f'Missing V418 cache marker: {marker}')
-          for marker in ["priority==='optional'",'setNewDueDateV418','setTaskDueDateV418','formatDue','due-ring-v417','priority-choice-ring-v418']:
-              if marker not in js+css: raise SystemExit(f'Missing V418 behavior: {marker}')
-          if '.priority-ring-v417.optional' not in css: raise SystemExit('Optional ring style missing')
-          if 'V418' not in dev or '17:02 Uhr' not in dev: raise SystemExit('V418 DEV label mismatch')
-          print('V418 priority/free-due consistency OK')
+          for marker in ['BUILD: V419','unified-icons-v419.css?v=419-1752','unified-icons-v419.js?v=419-1752']:
+              if marker not in index: raise SystemExit(f'Missing V419 marker: {marker}')
+          for marker in ['master-of-disaster-v419-unified-icons','unified-icons-v419.js','unified-icons-v419.css']:
+              if marker not in sw: raise SystemExit(f'Missing V419 cache marker: {marker}')
+          for marker in ['work:svg','leisure:svg','selfrunner:svg','cooking:svg','category:svg','diagnostic:svg','database:svg','renderDue']:
+              if marker not in ui: raise SystemExit(f'Missing unified icon behavior: {marker}')
+          for marker in ["priority==='optional'",'setNewDueDateV418','setTaskDueDateV418']:
+              if marker not in base: raise SystemExit(f'V418 model regression: {marker}')
+          if 'V419' not in dev or '17:52 Uhr' not in dev: raise SystemExit('V419 DEV label mismatch')
+          print('V419 unified icon consistency OK')
       - name: JavaScript syntax
-        run: node --check action-icons-v416.js && node --check dev-version-v418.js
+        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check dev-version-v418.js
