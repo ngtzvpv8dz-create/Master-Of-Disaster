@@ -1,4 +1,4 @@
-/* V416 · SCHLICHTE MONOCHROME ACTION-ICONS */
+/* V417 · SCHLICHTE MONOCHROME ACTION-ICONS + STATUSRINGE */
 .mono-action-v416{display:inline-flex!important;align-items:center!important;justify-content:center!important;color:#d8dde1!important;background:#101315!important;border-color:#30363b!important;box-shadow:none!important}
 .mono-action-v416 .action-svg-v416{width:17px;height:17px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 .mono-action-v416[data-icon-v416="calendarPin"]{color:#e2e6e9!important;border-color:#4a5359!important;background:#171c1f!important}
@@ -7,7 +7,11 @@
 .mono-action-v416:active{transform:scale(.91);filter:brightness(1.35)}
 .mono-status-v416{display:flex!important;align-items:center;justify-content:center;color:#d7dde0!important}
 .mono-status-v416 .action-svg-v416{width:18px;height:18px;display:block;fill:none;stroke:currentColor;stroke-width:1.65;stroke-linecap:round;stroke-linejoin:round}
-.due-inline-v416{display:inline-flex;vertical-align:-2px;margin-right:3px;color:#d7dde0}
-.due-inline-v416 .action-svg-v416{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.due-inline-v416 .due-alert-circle-v416{fill:#d84d4d;stroke:#f0a0a0;stroke-width:1}
-.due-inline-v416 .due-alert-mark-v416{stroke:white;stroke-width:1.7}
+.priority-ring-v417{display:inline-block;width:10px;height:10px;border:1.6px solid currentColor;border-radius:50%;vertical-align:-1px;background:transparent;flex:0 0 10px}
+.priority-ring-v417.normal{color:#d8dde1}.priority-ring-v417.medium{color:#d3aa45}.priority-ring-v417.high{color:#d85b5b}
+.due-ring-v417{display:inline-flex;align-items:center;gap:3px;margin-left:2px;white-space:nowrap;vertical-align:middle}
+.due-ring-mark-v417{display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;border:1.4px solid currentColor;border-radius:50%;font-size:7px;font-weight:900;line-height:1;background:transparent}
+.due-ring-v417.overdue{color:#d85b5b}.due-ring-v417.upcoming{color:#d3aa45}
+.due-date-v417{font-size:7px;font-weight:800;letter-spacing:.2px;color:#8c969f}
+.compact-flags{align-items:center;flex-wrap:wrap}
+.status-symbol:empty{display:block}
