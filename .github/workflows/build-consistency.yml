@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V405 shell, task rules and categories
+      - name: Verify V406 shell, task rules and category UX
         shell: python
         run: |
           from pathlib import Path
@@ -25,25 +25,27 @@ jobs:
           iphone = Path("iphone-backup-v400.js").read_text(encoding="utf-8")
           dev = Path("dev-cleanup-v401.js").read_text(encoding="utf-8")
           stats = Path("stats-and-rules-v403.js").read_text(encoding="utf-8")
-          cats = Path("categories-v405.js").read_text(encoding="utf-8")
+          cats405 = Path("categories-v405.js").read_text(encoding="utf-8")
+          cats406 = Path("categories-v406.js").read_text(encoding="utf-8")
 
           html_v = re.search(r'<!-- BUILD: V(\d+) ·', index)
           cache_v = re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"', sw)
           if not html_v or not cache_v:
               raise SystemExit("Build metadata missing")
-          if html_v.group(1) != "405" or cache_v.group(1) != "405":
-              raise SystemExit(f"Expected V405, got html={html_v.group(1)} sw={cache_v.group(1)}")
+          if html_v.group(1) != "406" or cache_v.group(1) != "406":
+              raise SystemExit(f"Expected V406, got html={html_v.group(1)} sw={cache_v.group(1)}")
 
           required = [
-            "categories-v405.css?v=405-1123","categories-v405.js?v=405-1123",
-            "stats-and-rules-v403.js?v=405-1123","iphone-backup-v400.js?v=405-1123",
-            "dev-cleanup-v401.js?v=405-1123","app.js?v=405","app.css?v=405"
+            "categories-v405.css?v=406-1145","categories-v406.css?v=406-1145",
+            "categories-v405.js?v=406-1145","categories-v406.js?v=406-1145",
+            "stats-and-rules-v403.js?v=406-1145","iphone-backup-v400.js?v=406-1145",
+            "dev-cleanup-v401.js?v=406-1145","app.js?v=406","app.css?v=406"
           ]
           for marker in required:
               if marker not in index:
-                  raise SystemExit(f"Missing V405 asset: {marker}")
+                  raise SystemExit(f"Missing V406 asset: {marker}")
 
-          for marker in ["categories-v405.js","categories-v405.css"]:
+          for marker in ["categories-v405.js","categories-v405.css","categories-v406.js","categories-v406.css"]:
               if marker not in sw:
                   raise SystemExit(f"Category asset missing from service worker: {marker}")
 
@@ -70,7 +72,14 @@ jobs:
                   raise SystemExit(f"Missing test-delete rule marker: {marker}")
 
           for marker in ["setAllByName", "nameMap", "KATEGORIE", "ALLE GLEICHNAMIGEN", "masterOfDisasterCategoriesV405"]:
-              if marker not in cats:
-                  raise SystemExit(f"Missing category behavior marker: {marker}")
+              if marker not in cats405:
+                  raise SystemExit(f"Missing base category behavior marker: {marker}")
 
-          print("Build V405 categories + task rules OK")
+          for marker in ["applySafeFilter", "restoreV405PartialHides", ".task, .archive-task", "NUR DIESE", "ALLE GLEICHNAMIGEN", "category-quick-v406"]:
+              if marker not in cats406:
+                  raise SystemExit(f"Missing V406 category UX marker: {marker}")
+
+          if 'BUILD_VERSION="V406"' not in dev or '20.08.2026 · 11:45 Uhr' not in dev:
+              raise SystemExit("DEV build metadata not V406")
+
+          print("Build V406 category UX + safe whole-card filter OK")
