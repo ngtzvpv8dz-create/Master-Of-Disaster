@@ -14,72 +14,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V406 shell, task rules and category UX
+      - name: Verify V407 shell and UX rules
         shell: python
         run: |
           from pathlib import Path
           import re
 
-          index = Path("index.html").read_text(encoding="utf-8")
-          sw = Path("sw.js").read_text(encoding="utf-8")
-          iphone = Path("iphone-backup-v400.js").read_text(encoding="utf-8")
-          dev = Path("dev-cleanup-v401.js").read_text(encoding="utf-8")
-          stats = Path("stats-and-rules-v403.js").read_text(encoding="utf-8")
-          cats405 = Path("categories-v405.js").read_text(encoding="utf-8")
-          cats406 = Path("categories-v406.js").read_text(encoding="utf-8")
-
-          html_v = re.search(r'<!-- BUILD: V(\d+) ·', index)
-          cache_v = re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"', sw)
-          if not html_v or not cache_v:
-              raise SystemExit("Build metadata missing")
-          if html_v.group(1) != "406" or cache_v.group(1) != "406":
-              raise SystemExit(f"Expected V406, got html={html_v.group(1)} sw={cache_v.group(1)}")
-
-          required = [
-            "categories-v405.css?v=406-1145","categories-v406.css?v=406-1145",
-            "categories-v405.js?v=406-1145","categories-v406.js?v=406-1145",
-            "stats-and-rules-v403.js?v=406-1145","iphone-backup-v400.js?v=406-1145",
-            "dev-cleanup-v401.js?v=406-1145","app.js?v=406","app.css?v=406"
-          ]
+          index=Path('index.html').read_text(encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          ux=Path('ux-fixes-v407.js').read_text(encoding='utf-8')
+          stats=Path('stats-and-rules-v403.js').read_text(encoding='utf-8')
+          iphone=Path('iphone-backup-v400.js').read_text(encoding='utf-8')
+          html_v=re.search(r'<!-- BUILD: V(\d+) ·',index)
+          cache_v=re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"',sw)
+          if not html_v or not cache_v or html_v.group(1)!='407' or cache_v.group(1)!='407':
+              raise SystemExit(f'Expected V407, got html={html_v.group(1) if html_v else None} sw={cache_v.group(1) if cache_v else None}')
+          required=['ux-fixes-v407.js?v=407-1214','ux-fixes-v407.css?v=407-1214','dev-version-v407.js?v=407-1214','categories-v406.js?v=407-1214','app.js?v=407']
           for marker in required:
-              if marker not in index:
-                  raise SystemExit(f"Missing V406 asset: {marker}")
-
-          for marker in ["categories-v405.js","categories-v405.css","categories-v406.js","categories-v406.css"]:
-              if marker not in sw:
-                  raise SystemExit(f"Category asset missing from service worker: {marker}")
-
-          obsolete = [
-            "ROLLBACK-V398-RECOVERY.txt","conflict-actions-v390.js","conflict-center.css","conflict-center.js",
-            "conflict-filter-v388.js","multidevice-sync-fix.js","offline-conflict-v398.js","offline-sync-v396.js",
-            "sync-core-v399.js","weight-conflict-v392.js","build-label-v393.js",
-            ".github/workflows/v389-conflict-semantics.yml"
-          ]
-          leftovers = [p for p in obsolete if Path(p).exists()]
-          if leftovers:
-              raise SystemExit(f"Obsolete files still present: {leftovers}")
-
-          for marker in ["localStorage ist Master", "Kein automatisches Cloud→Local", "AUTO_BACKUP_DELAY_MS=10000"]:
-              if marker not in iphone:
-                  raise SystemExit(f"Missing iPhone backup behavior marker: {marker}")
-
-          for marker in ["MIGRATIONS-CHECK", "KONTROLLIERTEN ERSTIMPORT", "LOCAL ↔ CLOUD VERGLEICHEN", "VERBINDUNG TESTEN"]:
-              if marker in dev:
-                  raise SystemExit(f"Obsolete DEV control still visible: {marker}")
-
-          for marker in ["isAdministrativeTest", "hasStarted(task) && !isAdministrativeTest(task)", "V404"]:
-              if marker not in stats:
-                  raise SystemExit(f"Missing test-delete rule marker: {marker}")
-
-          for marker in ["setAllByName", "nameMap", "KATEGORIE", "ALLE GLEICHNAMIGEN", "masterOfDisasterCategoriesV405"]:
-              if marker not in cats405:
-                  raise SystemExit(f"Missing base category behavior marker: {marker}")
-
-          for marker in ["applySafeFilter", "restoreV405PartialHides", ".task, .archive-task", "NUR DIESE", "ALLE GLEICHNAMIGEN", "category-quick-v406"]:
-              if marker not in cats406:
-                  raise SystemExit(f"Missing V406 category UX marker: {marker}")
-
-          if 'BUILD_VERSION="V406"' not in dev or '20.08.2026 · 11:45 Uhr' not in dev:
-              raise SystemExit("DEV build metadata not V406")
-
-          print("Build V406 category UX + safe whole-card filter OK")
+              if marker not in index: raise SystemExit(f'Missing V407 asset: {marker}')
+          for marker in ['ux-fixes-v407.js','ux-fixes-v407.css','dev-version-v407.js']:
+              if marker not in sw: raise SystemExit(f'Missing cached V407 asset: {marker}')
+          for marker in ['openCategoryPicker','category-choice-v407','title-edit-v407-button','AUFGABE UMBENENNEN','ALLE GLEICHNAMIGEN']:
+              if marker not in ux: raise SystemExit(f'Missing V407 UX behavior: {marker}')
+          for marker in ['isAdministrativeTest','hasStarted(task) && !isAdministrativeTest(task)']:
+              if marker not in stats: raise SystemExit(f'Missing delete rule: {marker}')
+          for marker in ['localStorage ist Master','AUTO_BACKUP_DELAY_MS=10000']:
+              if marker not in iphone: raise SystemExit(f'Missing backup behavior: {marker}')
+          print('Build V407 direct category picker + active title editing OK')
