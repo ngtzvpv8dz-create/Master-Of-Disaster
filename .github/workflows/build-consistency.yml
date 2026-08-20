@@ -14,30 +14,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V409 consolidated category UX
+      - name: Verify V410 category edit UI
         shell: python
         run: |
           from pathlib import Path
           import re
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          cat=Path('categories-v409.js').read_text(encoding='utf-8')
-          css=Path('categories-v409.css').read_text(encoding='utf-8')
+          cat=Path('categories.js').read_text(encoding='utf-8')
+          css=Path('categories.css').read_text(encoding='utf-8')
           stats=Path('stats-and-rules-v403.js').read_text(encoding='utf-8')
           iphone=Path('iphone-backup-v400.js').read_text(encoding='utf-8')
           html_v=re.search(r'<!-- BUILD: V(\d+) ·',index)
           cache_v=re.search(r'CACHE_NAME = "master-of-disaster-v(\d+)"',sw)
-          if not html_v or not cache_v or html_v.group(1)!='409' or cache_v.group(1)!='409': raise SystemExit('Expected V409 metadata')
-          for marker in ['categories-v409.js?v=409-1302','categories-v409.css?v=409-1302','dev-version-v409.js?v=409-1302','app.js?v=409']:
-              if marker not in index: raise SystemExit(f'Missing V409 asset: {marker}')
-          for forbidden in ['categories-v405.js','categories-v406.js','ux-fixes-v408.js','categories-v405.css','categories-v406.css','ux-fixes-v408.css']:
+          if not html_v or not cache_v or html_v.group(1)!='410' or cache_v.group(1)!='410': raise SystemExit('Expected V410 metadata')
+          for marker in ['categories.js?v=410-1335','categories.css?v=410-1335','dev-version-v410.js?v=410-1335','app.js?v=410']:
+              if marker not in index: raise SystemExit(f'Missing V410 asset: {marker}')
+          for forbidden in ['categories-v409.js','categories-v409.css','categories-v405.js','categories-v406.js','ux-fixes-v408.js']:
               if forbidden in index: raise SystemExit(f'Legacy category patch still active: {forbidden}')
-          for marker in ['OHNE KATEGORIE','openPicker','category-title-edit-v409','ALLE GLEICHNAMIGEN','setAllByName','startEditing(row.id)']:
-              if marker not in cat: raise SystemExit(f'Missing V409 behavior: {marker}')
-          for marker in ['position:absolute','top:8px','right:8px']:
-              if marker not in css: raise SystemExit(f'Missing badge placement: {marker}')
+          for marker in ['category-inline-v410','editCategoryRowV410','ALLE GLEICHNAMIGEN','category-title-edit-v410','insertBefore(edit,abort)','insertBefore(abort,del)']:
+              if marker not in cat: raise SystemExit(f'Missing V410 behavior: {marker}')
+          if 'categoryManageV409' in cat or 'openPicker' in cat: raise SystemExit('Old direct-assignment UI still present')
+          if 'pointer-events:none' not in css: raise SystemExit('Inline category badge must be non-interactive')
           for marker in ['isAdministrativeTest','hasStarted(task) && !isAdministrativeTest(task)']:
               if marker not in stats: raise SystemExit(f'Missing delete rule: {marker}')
           for marker in ['localStorage ist Master','AUTO_BACKUP_DELAY_MS=10000']:
               if marker not in iphone: raise SystemExit(f'Missing backup behavior: {marker}')
-          print('Build V409 consolidated category + edit UX OK')
+          print('Build V410 category edit UI OK')
