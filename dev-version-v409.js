@@ -1,0 +1,2 @@
+/* V409 · DEV build label alignment */
+(function(){function patch(){if(typeof currentTab!=="undefined"&&currentTab!=="dev")return;const vals=document.querySelectorAll(".dev-build-value");if(vals[0])vals[0].textContent="V409";if(vals[1])vals[1].textContent="20.08.2026 · 13:02 Uhr";}const prev=typeof render==="function"?render:null;if(prev){render=function(){const r=prev.apply(this,arguments);patch();return r;};}window.addEventListener("load",()=>setTimeout(patch,150));})();
