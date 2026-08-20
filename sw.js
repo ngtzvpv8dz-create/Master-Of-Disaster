@@ -1,4 +1,4 @@
-const CACHE_NAME = "master-of-disaster-v404";
+const CACHE_NAME = "master-of-disaster-v405";
 const APP_SHELL = ["./","./index.html","./app.css?v=404","./app.js?v=404","./weight-integrity-v393.js?v=404","./cloud-backup-restore-v394.js?v=404","./full-backup-v397.js?v=404","./stats-and-rules-v403.js?v=404-0913","./dev-cleanup-v401.js?v=404-0913","./iphone-backup-v400.js?v=404-0913","./manifest.webmanifest","./supabase-config.js?v=404","./master-of-disaster-192.png","./master-of-disaster-512.png","./apple-touch-icon.png?v=404","https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"];
 self.addEventListener("install",event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)).catch(()=>{}));});
 self.addEventListener("activate",event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
