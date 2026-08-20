@@ -11,22 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V421 priority and statistics polish
+      - name: Verify V422 video icon unification
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('ui-polish-v421.js').read_text(encoding='utf-8')
-          css=Path('ui-polish-v421.css').read_text(encoding='utf-8')
-          dev=Path('dev-version-v421.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V421','ui-polish-v421.css?v=421-2031','ui-polish-v421.js?v=421-2031','dev-version-v421.js?v=421-2031']:
-              if marker not in index: raise SystemExit(f'Missing V421 marker: {marker}')
-          for marker in ['master-of-disaster-v421-priority-stats-polish','ui-polish-v421.js','ui-polish-v421.css','dev-version-v421.js']:
-              if marker not in sw: raise SystemExit(f'Missing V421 cache marker: {marker}')
-          for marker in ['priority-section-title-v421','AKTIV MIT GEWICHT','PRODUKTIVSTER TAG','LÄNGSTER EINSATZTAG','HÄUFIGSTE AUFGABE','AKTIVE AUFGABEN','v421-neutral-weight-stats']:
-              if marker not in js+css: raise SystemExit(f'Missing V421 UI behavior: {marker}')
-          if 'V421' not in dev or '20:31 Uhr' not in dev: raise SystemExit('V421 DEV label mismatch')
-          print('V421 priority/statistics polish OK')
+          js=Path('ui-video-fixes-v422.js').read_text(encoding='utf-8')
+          css=Path('ui-video-fixes-v422.css').read_text(encoding='utf-8')
+          dev=Path('dev-version-v422.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V422','ui-video-fixes-v422.css?v=422-2042','ui-video-fixes-v422.js?v=422-2042','dev-version-v422.js?v=422-2042']:
+              if marker not in index: raise SystemExit(f'Missing V422 marker: {marker}')
+          for marker in ['master-of-disaster-v422-video-icon-unify','ui-video-fixes-v422.js','ui-video-fixes-v422.css','dev-version-v422.js']:
+              if marker not in sw: raise SystemExit(f'Missing V422 cache marker: {marker}')
+          for marker in ['PRODUKTIVSTER TAG','LÄNGSTER EINSATZTAG','HÄUFIGSTE AUFGABE','AKTIVE AUFGABEN','AUSSERHALB','GEWICHTSSTUFEN','v422-neutral-stats']:
+              if marker not in js+css: raise SystemExit(f'Missing V422 UI behavior: {marker}')
+          if 'V422' not in dev or '20:42 Uhr' not in dev: raise SystemExit('V422 DEV label mismatch')
+          print('V422 video icon unification OK')
       - name: JavaScript syntax
-        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check ui-polish-v421.js && node --check dev-version-v421.js
+        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check ui-polish-v421.js && node --check ui-video-fixes-v422.js && node --check dev-version-v422.js
