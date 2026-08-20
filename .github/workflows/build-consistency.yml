@@ -11,22 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V422 video icon unification
+      - name: Verify V423 visible icon fix
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('ui-video-fixes-v422.js').read_text(encoding='utf-8')
-          css=Path('ui-video-fixes-v422.css').read_text(encoding='utf-8')
-          dev=Path('dev-version-v422.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V422','ui-video-fixes-v422.css?v=422-2042','ui-video-fixes-v422.js?v=422-2042','dev-version-v422.js?v=422-2042']:
-              if marker not in index: raise SystemExit(f'Missing V422 marker: {marker}')
-          for marker in ['master-of-disaster-v422-video-icon-unify','ui-video-fixes-v422.js','ui-video-fixes-v422.css','dev-version-v422.js']:
-              if marker not in sw: raise SystemExit(f'Missing V422 cache marker: {marker}')
-          for marker in ['PRODUKTIVSTER TAG','LÄNGSTER EINSATZTAG','HÄUFIGSTE AUFGABE','AKTIVE AUFGABEN','AUSSERHALB','GEWICHTSSTUFEN','v422-neutral-stats']:
-              if marker not in js+css: raise SystemExit(f'Missing V422 UI behavior: {marker}')
-          if 'V422' not in dev or '20:42 Uhr' not in dev: raise SystemExit('V422 DEV label mismatch')
-          print('V422 video icon unification OK')
+          js=Path('visible-icon-fix-v423.js').read_text(encoding='utf-8')
+          css=Path('visible-icon-fix-v423.css').read_text(encoding='utf-8')
+          dev=Path('dev-version-v423.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V423','visible-icon-fix-v423.css?v=423-2054','visible-icon-fix-v423.js?v=423-2054','dev-version-v423.js?v=423-2054']:
+              if marker not in index: raise SystemExit(f'Missing V423 marker: {marker}')
+          for marker in ['master-of-disaster-v423-visible-icon-fix','visible-icon-fix-v423.js','visible-icon-fix-v423.css','dev-version-v423.js']:
+              if marker not in sw: raise SystemExit(f'Missing V423 cache marker: {marker}')
+          for marker in ['statistics-record-label','archive-task-weight-details','archive-weight-total','PRODUKTIVSTER TAG','LÄNGSTER EINSATZTAG','HÄUFIGSTE AUFGABE','AKTIVE AUFGABEN']:
+              if marker not in js: raise SystemExit(f'Missing real-selector behavior: {marker}')
+          for marker in ['statistics-record-label','statistics-record-value','statistics-section-title','statistics-weight-card']:
+              if marker not in css: raise SystemExit(f'Missing neutral style override: {marker}')
+          if 'V423' not in dev or '20:54 Uhr' not in dev: raise SystemExit('V423 DEV label mismatch')
+          print('V423 visible icon fix consistency OK')
       - name: JavaScript syntax
-        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check ui-polish-v421.js && node --check ui-video-fixes-v422.js && node --check dev-version-v422.js
+        run: node --check action-icons-v416.js && node --check unified-icons-v419.js && node --check unified-icons-v420.js && node --check ui-polish-v421.js && node --check ui-video-fixes-v422.js && node --check visible-icon-fix-v423.js && node --check dev-version-v423.js
