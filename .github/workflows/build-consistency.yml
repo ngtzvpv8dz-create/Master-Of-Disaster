@@ -32,7 +32,7 @@ jobs:
               if marker not in sw: raise SystemExit(f'Missing V459 cache marker: {marker}')
           for marker in ['masterOfDisasterThemeLayoutV458','THEME & LAYOUT EDITOR','LIVE-VORSCHAU','ELEMENT AUSWÄHLEN & FEINPOSITIONIEREN','data-move','gridStep','__modThemeLayoutV458']:
               if marker not in theme: raise SystemExit(f'Missing preserved V458 theme/editor behavior: {marker}')
-          for marker in ['theme-note-preview-v459','PREVIEW_NOTES','dataThemeRole','themePreviewFixV459Style','MutationObserver','__modThemePreviewFixV459']:
+          for marker in ['theme-note-preview-v459','PREVIEW_NOTES','dataset.themeRole','themePreviewFixV459Style','MutationObserver','__modThemePreviewFixV459']:
               if marker not in preview: raise SystemExit(f'Missing V459 preview fix behavior: {marker}')
           for marker in ['masterOfDisasterGoalsV455','ZIELE & MEILENSTEINE','__modGoalsMilestonesV455']:
               if marker not in goals: raise SystemExit(f'Missing preserved V455 goals behavior: {marker}')
