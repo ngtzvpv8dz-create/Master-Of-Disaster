@@ -1,7 +1,7 @@
 /* Master of Disaster · Smart task search + live UI fixes */
 (function () {
 'use strict';
-window.__modDevVersion={version:'V434',date:'21.08.2026',time:'08:05'};
+window.__modDevVersion={version:'V436',date:'21.08.2026',time:'09:28'};
 const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('de-DE');
 const time=i=>{for(const v of [i.completedAt,i.abortedAt,i.completedDate,i.startedAt]){const n=v?new Date(v).getTime():NaN;if(Number.isFinite(n))return n;}return 0;};
 const typeName=t=>t==='leisure'?'FREIZEIT':t==='selfrunner'?'SELBSTLÄUFER':t==='cooking'?'KOCHEN':'ARBEIT';

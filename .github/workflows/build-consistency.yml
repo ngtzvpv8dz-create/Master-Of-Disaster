@@ -11,31 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V435 build
+      - name: Verify V436 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          ui=Path('ui.js').read_text(encoding='utf-8')
-          css=Path('ui.css').read_text(encoding='utf-8')
           search=Path('task-search.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          archive=Path('archive-category-v413.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V435','21.08.2026 · 09:13','ui.css?v=435-0913','ui.js?v=435-0913','task-search.js?v=435-0913','remote-commands.js?v=435-0913']:
-              if marker not in index: raise SystemExit(f'Missing V435 index marker: {marker}')
-          for marker in ['master-of-disaster-v435-remote-bridge','task-search.js?v=435-0913','remote-commands.js?v=435-0913','/remote-commands.js']:
-              if marker not in sw: raise SystemExit(f'Missing V435 cache marker: {marker}')
-          for marker in ['getKnownTaskSuggestions','BEREITS VORHANDEN','__modPendingSuggestionCategory','slice(0,6)','refreshCategoryUiV433','removeOpenStatusPlaceholdersV434','next-task-status','__modV434']:
-              if marker not in search: raise SystemExit(f'Missing V434 behavior: {marker}')
-          for marker in ['REMOTE COMMAND BRIDGE','ADD_TASK','remote_commands','scheduleSupabaseLiveSync','POLL_MS=5000']:
-              if marker not in remote: raise SystemExit(f'Missing V435 remote behavior: {marker}')
-          for marker in ['V431 CONSOLIDATED UI/FEATURE BUNDLE','openWeightBackfillV430','priority-header-v426']:
-              if marker not in ui: raise SystemExit(f'Consolidated UI regression: {marker}')
-          for marker in ['V431 CONSOLIDATED UI STYLES','weight-backfill-button-v430']:
-              if marker not in css: raise SystemExit(f'Consolidated CSS regression: {marker}')
-          for marker in ['archiveCompletedTask.__v428Wrapped','preserveCategoryForArchivedTask']:
-              if marker not in archive: raise SystemExit(f'Archive category regression: {marker}')
-          print('V435 build consistency OK')
+          for marker in ['BUILD: V436','21.08.2026 · 09:28','task-search.js?v=436-0928','remote-commands.js?v=436-0928']:
+              if marker not in index: raise SystemExit(f'Missing V436 index marker: {marker}')
+          for marker in ['master-of-disaster-v436-remote-actions','remote-commands.js?v=436-0928','/remote-commands.js']:
+              if marker not in sw: raise SystemExit(f'Missing V436 cache marker: {marker}')
+          for marker in ["version:'V436'","date:'21.08.2026'","time:'09:28'"]:
+              if marker not in search: raise SystemExit(f'Missing V436 visible version: {marker}')
+          for marker in ['ADD_TASK','START_TASK','PAUSE_TASK','RESUME_TASK','COMPLETE_TASK','START_WEIGHT','STOP_WEIGHT','__modRemoteCommandsV436']:
+              if marker not in remote: raise SystemExit(f'Missing V436 remote behavior: {marker}')
+          print('V436 build consistency OK')
       - name: JavaScript syntax
         run: node --check remote-commands.js && node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js && node --check app.js

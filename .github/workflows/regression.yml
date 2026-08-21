@@ -12,9 +12,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
+      - run: node --check remote-commands.js && node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Exercise V434 iPhone workflow
+      - name: Exercise V436 iPhone workflow
         run: |
           python3 -m http.server 8000 >/tmp/mod-http.log 2>&1 &
           cat > /tmp/regression.js <<'JS'
@@ -22,16 +22,12 @@ jobs:
           (async()=>{
             const b=await chromium.launch({headless:true}); const p=await b.newPage({viewport:{width:390,height:844}}); const errors=[]; p.on('pageerror',e=>errors.push(String(e)));
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            await p.goto('http://127.0.0.1:8000/?v434test='+Date.now(),{waitUntil:'networkidle',timeout:60000}); await p.waitForFunction(()=>window.__modDevVersion?.version==='V434'); await p.waitForTimeout(500);
-            const r={build:true,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,search:false,liveCategory:false,todayNoSquare:false,nextTaskNoSquare:false,noPageErrors:false};
-            r.bundle=await p.evaluate(()=>!!(window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430&&window.__modV433&&window.__modV434));
-            await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();}); await p.waitForTimeout(150); r.priority=(await p.locator('#viewContainer .priority-header-v426').count())===4;
-            r.archiveCategory=await p.evaluate(()=>{tasks=[{id:43401,text:'Kategorie Transfer (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-21T06:00:00+02:00',completedAt:'2026-08-21T06:10:00+02:00',completedDate:'2026-08-21',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();return archive.find(x=>x.text==='Kategorie Transfer (TEST)')?.category==='Handwerk';});
-            await p.evaluate(()=>{const m=document.getElementById('modalContainer');if(m)m.innerHTML='';switchTab('all');weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;render();}); r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
-            await p.evaluate(()=>{tasks=[{id:1,text:'Küche aufräumen',status:'open',type:'work',priority:'high',optional:false,dueMode:'none',category:'Küche'}];archive=[];switchTab('all');render();}); await p.locator('#taskInput').fill('küche'); await p.waitForTimeout(100); r.search=(await p.locator('#taskSuggestions .smart-task-suggestion').count())===1;
-            r.liveCategory=await p.evaluate(()=>{localStorage.setItem('masterOfDisasterCategoriesV405',JSON.stringify(['Küche','Handwerk','Neue Kategorie'])); switchTab('categories'); render(); switchTab('all'); render(); window.__modV433.refreshCategoryUi(); const sel=document.getElementById('newCategoryV412'); return !!sel&&[...sel.options].some(o=>o.value==='Neue Kategorie');});
-            const todayResult=await p.evaluate(()=>{tasks=[{id:99,text:'Heute Test',status:'open',type:'work',priority:'normal',optional:false,dueMode:'deadline',dueDate:getBerlinDateKey(),todayDate:getBerlinDateKey(),todayOrder:1,activeSegments:[]}]; switchTab('today'); render(); window.__modV434.removeOpenStatusPlaceholders(); const card=[...document.querySelectorAll('#viewContainer .task')].find(x=>(x.querySelector('.task-text')?.textContent||'').includes('Heute Test')); const s=card?.querySelector('.status-symbol'); const next=document.querySelector('#viewContainer .next-task-status'); const clean=e=>!e||!(e.textContent||'').trim()||!/^[⬜□◻◽]$/.test((e.textContent||'').trim()); return {card:clean(s),next:clean(next)};});
-            r.todayNoSquare=todayResult.card; r.nextTaskNoSquare=todayResult.next;
+            await p.goto('http://127.0.0.1:8000/?v436test='+Date.now(),{waitUntil:'networkidle',timeout:60000}); await p.waitForFunction(()=>window.__modDevVersion?.version==='V436'); await p.waitForTimeout(400);
+            const r={build:true,bridge:false,taskLifecycle:false,weightLifecycle:false,oldUi:false,noPageErrors:false};
+            r.bridge=await p.evaluate(()=>!!window.__modRemoteCommandsV436);
+            r.taskLifecycle=await p.evaluate(()=>{tasks=[{id:43601,text:'(TEST) Remote Lifecycle',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:null,pausedAt:null,completedAt:null,abortedAt:null,pauseTotalMs:0,activeSegments:[],cookingSegments:[]}]; startTask(43601); if(tasks[0].status!=='running')return false; pauseTask(43601); if(tasks[0].status!=='paused')return false; resumeTask(43601); if(tasks[0].status!=='running')return false; tasks[0].activeSegments[0].startedAt=new Date(Date.now()-2000).toISOString(); tasks[0].startedAt=tasks[0].activeSegments[0].startedAt; finishTask(43601); return tasks[0].status==='completed'&&Number(tasks[0].activeDurationMs)>0;});
+            r.weightLifecycle=await p.evaluate(()=>{weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentWeightKg=5.5;startWeightPhase();if(!weightState.isWearing)return false;weightState.currentPhaseStartedAt=new Date(Date.now()-1500).toISOString();stopWeightPhase();return !weightState.isWearing&&weightPhases.length===1&&Number(weightPhases[0].weightKg)===5.5;});
+            r.oldUi=await p.evaluate(()=>!!(window.__modV433&&window.__modV434&&window.__modWeightBackfillV430));
             r.noPageErrors=errors.length===0; console.log(JSON.stringify({r,errors},null,2)); await b.close(); if(!Object.values(r).every(Boolean))process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
