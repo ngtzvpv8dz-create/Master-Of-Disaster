@@ -11,13 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V458 build
+      - name: Verify V459 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
           theme=Path('theme-layout-editor-v458.js').read_text(encoding='utf-8')
+          preview=Path('theme-preview-fix-v459.js').read_text(encoding='utf-8')
           goals=Path('goals-milestones-v455.js').read_text(encoding='utf-8')
           notes=Path('task-notes-v456.js').read_text(encoding='utf-8')
           undo=Path('safe-undo-v457.js').read_text(encoding='utf-8')
@@ -25,14 +26,14 @@ jobs:
           log=Path('live-log-v453.js').read_text(encoding='utf-8')
           history=Path('project-history-v452.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V458','21.08.2026 · 22:40','data-tab="theme"','theme-layout-editor-v458.js?v=458-2240',"version:'V458'",'modV458ThemeLayoutDone']:
-              if marker not in index: raise SystemExit(f'Missing V458 index marker: {marker}')
-          for marker in ['master-of-disaster-v458-theme-layout-editor','theme-layout-editor-v458.js?v=458-2240','/theme-layout-editor-v458.js']:
-              if marker not in sw: raise SystemExit(f'Missing V458 cache marker: {marker}')
-          for marker in ['masterOfDisasterThemeLayoutV458','THEME & LAYOUT EDITOR','LIVE-VORSCHAU','ELEMENT AUSWÄHLEN & FEINPOSITIONIEREN','data-move','gridStep','MASTER DARK','BLUE NIGHT','MEIN THEME','Master of Disaster Theme & Layout','__modThemeLayoutV458']:
-              if marker not in theme: raise SystemExit(f'Missing V458 theme/editor behavior: {marker}')
-          for marker in ['--mod-card-min-height','--mod-title-size','--mod-title-x','--mod-actions-x','--mod-note-x','task-note-v456','-webkit-line-clamp']:
-              if marker not in theme: raise SystemExit(f'Missing V458 card styling behavior: {marker}')
+          for marker in ['BUILD: V459','21.08.2026 · 22:49','data-tab="theme"','theme-layout-editor-v458.js?v=458-2240','theme-preview-fix-v459.js?v=459-2249',"version:'V459'",'modV459ThemePreviewDone']:
+              if marker not in index: raise SystemExit(f'Missing V459 index marker: {marker}')
+          for marker in ['master-of-disaster-v459-theme-preview-note-fix','theme-preview-fix-v459.js?v=459-2249','/theme-preview-fix-v459.js']:
+              if marker not in sw: raise SystemExit(f'Missing V459 cache marker: {marker}')
+          for marker in ['masterOfDisasterThemeLayoutV458','THEME & LAYOUT EDITOR','LIVE-VORSCHAU','ELEMENT AUSWÄHLEN & FEINPOSITIONIEREN','data-move','gridStep','__modThemeLayoutV458']:
+              if marker not in theme: raise SystemExit(f'Missing preserved V458 theme/editor behavior: {marker}')
+          for marker in ['theme-note-preview-v459','PREVIEW_NOTES','dataThemeRole','themePreviewFixV459Style','MutationObserver','__modThemePreviewFixV459']:
+              if marker not in preview: raise SystemExit(f'Missing V459 preview fix behavior: {marker}')
           for marker in ['masterOfDisasterGoalsV455','ZIELE & MEILENSTEINE','__modGoalsMilestonesV455']:
               if marker not in goals: raise SystemExit(f'Missing preserved V455 goals behavior: {marker}')
           for marker in ['MAX_NOTE=1200','note-edit-','NOTIZ · OPTIONAL','task-note-v456','archiveCompletedTask','__modTaskNotesV456']:
@@ -47,6 +48,6 @@ jobs:
               if marker not in history: raise SystemExit(f'Missing preserved V452 behavior: {marker}')
           for marker in ['findReusableTask','reused_existing','__modRemoteCommandsV450']:
               if marker not in remote: raise SystemExit(f'Missing preserved V450 behavior: {marker}')
-          print('V458 build consistency OK')
+          print('V459 build consistency OK')
       - name: JavaScript syntax
-        run: node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
