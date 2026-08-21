@@ -1,118 +1,18 @@
 /* V443 · MANUELLE ZEITSEGMENTE */
 (function(){
-  const nowLocal=()=>formatISOForDateTimeLocal(new Date().toISOString());
+  const style=document.createElement('style');
+  style.textContent=`.segment-editor-modal{max-width:760px}.segment-edit-row{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 12px;margin:10px 0;background:rgba(255,255,255,.025)}.segment-edit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:.78rem;letter-spacing:.08em}.segment-delete{border:1px solid rgba(255,255,255,.16);background:transparent;color:inherit;border-radius:8px;width:30px;height:30px;font-size:20px;line-height:1}.segment-total-v443{margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.05);font-weight:700;letter-spacing:.04em}@media(max-width:560px){.segment-editor-modal .time-edit-grid{grid-template-columns:1fr}.segment-edit-row{padding:9px}}`;
+  document.head.appendChild(style);
   const toIso=v=>berlinLocalInputToISO(v);
   const esc=s=>escapeHtml(String(s??''));
-
-  function getEditableSegments(task){
-    const existing=Array.isArray(task.activeSegments)?task.activeSegments.filter(s=>s&&s.startedAt):[];
-    if(existing.length) return existing.map(s=>({startedAt:s.startedAt,endedAt:s.endedAt||null}));
-    if(task.startedAt) return [{startedAt:task.startedAt,endedAt:task.completedAt||null}];
-    return [{startedAt:new Date().toISOString(),endedAt:null}];
-  }
-
-  function rowHtml(seg,index){
-    const start=formatISOForDateTimeLocal(seg.startedAt||new Date().toISOString());
-    const end=seg.endedAt?formatISOForDateTimeLocal(seg.endedAt):'';
-    return `<div class="segment-edit-row" data-segment-row="${index}">
-      <div class="segment-edit-head"><strong>ABSCHNITT ${index+1}</strong><button type="button" class="segment-delete" onclick="removeManualSegmentV443(${index})" title="Abschnitt löschen">×</button></div>
-      <div class="time-edit-grid">
-        <label class="time-edit-field"><span class="time-edit-label">START</span><input class="time-edit-input segment-start-v443" type="datetime-local" value="${start}"></label>
-        <label class="time-edit-field"><span class="time-edit-label">ENDE</span><input class="time-edit-input segment-end-v443" type="datetime-local" value="${end}"></label>
-      </div>
-    </div>`;
-  }
-
-  window.askManualTimes=function(id){
-    const task=getTask(id); if(!task)return;
-    if(task.type==='selfrunner'){showInfoModal('Selbstläufer','Selbstläufer benötigen keine manuelle Zeitkorrektur.');return;}
-    window.__manualSegmentsV443={taskId:id,segments:getEditableSegments(task)};
-    document.getElementById('modalContainer').innerHTML=`<div class="modal-backdrop"><div class="modal segment-editor-modal">
-      <h2>🕒 Zeitabschnitte korrigieren</h2><p>${esc(task.text)}</p>
-      <div id="segmentRowsV443">${window.__manualSegmentsV443.segments.map(rowHtml).join('')}</div>
-      <button type="button" class="modal-button" onclick="addManualSegmentV443()">+ ZEITABSCHNITT HINZUFÜGEN</button>
-      <div class="time-edit-note">Jeder Abschnitt zählt als aktive Aufgabenzeit. Die Zeit zwischen zwei Abschnitten ist automatisch Pause. Bei einer aktuell laufenden Aufgabe darf nur der letzte Abschnitt ohne Endzeit bleiben.</div>
-      <div class="segment-total-v443" id="segmentTotalV443"></div>
-      <div class="modal-actions" style="margin-top:14px"><button class="modal-button cancel-modal" onclick="closeModal()">Zurück</button><button class="modal-button confirm-modal" onclick="saveManualTimes(${id})">Speichern</button></div>
-    </div></div>`;
-    refreshSegmentTotalV443();
-  };
-
-  window.addManualSegmentV443=function(){
-    if(!window.__manualSegmentsV443)return;
-    const iso=new Date().toISOString();
-    window.__manualSegmentsV443.segments.push({startedAt:iso,endedAt:null});
-    const box=document.getElementById('segmentRowsV443');
-    box.insertAdjacentHTML('beforeend',rowHtml({startedAt:iso,endedAt:null},window.__manualSegmentsV443.segments.length-1));
-    refreshSegmentTotalV443();
-  };
-
-  window.removeManualSegmentV443=function(index){
-    const state=window.__manualSegmentsV443;if(!state)return;
-    if(state.segments.length<=1){showInfoModal('Mindestens ein Abschnitt','Eine Aufgabe braucht mindestens einen Zeitabschnitt.');return;}
-    readSegmentsFromDomV443(false);
-    state.segments.splice(index,1);
-    document.getElementById('segmentRowsV443').innerHTML=state.segments.map(rowHtml).join('');
-    refreshSegmentTotalV443();
-  };
-
-  window.readSegmentsFromDomV443=function(validate=true){
-    const state=window.__manualSegmentsV443;if(!state)return null;
-    const rows=[...document.querySelectorAll('[data-segment-row]')];
-    const segments=[];
-    for(let i=0;i<rows.length;i++){
-      const sv=rows[i].querySelector('.segment-start-v443').value;
-      const ev=rows[i].querySelector('.segment-end-v443').value;
-      const startedAt=toIso(sv), endedAt=ev?toIso(ev):null;
-      if(validate&&!startedAt) throw new Error(`Abschnitt ${i+1}: Startzeit fehlt oder ist ungültig.`);
-      if(startedAt&&endedAt&&new Date(endedAt)<=new Date(startedAt)) throw new Error(`Abschnitt ${i+1}: Ende muss nach dem Start liegen.`);
-      segments.push({startedAt:startedAt||new Date().toISOString(),endedAt});
-    }
-    state.segments=segments; return segments;
-  };
-
-  window.refreshSegmentTotalV443=function(){
-    try{
-      const segs=readSegmentsFromDomV443(false)||[]; let total=0;
-      for(const s of segs){if(s.startedAt&&s.endedAt)total+=Math.max(0,new Date(s.endedAt)-new Date(s.startedAt));}
-      const el=document.getElementById('segmentTotalV443');if(el)el.textContent='AKTIVE GESAMTZEIT · '+formatDuration(total);
-    }catch(_){ }
-  };
+  function getEditableSegments(task){const existing=Array.isArray(task.activeSegments)?task.activeSegments.filter(s=>s&&s.startedAt):[];if(existing.length)return existing.map(s=>({startedAt:s.startedAt,endedAt:s.endedAt||null}));if(task.startedAt)return[{startedAt:task.startedAt,endedAt:task.completedAt||null}];return[{startedAt:new Date().toISOString(),endedAt:null}];}
+  function rowHtml(seg,index){const start=formatISOForDateTimeLocal(seg.startedAt||new Date().toISOString());const end=seg.endedAt?formatISOForDateTimeLocal(seg.endedAt):'';return `<div class="segment-edit-row" data-segment-row="${index}"><div class="segment-edit-head"><strong>ABSCHNITT ${index+1}</strong><button type="button" class="segment-delete" onclick="removeManualSegmentV443(${index})" title="Abschnitt löschen">×</button></div><div class="time-edit-grid"><label class="time-edit-field"><span class="time-edit-label">START</span><input class="time-edit-input segment-start-v443" type="datetime-local" value="${start}"></label><label class="time-edit-field"><span class="time-edit-label">ENDE</span><input class="time-edit-input segment-end-v443" type="datetime-local" value="${end}"></label></div></div>`;}
+  window.askManualTimes=function(id){const task=getTask(id);if(!task)return;if(task.type==='selfrunner'){showInfoModal('Selbstläufer','Selbstläufer benötigen keine manuelle Zeitkorrektur.');return;}window.__manualSegmentsV443={taskId:id,segments:getEditableSegments(task)};document.getElementById('modalContainer').innerHTML=`<div class="modal-backdrop"><div class="modal segment-editor-modal"><h2>🕒 Zeitabschnitte korrigieren</h2><p>${esc(task.text)}</p><div id="segmentRowsV443">${window.__manualSegmentsV443.segments.map(rowHtml).join('')}</div><button type="button" class="modal-button" onclick="addManualSegmentV443()">+ ZEITABSCHNITT HINZUFÜGEN</button><div class="time-edit-note">Jeder Abschnitt zählt als aktive Aufgabenzeit. Die Zeit zwischen zwei Abschnitten ist automatisch Pause. Bei einer aktuell laufenden Aufgabe darf nur der letzte Abschnitt ohne Endzeit bleiben.</div><div class="segment-total-v443" id="segmentTotalV443"></div><div class="modal-actions" style="margin-top:14px"><button class="modal-button cancel-modal" onclick="closeModal()">Zurück</button><button class="modal-button confirm-modal" onclick="saveManualTimes(${id})">Speichern</button></div></div></div>`;refreshSegmentTotalV443();};
+  window.addManualSegmentV443=function(){if(!window.__manualSegmentsV443)return;const iso=new Date().toISOString();window.__manualSegmentsV443.segments.push({startedAt:iso,endedAt:null});document.getElementById('segmentRowsV443').insertAdjacentHTML('beforeend',rowHtml({startedAt:iso,endedAt:null},window.__manualSegmentsV443.segments.length-1));refreshSegmentTotalV443();};
+  window.removeManualSegmentV443=function(index){const state=window.__manualSegmentsV443;if(!state)return;if(state.segments.length<=1){showInfoModal('Mindestens ein Abschnitt','Eine Aufgabe braucht mindestens einen Zeitabschnitt.');return;}readSegmentsFromDomV443(false);state.segments.splice(index,1);document.getElementById('segmentRowsV443').innerHTML=state.segments.map(rowHtml).join('');refreshSegmentTotalV443();};
+  window.readSegmentsFromDomV443=function(validate=true){const state=window.__manualSegmentsV443;if(!state)return null;const rows=[...document.querySelectorAll('[data-segment-row]')];const segments=[];for(let i=0;i<rows.length;i++){const sv=rows[i].querySelector('.segment-start-v443').value;const ev=rows[i].querySelector('.segment-end-v443').value;const startedAt=toIso(sv),endedAt=ev?toIso(ev):null;if(validate&&!startedAt)throw new Error(`Abschnitt ${i+1}: Startzeit fehlt oder ist ungültig.`);if(startedAt&&endedAt&&new Date(endedAt)<=new Date(startedAt))throw new Error(`Abschnitt ${i+1}: Ende muss nach dem Start liegen.`);segments.push({startedAt:startedAt||new Date().toISOString(),endedAt});}state.segments=segments;return segments;};
+  window.refreshSegmentTotalV443=function(){try{const segs=readSegmentsFromDomV443(false)||[];let total=0;for(const s of segs){if(s.startedAt&&s.endedAt)total+=Math.max(0,new Date(s.endedAt)-new Date(s.startedAt));}const el=document.getElementById('segmentTotalV443');if(el)el.textContent='AKTIVE GESAMTZEIT · '+formatDuration(total);}catch(_){}};
   document.addEventListener('input',e=>{if(e.target&&e.target.closest&&e.target.closest('#segmentRowsV443'))refreshSegmentTotalV443();});
-
-  window.saveManualTimes=function(id){
-    const task=getTask(id); if(!task)return;
-    let segs;
-    try{segs=readSegmentsFromDomV443(true);}catch(e){showInfoModal('Zeitangabe prüfen',e.message);return;}
-    segs.sort((a,b)=>new Date(a.startedAt)-new Date(b.startedAt));
-    for(let i=0;i<segs.length-1;i++){
-      if(!segs[i].endedAt){showInfoModal('Zeitangabe prüfen',`Nur der letzte Abschnitt darf ohne Endzeit sein.`);return;}
-      if(new Date(segs[i].endedAt)>new Date(segs[i+1].startedAt)){showInfoModal('Zeitangabe prüfen',`Abschnitt ${i+1} und ${i+2} überlappen sich.`);return;}
-    }
-    const open=segs.filter(s=>!s.endedAt);
-    if(open.length>1 || (open.length===1 && task.status!=='running')){showInfoModal('Zeitangabe prüfen','Nur bei einer aktuell laufenden Aufgabe darf der letzte Abschnitt offen bleiben.');return;}
-    const total=segs.reduce((sum,s)=>sum+(s.endedAt?Math.max(0,new Date(s.endedAt)-new Date(s.startedAt)):0),0);
-    task.activeSegments=segs;
-    task.startedAt=segs[0].startedAt;
-    task.pausedAt=task.status==='paused'?(segs[segs.length-1].endedAt||task.pausedAt):null;
-    task.pauseTotalMs=0;
-    if(task.status==='completed'||task.status==='aborted'){
-      const last=segs[segs.length-1]; if(!last.endedAt){showInfoModal('Zeitangabe prüfen','Abgeschlossene oder abgebrochene Aufgaben benötigen für jeden Abschnitt eine Endzeit.');return;}
-      if(task.status==='completed')task.completedAt=last.endedAt; else task.abortedAt=last.endedAt;
-      task.actualDurationMs=total;
-      if(task.type==='leisure'){task.leisureDurationMs=total;task.activeDurationMs=0;}
-      else if(task.type==='cooking'){
-        task.cookingSegments=segs.map(s=>({mode:'active',startedAt:s.startedAt,endedAt:s.endedAt}));
-        task.cookingActiveDurationMs=total;task.cookingPassiveDurationMs=0;task.activeDurationMs=total;task.passiveDurationMs=0;
-      } else {task.activeDurationMs=total;task.actualDurationMs=total;}
-    } else {
-      task.activeDurationMs=null; task.actualDurationMs=null;
-      if(task.type==='leisure')task.leisureDurationMs=null;
-      if(task.type==='cooking') task.cookingSegments=segs.map(s=>({mode:'active',startedAt:s.startedAt,endedAt:s.endedAt}));
-    }
-    closeModal(); saveTasks(); render();
-    try{if(typeof scheduleSupabaseLiveSync==='function')scheduleSupabaseLiveSync('time-segments-v443');}catch(_){}
-  };
-
+  window.saveManualTimes=function(id){const task=getTask(id);if(!task)return;let segs;try{segs=readSegmentsFromDomV443(true);}catch(e){showInfoModal('Zeitangabe prüfen',e.message);return;}segs.sort((a,b)=>new Date(a.startedAt)-new Date(b.startedAt));for(let i=0;i<segs.length-1;i++){if(!segs[i].endedAt){showInfoModal('Zeitangabe prüfen','Nur der letzte Abschnitt darf ohne Endzeit sein.');return;}if(new Date(segs[i].endedAt)>new Date(segs[i+1].startedAt)){showInfoModal('Zeitangabe prüfen',`Abschnitt ${i+1} und ${i+2} überlappen sich.`);return;}}const open=segs.filter(s=>!s.endedAt);if(open.length>1||(open.length===1&&task.status!=='running')){showInfoModal('Zeitangabe prüfen','Nur bei einer aktuell laufenden Aufgabe darf der letzte Abschnitt offen bleiben.');return;}const total=segs.reduce((sum,s)=>sum+(s.endedAt?Math.max(0,new Date(s.endedAt)-new Date(s.startedAt)):0),0);task.activeSegments=segs;task.startedAt=segs[0].startedAt;task.pausedAt=task.status==='paused'?(segs[segs.length-1].endedAt||task.pausedAt):null;task.pauseTotalMs=0;if(task.status==='completed'||task.status==='aborted'){const last=segs[segs.length-1];if(!last.endedAt){showInfoModal('Zeitangabe prüfen','Abgeschlossene oder abgebrochene Aufgaben benötigen für jeden Abschnitt eine Endzeit.');return;}if(task.status==='completed')task.completedAt=last.endedAt;else task.abortedAt=last.endedAt;task.actualDurationMs=total;if(task.type==='leisure'){task.leisureDurationMs=total;task.activeDurationMs=0;}else if(task.type==='cooking'){task.cookingSegments=segs.map(s=>({mode:'active',startedAt:s.startedAt,endedAt:s.endedAt}));task.cookingActiveDurationMs=total;task.cookingPassiveDurationMs=0;task.activeDurationMs=total;task.passiveDurationMs=0;}else{task.activeDurationMs=total;task.actualDurationMs=total;}}else{task.activeDurationMs=null;task.actualDurationMs=null;if(task.type==='leisure')task.leisureDurationMs=null;if(task.type==='cooking')task.cookingSegments=segs.map(s=>({mode:'active',startedAt:s.startedAt,endedAt:s.endedAt}));}closeModal();saveTasks();render();try{if(typeof scheduleSupabaseLiveSync==='function')scheduleSupabaseLiveSync('time-segments-v443');}catch(_){}};
   window.__modTimeSegmentsV443={version:'V443'};
 })();
