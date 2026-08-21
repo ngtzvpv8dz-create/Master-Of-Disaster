@@ -14,7 +14,7 @@ jobs:
           node-version: '20'
       - run: node --check remote-commands.js && node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Exercise V437 iPhone workflow
+      - name: Exercise V438 requested weight timestamp
         run: |
           python3 -m http.server 8000 >/tmp/mod-http.log 2>&1 &
           cat > /tmp/regression.js <<'JS'
@@ -22,12 +22,11 @@ jobs:
           (async()=>{
             const b=await chromium.launch({headless:true}); const p=await b.newPage({viewport:{width:390,height:844}}); const errors=[]; p.on('pageerror',e=>errors.push(String(e)));
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            await p.goto('http://127.0.0.1:8000/?v437test='+Date.now(),{waitUntil:'networkidle',timeout:60000}); await p.waitForFunction(()=>window.__MOD_BUILD__?.version==='V437'); await p.waitForTimeout(500);
-            const r={buildMeta:false,bridge:false,taskLifecycle:false,weightLifecycle:false,oldUi:false,noPageErrors:false};
-            r.buildMeta=await p.evaluate(()=>{switchTab('dev');render(); return new Promise(resolve=>setTimeout(()=>{const vals=[...document.querySelectorAll('.dev-build-value')].map(x=>(x.textContent||'').trim());resolve(window.__modDevVersion?.version==='V437'&&vals[0]==='V437'&&vals[1]==='21.08.2026 · 09:44 Uhr');},50));});
-            r.bridge=await p.evaluate(()=>!!window.__modRemoteCommandsV436);
-            r.taskLifecycle=await p.evaluate(()=>{tasks=[{id:43601,text:'(TEST) Remote Lifecycle',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:null,pausedAt:null,completedAt:null,abortedAt:null,pauseTotalMs:0,activeSegments:[],cookingSegments:[]}]; startTask(43601); if(tasks[0].status!=='running')return false; pauseTask(43601); if(tasks[0].status!=='paused')return false; resumeTask(43601); if(tasks[0].status!=='running')return false; tasks[0].activeSegments[0].startedAt=new Date(Date.now()-2000).toISOString(); tasks[0].startedAt=tasks[0].activeSegments[0].startedAt; finishTask(43601); return tasks[0].status==='completed'&&Number(tasks[0].activeDurationMs)>0;});
-            r.weightLifecycle=await p.evaluate(()=>{weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentWeightKg=5.5;startWeightPhase();if(!weightState.isWearing)return false;weightState.currentPhaseStartedAt=new Date(Date.now()-1500).toISOString();stopWeightPhase();return !weightState.isWearing&&weightPhases.length===1&&Number(weightPhases[0].weightKg)===5.5;});
+            await p.goto('http://127.0.0.1:8000/?v438test='+Date.now(),{waitUntil:'networkidle',timeout:60000}); await p.waitForFunction(()=>window.__MOD_BUILD__?.version==='V438'); await p.waitForTimeout(400);
+            const r={buildMeta:false,bridge:false,requestedWeightTime:false,oldUi:false,noPageErrors:false};
+            r.buildMeta=await p.evaluate(()=>{switchTab('dev');render(); return new Promise(resolve=>setTimeout(()=>{const vals=[...document.querySelectorAll('.dev-build-value')].map(x=>(x.textContent||'').trim());resolve(window.__modDevVersion?.version==='V438'&&vals[0]==='V438'&&vals[1]==='21.08.2026 · 10:08 Uhr');},50));});
+            r.bridge=await p.evaluate(()=>!!window.__modRemoteCommandsV438);
+            r.requestedWeightTime=await p.evaluate(()=>{weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentWeightKg=5.5;startWeightPhase();const wanted='2026-08-21T08:02:06.000Z';weightState.currentPhaseStartedAt=wanted;saveWeight();return weightState.isWearing&&weightState.currentPhaseStartedAt===wanted;});
             r.oldUi=await p.evaluate(()=>!!(window.__modV433&&window.__modV434&&window.__modWeightBackfillV430));
             r.noPageErrors=errors.length===0; console.log(JSON.stringify({r,errors},null,2)); await b.close(); if(!Object.values(r).every(Boolean))process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
