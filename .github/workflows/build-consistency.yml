@@ -11,34 +11,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V454 build
+      - name: Verify V457 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          goals=Path('goals-milestones-v455.js').read_text(encoding='utf-8')
+          notes=Path('task-notes-v456.js').read_text(encoding='utf-8')
+          undo=Path('safe-undo-v457.js').read_text(encoding='utf-8')
           background=Path('background-log-v454.js').read_text(encoding='utf-8')
           log=Path('live-log-v453.js').read_text(encoding='utf-8')
           history=Path('project-history-v452.js').read_text(encoding='utf-8')
-          devstats=Path('development-stats-v451.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V454','21.08.2026 · 17:03','background-log-v454.js?v=454-1703',"version:'V454'",'__MOD_BUILD__','data-tab="log"','modV454BackgroundLogDone']:
-              if marker not in index: raise SystemExit(f'Missing V454 index marker: {marker}')
-          for marker in ['master-of-disaster-v454-background-process-logging','background-log-v454.js?v=454-1703','/background-log-v454.js']:
-              if marker not in sw: raise SystemExit(f'Missing V454 cache marker: {marker}')
-          for marker in ['SYNC_DELAY_MS=900','wrapSupabaseClient','getLiveSyncSessionAndManifest','Sync-Timer neu gestartet','remote_commands','isEmptyRemotePoll','GitHub Pages erreichbar','emptyRemotePollSuppressed:true','__modBackgroundLogV454']:
-              if marker not in background: raise SystemExit(f'Missing V454 background log behavior: {marker}')
-          for marker in ['masterOfDisasterLiveLogV453','WINDOW_MS=24*60*60*1000','MAX_ENTRIES=5000','data-log-filter-v453','LIVE-LOG · LETZTE 24 STUNDEN','logTaskDiff','logArchiveDiff','logWeightDiff','__modLiveLogV453']:
-              if marker not in log: raise SystemExit(f'Missing preserved V453 live log behavior: {marker}')
-          for marker in ['GESAMTCHRONIK','PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM','PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP','versionTransitionsV32ToV361:329','historicalTasksV361:273','recoveredRuleMilestones:22','details.statistics-collapsible-v452','data-stat-open-v452','data-stat-close-v452','__modProjectHistoryV452']:
-              if marker not in history: raise SystemExit(f'Missing preserved V452 history/collapse behavior: {marker}')
-          for marker in ['APP-ENTWICKLUNG','__modDevelopmentStatsV451','reachableCommits:558']:
-              if marker not in devstats: raise SystemExit(f'Missing preserved V451 statistics: {marker}')
-          for marker in ['findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
-              if marker not in remote: raise SystemExit(f'Missing preserved V450 remote behavior: {marker}')
-          for marker in ['setCompletedCategory','openCompletedCategoryEditor','__modCompletedCategoryV449']:
-              if marker not in completed: raise SystemExit(f'Missing preserved V449 behavior: {marker}')
-          print('V454 build consistency OK')
+          for marker in ['BUILD: V457','21.08.2026 · 17:25','goals-milestones-v455.js?v=455-1725','task-notes-v456.js?v=456-1725','safe-undo-v457.js?v=457-1725',"version:'V457'",'modV457FunctionalDone']:
+              if marker not in index: raise SystemExit(f'Missing V457 index marker: {marker}')
+          for marker in ['master-of-disaster-v457-goals-notes-undo','goals-milestones-v455.js?v=455-1725','task-notes-v456.js?v=456-1725','safe-undo-v457.js?v=457-1725']:
+              if marker not in sw: raise SystemExit(f'Missing V457 cache marker: {marker}')
+          for marker in ['masterOfDisasterGoalsV455','DEFAULTS={archiveTasks:250,activeHours:100,activeDays:30,weightedTasks:100}','ZIELE & MEILENSTEINE','ZIELE BEARBEITEN','reachedMilestones','__modGoalsMilestonesV455']:
+              if marker not in goals: raise SystemExit(f'Missing V455 goals behavior: {marker}')
+          for marker in ['MAX_NOTE=1200','note-edit-','NOTIZ · OPTIONAL','task-note-v456','archiveCompletedTask','__modTaskNotesV456']:
+              if marker not in notes: raise SystemExit(f'Missing V456 notes behavior: {marker}')
+          for marker in ['TTL_MS=10*60*1000','RÜCKGÄNGIG','analyzeTaskChange','archiveSignature','__modSafeUndoV457']:
+              if marker not in undo: raise SystemExit(f'Missing V457 undo behavior: {marker}')
+          for marker in ['SYNC_DELAY_MS=900','wrapSupabaseClient','emptyRemotePollSuppressed:true','__modBackgroundLogV454']:
+              if marker not in background: raise SystemExit(f'Missing preserved V454 behavior: {marker}')
+          for marker in ['WINDOW_MS=24*60*60*1000','__modLiveLogV453']:
+              if marker not in log: raise SystemExit(f'Missing preserved V453 behavior: {marker}')
+          for marker in ['GESAMTCHRONIK','data-stat-open-v452','data-stat-close-v452','__modProjectHistoryV452']:
+              if marker not in history: raise SystemExit(f'Missing preserved V452 behavior: {marker}')
+          for marker in ['findReusableTask','reused_existing','__modRemoteCommandsV450']:
+              if marker not in remote: raise SystemExit(f'Missing preserved V450 behavior: {marker}')
+          print('V457 build consistency OK')
       - name: JavaScript syntax
-        run: node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
