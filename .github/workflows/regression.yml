@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
       - name: Verify preserved V445-V454 behavior
         shell: python
         run: |
@@ -75,14 +75,39 @@ jobs:
           archive.push({archiveNumber:99,text:'Archived'});saveArchive();if(api.current()!==null)throw new Error('V457 undo survived archive mutation');
           console.log('V457 safe undo regression OK');
           NODE
-      - name: Verify V457 build wiring
+      - name: Verify V458 theme and layout editor state
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),store=new Map(),vars=new Map();
+          global.window=global;global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
+          global.addEventListener=()=>{};global.confirm=()=>true;global.alert=()=>{};
+          global.document={
+            documentElement:{style:{setProperty:(k,v)=>vars.set(k,String(v))}},
+            getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},
+            createElement(){return {style:{},classList:{toggle(){}},addEventListener(){},appendChild(){},remove(){},click(){},set textContent(v){this._text=v},get textContent(){return this._text||''}}},
+            head:{appendChild(){}},body:{appendChild(){}}
+          };
+          eval(fs.readFileSync('theme-layout-editor-v458.js','utf8'));
+          const api=window.__modThemeLayoutV458;if(!api||api.version!=='V458')throw new Error('V458 API missing');
+          const defaults=api.getConfig();if(defaults.card.minHeight!==50||defaults.card.noteLines!==2||defaults.gridStep!==2)throw new Error('V458 defaults wrong');
+          const changed=api.setConfig({...defaults,card:{...defaults.card,minHeight:999,actionSize:10},elements:{...defaults.elements,title:{...defaults.elements.title,fontSize:99,x:99,y:-99}}});
+          if(changed.card.minHeight!==140||changed.card.actionSize!==24)throw new Error('V458 card clamp failed');
+          if(changed.elements.title.fontSize!==30||changed.elements.title.x!==48||changed.elements.title.y!==-48)throw new Error('V458 element clamp failed');
+          if(!store.has('masterOfDisasterThemeLayoutV458'))throw new Error('V458 config was not persisted');
+          if(vars.get('--mod-card-min-height')!=='140px'||vars.get('--mod-title-x')!=='48px')throw new Error('V458 CSS variables not applied');
+          console.log('V458 theme/layout state regression OK');
+          NODE
+      - name: Verify V458 build wiring and editor coverage
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V457','21.08.2026 · 17:25','goals-milestones-v455.js?v=455-1725','task-notes-v456.js?v=456-1725','safe-undo-v457.js?v=457-1725',"version:'V457'",'modV457FunctionalDone']:
-              if marker not in html: raise SystemExit(f'Missing V457 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v457-goals-notes-undo','/goals-milestones-v455.js','/task-notes-v456.js','/safe-undo-v457.js']:
-              if marker not in sw: raise SystemExit(f'Missing V457 service worker marker: {marker}')
-          print('V457 build wiring OK')
+          js=Path('theme-layout-editor-v458.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V458','21.08.2026 · 22:40','data-tab="theme"','theme-layout-editor-v458.js?v=458-2240',"version:'V458'",'modV458ThemeLayoutDone']:
+              if marker not in html: raise SystemExit(f'Missing V458 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v458-theme-layout-editor','/theme-layout-editor-v458.js']:
+              if marker not in sw: raise SystemExit(f'Missing V458 service worker marker: {marker}')
+          for marker in ['APP-FARBEN · ZENTRALE PALETTE','AUFGABENKARTE · FARBEN & FORM','ELEMENT AUSWÄHLEN & FEINPOSITIONIEREN','LIVE-VORSCHAU · VERSCHIEDENE ZUSTÄNDE','OFFEN · MIT NOTIZ','LÄUFT · NORMALE ARBEIT','PAUSIERT','KOCHEN · AKTIV/GARZEIT','ERLEDIGT','data-move="up"','data-move="left"','data-move="right"','data-move="down"','themePositionOkV458','card.minHeight','card.borderWidth','card.actionSize','elements.${selectedRole}.fontSize','elements.${selectedRole}.fontWeight','elements.${selectedRole}.lineHeight','__modThemeLayoutV458']:
+              if marker not in js: raise SystemExit(f'Missing V458 editor marker: {marker}')
+          print('V458 build/editor coverage OK')
