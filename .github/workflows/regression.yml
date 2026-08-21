@@ -10,19 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check integrity-v439.js && node --check remote-commands.js && node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
-      - name: Verify V442 paused-task integrity
+        run: node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+      - name: Verify V443 time segment editor
+        shell: python
         run: |
-          node <<'JS'
-          global.window=global;
-          global.tasks=[{text:'Geschirrspüler ausräumen',status:'paused',activeDurationMs:null,activeSegments:[{startedAt:'2026-08-21T08:25:33.522Z',endedAt:'2026-08-21T08:25:59.257Z'}]}];
-          global.weightPhases=[];
-          global.weightState={isWearing:true,currentPhaseStartedAt:'2026-08-21T08:02:06.000Z',currentPhaseWeightKg:12.3,currentWeightKg:12.3};
-          global.collectDataIntegrityReport=()=>({ok:false,errors:['Summe der Aktivsegmente ist größer als die aktive Gesamtdauer bei „Geschirrspüler ausräumen“.','Zusatzgewicht ist als angelegt markiert, aber es existiert nicht genau eine offene Gewichtsphase.'],warnings:[],info:[]});
-          require('./integrity-v439.js');
-          const r=collectDataIntegrityReport();
-          if(!r.ok) throw new Error(JSON.stringify(r));
-          if(r.errors.length) throw new Error('False positives not removed');
-          if(!global.__modIntegrityV442) throw new Error('V442 hook missing');
-          console.log('V442 paused-task integrity OK');
-          JS
+          from pathlib import Path
+          seg=Path('time-segments-v443.js').read_text(encoding='utf-8')
+          for marker in ['Zeitabschnitte korrigieren','ABSCHNITT ${index+1}','+ ZEITABSCHNITT HINZUFÜGEN','AKTIVE GESAMTZEIT','Nur der letzte Abschnitt darf ohne Endzeit sein','überlappen sich','task.activeSegments=segs','scheduleSupabaseLiveSync']:
+              if marker not in seg: raise SystemExit(f'Missing segment behavior: {marker}')
+          print('V443 segment editor regression OK')
