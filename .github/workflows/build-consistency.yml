@@ -24,7 +24,7 @@ jobs:
               if marker not in index: raise SystemExit(f'Missing V451 index marker: {marker}')
           for marker in ['master-of-disaster-v451-development-statistics','development-stats-v451.js?v=451-1431']:
               if marker not in sw: raise SystemExit(f'Missing V451 cache marker: {marker}')
-          for marker in ['APP-ENTWICKLUNG','__modDevelopmentStatsV451','reachableCommits:557','pullRequests:50','remoteCommands:17',"grossActivityWindow:'ca. 49:01 h'"]:
+          for marker in ['APP-ENTWICKLUNG','__modDevelopmentStatsV451','reachableCommits:558','pullRequests:51','remoteCommands:17',"grossActivityWindow:'ca. 49:08 h'"]:
               if marker not in devstats: raise SystemExit(f'Missing V451 statistic: {marker}')
           for marker in ['findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
               if marker not in remote: raise SystemExit(f'Missing preserved V450 behavior: {marker}')
