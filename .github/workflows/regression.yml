@@ -39,5 +39,42 @@ jobs:
           html=Path('index.html').read_text(encoding='utf-8')
           for marker in ['resumeTask','askManualTimes','insertAdjacentElement(\'afterend\',btn)','toggleToday(${id})','paused-today-v447','Für heute markieren','Aus Heute entfernen']:
               if marker not in js: raise SystemExit(f'Missing V447 paused Today action: {marker}')
-          if 'BUILD: V447' not in html or 'paused-today-v447.js?v=447-1255' not in html: raise SystemExit('V447 build wiring missing')
+          if 'paused-today-v447.js?v=447-1255' not in html: raise SystemExit('V447 paused Today wiring missing')
           print('V447 paused Today action regression OK')
+      - name: Verify V448 ADD_TASK today pinning
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          global.tasks=[
+            {id:1,status:'open',todayDate:'2026-08-21',todayOrder:2},
+            {id:2,status:'completed',todayDate:'2026-08-21',todayOrder:99}
+          ];
+          global.window={addEventListener(){}};
+          global.document={addEventListener(){},visibilityState:'visible'};
+          global.navigator={onLine:false};
+          global.saveTasks=()=>{};
+          global.render=()=>{};
+          global.safeStorageSet=()=>true;
+          eval(fs.readFileSync('remote-commands.js','utf8'));
+          const api=window.__modRemoteCommandsV448;
+          if(!api)throw new Error('V448 API missing');
+          const pinned=api.createLocalTask({text:'Remote today test',type:'selfrunner',priority:'normal',category:'Test',today_date:'2026-08-21'});
+          if(pinned.todayDate!=='2026-08-21')throw new Error('todayDate was not applied');
+          if(pinned.todayOrder!==3)throw new Error(`Expected todayOrder 3, got ${pinned.todayOrder}`);
+          const unpinned=api.createLocalTask({text:'Remote no today test'});
+          if(unpinned.todayDate!==null||unpinned.todayOrder!==null)throw new Error('Task without today_date was pinned');
+          let invalidRejected=false;
+          try{api.createLocalTask({text:'Bad today',today_date:'2026-02-31'});}catch(error){invalidRejected=/today_date/.test(String(error&&error.message));}
+          if(!invalidRejected)throw new Error('Invalid today_date was not rejected');
+          console.log('V448 ADD_TASK today pinning regression OK');
+          NODE
+      - name: Verify V448 build wiring
+        shell: python
+        run: |
+          from pathlib import Path
+          html=Path('index.html').read_text(encoding='utf-8')
+          remote=Path('remote-commands.js').read_text(encoding='utf-8')
+          if 'BUILD: V448' not in html or 'remote-commands.js?v=448-1307' not in html: raise SystemExit('V448 build wiring missing')
+          for marker in ['applyRemoteToday(task,payload)','task.todayDate=day','task.todayOrder=highest+1','today_date:task.todayDate','__modRemoteCommandsV448']:
+              if marker not in remote: raise SystemExit(f'Missing V448 behavior: {marker}')
+          print('V448 build wiring regression OK')
