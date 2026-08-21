@@ -159,7 +159,7 @@ jobs:
               if marker not in html: raise SystemExit(f'Missing V451 HTML marker: {marker}')
           for marker in ['master-of-disaster-v451-development-statistics','development-stats-v451.js?v=451-1431']:
               if marker not in sw: raise SystemExit(f'Missing V451 service worker marker: {marker}')
-          for marker in ['APP-ENTWICKLUNG','PROJECT_START_ISO','reachableCommits:557','pullRequests:50','supabase:{','remoteCommands:17','Initialimport',"grossActivityWindow:'ca. 49:01 h'",'ENTSTEHUNGSGESCHICHTE','GESICHERT','CHAT-ZEITSTEMPEL','REKONSTRUIERT','__modDevelopmentStatsV451']:
+          for marker in ['APP-ENTWICKLUNG','PROJECT_START_ISO','reachableCommits:558','pullRequests:51','supabase:{','remoteCommands:17','Initialimport',"grossActivityWindow:'ca. 49:08 h'",'ENTSTEHUNGSGESCHICHTE','GESICHERT','CHAT-ZEITSTEMPEL','REKONSTRUIERT','__modDevelopmentStatsV451']:
               if marker not in js: raise SystemExit(f'Missing development statistics marker: {marker}')
           print('V451 development statistics regression OK')
       - name: Verify V451 build wiring and preserved V450 behavior
