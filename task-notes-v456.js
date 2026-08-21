@@ -48,11 +48,11 @@
   const previousSaveEdit=typeof saveEdit==='function'?saveEdit:null;
   if(previousSaveEdit){
     window.saveEdit=function(id){
-      const row=getRow(id),field=document.getElementById(`note-edit-${id}`);const before=cleanNote(row&&row.note);
-      if(row&&field)row.note=cleanNote(field.value)||null;
-      const result=previousSaveEdit.apply(this,arguments);
-      const after=cleanNote(row&&row.note);
-      if(before!==after){try{window.__modLiveLogV453?.append?.('EDIT','INFO',`${after?'Notiz gespeichert':'Notiz entfernt'}: „${String(row&&row.text||'Unbenannte Aufgabe').replace(/\s+/g,' ').trim()}“`,{taskId:row&&row.id});}catch(_){} }
+      const row=getRow(id),field=document.getElementById(`note-edit-${id}`),titleField=document.getElementById(`edit-${id}`);
+      if(!row||!field||!titleField||!String(titleField.value||'').trim())return previousSaveEdit.apply(this,arguments);
+      const before=cleanNote(row.note);row.note=cleanNote(field.value)||null;
+      const result=previousSaveEdit.apply(this,arguments);const after=cleanNote(row.note);
+      if(before!==after){try{window.__modLiveLogV453?.append?.('EDIT','INFO',`${after?'Notiz gespeichert':'Notiz entfernt'}: „${String(row.text||'Unbenannte Aufgabe').replace(/\s+/g,' ').trim()}“`,{taskId:row.id});}catch(_){} }
       return result;
     };
   }
