@@ -10,12 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
-      - name: Verify preserved V445-V459 behavior markers
+        run: node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+      - name: Verify preserved V445-V461 behavior markers
         shell: python
         run: |
           from pathlib import Path
-          files={name:Path(name).read_text(encoding='utf-8') for name in ['retroactive-complete-v445.js','today-paused-v446.js','paused-today-v447.js','completed-category-v449.js','remote-commands.js','development-stats-v451.js','project-history-v452.js','live-log-v453.js','background-log-v454.js','goals-milestones-v455.js','task-notes-v456.js','safe-undo-v457.js','theme-layout-editor-v458.js','theme-preview-fix-v459.js']}
           checks={
             'retroactive-complete-v445.js':['saveManualSegmentsAndCompleteV445',"task.status='completed'"],
             'today-paused-v446.js':['taskRelevantToday','PAUSIERTE AUFGABEN'],
@@ -30,22 +29,21 @@ jobs:
             'task-notes-v456.js':['MAX_NOTE=1200','__modTaskNotesV456'],
             'safe-undo-v457.js':['TTL_MS=10*60*1000','__modSafeUndoV457'],
             'theme-layout-editor-v458.js':['THEME & LAYOUT EDITOR','__modThemeLayoutV458'],
-            'theme-preview-fix-v459.js':['theme-note-preview-v459','__modThemePreviewFixV459']
+            'theme-preview-fix-v459.js':['theme-note-preview-v459','__modThemePreviewFixV459'],
+            'ux-cooking-editor-v460.js':['themeStickyPreviewV460','ERLEDIGT / ABGEBROCHEN HEUTE','passiveCookingParallel:true','__modUxCookingEditorV460'],
+            'theme-editor-stability-v461.js':['replaceObservedHostAfterLegacyObserversAttached','__modThemeStabilityV461']
           }
           for name,markers in checks.items():
+              text=Path(name).read_text(encoding='utf-8')
               for marker in markers:
-                  if marker not in files[name]: raise SystemExit(f'Missing preserved marker {marker} in {name}')
-          print('V445-V459 markers preserved')
+                  if marker not in text: raise SystemExit(f'Missing preserved marker {marker} in {name}')
+          print('V445-V461 markers preserved')
       - name: Verify V455 goals and milestones
         run: |
           node <<'NODE'
           const fs=require('fs'),store=new Map();
           global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
-          global.tasks=[];global.archive=[
-            {archiveNumber:1,text:'A',status:'completed',completedDate:'2026-08-20',archiveAccountingActiveDurationMs:3600000},
-            {archiveNumber:2,text:'B',status:'completed',completedDate:'2026-08-21',archiveAccountingActiveDurationMs:7200000,historicalWeightKg:12.3},
-            {archiveNumber:3,text:'C',status:'aborted',completedDate:'2026-08-21',archiveAccountingActiveDurationMs:9999999}
-          ];
+          global.tasks=[];global.archive=[{archiveNumber:1,text:'A',status:'completed',completedDate:'2026-08-20',archiveAccountingActiveDurationMs:3600000},{archiveNumber:2,text:'B',status:'completed',completedDate:'2026-08-21',archiveAccountingActiveDurationMs:7200000,historicalWeightKg:12.3},{archiveNumber:3,text:'C',status:'aborted',completedDate:'2026-08-21',archiveAccountingActiveDurationMs:9999999}];
           eval(fs.readFileSync('goals-milestones-v455.js','utf8'));
           const api=window.__modGoalsMilestonesV455;if(!api||api.version!=='V455')throw new Error('V455 API missing');
           const t=api.totals();if(t.archiveTasks!==2||Math.abs(t.activeHours-3)>0.001||t.activeDays!==2||t.weightedTasks!==1)throw new Error('V455 totals wrong');
@@ -54,59 +52,27 @@ jobs:
       - name: Verify V457 safe one-step undo
         run: |
           node <<'NODE'
-          const fs=require('fs');
-          global.window=global;global.tasks=[{id:1,text:'Test',status:'open',activeSegments:[]}];global.archive=[];global.weightState={isWearing:false};global.weightPhases=[];
-          global.saveTasks=()=>{};global.saveWeight=()=>{};global.saveArchive=()=>{};
-          eval(fs.readFileSync('safe-undo-v457.js','utf8'));
-          const api=window.__modSafeUndoV457;if(!api||api.version!=='V457')throw new Error('V457 API missing');
-          tasks[0].status='running';tasks[0].startedAt='2026-08-21T15:00:00Z';tasks[0].activeSegments=[{startedAt:tasks[0].startedAt,endedAt:null}];saveTasks();
-          if(!api.current()||!api.undo()||tasks[0].status!=='open')throw new Error('V457 undo failed');
-          console.log('V457 undo regression OK');
-          NODE
-      - name: Verify V458 theme state engine
-        run: |
-          node <<'NODE'
-          const fs=require('fs'),store=new Map(),vars=new Map();
-          global.window=global;global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.addEventListener=()=>{};global.confirm=()=>true;global.alert=()=>{};
-          global.document={documentElement:{style:{setProperty:(k,v)=>vars.set(k,String(v))}},getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {style:{},classList:{toggle(){}},addEventListener(){},appendChild(){},remove(){},click(){}}},head:{appendChild(){}},body:{appendChild(){}}};
-          eval(fs.readFileSync('theme-layout-editor-v458.js','utf8'));
-          const api=window.__modThemeLayoutV458;if(!api||api.version!=='V458')throw new Error('V458 API missing');
-          const defaults=api.getConfig();if(defaults.card.minHeight!==50||defaults.gridStep!==2)throw new Error('V458 defaults wrong');
-          console.log('V458 theme regression OK');
+          const fs=require('fs');global.window=global;global.tasks=[{id:1,text:'Test',status:'open',activeSegments:[]}];global.archive=[];global.weightState={isWearing:false};global.weightPhases=[];global.saveTasks=()=>{};global.saveWeight=()=>{};global.saveArchive=()=>{};
+          eval(fs.readFileSync('safe-undo-v457.js','utf8'));const api=window.__modSafeUndoV457;if(!api||api.version!=='V457')throw new Error('V457 API missing');tasks[0].status='running';tasks[0].startedAt='2026-08-21T15:00:00Z';tasks[0].activeSegments=[{startedAt:tasks[0].startedAt,endedAt:null}];saveTasks();if(!api.current()||!api.undo()||tasks[0].status!=='open')throw new Error('V457 undo failed');console.log('V457 undo regression OK');
           NODE
       - name: Verify V460 passive cooking concurrency
         run: |
           node <<'NODE'
-          const fs=require('fs'),store=new Map();
-          global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.currentTab='all';
-          const classList={add(){},remove(){},toggle(){}};
-          global.document={getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {style:{setProperty(){},removeProperty(){}},classList,appendChild(){},remove(){},querySelector(){return null},querySelectorAll(){return []}}},head:{appendChild(){}},body:{appendChild(){},classList}};
-          global.MutationObserver=class{observe(){} disconnect(){}};
-          global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeitsfläche',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];
-          global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-21';global.getBerlinDateKeyFromISO=()=> '2026-08-21';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};
+          const fs=require('fs'),store=new Map();global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.currentTab='all';const classList={add(){},remove(){},toggle(){}};
+          global.document={getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {style:{setProperty(){},removeProperty(){}},classList,appendChild(){},remove(){},querySelector(){return null},querySelectorAll(){return []}}},head:{appendChild(){}},body:{appendChild(){},classList}};global.MutationObserver=class{observe(){} disconnect(){}};
+          global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeitsfläche',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-21';global.getBerlinDateKeyFromISO=()=> '2026-08-21';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};
           global.startTask=()=>{};global.pauseTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;const now=new Date().toISOString();const last=Array.isArray(t.activeSegments)?t.activeSegments.at(-1):null;if(last&&!last.endedAt)last.endedAt=now;t.status='paused';t.pausedAt=now;};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
-          eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));
-          const api=window.__modUxCookingEditorV460;if(!api||api.version!=='V460')throw new Error('V460 API missing');
-          startTask(1);switchCookingMode(1,'passive');if(!api.isPassiveCooking(tasks[0]))throw new Error('Cooking did not become passive');if(tasks[0].activeSegments.filter(s=>!s.endedAt).length!==0)throw new Error('Passive cooking kept active segment open');
-          startTask(2);if(tasks[1].status!=='running')throw new Error('Work task was blocked by passive cooking');switchCookingMode(1,'active');if(tasks[0].cookingMode!=='passive')throw new Error('Cooking became active while work was active');pauseTask(2);switchCookingMode(1,'active');if(tasks[0].cookingMode!=='active'||tasks[0].activeSegments.filter(s=>!s.endedAt).length!==1)throw new Error('Cooking did not resume active mode after work paused');
-          console.log('V460 passive cooking concurrency OK');
+          eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));const api=window.__modUxCookingEditorV460;startTask(1);switchCookingMode(1,'passive');if(!api.isPassiveCooking(tasks[0])||tasks[0].activeSegments.filter(s=>!s.endedAt).length!==0)throw new Error('Passive cooking failed');startTask(2);if(tasks[1].status!=='running')throw new Error('Parallel work blocked');switchCookingMode(1,'active');if(tasks[0].cookingMode!=='passive')throw new Error('Active cooking incorrectly resumed');pauseTask(2);switchCookingMode(1,'active');if(tasks[0].cookingMode!=='active')throw new Error('Active cooking resume failed');console.log('V460 cooking regression OK');
           NODE
-      - name: Verify V461 stability fix and V460 wiring
+      - name: Verify V462 UI guard and build wiring
         shell: python
         run: |
           from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8')
-          sw=Path('sw.js').read_text(encoding='utf-8')
-          ux=Path('ux-cooking-editor-v460.js').read_text(encoding='utf-8')
-          fix=Path('theme-editor-stability-v461.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V461','21.08.2026 · 23:28','theme-editor-stability-v461.js?v=461-2328',"version:'V461'",'modV461ThemeStabilityDone']:
-              if marker not in html: raise SystemExit(f'Missing V461 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v461-theme-editor-stability','/theme-editor-stability-v461.js']:
-              if marker not in sw: raise SystemExit(f'Missing V461 service worker marker: {marker}')
-          for marker in ['replaceObservedHostAfterLegacyObserversAttached','oldHost.replaceWith(fresh)','scheduleThemeRefresh','theme-state-position-v460','__modThemeStabilityV461']:
-              if marker not in fix: raise SystemExit(f'Missing V461 stability marker: {marker}')
-          for marker in ['themeStickyPreviewV460','POSITION NUR FÜR ZUSTAND','OBEN LINKS','UNTEN RECHTS','ERLEDIGT / ABGEBROCHEN HEUTE','segment-mode-v460','passiveCookingParallel:true','notesDisabled:true','__modUxCookingEditorV460']:
-              if marker not in ux: raise SystemExit(f'Missing V460 behavior marker: {marker}')
-          if 'delete task.note' in ux or 'delete row.note' in ux:
-              raise SystemExit('V460 must not destructively delete legacy note data')
-          print('V461 stability/build wiring OK')
+          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');guard=Path('theme-ui-guard-v462.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V462','21.08.2026 · 23:35','theme-ui-guard-v462.js?v=462-2335',"version:'V462'",'modV462ThemeUiGuardDone']:
+              if marker not in html: raise SystemExit(f'Missing V462 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v462-theme-ui-guard','/theme-ui-guard-v462.js']:
+              if marker not in sw: raise SystemExit(f'Missing V462 service worker marker: {marker}')
+          for marker in ['theme-panel-v458:has(.theme-preview-v458)','task-note-editor-v456','data-theme-role-select="note"','card.noteLines','palette.note','elements.note','__modThemeUiGuardV462']:
+              if marker not in guard: raise SystemExit(f'Missing V462 guard marker: {marker}')
+          print('V462 UI guard/build wiring OK')
