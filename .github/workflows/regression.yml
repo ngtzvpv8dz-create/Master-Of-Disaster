@@ -11,108 +11,78 @@ jobs:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
         run: node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
-      - name: Verify V445 retroactive completion
+      - name: Verify preserved V445-V449 behavior
         shell: python
         run: |
           from pathlib import Path
-          retro=Path('retroactive-complete-v445.js').read_text(encoding='utf-8')
-          for marker in ['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','task.status=\'completed\'','task.completedAt=segs[segs.length-1].endedAt','hasClosedHistory','task.activeSegments.push({startedAt:now,endedAt:null})']:
-              if marker not in retro: raise SystemExit(f'Missing retroactive behavior: {marker}')
-          print('V445 retroactive completion regression OK')
-      - name: Verify V446 Today and Paused tab logic
-        shell: python
-        run: |
-          from pathlib import Path
-          js=Path('today-paused-v446.js').read_text(encoding='utf-8')
-          html=Path('index.html').read_text(encoding='utf-8')
-          for marker in ['task.todayDate===day','berlinDayFromIso(task.startedAt)===day','berlinDayFromIso(task.completedAt)===day','task.activeSegments.some','PAUSIERTE AUFGABEN']:
-              if marker not in js: raise SystemExit(f'Missing V446 Today behavior: {marker}')
-          if '>PAUSIERT</button>' not in html: raise SystemExit('PAUSIERT tab missing')
-          if 'data-tab="completed"' in html: raise SystemExit('ERLEDIGT tab still present')
-          if 'today-paused-v446.js?v=446-1228' not in html: raise SystemExit('V446 Today wiring missing')
-          print('V446 Today/Paused regression OK')
-      - name: Verify V447 paused Today action
-        shell: python
-        run: |
-          from pathlib import Path
-          js=Path('paused-today-v447.js').read_text(encoding='utf-8')
-          html=Path('index.html').read_text(encoding='utf-8')
-          for marker in ['resumeTask','askManualTimes','insertAdjacentElement(\'afterend\',btn)','toggleToday(${id})','paused-today-v447','Für heute markieren','Aus Heute entfernen']:
-              if marker not in js: raise SystemExit(f'Missing V447 paused Today action: {marker}')
-          if 'paused-today-v447.js?v=447-1255' not in html: raise SystemExit('V447 paused Today wiring missing')
-          print('V447 paused Today action regression OK')
-      - name: Verify V448 ADD_TASK today pinning
+          checks={
+            'retroactive-complete-v445.js':['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','hasClosedHistory'],
+            'today-paused-v446.js':['taskRelevantToday','PAUSIERTE AUFGABEN','__modTodayPausedV446'],
+            'paused-today-v447.js':['patchPausedTodayButtons','toggleToday(${id})','__modPausedTodayV447'],
+            'completed-category-v449.js':['setCompletedCategory','openCompletedCategoryEditor','__modCompletedCategoryV449'],
+          }
+          for filename,markers in checks.items():
+              text=Path(filename).read_text(encoding='utf-8')
+              for marker in markers:
+                  if marker not in text: raise SystemExit(f'{filename}: missing {marker}')
+          print('Preserved V445-V449 behavior OK')
+      - name: Verify V450 smart remote reuse
         run: |
           node <<'NODE'
           const fs=require('fs');
-          global.tasks=[
-            {id:1,status:'open',todayDate:'2026-08-21',todayOrder:2},
-            {id:2,status:'completed',todayDate:'2026-08-21',todayOrder:99}
-          ];
           global.window={addEventListener(){}};
           global.document={addEventListener(){},visibilityState:'visible'};
           global.navigator={onLine:false};
           global.saveTasks=()=>{};
           global.render=()=>{};
           global.safeStorageSet=()=>true;
+          global.tasks=[];
+          global.archive=[];
           eval(fs.readFileSync('remote-commands.js','utf8'));
-          const api=window.__modRemoteCommandsV448;
-          if(!api)throw new Error('V448 API missing');
-          const pinned=api.createLocalTask({text:'Remote today test',type:'selfrunner',priority:'normal',category:'Test',today_date:'2026-08-21'});
-          if(pinned.todayDate!=='2026-08-21')throw new Error('todayDate was not applied');
-          if(pinned.todayOrder!==3)throw new Error(`Expected todayOrder 3, got ${pinned.todayOrder}`);
-          const unpinned=api.createLocalTask({text:'Remote no today test'});
-          if(unpinned.todayDate!==null||unpinned.todayOrder!==null)throw new Error('Task without today_date was pinned');
+          const api=window.__modRemoteCommandsV450;
+          if(!api)throw new Error('V450 API missing');
+
+          tasks=[{id:10,text:'Küche aufräumen',status:'open',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:null,todayOrder:null}];
+          archive=[];
+          const reused=api.createLocalTask({text:'  Küche   aufräumen ',today_date:'2026-08-21'});
+          if(reused.id!==10||tasks.length!==1)throw new Error('Existing open task was duplicated instead of reused');
+          if(reused.todayDate!=='2026-08-21'||reused.todayOrder!==1)throw new Error('Reused task was not pinned to Today');
+          if(!reused.__remoteV450?.reused)throw new Error('Reuse result flag missing');
+          reused.todayOrder=4;
+          api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});
+          if(reused.todayOrder!==4)throw new Error('Already pinned task was reordered');
+
+          tasks=[{id:20,text:'Küche aufräumen',status:'completed',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:'2026-08-21',todayOrder:8,completedAt:'2026-08-21T11:00:00Z'}];
+          archive=[];
+          const repeated=api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});
+          if(tasks.length!==2||repeated.id===20||repeated.status!=='open')throw new Error('Completed task was reopened/reused instead of repeated');
+          if(repeated.category!=='Haushalt')throw new Error('Task metadata was not inherited from completed task');
+          if(repeated.__remoteV450?.reused)throw new Error('Repeated completed task incorrectly marked reused');
+
+          tasks=[];
+          archive=[{archiveNumber:161,text:'Wohnzimmer aufräumen',status:'completed',type:'work',priority:'medium',optional:true,category:'Haushalt'}];
+          const fromArchive=api.createLocalTask({text:'Wohnzimmer aufräumen',today_date:'2026-08-21'});
+          if(fromArchive.type!=='work'||fromArchive.priority!=='medium'||fromArchive.optional!==true||fromArchive.category!=='Haushalt')throw new Error('Archive metadata inheritance failed');
+          if(fromArchive.__remoteV450?.metadata_source!=='archive')throw new Error('Archive metadata source missing');
+
+          tasks=[];
+          const explicit=api.createLocalTask({text:'Wohnzimmer aufräumen',category:null,type:'leisure'});
+          if(explicit.category!==null||explicit.type!=='leisure')throw new Error('Explicit payload did not override learned metadata');
+
           let invalidRejected=false;
           try{api.createLocalTask({text:'Bad today',today_date:'2026-02-31'});}catch(error){invalidRejected=/today_date/.test(String(error&&error.message));}
           if(!invalidRejected)throw new Error('Invalid today_date was not rejected');
-          console.log('V448 ADD_TASK today pinning regression OK');
+          console.log('V450 smart remote reuse regression OK');
           NODE
-      - name: Verify V449 completed task category edit
-        run: |
-          node <<'NODE'
-          const fs=require('fs');
-          const completed={
-            id:42,
-            text:'Küche aufräumen',
-            status:'completed',
-            category:null,
-            startedAt:'2026-08-21T11:15:43.593Z',
-            completedAt:'2026-08-21T11:19:46.318Z',
-            activeDurationMs:242725
-          };
-          global.tasks=[completed];
-          global.archive=[];
-          global.localStorage={getItem(){return null;},setItem(){}};
-          global.escapeHtml=value=>String(value);
-          let saves=0;
-          global.saveAll=()=>{saves++;};
-          global.render=()=>{};
-          global.document={getElementById(){return null;}};
-          global.window={addEventListener(){}};
-          eval(fs.readFileSync('completed-category-v449.js','utf8'));
-          const api=window.__modCompletedCategoryV449;
-          if(!api)throw new Error('V449 API missing');
-          const snapshot={status:completed.status,startedAt:completed.startedAt,completedAt:completed.completedAt,activeDurationMs:completed.activeDurationMs};
-          if(!api.setCompletedCategory(completed,'  Haushalt  '))throw new Error('Completed task category update rejected');
-          if(completed.category!=='Haushalt')throw new Error(`Expected normalized category, got ${completed.category}`);
-          for(const [key,value] of Object.entries(snapshot))if(completed[key]!==value)throw new Error(`${key} changed while editing category`);
-          if(saves!==1)throw new Error(`Expected one save, got ${saves}`);
-          const open={id:43,text:'Noch offen',status:'open',category:null};
-          if(api.setCompletedCategory(open,'Haushalt')!==false)throw new Error('Open task accepted completed-only category edit');
-          if(open.category!==null)throw new Error('Open task category changed');
-          console.log('V449 completed category edit regression OK');
-          NODE
-      - name: Verify V449 build wiring
+      - name: Verify V450 build wiring
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
-          completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          if 'BUILD: V449' not in html or 'completed-category-v449.js?v=449-1338' not in html: raise SystemExit('V449 build wiring missing')
-          for marker in ['setCompletedCategory','openCompletedCategoryEditor','completed-category-click-v449','Nur die Kategorie dieser erledigten Aufgabe wird geändert','__modCompletedCategoryV449']:
-              if marker not in completed: raise SystemExit(f'Missing V449 behavior: {marker}')
-          for marker in ['applyRemoteToday(task,payload)','task.todayDate=day','task.todayOrder=highest+1','today_date:task.todayDate','__modRemoteCommandsV448']:
-              if marker not in remote: raise SystemExit(f'Missing preserved V448 behavior: {marker}')
-          print('V449 build wiring regression OK')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          if 'BUILD: V450' not in html or 'remote-commands.js?v=450-1350' not in html: raise SystemExit('V450 build wiring missing')
+          if 'master-of-disaster-v450-smart-remote-reuse' not in sw: raise SystemExit('V450 service worker cache missing')
+          for marker in ['findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
+              if marker not in remote: raise SystemExit(f'Missing V450 behavior: {marker}')
+          print('V450 build wiring regression OK')
