@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V450 build
+      - name: Verify V451 build
         shell: python
         run: |
           from pathlib import Path
@@ -19,14 +19,17 @@ jobs:
           sw=Path('sw.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
           completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V450','21.08.2026 · 13:50','remote-commands.js?v=450-1350',"version:'V450'",'__MOD_BUILD__']:
-              if marker not in index: raise SystemExit(f'Missing V450 index marker: {marker}')
-          for marker in ['master-of-disaster-v450-smart-remote-reuse','remote-commands.js?v=450-1350']:
-              if marker not in sw: raise SystemExit(f'Missing V450 cache marker: {marker}')
+          devstats=Path('development-stats-v451.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V451','21.08.2026 · 14:31','development-stats-v451.js?v=451-1431',"version:'V451'",'__MOD_BUILD__']:
+              if marker not in index: raise SystemExit(f'Missing V451 index marker: {marker}')
+          for marker in ['master-of-disaster-v451-development-statistics','development-stats-v451.js?v=451-1431']:
+              if marker not in sw: raise SystemExit(f'Missing V451 cache marker: {marker}')
+          for marker in ['APP-ENTWICKLUNG','__modDevelopmentStatsV451','reachableCommits:557','pullRequests:50','remoteCommands:17',"grossActivityWindow:'ca. 49:01 h'"]:
+              if marker not in devstats: raise SystemExit(f'Missing V451 statistic: {marker}')
           for marker in ['findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
-              if marker not in remote: raise SystemExit(f'Missing V450 remote behavior: {marker}')
+              if marker not in remote: raise SystemExit(f'Missing preserved V450 behavior: {marker}')
           for marker in ['setCompletedCategory','openCompletedCategoryEditor','__modCompletedCategoryV449']:
               if marker not in completed: raise SystemExit(f'Missing preserved V449 behavior: {marker}')
-          print('V450 build consistency OK')
+          print('V451 build consistency OK')
       - name: JavaScript syntax
-        run: node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
