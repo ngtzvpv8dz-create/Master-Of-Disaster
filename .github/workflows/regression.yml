@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
       - name: Verify V445 retroactive completion
         shell: python
         run: |
@@ -68,13 +68,51 @@ jobs:
           if(!invalidRejected)throw new Error('Invalid today_date was not rejected');
           console.log('V448 ADD_TASK today pinning regression OK');
           NODE
-      - name: Verify V448 build wiring
+      - name: Verify V449 completed task category edit
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const completed={
+            id:42,
+            text:'Küche aufräumen',
+            status:'completed',
+            category:null,
+            startedAt:'2026-08-21T11:15:43.593Z',
+            completedAt:'2026-08-21T11:19:46.318Z',
+            activeDurationMs:242725
+          };
+          global.tasks=[completed];
+          global.archive=[];
+          global.localStorage={getItem(){return null;},setItem(){}};
+          global.escapeHtml=value=>String(value);
+          let saves=0;
+          global.saveAll=()=>{saves++;};
+          global.render=()=>{};
+          global.document={getElementById(){return null;}};
+          global.window={addEventListener(){}};
+          eval(fs.readFileSync('completed-category-v449.js','utf8'));
+          const api=window.__modCompletedCategoryV449;
+          if(!api)throw new Error('V449 API missing');
+          const snapshot={status:completed.status,startedAt:completed.startedAt,completedAt:completed.completedAt,activeDurationMs:completed.activeDurationMs};
+          if(!api.setCompletedCategory(completed,'  Haushalt  '))throw new Error('Completed task category update rejected');
+          if(completed.category!=='Haushalt')throw new Error(`Expected normalized category, got ${completed.category}`);
+          for(const [key,value] of Object.entries(snapshot))if(completed[key]!==value)throw new Error(`${key} changed while editing category`);
+          if(saves!==1)throw new Error(`Expected one save, got ${saves}`);
+          const open={id:43,text:'Noch offen',status:'open',category:null};
+          if(api.setCompletedCategory(open,'Haushalt')!==false)throw new Error('Open task accepted completed-only category edit');
+          if(open.category!==null)throw new Error('Open task category changed');
+          console.log('V449 completed category edit regression OK');
+          NODE
+      - name: Verify V449 build wiring
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
+          completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          if 'BUILD: V448' not in html or 'remote-commands.js?v=448-1307' not in html: raise SystemExit('V448 build wiring missing')
+          if 'BUILD: V449' not in html or 'completed-category-v449.js?v=449-1338' not in html: raise SystemExit('V449 build wiring missing')
+          for marker in ['setCompletedCategory','openCompletedCategoryEditor','completed-category-click-v449','Nur die Kategorie dieser erledigten Aufgabe wird geändert','__modCompletedCategoryV449']:
+              if marker not in completed: raise SystemExit(f'Missing V449 behavior: {marker}')
           for marker in ['applyRemoteToday(task,payload)','task.todayDate=day','task.todayOrder=highest+1','today_date:task.todayDate','__modRemoteCommandsV448']:
-              if marker not in remote: raise SystemExit(f'Missing V448 behavior: {marker}')
-          print('V448 build wiring regression OK')
+              if marker not in remote: raise SystemExit(f'Missing preserved V448 behavior: {marker}')
+          print('V449 build wiring regression OK')
