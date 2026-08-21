@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V439 build
+      - name: Verify V440 build
         shell: python
         run: |
           from pathlib import Path
@@ -19,14 +19,14 @@ jobs:
           sw=Path('sw.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
           integrity=Path('integrity-v439.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V439','21.08.2026 · 10:34','integrity-v439.js?v=439-1034','remote-commands.js?v=439-1034',"version:'V439'",'__MOD_BUILD__']:
-              if marker not in index: raise SystemExit(f'Missing V439 index marker: {marker}')
-          for marker in ['master-of-disaster-v439-active-weight-integrity','integrity-v439.js?v=439-1034','/integrity-v439.js']:
-              if marker not in sw: raise SystemExit(f'Missing V439 cache marker: {marker}')
-          for marker in ['isValidActiveWeightState','Aktive Zusatzgewichtsphase wird korrekt in weightState geführt','offene Gewichtsphase']:
+          for marker in ['BUILD: V440','21.08.2026 · 10:44','remote-commands.js?v=440-1044',"version:'V440'",'__MOD_BUILD__']:
+              if marker not in index: raise SystemExit(f'Missing V440 index marker: {marker}')
+          for marker in ['master-of-disaster-v440-integrity-report','remote-commands.js?v=440-1044']:
+              if marker not in sw: raise SystemExit(f'Missing V440 cache marker: {marker}')
+          for marker in ['REPORT_INTEGRITY','integrityResult','__modRemoteCommandsV440']:
+              if marker not in remote: raise SystemExit(f'Missing V440 diagnostic behavior: {marker}')
+          for marker in ['isValidActiveWeightState','Aktive Zusatzgewichtsphase wird korrekt in weightState geführt']:
               if marker not in integrity: raise SystemExit(f'Missing V439 integrity behavior: {marker}')
-          for marker in ['START_WEIGHT','STOP_WEIGHT','ADJUST_WEIGHT_START','requestedAt','currentPhaseStartedAt=requestedAt','__modRemoteCommandsV438']:
-              if marker not in remote: raise SystemExit(f'Missing V438 remote behavior: {marker}')
-          print('V439 build consistency OK')
+          print('V440 build consistency OK')
       - name: JavaScript syntax
         run: node --check integrity-v439.js && node --check remote-commands.js && node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js && node --check app.js

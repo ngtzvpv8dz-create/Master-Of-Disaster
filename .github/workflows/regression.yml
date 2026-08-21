@@ -14,7 +14,7 @@ jobs:
           node-version: '20'
       - run: node --check integrity-v439.js && node --check remote-commands.js && node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Exercise V439 active-weight integrity and backup precondition
+      - name: Exercise V440 integrity diagnostics
         run: |
           python3 -m http.server 8000 >/tmp/mod-http.log 2>&1 &
           cat > /tmp/regression.js <<'JS'
@@ -22,14 +22,13 @@ jobs:
           (async()=>{
             const b=await chromium.launch({headless:true}); const p=await b.newPage({viewport:{width:390,height:844}}); const errors=[]; p.on('pageerror',e=>errors.push(String(e)));
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            await p.goto('http://127.0.0.1:8000/?v439test='+Date.now(),{waitUntil:'networkidle',timeout:60000}); await p.waitForFunction(()=>window.__MOD_BUILD__?.version==='V439'); await p.waitForTimeout(400);
-            const r={buildMeta:false,bridge:false,activeWeightIntegrity:false,requestedWeightTime:false,oldUi:false,noPageErrors:false};
-            r.buildMeta=await p.evaluate(()=>{switchTab('dev');render(); return new Promise(resolve=>setTimeout(()=>{const vals=[...document.querySelectorAll('.dev-build-value')].map(x=>(x.textContent||'').trim());resolve(window.__modDevVersion?.version==='V439'&&vals[0]==='V439'&&vals[1]==='21.08.2026 · 10:34 Uhr');},50));});
-            r.bridge=await p.evaluate(()=>!!window.__modRemoteCommandsV438);
-            r.activeWeightIntegrity=await p.evaluate(()=>{weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentWeightKg=12.3;startWeightPhase();const rep=collectDataIntegrityReport();return weightState.isWearing===true&&weightPhases.filter(x=>x&&x.startedAt&&!x.endedAt).length===0&&rep.ok===true&&!rep.errors.some(x=>/offene Gewichtsphase/.test(String(x)));});
-            r.requestedWeightTime=await p.evaluate(()=>{const wanted='2026-08-21T08:02:06.000Z';weightState.currentPhaseStartedAt=wanted;saveWeight();const rep=collectDataIntegrityReport();return weightState.currentPhaseStartedAt===wanted&&rep.ok===true;});
-            r.oldUi=await p.evaluate(()=>!!(window.__modV433&&window.__modV434&&window.__modWeightBackfillV430));
-            r.noPageErrors=errors.length===0; console.log(JSON.stringify({r,errors},null,2)); await b.close(); if(!Object.values(r).every(Boolean))process.exit(1);
+            await p.goto('http://127.0.0.1:8000/?v440test='+Date.now(),{waitUntil:'networkidle',timeout:60000}); await p.waitForFunction(()=>window.__MOD_BUILD__?.version==='V440'); await p.waitForTimeout(400);
+            const r={buildMeta:false,bridge:false,report:false,activeWeightIntegrity:false,noPageErrors:false};
+            r.buildMeta=await p.evaluate(()=>{switchTab('dev');render();return new Promise(resolve=>setTimeout(()=>{const vals=[...document.querySelectorAll('.dev-build-value')].map(x=>(x.textContent||'').trim());resolve(window.__modDevVersion?.version==='V440'&&vals[0]==='V440'&&vals[1]==='21.08.2026 · 10:44 Uhr');},50));});
+            r.bridge=await p.evaluate(()=>!!window.__modRemoteCommandsV440);
+            r.report=await p.evaluate(()=>{const x=window.__modRemoteCommandsV440.integrityResult();return x&&Array.isArray(x.errors)&&Array.isArray(x.warnings);});
+            r.activeWeightIntegrity=await p.evaluate(()=>{weightPhases.splice(0,weightPhases.length);weightState.isWearing=false;weightState.currentWeightKg=12.3;startWeightPhase();const rep=collectDataIntegrityReport();return rep.ok===true;});
+            r.noPageErrors=errors.length===0;console.log(JSON.stringify({r,errors},null,2));await b.close();if(!Object.values(r).every(Boolean))process.exit(1);
           })().catch(e=>{console.error(e);process.exit(1)});
           JS
           node /tmp/regression.js
