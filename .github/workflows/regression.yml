@@ -14,7 +14,7 @@ jobs:
       - name: Verify V445 retroactive completion
         shell: python
         run: |
-          from pathlib import Path
+          from pathlib import import Path
           retro=Path('retroactive-complete-v445.js').read_text(encoding='utf-8')
           for marker in ['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','task.status=\'completed\'','task.completedAt=segs[segs.length-1].endedAt','hasClosedHistory','task.activeSegments.push({startedAt:now,endedAt:null})']:
               if marker not in retro: raise SystemExit(f'Missing retroactive behavior: {marker}')
@@ -169,7 +169,7 @@ jobs:
               if marker not in html: raise SystemExit(f'Missing V452 HTML marker: {marker}')
           for marker in ['master-of-disaster-v452-full-history-collapsible-stats','project-history-v452.js?v=452-1501']:
               if marker not in sw: raise SystemExit(f'Missing V452 service worker marker: {marker}')
-          for marker in ['GESAMTCHRONIK','PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM','PHASE 2 · REGELN, ARCHIV UND VERSIONSWAHNSINN','PHASE 3 · STATISTIK, ZEITARTEN UND ZUSATZGEWICHT','PHASE 4 · DINGSI-KURZSCHRIFT UND KONTEXTKRISE','PHASE 5 · DER LETZTE CHAT-MASTER','PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP','REGEL-EVOLUTION','V361-IMPORT','QUELLENLAGE & GRENZEN','versionTransitionsV32ToV361:329','historicalTasksV361:273','taskGrowthFromV32:178','recoveredRuleMilestones:22','details.statistics-collapsible-v452','data.defaultCollapsed=\'true\'','data-stat-open-v452','data-stat-close-v452','__modProjectHistoryV452']:
+          for marker in ['GESAMTCHRONIK','PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM','PHASE 2 · REGELN, ARCHIV UND VERSIONSWAHNSINN','PHASE 3 · STATISTIK, ZEITARTEN UND ZUSATZGEWICHT','PHASE 4 · DINGSI-KURZSCHRIFT UND KONTEXTKRISE','PHASE 5 · DER LETZTE CHAT-MASTER','PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP','REGEL-EVOLUTION','V361-IMPORT','QUELLENLAGE & GRENZEN','versionTransitionsV32ToV361:329','historicalTasksV361:273','taskGrowthFromV32:178','recoveredRuleMilestones:22','details.statistics-collapsible-v452','details.dataset.defaultCollapsed=\'true\'','data-stat-open-v452','data-stat-close-v452','__modProjectHistoryV452']:
               if marker not in js: raise SystemExit(f'Missing V452 history/collapse marker: {marker}')
           if "details.open=true" in js: raise SystemExit('Statistics details default-open regression')
           print('V452 full history and default-collapsed statistics regression OK')
