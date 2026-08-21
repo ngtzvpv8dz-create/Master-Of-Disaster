@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check safe-undo-v457.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+      - run: node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check safe-undo-v457.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V466 complete Theme package and individual actions
+      - name: Verify live V467 Theme package lifecycle and individual actions
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,60 +23,52 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V466',live:false,bundle:false,toolbarClear:false,fullPackage:false,presetClearsState:false,resetClearsState:false,previewOpenActions:false,previewRunningActions:false,individualActionPanel:false,individualActionGradient:false,individualActionPosition:false,previewOffset:false,scrollRetention:false,abortedVisible:false,cookingParallel:false,integrity:false,errors:[]};
+            const out={status:'FAIL',version:'V467',live:false,bundle:false,lifecyclePatch:false,toolbarClear:false,fullPackage:false,presetClearsState:false,resetClearsState:false,previewOpenActions:false,previewRunningActions:false,individualActionPanel:false,individualActionGradient:false,individualActionPosition:false,previewOffset:false,scrollRetention:false,abortedVisible:false,cookingParallel:false,integrity:false,errors:[]};
             try{
-              async function openLive(){
-                for(let i=0;i<18;i++){
-                  await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                  if(/BUILD: V466/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V466'))return true;
-                  await p.waitForTimeout(10000);
-                }
-                return false;
+              for(let i=0;i<18;i++){
+                await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+                if(/BUILD: V467/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V467')){out.live=true;break;}
+                await p.waitForTimeout(10000);
               }
-              out.live=await openLive();if(!out.live)throw new Error('V466 not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modThemePackageActionsV466&&window.__modThemeStateSyncV465&&window.__modThemeStateDesignV464&&window.__modThemeEditorComfortV463&&window.__modUxCookingEditorV460&&window.__modSafeUndoV457));
-              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(1000);
+              if(!out.live)throw new Error('V467 not deployed');
+              out.bundle=await p.evaluate(()=>!!(window.__modThemePackageStabilityV467&&window.__modThemePackageActionsV466&&window.__modThemeStateSyncV465&&window.__modThemeStateDesignV464&&window.__modThemeEditorComfortV463&&window.__modUxCookingEditorV460&&window.__modSafeUndoV457));
+              out.lifecyclePatch=await p.evaluate(()=>window.__modThemePackageStabilityV467?.lifecyclePatch===true);
+              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(1200);
               out.toolbarClear=await p.evaluate(()=>document.getElementById('themeSaveSnapshotV458')?.textContent.includes('SPEICHERN')&&document.getElementById('themeLoadSnapshotV458')?.textContent.includes('LADEN')&&document.getElementById('themeExportV458')?.textContent.includes('EXPORTIEREN')&&document.getElementById('themeResetV458')?.textContent.includes('STANDARD'));
               out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
               out.fullPackage=await p.evaluate(()=>{const x=window.__modThemePackageActionsV466.capturePackage();return x?.schema==='master-of-disaster-theme-package'&&!!x.base&&!!x.state&&!!x.layout&&!!x.actionButtons;});
 
-              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('open'));await p.waitForTimeout(250);
+              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('open'));await p.waitForTimeout(350);
               out.previewOpenActions=await p.evaluate(()=>document.querySelectorAll('#themeStickyPreviewV460 .icon-actions .icon-action').length>=5);
               out.individualActionPanel=await p.evaluate(()=>!!document.querySelector('.v466-action-panel')&&document.body.textContent.includes('AKTIONSTASTEN EINZELN'));
-              await p.evaluate(()=>{const b=document.querySelector('.v466-action-panel [data-v466-select="1"]');b?.click();});await p.waitForTimeout(150);
-              await p.evaluate(()=>{const angle=document.querySelector('[data-v466-path="open.1.angle"]');if(!angle)throw new Error('individual angle missing');angle.value='77';angle.dispatchEvent(new Event('input',{bubbles:true}));const anchor=document.querySelector('[data-v466-anchor="br"]');anchor?.click();const right=document.querySelector('[data-v466-dir="right"]');right?.click();});await p.waitForTimeout(160);
+              await p.evaluate(()=>document.querySelector('.v466-action-panel [data-v466-select="1"]')?.click());await p.waitForTimeout(220);
+              await p.evaluate(()=>{const angle=document.querySelector('[data-v466-path="open.1.angle"]');if(!angle)throw new Error('individual angle missing');angle.value='77';angle.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('[data-v466-anchor="br"]')?.click();document.querySelector('[data-v466-dir="right"]')?.click();});await p.waitForTimeout(220);
               const actionCfg=await p.evaluate(()=>window.__modThemePackageActionsV466.getButtonConfig());
               out.individualActionGradient=actionCfg.states.open[1].angle===77;
               out.individualActionPosition=actionCfg.states.open[1].anchor==='br'&&actionCfg.states.open[1].x>0;
-
-              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('running'));await p.waitForTimeout(250);
+              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('running'));await p.waitForTimeout(350);
               out.previewRunningActions=await p.evaluate(()=>document.querySelectorAll('#themeStickyPreviewV460 .icon-actions .icon-action').length>=4);
 
-              // Save complete My Theme package and verify that the snapshot really contains all layers.
-              await p.evaluate(()=>document.getElementById('themeSaveSnapshotV458')?.click());await p.waitForTimeout(80);
+              await p.evaluate(()=>document.getElementById('themeSaveSnapshotV458')?.click());await p.waitForTimeout(100);
               out.fullPackage=out.fullPackage&&await p.evaluate(()=>{const raw=localStorage.getItem('masterOfDisasterThemePackageV466');if(!raw)return false;const x=JSON.parse(raw);return !!(x.base&&x.state&&x.layout&&x.actionButtons);});
 
-              // Put an unmistakable custom state gradient in place, then choose a preset.
-              await p.evaluate(()=>{const raw=JSON.parse(localStorage.getItem('masterOfDisasterThemeStateDesignV464'));raw.states.open.card.start='#123456';localStorage.setItem('masterOfDisasterThemeStateDesignV464',JSON.stringify(raw));});
-              await p.evaluate(()=>document.querySelector('[data-preset="graphite"]')?.click());
-              await p.waitForLoadState('networkidle',{timeout:60000});await p.waitForTimeout(450);
-              out.presetClearsState=await p.evaluate(()=>{const x=window.__modThemeStateDesignV464?.getConfig?.();return x?.states?.open?.card?.start!=='#123456';});
+              await p.evaluate(()=>{const raw=window.__modThemeStateDesignV464.getConfig();raw.states.open.card.start='#123456';localStorage.setItem('masterOfDisasterThemeStateDesignV464',JSON.stringify(raw));document.querySelector('[data-preset="graphite"]')?.click();});
+              await p.waitForTimeout(1200);await p.waitForLoadState('networkidle',{timeout:60000}).catch(()=>{});await p.waitForTimeout(350);
+              out.presetClearsState=await p.evaluate(()=>window.__modThemeStateDesignV464?.getConfig?.()?.states?.open?.card?.start!=='#123456');
 
-              // Reset must also remove stale state/action/layout overrides.
-              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(450);
-              await p.evaluate(()=>{const raw=JSON.parse(localStorage.getItem('masterOfDisasterThemeStateDesignV464'));raw.states.open.card.start='#654321';localStorage.setItem('masterOfDisasterThemeStateDesignV464',JSON.stringify(raw));});
-              await p.evaluate(()=>document.getElementById('themeResetV458')?.click());
-              await p.waitForLoadState('networkidle',{timeout:60000});await p.waitForTimeout(450);
-              out.resetClearsState=await p.evaluate(()=>{const x=window.__modThemeStateDesignV464?.getConfig?.();const button=localStorage.getItem('masterOfDisasterActionButtonDesignV466');const layout=localStorage.getItem('masterOfDisasterThemeStateLayoutV460');return x?.states?.open?.card?.start!=='#654321'&&!button&&!layout;});
+              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(650);
+              await p.evaluate(()=>{const raw=window.__modThemeStateDesignV464.getConfig();raw.states.open.card.start='#654321';localStorage.setItem('masterOfDisasterThemeStateDesignV464',JSON.stringify(raw));document.getElementById('themeResetV458')?.click();});
+              await p.waitForTimeout(1200);await p.waitForLoadState('networkidle',{timeout:60000}).catch(()=>{});await p.waitForTimeout(350);
+              out.resetClearsState=await p.evaluate(()=>window.__modThemeStateDesignV464?.getConfig?.()?.states?.open?.card?.start!=='#654321'&&!localStorage.getItem('masterOfDisasterActionButtonDesignV466')&&!localStorage.getItem('masterOfDisasterThemeStateLayoutV460'));
 
-              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(500);
-              const scroll=await p.evaluate(async()=>{const max=Math.max(0,document.documentElement.scrollHeight-innerHeight);const target=Math.min(650,Math.max(160,max-100));window.scrollTo(0,target);await new Promise(r=>setTimeout(r,60));const before=window.scrollY;const btn=document.querySelector('[data-theme-role-select="type"]');btn?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));btn?.click();await new Promise(r=>setTimeout(r,170));return {before,after:window.scrollY};});
+              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(650);
+              const scroll=await p.evaluate(async()=>{const max=Math.max(0,document.documentElement.scrollHeight-innerHeight),target=Math.min(650,Math.max(160,max-100));window.scrollTo(0,target);await new Promise(r=>setTimeout(r,60));const before=window.scrollY;const btn=document.querySelector('[data-theme-role-select="type"]');btn?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));btn?.click();await new Promise(r=>setTimeout(r,220));return {before,after:window.scrollY};});
               out.scrollRetention=scroll.before>50&&Math.abs(scroll.after-scroll.before)<=3;
 
               const today=await p.evaluate(()=>getBerlinDateKey());
-              await p.evaluate((today)=>{const iso=new Date().toISOString();tasks=[{id:46601,text:'Abbruch V466',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:iso,abortedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1}];archive=[];saveTasks();switchTab('today');render();},today);await p.waitForTimeout(220);
-              out.abortedVisible=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN HEUTE')&&document.body.textContent.includes('Abbruch V466'));
-              const cooking=await p.evaluate(()=>{tasks=[{id:46611,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:46612,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(46611);switchCookingMode(46611,'passive');const passive=tasks[0].activeSegments.filter(s=>!s.endedAt).length===0;startTask(46612);const parallel=tasks[1].status==='running';const rep=collectDataIntegrityReport();return {passive,parallel,errors:rep.errors||[]};});
+              await p.evaluate((today)=>{const iso=new Date().toISOString();tasks=[{id:46701,text:'Abbruch V467',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:iso,abortedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1}];archive=[];saveTasks();switchTab('today');render();},today);await p.waitForTimeout(220);
+              out.abortedVisible=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN HEUTE')&&document.body.textContent.includes('Abbruch V467'));
+              const cooking=await p.evaluate(()=>{tasks=[{id:46711,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:46712,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(46711);switchCookingMode(46711,'passive');const passive=tasks[0].activeSegments.filter(s=>!s.endedAt).length===0;startTask(46712);const parallel=tasks[1].status==='running';const rep=collectDataIntegrityReport();return {passive,parallel,errors:rep.errors||[]};});
               out.cookingParallel=cooking.passive&&cooking.parallel;out.integrity=cooking.errors.length===0;
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
