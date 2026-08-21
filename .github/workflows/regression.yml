@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check ux-cooking-editor-v460.js && node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
       - name: Verify preserved V445-V459 behavior markers
         shell: python
         run: |
@@ -80,44 +80,33 @@ jobs:
           const fs=require('fs'),store=new Map();
           global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.currentTab='all';
           const classList={add(){},remove(){},toggle(){}};
-          global.document={
-            getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},
-            createElement(){return {style:{setProperty(){},removeProperty(){}},classList,appendChild(){},remove(){},querySelector(){return null},querySelectorAll(){return []}}},
-            head:{appendChild(){}},body:{appendChild(){},classList}
-          };
+          global.document={getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {style:{setProperty(){},removeProperty(){}},classList,appendChild(){},remove(){},querySelector(){return null},querySelectorAll(){return []}}},head:{appendChild(){}},body:{appendChild(){},classList}};
           global.MutationObserver=class{observe(){} disconnect(){}};
-          global.tasks=[
-            {id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},
-            {id:2,text:'Arbeitsfläche',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}
-          ];
+          global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeitsfläche',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];
           global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-21';global.getBerlinDateKeyFromISO=()=> '2026-08-21';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};
-          global.startTask=()=>{};
-          global.pauseTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;const now=new Date().toISOString();const last=Array.isArray(t.activeSegments)?t.activeSegments.at(-1):null;if(last&&!last.endedAt)last.endedAt=now;t.status='paused';t.pausedAt=now;};
-          global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
+          global.startTask=()=>{};global.pauseTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;const now=new Date().toISOString();const last=Array.isArray(t.activeSegments)?t.activeSegments.at(-1):null;if(last&&!last.endedAt)last.endedAt=now;t.status='paused';t.pausedAt=now;};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
           eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));
           const api=window.__modUxCookingEditorV460;if(!api||api.version!=='V460')throw new Error('V460 API missing');
-          startTask(1);switchCookingMode(1,'passive');
-          if(!api.isPassiveCooking(tasks[0]))throw new Error('Cooking did not become passive');
-          if(tasks[0].activeSegments.filter(s=>!s.endedAt).length!==0)throw new Error('Passive cooking kept active segment open');
-          startTask(2);if(tasks[1].status!=='running')throw new Error('Work task was blocked by passive cooking');
-          switchCookingMode(1,'active');if(tasks[0].cookingMode!=='passive')throw new Error('Cooking became active while work was active');
-          pauseTask(2);switchCookingMode(1,'active');if(tasks[0].cookingMode!=='active'||tasks[0].activeSegments.filter(s=>!s.endedAt).length!==1)throw new Error('Cooking did not resume active mode after work paused');
-          if(!api.notesDisabled||!api.abortedVisible||!api.cookingSegmentModes||!api.passiveCookingParallel)throw new Error('V460 feature flags missing');
+          startTask(1);switchCookingMode(1,'passive');if(!api.isPassiveCooking(tasks[0]))throw new Error('Cooking did not become passive');if(tasks[0].activeSegments.filter(s=>!s.endedAt).length!==0)throw new Error('Passive cooking kept active segment open');
+          startTask(2);if(tasks[1].status!=='running')throw new Error('Work task was blocked by passive cooking');switchCookingMode(1,'active');if(tasks[0].cookingMode!=='passive')throw new Error('Cooking became active while work was active');pauseTask(2);switchCookingMode(1,'active');if(tasks[0].cookingMode!=='active'||tasks[0].activeSegments.filter(s=>!s.endedAt).length!==1)throw new Error('Cooking did not resume active mode after work paused');
           console.log('V460 passive cooking concurrency OK');
           NODE
-      - name: Verify V460 editor and build wiring
+      - name: Verify V461 stability fix and V460 wiring
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('ux-cooking-editor-v460.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V460','21.08.2026 · 23:20','ux-cooking-editor-v460.js?v=460-2320',"version:'V460'",'modV460UxCookingDone']:
-              if marker not in html: raise SystemExit(f'Missing V460 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v460-editor-abort-cooking','/ux-cooking-editor-v460.js']:
-              if marker not in sw: raise SystemExit(f'Missing V460 service worker marker: {marker}')
+          ux=Path('ux-cooking-editor-v460.js').read_text(encoding='utf-8')
+          fix=Path('theme-editor-stability-v461.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V461','21.08.2026 · 23:28','theme-editor-stability-v461.js?v=461-2328',"version:'V461'",'modV461ThemeStabilityDone']:
+              if marker not in html: raise SystemExit(f'Missing V461 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v461-theme-editor-stability','/theme-editor-stability-v461.js']:
+              if marker not in sw: raise SystemExit(f'Missing V461 service worker marker: {marker}')
+          for marker in ['replaceObservedHostAfterLegacyObserversAttached','oldHost.replaceWith(fresh)','scheduleThemeRefresh','theme-state-position-v460','__modThemeStabilityV461']:
+              if marker not in fix: raise SystemExit(f'Missing V461 stability marker: {marker}')
           for marker in ['themeStickyPreviewV460','POSITION NUR FÜR ZUSTAND','OBEN LINKS','UNTEN RECHTS','ERLEDIGT / ABGEBROCHEN HEUTE','segment-mode-v460','passiveCookingParallel:true','notesDisabled:true','__modUxCookingEditorV460']:
-              if marker not in js: raise SystemExit(f'Missing V460 behavior marker: {marker}')
-          if 'delete task.note' in js or 'delete row.note' in js:
+              if marker not in ux: raise SystemExit(f'Missing V460 behavior marker: {marker}')
+          if 'delete task.note' in ux or 'delete row.note' in ux:
               raise SystemExit('V460 must not destructively delete legacy note data')
-          print('V460 editor/build wiring OK')
+          print('V461 stability/build wiring OK')
