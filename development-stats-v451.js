@@ -5,7 +5,7 @@
 */
 (function(){
   const BUILD_VERSION='V451';
-  const SNAPSHOT_AT='21.08.2026 · 14:28';
+  const SNAPSHOT_AT='21.08.2026 · 14:35';
   const PROJECT_START_ISO='2026-08-17T04:43:22+02:00';
 
   const DATA={
@@ -14,18 +14,18 @@
       firstFile:'17.08.2026 · 04:48:49',
       firstFileName:'index.html',
       firstFileLines:77,
-      currentBuild:'V450',
-      commitsAfterFirst:556,
-      reachableCommits:557,
-      pullRequests:50,
-      mergedPullRequests:49,
+      currentBuild:'V451',
+      commitsAfterFirst:557,
+      reachableCommits:558,
+      pullRequests:51,
+      mergedPullRequests:50,
       testOnlyPullRequests:1,
-      currentFiles:31,
-      rootFiles:28,
+      currentFiles:32,
+      rootFiles:29,
       workflowFiles:3,
-      currentTextLines:22984,
-      currentBytes:1253333,
-      currentTextBytes:650607,
+      currentTextLines:23182,
+      currentBytes:1270770,
+      currentTextBytes:668044,
       currentImageBytes:602726,
       v431TouchedPaths:71,
       v431PathsGoneNow:63
@@ -68,16 +68,17 @@
       {at:'21.08.2026 · 00:16:25',title:'V431 Repository-Konsolidierung',detail:'Historische Patch-Schichten wurden gebündelt und der Repo-Wildwuchs massiv reduziert.',confidence:'gesichert'},
       {at:'21.08.2026 · 09:23:59',title:'Erster Remote-Befehl',detail:'Start des Supabase-Command-Bridge-Betriebs für Chat-/Sprachsteuerung.',confidence:'gesichert'},
       {at:'21.08.2026 · 13:54:25',title:'V450 Smart Remote Reuse',detail:'50. Pull Request: Remote-Aufgaben werden intelligent wiederverwendet oder als neue Wiederholung angelegt.',confidence:'gesichert'},
-      {at:'21.08.2026 · 14:17:25',title:'Jüngster erfasster Komplettbackup-Stand',detail:'49 Aufgaben, 237 Archiv-Einträge und 12 Gewichtphasen im vollständigen Local-Master-Snapshot.',confidence:'gesichert'}
+      {at:'21.08.2026 · 14:17:25',title:'Jüngster erfasster Komplettbackup-Stand',detail:'49 Aufgaben, 237 Archiv-Einträge und 12 Gewichtphasen im vollständigen Local-Master-Snapshot.',confidence:'gesichert'},
+      {at:'21.08.2026 · 14:35',title:'V451 Entwicklungsstatistik',detail:'51. Pull Request und eigener APP-ENTWICKLUNG-Block mit GitHub-, Chat-, Supabase-, Backup- und Aktivitätsdaten.',confidence:'gesichert'}
     ],
     activityWindows:[
       {date:'17.08.',windows:'04:48–14:21 · 22:45–23:12',span:'ca. 10:00 h',source:'GitHub'},
       {date:'18.08.',windows:'00:14–02:43 · 10:14–16:48 · 21:28–23:48',span:'ca. 11:23 h',source:'GitHub + Chat'},
       {date:'19.08.',windows:'00:12–06:21 · 22:50–23:53',span:'ca. 7:12 h',source:'GitHub + Chat'},
       {date:'20.08.',windows:'08:56–17:55 · 20:19–23:59',span:'ca. 12:39 h',source:'GitHub + Chat'},
-      {date:'21.08.',windows:'00:00–00:34 · 07:15–14:28',span:'ca. 7:47 h',source:'GitHub + Chat'}
+      {date:'21.08.',windows:'00:00–00:34 · 07:15–14:35',span:'ca. 7:54 h',source:'GitHub + Chat'}
     ],
-    grossActivityWindow:'ca. 49:01 h'
+    grossActivityWindow:'ca. 49:08 h'
   };
 
   function esc(v){
@@ -149,7 +150,7 @@
           ${card('COMMITS',fmtInt(d.reachableCommits),`${fmtInt(d.commitsAfterFirst)} nach dem ersten Commit`)}
           ${card('PULL REQUESTS',fmtInt(d.pullRequests),`${fmtInt(d.mergedPullRequests)} gemergt · ${fmtInt(d.testOnlyPullRequests)} Test-only`)}
           ${card('DATEIEN AKTUELL',fmtInt(d.currentFiles),`${d.rootFiles} Root · ${d.workflowFiles} Workflows`)}
-          ${card('TEXTZEILEN AKTUELL',fmtInt(d.currentTextLines),'GitHub-Vergleich erster Commit → V450')}
+          ${card('TEXTZEILEN AKTUELL',fmtInt(d.currentTextLines),'GitHub-Vergleich erster Commit → V451')}
           ${card('AKTUELLER DATEIUMFANG',fmtBytes(d.currentBytes),`${fmtBytes(d.currentTextBytes)} Text · ${fmtBytes(d.currentImageBytes)} Bilder`)}
           ${card('V431 AUFRÄUMAKTION',fmtInt(d.v431TouchedPaths)+' Pfade',`${fmtInt(d.v431PathsGoneNow)} davon heute nicht mehr vorhanden`)}
           ${card('AKTIVITÄTSRAHMEN',DATA.grossActivityWindow,'rekonstruierte Zeitfenster, keine Nettozeit')}
