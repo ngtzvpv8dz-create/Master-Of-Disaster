@@ -10,12 +10,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
-      - name: Verify V443 time segment editor
+        run: node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+      - name: Verify V445 retroactive completion
         shell: python
         run: |
           from pathlib import Path
-          seg=Path('time-segments-v443.js').read_text(encoding='utf-8')
-          for marker in ['Zeitabschnitte korrigieren','ABSCHNITT ${index+1}','+ ZEITABSCHNITT HINZUFÜGEN','AKTIVE GESAMTZEIT','Nur der letzte Abschnitt darf ohne Endzeit sein','überlappen sich','task.activeSegments=segs','scheduleSupabaseLiveSync']:
-              if marker not in seg: raise SystemExit(f'Missing segment behavior: {marker}')
-          print('V443 segment editor regression OK')
+          retro=Path('retroactive-complete-v445.js').read_text(encoding='utf-8')
+          for marker in ['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','task.status=\'completed\'','task.completedAt=segs[segs.length-1].endedAt','hasClosedHistory','task.activeSegments.push({startedAt:now,endedAt:null})']:
+              if marker not in retro: raise SystemExit(f'Missing retroactive behavior: {marker}')
+          print('V445 retroactive completion regression OK')
