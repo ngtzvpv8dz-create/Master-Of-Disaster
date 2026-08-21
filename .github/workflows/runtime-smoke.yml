@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check development-stats-v451.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
+      - run: node --check project-history-v452.js && node --check development-stats-v451.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V451 development statistics build
+      - name: Verify live V452 full history and collapsed statistics
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,26 +23,43 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const r={status:'FAIL',version:'V451',live:false,devstats:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
+            const r={status:'FAIL',version:'V452',live:false,history:false,collapsed:false,toggleAll:false,devstats:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
             try{
               for(let i=0;i<18;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V451/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V451')){r.live=true;break;}
+                if(/BUILD: V452/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V452')){r.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!r.live)throw new Error('V451 not deployed');
+              if(!r.live)throw new Error('V452 not deployed');
               r.bundle=await p.evaluate(()=>!!(window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430&&window.__modRemoteCommandsV450));
-              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(350);
-              r.devstats=await p.evaluate(()=>!!(window.__modDevelopmentStatsV451&&document.getElementById('developmentStatsV451')&&document.body.textContent.includes('APP-ENTWICKLUNG')));
+              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(500);
+              const stats=await p.evaluate(()=>{
+                const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];
+                return {
+                  history:!!(window.__modProjectHistoryV452&&document.getElementById('projectHistoryV452')&&document.body.textContent.includes('PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM')&&document.body.textContent.includes('PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP')),
+                  devstats:!!(window.__modDevelopmentStatsV451&&document.getElementById('developmentStatsV451')&&document.body.textContent.includes('APP-ENTWICKLUNG')),
+                  count:ds.length,
+                  open:ds.filter(d=>d.open).length,
+                  toolbar:document.querySelectorAll('.statistics-collapse-toolbar-v452 button').length
+                };
+              });
+              r.history=stats.history;
+              r.devstats=stats.devstats;
+              r.collapsed=stats.count>=10&&stats.open===0&&stats.toolbar===2;
+              await p.click('[data-stat-open-v452]');await p.waitForTimeout(100);
+              const allOpened=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=10&&ds.every(d=>d.open);});
+              await p.click('[data-stat-close-v452]');await p.waitForTimeout(100);
+              const allClosed=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=10&&ds.every(d=>!d.open);});
+              r.toggleAll=allOpened&&allClosed;
               await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();});await p.waitForTimeout(350);
               const heads=await p.locator('#viewContainer .priority-header-v426').evaluateAll(xs=>xs.map(x=>({t:x.querySelector('.priority-label-v426')?.textContent.trim(),c:getComputedStyle(x.querySelector('.priority-label-v426')).color,r:getComputedStyle(x.querySelector('.priority-ring-v426')).borderTopColor,n:x.querySelector('.priority-count-v426').getBoundingClientRect().right})));
               const labels=['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL'],colors=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];
               r.priority=heads.length===4&&heads.every((x,i)=>x.t===labels[i]&&x.c===colors[i]&&x.r===colors[i]&&x.n>350);
-              const transfer=await p.evaluate(()=>{tasks=[{id:45199,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,removed:!tasks.some(x=>x.id===45199)};});
+              const transfer=await p.evaluate(()=>{tasks=[{id:45299,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,removed:!tasks.some(x=>x.id===45299)};});
               r.archiveCategory=transfer.cat==='Handwerk'&&transfer.removed;
               await p.evaluate(()=>{switchTab('all');render();});await p.waitForTimeout(200);
               r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
-              r.status=['live','devstats','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
+              r.status=['live','history','collapsed','toggleAll','devstats','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
             }catch(e){r.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));
             await b.close(); if(r.status!=='PASS')process.exitCode=1;
