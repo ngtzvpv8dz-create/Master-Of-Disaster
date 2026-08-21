@@ -78,7 +78,7 @@ jobs:
         run: |
           node <<'NODE'
           const fs=require('fs'),store=new Map();
-          global.window=global;global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.currentTab='all';
+          global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.currentTab='all';
           const classList={add(){},remove(){},toggle(){}};
           global.document={
             getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},
@@ -91,7 +91,9 @@ jobs:
             {id:2,text:'Arbeitsfläche',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}
           ];
           global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-21';global.getBerlinDateKeyFromISO=()=> '2026-08-21';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};
-          global.startTask=()=>{};global.pauseTask=()=>{};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
+          global.startTask=()=>{};
+          global.pauseTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;const now=new Date().toISOString();const last=Array.isArray(t.activeSegments)?t.activeSegments.at(-1):null;if(last&&!last.endedAt)last.endedAt=now;t.status='paused';t.pausedAt=now;};
+          global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
           eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));
           const api=window.__modUxCookingEditorV460;if(!api||api.version!=='V460')throw new Error('V460 API missing');
           startTask(1);switchCookingMode(1,'passive');
