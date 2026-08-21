@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
+      - run: node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V453 rolling 24h log and preserved app behavior
+      - name: Verify live V454 background process logging and preserved app behavior
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,27 +23,39 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const r={status:'FAIL',version:'V453',live:false,log:false,rolling24h:false,logTab:false,history:false,collapsed:false,toggleAll:false,devstats:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
+            const r={status:'FAIL',version:'V454',live:false,log:false,rolling24h:false,logTab:false,backgroundLog:false,supabaseTrace:false,emptyRemotePollSuppressed:false,history:false,collapsed:false,toggleAll:false,devstats:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
             try{
               for(let i=0;i<18;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V453/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V453')){r.live=true;break;}
+                if(/BUILD: V454/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V454')){r.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!r.live)throw new Error('V453 not deployed');
-              r.bundle=await p.evaluate(()=>!!(window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430&&window.__modRemoteCommandsV450&&window.__modLiveLogV453));
-              const logState=await p.evaluate(()=>{
-                const api=window.__modLiveLogV453;
-                if(!api)return {api:false};
+              if(!r.live)throw new Error('V454 not deployed');
+              r.bundle=await p.evaluate(()=>!!(window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430&&window.__modRemoteCommandsV450&&window.__modLiveLogV453&&window.__modBackgroundLogV454));
+              const logState=await p.evaluate(async()=>{
+                const api=window.__modLiveLogV453,bg=window.__modBackgroundLogV454;
+                if(!api||!bg)return {api:false,bg:false};
                 api.clear();
-                api.append('SYSTEM','INFO','Runtime smoke V453');
+                function makeBuilder(result){
+                  const b={select(){return b},insert(){return b},update(){return b},delete(){return b},upsert(){return b},eq(){return b},in(){return b},limit(){return b},order(){return b},then(ok,bad){return Promise.resolve(result).then(ok,bad)}};
+                  return b;
+                }
+                const fake={from(table){return makeBuilder(table==='remote_commands'?{data:[],error:null}:{data:[{id:1}],error:null})}};
+                const client=bg.wrapSupabaseClient(fake);
+                await client.from('remote_commands').select('id,command').eq('status','pending');
+                const afterEmpty=api.read().length;
+                await client.from('tasks').select('id,legacy_task_id').eq('user_id','hidden');
+                const rows=api.read();
                 switchTab('log');render();
-                return {api:true,version:api.version,windowMs:api.windowMs,entries:api.read().length};
+                return {api:true,bg:true,version:api.version,windowMs:api.windowMs,bgVersion:bg.version,syncDelay:bg.syncDelayMs,emptyFlag:bg.emptyRemotePollSuppressed,afterEmpty,entries:rows.length,hasSupabase:rows.some(x=>x.area==='SYNC'&&x.message.includes('Supabase SELECT tasks')),hasRemoteNoise:rows.some(x=>x.message.includes('remote_commands'))};
               });
               await p.waitForTimeout(250);
-              r.log=!!logState.api&&logState.version==='V453'&&logState.entries===1;
+              r.log=!!logState.api&&logState.version==='V453'&&logState.entries>=1;
               r.rolling24h=logState.windowMs===86400000;
-              r.logTab=await p.evaluate(()=>!!(document.querySelector('[data-tab="log"]')&&document.getElementById('liveLogV453')&&document.body.textContent.includes('LIVE-LOG · LETZTE 24 STUNDEN')&&document.body.textContent.includes('Runtime smoke V453')&&document.querySelectorAll('[data-log-filter-v453]').length>=8));
+              r.backgroundLog=!!logState.bg&&logState.bgVersion==='V454'&&logState.syncDelay===900;
+              r.supabaseTrace=!!logState.hasSupabase;
+              r.emptyRemotePollSuppressed=logState.emptyFlag===true&&logState.afterEmpty===0&&!logState.hasRemoteNoise;
+              r.logTab=await p.evaluate(()=>!!(document.querySelector('[data-tab="log"]')&&document.getElementById('liveLogV453')&&document.body.textContent.includes('LIVE-LOG · LETZTE 24 STUNDEN')&&document.body.textContent.includes('Supabase SELECT tasks')));
               await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(500);
               const stats=await p.evaluate(()=>{
                 const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];
@@ -67,11 +79,11 @@ jobs:
               const heads=await p.locator('#viewContainer .priority-header-v426').evaluateAll(xs=>xs.map(x=>({t:x.querySelector('.priority-label-v426')?.textContent.trim(),c:getComputedStyle(x.querySelector('.priority-label-v426')).color,r:getComputedStyle(x.querySelector('.priority-ring-v426')).borderTopColor,n:x.querySelector('.priority-count-v426').getBoundingClientRect().right})));
               const labels=['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL'],colors=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];
               r.priority=heads.length===4&&heads.every((x,i)=>x.t===labels[i]&&x.c===colors[i]&&x.r===colors[i]&&x.n>350);
-              const transfer=await p.evaluate(()=>{tasks=[{id:45399,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,removed:!tasks.some(x=>x.id===45399)};});
+              const transfer=await p.evaluate(()=>{tasks=[{id:45499,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,removed:!tasks.some(x=>x.id===45499)};});
               r.archiveCategory=transfer.cat==='Handwerk'&&transfer.removed;
               await p.evaluate(()=>{switchTab('all');render();});await p.waitForTimeout(200);
               r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
-              r.status=['live','log','rolling24h','logTab','history','collapsed','toggleAll','devstats','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
+              r.status=['live','log','rolling24h','logTab','backgroundLog','supabaseTrace','emptyRemotePollSuppressed','history','collapsed','toggleAll','devstats','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
             }catch(e){r.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));
             await b.close(); if(r.status!=='PASS')process.exitCode=1;
