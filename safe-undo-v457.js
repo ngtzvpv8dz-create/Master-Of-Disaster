@@ -15,6 +15,7 @@
   function clone(value){try{return JSON.parse(JSON.stringify(value));}catch(_){return value;}}
   function hash(value){try{return JSON.stringify(value);}catch(_){return String(Date.now());}}
   function clean(value){return String(value??'').replace(/\s+/g,' ').trim();}
+  function esc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function taskMap(rows){const map=new Map();(Array.isArray(rows)?rows:[]).forEach((row,index)=>map.set(String(row&&row.id!=null?row.id:`idx-${index}`),row));return map;}
   function snapshotWeight(){return {state:clone(typeof weightState!=='undefined'?weightState:null),phases:clone(typeof weightPhases!=='undefined'?weightPhases:[])};}
   function hasTiming(row){if(!row)return false;return !!(row.startedAt||row.pausedAt||row.completedAt||row.abortedAt||(Array.isArray(row.activeSegments)&&row.activeSegments.length)||(Number(row.activeDurationMs)||0)>0||(Number(row.actualDurationMs)||0)>0);}
@@ -114,7 +115,7 @@
     if(typeof document==='undefined')return;injectStyle();let root=document.getElementById('safeUndoV457');
     if(!undoAction){root?.remove();return;}
     if(!root){root=document.createElement('div');root.id='safeUndoV457';root.className='safe-undo-v457';document.body.appendChild(root);}
-    root.innerHTML=`<div class="safe-undo-inner-v457"><div class="safe-undo-text-v457">Letzte Aktion: ${clean(undoAction.label)}</div><button type="button" class="safe-undo-button-v457" id="safeUndoButtonV457">↩️ RÜCKGÄNGIG</button><button type="button" class="safe-undo-close-v457" id="safeUndoCloseV457" aria-label="Rückgängig ausblenden">✕</button></div>`;
+    root.innerHTML=`<div class="safe-undo-inner-v457"><div class="safe-undo-text-v457">Letzte Aktion: ${esc(undoAction.label)}</div><button type="button" class="safe-undo-button-v457" id="safeUndoButtonV457">↩️ RÜCKGÄNGIG</button><button type="button" class="safe-undo-close-v457" id="safeUndoCloseV457" aria-label="Rückgängig ausblenden">✕</button></div>`;
     document.getElementById('safeUndoButtonV457')?.addEventListener('click',undo);
     document.getElementById('safeUndoCloseV457')?.addEventListener('click',clearUndo);
   }
