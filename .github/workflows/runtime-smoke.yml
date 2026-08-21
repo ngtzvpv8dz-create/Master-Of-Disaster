@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check ui.js && node --check app.js
+      - run: node --check ux-cooking-editor-v460.js && node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check ui.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V459 theme preview fix and preserved app behavior
+      - name: Verify live V460 editor, abort visibility and cooking concurrency
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,80 +23,80 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const r={status:'FAIL',version:'V459',live:false,theme:false,themePreview:false,themeControls:false,goals:false,notes:false,undo:false,log:false,rolling24h:false,backgroundLog:false,supabaseTrace:false,emptyRemotePollSuppressed:false,history:false,collapsed:false,toggleAll:false,devstats:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
+            const r={status:'FAIL',version:'V460',live:false,themeSticky:false,stateLayout:false,cornerAnchors:false,notesRemoved:false,abortedAll:false,abortedToday:false,cookingParallel:false,cookingModeEditor:false,integrity:true,goals:false,undo:false,log:false,backgroundLog:false,history:false,priority:false,archiveCategory:false,weightBackfill:false,bundle:false,errors:[]};
             try{
               for(let i=0;i<18;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V459/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V459')){r.live=true;break;}
+                if(/BUILD: V460/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V460')){r.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!r.live)throw new Error('V459 not deployed');
-              r.bundle=await p.evaluate(()=>!!(window.__modRemoteCommandsV450&&window.__modProjectHistoryV452&&window.__modLiveLogV453&&window.__modBackgroundLogV454&&window.__modGoalsMilestonesV455&&window.__modTaskNotesV456&&window.__modSafeUndoV457&&window.__modThemeLayoutV458&&window.__modThemePreviewFixV459));
+              if(!r.live)throw new Error('V460 not deployed');
+              r.bundle=await p.evaluate(()=>!!(window.__modRemoteCommandsV450&&window.__modProjectHistoryV452&&window.__modLiveLogV453&&window.__modBackgroundLogV454&&window.__modGoalsMilestonesV455&&window.__modSafeUndoV457&&window.__modThemeLayoutV458&&window.__modThemePreviewFixV459&&window.__modUxCookingEditorV460));
 
-              await p.evaluate(()=>{switchTab('theme');});await p.waitForTimeout(550);
-              r.theme=await p.evaluate(()=>{
-                const tab=document.querySelector('[data-tab="theme"]');
-                return !!(window.__modThemeLayoutV458?.version==='V458'&&window.__modThemePreviewFixV459?.version==='V459'&&tab?.classList.contains('active')&&document.querySelector('.theme-editor-v458')&&document.body.textContent.includes('THEME & LAYOUT EDITOR'));
+              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(800);
+              r.themeSticky=await p.evaluate(()=>{
+                const sticky=document.getElementById('themeStickyPreviewV460');
+                const old=[...document.querySelectorAll('.theme-panel-v458')].find(x=>(x.querySelector('.theme-panel-title-v458')?.textContent||'').includes('LIVE-VORSCHAU'));
+                return !!(sticky&&getComputedStyle(sticky).position==='fixed'&&old&&getComputedStyle(old).display==='none'&&sticky.querySelectorAll('[data-sticky-state-v460]').length===6);
               });
-              r.themePreview=await p.evaluate(()=>document.querySelectorAll('.theme-preview-card-v458').length===5&&['open','running','paused','completed'].every(s=>document.querySelector(`.theme-preview-card-v458.${s}`))&&!!document.querySelector('.theme-preview-card-v458 .cooking-mode-row')&&document.querySelectorAll('.theme-preview-card-v458 .theme-note-preview-v459').length===3&&!document.querySelector('.theme-preview-card-v458 .task-note-v456'));
-              r.themeControls=await p.evaluate(()=>{
-                const before=window.__modThemeLayoutV458.getConfig();
-                const role=document.querySelector('[data-theme-role-select="title"]');role?.click();
-                document.querySelector('[data-move="right"]')?.click();document.getElementById('themePositionOkV458')?.click();
-                const range=document.querySelector('[data-theme-setting="card.minHeight"]');if(range){range.value='64';range.dispatchEvent(new Event('input',{bubbles:true}));}
-                const after=window.__modThemeLayoutV458.getConfig();
-                const css=getComputedStyle(document.documentElement);
-                return before.elements.title.x===0&&after.elements.title.x===2&&after.card.minHeight===64&&css.getPropertyValue('--mod-card-min-height').trim()==='64px'&&document.querySelectorAll('[data-grid-step]').length===4&&!!document.querySelector('[data-theme-setting="palette.cardStart"]')&&!!document.querySelector('[data-theme-setting="elements.title.fontSize"]');
+              await p.click('[data-theme-role-select="title"]');await p.waitForTimeout(150);
+              await p.click('[data-position-state-v460="running"]');await p.waitForTimeout(100);
+              await p.click('[data-anchor-v460="br"]');await p.click('[data-dir-v460="right"]');await p.click('[data-dir-v460="down"]');await p.click('[data-ok-v460]');await p.waitForTimeout(120);
+              const layout=await p.evaluate(()=>window.__modUxCookingEditorV460.getLayout());
+              r.stateLayout=layout.positions.running.title.x!==layout.positions.open.title.x||layout.positions.running.title.y!==layout.positions.open.title.y||layout.positions.running.title.anchor!==layout.positions.open.title.anchor;
+              r.cornerAnchors=layout.positions.running.title.anchor==='br';
+              r.notesRemoved=await p.evaluate(()=>!document.querySelector('[data-theme-role-select="note"]')&&![...document.querySelectorAll('.theme-field-v458')].some(f=>(f.textContent||'').trim().toUpperCase().startsWith('NOTIZ'))&&!document.querySelector('#themeStickyPreviewV460 .task-note-v456,#themeStickyPreviewV460 .theme-note-preview-v459'));
+
+              const today=await p.evaluate(()=>getBerlinDateKey());
+              await p.evaluate((today)=>{
+                const iso=new Date().toISOString();
+                tasks=[
+                  {id:46001,text:'Abbruch sichtbar V460',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:iso,abortedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1},
+                  {id:46002,text:'Erledigt sichtbar V460',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:today,todayOrder:null,startedAt:iso,completedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1}
+                ];archive=[];saveTasks();switchTab('all');render();
+              },today);await p.waitForTimeout(250);
+              r.abortedAll=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN')&&document.body.textContent.includes('Abbruch sichtbar V460'));
+              await p.evaluate(()=>{switchTab('today');render();});await p.waitForTimeout(250);
+              r.abortedToday=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN HEUTE')&&document.body.textContent.includes('Abbruch sichtbar V460'));
+
+              const cooking=await p.evaluate(()=>{
+                tasks=[
+                  {id:46101,text:'Kochen V460',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:null,pausedAt:null,pauseTotalMs:0,activeSegments:[],cookingSegments:[],cookingMode:'active'},
+                  {id:46102,text:'Arbeitsfläche V460',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:null,pausedAt:null,pauseTotalMs:0,activeSegments:[]}
+                ];saveTasks();
+                startTask(46101);switchCookingMode(46101,'passive');
+                const passiveOpen=tasks[0].activeSegments.filter(s=>!s.endedAt).length;
+                startTask(46102);
+                const workStarted=tasks[1].status==='running';
+                switchCookingMode(46101,'active');const blocked=tasks[0].cookingMode==='passive';
+                pauseTask(46102);switchCookingMode(46101,'active');const resumed=tasks[0].cookingMode==='active'&&tasks[0].activeSegments.filter(s=>!s.endedAt).length===1;
+                switchCookingMode(46101,'passive');
+                const report=collectDataIntegrityReport();
+                askManualTimes(46101);
+                return {passiveOpen,workStarted,blocked,resumed,errors:report.errors||[],modeSelects:document.querySelectorAll('.segment-mode-v460').length,modeText:document.body.textContent.includes('AKTIV KOCHEN')&&document.body.textContent.includes('WARTE-/GARZEIT')};
               });
+              r.cookingParallel=cooking.passiveOpen===0&&cooking.workStarted&&cooking.blocked&&cooking.resumed;
+              r.integrity=cooking.errors.length===0;
+              r.cookingModeEditor=cooking.modeSelects>=1&&cooking.modeText;
 
-              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(450);
-              r.goals=await p.evaluate(()=>{
-                const el=document.getElementById('goalsMilestonesV455');
-                return !!(window.__modGoalsMilestonesV455?.version==='V455'&&el&&el.matches('details.statistics-collapsible-v452')&&!el.open&&el.textContent.includes('ZIELE & MEILENSTEINE')&&el.textContent.includes('ZIELE BEARBEITEN'));
-              });
+              await p.evaluate(()=>{closeModal();tasks=[{id:46201,text:'Notiz Altbestand',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,activeSegments:[],note:'Alt bleibt gespeichert'}];saveTasks();switchTab('all');render();startEditing(46201);render();});await p.waitForTimeout(250);
+              r.notesRemoved=r.notesRemoved&&await p.evaluate(()=>!document.querySelector('.task-note-v456,.task-note-editor-v456')&&tasks[0].note==='Alt bleibt gespeichert');
 
-              await p.evaluate(()=>{
-                tasks=[{id:45701,text:'Runtime Notiz Test',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,activeSegments:[],note:null}];archive=[];saveTasks();switchTab('all');render();
-                window.__modTaskNotesV456.setNote(45701,'Runtime-Notiz sichtbar');
-                startEditing(45701);render();
-              });
-              await p.waitForTimeout(350);
-              r.notes=await p.evaluate(()=>{
-                const field=document.getElementById('note-edit-45701');
-                return !!(field&&field.value==='Runtime-Notiz sichtbar'&&document.body.textContent.includes('NOTIZ · OPTIONAL'));
-              });
-              await p.evaluate(()=>{cancelEditing();window.__modSafeUndoV457.clear();const t=tasks.find(x=>x.id===45701);t.priority='high';saveTasks();});await p.waitForTimeout(100);
-              const undoBefore=await p.evaluate(()=>window.__modSafeUndoV457.current());
-              const undoResult=await p.evaluate(()=>({ok:window.__modSafeUndoV457.undo(),priority:tasks.find(x=>x.id===45701)?.priority}));
-              r.undo=!!undoBefore&&/Prioritätsänderung/.test(undoBefore.label)&&undoResult.ok&&undoResult.priority==='normal';
+              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(400);
+              r.goals=await p.evaluate(()=>!!(window.__modGoalsMilestonesV455&&document.getElementById('goalsMilestonesV455')));
+              r.history=await p.evaluate(()=>!!(window.__modProjectHistoryV452&&document.getElementById('projectHistoryV452')));
 
-              const logState=await p.evaluate(()=>{const api=window.__modLiveLogV453;api.clear();api.append('SYSTEM','INFO','Runtime smoke V459');switchTab('log');render();return {version:api.version,windowMs:api.windowMs,entries:api.read().length};});await p.waitForTimeout(200);
-              r.log=logState.version==='V453'&&logState.entries===1&&await p.evaluate(()=>document.body.textContent.includes('LIVE-LOG · LETZTE 24 STUNDEN')&&document.body.textContent.includes('Runtime smoke V459'));
-              r.rolling24h=logState.windowMs===86400000;
+              await p.evaluate(()=>{cancelEditing?.();window.__modSafeUndoV457.clear();const t=tasks[0];t.priority='high';saveTasks();});await p.waitForTimeout(80);
+              r.undo=await p.evaluate(()=>{const before=window.__modSafeUndoV457.current();const ok=window.__modSafeUndoV457.undo();return !!before&&ok&&tasks[0].priority==='normal';});
 
-              const bg=await p.evaluate(async()=>{
-                const api=window.__modBackgroundLogV454,log=window.__modLiveLogV453;log.clear();
-                function builder(result){const b={select(){return b},insert(){return b},update(){return b},delete(){return b},upsert(){return b},eq(){return b},in(){return b},limit(){return b},order(){return b},then(ok,bad){return Promise.resolve(result).then(ok,bad)}};return b;}
-                const client=api.wrapSupabaseClient({from(table){return builder(table==='remote_commands'?{data:[],error:null}:{data:[{id:1}],error:null});}});
-                await client.from('remote_commands').select('id,command').eq('status','pending');const afterEmpty=log.read().length;
-                await client.from('tasks').select('id,legacy_task_id').eq('user_id','secret-value');const rows=log.read();
-                return {version:api.version,empty:afterEmpty,select:rows.some(x=>x.area==='SYNC'&&x.message.includes('Supabase SELECT tasks')),leak:rows.some(x=>x.message.includes('secret-value')),flag:api.emptyRemotePollSuppressed};
-              });
-              r.backgroundLog=bg.version==='V454';r.supabaseTrace=bg.select&&!bg.leak;r.emptyRemotePollSuppressed=bg.flag&&bg.empty===0;
+              const logs=await p.evaluate(async()=>{const log=window.__modLiveLogV453,bg=window.__modBackgroundLogV454;log.clear();log.append('SYSTEM','INFO','Runtime smoke V460');function builder(result){const b={select(){return b},insert(){return b},update(){return b},delete(){return b},upsert(){return b},eq(){return b},in(){return b},limit(){return b},order(){return b},then(ok,bad){return Promise.resolve(result).then(ok,bad)}};return b;}const client=bg.wrapSupabaseClient({from(){return builder({data:[{id:1}],error:null});}});await client.from('tasks').select('id');return {log:log.read().some(x=>x.message.includes('V460')),bg:bg.version==='V454'};});r.log=logs.log;r.backgroundLog=logs.bg;
 
-              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(450);
-              const stats=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return {history:!!(window.__modProjectHistoryV452&&document.getElementById('projectHistoryV452')),devstats:!!(window.__modDevelopmentStatsV451&&document.getElementById('developmentStatsV451')),count:ds.length,open:ds.filter(d=>d.open).length,toolbar:document.querySelectorAll('.statistics-collapse-toolbar-v452 button').length};});
-              r.history=stats.history;r.devstats=stats.devstats;r.collapsed=stats.count>=11&&stats.open===0&&stats.toolbar===2;
-              await p.click('[data-stat-open-v452]');await p.waitForTimeout(80);const allOpened=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=11&&ds.every(d=>d.open);});
-              await p.click('[data-stat-close-v452]');await p.waitForTimeout(80);const allClosed=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=11&&ds.every(d=>!d.open);});r.toggleAll=allOpened&&allClosed;
+              await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();});await p.waitForTimeout(220);
+              r.priority=await p.locator('#viewContainer .priority-header-v426').count()===4;
+              const transfer=await p.evaluate(()=>{tasks=[{id:46299,text:'Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Archiv Kategorie (TEST)');return {cat:a?.category,removed:!tasks.some(x=>x.id===46299)};});r.archiveCategory=transfer.cat==='Handwerk'&&transfer.removed;
+              await p.evaluate(()=>{switchTab('all');render();});await p.waitForTimeout(120);r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
 
-              await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();});await p.waitForTimeout(300);
-              const heads=await p.locator('#viewContainer .priority-header-v426').evaluateAll(xs=>xs.map(x=>({t:x.querySelector('.priority-label-v426')?.textContent.trim(),c:getComputedStyle(x.querySelector('.priority-label-v426')).color,r:getComputedStyle(x.querySelector('.priority-ring-v426')).borderTopColor,n:x.querySelector('.priority-count-v426').getBoundingClientRect().right})));
-              const labels=['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL'],colors=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];r.priority=heads.length===4&&heads.every((x,i)=>x.t===labels[i]&&x.c===colors[i]&&x.r===colors[i]&&x.n>350);
-              const transfer=await p.evaluate(()=>{tasks=[{id:45799,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk',note:'Archivnotiz'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,note:a?.note,removed:!tasks.some(x=>x.id===45799)};});r.archiveCategory=transfer.cat==='Handwerk'&&transfer.note==='Archivnotiz'&&transfer.removed;
-              await p.evaluate(()=>{switchTab('all');render();});await p.waitForTimeout(150);r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
-
-              r.status=['live','theme','themePreview','themeControls','goals','notes','undo','log','rolling24h','backgroundLog','supabaseTrace','emptyRemotePollSuppressed','history','collapsed','toggleAll','devstats','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
+              r.status=Object.entries(r).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){r.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1;
           })();
