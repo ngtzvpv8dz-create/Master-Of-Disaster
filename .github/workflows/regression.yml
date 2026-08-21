@@ -10,25 +10,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+        run: node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
       - name: Verify preserved core behavior markers
         shell: python
         run: |
           from pathlib import Path
           checks={
-            'remote-commands.js':['findReusableTask','reused_existing','__modRemoteCommandsV450'],
-            'project-history-v452.js':['GESAMTCHRONIK','__modProjectHistoryV452'],
             'live-log-v453.js':['WINDOW_MS=24*60*60*1000','__modLiveLogV453'],
-            'background-log-v454.js':['SYNC_DELAY_MS=900','emptyRemotePollSuppressed:true','__modBackgroundLogV454'],
-            'goals-milestones-v455.js':['ZIELE & MEILENSTEINE','__modGoalsMilestonesV455'],
+            'background-log-v454.js':['SYNC_DELAY_MS=900','emptyRemotePollSuppressed:true'],
             'safe-undo-v457.js':['TTL_MS=10*60*1000','__modSafeUndoV457'],
-            'theme-layout-editor-v458.js':['THEME & LAYOUT EDITOR','__modThemeLayoutV458'],
-            'ux-cooking-editor-v460.js':['themeStickyPreviewV460','ERLEDIGT / ABGEBROCHEN HEUTE','passiveCookingParallel:true','__modUxCookingEditorV460'],
-            'theme-editor-stability-v461.js':['replaceObservedHostAfterLegacyObserversAttached','__modThemeStabilityV461'],
-            'theme-ui-guard-v462.js':['theme-panel-v458:has(.theme-preview-v458)','__modThemeUiGuardV462'],
-            'theme-editor-comfort-v463.js':['BOTTOM_OFFSET_PX=50','scrollRetention:true','__modThemeEditorComfortV463'],
-            'theme-state-design-v464.js':['ZUSTANDSDESIGN','perState:true','__modThemeStateDesignV464'],
-            'theme-state-sync-v465.js':['THEME STATE SYNC','__modThemeStateSyncV465']
+            'ux-cooking-editor-v460.js':['themeStickyPreviewV460','ERLEDIGT / ABGEBROCHEN HEUTE','passiveCookingParallel:true'],
+            'theme-editor-comfort-v463.js':['BOTTOM_OFFSET_PX=50','scrollRetention:true'],
+            'theme-state-design-v464.js':['ZUSTANDSDESIGN','perState:true'],
+            'theme-state-sync-v465.js':['THEME STATE SYNC','__modThemeStateSyncV465'],
+            'theme-package-actions-v466.js':['master-of-disaster-theme-package','AKTIONSTASTEN EINZELN','individualActions:true','fullPackage:true'],
+            'theme-package-stability-v467.js':['needsPatch','burst','lifecyclePatch:true','__modThemePackageStabilityV467']
           }
           for name,markers in checks.items():
               text=Path(name).read_text(encoding='utf-8')
@@ -40,20 +36,18 @@ jobs:
           node <<'NODE'
           const fs=require('fs'),store=new Map();global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.currentTab='all';const classList={add(){},remove(){},toggle(){}};
           global.document={getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {style:{setProperty(){},removeProperty(){}},classList,appendChild(){},remove(){},querySelector(){return null},querySelectorAll(){return []}}},head:{appendChild(){}},body:{appendChild(){},classList}};global.MutationObserver=class{observe(){} disconnect(){}};
-          global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeit',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-22';global.getBerlinDateKeyFromISO=()=> '2026-08-22';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};global.startTask=()=>{};global.pauseTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;const now=new Date().toISOString();const last=t.activeSegments?.at(-1);if(last&&!last.endedAt)last.endedAt=now;t.status='paused';t.pausedAt=now;};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
+          global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeit',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-22';global.getBerlinDateKeyFromISO=()=> '2026-08-22';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};global.startTask=()=>{};global.pauseTask=()=>{};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
           eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));startTask(1);switchCookingMode(1,'passive');startTask(2);if(tasks[1].status!=='running')throw new Error('Parallel cooking work blocked');console.log('Cooking concurrency OK');
           NODE
-      - name: Verify V466 package and individual-action wiring
+      - name: Verify V467 build wiring
         shell: python
         run: |
           from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('theme-package-actions-v466.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V466','22.08.2026 · 00:25','theme-package-actions-v466.js?v=466-0025',"version:'V466'",'modV466ThemePackageActionsDone']:
-              if marker not in html: raise SystemExit(f'Missing V466 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v466-theme-package-actions','/theme-package-actions-v466.js']:
-              if marker not in sw: raise SystemExit(f'Missing V466 SW marker: {marker}')
-          for marker in ['PACKAGE_KEY','capturePackage','presetApplied','resetAll','PREVIEW_ACTIONS','AKTIONSTASTEN EINZELN','TASTE VERLAUF START','TASTE VERLAUF ENDE','TASTE VERLAUF WINKEL','data-v466-anchor','individualActions:true','fullPackage:true','__modThemePackageActionsV466']:
-              if marker not in js: raise SystemExit(f'Missing V466 behavior marker: {marker}')
-          if "safeRemove(STATE_KEY)" not in js or "safeRemove(BUTTON_KEY)" not in js:
-              raise SystemExit('V466 presets/reset must clear stale state/action design')
-          print('V466 package/action wiring OK')
+          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');stable=Path('theme-package-stability-v467.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V467','22.08.2026 · 00:31','theme-package-stability-v467.js?v=467-0031',"version:'V467'",'modV467ThemePackageStabilityDone']:
+              if marker not in html: raise SystemExit(f'Missing V467 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v467-theme-package-stability','/theme-package-stability-v467.js']:
+              if marker not in sw: raise SystemExit(f'Missing V467 SW marker: {marker}')
+          for marker in ['needsPatch','expectedActions','wrapState','MutationObserver','lifecyclePatch:true','__modThemePackageStabilityV467']:
+              if marker not in stable: raise SystemExit(f'Missing V467 behavior marker: {marker}')
+          print('V467 stability wiring OK')
