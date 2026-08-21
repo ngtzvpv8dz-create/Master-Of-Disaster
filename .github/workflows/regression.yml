@@ -11,15 +11,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
         run: node --check integrity-v439.js && node --check remote-commands.js && node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
-      - name: Verify V441 diagnostic bridge
-        shell: python
+      - name: Verify V442 paused-task integrity
         run: |
-          from pathlib import Path
-          index=Path('index.html').read_text(encoding='utf-8')
-          remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          assert 'BUILD: V441' in index
-          assert 'REPORT_INTEGRITY' in remote
-          assert 'REPORT_TASK_DETAILS' in remote
-          assert 'taskDetailResult' in remote
-          assert '__modRemoteCommandsV441' in remote
-          print('V441 regression markers OK')
+          node <<'JS'
+          global.window=global;
+          global.tasks=[{text:'Geschirrspüler ausräumen',status:'paused',activeDurationMs:null,activeSegments:[{startedAt:'2026-08-21T08:25:33.522Z',endedAt:'2026-08-21T08:25:59.257Z'}]}];
+          global.weightPhases=[];
+          global.weightState={isWearing:true,currentPhaseStartedAt:'2026-08-21T08:02:06.000Z',currentPhaseWeightKg:12.3,currentWeightKg:12.3};
+          global.collectDataIntegrityReport=()=>({ok:false,errors:['Summe der Aktivsegmente ist größer als die aktive Gesamtdauer bei „Geschirrspüler ausräumen“.','Zusatzgewicht ist als angelegt markiert, aber es existiert nicht genau eine offene Gewichtsphase.'],warnings:[],info:[]});
+          require('./integrity-v439.js');
+          const r=collectDataIntegrityReport();
+          if(!r.ok) throw new Error(JSON.stringify(r));
+          if(r.errors.length) throw new Error('False positives not removed');
+          if(!global.__modIntegrityV442) throw new Error('V442 hook missing');
+          console.log('V442 paused-task integrity OK');
+          JS
