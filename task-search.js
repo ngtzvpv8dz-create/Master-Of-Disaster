@@ -1,7 +1,7 @@
-/* Master of Disaster · Smart task search */
+/* Master of Disaster · Smart task search + V433 live UI fixes */
 (function () {
 'use strict';
-window.__modDevVersion={version:'V432',date:'21.08.2026',time:'00:23'};
+window.__modDevVersion={version:'V433',date:'21.08.2026',time:'07:12'};
 const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('de-DE');
 const time=i=>{for(const v of [i.completedAt,i.abortedAt,i.completedDate,i.startedAt]){const n=v?new Date(v).getTime():NaN;if(Number.isFinite(n))return n;}return 0;};
 const typeName=t=>t==='leisure'?'FREIZEIT':t==='selfrunner'?'SELBSTLÄUFER':t==='cooking'?'KOCHEN':'ARBEIT';
@@ -13,5 +13,21 @@ window.selectTaskSuggestion=function(encodedName){const name=decodeURIComponent(
 const originalAddTask=window.addTask;if(typeof originalAddTask==='function'){window.addTask=function(){const input=document.getElementById('taskInput'),wanted=input?norm(input.value):'',before=new Set((Array.isArray(tasks)?tasks:[]).map(i=>i&&i.id)),pending=window.__modPendingSuggestionCategory,result=originalAddTask.apply(this,arguments);if(wanted&&pending!==undefined&&Array.isArray(tasks)){const created=[...tasks].reverse().find(i=>i&&!before.has(i.id)&&norm(i.text)===wanted);if(created){created.category=pending;if(typeof saveTasks==='function')saveTasks();if(typeof render==='function')render();}}window.__modPendingSuggestionCategory=undefined;return result;};}
 window.renderTaskSuggestions=function(){const input=document.getElementById('taskInput'),box=document.getElementById('taskSuggestions');if(!input||!box)return;const list=window.getKnownTaskSuggestions(input.value);if(!list.length){if(typeof hideTaskSuggestions==='function')hideTaskSuggestions();return;}box.innerHTML=list.map(s=>{const t=s.item||{},meta=[typeName(t.type),categoryName(t)].join(' · '),history=s.count>1?` · ${s.count}×`:'',warning=s.activeCount?'<span class="task-suggestion-active">BEREITS OFFEN</span>':'';return `<button type="button" class="task-suggestion smart-task-suggestion" onmousedown="event.preventDefault()" onclick="selectTaskSuggestion('${encodeURIComponent(s.name)}')"><span class="task-suggestion-main"><span class="task-suggestion-name">${typeof escapeHtml==='function'?escapeHtml(s.name):s.name}</span>${warning}</span><span class="task-suggestion-meta">${meta}${history}</span></button>`;}).join('');box.classList.add('visible');};
 const input=document.getElementById('taskInput');if(input){input.addEventListener('input',function(event){event.stopImmediatePropagation();window.renderTaskSuggestions();},true);input.addEventListener('focus',window.renderTaskSuggestions);}
+
+/* V433: category selects must reflect newly created categories immediately. */
+const CATEGORY_STORAGE_KEY='masterOfDisasterCategoriesV405';
+function esc(v){return typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>\"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function liveCategories(){const seen=new Map();try{const raw=JSON.parse(localStorage.getItem(CATEGORY_STORAGE_KEY)||'[]');(Array.isArray(raw)?raw:[]).forEach(c=>{const clean=String(c||'').trim().replace(/\s+/g,' ');if(clean)seen.set(norm(clean),clean);});}catch(_){};[...(Array.isArray(tasks)?tasks:[]),...(Array.isArray(archive)?archive:[])].forEach(row=>{const clean=String(row&&row.category||'').trim().replace(/\s+/g,' ');if(clean&&!seen.has(norm(clean)))seen.set(norm(clean),clean);});return [...seen.values()].sort((a,b)=>a.localeCompare(b,'de'));}
+function optionHtml(current,includeAll){const cur=norm(current);return `${includeAll?'<option value="all">ALLE KATEGORIEN</option>':''}<option value="">OHNE KATEGORIE</option>`+liveCategories().map(c=>`<option value="${esc(c)}" ${norm(c)===cur?'selected':''}>${esc(c.toUpperCase())}</option>`).join('');}
+function refreshCategorySelect(select,includeAll=false){if(!select)return;const current=select.value||'';const next=optionHtml(current,includeAll);if(select.innerHTML!==next){select.innerHTML=next;if([...select.options].some(o=>o.value===current))select.value=current;}}
+function refreshCategoryUiV433(){refreshCategorySelect(document.getElementById('newCategoryV412'),false);refreshCategorySelect(document.getElementById('editCategoryV412'),false);refreshCategorySelect(document.getElementById('archiveCategoryV412'),false);refreshCategorySelect(document.getElementById('categoryFilterV412'),true);}
+
+/* V433: open tasks must have no meaningless white status square in any tab. */
+function removeOpenStatusPlaceholdersV433(){document.querySelectorAll('#viewContainer .task:not(.archive-task) .status-symbol').forEach(el=>{const raw=(el.textContent||'').trim();if(/^[⬜□◻◽]$/.test(raw)){el.textContent='';el.classList.remove('mono-status-v416');}});}
+function postRenderV433(){refreshCategoryUiV433();removeOpenStatusPlaceholdersV433();}
+const previousRenderV433=window.render;if(typeof previousRenderV433==='function'){window.render=function(){const result=previousRenderV433.apply(this,arguments);setTimeout(postRenderV433,0);return result;};}
+window.__modV433={version:'V433',refreshCategoryUi:refreshCategoryUiV433,removeOpenStatusPlaceholders:removeOpenStatusPlaceholdersV433};
+setTimeout(postRenderV433,0);
+
 const style=document.createElement('style');style.textContent='.smart-task-suggestion{display:flex!important;flex-direction:column;align-items:stretch!important;gap:4px;padding:10px 12px!important;text-align:left}.task-suggestion-main{display:flex;align-items:center;gap:8px;min-width:0}.smart-task-suggestion .task-suggestion-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.task-suggestion-meta{font-size:10px;letter-spacing:.06em;opacity:.68}.task-suggestion-active{flex:0 0 auto;font-size:9px;letter-spacing:.06em;border:1px solid currentColor;border-radius:999px;padding:2px 5px;opacity:.9}';document.head.appendChild(style);
 })();

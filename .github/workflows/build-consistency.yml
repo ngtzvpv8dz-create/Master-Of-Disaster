@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V432 build
+      - name: Verify V433 build
         shell: python
         run: |
           from pathlib import Path
@@ -21,18 +21,18 @@ jobs:
           css=Path('ui.css').read_text(encoding='utf-8')
           search=Path('task-search.js').read_text(encoding='utf-8')
           archive=Path('archive-category-v413.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V432','21.08.2026 · 00:23','ui.css?v=432-0023','ui.js?v=432-0023','task-search.js?v=432-0023']:
-              if marker not in index: raise SystemExit(f'Missing V432 index marker: {marker}')
-          for marker in ['master-of-disaster-v432-search','task-search.js?v=432-0023','/task-search.js']:
-              if marker not in sw: raise SystemExit(f'Missing V432 cache marker: {marker}')
-          for marker in ['getKnownTaskSuggestions','BEREITS VORHANDEN','__modPendingSuggestionCategory','slice(0,6)']:
-              if marker not in search: raise SystemExit(f'Missing smart search behavior: {marker}')
+          for marker in ['BUILD: V433','21.08.2026 · 07:12','ui.css?v=433-0712','ui.js?v=433-0712','task-search.js?v=433-0712']:
+              if marker not in index: raise SystemExit(f'Missing V433 index marker: {marker}')
+          for marker in ['master-of-disaster-v433-live-ui','task-search.js?v=433-0712','/task-search.js']:
+              if marker not in sw: raise SystemExit(f'Missing V433 cache marker: {marker}')
+          for marker in ['getKnownTaskSuggestions','BEREITS VORHANDEN','__modPendingSuggestionCategory','slice(0,6)','refreshCategoryUiV433','removeOpenStatusPlaceholdersV433','__modV433']:
+              if marker not in search: raise SystemExit(f'Missing V433 behavior: {marker}')
           for marker in ['V431 CONSOLIDATED UI/FEATURE BUNDLE','openWeightBackfillV430','priority-header-v426']:
               if marker not in ui: raise SystemExit(f'Consolidated UI regression: {marker}')
           for marker in ['V431 CONSOLIDATED UI STYLES','weight-backfill-button-v430']:
               if marker not in css: raise SystemExit(f'Consolidated CSS regression: {marker}')
           for marker in ['archiveCompletedTask.__v428Wrapped','preserveCategoryForArchivedTask']:
               if marker not in archive: raise SystemExit(f'Archive category regression: {marker}')
-          print('V432 build consistency OK')
+          print('V433 build consistency OK')
       - name: JavaScript syntax
         run: node --check task-search.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js && node --check app.js
