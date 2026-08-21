@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
       - name: Verify V445 retroactive completion
         shell: python
         run: |
@@ -148,21 +148,32 @@ jobs:
           if(explicit.category!==null||explicit.type!=='leisure')throw new Error('Explicit payload did not override learned metadata');
           console.log('V450 smart remote reuse regression OK');
           NODE
-      - name: Verify V451 development statistics snapshot
+      - name: Verify preserved V451 development statistics snapshot
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
           js=Path('development-stats-v451.js').read_text(encoding='utf-8')
-          sw=Path('sw.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V451','development-stats-v451.js?v=451-1431',"version:'V451'"]:
-              if marker not in html: raise SystemExit(f'Missing V451 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v451-development-statistics','development-stats-v451.js?v=451-1431']:
-              if marker not in sw: raise SystemExit(f'Missing V451 service worker marker: {marker}')
+          if 'development-stats-v451.js?v=451-1431' not in html: raise SystemExit('V451 development statistics wiring missing')
           for marker in ['APP-ENTWICKLUNG','PROJECT_START_ISO','reachableCommits:558','pullRequests:51','supabase:{','remoteCommands:17','Initialimport',"grossActivityWindow:'ca. 49:08 h'",'ENTSTEHUNGSGESCHICHTE','GESICHERT','CHAT-ZEITSTEMPEL','REKONSTRUIERT','__modDevelopmentStatsV451']:
-              if marker not in js: raise SystemExit(f'Missing development statistics marker: {marker}')
-          print('V451 development statistics regression OK')
-      - name: Verify V451 build wiring and preserved V450 behavior
+              if marker not in js: raise SystemExit(f'Missing preserved V451 development statistic: {marker}')
+          print('V451 development statistics preserved')
+      - name: Verify V452 full project history and collapsed statistics
+        shell: python
+        run: |
+          from pathlib import Path
+          html=Path('index.html').read_text(encoding='utf-8')
+          js=Path('project-history-v452.js').read_text(encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V452','21.08.2026 · 15:01','project-history-v452.js?v=452-1501',"version:'V452'"]:
+              if marker not in html: raise SystemExit(f'Missing V452 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v452-full-history-collapsible-stats','project-history-v452.js?v=452-1501']:
+              if marker not in sw: raise SystemExit(f'Missing V452 service worker marker: {marker}')
+          for marker in ['GESAMTCHRONIK','PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM','PHASE 2 · REGELN, ARCHIV UND VERSIONSWAHNSINN','PHASE 3 · STATISTIK, ZEITARTEN UND ZUSATZGEWICHT','PHASE 4 · DINGSI-KURZSCHRIFT UND KONTEXTKRISE','PHASE 5 · DER LETZTE CHAT-MASTER','PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP','REGEL-EVOLUTION','V361-IMPORT','QUELLENLAGE & GRENZEN','versionTransitionsV32ToV361:329','historicalTasksV361:273','taskGrowthFromV32:178','recoveredRuleMilestones:22','details.statistics-collapsible-v452','data.defaultCollapsed=\'true\'','data-stat-open-v452','data-stat-close-v452','__modProjectHistoryV452']:
+              if marker not in js: raise SystemExit(f'Missing V452 history/collapse marker: {marker}')
+          if "details.open=true" in js: raise SystemExit('Statistics details default-open regression')
+          print('V452 full history and default-collapsed statistics regression OK')
+      - name: Verify V452 build wiring and preserved remote/category behavior
         shell: python
         run: |
           from pathlib import Path
@@ -170,11 +181,11 @@ jobs:
           completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          if 'BUILD: V451' not in html or 'development-stats-v451.js?v=451-1431' not in html: raise SystemExit('V451 build wiring missing')
-          if 'master-of-disaster-v451-development-statistics' not in sw: raise SystemExit('V451 service worker cache missing')
+          if 'BUILD: V452' not in html or 'project-history-v452.js?v=452-1501' not in html: raise SystemExit('V452 build wiring missing')
+          if 'master-of-disaster-v452-full-history-collapsible-stats' not in sw: raise SystemExit('V452 service worker cache missing')
           if 'remote-commands.js?v=450-1350' not in html: raise SystemExit('Preserved V450 remote wiring missing')
           for marker in ['setCompletedCategory','openCompletedCategoryEditor','__modCompletedCategoryV449']:
               if marker not in completed: raise SystemExit(f'Missing preserved V449 behavior: {marker}')
           for marker in ['applyRemoteToday(task,payload)','findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
               if marker not in remote: raise SystemExit(f'Missing V450 behavior: {marker}')
-          print('V451 build wiring and V450 behavior regression OK')
+          print('V452 build wiring and preserved behavior OK')
