@@ -11,22 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V443 build
+      - name: Verify V444 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
           seg=Path('time-segments-v443.js').read_text(encoding='utf-8')
+          duration=Path('segment-duration-v444.js').read_text(encoding='utf-8')
           integrity=Path('integrity-v439.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V443','21.08.2026 · 11:23','time-segments-v443.js?v=443-1123',"version:'V443'",'__MOD_BUILD__']:
-              if marker not in index: raise SystemExit(f'Missing V443 index marker: {marker}')
-          for marker in ['master-of-disaster-v443-time-segments','time-segments-v443.js?v=443-1123']:
-              if marker not in sw: raise SystemExit(f'Missing V443 cache marker: {marker}')
+          for marker in ['BUILD: V444','21.08.2026 · 11:42','segment-duration-v444.js?v=444-1142',"version:'V444'",'__MOD_BUILD__']:
+              if marker not in index: raise SystemExit(f'Missing V444 index marker: {marker}')
+          for marker in ['master-of-disaster-v444-segment-duration','segment-duration-v444.js?v=444-1142']:
+              if marker not in sw: raise SystemExit(f'Missing V444 cache marker: {marker}')
           for marker in ['Zeitabschnitte korrigieren','addManualSegmentV443','removeManualSegmentV443','AKTIVE GESAMTZEIT','__modTimeSegmentsV443']:
               if marker not in seg: raise SystemExit(f'Missing V443 segment behavior: {marker}')
+          for marker in ['calculateActiveDuration=function','sumTaskSegmentsMs','__modV444SegmentDuration']:
+              if marker not in duration: raise SystemExit(f'Missing V444 duration behavior: {marker}')
           for marker in ['validUnfinalizedTaskLabels','__modIntegrityV442']:
               if marker not in integrity: raise SystemExit(f'Missing V442 integrity behavior: {marker}')
-          print('V443 build consistency OK')
+          print('V444 build consistency OK')
       - name: JavaScript syntax
-        run: node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
