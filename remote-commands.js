@@ -1,5 +1,6 @@
-/* V448 · REMOTE COMMAND BRIDGE
+/* V450 · SMART REMOTE COMMAND BRIDGE
    Supabase ist nur Befehls-Briefkasten. localStorage bleibt Master.
+   V450 verhindert Remote-Dubletten, übernimmt etablierte Metadaten und bewahrt abgeschlossene Durchgänge.
 */
 (function(){
   const POLL_MS=5000;
@@ -15,6 +16,8 @@
   }
 
   const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('de-DE');
+  const clean=v=>String(v??'').trim().replace(/\s+/g,' ');
+  const hasOwn=(obj,key)=>!!obj&&Object.prototype.hasOwnProperty.call(obj,key);
   const isoOrNull=v=>{if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d.toISOString();};
   function normalizeType(v){return ['work','leisure','selfrunner','cooking'].includes(v)?v:'work';}
   function normalizePriority(v){return ['normal','medium','high'].includes(v)?v:'normal';}
@@ -25,32 +28,91 @@
     const d=new Date(day+'T00:00:00Z');
     return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===day?day:null;
   }
+
+  function persistTasks(){
+    if(typeof saveTasks==='function')saveTasks();
+    else if(typeof safeStorageSet==='function')safeStorageSet('masterOfDisasterTasks',JSON.stringify(tasks));
+    if(typeof render==='function')render();
+  }
+
   function applyRemoteToday(task,payload){
-    if(!payload||!Object.prototype.hasOwnProperty.call(payload,'today_date'))return task;
+    if(!payload||!hasOwn(payload,'today_date'))return task;
     if(payload.today_date==null||String(payload.today_date).trim()==='')return task;
     const day=normalizeTodayDate(payload.today_date);
     if(!day)throw new Error('ADD_TASK: ungültiges today_date. Erwartet YYYY-MM-DD.');
-    const todays=(Array.isArray(tasks)?tasks:[]).filter(item=>item&&item.id!==task.id&&item.todayDate===day&&item.status!=='completed');
+    if(task.todayDate===day&&Number(task.todayOrder)>0)return task;
+    const todays=(Array.isArray(tasks)?tasks:[]).filter(item=>item&&item.id!==task.id&&item.todayDate===day&&!['completed','aborted'].includes(item.status));
     const highest=todays.reduce((max,item)=>Math.max(max,Number(item.todayOrder)||0),0);
     task.todayDate=day;
     task.todayOrder=highest+1;
     return task;
   }
 
+  function matchingRows(text){
+    const n=norm(text);
+    const taskRows=(Array.isArray(tasks)?tasks:[]).filter(row=>row&&norm(row.text)===n);
+    const archiveRows=(typeof archive!=='undefined'&&Array.isArray(archive)?archive:[]).filter(row=>row&&norm(row.text)===n);
+    return {taskRows,archiveRows};
+  }
+
+  function latestReference(text){
+    const {taskRows,archiveRows}=matchingRows(text);
+    if(taskRows.length)return {row:taskRows[taskRows.length-1],source:'task'};
+    if(archiveRows.length)return {row:archiveRows[archiveRows.length-1],source:'archive'};
+    return {row:null,source:null};
+  }
+
+  function findReusableTask(text){
+    const {taskRows}=matchingRows(text);
+    const reusable=taskRows.filter(row=>['open','running','paused'].includes(String(row.status||'')));
+    if(!reusable.length)return null;
+    const rank={running:3,paused:2,open:1};
+    return reusable.reduce((best,row)=>{
+      if(!best)return row;
+      const a=rank[String(best.status||'')]||0,b=rank[String(row.status||'')]||0;
+      return b>a||b===a?row:best;
+    },null);
+  }
+
+  function metadataForNewTask(payload,text){
+    const ref=latestReference(text);
+    const row=ref.row||{};
+    return {
+      source:ref.source,
+      type:hasOwn(payload,'type')?normalizeType(payload.type):normalizeType(row.type),
+      priority:hasOwn(payload,'priority')?normalizePriority(payload.priority):normalizePriority(row.priority),
+      optional:hasOwn(payload,'optional')?Boolean(payload.optional):Boolean(row.optional),
+      category:hasOwn(payload,'category')?(clean(payload.category)||null):(clean(row.category)||null)
+    };
+  }
+
+  function stampRemoteMeta(task,meta){
+    try{Object.defineProperty(task,'__remoteV450',{value:meta,enumerable:false,configurable:true,writable:true});}catch(_){task.__remoteV450=meta;}
+    return task;
+  }
+
   function createLocalTask(payload){
     payload=payload&&typeof payload==='object'?payload:{};
-    const text=String(payload.text||'').trim();
+    const text=clean(payload.text);
     if(!text)throw new Error('ADD_TASK: Aufgabentitel fehlt.');
     if(!Array.isArray(tasks))throw new Error('ADD_TASK: Lokale Aufgabenliste fehlt.');
+
+    const reusable=findReusableTask(text);
+    if(reusable){
+      applyRemoteToday(reusable,payload);
+      persistTasks();
+      return stampRemoteMeta(reusable,{reused:true,metadata_source:'existing-active'});
+    }
+
+    const meta=metadataForNewTask(payload,text);
     const now=Date.now();
     const task={
-      id:now+Math.floor(Math.random()*1000),text,status:'open',type:normalizeType(payload.type),priority:normalizePriority(payload.priority),optional:Boolean(payload.optional),dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,planDurationMs:null,startedAt:null,pausedAt:null,completedAt:null,abortedAt:null,pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,leisureDurationMs:null,passiveDurationMs:null,cookingActiveDurationMs:null,cookingPassiveDurationMs:null,cookingMode:'active',activeSegments:[],cookingSegments:[],category:payload.category==null?null:String(payload.category).trim()||null,createdAt:new Date(now).toISOString(),remoteCommandV441:true
+      id:now+Math.floor(Math.random()*1000),text,status:'open',type:meta.type,priority:meta.priority,optional:meta.optional,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,planDurationMs:null,startedAt:null,pausedAt:null,completedAt:null,abortedAt:null,pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,leisureDurationMs:null,passiveDurationMs:null,cookingActiveDurationMs:null,cookingPassiveDurationMs:null,cookingMode:'active',activeSegments:[],cookingSegments:[],category:meta.category,createdAt:new Date(now).toISOString(),remoteCommandV441:true
     };
     applyRemoteToday(task,payload);
     tasks.push(task);
-    if(typeof saveTasks==='function')saveTasks();else safeStorageSet('masterOfDisasterTasks',JSON.stringify(tasks));
-    if(typeof render==='function')render();
-    return task;
+    persistTasks();
+    return stampRemoteMeta(task,{reused:false,metadata_source:meta.source});
   }
 
   function resolveTask(payload,allowedStatuses){
@@ -134,14 +196,15 @@
       else if(row.command==='REPORT_TASK_DETAILS')result=taskDetailResult(row.payload||{});
       else if(row.command==='ADD_TASK'){
         const task=createLocalTask(row.payload);
-        result={local_task_id:task.id,text:task.text,status:task.status,today_date:task.todayDate,today_order:task.todayOrder};
+        const remoteMeta=task.__remoteV450||{};
+        result={local_task_id:task.id,text:task.text,status:task.status,today_date:task.todayDate,today_order:task.todayOrder,reused_existing:!!remoteMeta.reused,metadata_source:remoteMeta.metadata_source||null,type:task.type,category:task.category??null};
       }
       else if(['START_TASK','PAUSE_TASK','RESUME_TASK','COMPLETE_TASK'].includes(row.command)){
         const task=runTaskCommand(row.command,row.payload);
         result={local_task_id:task.id,text:task.text,status:task.status,started_at:task.startedAt||null,paused_at:task.pausedAt||null,completed_at:task.completedAt||null};
       }
       else if(['START_WEIGHT','STOP_WEIGHT','ADJUST_WEIGHT_START'].includes(row.command))result=runWeightCommand(row.command,row.payload||{});
-      else throw new Error('V448: nicht unterstützter Befehl '+row.command+'.');
+      else throw new Error('V450: nicht unterstützter Befehl '+row.command+'.');
       await mark(client,row.id,'done',{result,error:null});
       if(!['REPORT_INTEGRITY','REPORT_TASK_DETAILS'].includes(row.command)){
         try{if(typeof scheduleSupabaseLiveSync==='function')scheduleSupabaseLiveSync('remote-command-'+row.command.toLowerCase());}catch(_){}
@@ -150,7 +213,7 @@
     }catch(error){
       const message=error&&error.message?error.message:String(error||'Unbekannter Fehler');
       try{await mark(client,row.id,'error',{error:message});}catch(_){}
-      console.warn('V448 remote command:',error);
+      console.warn('V450 remote command:',error);
       return false;
     }
   }
@@ -165,7 +228,7 @@
       if(error)throw error;
       for(const row of(data||[]))await processOne(s.client,row);
     }catch(error){
-      console.warn('V448 remote command poll:',error);
+      console.warn('V450 remote command poll:',error);
     }finally{busy=false;}
   }
 
@@ -181,4 +244,5 @@
   window.addEventListener('load',()=>setTimeout(start,700));
   window.__modRemoteCommandsV441={poll,pollMs:POLL_MS,integrityResult,taskDetailResult};
   window.__modRemoteCommandsV448={version:'V448',poll,pollMs:POLL_MS,integrityResult,taskDetailResult,normalizeTodayDate,applyRemoteToday,createLocalTask};
+  window.__modRemoteCommandsV450={version:'V450',poll,pollMs:POLL_MS,integrityResult,taskDetailResult,normalizeTodayDate,applyRemoteToday,findReusableTask,latestReference,metadataForNewTask,createLocalTask};
 })();
