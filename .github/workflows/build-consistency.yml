@@ -11,22 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V447 build
+      - name: Verify V448 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          remote=Path('remote-commands.js').read_text(encoding='utf-8')
           paused=Path('paused-today-v447.js').read_text(encoding='utf-8')
           tabs=Path('today-paused-v446.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V447','21.08.2026 · 12:55','paused-today-v447.js?v=447-1255',"version:'V447'",'__MOD_BUILD__']:
-              if marker not in index: raise SystemExit(f'Missing V447 index marker: {marker}')
-          for marker in ['master-of-disaster-v447-paused-today-action','paused-today-v447.js?v=447-1255']:
-              if marker not in sw: raise SystemExit(f'Missing V447 cache marker: {marker}')
+          for marker in ['BUILD: V448','21.08.2026 · 13:07','remote-commands.js?v=448-1307',"version:'V448'",'__MOD_BUILD__']:
+              if marker not in index: raise SystemExit(f'Missing V448 index marker: {marker}')
+          for marker in ['master-of-disaster-v448-remote-add-today','remote-commands.js?v=448-1307']:
+              if marker not in sw: raise SystemExit(f'Missing V448 cache marker: {marker}')
+          for marker in ['normalizeTodayDate','applyRemoteToday','today_date','task.todayOrder=highest+1','__modRemoteCommandsV448']:
+              if marker not in remote: raise SystemExit(f'Missing V448 remote Today behavior: {marker}')
           for marker in ['patchPausedTodayButtons','paused-today-v447','toggleToday(${id})','insertAdjacentElement(\'afterend\',btn)','__modPausedTodayV447']:
               if marker not in paused: raise SystemExit(f'Missing V447 paused Today behavior: {marker}')
           for marker in ['taskRelevantToday','PAUSIERTE AUFGABEN','__modTodayPausedV446']:
               if marker not in tabs: raise SystemExit(f'Missing V446 tab behavior: {marker}')
-          print('V447 build consistency OK')
+          print('V448 build consistency OK')
       - name: JavaScript syntax
         run: node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
