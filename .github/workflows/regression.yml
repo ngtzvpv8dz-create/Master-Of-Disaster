@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
       - name: Verify V445 retroactive completion
         shell: python
         run: |
@@ -19,3 +19,15 @@ jobs:
           for marker in ['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','task.status=\'completed\'','task.completedAt=segs[segs.length-1].endedAt','hasClosedHistory','task.activeSegments.push({startedAt:now,endedAt:null})']:
               if marker not in retro: raise SystemExit(f'Missing retroactive behavior: {marker}')
           print('V445 retroactive completion regression OK')
+      - name: Verify V446 Today and Paused tab logic
+        shell: python
+        run: |
+          from pathlib import Path
+          js=Path('today-paused-v446.js').read_text(encoding='utf-8')
+          html=Path('index.html').read_text(encoding='utf-8')
+          for marker in ['task.todayDate===day','berlinDayFromIso(task.startedAt)===day','berlinDayFromIso(task.completedAt)===day','task.activeSegments.some','PAUSIERTE AUFGABEN']:
+              if marker not in js: raise SystemExit(f'Missing V446 Today behavior: {marker}')
+          if '>PAUSIERT</button>' not in html: raise SystemExit('PAUSIERT tab missing')
+          if 'data-tab="completed"' in html: raise SystemExit('ERLEDIGT tab still present')
+          if 'V446' not in html or 'today-paused-v446.js?v=446-1228' not in html: raise SystemExit('V446 build wiring missing')
+          print('V446 Today/Paused regression OK')
