@@ -11,28 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V449 build
+      - name: Verify V450 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          paused=Path('paused-today-v447.js').read_text(encoding='utf-8')
-          tabs=Path('today-paused-v446.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V449','21.08.2026 · 13:38','completed-category-v449.js?v=449-1338',"version:'V449'",'__MOD_BUILD__']:
-              if marker not in index: raise SystemExit(f'Missing V449 index marker: {marker}')
-          for marker in ['master-of-disaster-v449-completed-category-edit','completed-category-v449.js?v=449-1338']:
-              if marker not in sw: raise SystemExit(f'Missing V449 cache marker: {marker}')
-          for marker in ['setCompletedCategory','openCompletedCategoryEditor','completed-category-click-v449',"String(row.status)!=='completed'",'__modCompletedCategoryV449']:
-              if marker not in completed: raise SystemExit(f'Missing V449 completed category behavior: {marker}')
-          for marker in ['normalizeTodayDate','applyRemoteToday','today_date','task.todayOrder=highest+1','__modRemoteCommandsV448']:
-              if marker not in remote: raise SystemExit(f'Missing V448 remote Today behavior: {marker}')
-          for marker in ['patchPausedTodayButtons','paused-today-v447','toggleToday(${id})','insertAdjacentElement(\'afterend\',btn)','__modPausedTodayV447']:
-              if marker not in paused: raise SystemExit(f'Missing V447 paused Today behavior: {marker}')
-          for marker in ['taskRelevantToday','PAUSIERTE AUFGABEN','__modTodayPausedV446']:
-              if marker not in tabs: raise SystemExit(f'Missing V446 tab behavior: {marker}')
-          print('V449 build consistency OK')
+          completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V450','21.08.2026 · 13:50','remote-commands.js?v=450-1350',"version:'V450'",'__MOD_BUILD__']:
+              if marker not in index: raise SystemExit(f'Missing V450 index marker: {marker}')
+          for marker in ['master-of-disaster-v450-smart-remote-reuse','remote-commands.js?v=450-1350']:
+              if marker not in sw: raise SystemExit(f'Missing V450 cache marker: {marker}')
+          for marker in ['findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
+              if marker not in remote: raise SystemExit(f'Missing V450 remote behavior: {marker}')
+          for marker in ['setCompletedCategory','openCompletedCategoryEditor','__modCompletedCategoryV449']:
+              if marker not in completed: raise SystemExit(f'Missing preserved V449 behavior: {marker}')
+          print('V450 build consistency OK')
       - name: JavaScript syntax
         run: node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js

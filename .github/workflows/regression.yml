@@ -46,9 +46,10 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           global.tasks=[
-            {id:1,status:'open',todayDate:'2026-08-21',todayOrder:2},
-            {id:2,status:'completed',todayDate:'2026-08-21',todayOrder:99}
+            {id:1,status:'open',todayDate:'2026-08-21',todayOrder:2,text:'Existing'},
+            {id:2,status:'completed',todayDate:'2026-08-21',todayOrder:99,text:'Completed'}
           ];
+          global.archive=[];
           global.window={addEventListener(){}};
           global.document={addEventListener(){},visibilityState:'visible'};
           global.navigator={onLine:false};
@@ -103,16 +104,62 @@ jobs:
           if(open.category!==null)throw new Error('Open task category changed');
           console.log('V449 completed category edit regression OK');
           NODE
-      - name: Verify V449 build wiring
+      - name: Verify V450 smart remote reuse
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          global.window={addEventListener(){}};
+          global.document={addEventListener(){},visibilityState:'visible'};
+          global.navigator={onLine:false};
+          global.saveTasks=()=>{};
+          global.render=()=>{};
+          global.safeStorageSet=()=>true;
+          global.tasks=[];
+          global.archive=[];
+          eval(fs.readFileSync('remote-commands.js','utf8'));
+          const api=window.__modRemoteCommandsV450;
+          if(!api)throw new Error('V450 API missing');
+
+          tasks=[{id:10,text:'Küche aufräumen',status:'open',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:null,todayOrder:null}];
+          archive=[];
+          const reused=api.createLocalTask({text:'  Küche   aufräumen ',today_date:'2026-08-21'});
+          if(reused.id!==10||tasks.length!==1)throw new Error('Existing open task was duplicated instead of reused');
+          if(reused.todayDate!=='2026-08-21'||reused.todayOrder!==1)throw new Error('Reused task was not pinned to Today');
+          if(!reused.__remoteV450?.reused)throw new Error('Reuse result flag missing');
+          reused.todayOrder=4;
+          api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});
+          if(reused.todayOrder!==4)throw new Error('Already pinned task was reordered');
+
+          tasks=[{id:20,text:'Küche aufräumen',status:'completed',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:'2026-08-21',todayOrder:8,completedAt:'2026-08-21T11:00:00Z'}];
+          archive=[];
+          const repeated=api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});
+          if(tasks.length!==2||repeated.id===20||repeated.status!=='open')throw new Error('Completed task was reopened/reused instead of repeated');
+          if(repeated.category!=='Haushalt')throw new Error('Task metadata was not inherited from completed task');
+          if(repeated.__remoteV450?.reused)throw new Error('Repeated completed task incorrectly marked reused');
+
+          tasks=[];
+          archive=[{archiveNumber:161,text:'Wohnzimmer aufräumen',status:'completed',type:'work',priority:'medium',optional:true,category:'Haushalt'}];
+          const fromArchive=api.createLocalTask({text:'Wohnzimmer aufräumen',today_date:'2026-08-21'});
+          if(fromArchive.type!=='work'||fromArchive.priority!=='medium'||fromArchive.optional!==true||fromArchive.category!=='Haushalt')throw new Error('Archive metadata inheritance failed');
+          if(fromArchive.__remoteV450?.metadata_source!=='archive')throw new Error('Archive metadata source missing');
+
+          tasks=[];
+          const explicit=api.createLocalTask({text:'Wohnzimmer aufräumen',category:null,type:'leisure'});
+          if(explicit.category!==null||explicit.type!=='leisure')throw new Error('Explicit payload did not override learned metadata');
+          console.log('V450 smart remote reuse regression OK');
+          NODE
+      - name: Verify V450 build wiring
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
           completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          if 'BUILD: V449' not in html or 'completed-category-v449.js?v=449-1338' not in html: raise SystemExit('V449 build wiring missing')
-          for marker in ['setCompletedCategory','openCompletedCategoryEditor','completed-category-click-v449','Nur die Kategorie dieser erledigten Aufgabe wird geändert','__modCompletedCategoryV449']:
-              if marker not in completed: raise SystemExit(f'Missing V449 behavior: {marker}')
-          for marker in ['applyRemoteToday(task,payload)','task.todayDate=day','task.todayOrder=highest+1','today_date:task.todayDate','__modRemoteCommandsV448']:
-              if marker not in remote: raise SystemExit(f'Missing preserved V448 behavior: {marker}')
-          print('V449 build wiring regression OK')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          if 'BUILD: V450' not in html or 'remote-commands.js?v=450-1350' not in html: raise SystemExit('V450 build wiring missing')
+          if 'master-of-disaster-v450-smart-remote-reuse' not in sw: raise SystemExit('V450 service worker cache missing')
+          for marker in ['setCompletedCategory','openCompletedCategoryEditor','__modCompletedCategoryV449']:
+              if marker not in completed: raise SystemExit(f'Missing preserved V449 behavior: {marker}')
+          for marker in ['applyRemoteToday(task,payload)','findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
+              if marker not in remote: raise SystemExit(f'Missing V450 behavior: {marker}')
+          print('V450 build wiring regression OK')
