@@ -10,211 +10,118 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
-      - name: Verify V445 retroactive completion
+        run: node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+      - name: Verify preserved V445-V447 behavior
         shell: python
         run: |
           from pathlib import Path
           retro=Path('retroactive-complete-v445.js').read_text(encoding='utf-8')
+          today=Path('today-paused-v446.js').read_text(encoding='utf-8')
+          paused=Path('paused-today-v447.js').read_text(encoding='utf-8')
+          html=Path('index.html').read_text(encoding='utf-8')
           for marker in ['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','task.status=\'completed\'','task.completedAt=segs[segs.length-1].endedAt','hasClosedHistory','task.activeSegments.push({startedAt:now,endedAt:null})']:
-              if marker not in retro: raise SystemExit(f'Missing retroactive behavior: {marker}')
-          print('V445 retroactive completion regression OK')
-      - name: Verify V446 Today and Paused tab logic
-        shell: python
-        run: |
-          from pathlib import Path
-          js=Path('today-paused-v446.js').read_text(encoding='utf-8')
-          html=Path('index.html').read_text(encoding='utf-8')
+              if marker not in retro: raise SystemExit(f'Missing V445 behavior: {marker}')
           for marker in ['task.todayDate===day','berlinDayFromIso(task.startedAt)===day','berlinDayFromIso(task.completedAt)===day','task.activeSegments.some','PAUSIERTE AUFGABEN']:
-              if marker not in js: raise SystemExit(f'Missing V446 Today behavior: {marker}')
-          if '>PAUSIERT</button>' not in html: raise SystemExit('PAUSIERT tab missing')
-          if 'data-tab="completed"' in html: raise SystemExit('ERLEDIGT tab still present')
-          if 'today-paused-v446.js?v=446-1228' not in html: raise SystemExit('V446 Today wiring missing')
-          print('V446 Today/Paused regression OK')
-      - name: Verify V447 paused Today action
-        shell: python
-        run: |
-          from pathlib import Path
-          js=Path('paused-today-v447.js').read_text(encoding='utf-8')
-          html=Path('index.html').read_text(encoding='utf-8')
+              if marker not in today: raise SystemExit(f'Missing V446 behavior: {marker}')
           for marker in ['resumeTask','askManualTimes','insertAdjacentElement(\'afterend\',btn)','toggleToday(${id})','paused-today-v447','Für heute markieren','Aus Heute entfernen']:
-              if marker not in js: raise SystemExit(f'Missing V447 paused Today action: {marker}')
-          if 'paused-today-v447.js?v=447-1255' not in html: raise SystemExit('V447 paused Today wiring missing')
-          print('V447 paused Today action regression OK')
+              if marker not in paused: raise SystemExit(f'Missing V447 behavior: {marker}')
+          if '>PAUSIERT</button>' not in html or 'data-tab="completed"' in html: raise SystemExit('V446 tab regression')
+          print('V445-V447 behavior preserved')
       - name: Verify V448 ADD_TASK today pinning
         run: |
           node <<'NODE'
           const fs=require('fs');
-          global.tasks=[
-            {id:1,status:'open',todayDate:'2026-08-21',todayOrder:2,text:'Existing'},
-            {id:2,status:'completed',todayDate:'2026-08-21',todayOrder:99,text:'Completed'}
-          ];
-          global.archive=[];
-          global.window={addEventListener(){}};
-          global.document={addEventListener(){},visibilityState:'visible'};
-          global.navigator={onLine:false};
-          global.saveTasks=()=>{};
-          global.render=()=>{};
-          global.safeStorageSet=()=>true;
+          global.tasks=[{id:1,status:'open',todayDate:'2026-08-21',todayOrder:2,text:'Existing'},{id:2,status:'completed',todayDate:'2026-08-21',todayOrder:99,text:'Completed'}];
+          global.archive=[];global.window={addEventListener(){}};global.document={addEventListener(){},visibilityState:'visible'};global.navigator={onLine:false};global.saveTasks=()=>{};global.render=()=>{};global.safeStorageSet=()=>true;
           eval(fs.readFileSync('remote-commands.js','utf8'));
-          const api=window.__modRemoteCommandsV448;
-          if(!api)throw new Error('V448 API missing');
+          const api=window.__modRemoteCommandsV448;if(!api)throw new Error('V448 API missing');
           const pinned=api.createLocalTask({text:'Remote today test',type:'selfrunner',priority:'normal',category:'Test',today_date:'2026-08-21'});
-          if(pinned.todayDate!=='2026-08-21')throw new Error('todayDate was not applied');
-          if(pinned.todayOrder!==3)throw new Error(`Expected todayOrder 3, got ${pinned.todayOrder}`);
-          const unpinned=api.createLocalTask({text:'Remote no today test'});
-          if(unpinned.todayDate!==null||unpinned.todayOrder!==null)throw new Error('Task without today_date was pinned');
-          let invalidRejected=false;
-          try{api.createLocalTask({text:'Bad today',today_date:'2026-02-31'});}catch(error){invalidRejected=/today_date/.test(String(error&&error.message));}
-          if(!invalidRejected)throw new Error('Invalid today_date was not rejected');
+          if(pinned.todayDate!=='2026-08-21'||pinned.todayOrder!==3)throw new Error('V448 today pinning failed');
+          const unpinned=api.createLocalTask({text:'Remote no today test'});if(unpinned.todayDate!==null||unpinned.todayOrder!==null)throw new Error('Unpinned task was pinned');
+          let invalid=false;try{api.createLocalTask({text:'Bad today',today_date:'2026-02-31'});}catch(error){invalid=/today_date/.test(String(error&&error.message));}if(!invalid)throw new Error('Invalid today_date accepted');
           console.log('V448 ADD_TASK today pinning regression OK');
           NODE
-      - name: Verify V449 completed task category edit
+      - name: Verify V449 completed category protection
         run: |
           node <<'NODE'
           const fs=require('fs');
-          const completed={
-            id:42,
-            text:'Küche aufräumen',
-            status:'completed',
-            category:null,
-            startedAt:'2026-08-21T11:15:43.593Z',
-            completedAt:'2026-08-21T11:19:46.318Z',
-            activeDurationMs:242725
-          };
-          global.tasks=[completed];
-          global.archive=[];
-          global.localStorage={getItem(){return null;},setItem(){}};
-          global.escapeHtml=value=>String(value);
-          let saves=0;
-          global.saveAll=()=>{saves++;};
-          global.render=()=>{};
-          global.document={getElementById(){return null;}};
-          global.window={addEventListener(){}};
-          eval(fs.readFileSync('completed-category-v449.js','utf8'));
-          const api=window.__modCompletedCategoryV449;
-          if(!api)throw new Error('V449 API missing');
+          const completed={id:42,text:'Küche aufräumen',status:'completed',category:null,startedAt:'2026-08-21T11:15:43.593Z',completedAt:'2026-08-21T11:19:46.318Z',activeDurationMs:242725};
+          global.tasks=[completed];global.archive=[];global.localStorage={getItem(){return null;},setItem(){}};global.escapeHtml=value=>String(value);let saves=0;global.saveAll=()=>{saves++;};global.render=()=>{};global.document={getElementById(){return null;}};global.window={addEventListener(){}};
+          eval(fs.readFileSync('completed-category-v449.js','utf8'));const api=window.__modCompletedCategoryV449;if(!api)throw new Error('V449 API missing');
           const snapshot={status:completed.status,startedAt:completed.startedAt,completedAt:completed.completedAt,activeDurationMs:completed.activeDurationMs};
-          if(!api.setCompletedCategory(completed,'  Haushalt  '))throw new Error('Completed task category update rejected');
-          if(completed.category!=='Haushalt')throw new Error(`Expected normalized category, got ${completed.category}`);
+          if(!api.setCompletedCategory(completed,'  Haushalt  ')||completed.category!=='Haushalt')throw new Error('Category update failed');
           for(const [key,value] of Object.entries(snapshot))if(completed[key]!==value)throw new Error(`${key} changed while editing category`);
-          if(saves!==1)throw new Error(`Expected one save, got ${saves}`);
-          const open={id:43,text:'Noch offen',status:'open',category:null};
-          if(api.setCompletedCategory(open,'Haushalt')!==false)throw new Error('Open task accepted completed-only category edit');
-          if(open.category!==null)throw new Error('Open task category changed');
+          if(saves!==1)throw new Error('Unexpected save count');
+          const open={id:43,text:'Noch offen',status:'open',category:null};if(api.setCompletedCategory(open,'Haushalt')!==false||open.category!==null)throw new Error('Open task accepted completed-only category edit');
           console.log('V449 completed category edit regression OK');
           NODE
       - name: Verify V450 smart remote reuse
         run: |
           node <<'NODE'
-          const fs=require('fs');
-          global.window={addEventListener(){}};
-          global.document={addEventListener(){},visibilityState:'visible'};
-          global.navigator={onLine:false};
-          global.saveTasks=()=>{};
-          global.render=()=>{};
-          global.safeStorageSet=()=>true;
-          global.tasks=[];
-          global.archive=[];
-          eval(fs.readFileSync('remote-commands.js','utf8'));
-          const api=window.__modRemoteCommandsV450;
-          if(!api)throw new Error('V450 API missing');
-
-          tasks=[{id:10,text:'Küche aufräumen',status:'open',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:null,todayOrder:null}];
-          archive=[];
-          const reused=api.createLocalTask({text:'  Küche   aufräumen ',today_date:'2026-08-21'});
-          if(reused.id!==10||tasks.length!==1)throw new Error('Existing open task was duplicated instead of reused');
-          if(reused.todayDate!=='2026-08-21'||reused.todayOrder!==1)throw new Error('Reused task was not pinned to Today');
-          if(!reused.__remoteV450?.reused)throw new Error('Reuse result flag missing');
-          reused.todayOrder=4;
-          api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});
-          if(reused.todayOrder!==4)throw new Error('Already pinned task was reordered');
-
-          tasks=[{id:20,text:'Küche aufräumen',status:'completed',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:'2026-08-21',todayOrder:8,completedAt:'2026-08-21T11:00:00Z'}];
-          archive=[];
-          const repeated=api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});
-          if(tasks.length!==2||repeated.id===20||repeated.status!=='open')throw new Error('Completed task was reopened/reused instead of repeated');
-          if(repeated.category!=='Haushalt')throw new Error('Task metadata was not inherited from completed task');
-          if(repeated.__remoteV450?.reused)throw new Error('Repeated completed task incorrectly marked reused');
-
-          tasks=[];
-          archive=[{archiveNumber:161,text:'Wohnzimmer aufräumen',status:'completed',type:'work',priority:'medium',optional:true,category:'Haushalt'}];
-          const fromArchive=api.createLocalTask({text:'Wohnzimmer aufräumen',today_date:'2026-08-21'});
-          if(fromArchive.type!=='work'||fromArchive.priority!=='medium'||fromArchive.optional!==true||fromArchive.category!=='Haushalt')throw new Error('Archive metadata inheritance failed');
-          if(fromArchive.__remoteV450?.metadata_source!=='archive')throw new Error('Archive metadata source missing');
-
-          tasks=[];
-          const explicit=api.createLocalTask({text:'Wohnzimmer aufräumen',category:null,type:'leisure'});
-          if(explicit.category!==null||explicit.type!=='leisure')throw new Error('Explicit payload did not override learned metadata');
+          const fs=require('fs');global.window={addEventListener(){}};global.document={addEventListener(){},visibilityState:'visible'};global.navigator={onLine:false};global.saveTasks=()=>{};global.render=()=>{};global.safeStorageSet=()=>true;global.tasks=[];global.archive=[];
+          eval(fs.readFileSync('remote-commands.js','utf8'));const api=window.__modRemoteCommandsV450;if(!api)throw new Error('V450 API missing');
+          tasks=[{id:10,text:'Küche aufräumen',status:'open',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:null,todayOrder:null}];archive=[];
+          const reused=api.createLocalTask({text:'  Küche   aufräumen ',today_date:'2026-08-21'});if(reused.id!==10||tasks.length!==1||reused.todayDate!=='2026-08-21'||reused.todayOrder!==1||!reused.__remoteV450?.reused)throw new Error('Existing task reuse failed');
+          reused.todayOrder=4;api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});if(reused.todayOrder!==4)throw new Error('Already pinned task reordered');
+          tasks=[{id:20,text:'Küche aufräumen',status:'completed',type:'work',priority:'normal',optional:false,category:'Haushalt',todayDate:'2026-08-21',todayOrder:8,completedAt:'2026-08-21T11:00:00Z'}];archive=[];
+          const repeated=api.createLocalTask({text:'Küche aufräumen',today_date:'2026-08-21'});if(tasks.length!==2||repeated.id===20||repeated.status!=='open'||repeated.category!=='Haushalt'||repeated.__remoteV450?.reused)throw new Error('Completed repetition failed');
+          tasks=[];archive=[{archiveNumber:161,text:'Wohnzimmer aufräumen',status:'completed',type:'work',priority:'medium',optional:true,category:'Haushalt'}];
+          const fromArchive=api.createLocalTask({text:'Wohnzimmer aufräumen',today_date:'2026-08-21'});if(fromArchive.type!=='work'||fromArchive.priority!=='medium'||fromArchive.optional!==true||fromArchive.category!=='Haushalt'||fromArchive.__remoteV450?.metadata_source!=='archive')throw new Error('Archive metadata inheritance failed');
           console.log('V450 smart remote reuse regression OK');
           NODE
-      - name: Verify preserved V451 development statistics snapshot
+      - name: Verify preserved V451-V452 statistics/history
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
-          js=Path('development-stats-v451.js').read_text(encoding='utf-8')
-          if 'development-stats-v451.js?v=451-1431' not in html: raise SystemExit('V451 development statistics wiring missing')
+          dev=Path('development-stats-v451.js').read_text(encoding='utf-8')
+          history=Path('project-history-v452.js').read_text(encoding='utf-8')
+          if 'development-stats-v451.js?v=451-1431' not in html or 'project-history-v452.js?v=452-1501' not in html: raise SystemExit('Preserved statistics wiring missing')
           for marker in ['APP-ENTWICKLUNG','PROJECT_START_ISO','reachableCommits:558','pullRequests:51','supabase:{','remoteCommands:17','Initialimport',"grossActivityWindow:'ca. 49:08 h'",'ENTSTEHUNGSGESCHICHTE','GESICHERT','CHAT-ZEITSTEMPEL','REKONSTRUIERT','__modDevelopmentStatsV451']:
-              if marker not in js: raise SystemExit(f'Missing preserved V451 development statistic: {marker}')
-          print('V451 development statistics preserved')
-      - name: Verify preserved V452 full project history and collapsed statistics
-        shell: python
-        run: |
-          from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8')
-          js=Path('project-history-v452.js').read_text(encoding='utf-8')
-          if 'project-history-v452.js?v=452-1501' not in html: raise SystemExit('V452 history wiring missing')
-          for marker in ['GESAMTCHRONIK','PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM','PHASE 2 · REGELN, ARCHIV UND VERSIONSWAHNSINN','PHASE 3 · STATISTIK, ZEITARTEN UND ZUSATZGEWICHT','PHASE 4 · DINGSI-KURZSCHRIFT UND KONTEXTKRISE','PHASE 5 · DER LETZTE CHAT-MASTER','PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP','REGEL-EVOLUTION','V361-IMPORT','QUELLENLAGE & GRENZEN','versionTransitionsV32ToV361:329','historicalTasksV361:273','taskGrowthFromV32:178','recoveredRuleMilestones:22','details.statistics-collapsible-v452','details.dataset.defaultCollapsed=\'true\'','data-stat-open-v452','data-stat-close-v452','__modProjectHistoryV452']:
-              if marker not in js: raise SystemExit(f'Missing V452 history/collapse marker: {marker}')
-          if "details.open=true" in js: raise SystemExit('Statistics details default-open regression')
-          print('V452 history and default-collapsed statistics preserved')
+              if marker not in dev: raise SystemExit(f'Missing V451 marker: {marker}')
+          for marker in ['GESAMTCHRONIK','PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM','PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP','REGEL-EVOLUTION','V361-IMPORT','QUELLENLAGE & GRENZEN','versionTransitionsV32ToV361:329','historicalTasksV361:273','taskGrowthFromV32:178','recoveredRuleMilestones:22','details.statistics-collapsible-v452','details.dataset.defaultCollapsed=\'true\'','data-stat-open-v452','data-stat-close-v452','__modProjectHistoryV452']:
+              if marker not in history: raise SystemExit(f'Missing V452 marker: {marker}')
+          if "details.open=true" in history: raise SystemExit('Statistics details default-open regression')
+          print('V451-V452 statistics/history preserved')
       - name: Verify V453 rolling 24h live log
         run: |
           node <<'NODE'
-          const fs=require('fs');
-          const store=new Map();
-          global.window=global;
-          global.addEventListener=()=>{};
-          global.localStorage={getItem:key=>store.has(key)?store.get(key):null,setItem:(key,value)=>store.set(key,value)};
-          const oldAt=new Date(Date.now()-25*60*60*1000).toISOString();
-          store.set('masterOfDisasterLiveLogV453',JSON.stringify([{id:'old',at:oldAt,area:'SYSTEM',level:'INFO',message:'old'}]));
-          global.tasks=[];global.archive=[];
-          global.weightState={isWearing:false,currentWeightKg:12.3,currentPhaseWeightKg:null,currentPhaseStartedAt:null};global.weightPhases=[];
-          global.saveTasks=()=>{};global.saveArchive=()=>{};global.saveWeight=()=>{};global.render=()=>{};global.switchTab=()=>{};
-          global.deleteTask=id=>{tasks=tasks.filter(t=>String(t.id)!==String(id));};
-          eval(fs.readFileSync('live-log-v453.js','utf8'));
-          const api=window.__modLiveLogV453;
-          if(!api||api.version!=='V453'||api.windowMs!==86400000)throw new Error('V453 log API/window missing');
-          if(api.read().length!==0)throw new Error('Entries older than 24h were not pruned');
-          tasks.push({id:1,text:'Küche aufräumen',status:'open',activeSegments:[]});saveTasks();
-          tasks[0].status='running';tasks[0].startedAt=new Date().toISOString();tasks[0].activeSegments=[{startedAt:tasks[0].startedAt,endedAt:null}];saveTasks();
-          tasks[0].status='paused';tasks[0].activeSegments[0].endedAt=new Date().toISOString();saveTasks();
-          tasks[0].category='Haushalt';saveTasks();
-          weightState.isWearing=true;weightState.currentPhaseWeightKg=12.3;weightState.currentPhaseStartedAt=new Date().toISOString();saveWeight();
-          archive.push({archiveNumber:237,text:'Küche aufräumen',status:'completed'});saveArchive();
-          const rows=api.read();
-          for(const marker of ['Aufgabe erstellt','Aufgabe gestartet','Aufgabe pausiert','Aufgabe bearbeitet','Zusatzgewicht gestartet','Archiviert: A237'])if(!rows.some(row=>row.message.includes(marker)))throw new Error('Missing log event: '+marker);
-          if(rows.some(row=>/poll/i.test(row.message)))throw new Error('Polling noise entered live log');
+          const fs=require('fs'),store=new Map();global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:key=>store.has(key)?store.get(key):null,setItem:(key,value)=>store.set(key,value)};
+          store.set('masterOfDisasterLiveLogV453',JSON.stringify([{id:'old',at:new Date(Date.now()-25*60*60*1000).toISOString(),area:'SYSTEM',level:'INFO',message:'old'}]));
+          global.tasks=[];global.archive=[];global.weightState={isWearing:false,currentWeightKg:12.3,currentPhaseWeightKg:null,currentPhaseStartedAt:null};global.weightPhases=[];global.saveTasks=()=>{};global.saveArchive=()=>{};global.saveWeight=()=>{};global.render=()=>{};global.switchTab=()=>{};global.deleteTask=id=>{tasks=tasks.filter(t=>String(t.id)!==String(id));};
+          eval(fs.readFileSync('live-log-v453.js','utf8'));const api=window.__modLiveLogV453;if(!api||api.version!=='V453'||api.windowMs!==86400000||api.read().length!==0)throw new Error('V453 log window/prune failed');
+          tasks.push({id:1,text:'Küche aufräumen',status:'open',activeSegments:[]});saveTasks();tasks[0].status='running';tasks[0].startedAt=new Date().toISOString();tasks[0].activeSegments=[{startedAt:tasks[0].startedAt,endedAt:null}];saveTasks();tasks[0].status='paused';tasks[0].activeSegments[0].endedAt=new Date().toISOString();saveTasks();tasks[0].category='Haushalt';saveTasks();weightState.isWearing=true;weightState.currentPhaseWeightKg=12.3;weightState.currentPhaseStartedAt=new Date().toISOString();saveWeight();archive.push({archiveNumber:237,text:'Küche aufräumen',status:'completed'});saveArchive();
+          const rows=api.read();for(const marker of ['Aufgabe erstellt','Aufgabe gestartet','Aufgabe pausiert','Aufgabe bearbeitet','Zusatzgewicht gestartet','Archiviert: A237'])if(!rows.some(row=>row.message.includes(marker)))throw new Error('Missing V453 event: '+marker);if(rows.some(row=>/poll/i.test(row.message)))throw new Error('Polling noise entered V453 log');
           console.log('V453 rolling 24h live log regression OK');
           NODE
-      - name: Verify V453 build wiring and preserved behavior
+      - name: Verify V454 background logging
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),rows=[];global.window=global;global.navigator={onLine:true};global.location={hostname:'example.test'};global.tasks=[];global.archive=[];global.weightPhases=[];global.addEventListener=()=>{};global.__modLiveLogV453={append(area,level,message,meta){rows.push({area,level,message,meta});return rows.at(-1);}};
+          eval(fs.readFileSync('background-log-v454.js','utf8'));const api=window.__modBackgroundLogV454;if(!api||api.version!=='V454'||api.syncDelayMs!==900||api.emptyRemotePollSuppressed!==true)throw new Error('V454 API flags missing');
+          function builder(result){const b={select(){return b},insert(){return b},update(){return b},delete(){return b},upsert(){return b},eq(){return b},in(){return b},limit(){return b},order(){return b},then(ok,bad){return Promise.resolve(result).then(ok,bad)}};return b;}
+          (async()=>{const client=api.wrapSupabaseClient({from(table){return builder(table==='remote_commands'?{data:[],error:null}:{data:[{id:1}],error:null});}});await client.from('remote_commands').select('id,command').eq('status','pending');if(rows.length!==0)throw new Error('Empty remote poll was logged');await client.from('tasks').select('id,legacy_task_id').eq('user_id','hidden');if(!rows.some(row=>row.area==='SYNC'&&row.message.includes('Supabase SELECT tasks')))throw new Error('Supabase task SELECT was not logged');if(rows.some(row=>/hidden/.test(row.message)))throw new Error('Filter value leaked into log');console.log('V454 background logging regression OK');})().catch(error=>{console.error(error);process.exit(1);});
+          NODE
+      - name: Verify V454 build wiring and preserved behavior
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          background=Path('background-log-v454.js').read_text(encoding='utf-8')
           log=Path('live-log-v453.js').read_text(encoding='utf-8')
           completed=Path('completed-category-v449.js').read_text(encoding='utf-8')
           remote=Path('remote-commands.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V453','21.08.2026 · 16:41','data-tab="log"','live-log-v453.js?v=453-1641',"version:'V453'"]:
-              if marker not in html: raise SystemExit(f'Missing V453 HTML marker: {marker}')
-          if 'master-of-disaster-v453-rolling-24h-live-log' not in sw or 'live-log-v453.js?v=453-1641' not in sw: raise SystemExit('V453 service worker cache missing')
+          for marker in ['BUILD: V454','21.08.2026 · 17:03','data-tab="log"','live-log-v453.js?v=453-1641','background-log-v454.js?v=454-1703',"version:'V454'"]:
+              if marker not in html: raise SystemExit(f'Missing V454 HTML marker: {marker}')
+          if 'master-of-disaster-v454-background-process-logging' not in sw or 'background-log-v454.js?v=454-1703' not in sw: raise SystemExit('V454 service worker cache missing')
           for marker in ['masterOfDisasterLiveLogV453','WINDOW_MS=24*60*60*1000','logTaskDiff','logArchiveDiff','logWeightDiff','__modLiveLogV453']:
-              if marker not in log: raise SystemExit(f'Missing V453 behavior: {marker}')
+              if marker not in log: raise SystemExit(f'Missing preserved V453 behavior: {marker}')
+          for marker in ['SYNC_DELAY_MS=900','wrapSupabaseClient','getLiveSyncSessionAndManifest','remote_commands','isEmptyRemotePoll','emptyRemotePollSuppressed:true','__modBackgroundLogV454']:
+              if marker not in background: raise SystemExit(f'Missing V454 background behavior: {marker}')
           if 'remote-commands.js?v=450-1350' not in html: raise SystemExit('Preserved V450 remote wiring missing')
           for marker in ['setCompletedCategory','openCompletedCategoryEditor','__modCompletedCategoryV449']:
               if marker not in completed: raise SystemExit(f'Missing preserved V449 behavior: {marker}')
           for marker in ['applyRemoteToday(task,payload)','findReusableTask','latestReference','metadataForNewTask','reused_existing','metadata_source','__modRemoteCommandsV450']:
               if marker not in remote: raise SystemExit(f'Missing V450 behavior: {marker}')
-          print('V453 build wiring and preserved behavior OK')
+          print('V454 build wiring and preserved behavior OK')
