@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check ui.js && node --check archive-category-v413.js && node --check categories.js
+      - run: node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check ui.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V454 background process logging and preserved app behavior
+      - name: Verify live V457 functional additions and preserved app behavior
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,70 +23,66 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const r={status:'FAIL',version:'V454',live:false,log:false,rolling24h:false,logTab:false,backgroundLog:false,supabaseTrace:false,emptyRemotePollSuppressed:false,history:false,collapsed:false,toggleAll:false,devstats:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
+            const r={status:'FAIL',version:'V457',live:false,goals:false,notes:false,undo:false,log:false,rolling24h:false,backgroundLog:false,supabaseTrace:false,emptyRemotePollSuppressed:false,history:false,collapsed:false,toggleAll:false,devstats:false,bundle:false,priority:false,archiveCategory:false,weightBackfill:false,errors:[]};
             try{
               for(let i=0;i<18;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V454/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V454')){r.live=true;break;}
+                if(/BUILD: V457/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V457')){r.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!r.live)throw new Error('V454 not deployed');
-              r.bundle=await p.evaluate(()=>!!(window.__modActionIconsV416&&window.__modVisibleIconFixV423&&window.__modCompletedCleanupV429&&window.__modWeightBackfillV430&&window.__modRemoteCommandsV450&&window.__modLiveLogV453&&window.__modBackgroundLogV454));
-              const logState=await p.evaluate(async()=>{
-                const api=window.__modLiveLogV453,bg=window.__modBackgroundLogV454;
-                if(!api||!bg)return {api:false,bg:false};
-                api.clear();
-                function makeBuilder(result){
-                  const b={select(){return b},insert(){return b},update(){return b},delete(){return b},upsert(){return b},eq(){return b},in(){return b},limit(){return b},order(){return b},then(ok,bad){return Promise.resolve(result).then(ok,bad)}};
-                  return b;
-                }
-                const fake={from(table){return makeBuilder(table==='remote_commands'?{data:[],error:null}:{data:[{id:1}],error:null})}};
-                const client=bg.wrapSupabaseClient(fake);
-                await client.from('remote_commands').select('id,command').eq('status','pending');
-                const afterEmpty=api.read().length;
-                await client.from('tasks').select('id,legacy_task_id').eq('user_id','hidden');
-                const rows=api.read();
-                switchTab('log');render();
-                return {api:true,bg:true,version:api.version,windowMs:api.windowMs,bgVersion:bg.version,syncDelay:bg.syncDelayMs,emptyFlag:bg.emptyRemotePollSuppressed,afterEmpty,entries:rows.length,hasSupabase:rows.some(x=>x.area==='SYNC'&&x.message.includes('Supabase SELECT tasks')),hasRemoteNoise:rows.some(x=>x.message.includes('remote_commands'))};
+              if(!r.live)throw new Error('V457 not deployed');
+              r.bundle=await p.evaluate(()=>!!(window.__modRemoteCommandsV450&&window.__modProjectHistoryV452&&window.__modLiveLogV453&&window.__modBackgroundLogV454&&window.__modGoalsMilestonesV455&&window.__modTaskNotesV456&&window.__modSafeUndoV457));
+
+              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(450);
+              r.goals=await p.evaluate(()=>{
+                const el=document.getElementById('goalsMilestonesV455');
+                return !!(window.__modGoalsMilestonesV455?.version==='V455'&&el&&el.matches('details.statistics-collapsible-v452')&&!el.open&&el.textContent.includes('ZIELE & MEILENSTEINE')&&el.textContent.includes('ZIELE BEARBEITEN'));
               });
-              await p.waitForTimeout(250);
-              r.log=!!logState.api&&logState.version==='V453'&&logState.entries>=1;
+
+              await p.evaluate(()=>{
+                tasks=[{id:45701,text:'Runtime Notiz Test',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,activeSegments:[],note:null}];archive=[];saveTasks();switchTab('all');render();
+                window.__modTaskNotesV456.setNote(45701,'Runtime-Notiz sichtbar');
+                startEditing(45701);render();
+              });
+              await p.waitForTimeout(350);
+              r.notes=await p.evaluate(()=>{
+                const field=document.getElementById('note-edit-45701');
+                return !!(field&&field.value==='Runtime-Notiz sichtbar'&&document.body.textContent.includes('NOTIZ · OPTIONAL'));
+              });
+              await p.evaluate(()=>{cancelEditing();window.__modSafeUndoV457.clear();const t=tasks.find(x=>x.id===45701);t.priority='high';saveTasks();});await p.waitForTimeout(100);
+              const undoBefore=await p.evaluate(()=>window.__modSafeUndoV457.current());
+              const undoResult=await p.evaluate(()=>({ok:window.__modSafeUndoV457.undo(),priority:tasks.find(x=>x.id===45701)?.priority}));
+              r.undo=!!undoBefore&&/Prioritätsänderung/.test(undoBefore.label)&&undoResult.ok&&undoResult.priority==='normal';
+
+              const logState=await p.evaluate(()=>{const api=window.__modLiveLogV453;api.clear();api.append('SYSTEM','INFO','Runtime smoke V457');switchTab('log');render();return {version:api.version,windowMs:api.windowMs,entries:api.read().length};});await p.waitForTimeout(200);
+              r.log=logState.version==='V453'&&logState.entries===1&&await p.evaluate(()=>document.body.textContent.includes('LIVE-LOG · LETZTE 24 STUNDEN')&&document.body.textContent.includes('Runtime smoke V457'));
               r.rolling24h=logState.windowMs===86400000;
-              r.backgroundLog=!!logState.bg&&logState.bgVersion==='V454'&&logState.syncDelay===900;
-              r.supabaseTrace=!!logState.hasSupabase;
-              r.emptyRemotePollSuppressed=logState.emptyFlag===true&&logState.afterEmpty===0&&!logState.hasRemoteNoise;
-              r.logTab=await p.evaluate(()=>!!(document.querySelector('[data-tab="log"]')&&document.getElementById('liveLogV453')&&document.body.textContent.includes('LIVE-LOG · LETZTE 24 STUNDEN')&&document.body.textContent.includes('Supabase SELECT tasks')));
-              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(500);
-              const stats=await p.evaluate(()=>{
-                const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];
-                return {
-                  history:!!(window.__modProjectHistoryV452&&document.getElementById('projectHistoryV452')&&document.body.textContent.includes('PHASE 1 · AUS EINER LISTE WIRD EIN SYSTEM')&&document.body.textContent.includes('PHASE 6 · AUS DEM CHAT WIRD EINE WEB-APP')),
-                  devstats:!!(window.__modDevelopmentStatsV451&&document.getElementById('developmentStatsV451')&&document.body.textContent.includes('APP-ENTWICKLUNG')),
-                  count:ds.length,
-                  open:ds.filter(d=>d.open).length,
-                  toolbar:document.querySelectorAll('.statistics-collapse-toolbar-v452 button').length
-                };
+
+              const bg=await p.evaluate(async()=>{
+                const api=window.__modBackgroundLogV454,log=window.__modLiveLogV453;log.clear();
+                function builder(result){const b={select(){return b},insert(){return b},update(){return b},delete(){return b},upsert(){return b},eq(){return b},in(){return b},limit(){return b},order(){return b},then(ok,bad){return Promise.resolve(result).then(ok,bad)}};return b;}
+                const client=api.wrapSupabaseClient({from(table){return builder(table==='remote_commands'?{data:[],error:null}:{data:[{id:1}],error:null});}});
+                await client.from('remote_commands').select('id,command').eq('status','pending');const afterEmpty=log.read().length;
+                await client.from('tasks').select('id,legacy_task_id').eq('user_id','secret-value');const rows=log.read();
+                return {version:api.version,empty:afterEmpty,select:rows.some(x=>x.area==='SYNC'&&x.message.includes('Supabase SELECT tasks')),leak:rows.some(x=>x.message.includes('secret-value')),flag:api.emptyRemotePollSuppressed};
               });
-              r.history=stats.history;
-              r.devstats=stats.devstats;
-              r.collapsed=stats.count>=10&&stats.open===0&&stats.toolbar===2;
-              await p.click('[data-stat-open-v452]');await p.waitForTimeout(100);
-              const allOpened=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=10&&ds.every(d=>d.open);});
-              await p.click('[data-stat-close-v452]');await p.waitForTimeout(100);
-              const allClosed=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=10&&ds.every(d=>!d.open);});
-              r.toggleAll=allOpened&&allClosed;
-              await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();});await p.waitForTimeout(350);
+              r.backgroundLog=bg.version==='V454';r.supabaseTrace=bg.select&&!bg.leak;r.emptyRemotePollSuppressed=bg.flag&&bg.empty===0;
+
+              await p.evaluate(()=>{switchTab('statistics');render();});await p.waitForTimeout(450);
+              const stats=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return {history:!!(window.__modProjectHistoryV452&&document.getElementById('projectHistoryV452')),devstats:!!(window.__modDevelopmentStatsV451&&document.getElementById('developmentStatsV451')),count:ds.length,open:ds.filter(d=>d.open).length,toolbar:document.querySelectorAll('.statistics-collapse-toolbar-v452 button').length};});
+              r.history=stats.history;r.devstats=stats.devstats;r.collapsed=stats.count>=11&&stats.open===0&&stats.toolbar===2;
+              await p.click('[data-stat-open-v452]');await p.waitForTimeout(80);const allOpened=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=11&&ds.every(d=>d.open);});
+              await p.click('[data-stat-close-v452]');await p.waitForTimeout(80);const allClosed=await p.evaluate(()=>{const ds=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')];return ds.length>=11&&ds.every(d=>!d.open);});r.toggleAll=allOpened&&allClosed;
+
+              await p.evaluate(()=>{tasks=[];archive=[];switchTab('priority');render();});await p.waitForTimeout(300);
               const heads=await p.locator('#viewContainer .priority-header-v426').evaluateAll(xs=>xs.map(x=>({t:x.querySelector('.priority-label-v426')?.textContent.trim(),c:getComputedStyle(x.querySelector('.priority-label-v426')).color,r:getComputedStyle(x.querySelector('.priority-ring-v426')).borderTopColor,n:x.querySelector('.priority-count-v426').getBoundingClientRect().right})));
-              const labels=['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL'],colors=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];
-              r.priority=heads.length===4&&heads.every((x,i)=>x.t===labels[i]&&x.c===colors[i]&&x.r===colors[i]&&x.n>350);
-              const transfer=await p.evaluate(()=>{tasks=[{id:45499,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,removed:!tasks.some(x=>x.id===45499)};});
-              r.archiveCategory=transfer.cat==='Handwerk'&&transfer.removed;
-              await p.evaluate(()=>{switchTab('all');render();});await p.waitForTimeout(200);
-              r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
-              r.status=['live','log','rolling24h','logTab','backgroundLog','supabaseTrace','emptyRemotePollSuppressed','history','collapsed','toggleAll','devstats','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
+              const labels=['HOHE PRIORITÄT','MITTLERE PRIORITÄT','NORMALE PRIORITÄT','OPTIONAL'],colors=['rgb(216, 91, 91)','rgb(211, 170, 69)','rgb(243, 243, 243)','rgb(166, 106, 216)'];r.priority=heads.length===4&&heads.every((x,i)=>x.t===labels[i]&&x.c===colors[i]&&x.r===colors[i]&&x.n>350);
+              const transfer=await p.evaluate(()=>{tasks=[{id:45799,text:'Live Archiv Kategorie (TEST)',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-20T20:00:00+02:00',completedAt:'2026-08-20T20:10:00+02:00',completedDate:'2026-08-20',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],category:'Handwerk',note:'Archivnotiz'}];archive=[];saveTasks();saveArchive();simulateDayTransitionForTesting();const a=archive.find(x=>x.text==='Live Archiv Kategorie (TEST)');return {cat:a?.category,note:a?.note,removed:!tasks.some(x=>x.id===45799)};});r.archiveCategory=transfer.cat==='Handwerk'&&transfer.note==='Archivnotiz'&&transfer.removed;
+              await p.evaluate(()=>{switchTab('all');render();});await p.waitForTimeout(150);r.weightBackfill=await p.locator('.weight-backfill-button-v430').count()===1;
+
+              r.status=['live','goals','notes','undo','log','rolling24h','backgroundLog','supabaseTrace','emptyRemotePollSuppressed','history','collapsed','toggleAll','devstats','bundle','priority','archiveCategory','weightBackfill'].every(k=>r[k])?'PASS':'FAIL';
             }catch(e){r.errors.push(String(e.stack||e));}
-            fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));
-            await b.close(); if(r.status!=='PASS')process.exitCode=1;
+            fs.writeFileSync('runtime-status.txt',JSON.stringify(r,null,2));await b.close();if(r.status!=='PASS')process.exitCode=1;
           })();
           JS
           node smoke.js
