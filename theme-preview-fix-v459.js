@@ -41,11 +41,15 @@
     if(typeof currentTab!=='undefined'&&currentTab!=='theme')return;
     const cards=[...document.querySelectorAll('.theme-preview-card-v458')];
     if(cards.length<5)return;
+    const noteSelected=!!document.querySelector('[data-theme-role-select="note"].active');
     PREVIEW_NOTES.forEach(item=>{
       const card=cards[item.index];
-      if(!card||card.querySelector('.theme-note-preview-v459'))return;
+      if(!card)return;
+      const existing=card.querySelector('.theme-note-preview-v459');
+      if(existing){existing.classList.toggle('theme-selected-v458',noteSelected);return;}
       const node=document.createElement('div');
       node.className='theme-note-preview-v459';
+      if(noteSelected)node.classList.add('theme-selected-v458');
       node.dataset.themeRole='note';
       node.innerHTML=`<strong>📝</strong> ${String(item.text).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}`;
       node.addEventListener('click',event=>{
