@@ -11,25 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V446 build
+      - name: Verify V447 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          paused=Path('paused-today-v447.js').read_text(encoding='utf-8')
           tabs=Path('today-paused-v446.js').read_text(encoding='utf-8')
-          retro=Path('retroactive-complete-v445.js').read_text(encoding='utf-8')
-          duration=Path('segment-duration-v444.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V446','21.08.2026 · 12:28','today-paused-v446.js?v=446-1228',"version:'V446'",'__MOD_BUILD__']:
-              if marker not in index: raise SystemExit(f'Missing V446 index marker: {marker}')
-          for marker in ['master-of-disaster-v446-today-paused','today-paused-v446.js?v=446-1228']:
-              if marker not in sw: raise SystemExit(f'Missing V446 cache marker: {marker}')
+          for marker in ['BUILD: V447','21.08.2026 · 12:55','paused-today-v447.js?v=447-1255',"version:'V447'",'__MOD_BUILD__']:
+              if marker not in index: raise SystemExit(f'Missing V447 index marker: {marker}')
+          for marker in ['master-of-disaster-v447-paused-today-action','paused-today-v447.js?v=447-1255']:
+              if marker not in sw: raise SystemExit(f'Missing V447 cache marker: {marker}')
+          for marker in ['patchPausedTodayButtons','paused-today-v447','toggleToday(${id})','insertAdjacentElement(\'afterend\',btn)','__modPausedTodayV447']:
+              if marker not in paused: raise SystemExit(f'Missing V447 paused Today behavior: {marker}')
           for marker in ['taskRelevantToday','PAUSIERTE AUFGABEN','__modTodayPausedV446']:
               if marker not in tabs: raise SystemExit(f'Missing V446 tab behavior: {marker}')
-          for marker in ['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','hasClosedHistory','task.activeSegments.push','__modRetroactiveV445']:
-              if marker not in retro: raise SystemExit(f'Missing V445 retroactive behavior: {marker}')
-          for marker in ['calculateActiveDuration=function','sumTaskSegmentsMs','__modV444SegmentDuration']:
-              if marker not in duration: raise SystemExit(f'Missing V444 duration behavior: {marker}')
-          print('V446 build consistency OK')
+          print('V447 build consistency OK')
       - name: JavaScript syntax
-        run: node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js

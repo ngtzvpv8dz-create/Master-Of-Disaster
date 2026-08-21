@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
       - name: Verify V445 retroactive completion
         shell: python
         run: |
@@ -29,5 +29,15 @@ jobs:
               if marker not in js: raise SystemExit(f'Missing V446 Today behavior: {marker}')
           if '>PAUSIERT</button>' not in html: raise SystemExit('PAUSIERT tab missing')
           if 'data-tab="completed"' in html: raise SystemExit('ERLEDIGT tab still present')
-          if 'V446' not in html or 'today-paused-v446.js?v=446-1228' not in html: raise SystemExit('V446 build wiring missing')
+          if 'today-paused-v446.js?v=446-1228' not in html: raise SystemExit('V446 Today wiring missing')
           print('V446 Today/Paused regression OK')
+      - name: Verify V447 paused Today action
+        shell: python
+        run: |
+          from pathlib import Path
+          js=Path('paused-today-v447.js').read_text(encoding='utf-8')
+          html=Path('index.html').read_text(encoding='utf-8')
+          for marker in ['resumeTask','askManualTimes','insertAdjacentElement(\'afterend\',btn)','toggleToday(${id})','paused-today-v447','Für heute markieren','Aus Heute entfernen']:
+              if marker not in js: raise SystemExit(f'Missing V447 paused Today action: {marker}')
+          if 'BUILD: V447' not in html or 'paused-today-v447.js?v=447-1255' not in html: raise SystemExit('V447 build wiring missing')
+          print('V447 paused Today action regression OK')
