@@ -11,28 +11,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V465 build
+      - name: Verify V466 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          pkg=Path('theme-package-actions-v466.js').read_text(encoding='utf-8')
           sync=Path('theme-state-sync-v465.js').read_text(encoding='utf-8')
           state=Path('theme-state-design-v464.js').read_text(encoding='utf-8')
           comfort=Path('theme-editor-comfort-v463.js').read_text(encoding='utf-8')
           ux=Path('ux-cooking-editor-v460.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V465','22.08.2026 · 00:10','theme-state-sync-v465.js?v=465-0010',"version:'V465'",'modV465ThemeStateSyncDone']:
-              if marker not in index: raise SystemExit(f'Missing V465 index marker: {marker}')
-          for marker in ['master-of-disaster-v465-theme-state-sync','theme-state-sync-v465.js?v=465-0010','/theme-state-sync-v465.js']:
-              if marker not in sw: raise SystemExit(f'Missing V465 cache marker: {marker}')
-          for marker in ['THEME STATE SYNC','api.setState=function','__modThemeStateDesignV464?.patch','__modThemeStateSyncV465']:
-              if marker not in sync: raise SystemExit(f'Missing V465 sync behavior: {marker}')
-          for marker in ['ZUSTANDSDESIGN','AKTION VERLAUF WINKEL','perState:true','previewRepair:true','__modThemeStateDesignV464']:
+          for marker in ['BUILD: V466','22.08.2026 · 00:25','theme-package-actions-v466.js?v=466-0025',"version:'V466'",'modV466ThemePackageActionsDone']:
+              if marker not in index: raise SystemExit(f'Missing V466 index marker: {marker}')
+          for marker in ['master-of-disaster-v466-theme-package-actions','theme-package-actions-v466.js?v=466-0025','/theme-package-actions-v466.js']:
+              if marker not in sw: raise SystemExit(f'Missing V466 cache marker: {marker}')
+          for marker in ['master-of-disaster-theme-package','MEIN THEME SPEICHERN','MEIN THEME LADEN','THEME EXPORTIEREN','ALLES AUF STANDARD','PREVIEW_ACTIONS','AKTIONSTASTEN EINZELN','TASTE VERLAUF WINKEL','individualActions:true','fullPackage:true','__modThemePackageActionsV466']:
+              if marker not in pkg: raise SystemExit(f'Missing V466 package/action behavior: {marker}')
+          for marker in ['THEME STATE SYNC','__modThemeStateSyncV465']:
+              if marker not in sync: raise SystemExit(f'Missing preserved V465 behavior: {marker}')
+          for marker in ['ZUSTANDSDESIGN','perState:true','__modThemeStateDesignV464']:
               if marker not in state: raise SystemExit(f'Missing preserved V464 behavior: {marker}')
           for marker in ['BOTTOM_OFFSET_PX=50','scrollRetention:true','__modThemeEditorComfortV463']:
               if marker not in comfort: raise SystemExit(f'Missing preserved V463 behavior: {marker}')
           for marker in ['themeStickyPreviewV460','passiveCookingParallel:true','__modUxCookingEditorV460']:
               if marker not in ux: raise SystemExit(f'Missing preserved V460 behavior: {marker}')
-          print('V465 build consistency OK')
+          print('V466 build consistency OK')
       - name: JavaScript syntax
-        run: node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+        run: node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js

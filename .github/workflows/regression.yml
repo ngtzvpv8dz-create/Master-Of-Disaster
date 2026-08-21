@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+        run: node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
       - name: Verify preserved core behavior markers
         shell: python
         run: |
@@ -27,7 +27,8 @@ jobs:
             'theme-editor-stability-v461.js':['replaceObservedHostAfterLegacyObserversAttached','__modThemeStabilityV461'],
             'theme-ui-guard-v462.js':['theme-panel-v458:has(.theme-preview-v458)','__modThemeUiGuardV462'],
             'theme-editor-comfort-v463.js':['BOTTOM_OFFSET_PX=50','scrollRetention:true','__modThemeEditorComfortV463'],
-            'theme-state-design-v464.js':['ZUSTANDSDESIGN','AKTION VERLAUF WINKEL','perState:true','__modThemeStateDesignV464']
+            'theme-state-design-v464.js':['ZUSTANDSDESIGN','perState:true','__modThemeStateDesignV464'],
+            'theme-state-sync-v465.js':['THEME STATE SYNC','__modThemeStateSyncV465']
           }
           for name,markers in checks.items():
               text=Path(name).read_text(encoding='utf-8')
@@ -42,17 +43,17 @@ jobs:
           global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeit',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-22';global.getBerlinDateKeyFromISO=()=> '2026-08-22';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};global.startTask=()=>{};global.pauseTask=id=>{const t=tasks.find(x=>x.id===id);if(!t)return;const now=new Date().toISOString();const last=t.activeSegments?.at(-1);if(last&&!last.endedAt)last.endedAt=now;t.status='paused';t.pausedAt=now;};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
           eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));startTask(1);switchCookingMode(1,'passive');startTask(2);if(tasks[1].status!=='running')throw new Error('Parallel cooking work blocked');console.log('Cooking concurrency OK');
           NODE
-      - name: Verify V465 state synchronization wiring
+      - name: Verify V466 package and individual-action wiring
         shell: python
         run: |
           from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');sync=Path('theme-state-sync-v465.js').read_text(encoding='utf-8');state=Path('theme-state-design-v464.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V465','22.08.2026 · 00:10','theme-state-sync-v465.js?v=465-0010',"version:'V465'",'modV465ThemeStateSyncDone']:
-              if marker not in html: raise SystemExit(f'Missing V465 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v465-theme-state-sync','/theme-state-sync-v465.js']:
-              if marker not in sw: raise SystemExit(f'Missing V465 SW marker: {marker}')
-          for marker in ['api.setState=function','setTimeout(patch,35)','setTimeout(patch,90)','__modThemeStateSyncV465']:
-              if marker not in sync: raise SystemExit(f'Missing V465 sync marker: {marker}')
-          for marker in ['KARTE VERLAUF WINKEL','AKTION VERLAUF WINKEL','data-v464-preview-source','perState:true','actionGradient:true','gradientAngle:true']:
-              if marker not in state: raise SystemExit(f'Missing V464 state design marker: {marker}')
-          print('V465 state sync wiring OK')
+          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('theme-package-actions-v466.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V466','22.08.2026 · 00:25','theme-package-actions-v466.js?v=466-0025',"version:'V466'",'modV466ThemePackageActionsDone']:
+              if marker not in html: raise SystemExit(f'Missing V466 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v466-theme-package-actions','/theme-package-actions-v466.js']:
+              if marker not in sw: raise SystemExit(f'Missing V466 SW marker: {marker}')
+          for marker in ['PACKAGE_KEY','capturePackage','presetApplied','resetAll','PREVIEW_ACTIONS','AKTIONSTASTEN EINZELN','TASTE VERLAUF START','TASTE VERLAUF ENDE','TASTE VERLAUF WINKEL','data-v466-anchor','individualActions:true','fullPackage:true','__modThemePackageActionsV466']:
+              if marker not in js: raise SystemExit(f'Missing V466 behavior marker: {marker}')
+          if "safeRemove(STATE_KEY)" not in js or "safeRemove(BUTTON_KEY)" not in js:
+              raise SystemExit('V466 presets/reset must clear stale state/action design')
+          print('V466 package/action wiring OK')
