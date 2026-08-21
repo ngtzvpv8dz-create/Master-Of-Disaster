@@ -14,7 +14,7 @@ jobs:
       - name: Verify V445 retroactive completion
         shell: python
         run: |
-          from pathlib import import Path
+          from pathlib import Path
           retro=Path('retroactive-complete-v445.js').read_text(encoding='utf-8')
           for marker in ['SPEICHERN & ERLEDIGEN','saveManualSegmentsAndCompleteV445','task.status=\'completed\'','task.completedAt=segs[segs.length-1].endedAt','hasClosedHistory','task.activeSegments.push({startedAt:now,endedAt:null})']:
               if marker not in retro: raise SystemExit(f'Missing retroactive behavior: {marker}')
