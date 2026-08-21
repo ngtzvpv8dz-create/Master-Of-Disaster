@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check safe-undo-v457.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+      - run: node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check safe-undo-v457.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V464 per-state Theme design
+      - name: Verify live V465 Theme state synchronization
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,15 +23,16 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V464',live:false,bundle:false,previewOpen:false,previewRunning:false,perState:false,noDuplicateStateBorders:false,cardGradientAngle:false,actionGradient:false,actionGradientAngle:false,stateTypography:false,previewOffset:false,scrollRetention:false,abortedVisible:false,cookingParallel:false,integrity:false,errors:[]};
+            const out={status:'FAIL',version:'V465',live:false,bundle:false,stateSync:false,previewOpen:false,previewRunning:false,perState:false,noDuplicateStateBorders:false,cardGradientAngle:false,actionGradient:false,actionGradientAngle:false,stateTypography:false,previewOffset:false,scrollRetention:false,abortedVisible:false,cookingParallel:false,integrity:false,errors:[]};
             try{
               for(let i=0;i<18;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V464/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V464')){out.live=true;break;}
+                if(/BUILD: V465/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V465')){out.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V464 not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modThemeStateDesignV464&&window.__modThemeEditorComfortV463&&window.__modThemeUiGuardV462&&window.__modThemeStabilityV461&&window.__modUxCookingEditorV460&&window.__modSafeUndoV457&&window.__modBackgroundLogV454&&window.__modLiveLogV453));
+              if(!out.live)throw new Error('V465 not deployed');
+              out.bundle=await p.evaluate(()=>!!(window.__modThemeStateSyncV465&&window.__modThemeStateDesignV464&&window.__modThemeEditorComfortV463&&window.__modThemeUiGuardV462&&window.__modThemeStabilityV461&&window.__modUxCookingEditorV460&&window.__modSafeUndoV457&&window.__modBackgroundLogV454&&window.__modLiveLogV453));
+              out.stateSync=await p.evaluate(()=>window.__modThemeStateSyncV465?.wrapped===true);
 
               await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(1000);
               out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1&&window.__modThemeEditorComfortV463?.bottomOffsetPx===50;});
@@ -43,8 +44,8 @@ jobs:
               out.previewRunning=await p.evaluate(()=>!!document.querySelector('#themeStickyPreviewV460 .theme-sticky-cardwrap-v460 .task.running')&&!document.querySelector('#themeStickyPreviewV460 .theme-sticky-cardwrap-v460')?.textContent.includes('Vorschau wird aufgebaut'));
 
               async function setField(state,path,value){
-                await p.evaluate(({state,path,value})=>{window.__modUxCookingEditorV460.setState(state);}, {state,path,value});
-                await p.waitForTimeout(120);
+                await p.evaluate(state=>window.__modUxCookingEditorV460.setState(state),state);
+                await p.waitForTimeout(170);
                 await p.evaluate(({path,value})=>{const el=document.querySelector(`[data-v464-path="${path}"]`);if(!el)throw new Error('Missing field '+path);el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true}));},{path,value});
                 await p.waitForTimeout(100);
               }
@@ -53,7 +54,7 @@ jobs:
               await setField('open','states.open.actions.start','#123456');
               await setField('open','states.open.actions.end','#654321');
               await setField('open','states.open.actions.angle',41);
-              await p.evaluate(()=>document.querySelector('[data-theme-role-select="title"]')?.click());await p.waitForTimeout(130);
+              await p.evaluate(()=>document.querySelector('[data-theme-role-select="title"]')?.click());await p.waitForTimeout(150);
               await setField('open','states.open.elements.title.fontSize',19);
               await setField('running','states.running.elements.title.fontSize',13);
               const cfg=await p.evaluate(()=>window.__modThemeStateDesignV464.getConfig());
@@ -63,17 +64,17 @@ jobs:
               out.actionGradientAngle=cfg.states.open.actions.angle===41;
               out.stateTypography=cfg.states.open.elements.title.fontSize===19&&cfg.states.running.elements.title.fontSize===13;
 
-              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('open'));await p.waitForTimeout(150);
+              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('open'));await p.waitForTimeout(170);
               out.actionGradient=out.actionGradient&&await p.evaluate(()=>{const btn=document.querySelector('#themeStickyPreviewV460 .icon-action');return !!btn&&getComputedStyle(btn).backgroundImage.includes('linear-gradient');});
 
               const scroll=await p.evaluate(async()=>{const max=Math.max(0,document.documentElement.scrollHeight-innerHeight);const target=Math.min(650,Math.max(160,max-100));window.scrollTo(0,target);await new Promise(r=>setTimeout(r,60));const before=window.scrollY;const btn=document.querySelector('[data-theme-role-select="type"]');btn?.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));btn?.click();await new Promise(r=>setTimeout(r,170));return {before,after:window.scrollY};});
               out.scrollRetention=scroll.before>50&&Math.abs(scroll.after-scroll.before)<=3;
 
               const today=await p.evaluate(()=>getBerlinDateKey());
-              await p.evaluate((today)=>{const iso=new Date().toISOString();tasks=[{id:46401,text:'Abbruch V464',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:iso,abortedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1}];archive=[];saveTasks();switchTab('today');render();},today);await p.waitForTimeout(220);
-              out.abortedVisible=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN HEUTE')&&document.body.textContent.includes('Abbruch V464'));
+              await p.evaluate((today)=>{const iso=new Date().toISOString();tasks=[{id:46501,text:'Abbruch V465',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:iso,abortedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1}];archive=[];saveTasks();switchTab('today');render();},today);await p.waitForTimeout(220);
+              out.abortedVisible=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN HEUTE')&&document.body.textContent.includes('Abbruch V465'));
 
-              const cooking=await p.evaluate(()=>{tasks=[{id:46411,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:46412,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(46411);switchCookingMode(46411,'passive');const passive=tasks[0].activeSegments.filter(s=>!s.endedAt).length===0;startTask(46412);const parallel=tasks[1].status==='running';const rep=collectDataIntegrityReport();return {passive,parallel,errors:rep.errors||[]};});
+              const cooking=await p.evaluate(()=>{tasks=[{id:46511,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:46512,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(46511);switchCookingMode(46511,'passive');const passive=tasks[0].activeSegments.filter(s=>!s.endedAt).length===0;startTask(46512);const parallel=tasks[1].status==='running';const rep=collectDataIntegrityReport();return {passive,parallel,errors:rep.errors||[]};});
               out.cookingParallel=cooking.passive&&cooking.parallel;out.integrity=cooking.errors.length===0;
 
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
