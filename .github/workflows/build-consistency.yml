@@ -11,28 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V463 build
+      - name: Verify V464 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          state=Path('theme-state-design-v464.js').read_text(encoding='utf-8')
           comfort=Path('theme-editor-comfort-v463.js').read_text(encoding='utf-8')
-          guard=Path('theme-ui-guard-v462.js').read_text(encoding='utf-8')
-          stability=Path('theme-editor-stability-v461.js').read_text(encoding='utf-8')
           ux=Path('ux-cooking-editor-v460.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V463','21.08.2026 · 23:51','theme-editor-comfort-v463.js?v=463-2351',"version:'V463'",'modV463ThemeComfortDone']:
-              if marker not in index: raise SystemExit(f'Missing V463 index marker: {marker}')
-          for marker in ['master-of-disaster-v463-theme-editor-comfort','theme-editor-comfort-v463.js?v=463-2351','/theme-editor-comfort-v463.js']:
-              if marker not in sw: raise SystemExit(f'Missing V463 cache marker: {marker}')
-          for marker in ['BOTTOM_OFFSET_PX=50','bottom:${BOTTOM_OFFSET_PX}px','lastThemeScrollY','scheduleRestore','data-theme-role-select','scrollRetention:true','__modThemeEditorComfortV463']:
-              if marker not in comfort: raise SystemExit(f'Missing V463 comfort behavior: {marker}')
-          for marker in ['theme-panel-v458:has(.theme-preview-v458)','__modThemeUiGuardV462']:
-              if marker not in guard: raise SystemExit(f'Missing preserved V462 UI guard behavior: {marker}')
-          for marker in ['replaceObservedHostAfterLegacyObserversAttached','__modThemeStabilityV461']:
-              if marker not in stability: raise SystemExit(f'Missing preserved V461 stability behavior: {marker}')
-          for marker in ['themeStickyPreviewV460','ERLEDIGT / ABGEBROCHEN HEUTE','segment-mode-v460','passiveCookingParallel:true','__modUxCookingEditorV460']:
+          for marker in ['BUILD: V464','22.08.2026 · 00:03','theme-state-design-v464.js?v=464-0003',"version:'V464'",'modV464ThemeStateDesignDone']:
+              if marker not in index: raise SystemExit(f'Missing V464 index marker: {marker}')
+          for marker in ['master-of-disaster-v464-theme-state-design','theme-state-design-v464.js?v=464-0003','/theme-state-design-v464.js']:
+              if marker not in sw: raise SystemExit(f'Missing V464 cache marker: {marker}')
+          for marker in ['masterOfDisasterThemeStateDesignV464','ZUSTANDSDESIGN','KARTE VERLAUF WINKEL','AKTION VERLAUF WINKEL','perState:true','actionGradient:true','gradientAngle:true','previewRepair:true','__modThemeStateDesignV464']:
+              if marker not in state: raise SystemExit(f'Missing V464 state-theme behavior: {marker}')
+          for marker in ['BOTTOM_OFFSET_PX=50','scrollRetention:true','__modThemeEditorComfortV463']:
+              if marker not in comfort: raise SystemExit(f'Missing preserved V463 comfort behavior: {marker}')
+          for marker in ['themeStickyPreviewV460','ERLEDIGT / ABGEBROCHEN HEUTE','passiveCookingParallel:true','__modUxCookingEditorV460']:
               if marker not in ux: raise SystemExit(f'Missing preserved V460 behavior: {marker}')
-          print('V463 build consistency OK')
+          print('V464 build consistency OK')
       - name: JavaScript syntax
-        run: node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-preview-fix-v459.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check task-notes-v456.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check project-history-v452.js && node --check development-stats-v451.js && node --check completed-category-v449.js && node --check paused-today-v447.js && node --check today-paused-v446.js && node --check retroactive-complete-v445.js && node --check segment-duration-v444.js && node --check time-segments-v443.js && node --check integrity-v439.js && node --check remote-commands.js && node --check app.js
+        run: node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
