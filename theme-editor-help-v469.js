@@ -81,7 +81,7 @@
   function patchFields(){
     for(const field of document.querySelectorAll('.theme-editor-v458 .theme-field-v458')){
       const row=field.querySelector('.theme-label-v458');const labelNode=row?.querySelector('span');const input=field.querySelector('input,select,button');const label=labelNode?.textContent?.trim()||input?.getAttribute('aria-label')||'Einstellung';
-      if(labelNode&&!row.querySelector('.theme-info-v469'))addInfoButton(labelNode,label);
+      if(labelNode&&!row.querySelector('.theme-info-v468'))addInfoButton(labelNode,label);
     }
   }
   function patchToolbar(){
