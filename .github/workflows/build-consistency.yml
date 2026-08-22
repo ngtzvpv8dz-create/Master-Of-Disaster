@@ -11,22 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V470 build
+      - name: Verify V471 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          remote=Path('remote-archive-maintenance-v471.js').read_text(encoding='utf-8')
           stable=Path('theme-editor-help-stability-v470.js').read_text(encoding='utf-8')
-          helpjs=Path('theme-editor-help-v469.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V470','22.08.2026 · 10:05','theme-editor-help-stability-v470.js?v=470-1005',"version:'V470'",'modV470ThemeHelpStabilityDone']:
-              if marker not in index: raise SystemExit(f'Missing V470 index marker: {marker}')
-          for marker in ['master-of-disaster-v470-theme-help-stability','theme-editor-help-stability-v470.js']:
-              if marker not in sw: raise SystemExit(f'Missing V470 service worker marker: {marker}')
-          for marker in ['stateHelpMissing','addToggleHelp','wrapState','MutationObserver','stickyHelpStable:true','toggleHelp:true','__modThemeEditorHelpStabilityV470']:
-              if marker not in stable: raise SystemExit(f'Missing V470 stability behavior: {marker}')
-          for marker in ['completeHelp:true','patchChoiceGroups','__modThemeEditorHelpV469']:
-              if marker not in helpjs: raise SystemExit(f'Missing preserved V469 behavior: {marker}')
-          print('V470 build consistency OK')
+          for marker in ['BUILD: V471','22.08.2026 · 10:24','remote-archive-maintenance-v471.js?v=471-1024',"version:'V471'",'modV471RemoteArchiveDeleteDone']:
+              if marker not in index: raise SystemExit(f'Missing V471 index marker: {marker}')
+          for marker in ['master-of-disaster-v471-remote-archive-delete','remote-archive-maintenance-v471.js']:
+              if marker not in sw: raise SystemExit(f'Missing V471 service worker marker: {marker}')
+          for marker in ['DELETE_ARCHIVE_ENTRY','archive_pending','deleteArchiveEntry','nextArchiveNumber=afterHighest+1','__modRemoteArchiveMaintenanceV471']:
+              if marker not in remote: raise SystemExit(f'Missing V471 archive maintenance behavior: {marker}')
+          for marker in ['stickyHelpStable:true','__modThemeEditorHelpStabilityV470']:
+              if marker not in stable: raise SystemExit(f'Missing preserved V470 behavior: {marker}')
+          print('V471 build consistency OK')
       - name: JavaScript syntax
-        run: node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-design-v464.js && node --check ux-cooking-editor-v460.js && node --check app.js
+        run: node --check remote-archive-maintenance-v471.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-design-v464.js && node --check ux-cooking-editor-v460.js && node --check app.js
