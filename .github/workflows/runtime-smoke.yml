@@ -42,8 +42,9 @@ jobs:
               await p.waitForTimeout(500);
 
               const before=await p.evaluate(()=>{const s=document.getElementById('appFixedTopV475'),h=s?.querySelector('.header'),t=s?.querySelector('.tabs-wrapper');const cs=s?getComputedStyle(s):null;return {shell:!!s,position:cs?.position||'',top:s?.getBoundingClientRect().top??999,height:s?.getBoundingClientRect().height||0,header:!!h,tabs:!!t,bg:cs?.backgroundColor||'',apiHeight:window.__modFixedAppHeaderV475?.height||0};});
+              const scrollPadding=await p.evaluate(()=>parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0);
               out.fixedShell=before.shell&&before.position==='sticky'&&Math.abs(before.top)<1&&before.header&&before.tabs;
-              out.dynamicHeight=before.height>80&&Math.abs(before.apiHeight-before.height)<3&&parseFloat(getComputedStyle(await p.locator('html').elementHandle()).scrollPaddingTop||'0')>=before.height;
+              out.dynamicHeight=before.height>80&&Math.abs(before.apiHeight-before.height)<3&&scrollPadding>=before.height;
 
               await p.evaluate(()=>window.scrollTo(0,1500));await p.waitForTimeout(300);
               const after=await p.evaluate(()=>{const s=document.getElementById('appFixedTopV475'),h=s?.querySelector('.header'),t=s?.querySelector('.tabs-wrapper');const sr=s?.getBoundingClientRect(),hr=h?.getBoundingClientRect(),tr=t?.getBoundingClientRect();const hit=document.elementFromPoint(20,Math.max(2,(sr?.bottom||2)-4));return {scrollY:window.scrollY,top:sr?.top??999,bottom:sr?.bottom??0,headerTop:hr?.top??-999,headerBottom:hr?.bottom??999,tabsTop:tr?.top??-999,tabsBottom:tr?.bottom??999,hitInside:!!hit?.closest?.('#appFixedTopV475'),bg:getComputedStyle(s).backgroundColor};});
