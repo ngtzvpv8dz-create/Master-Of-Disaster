@@ -68,6 +68,7 @@ jobs:
               await p.evaluate(({b1,b2})=>{const api=window.__modTodayWorkBlocksV474;api.moveTaskToBlock(47401,b2,null,{render:false});api.moveTaskToBlock(47402,b2,null,{render:false});render();},model);await p.waitForTimeout(380);
               out.emptyBlockPersists=await p.evaluate(({b1})=>{const root=document.querySelector(`.work-block-v474[data-work-block-id="${b1}"]`);return !!root&&root.querySelector('.work-block-count-v474')?.textContent==='0'&&/Keine offenen Aufgaben/.test(root.textContent);},model);
               out.manualDeleteGuard=await p.evaluate(({b2})=>{const api=window.__modTodayWorkBlocksV474;const before=api.getBlocks().length;window.confirm=()=>true;const result=api.deleteBlock(b2);return result===false&&api.getBlocks().length===before;},model);
+              await p.evaluate(()=>{const modal=document.getElementById('modalContainer');if(modal)modal.innerHTML='';document.getElementById('safeUndoV457')?.remove();});
 
               await p.evaluate(()=>{editingTaskId=47403;render();});await p.waitForTimeout(320);
               out.editAssignment=await p.evaluate(()=>!!document.getElementById('editWorkBlockRowV474')&&document.querySelectorAll('#editWorkBlockV474 option').length>=3);
