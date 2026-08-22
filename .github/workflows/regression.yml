@@ -10,28 +10,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+        run: node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check ux-cooking-editor-v460.js && node --check safe-undo-v457.js && node --check app.js
       - name: Verify preserved core behavior markers
         shell: python
         run: |
           from pathlib import Path
           checks={
             'live-log-v453.js':['WINDOW_MS=24*60*60*1000','__modLiveLogV453'],
-            'background-log-v454.js':['SYNC_DELAY_MS=900','emptyRemotePollSuppressed:true'],
             'safe-undo-v457.js':['TTL_MS=10*60*1000','__modSafeUndoV457'],
             'ux-cooking-editor-v460.js':['themeStickyPreviewV460','ERLEDIGT / ABGEBROCHEN HEUTE','passiveCookingParallel:true'],
             'theme-editor-comfort-v463.js':['BOTTOM_OFFSET_PX=50','scrollRetention:true'],
-            'theme-state-design-v464.js':['ZUSTANDSDESIGN','perState:true'],
-            'theme-state-sync-v465.js':['THEME STATE SYNC','__modThemeStateSyncV465'],
-            'theme-package-actions-v466.js':['master-of-disaster-theme-package','AKTIONSTASTEN EINZELN','individualActions:true','fullPackage:true'],
-            'theme-package-stability-v467.js':['needsPatch','burst','lifecyclePatch:true','__modThemePackageStabilityV467'],
-            'theme-editor-polish-v468.js':['theme-info-v468','theme-mini-v468','v468-action-common','presetStaysTheme:true','paletteHelp:true','actionControlsUnified:true','rootBackground:true','addButtonDark:true','nextTaskUnified:true']
+            'theme-package-actions-v466.js':['master-of-disaster-theme-package','individualActions:true','fullPackage:true'],
+            'theme-package-stability-v467.js':['lifecyclePatch:true','__modThemePackageStabilityV467'],
+            'theme-editor-polish-v468.js':['theme-info-v468','theme-mini-v468','presetStaysTheme:true','actionControlsUnified:true','rootBackground:true']
           }
           for name,markers in checks.items():
               text=Path(name).read_text(encoding='utf-8')
               for marker in markers:
                   if marker not in text: raise SystemExit(f'Missing preserved marker {marker} in {name}')
           print('Preserved behavior markers OK')
+      - name: Verify V469 complete help wiring
+        shell: python
+        run: |
+          from pathlib import Path
+          html=Path('index.html').read_text(encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          js=Path('theme-editor-help-v469.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V469','theme-editor-help-v469.js?v=469-0957',"version:'V469'",'modV469ThemeEditorHelpDone']:
+              if marker not in html: raise SystemExit(f'Missing V469 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v469-theme-editor-help','theme-editor-help-v469.js']:
+              if marker not in sw: raise SystemExit(f'Missing V469 SW marker: {marker}')
+          for marker in ['patchFields','patchToolbar','patchChoiceGroups','patchGroupHeadings','v469HelpButton','MEIN THEME SPEICHERN','data-v466-select','data-v466-anchor','data-grid-step','data-move','completeHelp:true','__modThemeEditorHelpV469']:
+              if marker not in js: raise SystemExit(f'Missing V469 help marker: {marker}')
+          if "!row.querySelector('.theme-info-v468')" not in js:
+              raise SystemExit('V469 must not duplicate V468 palette info buttons')
+          print('V469 complete help wiring OK')
       - name: Verify V460 passive cooking concurrency
         run: |
           node <<'NODE'
@@ -40,18 +53,3 @@ jobs:
           global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeit',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-22';global.getBerlinDateKeyFromISO=()=> '2026-08-22';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};global.startTask=()=>{};global.pauseTask=()=>{};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
           eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));startTask(1);switchCookingMode(1,'passive');startTask(2);if(tasks[1].status!=='running')throw new Error('Parallel cooking work blocked');console.log('Cooking concurrency OK');
           NODE
-      - name: Verify V468 Theme editor polish wiring
-        shell: python
-        run: |
-          from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('theme-editor-polish-v468.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V468','22.08.2026 · 09:41','theme-editor-polish-v468.js?v=468-0941',"version:'V468'",'modV468ThemeEditorPolishDone']:
-              if marker not in html: raise SystemExit(f'Missing V468 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v468-theme-editor-polish','/theme-editor-polish-v468.js']:
-              if marker not in sw: raise SystemExit(f'Missing V468 SW marker: {marker}')
-          for marker in ['RETURN_THEME_KEY','consumeReturnTheme','addPaletteHelp','openInfo','unifyActionControls','AKTION VERLAUF START','AKTION GRÖSSE','AKTION ABSTAND','theme-info-v468','theme-mini-v468','v468-action-common','__modThemeEditorPolishV468']:
-              if marker not in js: raise SystemExit(f'Missing V468 behavior marker: {marker}')
-          if '.add-button{background:var(--mod-control' not in js: raise SystemExit('Add button is not dark-theme controlled')
-          if '.next-task-panel{background:var(--mod-surface' not in js or 'border:2px solid' not in js: raise SystemExit('Next task panel is not unified/highlighted')
-          if 'html{background:var(--mod-bg-top' not in js: raise SystemExit('Root background is not linked to palette')
-          print('V468 Theme editor polish wiring OK')

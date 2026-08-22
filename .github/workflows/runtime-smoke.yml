@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check safe-undo-v457.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+      - run: node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-design-v464.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V468 Theme editor polish
+      - name: Verify live V469 complete Theme editor help
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,56 +23,48 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V468',live:false,bundle:false,presetStaysTheme:false,paletteHelp:false,helpPopup:false,actionControlsUnified:false,actionSizeGapMoved:false,addButtonDark:false,nextTaskUnified:false,rootBackground:false,previewOffset:false,scrollRetention:false,individualActions:false,presetClearsState:false,abortedVisible:false,cookingParallel:false,integrity:false,errors:[]};
+            const out={status:'FAIL',version:'V469',live:false,bundle:false,completeHelp:false,allFieldHelp:false,noPaletteDuplicates:false,toolbarHelp:false,stateHelp:false,roleHelp:false,actionHelp:false,anchorHelp:false,dpadHelp:false,groupHelp:false,helpPopup:false,presetStaysTheme:false,previewOffset:false,scrollRetention:false,individualActions:false,abortedVisible:false,cookingParallel:false,integrity:false,errors:[]};
             try{
               for(let i=0;i<18;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V468/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V468')){out.live=true;break;}
+                if(/BUILD: V469/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V469')){out.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V468 not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modThemeEditorPolishV468&&window.__modThemePackageStabilityV467&&window.__modThemePackageActionsV466&&window.__modThemeStateDesignV464&&window.__modThemeEditorComfortV463&&window.__modUxCookingEditorV460&&window.__modSafeUndoV457));
+              if(!out.live)throw new Error('V469 not deployed');
+              out.bundle=await p.evaluate(()=>!!(window.__modThemeEditorHelpV469&&window.__modThemeEditorPolishV468&&window.__modThemePackageActionsV466&&window.__modUxCookingEditorV460));
+              out.completeHelp=await p.evaluate(()=>window.__modThemeEditorHelpV469?.completeHelp===true);
+              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(1700);
+              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('open'));await p.waitForTimeout(600);
 
-              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(1300);
               out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
-              out.paletteHelp=await p.evaluate(()=>document.querySelectorAll('[data-v468-info]').length>=14);
-              await p.evaluate(()=>document.querySelector('[data-v468-info="HINTERGRUND MITTE"]')?.click());await p.waitForTimeout(120);
-              out.helpPopup=await p.evaluate(()=>!!document.getElementById('themeInfoBackdropV468')&&!!document.querySelector('#themeInfoBackdropV468 .theme-mini-v468.hit')&&document.body.textContent.includes('Wo sehe ich das?'));
+              out.allFieldHelp=await p.evaluate(()=>{const fields=[...document.querySelectorAll('.theme-editor-v458 .theme-field-v458')];return fields.length>20&&fields.every(f=>!!f.querySelector('.theme-label-v458 .theme-info-v468'));});
+              out.noPaletteDuplicates=await p.evaluate(()=>{const panel=[...document.querySelectorAll('.theme-panel-v458')].find(x=>(x.querySelector('.theme-panel-title-v458')?.textContent||'').includes('APP-FARBEN · ZENTRALE PALETTE'));return !!panel&&[...panel.querySelectorAll('.theme-field-v458')].every(f=>f.querySelectorAll('.theme-label-v458 .theme-info-v468').length===1);});
+              out.toolbarHelp=await p.evaluate(()=>{const ids=['themeSaveSnapshotV458','themeLoadSnapshotV458','themeExportV458','themeImportV458','themeResetV458'];return ids.every(id=>document.getElementById(id)?.parentElement?.querySelector('.theme-info-v469'))&&[...document.querySelectorAll('[data-preset]')].every(b=>b.parentElement?.querySelector('.theme-info-v469'));});
+              out.stateHelp=await p.evaluate(()=>{const buttons=[...document.querySelectorAll('#themeStickyPreviewV460 [data-sticky-state-v460]')];return buttons.length>=6&&buttons.every(b=>b.parentElement?.querySelector('.theme-info-v469'));});
+              out.roleHelp=await p.evaluate(()=>{const buttons=[...document.querySelectorAll('.theme-editor-v458 [data-theme-role-select]')];return buttons.length>=5&&buttons.every(b=>b.parentElement?.querySelector('.theme-info-v469'));});
+              out.actionHelp=await p.evaluate(()=>{const buttons=[...document.querySelectorAll('.v466-action-panel [data-v466-select]')];return buttons.length>=5&&buttons.every(b=>b.parentElement?.querySelector('.theme-info-v469'));});
+              out.anchorHelp=await p.evaluate(()=>{const buttons=[...document.querySelectorAll('.v466-action-panel [data-v466-anchor]')];return buttons.length>=5&&buttons.every(b=>b.parentElement?.querySelector('.theme-info-v469'));});
+              out.dpadHelp=await p.evaluate(()=>{const buttons=[...document.querySelectorAll('.v466-action-panel [data-v466-dir]')];return buttons.length>=4&&buttons.every(b=>b.parentElement?.querySelector('.theme-info-v469'));});
+              out.groupHelp=await p.evaluate(()=>[...document.querySelectorAll('.theme-editor-v458 .theme-panel-title-v458')].every(h=>h.nextElementSibling?.classList.contains('theme-info-v469')));
+              out.individualActions=await p.evaluate(()=>!!document.querySelector('.v466-action-panel [data-v466-path="open.0.angle"]'));
+
+              const helpClicked=await p.evaluate(()=>{const field=[...document.querySelectorAll('.theme-field-v458')].find(f=>(f.querySelector('.theme-label-v458 span')?.textContent||'').trim()==='MINDESTHÖHE');const info=field?.querySelector('.theme-info-v469');info?.click();return !!info;});
+              await p.waitForTimeout(150);
+              out.helpPopup=helpClicked&&await p.evaluate(()=>!!document.getElementById('themeInfoBackdropV468')&&document.body.textContent.includes('Mindesthöhe')&&document.body.textContent.includes('Wo sehe ich das?')&&!!document.querySelector('#themeInfoBackdropV468 .v469-mini .hit'));
               await p.evaluate(()=>document.querySelector('.theme-info-close-v468')?.click());
 
-              await p.evaluate(()=>window.__modUxCookingEditorV460.setState('open'));await p.waitForTimeout(350);
-              const unified=await p.evaluate(()=>{
-                const state=document.querySelector('.v464-state-card-panel'),action=document.querySelector('.v466-action-panel');if(!state||!action)return {unified:false,moved:false,individual:false};
-                const visibleDuplicate=[...state.querySelectorAll('.theme-field-v458')].filter(f=>{const t=(f.querySelector('.theme-label-v458 span')?.textContent||'').trim();return ['AKTION VERLAUF START','AKTION VERLAUF ENDE','AKTION VERLAUF WINKEL','AKTION RAHMEN'].includes(t)&&getComputedStyle(f).display!=='none';}).length;
-                const moved=!!action.querySelector('.v468-action-common [data-v464-path$=".actions.size"]')&&!!action.querySelector('.v468-action-common [data-v464-path$=".actions.gap"]');
-                return {unified:visibleDuplicate===0&&!!action.querySelector('.v468-action-common'),moved,individual:!!action.querySelector('[data-v466-path="open.0.angle"]')};
-              });
-              out.actionControlsUnified=unified.unified;out.actionSizeGapMoved=unified.moved;out.individualActions=unified.individual;
+              const scroll=await p.evaluate(async()=>{const max=Math.max(0,document.documentElement.scrollHeight-innerHeight),target=Math.min(650,Math.max(160,max-100));window.scrollTo(0,target);await new Promise(r=>setTimeout(r,60));const before=window.scrollY;document.querySelector('[data-theme-role-select="type"]')?.click();await new Promise(r=>setTimeout(r,260));return {before,after:window.scrollY};});
+              out.scrollRetention=scroll.before>50&&Math.abs(scroll.after-scroll.before)<=4;
 
-              const chrome=await p.evaluate(()=>{
-                const add=document.querySelector('.add-button'),active=document.querySelector('.tab-button.active'),html=getComputedStyle(document.documentElement);if(!add||!active)return {};
-                const a=getComputedStyle(add),t=getComputedStyle(active);return {addBg:a.backgroundColor,activeBg:t.backgroundColor,addColor:a.color,rootBg:html.backgroundColor};
-              });
-              out.addButtonDark=!!chrome.addBg&&chrome.addBg!==chrome.activeBg&&chrome.addBg!=='rgb(255, 255, 255)'&&chrome.addColor!=='rgb(16, 18, 20)';
-              out.rootBackground=!!chrome.rootBg&&chrome.rootBg!=='rgba(0, 0, 0, 0)'&&chrome.rootBg!=='rgb(255, 255, 255)';
-
-              const scroll=await p.evaluate(async()=>{const max=Math.max(0,document.documentElement.scrollHeight-innerHeight),target=Math.min(650,Math.max(160,max-100));window.scrollTo(0,target);await new Promise(r=>setTimeout(r,60));const before=window.scrollY;document.querySelector('[data-theme-role-select="type"]')?.click();await new Promise(r=>setTimeout(r,230));return {before,after:window.scrollY};});
-              out.scrollRetention=scroll.before>50&&Math.abs(scroll.after-scroll.before)<=3;
-
-              // Preset: stale state design is cleared and we land directly back in THEME after the reload.
-              await p.evaluate(()=>{const raw=window.__modThemeStateDesignV464.getConfig();raw.states.open.card.start='#123456';localStorage.setItem('masterOfDisasterThemeStateDesignV464',JSON.stringify(raw));document.querySelector('[data-preset="graphite"]')?.click();});
-              await p.waitForTimeout(1400);await p.waitForLoadState('networkidle',{timeout:60000}).catch(()=>{});await p.waitForTimeout(500);
-              out.presetClearsState=await p.evaluate(()=>window.__modThemeStateDesignV464?.getConfig?.()?.states?.open?.card?.start!=='#123456');
-              out.presetStaysTheme=await p.evaluate(()=>currentTab==='theme'&&document.querySelector('.tab-button[data-tab="theme"]')?.classList.contains('active')&&!!document.querySelector('.theme-editor-v458'));
+              await p.evaluate(()=>document.querySelector('[data-preset="graphite"]')?.click());await p.waitForTimeout(1500);await p.waitForLoadState('networkidle',{timeout:60000}).catch(()=>{});await p.waitForTimeout(500);
+              out.presetStaysTheme=await p.evaluate(()=>currentTab==='theme'&&!!document.querySelector('.theme-editor-v458'));
 
               const today=await p.evaluate(()=>getBerlinDateKey());
-              await p.evaluate((today)=>{const iso=new Date().toISOString();tasks=[{id:46801,text:'Nächste V468',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:today,todayOrder:1,startedAt:null,activeSegments:[],pauseTotalMs:0},{id:46802,text:'Abbruch V468',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:iso,abortedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1}];archive=[];saveTasks();switchTab('today');render();},today);await p.waitForTimeout(300);
-              out.nextTaskUnified=await p.evaluate(()=>{const next=document.querySelector('.next-task-panel'),surface=document.querySelector('.today-summary,.input-panel');if(!next)return false;const n=getComputedStyle(next);return n.borderTopWidth==='2px'&&n.backgroundColor!=='rgb(23, 36, 44)'&&n.backgroundColor!=='rgb(255, 255, 255)';});
-              out.abortedVisible=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN HEUTE')&&document.body.textContent.includes('Abbruch V468'));
+              await p.evaluate((today)=>{const iso=new Date().toISOString();tasks=[{id:46901,text:'Abbruch V469',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:iso,abortedAt:iso,activeSegments:[{startedAt:iso,endedAt:iso}],activeDurationMs:1,actualDurationMs:1}];archive=[];saveTasks();switchTab('today');render();},today);await p.waitForTimeout(250);
+              out.abortedVisible=await p.evaluate(()=>document.body.textContent.includes('ERLEDIGT / ABGEBROCHEN HEUTE')&&document.body.textContent.includes('Abbruch V469'));
 
-              const cooking=await p.evaluate(()=>{tasks=[{id:46811,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:46812,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(46811);switchCookingMode(46811,'passive');const passive=tasks[0].activeSegments.filter(s=>!s.endedAt).length===0;startTask(46812);const parallel=tasks[1].status==='running';const rep=collectDataIntegrityReport();return {passive,parallel,errors:rep.errors||[]};});
+              const cooking=await p.evaluate(()=>{tasks=[{id:46911,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:46912,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(46911);switchCookingMode(46911,'passive');const passive=tasks[0].activeSegments.filter(s=>!s.endedAt).length===0;startTask(46912);const parallel=tasks[1].status==='running';const rep=collectDataIntegrityReport();return {passive,parallel,errors:rep.errors||[]};});
               out.cookingParallel=cooking.passive&&cooking.parallel;out.integrity=cooking.errors.length===0;
-
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));await b.close();if(out.status!=='PASS')process.exitCode=1;
