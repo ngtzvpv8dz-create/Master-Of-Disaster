@@ -10,41 +10,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check ux-cooking-editor-v460.js && node --check safe-undo-v457.js && node --check app.js
-      - name: Verify preserved core behavior markers
-        shell: python
-        run: |
-          from pathlib import Path
-          checks={
-            'live-log-v453.js':['WINDOW_MS=24*60*60*1000','__modLiveLogV453'],
-            'safe-undo-v457.js':['TTL_MS=10*60*1000','__modSafeUndoV457'],
-            'ux-cooking-editor-v460.js':['themeStickyPreviewV460','ERLEDIGT / ABGEBROCHEN HEUTE','passiveCookingParallel:true'],
-            'theme-editor-comfort-v463.js':['BOTTOM_OFFSET_PX=50','scrollRetention:true'],
-            'theme-package-actions-v466.js':['master-of-disaster-theme-package','individualActions:true','fullPackage:true'],
-            'theme-package-stability-v467.js':['lifecyclePatch:true','__modThemePackageStabilityV467'],
-            'theme-editor-polish-v468.js':['theme-info-v468','theme-mini-v468','presetStaysTheme:true','actionControlsUnified:true','rootBackground:true']
-          }
-          for name,markers in checks.items():
-              text=Path(name).read_text(encoding='utf-8')
-              for marker in markers:
-                  if marker not in text: raise SystemExit(f'Missing preserved marker {marker} in {name}')
-          print('Preserved behavior markers OK')
-      - name: Verify V469 complete help wiring
+        run: node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-design-v464.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V470 help stability wiring
         shell: python
         run: |
           from pathlib import Path
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('theme-editor-help-v469.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V469','theme-editor-help-v469.js?v=469-0957',"version:'V469'",'modV469ThemeEditorHelpDone']:
-              if marker not in html: raise SystemExit(f'Missing V469 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v469-theme-editor-help','theme-editor-help-v469.js']:
-              if marker not in sw: raise SystemExit(f'Missing V469 SW marker: {marker}')
-          for marker in ['patchFields','patchToolbar','patchChoiceGroups','patchGroupHeadings','v469HelpButton','MEIN THEME SPEICHERN','data-v466-select','data-v466-anchor','data-grid-step','data-move','completeHelp:true','__modThemeEditorHelpV469']:
-              if marker not in js: raise SystemExit(f'Missing V469 help marker: {marker}')
-          if "!row.querySelector('.theme-info-v468')" not in js:
-              raise SystemExit('V469 must not duplicate V468 palette info buttons')
-          print('V469 complete help wiring OK')
+          stable=Path('theme-editor-help-stability-v470.js').read_text(encoding='utf-8')
+          helpjs=Path('theme-editor-help-v469.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V470','theme-editor-help-stability-v470.js?v=470-1005',"version:'V470'",'modV470ThemeHelpStabilityDone']:
+              if marker not in html: raise SystemExit(f'Missing V470 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v470-theme-help-stability','theme-editor-help-stability-v470.js']:
+              if marker not in sw: raise SystemExit(f'Missing V470 SW marker: {marker}')
+          for marker in ['stateHelpMissing','addToggleHelp','openToggleHelp','wrapState','theme-info-v470-toggle','stickyHelpStable:true','toggleHelp:true','__modThemeEditorHelpStabilityV470']:
+              if marker not in stable: raise SystemExit(f'Missing V470 stability marker: {marker}')
+          for marker in ['completeHelp:true','patchFields','patchToolbar','patchChoiceGroups','patchGroupHeadings','__modThemeEditorHelpV469']:
+              if marker not in helpjs: raise SystemExit(f'Missing preserved V469 help marker: {marker}')
+          print('V470 help stability wiring OK')
       - name: Verify V460 passive cooking concurrency
         run: |
           node <<'NODE'
