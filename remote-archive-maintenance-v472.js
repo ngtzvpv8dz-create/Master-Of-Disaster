@@ -71,7 +71,7 @@
       const s=await getSession();if(!s)return;
       const {data,error}=await s.client.from('remote_commands').select('id,command,payload,created_at').eq('user_id',s.userId).eq('status',QUEUE_STATUS).eq('command','DELETE_ARCHIVE_ENTRY').order('created_at',{ascending:true}).limit(5);
       if(error)throw error;
-      for(const row of(data||[])await processOne(s.client,row);
+      for(const row of (data||[]))await processOne(s.client,row);
     }catch(error){console.warn('V472 archive maintenance poll:',error);}finally{busy=false;}
   }
   function start(){if(timer)clearInterval(timer);poll();timer=setInterval(poll,POLL_MS);}
