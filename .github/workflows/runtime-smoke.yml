@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check development-stats-current-v476.js && node --check scripts/generate-development-metrics.mjs && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - run: node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check scripts/generate-development-metrics.mjs && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V476 current development statistics
+      - name: Verify live V477 statistics summary alignment
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,23 +23,23 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V476',live:false,bundle:false,metricsCurrent:false,appDevelopmentCurrent:false,fiveDevelopmentBlocks:false,developmentBlocksAligned:false,historicalGit:false,fixedShell:false,contentScrolls:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,cookingParallel:false,integrity:false,errors:[]};
+            const out={status:'FAIL',version:'V477',live:false,bundle:false,metricsCurrent:false,appDevelopmentCurrent:false,fiveDevelopmentBlocks:false,summaryPaddingAligned:false,cardsAligned:false,fixedAlignmentPatch:false,historicalGit:false,fixedShell:false,contentScrolls:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,cookingParallel:false,integrity:false,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=/BUILD: V476/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V476');
+                const build=/BUILD: V477/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V477');
                 let liveMetrics=null;
                 try{liveMetrics=await p.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
-                if(build&&liveMetrics?.version==='V476'&&liveMetrics?.sourceCommit&&liveMetrics.sourceCommit!=='pending'&&liveMetrics?.repository?.currentTextLines>10000){out.live=true;break;}
+                if(build&&liveMetrics?.version==='V477'&&liveMetrics?.sourceCommit&&liveMetrics.sourceCommit!=='pending'&&liveMetrics?.repository?.currentTextLines>10000){out.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V476 build or generated metrics not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modDevelopmentStatsCurrentV476&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modRemoteArchiveMaintenanceV472&&window.__modUxCookingEditorV460));
+              if(!out.live)throw new Error('V477 build or generated metrics not deployed');
+              out.bundle=await p.evaluate(()=>!!(window.__modStatisticsAlignmentV477&&window.__modDevelopmentStatsCurrentV476&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modRemoteArchiveMaintenanceV472&&window.__modUxCookingEditorV460));
 
               const date=await p.evaluate(()=>getBerlinDateKey());
               await p.evaluate((date)=>{
                 localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
-                tasks=Array.from({length:34},(_,i)=>({id:47600+i,text:`Scroll Aufgabe ${i+1}`,category:i%3===0?'Haushalt':i%3===1?'Böden wischen':'Sonstiges',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:i<8?date:null,todayOrder:i<8?i+1:null,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}));
+                tasks=Array.from({length:34},(_,i)=>({id:47700+i,text:`Scroll Aufgabe ${i+1}`,category:i%3===0?'Haushalt':i%3===1?'Böden wischen':'Sonstiges',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:i<8?date:null,todayOrder:i<8?i+1:null,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}));
                 archive=[];saveTasks();switchTab('all');render();window.scrollTo(0,0);
               },date);
               await p.waitForTimeout(450);
@@ -49,24 +49,30 @@ jobs:
               out.fixedShell=headerBefore.ok&&Math.abs(headerBefore.top)<1&&Math.abs(headerAfter.top)<1;
               out.contentScrolls=headerAfter.scrollY>500;
 
-              await p.evaluate(()=>{window.scrollTo(0,0);switchTab('statistics');render();});await p.waitForTimeout(900);
-              await p.evaluate(()=>window.__modDevelopmentStatsCurrentV476.load(true));await p.waitForTimeout(300);
+              await p.evaluate(()=>{window.scrollTo(0,0);switchTab('statistics');render();});await p.waitForTimeout(1000);
+              await p.evaluate(async()=>{window.__modStatisticsAlignmentV477.patch();await window.__modDevelopmentStatsCurrentV476.load(true);window.__modStatisticsAlignmentV477.patch();});await p.waitForTimeout(350);
               const stats=await p.evaluate(()=>{
                 const api=window.__modDevelopmentStatsCurrentV476;
+                const fix=window.__modStatisticsAlignmentV477;
                 const root=document.getElementById('developmentStatsV451');
                 const dev=root?[...root.children].filter(x=>x.matches?.('details.statistics-collapsible-v452')):[];
                 const first=dev.find(d=>/APP-ENTWICKLUNG/i.test(d.querySelector(':scope>summary')?.textContent||''));
-                const refs=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')].filter(d=>root&&!root.contains(d)&&d.offsetParent!==null);
-                const lefts=refs.map(d=>d.getBoundingClientRect().left).sort((a,b)=>a-b);
-                const desired=lefts.length?lefts[Math.floor(lefts.length/2)]:null;
-                const aligned=desired!==null&&dev.length===5&&dev.every(d=>Math.abs(d.getBoundingClientRect().left-desired)<=2);
+                const ref=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')].find(d=>root&&!root.contains(d)&&/REPORT-BASIS|GESAMTCHRONIK|PHASE 1/i.test(d.querySelector(':scope>summary')?.textContent||''));
+                const devSummaries=dev.map(d=>d.querySelector(':scope>summary')).filter(Boolean);
+                const refSummary=ref?.querySelector(':scope>summary')||null;
+                const refPadding=refSummary?parseFloat(getComputedStyle(refSummary).paddingLeft):null;
+                const paddings=devSummaries.map(s=>parseFloat(getComputedStyle(s).paddingLeft));
+                const refLeft=ref?.getBoundingClientRect().left??null;
+                const cardLefts=dev.map(d=>d.getBoundingClientRect().left);
                 const m=api?.metrics;
-                return {count:dev.length,aligned,summary:first?.querySelector(':scope>summary')?.textContent||'',body:first?.textContent||'',version:m?.version||'',source:m?.sourceCommit||'',lines:m?.repository?.currentTextLines||0,commits:m?.repository?.reachableCommits||0,prs:m?.repository?.pullRequests||0,historical:api?.historicalFromGit===true,dynamic:api?.dynamicIndent===true};
+                return {count:dev.length,summary:first?.querySelector(':scope>summary')?.textContent||'',body:first?.textContent||'',version:m?.version||'',source:m?.sourceCommit||'',lines:m?.repository?.currentTextLines||0,commits:m?.repository?.reachableCommits||0,prs:m?.repository?.pullRequests||0,historical:api?.historicalFromGit===true,refPadding,paddings,refLeft,cardLefts,fixed:fix?.fixedSummaryPadding===true&&fix?.dynamicIndentRemoved===true};
               });
-              out.metricsCurrent=stats.version==='V476'&&stats.source!=='pending'&&stats.lines>10000&&stats.commits>500&&stats.prs>60;
-              out.appDevelopmentCurrent=/APP-ENTWICKLUNG · AKTUELL · V476/.test(stats.summary)&&/TEXTZEILEN AKTUELL/.test(stats.body)&&!/APP-ENTWICKLUNG · V451/.test(stats.summary);
+              out.metricsCurrent=stats.version==='V477'&&stats.source!=='pending'&&stats.lines>10000&&stats.commits>500&&stats.prs>60;
+              out.appDevelopmentCurrent=/APP-ENTWICKLUNG · AKTUELL · V477/.test(stats.summary)&&/TEXTZEILEN AKTUELL/.test(stats.body)&&!/APP-ENTWICKLUNG · V451/.test(stats.summary);
               out.fiveDevelopmentBlocks=stats.count===5;
-              out.developmentBlocksAligned=stats.aligned&&stats.dynamic;
+              out.summaryPaddingAligned=stats.refPadding!==null&&stats.paddings.length===5&&stats.paddings.every(v=>Math.abs(v-stats.refPadding)<=0.5);
+              out.cardsAligned=stats.refLeft!==null&&stats.cardLefts.length===5&&stats.cardLefts.every(v=>Math.abs(v-stats.refLeft)<=1);
+              out.fixedAlignmentPatch=stats.fixed;
               out.historicalGit=stats.historical;
 
               await p.evaluate(()=>switchTab('today'));await p.waitForTimeout(400);
@@ -79,7 +85,7 @@ jobs:
               out.themeHelpPreserved=await p.evaluate(()=>window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);
               out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
               out.archiveMaintenance=await p.evaluate(()=>window.__modRemoteArchiveMaintenanceV472?.queueStatus==='processing'&&window.__modRemoteArchiveMaintenanceV472?.command==='DELETE_ARCHIVE_ENTRY');
-              const cooking=await p.evaluate(()=>{tasks=[{id:47691,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47692,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47691);switchCookingMode(47691,'passive');startTask(47692);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              const cooking=await p.evaluate(()=>{tasks=[{id:47791,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47792,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47791);switchCookingMode(47791,'passive');startTask(47792);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
               out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
