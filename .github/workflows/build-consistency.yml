@@ -11,19 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V472 build
+      - name: Verify V473 build
         shell: python
         run: |
           from pathlib import Path
-          index=Path('index.html').read_text(encoding='utf-8'); sw=Path('sw.js').read_text(encoding='utf-8')
-          remote=Path('remote-archive-maintenance-v472.js').read_text(encoding='utf-8'); v450=Path('remote-commands.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V472','22.08.2026 · 10:30','remote-archive-maintenance-v472.js?v=472-1030',"version:'V472'",'modV472ArchiveDeleteQueueFixDone']:
-              if marker not in index: raise SystemExit(f'Missing V472 index marker: {marker}')
-          for marker in ['master-of-disaster-v472-archive-delete-queue-fix','remote-archive-maintenance-v472.js']:
-              if marker not in sw: raise SystemExit(f'Missing V472 SW marker: {marker}')
-          for marker in ["QUEUE_STATUS='processing'",'DELETE_ARCHIVE_ENTRY','deleteArchiveEntry','nextArchiveNumber=afterHighest+1','__modRemoteArchiveMaintenanceV472']:
-              if marker not in remote: raise SystemExit(f'Missing V472 behavior: {marker}')
-          if ".eq('status','pending')" not in v450: raise SystemExit('V450 pending queue isolation changed')
-          print('V472 build consistency OK')
+          index=Path('index.html').read_text(encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          v473=Path('category-group-drag-v473.js').read_text(encoding='utf-8')
+          v472=Path('remote-archive-maintenance-v472.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V473','22.08.2026 · 12:15','category-group-drag-v473.js?v=473-1215',"version:'V473'",'modV473CategoryGroupingDone']:
+              if marker not in index: raise SystemExit(f'Missing V473 index marker: {marker}')
+          for marker in ['master-of-disaster-v473-category-grouping-drag-feedback','category-group-drag-v473.js']:
+              if marker not in sw: raise SystemExit(f'Missing V473 service worker marker: {marker}')
+          for marker in ["GROUP_TABS=new Set(['all','today','priority','due','active','archive'])",'task-category-group-v473','REIHENFOLGE','GRUPPIERT','drag-position-badge-v473','drag-insert-before-v473','drag-insert-after-v473','groupingIsViewOnly:true','todayDragGroupedDisabled:true','livePosition:true','insertionLine:true','__modCategoryGroupDragV473']:
+              if marker not in v473: raise SystemExit(f'Missing V473 behavior: {marker}')
+          for marker in ["QUEUE_STATUS='processing'",'DELETE_ARCHIVE_ENTRY','__modRemoteArchiveMaintenanceV472']:
+              if marker not in v472: raise SystemExit(f'Missing preserved V472 behavior: {marker}')
+          print('V473 build consistency OK')
       - name: JavaScript syntax
-        run: node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
+        run: node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
