@@ -1,0 +1,26 @@
+{
+  "schema": "master-of-disaster-development-metrics",
+  "schemaVersion": 1,
+  "version": "V476",
+  "generatedAt": "wird beim Merge automatisch erzeugt",
+  "sourceCommit": "pending",
+  "automated": true,
+  "excludes": [
+    "development-metrics.json"
+  ],
+  "repository": {
+    "reachableCommits": 0,
+    "pullRequests": 0,
+    "mergedPullRequests": 0,
+    "currentFiles": 0,
+    "rootFiles": 0,
+    "workflowFiles": 0,
+    "javascriptFiles": 0,
+    "cssFiles": 0,
+    "currentTextLines": 0,
+    "currentBytes": 0,
+    "currentTextBytes": 0,
+    "imageBytes": 0,
+    "otherBinaryBytes": 0
+  }
+}
