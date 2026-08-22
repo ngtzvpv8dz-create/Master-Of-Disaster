@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - run: node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V473 category grouping and Today drag feedback
+      - name: Verify live V474 Today work blocks and All search
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,73 +23,72 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V473',live:false,bundle:false,groupTabs:false,viewToggle:false,perTabMode:false,groupedCategories:false,collapsePersistent:false,groupingViewOnly:false,groupedDragDisabled:false,sequenceRestored:false,livePosition:false,insertionLine:false,dragHighlight:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,cookingParallel:false,integrity:false,errors:[]};
+            const out={status:'FAIL',version:'V474',live:false,bundle:false,todayUsesWorkBlocks:false,categoriesSeparated:false,dynamicBlockNumbering:false,optionalNames:false,emptyBlockPersists:false,manualDeleteGuard:false,blockDragSwap:false,crossBlockMove:false,editAssignment:false,nextByBlock:false,allSearch:false,directTodayAssignment:false,categoryGroupingPreserved:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,cookingParallel:false,integrity:false,errors:[]};
             try{
               for(let i=0;i<18;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V473/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V473')){out.live=true;break;}
+                if(/BUILD: V474/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V474')){out.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V473 not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modCategoryGroupDragV473&&window.__modCategoriesV412&&window.__modRemoteArchiveMaintenanceV472&&window.__modThemeEditorHelpStabilityV470&&window.__modUxCookingEditorV460));
-              out.groupTabs=await p.evaluate(()=>['all','today','priority','due','active','archive'].every(t=>window.__modCategoryGroupDragV473.groupTabs.includes(t)));
-
-              const today=await p.evaluate(()=>getBerlinDateKey());
-              await p.evaluate((today)=>{
+              if(!out.live)throw new Error('V474 not deployed');
+              out.bundle=await p.evaluate(()=>!!(window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modCategoriesV412&&window.__modRemoteArchiveMaintenanceV472&&window.__modThemeEditorHelpStabilityV470&&window.__modUxCookingEditorV460));
+              const date=await p.evaluate(()=>getBerlinDateKey());
+              await p.evaluate((date)=>{
+                localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
                 localStorage.removeItem('masterOfDisasterCategoryViewModesV473');
-                localStorage.removeItem('masterOfDisasterCategoryCollapsedV473');
                 tasks=[
-                  {id:47301,text:'Badezimmer wischen',category:'Böden wischen',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:today,todayOrder:1,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]},
-                  {id:47302,text:'Flur aufräumen',category:'Flur',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:today,todayOrder:2,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]},
-                  {id:47303,text:'Flur saugen',category:'Flur',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:today,todayOrder:3,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]},
-                  {id:47304,text:'Flur wischen',category:'Böden wischen',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:today,todayOrder:4,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}
+                  {id:47401,text:'Badezimmer aufräumen',category:'Badezimmer',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:date,todayOrder:1,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]},
+                  {id:47402,text:'Badezimmer wischen',category:'Böden wischen',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:date,todayOrder:2,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]},
+                  {id:47403,text:'Flur aufräumen',category:'Flur',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:date,todayOrder:3,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]},
+                  {id:47404,text:'Flur wischen',category:'Böden wischen',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:date,todayOrder:4,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]},
+                  {id:47405,text:'Küche wischen',category:'Böden wischen',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}
                 ];
                 archive=[];saveTasks();switchTab('today');render();
-              },today);
-              await p.waitForTimeout(550);
-              out.viewToggle=await p.evaluate(()=>!!document.getElementById('categoryViewToggleV473')&&!!document.querySelector('[data-v473-mode="order"].active')&&!!document.querySelector('[data-v473-mode="grouped"]'));
-              const before=await p.evaluate(()=>tasks.map(t=>`${t.id}:${t.todayOrder}`).join('|'));
+              },date);
+              await p.waitForTimeout(650);
+              out.todayUsesWorkBlocks=await p.evaluate(()=>!!document.querySelector('.work-block-toolbar-v474')&&document.querySelectorAll('.work-block-v474').length===1&&!document.getElementById('categoryViewToggleV473'));
+              out.categoriesSeparated=await p.evaluate(()=>tasks.find(t=>t.id===47402).category==='Böden wischen'&&tasks.find(t=>t.id===47404).category==='Böden wischen'&&tasks.slice(0,4).every(t=>!!t.todayWorkBlockId));
 
-              await p.evaluate(()=>window.__modCategoryGroupDragV473.setMode('today','grouped'));
-              await p.waitForTimeout(450);
-              out.groupedCategories=await p.evaluate(()=>{
-                const groups=[...document.querySelectorAll('.task-category-group-v473')];
-                const names=groups.map(g=>g.dataset.v473Category);
-                return groups.length===2&&names.includes('Böden wischen')&&names.includes('Flur')&&groups.reduce((n,g)=>n+g.querySelectorAll('.task').length,0)===4;
+              const model=await p.evaluate(()=>{
+                const api=window.__modTodayWorkBlocksV474;
+                const beforeCat=tasks.map(t=>t.category).join('|');
+                let blocks=api.getBlocks();const b1=blocks[0],b2=api.addBlock('',{render:false}),b3=api.addBlock('',{render:false});
+                api.moveTaskToBlock(47403,b2.id,null,{render:false});api.moveTaskToBlock(47404,b3.id,null,{render:false});
+                render();
+                return {b1:b1.id,b2:b2.id,b3:b3.id,beforeCat};
               });
-              out.groupingViewOnly=(await p.evaluate(()=>tasks.map(t=>`${t.id}:${t.todayOrder}`).join('|')))===before;
-              out.groupedDragDisabled=await p.evaluate(()=>{const h=[...document.querySelectorAll('.task-category-group-v473 .drag-handle')];return h.length===4&&h.every(x=>x.getAttribute('aria-disabled')==='true'&&getComputedStyle(x).pointerEvents==='none');});
+              await p.waitForTimeout(500);
+              out.crossBlockMove=await p.evaluate(({b2,b3})=>tasks.find(t=>t.id===47403).todayWorkBlockId===b2&&tasks.find(t=>t.id===47404).todayWorkBlockId===b3&&document.querySelectorAll('.work-block-v474').length===3,model);
+              out.optionalNames=await p.evaluate(()=>window.__modTodayWorkBlocksV474.optionalNames===true&&document.querySelectorAll('.work-block-icon-v474').length>=6);
 
-              await p.evaluate(()=>{const g=[...document.querySelectorAll('.task-category-group-v473')].find(x=>x.dataset.v473Category==='Böden wischen');g?.querySelector('.task-category-head-v473')?.click();});
-              await p.waitForTimeout(120);
-              const collapsedOnce=await p.evaluate(()=>{const g=[...document.querySelectorAll('.task-category-group-v473')].find(x=>x.dataset.v473Category==='Böden wischen');return !!g?.querySelector('.task-category-items-v473.collapsed');});
-              await p.evaluate(()=>render());await p.waitForTimeout(320);
-              const collapsedAgain=await p.evaluate(()=>{const g=[...document.querySelectorAll('.task-category-group-v473')].find(x=>x.dataset.v473Category==='Böden wischen');return !!g?.querySelector('.task-category-items-v473.collapsed');});
-              out.collapsePersistent=collapsedOnce&&collapsedAgain;
+              await p.evaluate(({b1,b3})=>window.__modTodayWorkBlocksV474.swapBlocks(b3,b1),model);await p.waitForTimeout(400);
+              out.blockDragSwap=await p.evaluate(({b1,b3})=>window.__modTodayWorkBlocksV474.blockNumber(b3)===1&&window.__modTodayWorkBlocksV474.blockNumber(b1)===3,model);
+              out.dynamicBlockNumbering=await p.evaluate(()=>[...document.querySelectorAll('.work-block-collapse-v474')].map(x=>x.textContent).every((text,i)=>text.includes(`ARBEITSBLOCK ${i+1}`)));
 
-              await p.evaluate(()=>window.__modCategoryGroupDragV473.setMode('today','order'));await p.waitForTimeout(350);
-              out.sequenceRestored=await p.evaluate(()=>{
-                const order=[...document.querySelectorAll('.today-task-active')].map(card=>Number(card.dataset.id));
-                return order.join(',')==='47301,47302,47303,47304'&&!document.querySelector('.task-category-group-v473');
-              });
-              out.perTabMode=await p.evaluate(()=>{const api=window.__modCategoryGroupDragV473;api.setMode('all','grouped');const ok=api.modeFor('all')==='grouped'&&api.modeFor('today')==='order';api.setMode('all','order');return ok;});
-              await p.waitForTimeout(220);
+              await p.evaluate(({b1,b2})=>{const api=window.__modTodayWorkBlocksV474;api.moveTaskToBlock(47401,b2,null,{render:false});api.moveTaskToBlock(47402,b2,null,{render:false});render();},model);await p.waitForTimeout(380);
+              out.emptyBlockPersists=await p.evaluate(({b1})=>{const root=document.querySelector(`.work-block-v474[data-work-block-id="${b1}"]`);return !!root&&root.querySelector('.work-block-count-v474')?.textContent==='0'&&/Keine offenen Aufgaben/.test(root.textContent);},model);
+              out.manualDeleteGuard=await p.evaluate(({b2})=>{const api=window.__modTodayWorkBlocksV474;const before=api.getBlocks().length;window.confirm=()=>true;const result=api.deleteBlock(b2);return result===false&&api.getBlocks().length===before;},model);
 
-              const dragDown=await p.evaluate(()=>{
-                const api=window.__modCategoryGroupDragV473,card=document.querySelector('.today-task-active[data-id="47301"]');card?.classList.add('dragging');const preview=api.applyDragFeedback(47301,47304);const target=document.querySelector('.today-task-active[data-id="47304"]');const badge=card?.querySelector('.drag-position-badge-v473');const css=card?getComputedStyle(card):null;return {preview,badge:badge?.textContent||'',after:target?.classList.contains('drag-insert-after-v473')||false,opacity:css?parseFloat(css.opacity):1,shadow:css?.boxShadow||'none'};
-              });
-              out.livePosition=dragDown.preview?.position===4&&dragDown.preview?.total===4&&dragDown.badge.includes('POSITION 4 / 4');
-              out.insertionLine=dragDown.preview?.side==='after'&&dragDown.after;
-              out.dragHighlight=dragDown.opacity<0.9&&dragDown.shadow!=='none';
-              const dragUp=await p.evaluate(()=>{const api=window.__modCategoryGroupDragV473;api.clearDragFeedback();document.querySelectorAll('.dragging').forEach(x=>x.classList.remove('dragging'));const preview=api.applyDragFeedback(47304,47302);const target=document.querySelector('.today-task-active[data-id="47302"]');return {preview,before:target?.classList.contains('drag-insert-before-v473')||false};});
-              out.insertionLine=out.insertionLine&&dragUp.preview?.position===2&&dragUp.preview?.side==='before'&&dragUp.before;
+              await p.evaluate(()=>{editingTaskId=47403;render();});await p.waitForTimeout(320);
+              out.editAssignment=await p.evaluate(()=>!!document.getElementById('editWorkBlockRowV474')&&document.querySelectorAll('#editWorkBlockV474 option').length>=3);
+              await p.evaluate(()=>{editingTaskId=null;render();});await p.waitForTimeout(250);
+
+              out.nextByBlock=await p.evaluate(()=>{const api=window.__modTodayWorkBlocksV474,ordered=api.orderedByBlocks().rows,panel=document.querySelector('.next-task-panel');return ordered.length>0&&panel?.textContent.includes(ordered[0].text)&&panel?.textContent.includes('ARBEITSBLOCK 1');});
+
+              await p.evaluate(()=>switchTab('all'));await p.waitForTimeout(420);
+              out.categoryGroupingPreserved=await p.evaluate(()=>!!document.getElementById('categoryViewToggleV473')&&!!document.querySelector('[data-v473-mode="grouped"]'));
+              out.allSearch=await p.evaluate(()=>!!document.getElementById('allTaskSearchV474'));
+              await p.fill('.all-task-search-input-v474','Küche wischen');await p.waitForTimeout(180);
+              const resultCount=await p.locator('.all-task-search-row-v474').count();
+              if(resultCount<1)throw new Error('All search did not find task');
+              await p.locator('.all-task-search-assign-v474').first().click();await p.waitForTimeout(450);
+              out.directTodayAssignment=await p.evaluate(()=>{const t=tasks.find(x=>x.id===47405);return t?.todayDate===getBerlinDateKey()&&!!t.todayWorkBlockId;});
 
               await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(900);
               out.themeHelpPreserved=await p.evaluate(()=>window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);
               out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
-
               out.archiveMaintenance=await p.evaluate(()=>window.__modRemoteArchiveMaintenanceV472?.queueStatus==='processing'&&window.__modRemoteArchiveMaintenanceV472?.command==='DELETE_ARCHIVE_ENTRY');
-              const cooking=await p.evaluate(()=>{tasks=[{id:47311,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47312,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47311);switchCookingMode(47311,'passive');startTask(47312);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              const cooking=await p.evaluate(()=>{tasks=[{id:47411,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47412,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47411);switchCookingMode(47411,'passive');startTask(47412);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
               out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
