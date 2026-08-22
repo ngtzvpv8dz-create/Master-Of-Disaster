@@ -28,7 +28,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs'),store=new Map();
           global.window=global;global.currentTab='today';global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
-          global.document={addEventListener(){},getElementById(){return null}};global.addEventListener=()=>{};global.setTimeout=()=>0;global.render=()=>{};global.getBerlinDateKey=()=> '2026-08-22';
+          global.document={addEventListener(){},getElementById(){return null}};global.addEventListener=()=>{};global.setTimeout=()=>0;global.render=null;global.getBerlinDateKey=()=> '2026-08-22';
           global.tasks=[
             {id:1,text:'Bad wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:1,status:'open'},
             {id:2,text:'Flur aufräumen',category:'Flur',todayDate:'2026-08-22',todayOrder:2,status:'open'},
