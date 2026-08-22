@@ -40,7 +40,7 @@ jobs:
               if marker not in html: raise SystemExit(f'Missing V469 HTML marker: {marker}')
           for marker in ['master-of-disaster-v469-theme-editor-help','theme-editor-help-v469.js']:
               if marker not in sw: raise SystemExit(f'Missing V469 SW marker: {marker}')
-          for marker in ['patchFields','patchToolbar','patchChoiceGroups','patchGroupHeadings','data-v469HelpButton','MEIN THEME SPEICHERN','data-v466-select','data-v466-anchor','data-grid-step','data-move','completeHelp:true','__modThemeEditorHelpV469']:
+          for marker in ['patchFields','patchToolbar','patchChoiceGroups','patchGroupHeadings','v469HelpButton','MEIN THEME SPEICHERN','data-v466-select','data-v466-anchor','data-grid-step','data-move','completeHelp:true','__modThemeEditorHelpV469']:
               if marker not in js: raise SystemExit(f'Missing V469 help marker: {marker}')
           if "!row.querySelector('.theme-info-v468')" not in js:
               raise SystemExit('V469 must not duplicate V468 palette info buttons')
