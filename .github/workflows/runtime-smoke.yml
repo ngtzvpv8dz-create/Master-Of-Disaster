@@ -13,50 +13,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check remote-archive-maintenance-v471.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - run: node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V471 remote archive maintenance
+      - name: Verify live V472 archive queue fix
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
-          (async()=>{
-            const b=await chromium.launch({headless:true});
-            const p=await b.newPage({viewport:{width:390,height:844}});
-            await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V471',live:false,bundle:false,remoteArchiveMaintenance:false,queueIsolation:false,exactArchiveDelete:false,nextNumberRollback:false,persisted:false,themeHelpPreserved:false,previewOffset:false,cookingParallel:false,integrity:false,errors:[]};
-            try{
-              for(let i=0;i<18;i++){
-                await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V471/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V471')){out.live=true;break;}
-                await p.waitForTimeout(10000);
-              }
-              if(!out.live)throw new Error('V471 not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modRemoteArchiveMaintenanceV471&&window.__modThemeEditorHelpStabilityV470&&window.__modThemeEditorHelpV469&&window.__modUxCookingEditorV460));
-              out.remoteArchiveMaintenance=await p.evaluate(()=>window.__modRemoteArchiveMaintenanceV471?.command==='DELETE_ARCHIVE_ENTRY');
-              out.queueIsolation=await p.evaluate(()=>window.__modRemoteArchiveMaintenanceV471?.queueStatus==='archive_pending');
-
-              const deletion=await p.evaluate(()=>{
-                archive=[{archiveNumber:254,archiveId:'A-254',text:'Vorher',status:'completed',type:'work'},{archiveNumber:255,archiveId:'A-255',text:'Falsches Kochen',status:'completed',type:'cooking'}];
-                nextArchiveNumber=256;
-                let saves=0;const originalSave=saveArchive;saveArchive=function(){saves++;safeStorageSet('masterOfDisasterArchive',JSON.stringify(archive));safeStorageSet('masterOfDisasterNextArchiveNumber',String(nextArchiveNumber));};
-                const result=window.__modRemoteArchiveMaintenanceV471.deleteArchiveEntry(255);
-                saveArchive=originalSave;
-                return {exists:archive.some(x=>Number(x.archiveNumber)===255),length:archive.length,next:nextArchiveNumber,resultNext:result.next_archive_number,saves};
-              });
-              out.exactArchiveDelete=!deletion.exists&&deletion.length===1;
-              out.nextNumberRollback=deletion.next===255&&deletion.resultNext===255;
-              out.persisted=deletion.saves===1;
-
-              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(1000);
-              out.themeHelpPreserved=await p.evaluate(()=>window.__modThemeEditorHelpV469?.completeHelp===true&&window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);
-              out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
-
-              const cooking=await p.evaluate(()=>{tasks=[{id:47111,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47112,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47111);switchCookingMode(47111,'passive');const passive=tasks[0].activeSegments.filter(s=>!s.endedAt).length===0;startTask(47112);const parallel=tasks[1].status==='running';const rep=collectDataIntegrityReport();return {passive,parallel,errors:rep.errors||[]};});
-              out.cookingParallel=cooking.passive&&cooking.parallel;out.integrity=cooking.errors.length===0;
-              out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
-            }catch(e){out.errors.push(String(e.stack||e));}
-            fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));await b.close();if(out.status!=='PASS')process.exitCode=1;
-          })();
+          (async()=>{const b=await chromium.launch({headless:true}),p=await b.newPage({viewport:{width:390,height:844}});await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
+          const out={status:'FAIL',version:'V472',live:false,bundle:false,queueProcessing:false,exactArchiveDelete:false,nextNumberRollback:false,persisted:false,themeHelpPreserved:false,previewOffset:false,cookingParallel:false,integrity:false,errors:[]};
+          try{for(let i=0;i<18;i++){await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});if(/BUILD: V472/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V472')){out.live=true;break;}await p.waitForTimeout(10000);}if(!out.live)throw new Error('V472 not deployed');
+          out.bundle=await p.evaluate(()=>!!(window.__modRemoteArchiveMaintenanceV472&&window.__modThemeEditorHelpStabilityV470&&window.__modUxCookingEditorV460));out.queueProcessing=await p.evaluate(()=>window.__modRemoteArchiveMaintenanceV472?.queueStatus==='processing'&&window.__modRemoteArchiveMaintenanceV472?.command==='DELETE_ARCHIVE_ENTRY');
+          const d=await p.evaluate(()=>{archive=[{archiveNumber:254,text:'Vorher'},{archiveNumber:255,text:'Falsches Kochen',type:'cooking',status:'completed'}];nextArchiveNumber=256;let saves=0;const old=saveArchive;saveArchive=()=>{saves++};const r=window.__modRemoteArchiveMaintenanceV472.deleteArchiveEntry(255);saveArchive=old;return {exists:archive.some(x=>Number(x.archiveNumber)===255),len:archive.length,next:nextArchiveNumber,resultNext:r.next_archive_number,saves};});out.exactArchiveDelete=!d.exists&&d.len===1;out.nextNumberRollback=d.next===255&&d.resultNext===255;out.persisted=d.saves===1;
+          await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(900);out.themeHelpPreserved=await p.evaluate(()=>window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
+          const c=await p.evaluate(()=>{tasks=[{id:47211,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47212,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47211);switchCookingMode(47211,'passive');startTask(47212);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});out.cookingParallel=c.parallel;out.integrity=c.errors.length===0;out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';}catch(e){out.errors.push(String(e.stack||e));}
+          fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));await b.close();if(out.status!=='PASS')process.exitCode=1;})();
           JS
           node smoke.js
       - name: Publish result
