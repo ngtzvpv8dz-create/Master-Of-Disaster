@@ -11,20 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V467 build
+      - name: Verify V468 build
         shell: python
         run: |
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8'); sw=Path('sw.js').read_text(encoding='utf-8')
-          stable=Path('theme-package-stability-v467.js').read_text(encoding='utf-8'); pkg=Path('theme-package-actions-v466.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V467','22.08.2026 · 00:31','theme-package-stability-v467.js?v=467-0031',"version:'V467'",'modV467ThemePackageStabilityDone']:
-              if marker not in index: raise SystemExit(f'Missing V467 index marker: {marker}')
-          for marker in ['master-of-disaster-v467-theme-package-stability','theme-package-stability-v467.js?v=467-0031','/theme-package-stability-v467.js']:
-              if marker not in sw: raise SystemExit(f'Missing V467 cache marker: {marker}')
-          for marker in ['needsPatch','burst','MutationObserver','lifecyclePatch:true','__modThemePackageStabilityV467']:
-              if marker not in stable: raise SystemExit(f'Missing V467 stability behavior: {marker}')
+          polish=Path('theme-editor-polish-v468.js').read_text(encoding='utf-8'); stable=Path('theme-package-stability-v467.js').read_text(encoding='utf-8'); pkg=Path('theme-package-actions-v466.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V468','22.08.2026 · 09:41','theme-editor-polish-v468.js?v=468-0941',"version:'V468'",'modV468ThemeEditorPolishDone']:
+              if marker not in index: raise SystemExit(f'Missing V468 index marker: {marker}')
+          for marker in ['master-of-disaster-v468-theme-editor-polish','theme-editor-polish-v468.js?v=468-0941','/theme-editor-polish-v468.js']:
+              if marker not in sw: raise SystemExit(f'Missing V468 cache marker: {marker}')
+          for marker in ['HINTERGRUND OBEN','theme-info-v468','theme-mini-v468','v468-action-common','AKTION VERLAUF START','RETURN_THEME_KEY','presetStaysTheme:true','paletteHelp:true','actionControlsUnified:true','rootBackground:true','addButtonDark:true','nextTaskUnified:true','__modThemeEditorPolishV468']:
+              if marker not in polish: raise SystemExit(f'Missing V468 polish behavior: {marker}')
+          for marker in ['needsPatch','burst','lifecyclePatch:true','__modThemePackageStabilityV467']:
+              if marker not in stable: raise SystemExit(f'Missing preserved V467 behavior: {marker}')
           for marker in ['master-of-disaster-theme-package','AKTIONSTASTEN EINZELN','individualActions:true','fullPackage:true','__modThemePackageActionsV466']:
               if marker not in pkg: raise SystemExit(f'Missing preserved V466 behavior: {marker}')
-          print('V467 build consistency OK')
+          print('V468 build consistency OK')
       - name: JavaScript syntax
-        run: node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
+        run: node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-sync-v465.js && node --check theme-state-design-v464.js && node --check theme-editor-comfort-v463.js && node --check theme-ui-guard-v462.js && node --check theme-editor-stability-v461.js && node --check ux-cooking-editor-v460.js && node --check theme-layout-editor-v458.js && node --check safe-undo-v457.js && node --check goals-milestones-v455.js && node --check background-log-v454.js && node --check live-log-v453.js && node --check app.js
