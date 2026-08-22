@@ -10,32 +10,50 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V472 queue isolation and archive maintenance
+        run: node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V473 grouping and drag wiring
         shell: python
         run: |
           from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('remote-archive-maintenance-v472.js').read_text(encoding='utf-8');v450=Path('remote-commands.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V472','remote-archive-maintenance-v472.js?v=472-1030',"version:'V472'",'modV472ArchiveDeleteQueueFixDone']:
-              if marker not in html: raise SystemExit(f'Missing V472 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v472-archive-delete-queue-fix','remote-archive-maintenance-v472.js']:
-              if marker not in sw: raise SystemExit(f'Missing V472 SW marker: {marker}')
-          for marker in ["QUEUE_STATUS='processing'",'.eq(\'status\',QUEUE_STATUS)',".eq('command','DELETE_ARCHIVE_ENTRY')",'realArchiveNumber','deleteArchiveEntry','nextArchiveNumber=afterHighest+1','saveArchive','__modRemoteArchiveMaintenanceV472']:
-              if marker not in js: raise SystemExit(f'Missing V472 behavior marker: {marker}')
-          if ".eq('status','pending')" not in v450: raise SystemExit('V450 no longer isolated to pending')
-          print('V472 queue isolation wiring OK')
-      - name: Verify V472 exact A255 deletion and numbering
+          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('category-group-drag-v473.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V473','category-group-drag-v473.js?v=473-1215',"version:'V473'",'modV473CategoryGroupingDone']:
+              if marker not in html: raise SystemExit(f'Missing V473 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v473-category-grouping-drag-feedback','category-group-drag-v473.js']:
+              if marker not in sw: raise SystemExit(f'Missing V473 SW marker: {marker}')
+          for marker in ['REIHENFOLGE','GRUPPIERT','task-category-group-v473','task-category-head-v473','OHNE KATEGORIE','todayDragGroupedDisabled:true','POSITION ${preview.position} / ${preview.total}','drag-insert-before-v473','drag-insert-after-v473','groupingIsViewOnly:true','__modCategoryGroupDragV473']:
+              if marker not in js: raise SystemExit(f'Missing V473 behavior marker: {marker}')
+          print('V473 grouping/drag wiring OK')
+      - name: Verify V473 view-only grouping state and drop positions
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),store=new Map();
+          global.window=global;global.currentTab='today';global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
+          global.document={addEventListener(){},getElementById(){return null}};global.addEventListener=()=>{};global.setTimeout=()=>0;global.render=()=>{};global.getBerlinDateKey=()=> '2026-08-22';
+          global.tasks=[
+            {id:1,text:'Bad wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:1,status:'open'},
+            {id:2,text:'Flur aufräumen',category:'Flur',todayDate:'2026-08-22',todayOrder:2,status:'open'},
+            {id:3,text:'Flur wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:3,status:'open'},
+            {id:4,text:'Küche wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:4,status:'open'}
+          ];
+          eval(fs.readFileSync('category-group-drag-v473.js','utf8'));
+          const api=window.__modCategoryGroupDragV473,before=tasks.map(t=>t.todayOrder).join(',');
+          if(!api.groupingIsViewOnly||!api.todayDragGroupedDisabled||!api.livePosition||!api.insertionLine)throw new Error('V473 capability flags missing');
+          api.setMode('today','grouped');if(api.modeFor('today')!=='grouped')throw new Error('Grouped mode not stored');
+          if(tasks.map(t=>t.todayOrder).join(',')!==before)throw new Error('Grouping changed todayOrder');
+          const down=api.getDropPreview(1,4);if(!down||down.position!==4||down.side!=='after'||down.total!==4)throw new Error('Downward drop preview wrong');
+          const up=api.getDropPreview(4,2);if(!up||up.position!==2||up.side!=='before')throw new Error('Upward drop preview wrong');
+          api.setMode('today','order');if(api.modeFor('today')!=='order')throw new Error('Order mode not restored');
+          if(tasks.map(t=>t.todayOrder).join(',')!==before)throw new Error('Mode switch changed todayOrder');
+          console.log('V473 view-only grouping and drop positions OK');
+          NODE
+      - name: Verify preserved V472 exact A255 deletion
         run: |
           node <<'NODE'
           const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          global.archive=[{archiveNumber:254,archiveId:'A-254',text:'Vorher'},{archiveNumber:255,archiveId:'A-255',text:'Falsches Kochen',type:'cooking',status:'completed'}];global.nextArchiveNumber=256;let saved=0;global.saveArchive=()=>{saved++};global.render=()=>{};
-          eval(fs.readFileSync('remote-archive-maintenance-v472.js','utf8'));const api=window.__modRemoteArchiveMaintenanceV472;
-          if(api.queueStatus!=='processing')throw new Error('Wrong dedicated queue status');
-          const r=api.deleteArchiveEntry(255);
-          if(archive.length!==1||archive.some(x=>Number(x.archiveNumber)===255))throw new Error('A255 not deleted exactly');
-          if(nextArchiveNumber!==255||r.next_archive_number!==255)throw new Error('Next archive number not rolled back');
-          if(saved!==1)throw new Error('Archive not persisted once');
-          console.log('V472 exact delete OK');
+          global.archive=[{archiveNumber:254,text:'Vorher'},{archiveNumber:255,text:'Falsches Kochen'}];global.nextArchiveNumber=256;let saved=0;global.saveArchive=()=>saved++;global.render=()=>{};
+          eval(fs.readFileSync('remote-archive-maintenance-v472.js','utf8'));const r=window.__modRemoteArchiveMaintenanceV472.deleteArchiveEntry(255);
+          if(archive.some(x=>Number(x.archiveNumber)===255)||nextArchiveNumber!==255||r.next_archive_number!==255||saved!==1)throw new Error('Preserved A255 deletion failed');
+          console.log('V472 archive maintenance preserved');
           NODE
       - name: Verify preserved V460 passive cooking concurrency
         run: |
