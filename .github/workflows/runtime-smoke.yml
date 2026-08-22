@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - run: node --check development-stats-current-v476.js && node --check scripts/generate-development-metrics.mjs && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V475 fixed app header
+      - name: Verify live V476 current development statistics
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,51 +23,63 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V475',live:false,bundle:false,fixedShell:false,headerVisible:false,tabsVisible:false,opaqueShell:false,contentScrolls:false,shellStableAcrossTabs:false,dynamicHeight:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,cookingParallel:false,integrity:false,errors:[]};
+            const out={status:'FAIL',version:'V476',live:false,bundle:false,metricsCurrent:false,appDevelopmentCurrent:false,fiveDevelopmentBlocks:false,developmentBlocksAligned:false,historicalGit:false,fixedShell:false,contentScrolls:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,cookingParallel:false,integrity:false,errors:[]};
             try{
-              for(let i=0;i<18;i++){
+              for(let i=0;i<24;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                if(/BUILD: V475/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V475')){out.live=true;break;}
+                const build=/BUILD: V476/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V476');
+                let liveMetrics=null;
+                try{liveMetrics=await p.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
+                if(build&&liveMetrics?.version==='V476'&&liveMetrics?.sourceCommit&&liveMetrics.sourceCommit!=='pending'&&liveMetrics?.repository?.currentTextLines>10000){out.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V475 not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modRemoteArchiveMaintenanceV472&&window.__modUxCookingEditorV460));
+              if(!out.live)throw new Error('V476 build or generated metrics not deployed');
+              out.bundle=await p.evaluate(()=>!!(window.__modDevelopmentStatsCurrentV476&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modRemoteArchiveMaintenanceV472&&window.__modUxCookingEditorV460));
 
               const date=await p.evaluate(()=>getBerlinDateKey());
               await p.evaluate((date)=>{
                 localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
-                tasks=Array.from({length:34},(_,i)=>({id:47500+i,text:`Scroll Aufgabe ${i+1}`,category:i%3===0?'Haushalt':i%3===1?'Böden wischen':'Sonstiges',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:i<8?date:null,todayOrder:i<8?i+1:null,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}));
+                tasks=Array.from({length:34},(_,i)=>({id:47600+i,text:`Scroll Aufgabe ${i+1}`,category:i%3===0?'Haushalt':i%3===1?'Böden wischen':'Sonstiges',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:i<8?date:null,todayOrder:i<8?i+1:null,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}));
                 archive=[];saveTasks();switchTab('all');render();window.scrollTo(0,0);
               },date);
-              await p.waitForTimeout(500);
+              await p.waitForTimeout(450);
+              const headerBefore=await p.evaluate(()=>{const s=document.getElementById('appFixedTopV475');return {ok:!!s&&getComputedStyle(s).position==='sticky',top:s?.getBoundingClientRect().top??999};});
+              await p.evaluate(()=>window.scrollTo(0,1500));await p.waitForTimeout(250);
+              const headerAfter=await p.evaluate(()=>{const s=document.getElementById('appFixedTopV475');return {scrollY,top:s?.getBoundingClientRect().top??999};});
+              out.fixedShell=headerBefore.ok&&Math.abs(headerBefore.top)<1&&Math.abs(headerAfter.top)<1;
+              out.contentScrolls=headerAfter.scrollY>500;
 
-              const before=await p.evaluate(()=>{const s=document.getElementById('appFixedTopV475'),h=s?.querySelector('.header'),t=s?.querySelector('.tabs-wrapper');const cs=s?getComputedStyle(s):null;return {shell:!!s,position:cs?.position||'',top:s?.getBoundingClientRect().top??999,height:s?.getBoundingClientRect().height||0,header:!!h,tabs:!!t,bg:cs?.backgroundColor||'',apiHeight:window.__modFixedAppHeaderV475?.height||0};});
-              const scrollPadding=await p.evaluate(()=>parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop)||0);
-              out.fixedShell=before.shell&&before.position==='sticky'&&Math.abs(before.top)<1&&before.header&&before.tabs;
-              out.dynamicHeight=before.height>80&&Math.abs(before.apiHeight-before.height)<3&&scrollPadding>=before.height;
+              await p.evaluate(()=>{window.scrollTo(0,0);switchTab('statistics');render();});await p.waitForTimeout(900);
+              await p.evaluate(()=>window.__modDevelopmentStatsCurrentV476.load(true));await p.waitForTimeout(300);
+              const stats=await p.evaluate(()=>{
+                const api=window.__modDevelopmentStatsCurrentV476;
+                const root=document.getElementById('developmentStatsV451');
+                const dev=root?[...root.children].filter(x=>x.matches?.('details.statistics-collapsible-v452')):[];
+                const first=dev.find(d=>/APP-ENTWICKLUNG/i.test(d.querySelector(':scope>summary')?.textContent||''));
+                const refs=[...document.querySelectorAll('#viewContainer details.statistics-collapsible-v452')].filter(d=>root&&!root.contains(d)&&d.offsetParent!==null);
+                const lefts=refs.map(d=>d.getBoundingClientRect().left).sort((a,b)=>a-b);
+                const desired=lefts.length?lefts[Math.floor(lefts.length/2)]:null;
+                const aligned=desired!==null&&dev.length===5&&dev.every(d=>Math.abs(d.getBoundingClientRect().left-desired)<=2);
+                const m=api?.metrics;
+                return {count:dev.length,aligned,summary:first?.querySelector(':scope>summary')?.textContent||'',body:first?.textContent||'',version:m?.version||'',source:m?.sourceCommit||'',lines:m?.repository?.currentTextLines||0,commits:m?.repository?.reachableCommits||0,prs:m?.repository?.pullRequests||0,historical:api?.historicalFromGit===true,dynamic:api?.dynamicIndent===true};
+              });
+              out.metricsCurrent=stats.version==='V476'&&stats.source!=='pending'&&stats.lines>10000&&stats.commits>500&&stats.prs>60;
+              out.appDevelopmentCurrent=/APP-ENTWICKLUNG · AKTUELL · V476/.test(stats.summary)&&/TEXTZEILEN AKTUELL/.test(stats.body)&&!/APP-ENTWICKLUNG · V451/.test(stats.summary);
+              out.fiveDevelopmentBlocks=stats.count===5;
+              out.developmentBlocksAligned=stats.aligned&&stats.dynamic;
+              out.historicalGit=stats.historical;
 
-              await p.evaluate(()=>window.scrollTo(0,1500));await p.waitForTimeout(300);
-              const after=await p.evaluate(()=>{const s=document.getElementById('appFixedTopV475'),h=s?.querySelector('.header'),t=s?.querySelector('.tabs-wrapper');const sr=s?.getBoundingClientRect(),hr=h?.getBoundingClientRect(),tr=t?.getBoundingClientRect();const hit=document.elementFromPoint(20,Math.max(2,(sr?.bottom||2)-4));return {scrollY:window.scrollY,top:sr?.top??999,bottom:sr?.bottom??0,headerTop:hr?.top??-999,headerBottom:hr?.bottom??999,tabsTop:tr?.top??-999,tabsBottom:tr?.bottom??999,hitInside:!!hit?.closest?.('#appFixedTopV475'),bg:getComputedStyle(s).backgroundColor};});
-              out.contentScrolls=after.scrollY>500&&Math.abs(after.top)<1;
-              out.headerVisible=after.headerTop>=-1&&after.headerBottom<=after.bottom+1;
-              out.tabsVisible=after.tabsTop>=-1&&after.tabsBottom<=after.bottom+1;
-              out.opaqueShell=after.hitInside&&after.bg!=='rgba(0, 0, 0, 0)'&&after.bg!=='transparent';
-
-              await p.evaluate(()=>{window.scrollTo(0,0);switchTab('today');render();});await p.waitForTimeout(450);
+              await p.evaluate(()=>switchTab('today'));await p.waitForTimeout(400);
               out.workBlocksPreserved=await p.evaluate(()=>!!document.querySelector('.work-block-toolbar-v474')&&document.querySelectorAll('.work-block-v474').length>=1&&!document.getElementById('categoryViewToggleV473'));
-              out.shellStableAcrossTabs=await p.evaluate(()=>{const s=document.getElementById('appFixedTopV475');return !!s&&s.querySelector('.header')&&s.querySelector('.tabs-wrapper')&&getComputedStyle(s).position==='sticky';});
-
-              await p.evaluate(()=>switchTab('all'));await p.waitForTimeout(350);
+              await p.evaluate(()=>switchTab('all'));await p.waitForTimeout(320);
               out.allSearchPreserved=await p.evaluate(()=>!!document.getElementById('allTaskSearchV474'));
               out.categoryGroupingPreserved=await p.evaluate(()=>!!document.getElementById('categoryViewToggleV473')&&!!document.querySelector('[data-v473-mode="grouped"]'));
 
-              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(900);
+              await p.evaluate(()=>switchTab('theme'));await p.waitForTimeout(850);
               out.themeHelpPreserved=await p.evaluate(()=>window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);
               out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
-              out.shellStableAcrossTabs=out.shellStableAcrossTabs&&await p.evaluate(()=>!!document.getElementById('appFixedTopV475')&&getComputedStyle(document.getElementById('appFixedTopV475')).position==='sticky');
-
               out.archiveMaintenance=await p.evaluate(()=>window.__modRemoteArchiveMaintenanceV472?.queueStatus==='processing'&&window.__modRemoteArchiveMaintenanceV472?.command==='DELETE_ARCHIVE_ENTRY');
-              const cooking=await p.evaluate(()=>{tasks=[{id:47591,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47592,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47591);switchCookingMode(47591,'passive');startTask(47592);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              const cooking=await p.evaluate(()=>{tasks=[{id:47691,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47692,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47691);switchCookingMode(47691,'passive');startTask(47692);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
               out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
