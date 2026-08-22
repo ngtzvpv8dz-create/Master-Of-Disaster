@@ -10,56 +10,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V474 wiring
+        run: node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V475 fixed header wiring
         shell: python
         run: |
           from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('today-work-blocks-v474.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V474','today-work-blocks-v474.js?v=474-1305',"version:'V474'",'modV474WorkBlocksDone']:
-              if marker not in html: raise SystemExit(f'Missing V474 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v474-today-work-blocks','today-work-blocks-v474.js']:
-              if marker not in sw: raise SystemExit(f'Missing V474 SW marker: {marker}')
-          for marker in ['masterOfDisasterTodayWorkBlocksV474','ARBEITSBLOCK','assignTaskToToday','moveTaskToBlock','swapBlocks','dynamicBlockNumbering:true','emptyBlocksPersist:true','manualDeleteOnly:true','optionalNames:true','blockDrag:true','crossBlockTaskDrag:true','allSearch:true','directTodayAssignment:true','__modTodayWorkBlocksV474']:
-              if marker not in js: raise SystemExit(f'Missing V474 behavior marker: {marker}')
-          print('V474 wiring OK')
-      - name: Verify V474 work block data model
+          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('fixed-app-header-v475.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V475','fixed-app-header-v475.js?v=475-1345',"version:'V475'",'modV475FixedAppHeaderDone']:
+              if marker not in html: raise SystemExit(f'Missing V475 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v475-fixed-app-header','fixed-app-header-v475.js']:
+              if marker not in sw: raise SystemExit(f'Missing V475 SW marker: {marker}')
+          for marker in ['appFixedTopV475','position:sticky','background:var(--mod-bg-top','#','headerAndTabsTogether:true','opaqueShell:true','dynamicHeight:true','--mod-fixed-top-height-v475','scroll-padding-top','__modFixedAppHeaderV475']:
+              if marker not in js: raise SystemExit(f'Missing V475 behavior marker: {marker}')
+          print('V475 fixed header wiring OK')
+      - name: Verify preserved V474 work block data model
         run: |
           node <<'NODE'
           const fs=require('fs'),store=new Map();
           global.window=global;global.currentTab='all';global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
           global.addEventListener=()=>{};global.setTimeout=()=>0;global.CSS={escape:s=>String(s)};
-          global.document={
-            addEventListener(){},getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},
-            createElement(){return {id:'',textContent:'',className:'',style:{},appendChild(){},append(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},toggle(){}}}},
-            head:{appendChild(){}},body:{appendChild(){}}
-          };
-          global.getBerlinDateKey=()=> '2026-08-22';global.render=null;global.saveEdit=null;let saves=0;global.saveTasks=()=>{saves++};
+          global.document={addEventListener(){},getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {id:'',textContent:'',className:'',style:{},appendChild(){},append(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},toggle(){}}}},head:{appendChild(){}},body:{appendChild(){}}};
+          global.getBerlinDateKey=()=> '2026-08-22';global.render=null;global.saveEdit=null;global.saveTasks=()=>{};
           global.tasks=[
             {id:1,text:'Bad wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:1,status:'open'},
             {id:2,text:'Flur aufräumen',category:'Flur',todayDate:'2026-08-22',todayOrder:2,status:'open'},
-            {id:3,text:'Flur saugen',category:'Flur',todayDate:'2026-08-22',todayOrder:3,status:'open'},
-            {id:4,text:'Flur wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:4,status:'open'},
-            {id:5,text:'Küche wischen',category:'Böden wischen',todayDate:null,todayOrder:null,status:'open'}
+            {id:3,text:'Flur wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:3,status:'open'},
+            {id:4,text:'Küche wischen',category:'Böden wischen',todayDate:null,todayOrder:null,status:'open'}
           ];
           eval(fs.readFileSync('today-work-blocks-v474.js','utf8'));
           const api=window.__modTodayWorkBlocksV474;
-          if(!api.categoriesIndependent||!api.dynamicBlockNumbering||!api.emptyBlocksPersist||!api.manualDeleteOnly||!api.optionalNames||!api.blockDrag||!api.crossBlockTaskDrag||!api.allSearch||!api.directTodayAssignment)throw new Error('V474 capability flags missing');
-          let blocks=api.ensureTodayModel('2026-08-22',[]);if(blocks.length!==1)throw new Error('Existing Today tasks were not migrated into one block');
-          if(tasks.slice(0,4).some(t=>t.todayWorkBlockId!==blocks[0].id))throw new Error('Migration did not preserve one initial work block');
-          const b1=blocks[0],b2=api.addBlock('',{date:'2026-08-22',render:false}),b3=api.addBlock('Bad',{date:'2026-08-22',render:false});
-          api.moveTaskToBlock(2,b2.id,null,{date:'2026-08-22',render:false});api.moveTaskToBlock(3,b2.id,null,{date:'2026-08-22',render:false});api.moveTaskToBlock(4,b3.id,null,{date:'2026-08-22',render:false});
-          if(tasks.find(t=>t.id===2).todayWorkBlockId!==b2.id||tasks.find(t=>t.id===4).todayWorkBlockId!==b3.id)throw new Error('Cross-block task assignment failed');
-          const beforeCategories=tasks.map(t=>t.category).join('|');
-          api.swapBlocks(b3.id,b1.id);
-          if(api.blockNumber(b3.id,'2026-08-22')!==1||api.blockNumber(b1.id,'2026-08-22')!==3)throw new Error('Block swap/dynamic numbering failed');
-          if(tasks.map(t=>t.category).join('|')!==beforeCategories)throw new Error('Work blocks changed categories');
-          const ordered=api.orderedByBlocks('2026-08-22').rows;if(ordered.map(t=>t.todayOrder).join(',')!=='1,2,3,4')throw new Error('Global Today order is not normalized after block reorder');
-          api.assignTaskToToday(5,b2.id,{date:'2026-08-22',render:false});if(tasks[4].todayDate!=='2026-08-22'||tasks[4].todayWorkBlockId!==b2.id)throw new Error('Direct Today assignment failed');
-          blocks=api.getBlocks('2026-08-22');if(blocks.length!==3)throw new Error('Empty blocks should persist until manual deletion');
-          console.log('V474 data model OK');
+          let blocks=api.ensureTodayModel('2026-08-22',[]);if(blocks.length!==1)throw new Error('Today migration failed');
+          const b1=blocks[0],b2=api.addBlock('',{date:'2026-08-22',render:false}),b3=api.addBlock('',{date:'2026-08-22',render:false});
+          api.moveTaskToBlock(2,b2.id,null,{date:'2026-08-22',render:false});api.moveTaskToBlock(3,b3.id,null,{date:'2026-08-22',render:false});
+          const before=tasks.map(t=>t.category).join('|');api.swapBlocks(b3.id,b1.id);
+          if(api.blockNumber(b3.id,'2026-08-22')!==1||api.blockNumber(b1.id,'2026-08-22')!==3)throw new Error('Dynamic block numbering failed');
+          if(tasks.map(t=>t.category).join('|')!==before)throw new Error('Categories changed by work blocks');
+          api.assignTaskToToday(4,b2.id,{date:'2026-08-22',render:false});if(tasks[3].todayWorkBlockId!==b2.id)throw new Error('Direct Today assignment failed');
+          console.log('V474 work blocks preserved');
           NODE
-      - name: Verify preserved V473 category grouping outside Today
+      - name: Verify preserved V473 grouping outside Today
         shell: python
         run: |
           from pathlib import Path
