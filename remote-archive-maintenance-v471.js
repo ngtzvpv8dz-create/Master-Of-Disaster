@@ -89,5 +89,5 @@
   window.addEventListener('load',()=>setTimeout(start,900));
   setTimeout(start,1200);
 
-  window.__modRemoteArchiveMaintenanceV471={version:BUILD_VERSION,poll,pollMs:POLL_MS,queueStatus:'archive_pending',command:'DELETE_ARCHIVE_ENTRY'};
+  window.__modRemoteArchiveMaintenanceV471={version:BUILD_VERSION,poll,pollMs:POLL_MS,queueStatus:'archive_pending',command:'DELETE_ARCHIVE_ENTRY',deleteArchiveEntry};
 })();
