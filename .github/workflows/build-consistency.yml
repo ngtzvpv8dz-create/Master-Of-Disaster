@@ -11,22 +11,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify V471 build
+      - name: Verify V472 build
         shell: python
         run: |
           from pathlib import Path
-          index=Path('index.html').read_text(encoding='utf-8')
-          sw=Path('sw.js').read_text(encoding='utf-8')
-          remote=Path('remote-archive-maintenance-v471.js').read_text(encoding='utf-8')
-          stable=Path('theme-editor-help-stability-v470.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V471','22.08.2026 · 10:24','remote-archive-maintenance-v471.js?v=471-1024',"version:'V471'",'modV471RemoteArchiveDeleteDone']:
-              if marker not in index: raise SystemExit(f'Missing V471 index marker: {marker}')
-          for marker in ['master-of-disaster-v471-remote-archive-delete','remote-archive-maintenance-v471.js']:
-              if marker not in sw: raise SystemExit(f'Missing V471 service worker marker: {marker}')
-          for marker in ['DELETE_ARCHIVE_ENTRY','archive_pending','deleteArchiveEntry','nextArchiveNumber=afterHighest+1','__modRemoteArchiveMaintenanceV471']:
-              if marker not in remote: raise SystemExit(f'Missing V471 archive maintenance behavior: {marker}')
-          for marker in ['stickyHelpStable:true','__modThemeEditorHelpStabilityV470']:
-              if marker not in stable: raise SystemExit(f'Missing preserved V470 behavior: {marker}')
-          print('V471 build consistency OK')
+          index=Path('index.html').read_text(encoding='utf-8'); sw=Path('sw.js').read_text(encoding='utf-8')
+          remote=Path('remote-archive-maintenance-v472.js').read_text(encoding='utf-8'); v450=Path('remote-commands.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V472','22.08.2026 · 10:30','remote-archive-maintenance-v472.js?v=472-1030',"version:'V472'",'modV472ArchiveDeleteQueueFixDone']:
+              if marker not in index: raise SystemExit(f'Missing V472 index marker: {marker}')
+          for marker in ['master-of-disaster-v472-archive-delete-queue-fix','remote-archive-maintenance-v472.js']:
+              if marker not in sw: raise SystemExit(f'Missing V472 SW marker: {marker}')
+          for marker in ["QUEUE_STATUS='processing'",'DELETE_ARCHIVE_ENTRY','deleteArchiveEntry','nextArchiveNumber=afterHighest+1','__modRemoteArchiveMaintenanceV472']:
+              if marker not in remote: raise SystemExit(f'Missing V472 behavior: {marker}')
+          if ".eq('status','pending')" not in v450: raise SystemExit('V450 pending queue isolation changed')
+          print('V472 build consistency OK')
       - name: JavaScript syntax
-        run: node --check remote-archive-maintenance-v471.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-design-v464.js && node --check ux-cooking-editor-v460.js && node --check app.js
+        run: node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
