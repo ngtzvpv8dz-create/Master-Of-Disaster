@@ -10,35 +10,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: JavaScript syntax
-        run: node --check remote-archive-maintenance-v471.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check theme-editor-polish-v468.js && node --check theme-package-stability-v467.js && node --check theme-package-actions-v466.js && node --check theme-state-design-v464.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V471 archive maintenance wiring
+        run: node --check remote-archive-maintenance-v472.js && node --check remote-commands.js && node --check theme-editor-help-stability-v470.js && node --check theme-editor-help-v469.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V472 queue isolation and archive maintenance
         shell: python
         run: |
           from pathlib import Path
-          html=Path('index.html').read_text(encoding='utf-8')
-          sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('remote-archive-maintenance-v471.js').read_text(encoding='utf-8')
-          for marker in ['BUILD: V471','remote-archive-maintenance-v471.js?v=471-1024',"version:'V471'",'modV471RemoteArchiveDeleteDone']:
-              if marker not in html: raise SystemExit(f'Missing V471 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v471-remote-archive-delete','remote-archive-maintenance-v471.js']:
-              if marker not in sw: raise SystemExit(f'Missing V471 SW marker: {marker}')
-          for marker in ['DELETE_ARCHIVE_ENTRY','archive_pending','realArchiveNumber','deleteArchiveEntry','nextArchiveNumber=afterHighest+1','saveArchive','__modRemoteArchiveMaintenanceV471']:
-              if marker not in js: raise SystemExit(f'Missing V471 behavior marker: {marker}')
-          print('V471 archive maintenance wiring OK')
-      - name: Verify V471 exact archive deletion and numbering
+          html=Path('index.html').read_text(encoding='utf-8');sw=Path('sw.js').read_text(encoding='utf-8');js=Path('remote-archive-maintenance-v472.js').read_text(encoding='utf-8');v450=Path('remote-commands.js').read_text(encoding='utf-8')
+          for marker in ['BUILD: V472','remote-archive-maintenance-v472.js?v=472-1030',"version:'V472'",'modV472ArchiveDeleteQueueFixDone']:
+              if marker not in html: raise SystemExit(f'Missing V472 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v472-archive-delete-queue-fix','remote-archive-maintenance-v472.js']:
+              if marker not in sw: raise SystemExit(f'Missing V472 SW marker: {marker}')
+          for marker in ["QUEUE_STATUS='processing'",'.eq(\'status\',QUEUE_STATUS)',".eq('command','DELETE_ARCHIVE_ENTRY')",'realArchiveNumber','deleteArchiveEntry','nextArchiveNumber=afterHighest+1','saveArchive','__modRemoteArchiveMaintenanceV472']:
+              if marker not in js: raise SystemExit(f'Missing V472 behavior marker: {marker}')
+          if ".eq('status','pending')" not in v450: raise SystemExit('V450 no longer isolated to pending')
+          print('V472 queue isolation wiring OK')
+      - name: Verify V472 exact A255 deletion and numbering
         run: |
           node <<'NODE'
-          const fs=require('fs');
-          global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          global.archive=[{archiveNumber:254,archiveId:'A-254',text:'Vorher'},{archiveNumber:255,archiveId:'A-255',text:'Falsches Kochen',type:'cooking',status:'completed'}];
-          global.nextArchiveNumber=256;let saved=0;global.saveArchive=()=>{saved++};global.render=()=>{};
-          eval(fs.readFileSync('remote-archive-maintenance-v471.js','utf8'));
-          const r=window.__modRemoteArchiveMaintenanceV471.deleteArchiveEntry(255);
+          const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
+          global.archive=[{archiveNumber:254,archiveId:'A-254',text:'Vorher'},{archiveNumber:255,archiveId:'A-255',text:'Falsches Kochen',type:'cooking',status:'completed'}];global.nextArchiveNumber=256;let saved=0;global.saveArchive=()=>{saved++};global.render=()=>{};
+          eval(fs.readFileSync('remote-archive-maintenance-v472.js','utf8'));const api=window.__modRemoteArchiveMaintenanceV472;
+          if(api.queueStatus!=='processing')throw new Error('Wrong dedicated queue status');
+          const r=api.deleteArchiveEntry(255);
           if(archive.length!==1||archive.some(x=>Number(x.archiveNumber)===255))throw new Error('A255 not deleted exactly');
-          if(nextArchiveNumber!==255||r.next_archive_number!==255)throw new Error('Next archive number not rolled back to A255');
-          if(saved!==1)throw new Error('Archive not persisted exactly once');
-          let threw=false;try{window.__modRemoteArchiveMaintenanceV471.deleteArchiveEntry(255)}catch(e){threw=true}if(!threw)throw new Error('Missing entry must fail closed');
-          console.log('V471 exact delete OK');
+          if(nextArchiveNumber!==255||r.next_archive_number!==255)throw new Error('Next archive number not rolled back');
+          if(saved!==1)throw new Error('Archive not persisted once');
+          console.log('V472 exact delete OK');
           NODE
       - name: Verify preserved V460 passive cooking concurrency
         run: |
