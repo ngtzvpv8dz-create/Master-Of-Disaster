@@ -96,7 +96,7 @@ jobs:
               const button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');
               const actions=card?.querySelector('.icon-actions');
               const before=button?.getBoundingClientRect();
-              const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,options:select?.options.length||0};
+              const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0};
               toggleToday(task.id);
               const card2=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
               const button2=card2?.querySelector('.icon-actions button[onclick*="toggleToday("]');
@@ -104,15 +104,18 @@ jobs:
               const after=button2?.getBoundingClientRect();
               return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},row:!!document.getElementById('newTodayRowV480')};
             });
+            console.log('V480 browser state',result);
+            const norm=v=>String(v||'').replace(/\s+/g,'');
             if(result.created.today==null)throw new Error('New task was not assigned to Today');
             if(!result.created.block)throw new Error('New task has no work block');
             if(!result.created.selected||result.created.icon!=='calendar')throw new Error('Assigned Today action is not stable calendar state');
-            if(result.created.state!=='open'||result.created.transform!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously on create');
+            if(result.created.layout?.x!==12||result.created.layout?.y!==4)throw new Error('V460 test layout was not loaded');
+            if(result.created.state!=='open'||norm(result.created.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously on create');
             if(result.created.options<2||!result.row)throw new Error('Create-time work-block selector missing');
             if(result.after.today!==null||result.after.selected||result.after.icon!=='calendar')throw new Error('Today toggle did not retain stable calendar visual');
-            if(result.after.state!=='open'||result.after.transform!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously after Today toggle');
+            if(result.after.state!=='open'||norm(result.after.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously after Today toggle');
             if(result.after.dx>1||result.after.dy>1)throw new Error(`Today action moved: ${result.after.dx}/${result.after.dy}`);
-            console.log('V480 browser regression OK',result);
+            console.log('V480 browser regression OK');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
