@@ -87,7 +87,7 @@
   function patchVisibleCards(){
     if(typeof getTask!=='function'||typeof formatDuration!=='function')return 0;
     let patched=0;
-    document.querySelectorAll('.duration[data-task-id][data-live-kind="work"]').forEach(el=>{
+    document.querySelectorAll('.duration[data-task-id][data-live-kind="work"],.duration.historical-segment-duration-v488[data-task-id]').forEach(el=>{
       const id=Number(el.dataset.taskId);
       const task=getTask(id);
       if(!task)return;
@@ -97,6 +97,7 @@
       const metrics=segmentMetrics(task,segments,Date.now());
       el.classList.remove('live-duration');
       el.classList.add('historical-segment-duration-v488');
+      el.removeAttribute('data-live-kind');
       el.dataset.v488Breakdown='true';
       el.innerHTML=breakdownHtml(metrics);
       patched+=1;
@@ -164,6 +165,7 @@
     patchVisibleCards,
     pausesExcludedFromSegmentActive:true,
     historicalProgressPreserved:true,
+    legacyLiveTickerDetached:true,
     editorShowsBreakdown:true,
     cardShowsBreakdown:true
   };
