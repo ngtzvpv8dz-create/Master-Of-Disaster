@@ -19,6 +19,7 @@ jobs:
           node --check historical-segment-breakdown-v488.js
           grep -q 'cardBreakdownFontPx:8.5' historical-segment-breakdown-v488.js
           grep -q 'font-size:8.5px!important' historical-segment-breakdown-v488.js
+          grep -q 'cardPauseLineRemoved:true' historical-segment-breakdown-v488.js
       - name: Verify computed card typography
         run: |
           npm init -y >/dev/null 2>&1
@@ -42,18 +43,13 @@ jobs:
               const card=document.querySelector('.historical-segment-duration-v488');
               const main=card?.querySelector('.v488-main');
               const subs=[...card?.querySelectorAll('.v488-sub')||[]];
-              const pause=card?.querySelector('.v488-pause');
-              return {
-                text:card?.innerText||'',
-                main:main?getComputedStyle(main).fontSize:null,
-                subs:subs.map(el=>getComputedStyle(el).fontSize),
-                pause:pause?getComputedStyle(pause).fontSize:null
-              };
+              return {text:card?.innerText||'',main:main?getComputedStyle(main).fontSize:null,subs:subs.map(el=>getComputedStyle(el).fontSize),pauseCount:card?.querySelectorAll('.v488-pause').length||0};
             });
-            const sizes=[result.main,...result.subs,result.pause];
-            if(sizes.length!==4||sizes.some(v=>v!=='8.5px'))throw new Error('V488 card typography is not uniformly 8.5px: '+JSON.stringify(result));
+            const sizes=[result.main,...result.subs];
+            if(sizes.length!==3||sizes.some(v=>v!=='8.5px'))throw new Error('V488 card typography is not uniformly 8.5px: '+JSON.stringify(result));
+            if(result.pauseCount!==0||result.text.includes('PAUSEN ZWISCHEN SEGMENTEN'))throw new Error('V491 card must not show segment-gap line: '+result.text);
             for(const marker of ['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00'])if(!result.text.includes(marker))throw new Error('Breakdown content regression: '+result.text);
-            console.log('V488 typography regression OK',result);
+            console.log('V488/V491 typography regression OK',result);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
@@ -84,26 +80,26 @@ jobs:
                 try{
                   const r=await fetch('./historical-segment-breakdown-v488.js?font='+Date.now(),{cache:'no-store'});
                   const t=await r.text();
-                  return r.ok&&t.includes('cardBreakdownFontPx:8.5')&&t.includes('font-size:8.5px!important');
+                  return r.ok&&t.includes('cardBreakdownFontPx:8.5')&&t.includes('cardPauseLineRemoved:true');
                 }catch(_){return false;}
               });
               if(marker){deployed=true;break;}
               await page.waitForTimeout(10000);
             }
-            if(!deployed)throw new Error('Typography hotfix not deployed within polling window');
+            if(!deployed)throw new Error('V491-compatible typography source not deployed within polling window');
             await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?fontsmoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5,{timeout:30000});
+            await page.waitForFunction(()=>window.__modHistoricalSegmentBreakdownV488?.cardPauseLineRemoved===true,{timeout:30000});
             await page.evaluate(()=>{
               tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},{startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}]}];archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();
             });
             await page.waitForTimeout(1300);
-            const sizes=await page.evaluate(()=>{
+            const result=await page.evaluate(()=>{
               const card=document.querySelector('.historical-segment-duration-v488');
-              const els=[card?.querySelector('.v488-main'),...card?.querySelectorAll('.v488-sub')||[],card?.querySelector('.v488-pause')].filter(Boolean);
-              return els.map(el=>({text:el.textContent.trim(),fontSize:getComputedStyle(el).fontSize}));
+              const els=[card?.querySelector('.v488-main'),...card?.querySelectorAll('.v488-sub')||[]].filter(Boolean);
+              return {sizes:els.map(el=>({text:el.textContent.trim(),fontSize:getComputedStyle(el).fontSize})),pause:card?.querySelector('.v488-pause')?.textContent||''};
             });
-            if(sizes.length!==4||sizes.some(x=>x.fontSize!=='8.5px'))throw new Error('LIVE typography mismatch: '+JSON.stringify(sizes));
-            console.log('LIVE typography PASS',sizes);
+            if(result.sizes.length!==3||result.sizes.some(x=>x.fontSize!=='8.5px')||result.pause)throw new Error('LIVE V491 typography mismatch: '+JSON.stringify(result));
+            console.log('LIVE V491-compatible typography PASS',result);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
