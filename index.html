@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d0f">
   <title>Master of Disaster</title>
-  <!-- BUILD: V488 · 23.08.2026 · 16:16 -->
+  <!-- BUILD: V489 · 23.08.2026 · 18:25 -->
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
@@ -127,9 +127,10 @@
   <script src="./terminal-delete-v485.js?v=485-0954"></script>
   <script src="./time-segment-scroll-v486.js?v=486-1511"></script>
   <script src="./historical-segment-breakdown-v488.js?v=488-1616"></script>
+  <script src="./task-time-weight-details-v489.js?v=489-1825"></script>
   <script>
     (function(){
-      const meta={version:'V488',date:'23.08.2026',time:'16:16',build:'23.08.2026 · 16:16 Uhr'};
+      const meta={version:'V489',date:'23.08.2026',time:'18:25',build:'23.08.2026 · 18:25 Uhr'};
       window.__MOD_BUILD__=meta;
       function patchBuild(){
         window.__modDevVersion={...meta,patch:patchBuild};
@@ -151,13 +152,13 @@
         const testRun=params.has('reg')||params.has('smoke');
         if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
         if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
-        if(!testRun&&!sessionStorage.getItem('modV488HistoricalBreakdownDone')){
-          sessionStorage.setItem('modV488HistoricalBreakdownDone','1');
+        if(!testRun&&!sessionStorage.getItem('modV489TaskTimeWeightDetailsDone')){
+          sessionStorage.setItem('modV489TaskTimeWeightDetailsDone','1');
           const u=new URL(location.href);
-          u.searchParams.set('v488history',Date.now().toString());
+          u.searchParams.set('v489details',Date.now().toString());
           location.replace(u.toString());
         }
-      }catch(e){console.warn('V488 historical segment breakdown cleanup:',e);}
+      }catch(e){console.warn('V489 task time/weight details cleanup:',e);}
     })();
   </script>
 </body>
