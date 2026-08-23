@@ -57,15 +57,16 @@ jobs:
                 const findCard=()=>[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Live Test');
                 let card=findCard(),btn=card?.querySelector('.icon-actions button[onclick*="toggleToday("]'),actions=card?.querySelector('.icon-actions');
                 const before=btn?.getBoundingClientRect();
-                const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:btn?.classList.contains('today-selected-v480'),icon:btn?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,options:select?.options.length||0,row:!!document.getElementById('newTodayRowV480')};
+                const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:btn?.classList.contains('today-selected-v480'),icon:btn?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0,row:!!document.getElementById('newTodayRowV480')};
                 toggleToday(task.id);
                 card=findCard();btn=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');actions=card?.querySelector('.icon-actions');
                 const after=btn?.getBoundingClientRect();
                 return {created,after:{today:task.todayDate,selected:btn?.classList.contains('today-selected-v480'),icon:btn?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))}};
               });
+              const norm=v=>String(v||'').replace(/\s+/g,'');
               out.createTodayBlock=!!v480.created.today&&!!v480.created.block&&v480.created.options>=2&&v480.created.row;
               out.stableTodayAction=v480.created.selected&&v480.created.icon==='calendar'&&v480.after.today===null&&!v480.after.selected&&v480.after.icon==='calendar'&&v480.after.dx<=1&&v480.after.dy<=1;
-              out.renderStability=v480.created.state==='open'&&v480.after.state==='open'&&v480.created.transform==='translate(12px,4px)'&&v480.after.transform==='translate(12px,4px)';
+              out.renderStability=v480.created.layout?.x===12&&v480.created.layout?.y===4&&v480.created.state==='open'&&v480.after.state==='open'&&norm(v480.created.transform)==='translate(12px,4px)'&&norm(v480.after.transform)==='translate(12px,4px)';
 
               await page.evaluate(()=>{switchTab('today');render();});await page.waitForTimeout(120);
               out.workBlocksPreserved=await page.evaluate(()=>!!document.querySelector('.work-block-toolbar-v474')&&document.querySelectorAll('.work-block-v474').length>=1&&!document.getElementById('categoryViewToggleV473'));
