@@ -4,6 +4,7 @@
 
   const BUILD_VERSION='V493';
   const EPSILON_MS=1000;
+  const INPUT_LABELS=new Set(['TYP','PRIORITÄT','OPTIONAL','FÄLLIG']);
   let observer=null;
   let queued=false;
 
@@ -63,6 +64,8 @@
     if(!row)return false;
     const label=row.querySelector(':scope > .option-label');
     if(!label)return false;
+    const labelText=String(label.textContent||'').trim().toUpperCase();
+    if(!INPUT_LABELS.has(labelText))return false;
     let buttons=row.querySelector(':scope > .v493-option-buttons');
     if(!buttons){
       buttons=document.createElement('div');
@@ -201,6 +204,7 @@
     statusStillBelowNumber:true,
     fourDigitRailPreserved:true,
     wrappedOptionRowsIndented:true,
+    originalInputRowsOnly:true,
     typeOptionsAligned:true,
     priorityOptionsAligned:true,
     activeSourceLabels:true,
