@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d0f">
   <title>Master of Disaster</title>
-  <!-- BUILD: V480 · 23.08.2026 · 08:01 -->
+  <!-- BUILD: V481 · 23.08.2026 · 08:28 -->
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
@@ -122,9 +122,10 @@
   <script src="./statistics-alignment-v477.js?v=477-1440"></script>
   <script src="./render-stability-v479.js?v=479-0746"></script>
   <script src="./today-create-render-v480.js?v=480-0801"></script>
+  <script src="./voice-commands-v481.js?v=481-0828"></script>
   <script>
     (function(){
-      const meta={version:'V480',date:'23.08.2026',time:'08:01',build:'23.08.2026 · 08:01 Uhr'};
+      const meta={version:'V481',date:'23.08.2026',time:'08:28',build:'23.08.2026 · 08:28 Uhr'};
       window.__MOD_BUILD__=meta;
       function patchBuild(){
         window.__modDevVersion={...meta,patch:patchBuild};
@@ -144,13 +145,13 @@
       try{
         if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
         if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
-        if(!sessionStorage.getItem('modV480TodayCreateRenderDone')){
-          sessionStorage.setItem('modV480TodayCreateRenderDone','1');
+        if(!sessionStorage.getItem('modV481VoiceCommandDone')){
+          sessionStorage.setItem('modV481VoiceCommandDone','1');
           const u=new URL(location.href);
-          u.searchParams.set('v480today',Date.now().toString());
+          u.searchParams.set('v481voice',Date.now().toString());
           location.replace(u.toString());
         }
-      }catch(e){console.warn('V480 today/create render cleanup:',e);}
+      }catch(e){console.warn('V481 voice command cleanup:',e);}
     })();
   </script>
 </body>
