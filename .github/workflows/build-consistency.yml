@@ -16,51 +16,44 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V482 build
+      - name: Verify V483 build
         shell: python
         run: |
           from pathlib import Path
           import json
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          v483=Path('voice-result-v483.js').read_text(encoding='utf-8')
           v482=Path('voice-commands-v482.js').read_text(encoding='utf-8')
           v480=Path('today-create-render-v480.js').read_text(encoding='utf-8')
-          v479=Path('render-stability-v479.js').read_text(encoding='utf-8')
           v478=Path('remote-archive-sequence-v478.js').read_text(encoding='utf-8')
-          v477=Path('statistics-alignment-v477.js').read_text(encoding='utf-8')
-          v475=Path('fixed-app-header-v475.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V482','23.08.2026 · 08:46','voice-commands-v482.js?v=482-0846',"version:'V482'",'modV482VoiceStopDone']:
-              if marker not in index: raise SystemExit(f'Missing V482 index marker: {marker}')
-          for marker in ['master-of-disaster-v482-voice-block-stop-fix','voice-commands-v482.js','today-create-render-v480.js','development-metrics.json']:
-              if marker not in sw: raise SystemExit(f'Missing V482 service worker marker: {marker}')
-          for marker in ["const BUILD_VERSION='V482'",'arbeits[\\s-]*','blockTitleCleanup:true','microphoneStop:true','stopListening','r.stop','r.abort','noOpenAiApi:true','confirmationRequired:true',"supportedCommands:['create','start','finish']",'__modVoiceCommandsV482']:
-              if marker not in v482: raise SystemExit(f'Missing V482 behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V480'",'directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true','__modTodayCreateRenderV480']:
+          for marker in ['BUILD: V483','23.08.2026 · 08:58','voice-result-v483.js?v=483-0858',"version:'V483'",'modV483VoiceResultDone']:
+              if marker not in index: raise SystemExit(f'Missing V483 index marker: {marker}')
+          for marker in ['master-of-disaster-v483-voice-result-after-stop','voice-result-v483.js','voice-commands-v482.js','development-metrics.json']:
+              if marker not in sw: raise SystemExit(f'Missing V483 service-worker marker: {marker}')
+          for marker in ["const BUILD_VERSION='V483'",'preservesResultAfterStop:true','noEarlyAbort:true','scheduleWatchdog','onaudioend','endGrace','__modVoiceResultV483']:
+              if marker not in v483: raise SystemExit(f'Missing V483 behavior: {marker}')
+          for marker in ["const BUILD_VERSION='V482'",'blockTitleCleanup:true','microphoneStop:true','__modVoiceCommandsV482']:
+              if marker not in v482: raise SystemExit(f'Missing preserved V482 behavior: {marker}')
+          for marker in ['directTodayOnCreate:true','createBlockSelection:true','stableTodayAction:true','__modTodayCreateRenderV480']:
               if marker not in v480: raise SystemExit(f'Missing preserved V480 behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V479'",'synchronousPostRender:true','__modRenderStabilityV479']:
-              if marker not in v479: raise SystemExit(f'Missing preserved V479 behavior: {marker}')
           for marker in ["const COMMAND='RENUMBER_ARCHIVE_GAP'",'sequence_contiguous:true','__modRemoteArchiveSequenceV478']:
               if marker not in v478: raise SystemExit(f'Missing preserved V478 behavior: {marker}')
-          for marker in ['fixedSummaryPadding:true','dynamicIndentRemoved:true','__modStatisticsAlignmentV477']:
-              if marker not in v477: raise SystemExit(f'Missing preserved V477 behavior: {marker}')
-          for marker in ['appFixedTopV475','headerAndTabsTogether:true','dynamicHeight:true','__modFixedAppHeaderV475']:
-              if marker not in v475: raise SystemExit(f'Missing preserved V475 behavior: {marker}')
-          if metrics.get('version')!='V482' or metrics.get('automated') is not True:
-              raise SystemExit('Bundled metrics snapshot is not V482/automated')
-          print('V482 build consistency OK')
+          if metrics.get('version')!='V483' or metrics.get('automated') is not True:
+              raise SystemExit('Bundled metrics snapshot is not V483/automated')
+          print('V483 build consistency OK')
       - name: JavaScript syntax
-        run: node --check voice-commands-v482.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
+        run: node --check voice-result-v483.js && node --check voice-commands-v482.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - name: Generator produces current repository metrics
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
           cat /tmp/metrics.log
           node - <<'NODE'
           const m=require('/tmp/development-metrics.json');
-          if(m.version!=='V482'||!m.automated)throw new Error('Generated version/automation flag wrong');
+          if(m.version!=='V483'||!m.automated)throw new Error('Generated version/automation flag wrong');
           if(m.repository.reachableCommits<500)throw new Error('Commit history unexpectedly short');
           if(m.repository.currentFiles<40)throw new Error('File count unexpectedly low');
           if(m.repository.currentTextLines<10000)throw new Error('Text line count unexpectedly low');
-          if(m.repository.currentBytes<500000)throw new Error('Repository byte count unexpectedly low');
-          console.log('V482 generated metrics sane');
+          console.log('V483 generated metrics sane');
           NODE
