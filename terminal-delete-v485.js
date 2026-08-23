@@ -9,7 +9,6 @@
   const BUILD_VERSION='V485';
   const TERMINAL_STATUSES=new Set(['completed','aborted']);
 
-  const clean=v=>String(v??'').trim().replace(/\s+/g,' ');
   const esc=v=>typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clone=v=>{try{return JSON.parse(JSON.stringify(v));}catch(_){return v;}};
 
@@ -143,7 +142,8 @@
         closeModal();
       }catch(error){
         const msg=error?.message||String(error);
-        modal.querySelector('.terminal-delete-warning-v485').innerHTML=`<strong>Löschen nicht ausgeführt.</strong><br><br>${esc(msg)}`;
+        const warning=modal.querySelector('.terminal-delete-warning-v485');
+        if(warning)warning.innerHTML=`<strong>Löschen nicht ausgeführt.</strong><br><br>${esc(msg)}`;
         const confirm=document.getElementById('terminalDeleteConfirmV485');if(confirm)confirm.remove();
       }
     });
@@ -181,10 +181,28 @@
     return null;
   }
 
+  function ensureAbortedSection(){
+    const container=document.getElementById('viewContainer');
+    if(!container||typeof currentTab==='undefined'||currentTab!=='all'||!Array.isArray(tasks)||typeof taskCard!=='function')return false;
+    document.getElementById('abortedSectionV485')?.remove();
+    const rows=tasks
+      .filter(row=>row&&row.status==='aborted'&&!(typeof isTestTask==='function'&&isTestTask(row)))
+      .sort((a,b)=>new Date(b.abortedAt||b.completedAt||0)-new Date(a.abortedAt||a.completedAt||0));
+    if(!rows.length)return false;
+    const section=document.createElement('section');
+    section.id='abortedSectionV485';
+    section.className='section';
+    section.innerHTML=`<div class="section-header"><div class="section-title">ABGEBROCHEN</div><div class="counter">${rows.length}</div></div>`;
+    rows.forEach(row=>section.appendChild(taskCard(row)));
+    container.appendChild(section);
+    return true;
+  }
+
   function enhanceDeleteActions(){
     const container=document.getElementById('viewContainer');
     if(!container)return;
     injectStyle();
+    ensureAbortedSection();
 
     container.querySelectorAll('.task:not(.archive-task)').forEach(card=>{
       const row=rowForCard(card);
@@ -223,11 +241,13 @@
     deleteArchivedTask,
     compactArchiveNumbers,
     openDeleteConfirm,
+    ensureAbortedSection,
     enhanceDeleteActions,
     dynamicArchiveRenumber:true,
     statisticsFollowRemainingData:true,
     stableArchiveIdsPreserved:true,
-    confirmationRequired:true
+    confirmationRequired:true,
+    abortedTasksVisible:true
   };
   window.addEventListener('load',()=>setTimeout(enhanceDeleteActions,350));
 })();
