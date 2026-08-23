@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d0f">
   <title>Master of Disaster</title>
-  <!-- BUILD: V482 · 23.08.2026 · 08:46 -->
+  <!-- BUILD: V483 · 23.08.2026 · 08:58 -->
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
@@ -123,9 +123,10 @@
   <script src="./render-stability-v479.js?v=479-0746"></script>
   <script src="./today-create-render-v480.js?v=480-0801"></script>
   <script src="./voice-commands-v482.js?v=482-0846"></script>
+  <script src="./voice-result-v483.js?v=483-0858"></script>
   <script>
     (function(){
-      const meta={version:'V482',date:'23.08.2026',time:'08:46',build:'23.08.2026 · 08:46 Uhr'};
+      const meta={version:'V483',date:'23.08.2026',time:'08:58',build:'23.08.2026 · 08:58 Uhr'};
       window.__MOD_BUILD__=meta;
       function patchBuild(){
         window.__modDevVersion={...meta,patch:patchBuild};
@@ -147,13 +148,13 @@
         const testRun=params.has('reg')||params.has('smoke');
         if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
         if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
-        if(!testRun&&!sessionStorage.getItem('modV482VoiceStopDone')){
-          sessionStorage.setItem('modV482VoiceStopDone','1');
+        if(!testRun&&!sessionStorage.getItem('modV483VoiceResultDone')){
+          sessionStorage.setItem('modV483VoiceResultDone','1');
           const u=new URL(location.href);
-          u.searchParams.set('v482voice',Date.now().toString());
+          u.searchParams.set('v483voice',Date.now().toString());
           location.replace(u.toString());
         }
-      }catch(e){console.warn('V482 voice block/stop cleanup:',e);}
+      }catch(e){console.warn('V483 voice result cleanup:',e);}
     })();
   </script>
 </body>
