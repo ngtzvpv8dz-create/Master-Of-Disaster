@@ -16,40 +16,26 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check app.js
-      - name: Verify V488 wiring
+        run: node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check live-log-v453.js && node --check app.js
+      - name: Verify V489 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('historical-segment-breakdown-v488.js').read_text(encoding='utf-8')
+          js=Path('task-time-weight-details-v489.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V488','historical-segment-breakdown-v488.js?v=488-1616',"version:'V488'",'modV488HistoricalBreakdownDone']:
-              if marker not in html: raise SystemExit(f'Missing V488 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v488-historical-segment-breakdown','historical-segment-breakdown-v488.js']:
-              if marker not in sw: raise SystemExit(f'Missing V488 SW marker: {marker}')
-          for marker in ['historicalProgressPreserved:true','pausesExcludedFromSegmentActive:true','legacyLiveTickerDetached:true','segmentMetrics','patchVisibleCards']:
-              if marker not in js: raise SystemExit(f'Missing V488 behavior marker: {marker}')
-          if metrics.get('version')!='V488' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V488 automated metrics snapshot')
-          print('V488 wiring OK')
-      - name: Verify V487 calculation preserved
-        run: |
-          node <<'NODE'
-          const fs=require('fs');global.window=global;global.calculateActiveDuration=()=>0;
-          eval(fs.readFileSync('segment-active-duration-v487.js','utf8'));
-          const task={status:'paused',importedHistoricalProgressDurationMs:8760000,activeSegments:[
-            {startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},
-            {startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},
-            {startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}
-          ]};
-          const total=calculateActiveDuration(task,Date.parse('2026-08-23T12:54:00Z'));
-          if(total!==17640000)throw new Error(`Expected preserved historical+segment total 04:54:00, got ${total}`);
-          console.log('V487 accounting preserved');
-          NODE
-      - name: Browser regression V488
+          for marker in ['BUILD: V489','task-time-weight-details-v489.js?v=489-1825',"version:'V489'",'modV489TaskTimeWeightDetailsDone']:
+              if marker not in html: raise SystemExit(f'Missing V489 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v489-task-time-weight-details','task-time-weight-details-v489.js','historical-segment-breakdown-v488.js']:
+              if marker not in sw: raise SystemExit(f'Missing V489 SW marker: {marker}')
+          for marker in ['perTaskTimeRanges:true','perTaskWeightOverlap:true','appliesToPausedCompletedAbortedAndArchive:true','historicalTimesNeverInvented:true','compactLogFontPx:8.5']:
+              if marker not in js: raise SystemExit(f'Missing V489 behavior marker: {marker}')
+          if metrics.get('version')!='V489' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V489 automated metrics snapshot')
+          print('V489 wiring OK')
+      - name: Browser regression V489
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -59,49 +45,88 @@ jobs:
           const {chromium}=require('playwright');
           (async()=>{
             const browser=await chromium.launch({headless:true});
-            const page=await browser.newPage({viewport:{width:390,height:640}});
+            const page=await browser.newPage({viewport:{width:390,height:700}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V488'&&window.__modHistoricalSegmentBreakdownV488&&window.__modSegmentActiveDurationV487&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V489'&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485,{timeout:30000});
 
+            // Pausierte Aufgabe: 3 aktive Segmente = 02:15:00. Gewicht nur in echten Aktivüberlappungen = 01:15:00.
             await page.evaluate(()=>{
-              tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,
-                importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,
-                startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,
-                activeSegments:[
-                  {startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},
-                  {startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},
-                  {startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}
-                ]}];archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();
+              tasks=[
+                {id:4891,text:'Drei Segmente mit Gewicht',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:00:00+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[
+                  {startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},
+                  {startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},
+                  {startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}
+                ]},
+                {id:4892,text:'Erledigt Detailtest',type:'work',status:'completed',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T17:58:19+02:00',completedAt:'2026-08-23T18:03:19+02:00',activeDurationMs:300000,actualDurationMs:300000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T17:58:19+02:00',endedAt:'2026-08-23T18:03:19+02:00'}]},
+                {id:4893,text:'Abgebrochen Detailtest',type:'work',status:'aborted',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T18:10:00+02:00',abortedAt:'2026-08-23T18:20:00+02:00',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T18:10:00+02:00',endedAt:'2026-08-23T18:20:00+02:00'}]}
+              ];
+              weightPhases=[
+                {id:9001,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:20:00+02:00'},
+                {id:9002,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:10:00+02:00'}
+              ];
+              weightState={isWearing:false,currentWeightKg:8};
+              archive=[];nextArchiveNumber=265;saveTasks();saveArchive();saveWeight();switchTab('all');render();
             });
-            await page.waitForTimeout(120);
-            const state=await page.evaluate(()=>{
-              const task=tasks[0],m=window.__modHistoricalSegmentBreakdownV488.segmentMetrics(task);
-              const el=document.querySelector('.task .duration');
-              return {card:el?.innerText||'',segments:m.activeMs,history:m.historicalMs,total:m.totalActiveMs,gaps:m.gapMs,calc:liveDuration(task),liveKind:el?.getAttribute('data-live-kind')||null};
+            await page.waitForTimeout(350);
+            const paused=page.locator('.task',{hasText:'Drei Segmente mit Gewicht'}).first();
+            const pausedText=await paused.innerText();
+            for(const expected of [
+              '13:00:00–14:00:00 · 01:00:00',
+              '14:15:00–15:00:00 · 00:45:00',
+              '15:30:00–16:00:00 · 00:30:00',
+              'GESAMT AKTIV · 02:15:00',
+              'MIT ZUSATZGEWICHT · 01:15:00 VON 02:15:00',
+              '13:10:00–14:00:00 · 00:50:00 · 12,3 kg',
+              '14:15:00–14:20:00 · 00:05:00 · 12,3 kg',
+              '15:40:00–16:00:00 · 00:20:00 · 8 kg'
+            ]) if(!pausedText.includes(expected))throw new Error(`Paused detail missing ${expected}: ${pausedText}`);
+            const detailApi=await page.evaluate(()=>{
+              const t=tasks.find(x=>x.id===4891),ti=window.__modTaskTimeWeightDetailsV489.timeDetail(t,false),wi=window.__modTaskTimeWeightDetailsV489.weightDetail(t,ti,false);
+              return {active:ti.knownTotalMs,weighted:wi.totalMs,overlaps:wi.overlaps.map(r=>r.durationMs),detailFont:window.__modTaskTimeWeightDetailsV489.detailFontPx};
             });
-            if(state.segments!==8880000)throw new Error(`Segment active time wrong: ${state.segments}`);
-            if(state.history!==8760000)throw new Error(`Historical active time wrong: ${state.history}`);
-            if(state.total!==17640000||state.calc!==17640000)throw new Error('Total active accounting must remain 04:54:00');
-            if(state.gaps!==8760000)throw new Error(`Expected 02:26:00 segment gaps, got ${state.gaps}`);
-            if(state.liveKind!==null)throw new Error('V488 card is still attached to legacy data-live-kind ticker');
-            const expectedCard=['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN'];
-            for(const expected of expectedCard){if(!state.card.includes(expected))throw new Error(`Card breakdown missing ${expected}: ${state.card}`);}
-            await page.waitForTimeout(1250);
-            const stableCard=await page.locator('.task .duration').innerText();
-            for(const expected of expectedCard){if(!stableCard.includes(expected))throw new Error(`Live ticker overwrote V488 card after 1.25s: ${stableCard}`);}
+            if(detailApi.active!==8100000||detailApi.weighted!==4500000||detailApi.overlaps.join(',')!=='3000000,300000,1200000'||detailApi.detailFont!==8.5)throw new Error('V489 overlap accounting regression: '+JSON.stringify(detailApi));
 
-            await page.evaluate(()=>askManualTimes(217));await page.waitForTimeout(80);
-            const editor=await page.locator('#segmentTotalV443').innerText();
-            for(const expected of ['AKTIVE SEGMENTE · 02:28:00','HISTORISCHER FORTSCHRITT · 02:26:00','AKTIVE GESAMTZEIT · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN']){
-              if(!editor.includes(expected))throw new Error(`Editor breakdown missing ${expected}: ${editor}`);
-            }
-            await page.getByRole('button',{name:'Zurück'}).click();
+            // Erledigte Aufgabe in ALLE.
+            const completed=page.locator('.task',{hasText:'Erledigt Detailtest'}).first();
+            const completedText=await completed.innerText();
+            if(!completedText.includes('17:58:19–18:03:19 · 00:05:00')||!completedText.includes('GESAMT AKTIV · 00:05:00'))throw new Error('Completed detail missing: '+completedText);
 
-            await page.evaluate(()=>{tasks=[{id:4861,text:'Kochen',type:'cooking',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T12:00:00Z',pausedAt:'2026-08-23T12:20:00Z',pauseTotalMs:0,cookingMode:'passive',activeSegments:[{startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'}],cookingSegments:[{mode:'active',startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'},{mode:'passive',startedAt:'2026-08-23T12:05:00Z',endedAt:'2026-08-23T12:20:00Z'}]}];saveTasks();askManualTimes(4861);});
-            await page.getByRole('button',{name:/KOCHABSCHNITT HINZUFÜGEN/i}).click();await page.waitForTimeout(120);
-            const modal=await page.evaluate(()=>{const m=document.querySelector('.segment-editor-modal'),a=m?.querySelector('.modal-actions');return m&&a?{rows:document.querySelectorAll('#segmentRowsV443 [data-segment-row]').length,overflow:getComputedStyle(m).overflowY,sticky:getComputedStyle(a).position}:null;});
-            if(!modal||modal.rows!==3||modal.overflow!=='auto'||modal.sticky!=='sticky')throw new Error('V486 scroll regression');
-            console.log('V488 browser regression OK');await browser.close();
+            // Abgebrochene Aufgabe wird von V485 im eigenen Bereich dargestellt und behält V489-Details.
+            await page.waitForTimeout(250);
+            const aborted=page.locator('#abortedSectionV485 .task',{hasText:'Abgebrochen Detailtest'}).first();
+            if(!(await aborted.count()))throw new Error('Aborted V485 section missing');
+            const abortedText=await aborted.innerText();
+            if(!abortedText.includes('18:10:00–18:20:00 · 00:10:00')||!abortedText.includes('GESAMT AKTIV · 00:10:00'))throw new Error('Aborted detail missing: '+abortedText);
+
+            // Archiv: exakte Segmente + gespeicherte Gewichtsteilsegmente.
+            await page.evaluate(()=>{
+              archive=[
+                {archiveNumber:1,archiveId:'v489-a1',text:'Archiv Detailtest',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T15:00:00+02:00',activeDurationMs:6300000,archiveAccountingActiveDurationMs:6300000,actualDurationMs:6300000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'},{startedAt:'2026-08-22T14:15:00+02:00',endedAt:'2026-08-22T15:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:2700000,weightActiveSegments:[{startedAt:'2026-08-22T13:15:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]},
+                {archiveNumber:2,archiveId:'v489-a2',text:'Historisch ohne Uhrzeit',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:null,completedAt:null,activeDurationMs:600000,archiveAccountingActiveDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],historicalWeightKg:8,weightedActiveDurationMs:600000,historicalWeightNote:'historisch vollständig mit 8 kg'}
+              ];nextArchiveNumber=3;saveArchive();switchTab('archive');render();
+            });
+            await page.waitForTimeout(350);
+            const archiveText=await page.locator('.archive-task',{hasText:'Archiv Detailtest'}).first().textContent();
+            for(const expected of ['13:00:00–14:00:00 · 01:00:00','14:15:00–15:00:00 · 00:45:00','GESAMT AKTIV · 01:45:00','MIT ZUSATZGEWICHT · 00:45:00 VON 01:45:00','13:15:00–14:00:00 · 00:45:00 · 12,3 kg']) if(!archiveText.includes(expected))throw new Error(`Archive detail missing ${expected}: ${archiveText}`);
+            const historicalText=await page.locator('.archive-task',{hasText:'Historisch ohne Uhrzeit'}).first().textContent();
+            if(!historicalText.includes('DAUER · 00:10:00 · keine exakten Uhrzeiten dokumentiert')||!historicalText.includes('MIT ZUSATZGEWICHT · 00:10:00 VON 00:10:00 · 8 kg')||!historicalText.includes('Uhrzeit der Gewichtsnutzung nicht exakt dokumentiert'))throw new Error('Historical fallback wrong: '+historicalText);
+            if(/\d{2}:\d{2}:\d{2}–\d{2}:\d{2}:\d{2}/.test(historicalText))throw new Error('V489 invented historical clock times: '+historicalText);
+
+            // V488 historical/segment accounting stays untouched.
+            const preserved=await page.evaluate(()=>window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478);
+            if(!preserved)throw new Error('Preserved V488/V486/V485/V484/V478 module missing');
+
+            // Log typography: same compact scale as archive/task metadata.
+            await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V489 Log Test');switchTab('log');});
+            await page.waitForTimeout(150);
+            const logStyle=await page.evaluate(()=>{
+              const row=document.querySelector('.log-row-v453'),msg=document.querySelector('.log-message-v453'),chip=document.querySelector('.log-chip-v453');
+              return {row:row?getComputedStyle(row).fontSize:null,msg:msg?getComputedStyle(msg).fontSize:null,chip:chip?getComputedStyle(chip).fontSize:null};
+            });
+            if(logStyle.row!=='8.5px'||logStyle.msg!=='8.5px'||logStyle.chip!=='8.5px')throw new Error('Log is not compact 8.5px: '+JSON.stringify(logStyle));
+
+            console.log('V489 browser regression OK');
+            await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE

@@ -13,63 +13,70 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check app.js
+      - run: node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check live-log-v453.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V488
+      - name: Verify live V489
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
           (async()=>{
             const browser=await chromium.launch({headless:true});
-            const page=await browser.newPage({viewport:{width:390,height:640}});
+            const page=await browser.newPage({viewport:{width:390,height:700}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            const out={status:'FAIL',version:'V488',live:false,bundle:false,metricsCurrent:false,segmentActiveCorrect:false,historicalActivePreserved:false,totalActiveCorrect:false,segmentGapsExcluded:false,cardBreakdownCorrect:false,cardStableAfterTicker:false,editorBreakdownCorrect:false,scrollFixPreserved:false,terminalDeletePreserved:false,archiveSequenceRepair:true,remoteReopenCompleted:true,cookingParallel:true,integrity:true,renderStability:true,workBlocksPreserved:true,fixedShell:true,errors:[]};
+            const out={status:'FAIL',version:'V489',live:false,bundle:false,metricsCurrent:false,pausedTimeRanges:false,pausedWeightOverlap:false,completedDetails:false,abortedDetails:false,archiveDetails:false,historicalNoInventedTimes:false,compactLog:false,v488Preserved:false,scrollFixPreserved:false,terminalDeletePreserved:false,remoteReopenCompleted:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,workBlocksPreserved:false,fixedShell:false,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V488'&&window.__modDevVersion?.version==='V488'&&!!window.__modHistoricalSegmentBreakdownV488).catch(()=>false);
+                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V489'&&window.__modDevVersion?.version==='V489'&&!!window.__modTaskTimeWeightDetailsV489).catch(()=>false);
                 let metrics=null;try{metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
-                if(build&&metrics?.version==='V488'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'){out.live=true;break;}
+                if(build&&metrics?.version==='V489'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'){out.live=true;break;}
                 await page.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V488 build or generated metrics not deployed');
-              out.bundle=await page.evaluate(()=>!!(window.__modHistoricalSegmentBreakdownV488&&window.__modSegmentActiveDurationV487&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485));
-              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V488');
+              if(!out.live)throw new Error('V489 build or generated metrics not deployed');
+              out.bundle=await page.evaluate(()=>!!(window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modSegmentActiveDurationV487&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478&&window.__modLiveLogV453));
+              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V489');
 
               await page.evaluate(()=>{
-                tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,
-                  importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,
-                  startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,
-                  activeSegments:[
-                    {startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},
-                    {startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},
-                    {startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}
-                  ]}];archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();
-              });await page.waitForTimeout(150);
-              const expectedCard=['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN'];
-              const state=await page.evaluate(()=>{const t=tasks[0],m=window.__modHistoricalSegmentBreakdownV488.segmentMetrics(t),el=document.querySelector('.task .duration');return {m,calc:liveDuration(t),card:el?.innerText||'',liveKind:el?.getAttribute('data-live-kind')||null};});
-              out.segmentActiveCorrect=state.m.activeMs===8880000;
-              out.historicalActivePreserved=state.m.historicalMs===8760000;
-              out.totalActiveCorrect=state.m.totalActiveMs===17640000&&state.calc===17640000;
-              out.segmentGapsExcluded=state.m.gapMs===8760000&&state.m.activeMs!==state.m.totalActiveMs;
-              out.cardBreakdownCorrect=state.liveKind===null&&expectedCard.every(x=>state.card.includes(x));
-              await page.waitForTimeout(1250);
-              const stableCard=await page.locator('.task .duration').innerText();
-              out.cardStableAfterTicker=expectedCard.every(x=>stableCard.includes(x));
+                tasks=[
+                  {id:4891,text:'V489 Live Pausiert',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:00:00+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}]},
+                  {id:4892,text:'V489 Live Erledigt',type:'work',status:'completed',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T17:58:19+02:00',completedAt:'2026-08-23T18:03:19+02:00',activeDurationMs:300000,actualDurationMs:300000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T17:58:19+02:00',endedAt:'2026-08-23T18:03:19+02:00'}]},
+                  {id:4893,text:'V489 Live Abgebrochen',type:'work',status:'aborted',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T18:10:00+02:00',abortedAt:'2026-08-23T18:20:00+02:00',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T18:10:00+02:00',endedAt:'2026-08-23T18:20:00+02:00'}]}
+                ];
+                weightPhases=[{id:9001,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:20:00+02:00'},{id:9002,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:10:00+02:00'}];
+                weightState={isWearing:false,currentWeightKg:8};archive=[];nextArchiveNumber=265;saveTasks();saveArchive();saveWeight();switchTab('all');render();
+              });await page.waitForTimeout(400);
+              const pausedText=await page.locator('.task',{hasText:'V489 Live Pausiert'}).first().innerText();
+              out.pausedTimeRanges=['13:00:00–14:00:00 · 01:00:00','14:15:00–15:00:00 · 00:45:00','15:30:00–16:00:00 · 00:30:00','GESAMT AKTIV · 02:15:00'].every(x=>pausedText.includes(x));
+              out.pausedWeightOverlap=['MIT ZUSATZGEWICHT · 01:15:00 VON 02:15:00','13:10:00–14:00:00 · 00:50:00 · 12,3 kg','14:15:00–14:20:00 · 00:05:00 · 12,3 kg','15:40:00–16:00:00 · 00:20:00 · 8 kg'].every(x=>pausedText.includes(x));
+              const completedText=await page.locator('.task',{hasText:'V489 Live Erledigt'}).first().innerText();
+              out.completedDetails=completedText.includes('17:58:19–18:03:19 · 00:05:00')&&completedText.includes('GESAMT AKTIV · 00:05:00');
+              await page.waitForTimeout(200);
+              const aborted=page.locator('#abortedSectionV485 .task',{hasText:'V489 Live Abgebrochen'}).first();
+              out.abortedDetails=await aborted.count()?((await aborted.innerText()).includes('18:10:00–18:20:00 · 00:10:00')):false;
 
-              await page.evaluate(()=>askManualTimes(217));await page.waitForTimeout(80);
-              const editor=await page.locator('#segmentTotalV443').innerText();
-              out.editorBreakdownCorrect=['AKTIVE SEGMENTE · 02:28:00','HISTORISCHER FORTSCHRITT · 02:26:00','AKTIVE GESAMTZEIT · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN'].every(x=>editor.includes(x));
-              await page.getByRole('button',{name:'Zurück'}).click();
+              await page.evaluate(()=>{archive=[
+                {archiveNumber:1,archiveId:'live-v489-a1',text:'V489 Archiv Detail',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T15:00:00+02:00',activeDurationMs:6300000,archiveAccountingActiveDurationMs:6300000,actualDurationMs:6300000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'},{startedAt:'2026-08-22T14:15:00+02:00',endedAt:'2026-08-22T15:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:2700000,weightActiveSegments:[{startedAt:'2026-08-22T13:15:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]},
+                {archiveNumber:2,archiveId:'live-v489-a2',text:'V489 Alt ohne Uhrzeit',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:null,completedAt:null,activeDurationMs:600000,archiveAccountingActiveDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],historicalWeightKg:8,weightedActiveDurationMs:600000,historicalWeightNote:'historisch vollständig mit 8 kg'}
+              ];nextArchiveNumber=3;saveArchive();switchTab('archive');render();});await page.waitForTimeout(350);
+              const archiveText=await page.locator('.archive-task',{hasText:'V489 Archiv Detail'}).first().textContent();
+              out.archiveDetails=['13:00:00–14:00:00 · 01:00:00','14:15:00–15:00:00 · 00:45:00','GESAMT AKTIV · 01:45:00','MIT ZUSATZGEWICHT · 00:45:00 VON 01:45:00','13:15:00–14:00:00 · 00:45:00 · 12,3 kg'].every(x=>archiveText.includes(x));
+              const oldText=await page.locator('.archive-task',{hasText:'V489 Alt ohne Uhrzeit'}).first().textContent();
+              out.historicalNoInventedTimes=oldText.includes('DAUER · 00:10:00 · keine exakten Uhrzeiten dokumentiert')&&oldText.includes('Uhrzeit der Gewichtsnutzung nicht exakt dokumentiert')&&!/\d{2}:\d{2}:\d{2}–\d{2}:\d{2}:\d{2}/.test(oldText);
 
-              await page.evaluate(()=>{tasks=[{id:4861,text:'Kochen',type:'cooking',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T12:00:00Z',pausedAt:'2026-08-23T12:20:00Z',pauseTotalMs:0,cookingMode:'passive',activeSegments:[{startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'}],cookingSegments:[{mode:'active',startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'},{mode:'passive',startedAt:'2026-08-23T12:05:00Z',endedAt:'2026-08-23T12:20:00Z'}]}];saveTasks();askManualTimes(4861);});
-              await page.getByRole('button',{name:/KOCHABSCHNITT HINZUFÜGEN/i}).click();await page.waitForTimeout(120);
-              const modal=await page.evaluate(()=>{const m=document.querySelector('.segment-editor-modal'),a=m?.querySelector('.modal-actions');return m&&a?{rows:document.querySelectorAll('#segmentRowsV443 [data-segment-row]').length,overflow:getComputedStyle(m).overflowY,sticky:getComputedStyle(a).position}:null;});
-              out.scrollFixPreserved=!!modal&&modal.rows===3&&modal.overflow==='auto'&&modal.sticky==='sticky';
-              await page.getByRole('button',{name:'Zurück'}).click();
+              await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V489 Live Log Test');switchTab('log');});await page.waitForTimeout(150);
+              const log=await page.evaluate(()=>{const r=document.querySelector('.log-row-v453'),m=document.querySelector('.log-message-v453'),c=document.querySelector('.log-chip-v453');return {r:r?getComputedStyle(r).fontSize:null,m:m?getComputedStyle(m).fontSize:null,c:c?getComputedStyle(c).fontSize:null};});
+              out.compactLog=log.r==='8.5px'&&log.m==='8.5px'&&log.c==='8.5px';
 
-              await page.evaluate(()=>{tasks=[{id:4851,text:'Delete smoke',status:'completed',type:'work',priority:'normal',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]}];archive=[];saveTasks();saveArchive();switchTab('all');render();});await page.waitForTimeout(100);
-              await page.locator('.task',{hasText:'Delete smoke'}).first().locator('.terminal-delete-v485').click();out.terminalDeletePreserved=await page.locator('#terminalDeleteConfirmV485').isVisible();
+              out.v488Preserved=await page.evaluate(()=>window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5);
+              out.scrollFixPreserved=await page.evaluate(()=>!!window.__modTimeSegmentScrollV486);
+              out.terminalDeletePreserved=await page.evaluate(()=>!!window.__modTerminalDeleteV485?.confirmationRequired);
+              out.remoteReopenCompleted=await page.evaluate(()=>!!window.__modRemoteTaskReopenV484);
+              out.archiveSequenceRepair=await page.evaluate(()=>!!window.__modRemoteArchiveSequenceV478);
+              const cooking=await page.evaluate(()=>{tasks=[{id:4901,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:4902,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(4901);switchCookingMode(4901,'passive');startTask(4902);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
+              out.renderStability=await page.evaluate(()=>!!window.__modRenderStabilityV479&&!!window.__modTodayCreateRenderV480);
+              out.workBlocksPreserved=await page.evaluate(()=>!!window.__modTodayWorkBlocksV474);
+              out.fixedShell=await page.evaluate(()=>{const e=document.getElementById('appFixedTopV475');return !!e&&getComputedStyle(e).position==='sticky';});
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));await browser.close();if(out.status!=='PASS')process.exitCode=1;
