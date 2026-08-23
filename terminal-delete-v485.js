@@ -116,7 +116,7 @@
     const archived=kind==='archive';
     const status=archived?'ARCHIVIERT':String(row.status||'').toUpperCase();
     modal.innerHTML=`
-      <div class="modal-overlay">
+      <div class="modal-backdrop">
         <div class="modal terminal-delete-modal-v485">
           <div class="modal-title">🗑️ DAUERHAFT LÖSCHEN?</div>
           <div class="terminal-delete-name-v485">${esc(row.text||'Unbenannte Aufgabe')}</div>
