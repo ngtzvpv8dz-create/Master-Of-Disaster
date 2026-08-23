@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check voice-commands-v481.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - run: node --check voice-commands-v482.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V481
+      - name: Verify live V482
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -24,30 +24,32 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.addInitScript(()=>{
               class FakeRecognition{
-                constructor(){window.__v481FakeRecognition=this;this.lang='';this.continuous=false;this.interimResults=false;this.maxAlternatives=1;}
+                constructor(){window.__v482FakeRecognition=this;this.lang='';this.continuous=false;this.interimResults=false;this.maxAlternatives=1;this.stopCalls=0;this.abortCalls=0;}
                 start(){queueMicrotask(()=>this.onstart?.());}
-                emit(text){this.onresult?.({results:[[{transcript:text,confidence:1}]]});this.onend?.();}
+                stop(){this.stopCalls++;queueMicrotask(()=>this.onend?.());}
+                abort(){this.abortCalls++;queueMicrotask(()=>this.onend?.());}
+                emit(text){this.onresult?.({results:[[{transcript:text,confidence:1}]]});}
               }
               window.webkitSpeechRecognition=FakeRecognition;
             });
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            const out={status:'FAIL',version:'V481',live:false,bundle:false,metricsCurrent:false,fixedShell:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,createTodayBlock:false,stableTodayAction:false,voiceTest:false,voiceConfirmation:false,voiceCreate:false,voiceStart:false,voiceFinishParse:false,errors:[]};
+            const out={status:'FAIL',version:'V482',live:false,bundle:false,metricsCurrent:false,fixedShell:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,createTodayBlock:false,stableTodayAction:false,voiceTest:false,voiceConfirmation:false,voiceBlockCleanup:false,voiceMicrophoneStop:false,voiceCreate:false,voiceStart:false,voiceFinishParse:false,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V481'&&window.__modDevVersion?.version==='V481').catch(()=>false);
+                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V482'&&window.__modDevVersion?.version==='V482').catch(()=>false);
                 let metrics=null;
                 try{metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
-                if(build&&metrics?.version==='V481'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'&&metrics?.repository?.currentTextLines>10000){out.live=true;break;}
+                if(build&&metrics?.version==='V482'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'&&metrics?.repository?.currentTextLines>10000){out.live=true;break;}
                 await page.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V481 build or generated metrics not deployed');
-              out.bundle=await page.evaluate(()=>!!(window.__modVoiceCommandsV481&&window.__modTodayCreateRenderV480&&window.__modRenderStabilityV479&&window.__modRemoteArchiveSequenceV478&&window.__modStatisticsAlignmentV477&&window.__modDevelopmentStatsCurrentV476&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modUxCookingEditorV460));
-              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V481');
+              if(!out.live)throw new Error('V482 build or generated metrics not deployed');
+              out.bundle=await page.evaluate(()=>!!(window.__modVoiceCommandsV482&&window.__modTodayCreateRenderV480&&window.__modRenderStabilityV479&&window.__modRemoteArchiveSequenceV478&&window.__modStatisticsAlignmentV477&&window.__modDevelopmentStatsCurrentV476&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modUxCookingEditorV460));
+              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V482');
 
               await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
               await page.reload({waitUntil:'networkidle',timeout:60000});
-              await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V481'&&window.__modVoiceCommandsV481&&window.__modTodayCreateRenderV480,{timeout:30000});
+              await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V482'&&window.__modVoiceCommandsV482&&window.__modTodayCreateRenderV480,{timeout:30000});
 
               const v480=await page.evaluate(()=>{
                 const date=getBerlinDateKey();
@@ -55,20 +57,14 @@ jobs:
                 const api=window.__modTodayWorkBlocksV474;
                 const b1=api.addBlock('',{date,render:false}),b2=api.addBlock('SPÄTER',{date,render:false});
                 switchTab('all');render();
-                const ui=window.__modTodayCreateRenderV480;
-                ui.setNewTaskToday(true);
-                const select=document.getElementById('newTodayBlockV480');
-                select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));
-                document.getElementById('taskInput').value='V480 Live Test';
-                addTask();
+                const ui=window.__modTodayCreateRenderV480;ui.setNewTaskToday(true);
+                const select=document.getElementById('newTodayBlockV480');select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));
+                document.getElementById('taskInput').value='V480 Live Test';addTask();
                 const task=tasks.find(t=>t.text==='V480 Live Test');
                 const findCard=()=>[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Live Test');
-                let card=findCard(),btn=card?.querySelector('.icon-actions button[onclick*="toggleToday("]'),actions=card?.querySelector('.icon-actions');
-                const before=btn?.getBoundingClientRect();
+                let card=findCard(),btn=card?.querySelector('.icon-actions button[onclick*="toggleToday("]'),actions=card?.querySelector('.icon-actions');const before=btn?.getBoundingClientRect();
                 const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:btn?.classList.contains('today-selected-v480'),icon:btn?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0,row:!!document.getElementById('newTodayRowV480')};
-                toggleToday(task.id);
-                card=findCard();btn=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');actions=card?.querySelector('.icon-actions');
-                const after=btn?.getBoundingClientRect();
+                toggleToday(task.id);card=findCard();btn=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');actions=card?.querySelector('.icon-actions');const after=btn?.getBoundingClientRect();
                 return {created,after:{today:task.todayDate,selected:btn?.classList.contains('today-selected-v480'),icon:btn?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},b2:b2.id};
               });
               const norm=v=>String(v||'').replace(/\s+/g,'');
@@ -76,27 +72,37 @@ jobs:
               out.stableTodayAction=v480.created.selected&&v480.created.icon==='calendar'&&v480.after.today===null&&!v480.after.selected&&v480.after.icon==='calendar'&&v480.after.dx<=1&&v480.after.dy<=1;
               out.renderStability=v480.created.layout?.x===12&&v480.created.layout?.y===4&&v480.created.state==='open'&&v480.after.state==='open'&&norm(v480.created.transform)==='translate(12px,4px)'&&norm(v480.after.transform)==='translate(12px,4px)';
 
-              const voiceCaps=await page.evaluate(()=>({supported:window.__modVoiceCommandsV481?.supported,noApi:window.__modVoiceCommandsV481?.noOpenAiApi,confirm:window.__modVoiceCommandsV481?.confirmationRequired,commands:window.__modVoiceCommandsV481?.supportedCommands||[],ui:!!document.getElementById('voiceCommandTestV481'),button:!document.getElementById('voiceStartV481')?.disabled}));
-              out.voiceTest=voiceCaps.supported===true&&voiceCaps.noApi===true&&voiceCaps.confirm===true&&voiceCaps.commands.join(',')==='create,start,finish'&&voiceCaps.ui&&voiceCaps.button;
+              const voiceCaps=await page.evaluate(()=>({supported:window.__modVoiceCommandsV482?.supported,noApi:window.__modVoiceCommandsV482?.noOpenAiApi,confirm:window.__modVoiceCommandsV482?.confirmationRequired,micStop:window.__modVoiceCommandsV482?.microphoneStop,titleCleanup:window.__modVoiceCommandsV482?.blockTitleCleanup,commands:window.__modVoiceCommandsV482?.supportedCommands||[],ui:!!document.getElementById('voiceCommandTestV482'),button:!document.getElementById('voiceStartV482')?.disabled}));
+              out.voiceTest=voiceCaps.supported===true&&voiceCaps.noApi===true&&voiceCaps.confirm===true&&voiceCaps.micStop===true&&voiceCaps.titleCleanup===true&&voiceCaps.commands.join(',')==='create,start,finish'&&voiceCaps.ui&&voiceCaps.button;
 
-              await page.click('#voiceStartV481');await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
-              await page.evaluate(()=>window.__v481FakeRecognition.emit('Neue Aufgabe Sprachtest heute Arbeitsblock zwei hohe Priorität'));
-              const createPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV481.pending,count:tasks.filter(t=>t.text==='Sprachtest').length,preview:document.getElementById('voicePreviewV481')?.textContent||''}));
-              out.voiceConfirmation=createPreview.count===0&&createPreview.pending?.type==='create'&&createPreview.pending?.text==='Sprachtest'&&createPreview.pending?.block===2&&createPreview.pending?.priority==='high'&&createPreview.pending?.today===true&&/AUSFÜHREN/.test(createPreview.preview);
-              await page.click('[data-v481-execute]');
+              const variants=await page.evaluate(()=>[
+                'Neue Aufgabe Bart putzen heute Arbeitsblock 2',
+                'Neue Aufgabe, Bart putzen, heute, Arbeits Block 2',
+                'Neue Aufgabe Bart putzen heute Block zwei',
+                'Neue Aufgabe Bart putzen heute Arbeitsblock Nummer zwei'
+              ].map(x=>window.__modVoiceCommandsV482.parseTranscript(x)));
+              out.voiceBlockCleanup=variants.every(v=>v.type==='create'&&v.text==='Bart putzen'&&v.block===2&&v.today===true);
+
+              await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);
+              const label=await page.textContent('#voiceStartV482');
+              await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===false&&window.__modVoiceCommandsV482.stopping===false);
+              const stopCalls=await page.evaluate(()=>window.__v482FakeRecognition?.stopCalls||0);
+              out.voiceMicrophoneStop=/STOPPEN/.test(label||'')&&stopCalls===1;
+
+              await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);
+              await page.evaluate(()=>window.__v482FakeRecognition.emit('Neue Aufgabe Sprachtest heute Arbeits Block 2 hohe Priorität'));
+              await page.waitForFunction(()=>window.__modVoiceCommandsV482.pending?.type==='create');
+              const createPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV482.pending,count:tasks.filter(t=>t.text==='Sprachtest').length,preview:document.getElementById('voicePreviewV482')?.textContent||'',abortCalls:window.__v482FakeRecognition?.abortCalls||0}));
+              out.voiceConfirmation=createPreview.count===0&&createPreview.pending?.text==='Sprachtest'&&createPreview.pending?.block===2&&createPreview.pending?.priority==='high'&&createPreview.pending?.today===true&&/AUSFÜHREN/.test(createPreview.preview)&&createPreview.abortCalls>=1;
+              await page.click('[data-v482-execute]');
               out.voiceCreate=await page.evaluate((b2)=>{const t=tasks.find(x=>x.text==='Sprachtest');return !!t&&t.todayDate===getBerlinDateKey()&&t.todayWorkBlockId===b2&&t.priority==='high'&&t.status==='open';},v480.b2);
 
-              await page.click('#voiceStartV481');await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
-              await page.evaluate(()=>window.__v481FakeRecognition.emit('Starte Sprachtest'));
-              const startPreview=await page.evaluate(()=>({p:window.__modVoiceCommandsV481.pending,status:tasks.find(t=>t.text==='Sprachtest')?.status}));
-              const startConfirmed=startPreview.p?.type==='start'&&startPreview.p?.resolvedTask?.text==='Sprachtest'&&startPreview.status==='open';
-              await page.click('[data-v481-execute]');
-              out.voiceStart=startConfirmed&&await page.evaluate(()=>tasks.find(t=>t.text==='Sprachtest')?.status==='running');
+              await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);await page.evaluate(()=>window.__v482FakeRecognition.emit('Starte Sprachtest'));await page.waitForFunction(()=>window.__modVoiceCommandsV482.pending?.type==='start');
+              const startPreview=await page.evaluate(()=>({p:window.__modVoiceCommandsV482.pending,status:tasks.find(t=>t.text==='Sprachtest')?.status}));
+              const startConfirmed=startPreview.p?.resolvedTask?.text==='Sprachtest'&&startPreview.status==='open';await page.click('[data-v482-execute]');out.voiceStart=startConfirmed&&await page.evaluate(()=>tasks.find(t=>t.text==='Sprachtest')?.status==='running');
 
-              await page.click('#voiceStartV481');await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
-              await page.evaluate(()=>window.__v481FakeRecognition.emit('Sprachtest ist fertig'));
-              out.voiceFinishParse=await page.evaluate(()=>window.__modVoiceCommandsV481.pending?.type==='finish'&&window.__modVoiceCommandsV481.pending?.resolvedTask?.text==='Sprachtest'&&tasks.find(t=>t.text==='Sprachtest')?.status==='running');
-              await page.click('[data-v481-cancel]');
+              await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);await page.evaluate(()=>window.__v482FakeRecognition.emit('Sprachtest ist fertig'));await page.waitForFunction(()=>window.__modVoiceCommandsV482.pending?.type==='finish');
+              out.voiceFinishParse=await page.evaluate(()=>window.__modVoiceCommandsV482.pending?.resolvedTask?.text==='Sprachtest'&&tasks.find(t=>t.text==='Sprachtest')?.status==='running');await page.click('[data-v482-cancel]');
 
               await page.evaluate(()=>{switchTab('today');render();});await page.waitForTimeout(120);
               out.workBlocksPreserved=await page.evaluate(()=>!!document.querySelector('.work-block-toolbar-v474')&&document.querySelectorAll('.work-block-v474').length>=1&&!document.getElementById('categoryViewToggleV473'));
@@ -104,22 +110,18 @@ jobs:
               out.allSearchPreserved=await page.evaluate(()=>!!document.getElementById('allTaskSearchV474'));
               out.categoryGroupingPreserved=await page.evaluate(()=>!!document.getElementById('categoryViewToggleV473')&&!!document.querySelector('[data-v473-mode="grouped"]'));
 
-              const header=await page.evaluate(()=>{const e=document.getElementById('appFixedTopV475');return !!e&&getComputedStyle(e).position==='sticky'&&Math.abs(e.getBoundingClientRect().top)<1;});out.fixedShell=header;
-              await page.evaluate(()=>switchTab('theme'));await page.waitForTimeout(300);
-              out.themeHelpPreserved=await page.evaluate(()=>window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);
+              out.fixedShell=await page.evaluate(()=>{const e=document.getElementById('appFixedTopV475');return !!e&&getComputedStyle(e).position==='sticky'&&Math.abs(e.getBoundingClientRect().top)<1;});
+              await page.evaluate(()=>switchTab('theme'));await page.waitForTimeout(300);out.themeHelpPreserved=await page.evaluate(()=>window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);
 
               out.archiveSequenceRepair=await page.evaluate(()=>{
                 archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`A${i+1}`}));for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`A${n}`});nextArchiveNumber=263;
-                const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b),ok=archive.length===261&&nums.every((n,i)=>n===i+1)&&nextArchiveNumber===262&&r.shifted===7&&r.sequence_contiguous;
-                archive=[];nextArchiveNumber=1;saveArchive();return ok;
+                const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b),ok=archive.length===261&&nums.every((n,i)=>n===i+1)&&nextArchiveNumber===262&&r.shifted===7&&r.sequence_contiguous;archive=[];nextArchiveNumber=1;saveArchive();return ok;
               });
-              const cooking=await page.evaluate(()=>{tasks=[{id:48191,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:48192,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(48191);switchCookingMode(48191,'passive');startTask(48192);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              const cooking=await page.evaluate(()=>{tasks=[{id:48291,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:48292,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(48291);switchCookingMode(48291,'passive');startTask(48292);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
               out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
-            fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));
-            await browser.close();
-            if(out.status!=='PASS')process.exitCode=1;
+            fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));await browser.close();if(out.status!=='PASS')process.exitCode=1;
           })();
           JS
           node smoke.js
