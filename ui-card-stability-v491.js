@@ -55,16 +55,17 @@
     const icons=window.__modActionIconsV416?.ICONS||{};
     const key=selected?'calendarPin':'calendar';
     const svg=icons[key]||icons.calendar;
+    const oldKey=button.dataset.iconV416||'';
 
     button.dataset.v480TodayAction='1';
-    button.dataset.iconV416=key;
     button.classList.add('mono-action-v416','v491-today-action');
     button.classList.toggle('today-selected-v480',selected);
     button.setAttribute('aria-pressed',selected?'true':'false');
     button.setAttribute('aria-label',selected?'Heute-Zuweisung entfernen':'Heute zuweisen');
     button.setAttribute('title',selected?'Heute-Zuweisung entfernen':'Heute zuweisen');
     if(!/toggleToday\(/.test(String(button.getAttribute('onclick')||'')))button.setAttribute('onclick',`toggleToday(${row.id})`);
-    if(svg&&button.innerHTML!==svg)button.innerHTML=svg;
+    if(svg&&(oldKey!==key||!button.querySelector('.action-svg-v416')))button.innerHTML=svg;
+    button.dataset.iconV416=key;
 
     const clock=[...actions.querySelectorAll('button')].find(btn=>{
       const onclick=String(btn.getAttribute('onclick')||'');
@@ -109,27 +110,37 @@
     return !!info.api.moveTaskToBlock?.(row.id,targetBlockId,targetIndex,{date:info.date,render:true});
   }
 
-  function makeOrderButton(row,direction,disabled){
+  function makeOrderButton(row,direction){
     const btn=document.createElement('button');
     btn.type='button';
     btn.className=`icon-action v491-order-button ${direction<0?'v491-order-up':'v491-order-down'}`;
     btn.textContent=direction<0?'▲':'▼';
+    btn.dataset.direction=String(direction<0?-1:1);
+    btn.dataset.taskId=String(row.id);
     btn.title=direction<0?'Aufgabe nach oben verschieben':'Aufgabe nach unten verschieben';
     btn.setAttribute('aria-label',btn.title);
-    btn.disabled=!!disabled;
-    btn.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();moveTodayTask(row.id,direction);});
+    btn.addEventListener('click',event=>{
+      event.preventDefault();event.stopPropagation();
+      const target=event.currentTarget;
+      moveTodayTask(target.dataset.taskId,Number(target.dataset.direction)||1);
+    });
     return btn;
   }
 
   function ensureOrderButtons(card,row){
     card.querySelectorAll('.drag-handle').forEach(handle=>handle.remove());
     const actions=card.querySelector('.icon-actions');if(!actions)return false;
-    actions.querySelectorAll('.v491-order-button').forEach(btn=>btn.remove());
-    if(current()!=='today'||!card.classList.contains('today-task-active')||!row||!['open','running','paused'].includes(String(row.status||'')))return false;
+    let up=actions.querySelector('.v491-order-up');
+    let down=actions.querySelector('.v491-order-down');
+    const allowed=current()==='today'&&card.classList.contains('today-task-active')&&row&&['open','running','paused'].includes(String(row.status||''));
+    if(!allowed){up?.remove();down?.remove();return false;}
     const info=orderInfo(row);if(!info)return false;
-    const up=makeOrderButton(row,-1,info.overallIndex<=0);
-    const down=makeOrderButton(row,1,info.overallIndex>=info.ordered.length-1);
-    actions.prepend(down);actions.prepend(up);
+    if(!up)up=makeOrderButton(row,-1);
+    if(!down)down=makeOrderButton(row,1);
+    up.dataset.taskId=String(row.id);down.dataset.taskId=String(row.id);
+    up.disabled=info.overallIndex<=0;down.disabled=info.overallIndex>=info.ordered.length-1;
+    if(actions.firstElementChild!==up)actions.prepend(up);
+    if(up.nextElementSibling!==down)up.insertAdjacentElement('afterend',down);
     return true;
   }
 
@@ -202,6 +213,7 @@
     todayActionAfterClock:true,
     todayIconConsistentAcrossStatuses:true,
     selectedTodayUsesCalendarPin:true,
-    stableCardLayout:true
+    stableCardLayout:true,
+    controlsReuseDomNodes:true
   };
 })();
