@@ -270,12 +270,13 @@
 
   const previousRender=typeof render==='function'?render:null;
   if(previousRender){
-    window.render=function(){
+    render=function(){
       const result=previousRender.apply(this,arguments);
       ensureObserver();
       scheduleEnhance();
       return result;
     };
+    window.render=render;
   }
 
   window.__modTerminalDeleteV485={
