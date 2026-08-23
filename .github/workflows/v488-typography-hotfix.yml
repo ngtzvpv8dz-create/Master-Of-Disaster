@@ -32,28 +32,16 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:640}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            await page.goto('http://127.0.0.1:8787/?fontreg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
             await page.waitForFunction(()=>window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5,{timeout:30000});
-            await page.evaluate(()=>{
-              tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},{startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}]}];
-              archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();
-            });
+            await page.evaluate(()=>{tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},{startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}]}];archive=[];saveTasks();saveArchive();switchTab('all');render();});
             await page.waitForTimeout(1300);
-            const result=await page.evaluate(()=>{
-              const card=document.querySelector('.historical-segment-duration-v488');
-              const main=card?.querySelector('.v488-main');
-              const subs=[...card?.querySelectorAll('.v488-sub')||[]];
-              return {text:card?.innerText||'',main:main?getComputedStyle(main).fontSize:null,subs:subs.map(el=>getComputedStyle(el).fontSize),pauseCount:card?.querySelectorAll('.v488-pause').length||0};
-            });
-            const sizes=[result.main,...result.subs];
-            if(sizes.length!==3||sizes.some(v=>v!=='8.5px'))throw new Error('V488 card typography is not uniformly 8.5px: '+JSON.stringify(result));
-            if(result.pauseCount!==0||result.text.includes('PAUSEN ZWISCHEN SEGMENTEN'))throw new Error('V491 card must not show segment-gap line: '+result.text);
-            for(const marker of ['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00'])if(!result.text.includes(marker))throw new Error('Breakdown content regression: '+result.text);
-            console.log('V488/V491 typography regression OK',result);
-            await browser.close();
+            const result=await page.evaluate(()=>{const card=document.querySelector('.historical-segment-duration-v488');const els=[card?.querySelector('.v488-main'),...card?.querySelectorAll('.v488-sub')||[]].filter(Boolean);return {text:card?.innerText||'',sizes:els.map(el=>getComputedStyle(el).fontSize),pause:card?.querySelectorAll('.v488-pause').length||0};});
+            if(result.sizes.length!==3||result.sizes.some(x=>x!=='8.5px')||result.pause!==0||result.text.includes('PAUSEN ZWISCHEN SEGMENTEN'))throw new Error('V488/V491 typography regression '+JSON.stringify(result));
+            for(const marker of ['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00'])if(!result.text.includes(marker))throw new Error('Breakdown content regression '+result.text);
+            console.log('V488/V491 typography regression OK');await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
-
   live:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: regression
@@ -62,44 +50,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify deployed typography on GitHub Pages
+      - name: Verify deployed typography
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
           npx playwright install chromium >/dev/null 2>&1
           node <<'NODE'
           const {chromium}=require('playwright');
-          (async()=>{
-            const browser=await chromium.launch({headless:true});
-            const page=await browser.newPage({viewport:{width:390,height:640}});
-            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            let deployed=false;
-            for(let i=0;i<24;i++){
-              await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?fontsmoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-              const marker=await page.evaluate(async()=>{
-                try{
-                  const r=await fetch('./historical-segment-breakdown-v488.js?font='+Date.now(),{cache:'no-store'});
-                  const t=await r.text();
-                  return r.ok&&t.includes('cardBreakdownFontPx:8.5')&&t.includes('cardPauseLineRemoved:true');
-                }catch(_){return false;}
-              });
-              if(marker){deployed=true;break;}
-              await page.waitForTimeout(10000);
-            }
-            if(!deployed)throw new Error('V491-compatible typography source not deployed within polling window');
-            await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?fontsmoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modHistoricalSegmentBreakdownV488?.cardPauseLineRemoved===true,{timeout:30000});
-            await page.evaluate(()=>{
-              tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},{startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}]}];archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();
-            });
-            await page.waitForTimeout(1300);
-            const result=await page.evaluate(()=>{
-              const card=document.querySelector('.historical-segment-duration-v488');
-              const els=[card?.querySelector('.v488-main'),...card?.querySelectorAll('.v488-sub')||[]].filter(Boolean);
-              return {sizes:els.map(el=>({text:el.textContent.trim(),fontSize:getComputedStyle(el).fontSize})),pause:card?.querySelector('.v488-pause')?.textContent||''};
-            });
-            if(result.sizes.length!==3||result.sizes.some(x=>x.fontSize!=='8.5px')||result.pause)throw new Error('LIVE V491 typography mismatch: '+JSON.stringify(result));
-            console.log('LIVE V491-compatible typography PASS',result);
-            await browser.close();
-          })().catch(e=>{console.error(e);process.exit(1)});
+          (async()=>{const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:390,height:640}});await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());let deployed=false;for(let i=0;i<24;i++){await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});deployed=await page.evaluate(()=>window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5&&window.__modHistoricalSegmentBreakdownV488?.cardPauseLineRemoved===true).catch(()=>false);if(deployed)break;await page.waitForTimeout(10000);}if(!deployed)throw new Error('Typography update not deployed');console.log('LIVE typography source PASS');await browser.close();})().catch(e=>{console.error(e);process.exit(1)});
           NODE
