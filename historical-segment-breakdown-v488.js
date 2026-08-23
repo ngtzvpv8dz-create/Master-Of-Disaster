@@ -36,6 +36,20 @@
       .sort((a,b)=>new Date(a.startedAt).getTime()-new Date(b.startedAt).getTime());
   }
 
+  function storedKnownTotalMs(task){
+    if(!task)return null;
+    const candidates=[];
+    if(task.type==='leisure')candidates.push(task.leisureDurationMs);
+    if(task.type==='cooking')candidates.push(task.cookingActiveDurationMs);
+    candidates.push(task.activeDurationMs,task.actualDurationMs);
+    for(const value of candidates){
+      if(value===null||typeof value==='undefined'||value==='')continue;
+      const n=Number(value);
+      if(Number.isFinite(n)&&n>=0)return n;
+    }
+    return null;
+  }
+
   function segmentMetrics(task,segmentsInput=null,nowMs=Date.now()){
     const segments=validSegments(segmentsInput||task);
     let activeMs=0;
@@ -66,19 +80,34 @@
       }
     }
 
+    const history=historicalMs(task);
+
+    /*
+      V493: Bei Altaufgaben ohne moderne activeSegments ist nur die
+      gespeicherte bekannte Dauer belastbar. Keine Wandzeit aus alten
+      startedAt/pausedAt-Werten hochrechnen und keine fehlenden Daten erfinden.
+      Der gespeicherte Altwert ist die bekannte Gesamt-Aktivzeit; der
+      Vor-App-Anteil wird für die Anzeige davon abgezogen.
+    */
+    if(!segments.length&&history>0&&task){
+      const stored=storedKnownTotalMs(task);
+      const knownTotal=stored===null?history:Math.max(history,stored);
+      activeMs=Math.max(0,knownTotal-history);
+    }
+
     return {
       activeMs,
       gapMs,
-      historicalMs:historicalMs(task),
-      totalActiveMs:activeMs+historicalMs(task),
+      historicalMs:history,
+      totalActiveMs:activeMs+history,
       segmentCount:segments.length
     };
   }
 
   function breakdownHtml(metrics){
     return `
-      <span class="v488-main">AKTIV · ${formatDuration(metrics.activeMs)}</span>
-      <span class="v488-sub">+ HISTORISCH · ${formatDuration(metrics.historicalMs)}</span>
+      <span class="v488-main">SEIT APP AKTIV · ${formatDuration(metrics.activeMs)}</span>
+      <span class="v488-sub">+ VOR APP AKTIV · ${formatDuration(metrics.historicalMs)}</span>
       <span class="v488-sub">= GESAMT AKTIV · ${formatDuration(metrics.totalActiveMs)}</span>
     `;
   }
@@ -99,18 +128,19 @@
   function patchVisibleCards(){
     if(typeof getTask!=='function'||typeof formatDuration!=='function')return 0;
     let patched=0;
-    document.querySelectorAll('.duration[data-task-id][data-live-kind="work"],.duration.historical-segment-duration-v488[data-task-id]').forEach(el=>{
+    document.querySelectorAll('.duration[data-task-id][data-live-kind="work"],.duration.historical-segment-duration-v488[data-task-id],.duration[data-task-id]').forEach(el=>{
       const id=Number(el.dataset.taskId);
       const task=getTask(id);
       if(!task)return;
       const history=historicalMs(task);
+      if(!(history>0))return;
       const segments=validSegments(task);
-      if(!(history>0&&segments.length>0))return;
       const metrics=segmentMetrics(task,segments,Date.now());
       el.classList.remove('live-duration');
       el.classList.add('historical-segment-duration-v488');
       el.removeAttribute('data-live-kind');
       el.dataset.v488Breakdown='true';
+      el.dataset.v493ActiveSource='true';
       const signature=`${Math.floor(metrics.activeMs/1000)}|${Math.floor(metrics.historicalMs/1000)}|${Math.floor(metrics.totalActiveMs/1000)}`;
       if(el.dataset.v488Signature!==signature){
         const nested=preserveNestedWeightHtml(el);
@@ -156,9 +186,9 @@
     if(!el)return;
     el.classList.add('v488-breakdown');
     el.innerHTML=`
-      <span>AKTIVE SEGMENTE · ${formatDuration(metrics.activeMs)}</span>
-      <span>HISTORISCHER FORTSCHRITT · ${formatDuration(metrics.historicalMs)}</span>
-      <span class="v488-total">AKTIVE GESAMTZEIT · ${formatDuration(metrics.totalActiveMs)}</span>
+      <span>SEIT APP AKTIV · ${formatDuration(metrics.activeMs)}</span>
+      <span>VOR APP AKTIV · ${formatDuration(metrics.historicalMs)}</span>
+      <span class="v488-total">GESAMT AKTIV · ${formatDuration(metrics.totalActiveMs)}</span>
       ${metrics.gapMs>0?`<span class="v488-pause">PAUSEN ZWISCHEN SEGMENTEN · ${formatDuration(metrics.gapMs)} · NICHT ENTHALTEN</span>`:''}
     `;
   };
@@ -179,6 +209,7 @@
   window.__modHistoricalSegmentBreakdownV488={
     version:BUILD_VERSION,
     historicalMs,
+    storedKnownTotalMs,
     segmentMetrics,
     patchVisibleCards,
     pausesExcludedFromSegmentActive:true,
@@ -189,6 +220,9 @@
     cardBreakdownFontPx:8.5,
     cardPauseLineRemoved:true,
     nestedWeightPreservedOnTicker:true,
-    unchangedCardsDoNotRewriteDom:true
+    unchangedCardsDoNotRewriteDom:true,
+    activeSourceLabelsV493:true,
+    historicalOnlyBreakdownV493:true,
+    historicalOnlyUsesStoredTotalV493:true
   };
 })();
