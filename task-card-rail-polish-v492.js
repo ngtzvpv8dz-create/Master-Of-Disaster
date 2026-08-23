@@ -78,10 +78,10 @@
         align-self:stretch!important;
         display:flex!important;
         flex-direction:column!important;
-        align-items:center!important;
+        align-items:flex-start!important;
         justify-content:flex-start!important;
         gap:5px!important;
-        padding:1px 0 0!important;
+        padding:1px 0 0 2px!important;
       }
       #viewContainer .v492-number-status-rail.v492-archive-rail{
         flex-basis:46px!important;
@@ -101,12 +101,9 @@
         width:100%!important;
         max-width:100%!important;
         min-width:0!important;
-        text-align:center!important;
+        text-align:left!important;
       }
-      #viewContainer .v492-number-status-rail>.task-number{
-        font-variant-numeric:tabular-nums!important;
-        white-space:nowrap!important;
-      }
+      #viewContainer .v492-number-status-rail>.task-number,
       #viewContainer .v492-number-status-rail>.archive-number{
         font-variant-numeric:tabular-nums!important;
         white-space:nowrap!important;
@@ -115,7 +112,7 @@
         min-height:18px!important;
         display:flex!important;
         align-items:flex-start!important;
-        justify-content:center!important;
+        justify-content:flex-start!important;
       }
       #viewContainer .task:not(.archive-task)>.task-content,
       #viewContainer .task:not(.archive-task)>.edit-area,
@@ -158,7 +155,7 @@
       }
 
       /* Dünne optische Trennung: Gesamtbereich oben, Arbeitssegmente unten. */
-      #viewContainer .task:not(.archive-task) .task-detail-v490{
+      #viewContainer .task-detail-v490{
         margin-top:6px!important;
         padding-top:5px!important;
         border-top:1px solid rgba(126,139,145,.22)!important;
@@ -200,6 +197,7 @@
     archiveNumberFutureReady:true,
     taskRailWidthPx:42,
     archiveRailWidthPx:46,
+    numberAndStatusLeftAligned:true,
     subtleWeightStyle:true,
     weightSecondLineAligned:true,
     segmentSeparator:true,
