@@ -81,7 +81,7 @@
         align-items:flex-start!important;
         justify-content:flex-start!important;
         gap:5px!important;
-        padding:1px 0 0 2px!important;
+        padding:1px 0 0!important;
       }
       #viewContainer .v492-number-status-rail.v492-archive-rail{
         flex-basis:46px!important;
@@ -96,6 +96,7 @@
         inset:auto!important;
         z-index:auto!important;
         flex:0 0 auto!important;
+        align-self:stretch!important;
         margin:0!important;
         padding:0!important;
         width:100%!important;
