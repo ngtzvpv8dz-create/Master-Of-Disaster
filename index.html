@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d0f">
   <title>Master of Disaster</title>
-  <!-- BUILD: V491 · 23.08.2026 · 19:26 -->
+  <!-- BUILD: V492 · 23.08.2026 · 19:54 -->
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
@@ -130,9 +130,10 @@
   <script src="./task-time-weight-details-v489.js?v=489-1825"></script>
   <script src="./nested-task-weight-layout-v490.js?v=490-1853"></script>
   <script src="./ui-card-stability-v491.js?v=491-1926"></script>
+  <script src="./task-card-rail-polish-v492.js?v=492-1954"></script>
   <script>
     (function(){
-      const meta={version:'V491',date:'23.08.2026',time:'19:26',build:'23.08.2026 · 19:26 Uhr'};
+      const meta={version:'V492',date:'23.08.2026',time:'19:54',build:'23.08.2026 · 19:54 Uhr'};
       window.__MOD_BUILD__=meta;
       function patchBuild(){
         window.__modDevVersion={...meta,patch:patchBuild};
@@ -154,13 +155,13 @@
         const testRun=params.has('reg')||params.has('smoke');
         if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
         if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
-        if(!testRun&&!sessionStorage.getItem('modV491CardStabilityDone')){
-          sessionStorage.setItem('modV491CardStabilityDone','1');
+        if(!testRun&&!sessionStorage.getItem('modV492TaskCardRailPolishDone')){
+          sessionStorage.setItem('modV492TaskCardRailPolishDone','1');
           const u=new URL(location.href);
-          u.searchParams.set('v491cards',Date.now().toString());
+          u.searchParams.set('v492rail',Date.now().toString());
           location.replace(u.toString());
         }
-      }catch(e){console.warn('V491 card stability cleanup:',e);}
+      }catch(e){console.warn('V492 task card rail polish cleanup:',e);}
     })();
   </script>
 </body>
