@@ -16,32 +16,26 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check ui-card-stability-v491.js && node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check live-log-v453.js && node --check app.js
-      - name: Verify V491 wiring
+        run: node --check task-card-rail-polish-v492.js && node --check ui-card-stability-v491.js && node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check live-log-v453.js && node --check app.js
+      - name: Verify V492 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          v491=Path('ui-card-stability-v491.js').read_text(encoding='utf-8')
-          v490=Path('nested-task-weight-layout-v490.js').read_text(encoding='utf-8')
-          v488=Path('historical-segment-breakdown-v488.js').read_text(encoding='utf-8')
+          js=Path('task-card-rail-polish-v492.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V491','ui-card-stability-v491.js?v=491-1926',"version:'V491'",'modV491CardStabilityDone']:
-              if marker not in html: raise SystemExit(f'Missing V491 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v491-card-stability-controls','ui-card-stability-v491.js','nested-task-weight-layout-v490.js']:
-              if marker not in sw: raise SystemExit(f'Missing V491 SW marker: {marker}')
-          for marker in ['dragHandleReplacedByArrows:true','actionsAlwaysBottom:true','todayActionAfterClock:true','todayIconConsistentAcrossStatuses:true','selectedTodayUsesCalendarPin:true','stableCardLayout:true','controlsReuseDomNodes:true']:
-              if marker not in v491: raise SystemExit(f'Missing V491 behavior marker: {marker}')
-          for marker in ['periodicDomRewriteRemoved:true','subSecondSegmentsHidden:true','nestedSegmentWeight:true']:
-              if marker not in v490: raise SystemExit(f'Missing updated V490 behavior: {marker}')
-          for marker in ['cardPauseLineRemoved:true','nestedWeightPreservedOnTicker:true','unchangedCardsDoNotRewriteDom:true']:
-              if marker not in v488: raise SystemExit(f'Missing V488 stability behavior: {marker}')
-          if metrics.get('version')!='V491' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V491 automated metrics snapshot')
-          print('V491 wiring OK')
-      - name: Browser regression V491
+          for marker in ['BUILD: V492','task-card-rail-polish-v492.js?v=492-1954',"version:'V492'",'modV492TaskCardRailPolishDone']:
+              if marker not in html: raise SystemExit(f'Missing V492 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v492-number-status-weight-polish','task-card-rail-polish-v492.js','ui-card-stability-v491.js']:
+              if marker not in sw: raise SystemExit(f'Missing V492 SW marker: {marker}')
+          for marker in ['numberTopLeftEverywhere:true','statusBelowNumber:true','fourDigitTaskNumberReady:true','archiveNumberFutureReady:true','subtleWeightStyle:true','weightSecondLineAligned:true','segmentSeparator:true','dataSemanticsUntouched:true']:
+              if marker not in js: raise SystemExit(f'Missing V492 behavior marker: {marker}')
+          if metrics.get('version')!='V492' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V492 automated metrics snapshot')
+          print('V492 wiring OK')
+      - name: Browser regression V492
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -54,98 +48,70 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V491'&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modHistoricalSegmentBreakdownV488&&window.__modTodayWorkBlocksV474,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V492'&&window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490,{timeout:30000});
 
             await page.evaluate(()=>{
               const day=getBerlinDateKey();
               localStorage.removeItem(window.__modTodayWorkBlocksV474.storageKey);
               tasks=[
-                {id:4911,text:'Kisten sortieren V491',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:0,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:10:00.900+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[
+                {id:4921,text:'Kisten sortieren V492',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:0,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:00:00+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[
                   {startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},
                   {startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},
-                  {startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'},
-                  {startedAt:'2026-08-23T16:10:00+02:00',endedAt:'2026-08-23T16:10:00.900+02:00'}
+                  {startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}
                 ]},
-                {id:4912,text:'Büro wischen V491',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null,startedAt:null,pausedAt:null,pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[]}
+                {id:4922,text:'Büro wischen V492',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null,startedAt:null,pauseTotalMs:0,activeSegments:[]}
               ];
               weightPhases=[
-                {id:9201,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},
-                {id:9202,weightKg:12.3,startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},
-                {id:9203,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}
+                {id:9301,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},
+                {id:9302,weightKg:12.3,startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},
+                {id:9303,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}
               ];
               weightState={isWearing:false,currentWeightKg:8};archive=[];nextArchiveNumber=1;
-              saveTasks();saveArchive();saveWeight();
-              window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();
-              switchTab('all');render();
+              saveTasks();saveArchive();saveWeight();window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();switchTab('all');render();
             });
             await page.waitForTimeout(500);
-            const allCard=page.locator('.task',{hasText:'Kisten sortieren V491'}).first();
-            const allText=await allCard.innerText();
-            for(const expected of ['AKTIV · 02:15:00','+ HISTORISCH · 02:26:00','= GESAMT AKTIV · 04:41:00','↳ 🏋️ DAVON 01:55:00 MIT ZUSATZGEWICHT','13:00:00–14:00:00 · 01:00:00','↳ 🏋️ INKL. ZUSATZGEWICHT · 13:10:00–14:00:00','00:50:00 · 12,3 kg','14:15:00–15:00:00 · 00:45:00','↳ 🏋️ INKL. ZUSATZGEWICHT · 12,3 kg','HISTORISCH · 02:26:00']){
-              if(!allText.includes(expected))throw new Error(`V491 ALL card missing ${expected}: ${allText}`);
+
+            async function assertRail(tab,label){
+              await page.evaluate(t=>{switchTab(t);render();},tab);await page.waitForTimeout(300);
+              const card=page.locator('.task:not(.archive-task)',{hasText:'Kisten sortieren V492'}).first();
+              if(!(await card.count()))throw new Error(`${label}: task card missing`);
+              const r=await card.evaluate(card=>{
+                const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.task-number'),status=rail?.querySelector('.status-symbol'),content=card.querySelector(':scope > .task-content');
+                if(num)num.textContent='9999';
+                const nr=num?.getBoundingClientRect(),sr=status?.getBoundingClientRect(),cr=content?.getBoundingClientRect(),rr=rail?.getBoundingClientRect();
+                return {rail:!!rail,numberParent:num?.parentElement===rail,statusParent:status?.parentElement===rail,numTop:nr?.top,statusTop:sr?.top,railLeft:rr?.left,numLeft:nr?.left,contentLeft:cr?.left,width:rr?.width,numOverflow:num?num.scrollWidth-num.clientWidth:999};
+              });
+              if(!r.rail||!r.numberParent||!r.statusParent||!(r.numTop<r.statusTop)||Math.abs(r.numLeft-r.railLeft)>1||r.width<41||r.numOverflow>0||!(r.contentLeft>r.railLeft+r.width-1))throw new Error(`${label}: number/status rail wrong: ${JSON.stringify(r)}`);
             }
-            if(allText.includes('PAUSEN ZWISCHEN SEGMENTEN'))throw new Error('Card still shows segment-gap line: '+allText);
-            if(allText.includes('16:10:00'))throw new Error('Sub-second segment still visible: '+allText);
+            for(const [tab,label] of [['all','ALLE'],['today','HEUTE'],['priority','PRIORITÄT'],['due','FÄLLIG'],['active','PAUSIERT']])await assertRail(tab,label);
 
-            const initial=await allCard.evaluate(card=>{
-              const host=card.querySelector('.task-content'),actions=card.querySelector('.icon-actions'),hist=card.querySelector('.historical-segment-duration-v488'),overall=card.querySelector('.v490-overall-weight');
-              const buttons=[...actions.querySelectorAll('button')],clock=buttons.findIndex(b=>b.dataset.iconV416==='clock'),today=buttons.findIndex(b=>b.dataset.v480TodayAction==='1');
-              return {height:card.getBoundingClientRect().height,html:card.innerHTML,overall:overall?.textContent.trim()||'',pause:hist?.querySelectorAll('.v488-pause').length||0,actionsLast:host?.lastElementChild===actions,clock,today,todayIcon:buttons[today]?.dataset.iconV416||null};
+            await page.evaluate(()=>{switchTab('all');render();});await page.waitForTimeout(300);
+            const card=page.locator('.task:not(.archive-task)',{hasText:'Kisten sortieren V492'}).first();
+            const weight=await card.evaluate(card=>{
+              const partial=card.querySelector('.v490-weight-partial'),copy=partial?.querySelector('.v492-weight-copy'),sub=partial?.nextElementSibling,overall=card.querySelector('.v490-overall-weight'),detail=card.querySelector('.task-detail-v490');
+              const cs=partial?getComputedStyle(partial):null,os=overall?getComputedStyle(overall):null,ds=detail?getComputedStyle(detail):null;
+              const cx=copy?.getBoundingClientRect().left,sx=sub?.getBoundingClientRect().left+(parseFloat(getComputedStyle(sub).paddingLeft)||0);
+              return {copyX:cx,subTextX:sx,color:cs?.color,weight:cs?.fontWeight,overallColor:os?.color,overallWeight:os?.fontWeight,borderWidth:ds?.borderTopWidth,borderStyle:ds?.borderTopStyle,aligned:partial?.dataset.v492Aligned||null,subAligned:sub?.classList.contains('v492-weight-subline-aligned')||false};
             });
-            if(!initial.actionsLast||initial.pause!==0||initial.clock<0||initial.today!==initial.clock+1||initial.todayIcon!=='calendarPin')throw new Error('ALL action hierarchy wrong: '+JSON.stringify(initial));
-            await page.waitForTimeout(2200);
-            const stable=await allCard.evaluate(card=>({height:card.getBoundingClientRect().height,html:card.innerHTML,overall:card.querySelector('.v490-overall-weight')?.textContent.trim()||''}));
-            if(Math.abs(stable.height-initial.height)>0.5||stable.html!==initial.html||stable.overall!==initial.overall)throw new Error('Kisten sortieren card still hops/rewrites after ticker: '+JSON.stringify({initial:{height:initial.height,overall:initial.overall},stable:{height:stable.height,overall:stable.overall}}));
+            if(weight.aligned!=='true'||!weight.subAligned||Math.abs(weight.copyX-weight.subTextX)>0.75)throw new Error('Weight second line not aligned: '+JSON.stringify(weight));
+            if(weight.color!=='rgb(126, 139, 104)'||weight.overallColor!=='rgb(126, 139, 104)'||Number(weight.weight)>500||Number(weight.overallWeight)>500)throw new Error('Weight styling not subtle: '+JSON.stringify(weight));
+            if(weight.borderWidth!=='1px'||weight.borderStyle!=='solid')throw new Error('Segment separator missing: '+JSON.stringify(weight));
 
-            // Pauseninformation bleibt im manuellen Zeit-Editor erhalten.
-            await page.evaluate(()=>askManualTimes(4911));await page.waitForTimeout(100);
-            const editor=await page.locator('#segmentTotalV443').innerText();
-            if(!editor.includes('PAUSEN ZWISCHEN SEGMENTEN'))throw new Error('Segment editor lost pause information: '+editor);
-            await page.getByRole('button',{name:'Zurück'}).click();
-
-            // HEUTE: kein Drag-Griff mehr, volle Breite, Pfeile, gleiche Kalender-Pin-Symbolik.
-            await page.evaluate(()=>{switchTab('today');render();});await page.waitForTimeout(650);
-            const paused=page.locator('.today-task-active',{hasText:'Kisten sortieren V491'}).first();
-            const open=page.locator('.today-task-active',{hasText:'Büro wischen V491'}).first();
-            if(!(await paused.count())||!(await open.count()))throw new Error('Today task cards missing');
-            const todayState=await paused.evaluate(card=>{
-              const actions=card.querySelector('.icon-actions'),host=card.querySelector('.task-content'),buttons=[...actions.querySelectorAll('button')];
-              const clock=buttons.findIndex(b=>b.dataset.iconV416==='clock'),today=buttons.findIndex(b=>b.dataset.v480TodayAction==='1');
-              const partial=card.querySelector('.v490-weight-partial');
-              const number=card.querySelector('.task-number'),status=card.querySelector('.status-symbol'),content=card.querySelector('.task-content');
-              return {drag:card.querySelectorAll('.drag-handle').length,up:card.querySelectorAll('.v491-order-up').length,down:card.querySelectorAll('.v491-order-down').length,actionsLast:host.lastElementChild===actions,clock,today,todayIcon:buttons[today]?.dataset.iconV416||null,partialHeight:partial?.getBoundingClientRect().height||0,partialScroll:partial?.scrollWidth||0,partialClient:partial?.clientWidth||0,numberLeft:number?.getBoundingClientRect().left||0,statusLeft:status?.getBoundingClientRect().left||0,contentLeft:content?.getBoundingClientRect().left||0};
-            });
-            if(todayState.drag!==0||todayState.up!==1||todayState.down!==1||!todayState.actionsLast)throw new Error('Today grip/arrows/action-row wrong: '+JSON.stringify(todayState));
-            if(todayState.clock<0||todayState.today!==todayState.clock+1||todayState.todayIcon!=='calendarPin')throw new Error('Today calendar position/icon wrong: '+JSON.stringify(todayState));
-            if(todayState.partialHeight>13||todayState.partialScroll>todayState.partialClient+1)throw new Error('Partial weight line wraps in Today: '+JSON.stringify(todayState));
-            if(!(todayState.numberLeft<todayState.statusLeft&&todayState.statusLeft<todayState.contentLeft))throw new Error('Task number did not return to left edge: '+JSON.stringify(todayState));
-            const openIcon=await open.evaluate(card=>card.querySelector('button[data-v480-today-action="1"]')?.dataset.iconV416||null);
-            if(openIcon!=='calendarPin'||openIcon!==todayState.todayIcon)throw new Error('Pinned icon differs by status: '+JSON.stringify({paused:todayState.todayIcon,open:openIcon}));
-
-            // Pfeil nach unten verschiebt die erste Heute-Aufgabe tatsächlich um eine Position.
-            const beforeOrder=await page.evaluate(()=>window.__modTodayWorkBlocksV474.orderedByBlocks(getBerlinDateKey()).rows.map(x=>x.id));
-            if(beforeOrder[0]!==4911||beforeOrder[1]!==4912)throw new Error('Unexpected initial Today order: '+JSON.stringify(beforeOrder));
-            await paused.locator('.v491-order-down').click();await page.waitForTimeout(500);
-            const afterDown=await page.evaluate(()=>window.__modTodayWorkBlocksV474.orderedByBlocks(getBerlinDateKey()).rows.map(x=>x.id));
-            if(afterDown[0]!==4912||afterDown[1]!==4911)throw new Error('Down arrow did not reorder task: '+JSON.stringify(afterDown));
-            const moved=page.locator('.today-task-active',{hasText:'Kisten sortieren V491'}).first();
-            await moved.locator('.v491-order-up').click();await page.waitForTimeout(500);
-            const afterUp=await page.evaluate(()=>window.__modTodayWorkBlocksV474.orderedByBlocks(getBerlinDateKey()).rows.map(x=>x.id));
-            if(afterUp[0]!==4911||afterUp[1]!==4912)throw new Error('Up arrow did not restore task order: '+JSON.stringify(afterUp));
-
-            // Archiv-V490 und Log bleiben kompakt erhalten.
             await page.evaluate(()=>{
-              archive=[{archiveNumber:1,archiveId:'v491-a1',text:'Archiv V491',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T14:00:00+02:00',activeDurationMs:3600000,archiveAccountingActiveDurationMs:3600000,actualDurationMs:3600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:3600000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]}];nextArchiveNumber=2;saveArchive();switchTab('archive');render();
+              archive=[{archiveNumber:9999,archiveId:'v492-a9999',text:'Archiv Rail V492',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T14:00:00+02:00',activeDurationMs:3600000,archiveAccountingActiveDurationMs:3600000,actualDurationMs:3600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:3600000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]}];nextArchiveNumber=10000;saveArchive();switchTab('archive');render();
             });await page.waitForTimeout(350);
-            const archiveStyle=await page.locator('.archive-task',{hasText:'Archiv V491'}).first().evaluate(card=>({font:[...card.querySelectorAll('.task-detail-v490>div')].map(el=>getComputedStyle(el).fontSize),old:card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').length,text:card.innerText}));
-            if(archiveStyle.font.some(x=>x!=='8.5px')||archiveStyle.old!==0||!archiveStyle.text.includes('INKL. ZUSATZGEWICHT'))throw new Error('Archive V490 preservation failed: '+JSON.stringify(archiveStyle));
-            await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V491 Log Test');switchTab('log');});await page.waitForTimeout(120);
-            const logFont=await page.evaluate(()=>getComputedStyle(document.querySelector('.log-message-v453')).fontSize);
-            if(logFont!=='8.5px')throw new Error('Compact log regressed: '+logFont);
+            const archived=page.locator('.archive-task',{hasText:'Archiv Rail V492'}).first();
+            const ar=await archived.evaluate(card=>{
+              const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.archive-number'),status=rail?.querySelector('.status-symbol');
+              if(num)num.textContent='A9999';
+              const nr=num?.getBoundingClientRect(),sr=status?.getBoundingClientRect(),rr=rail?.getBoundingClientRect();
+              return {rail:!!rail,numTop:nr?.top,statusTop:sr?.top,width:rr?.width,overflow:num?num.scrollWidth-num.clientWidth:999,font:[...card.querySelectorAll('.task-detail-v490>div')].map(el=>getComputedStyle(el).fontSize)};
+            });
+            if(!ar.rail||!(ar.numTop<ar.statusTop)||ar.width<45||ar.overflow>0||ar.font.some(x=>x!=='8.5px'))throw new Error('Archive rail/future number failed: '+JSON.stringify(ar));
 
-            const preserved=await page.evaluate(()=>!!(window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478));
-            if(!preserved)throw new Error('Preserved V490/V489/V488/V486/V485/V484/V478 module missing');
-            console.log('V491 browser regression OK');
+            const preserved=await page.evaluate(()=>!!(window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478));
+            if(!preserved)throw new Error('Preserved V491/V490/V489/V488/V486/V485/V484/V478 module missing');
+            console.log('V492 browser regression OK');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
