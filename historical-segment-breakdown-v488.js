@@ -36,6 +36,20 @@
       .sort((a,b)=>new Date(a.startedAt).getTime()-new Date(b.startedAt).getTime());
   }
 
+  function storedKnownTotalMs(task){
+    if(!task)return null;
+    const candidates=[];
+    if(task.type==='leisure')candidates.push(task.leisureDurationMs);
+    if(task.type==='cooking')candidates.push(task.cookingActiveDurationMs);
+    candidates.push(task.activeDurationMs,task.actualDurationMs);
+    for(const value of candidates){
+      if(value===null||typeof value==='undefined'||value==='')continue;
+      const n=Number(value);
+      if(Number.isFinite(n)&&n>=0)return n;
+    }
+    return null;
+  }
+
   function segmentMetrics(task,segmentsInput=null,nowMs=Date.now()){
     const segments=validSegments(segmentsInput||task);
     let activeMs=0;
@@ -69,16 +83,16 @@
     const history=historicalMs(task);
 
     /*
-      V493: Bei Altaufgaben ohne moderne activeSegments ist die alte
-      calculateActiveDuration-Zahl bereits die bekannte Gesamt-Aktivzeit.
-      Für die Anzeige ziehen wir den importierten Vor-App-Anteil nur optisch
-      ab. Gespeicherte Zeiten werden nicht verändert.
+      V493: Bei Altaufgaben ohne moderne activeSegments ist nur die
+      gespeicherte bekannte Dauer belastbar. Keine Wandzeit aus alten
+      startedAt/pausedAt-Werten hochrechnen und keine fehlenden Daten erfinden.
+      Der gespeicherte Altwert ist die bekannte Gesamt-Aktivzeit; der
+      Vor-App-Anteil wird für die Anzeige davon abgezogen.
     */
-    if(!segments.length&&history>0&&task&&typeof calculateActiveDuration==='function'){
-      try{
-        const knownTotal=Math.max(0,Number(calculateActiveDuration(task,nowMs))||0);
-        activeMs=Math.max(0,knownTotal-history);
-      }catch(_){ }
+    if(!segments.length&&history>0&&task){
+      const stored=storedKnownTotalMs(task);
+      const knownTotal=stored===null?history:Math.max(history,stored);
+      activeMs=Math.max(0,knownTotal-history);
     }
 
     return {
@@ -195,6 +209,7 @@
   window.__modHistoricalSegmentBreakdownV488={
     version:BUILD_VERSION,
     historicalMs,
+    storedKnownTotalMs,
     segmentMetrics,
     patchVisibleCards,
     pausesExcludedFromSegmentActive:true,
@@ -207,6 +222,7 @@
     nestedWeightPreservedOnTicker:true,
     unchangedCardsDoNotRewriteDom:true,
     activeSourceLabelsV493:true,
-    historicalOnlyBreakdownV493:true
+    historicalOnlyBreakdownV493:true,
+    historicalOnlyUsesStoredTotalV493:true
   };
 })();
