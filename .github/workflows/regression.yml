@@ -17,6 +17,7 @@ jobs:
           node-version: '20'
       - name: Syntax and wiring
         run: |
+          node --check summary-weight-due-polish-v494.js
           node --check ui-alignment-v493.js
           node --check task-card-rail-polish-v492.js
           node --check ui-card-stability-v491.js
@@ -24,12 +25,12 @@ jobs:
           node --check task-time-weight-details-v489.js
           node --check historical-segment-breakdown-v488.js
           node --check app.js
-          grep -q 'BUILD: V493' index.html
-          grep -q 'ui-alignment-v493.js?v=493-2035' index.html
-          grep -q 'master-of-disaster-v493-active-source-input-alignment' sw.js
-          grep -q 'numberTitleBottomAligned:true' ui-alignment-v493.js
-          grep -q 'activeSourceLabelsV493:true' historical-segment-breakdown-v488.js
-      - name: Browser regression V493
+          grep -q 'BUILD: V494' index.html
+          grep -q 'summary-weight-due-polish-v494.js?v=494-2103' index.html
+          grep -q 'master-of-disaster-v494-summary-weight-due-polish' sw.js
+          grep -q 'totalActiveHighlighted:true' summary-weight-due-polish-v494.js
+          grep -q 'partialWeightFirstLineShowsKg:true' summary-weight-due-polish-v494.js
+      - name: Browser regression V494
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -42,66 +43,36 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V493'&&window.__modUiAlignmentV493&&window.__modTaskCardRailPolishV492&&window.__modNestedTaskWeightLayoutV490,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V494'&&window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTaskCardRailPolishV492&&window.__modNestedTaskWeightLayoutV490,{timeout:30000});
 
             await page.evaluate(()=>{
-              const day=getBerlinDateKey();
-              localStorage.removeItem(window.__modTodayWorkBlocksV474.storageKey);
+              const day=getBerlinDateKey();localStorage.removeItem(window.__modTodayWorkBlocksV474.storageKey);
               tasks=[
-                {id:263,text:'V493 Nur Altzeit 30m',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:1800000,activeDurationMs:1800000,actualDurationMs:1800000,startedAt:'2026-06-12T10:00:00+02:00',pausedAt:'2026-06-12T10:30:00+02:00',pauseTotalMs:0,activeSegments:[]},
-                {id:264,text:'V493 Nur Altzeit 90m',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:2,todayWorkBlockId:null,importedHistoricalProgressDurationMs:5400000,activeDurationMs:5400000,actualDurationMs:5400000,startedAt:'2026-06-12T11:00:00+02:00',pausedAt:'2026-06-12T12:30:00+02:00',pauseTotalMs:0,activeSegments:[]},
-                {id:265,text:'V493 Alt plus App',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:3,todayWorkBlockId:null,importedHistoricalProgressDurationMs:1800000,activeDurationMs:null,actualDurationMs:null,startedAt:'2026-08-23T18:00:00+02:00',pausedAt:'2026-08-23T18:10:00+02:00',pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T18:00:00+02:00',endedAt:'2026-08-23T18:10:00+02:00'}]}
+                {id:263,text:'V494 Nur Altzeit 30m',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:1800000,activeDurationMs:1800000,actualDurationMs:1800000,startedAt:'2026-06-12T10:00:00+02:00',pausedAt:'2026-06-12T10:30:00+02:00',pauseTotalMs:0,activeSegments:[]},
+                {id:264,text:'V494 Nur Altzeit 90m',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:2,todayWorkBlockId:null,importedHistoricalProgressDurationMs:5400000,activeDurationMs:5400000,actualDurationMs:5400000,startedAt:'2026-06-12T11:00:00+02:00',pausedAt:'2026-06-12T12:30:00+02:00',pauseTotalMs:0,activeSegments:[]},
+                {id:265,text:'V494 Kisten sortieren',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:3,todayWorkBlockId:null,importedHistoricalProgressDurationMs:8760000,activeDurationMs:null,actualDurationMs:null,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T14:00:00+02:00',pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'}]}
               ];
-              weightPhases=[{id:49301,weightKg:12.3,startedAt:'2026-08-23T18:00:00+02:00',endedAt:'2026-08-23T18:10:00+02:00'}];
-              weightState={isWearing:false,currentWeightKg:12.3};archive=[];nextArchiveNumber=1;
-              saveTasks();saveArchive();saveWeight();window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();switchTab('all');render();
+              weightPhases=[{id:49401,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T13:30:00+02:00'}];weightState={isWearing:false,currentWeightKg:12.3};archive=[];nextArchiveNumber=1;saveTasks();saveArchive();saveWeight();window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();switchTab('all');render();
             });
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(600);
 
-            const summaries=await page.evaluate(()=>{
-              const out={};
-              for(const id of [263,264,265]){
-                const card=document.querySelector(`.task[data-v490-task-id="${id}"]`);
-                out[id]={
-                  summary:card?.querySelector('.historical-segment-duration-v488')?.innerText||'',
-                  historicalDetail:card?.querySelectorAll('.v490-historical').length||0,
-                  segments:card?.querySelectorAll('.task-detail-v490 .v490-segment').length||0,
-                  nestedWeight:card?.querySelectorAll('.v490-weight-nested').length||0
-                };
-              }
-              return out;
-            });
-            for(const id of [263,264]){
-              const s=summaries[id];
-              if(!s.summary.includes('SEIT APP AKTIV · 00:00:00'))throw new Error(id+' must show zero since-app active: '+s.summary);
-              const expected=id===263?'00:30:00':'01:30:00';
-              if(!s.summary.includes('+ VOR APP AKTIV · '+expected)||!s.summary.includes('= GESAMT AKTIV · '+expected))throw new Error(id+' source split wrong: '+s.summary);
-              if(s.historicalDetail!==0||s.segments!==0)throw new Error(id+' duplicated historical detail/range: '+JSON.stringify(s));
-            }
-            if(!summaries[265].summary.includes('SEIT APP AKTIV · 00:10:00')||!summaries[265].summary.includes('+ VOR APP AKTIV · 00:30:00')||!summaries[265].summary.includes('= GESAMT AKTIV · 00:40:00'))throw new Error('265 app/history split wrong: '+summaries[265].summary);
-            if(summaries[265].historicalDetail!==0||summaries[265].segments!==1||summaries[265].nestedWeight<1)throw new Error('265 exact segment/weight detail regressed: '+JSON.stringify(summaries[265]));
+            const history=await page.evaluate(()=>{const out={};for(const id of [263,264,265]){const card=document.querySelector(`.task[data-v490-task-id="${id}"]`);out[id]={text:(card?.querySelector('.historical-segment-duration-v488')?.innerText||'').replace(/\s+/g,' ').trim(),hist:card?.querySelectorAll('.v490-historical').length||0,segments:card?.querySelectorAll('.task-detail-v490 .v490-segment').length||0};}return out;});
+            if(!history[263].text.includes('SEIT APP AKTIV · 00:00:00')||!history[263].text.includes('+ VOR APP AKTIV · 00:30:00')||!history[263].text.includes('= GESAMT AKTIV · 00:30:00')||history[263].hist||history[263].segments)throw new Error('263 V493 history behavior regressed '+JSON.stringify(history[263]));
+            if(!history[264].text.includes('SEIT APP AKTIV · 00:00:00')||!history[264].text.includes('+ VOR APP AKTIV · 01:30:00')||!history[264].text.includes('= GESAMT AKTIV · 01:30:00')||history[264].hist||history[264].segments)throw new Error('264 V493 history behavior regressed '+JSON.stringify(history[264]));
+            if(!history[265].text.includes('SEIT APP AKTIV · 01:00:00')||!history[265].text.includes('+ VOR APP AKTIV · 02:26:00')||!history[265].text.includes('= GESAMT AKTIV · 03:26:00')||history[265].hist!==0||history[265].segments!==1)throw new Error('265 source split wrong '+JSON.stringify(history[265]));
 
-            const heading=await page.locator('.task[data-v490-task-id="264"]:visible').evaluate(card=>{
-              function glyph(el){const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){const t=n.textContent||'';const i=t.search(/\S/);if(i>=0){const r=document.createRange();r.setStart(n,i);r.setEnd(n,Math.min(i+1,t.length));return r.getBoundingClientRect();}}return el.getBoundingClientRect();}
-              const rail=card.querySelector(':scope>.v492-number-status-rail'),num=rail.querySelector('.task-number'),status=rail.querySelector('.status-symbol'),title=card.querySelector('.task-text');num.textContent='9.999';window.__modUiAlignmentV493.alignNumberWithTitle(card);const nr=glyph(num),tr=glyph(title),sr=status.getBoundingClientRect();return {diff:Math.abs(nr.bottom-tr.bottom),statusBelow:sr.top>=nr.bottom-0.5,overflow:num.scrollWidth-num.clientWidth,aligned:num.dataset.v493TitleAligned};
-            });
-            if(heading.diff>0.8||!heading.statusBelow||heading.overflow>0||heading.aligned!=='true')throw new Error('Number/title alignment failed: '+JSON.stringify(heading));
+            const polish=await page.locator('.task[data-v490-task-id="265"]:visible').evaluate(card=>{const summary=card.querySelector('.historical-segment-duration-v488'),rows=[...summary.querySelectorAll(':scope>.v494-time-row')],vals=rows.map(r=>r.querySelector('.v494-time-value')),xs=vals.map(v=>v.getBoundingClientRect().left),total=summary.querySelector('.v494-total-row .v494-time-value'),source=summary.querySelector('.v494-source-row .v494-time-value'),totalStyle=getComputedStyle(total),sourceStyle=getComputedStyle(source),summaryStyle=getComputedStyle(summary),detail=card.querySelector('.task-detail-v490'),detailStyle=getComputedStyle(detail),partial=card.querySelector('.v490-weight-partial'),copy=partial?.querySelector('.v492-weight-copy'),sub=partial?.nextElementSibling;return {rowCount:rows.length,timeSpread:Math.max(...xs)-Math.min(...xs),totalWeight:Number(totalStyle.fontWeight),sourceWeight:Number(sourceStyle.fontWeight),totalColor:totalStyle.color,sourceColor:sourceStyle.color,summaryBorder:summaryStyle.borderTopWidth,summaryMargin:summaryStyle.marginTop,summaryPadding:summaryStyle.paddingTop,detailBorder:detailStyle.borderTopWidth,detailMargin:detailStyle.marginTop,detailPadding:detailStyle.paddingTop,partialCopy:copy?.textContent||'',subText:sub?.textContent||'',reordered:partial?.dataset.v494PartialReordered||'',rangeDuration:sub?.dataset.v494RangeDuration||''};});
+            if(polish.rowCount!==3||polish.timeSpread>0.75)throw new Error('Summary time columns not aligned '+JSON.stringify(polish));
+            if(polish.totalWeight<800||polish.totalWeight<=polish.sourceWeight||polish.totalColor!=='rgb(217, 224, 228)'||polish.sourceColor!=='rgb(143, 154, 161)')throw new Error('GESAMT highlight wrong '+JSON.stringify(polish));
+            if(polish.summaryBorder!=='1px'||polish.summaryBorder!==polish.detailBorder||polish.summaryMargin!==polish.detailMargin||polish.summaryPadding!==polish.detailPadding)throw new Error('Summary separator mismatch '+JSON.stringify(polish));
+            if(!polish.partialCopy.includes('INKL. ZUSATZGEWICHT · 12,3 kg')||/13:10|13:30/.test(polish.partialCopy)||!polish.subText.includes('13:10:00–13:30:00')||!polish.subText.includes('00:20:00')||/kg/i.test(polish.subText)||polish.reordered!=='true'||polish.rangeDuration!=='true')throw new Error('Partial weight hierarchy wrong '+JSON.stringify(polish));
 
-            const options=await page.evaluate(()=>{
-              const rows=[...document.querySelectorAll('#inputPanel .option-row')];rows.forEach(r=>r.style.width='220px');window.__modUiAlignmentV493.alignInputOptions();
-              const type=document.getElementById('newTypeWork'),self=document.getElementById('newTypeSelfrunner'),prio=document.getElementById('newPriorityNormal'),high=document.getElementById('newPriorityHigh');
-              const tw=type.getBoundingClientRect(),ts=self.getBoundingClientRect(),pn=prio.getBoundingClientRect(),ph=high.getBoundingClientRect();
-              return {typeWrapped:ts.top>tw.top+1,typeAligned:Math.abs(ts.left-tw.left),priorityWrapped:ph.top>pn.top+1,priorityAligned:Math.abs(ph.left-pn.left),typeWrapper:!!type.closest('.v493-option-buttons'),priorityWrapper:!!prio.closest('.v493-option-buttons')};
-            });
-            if(!options.typeWrapped||options.typeAligned>0.8||!options.priorityWrapped||options.priorityAligned>0.8||!options.typeWrapper||!options.priorityWrapper)throw new Error('Input option indentation failed: '+JSON.stringify(options));
+            const due=await page.evaluate(()=>{const row=[...document.querySelectorAll('#inputPanel .option-row')].find(r=>(r.querySelector(':scope>.option-label')?.textContent||'').trim()==='FÄLLIG');const input=document.createElement('input');input.type='date';input.id='v494SyntheticDueDate';row.appendChild(input);const clear=document.createElement('button');clear.className='option-button';clear.id='v494SyntheticDueClear';clear.textContent='KEIN DATUM';row.appendChild(clear);window.__modSummaryWeightDuePolishV494.alignDueControls();const wrapped=row.querySelector(':scope>.v494-due-controls'),wr=wrapped.getBoundingClientRect(),ir=input.getBoundingClientRect(),cr=clear.getBoundingClientRect(),today=document.getElementById('newTodayRowV480');return {inputInside:input.parentElement===wrapped,clearInside:clear.parentElement===wrapped,inputIndented:ir.left>=wr.left-0.5,clearIndented:cr.left>=wr.left-0.5,todayWrapped:!!today?.querySelector('.v494-due-controls'),rowMarked:row.dataset.v494DueAligned};});
+            if(!due.inputInside||!due.clearInside||!due.inputIndented||!due.clearIndented||due.todayWrapped||due.rowMarked!=='true')throw new Error('Dynamic due controls not indented '+JSON.stringify(due));
 
-            await page.evaluate(()=>{const item={archiveNumber:9999,archiveId:'v493-a',text:'V493 Archiv Titel',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[]};const host=document.getElementById('viewContainer');host.innerHTML='';const card=archiveCard(item);host.appendChild(card);window.__modTaskCardRailPolishV492.enhanceAll();window.__modUiAlignmentV493.enhanceAll();});await page.waitForTimeout(100);
-            const archiveHeading=await page.locator('.archive-task:visible',{hasText:'V493 Archiv Titel'}).evaluate(card=>{const r=card.querySelector(':scope>.v492-number-status-rail'),n=r.querySelector('.archive-number'),s=r.querySelector('.status-symbol');n.textContent='A9999';window.__modUiAlignmentV493.alignNumberWithTitle(card);return {overflow:n.scrollWidth-n.clientWidth,statusBelow:s.getBoundingClientRect().top>=n.getBoundingClientRect().bottom-1};});
-            if(archiveHeading.overflow>0||!archiveHeading.statusBelow)throw new Error('Archive A9999 alignment regressed: '+JSON.stringify(archiveHeading));
-
-            const preserved=await page.evaluate(()=>!!(window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478));
-            if(!preserved)throw new Error('Preserved modules missing');
-            console.log('V493 browser regression OK');
-            await browser.close();
+            const heading=await page.locator('.task[data-v490-task-id="265"]:visible').evaluate(card=>{function glyph(el){const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){const t=n.textContent||'',i=t.search(/\S/);if(i>=0){const r=document.createRange();r.setStart(n,i);r.setEnd(n,Math.min(i+1,t.length));return r.getBoundingClientRect();}}return el.getBoundingClientRect();}const rail=card.querySelector(':scope>.v492-number-status-rail'),num=rail.querySelector('.task-number'),status=rail.querySelector('.status-symbol'),title=card.querySelector('.task-text');num.textContent='9.999';window.__modUiAlignmentV493.alignNumberWithTitle(card);const nr=glyph(num),tr=glyph(title);return {diff:Math.abs(nr.bottom-tr.bottom),statusBelow:status.getBoundingClientRect().top>=nr.bottom-0.5,overflow:num.scrollWidth-num.clientWidth};});
+            if(heading.diff>0.8||!heading.statusBelow||heading.overflow>0)throw new Error('V493 number/title alignment regressed '+JSON.stringify(heading));
+            const preserved=await page.evaluate(()=>!!(window.__modSummaryWeightDuePolishV494?.dataSemanticsUntouched&&window.__modUiAlignmentV493&&window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478&&window.__modTodayCreateRenderV480));if(!preserved)throw new Error('Preserved modules missing');
+            console.log('V494 browser regression OK',polish,due);await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
