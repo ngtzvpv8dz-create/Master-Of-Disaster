@@ -16,28 +16,28 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check voice-commands-v481.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V481 wiring
+        run: node --check voice-commands-v482.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V482 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('voice-commands-v481.js').read_text(encoding='utf-8')
+          js=Path('voice-commands-v482.js').read_text(encoding='utf-8')
           v480=Path('today-create-render-v480.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V481','voice-commands-v481.js?v=481-0828',"version:'V481'",'modV481VoiceCommandDone']:
-              if marker not in html: raise SystemExit(f'Missing V481 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v481-free-voice-command-test','voice-commands-v481.js']:
-              if marker not in sw: raise SystemExit(f'Missing V481 SW marker: {marker}')
-          for marker in ['SpeechRecognition||window.webkitSpeechRecognition','parseTranscript','matchTask','acceptTranscript','executeCreate','executeStart','executeFinish','noOpenAiApi:true','confirmationRequired:true',"supportedCommands:['create','start','finish']"]:
-              if marker not in js: raise SystemExit(f'Missing V481 behavior marker: {marker}')
+          for marker in ['BUILD: V482','voice-commands-v482.js?v=482-0846',"version:'V482'",'modV482VoiceStopDone']:
+              if marker not in html: raise SystemExit(f'Missing V482 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v482-voice-block-stop-fix','voice-commands-v482.js']:
+              if marker not in sw: raise SystemExit(f'Missing V482 SW marker: {marker}')
+          for marker in ['parseTranscript','stripNewTaskModifiers','blockNumberFrom','stopListening','toggleListening','r.stop','r.abort','blockTitleCleanup:true','microphoneStop:true','noOpenAiApi:true','confirmationRequired:true']:
+              if marker not in js: raise SystemExit(f'Missing V482 behavior marker: {marker}')
           for marker in ['applyVisibleLayoutsSync','normalizeTodayActions','directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true']:
               if marker not in v480: raise SystemExit(f'Missing preserved V480 behavior marker: {marker}')
-          if metrics.get('version')!='V481' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V481 automated metrics snapshot')
-          print('V481 wiring OK')
+          if metrics.get('version')!='V482' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V482 automated metrics snapshot')
+          print('V482 wiring OK')
       - name: Verify preserved V478 targeted A255 gap repair
         run: |
           node <<'NODE'
@@ -64,7 +64,7 @@ jobs:
           if(tasks[1].todayDate!=='2026-08-23'||tasks[1].todayWorkBlockId!==b2.id||api.getBlocks('2026-08-23').length!==2)throw new Error('V474 work block regression');
           console.log('V474 work blocks preserved');
           NODE
-      - name: Browser regression V481
+      - name: Browser regression V482
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -78,18 +78,20 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.addInitScript(()=>{
               class FakeRecognition{
-                constructor(){window.__v481FakeRecognition=this;this.lang='';this.continuous=false;this.interimResults=false;this.maxAlternatives=1;}
+                constructor(){window.__v482FakeRecognition=this;this.lang='';this.continuous=false;this.interimResults=false;this.maxAlternatives=1;this.stopCalls=0;this.abortCalls=0;}
                 start(){queueMicrotask(()=>this.onstart?.());}
-                emit(text){this.onresult?.({results:[[{transcript:text,confidence:1}]]});this.onend?.();}
+                stop(){this.stopCalls++;queueMicrotask(()=>this.onend?.());}
+                abort(){this.abortCalls++;queueMicrotask(()=>this.onend?.());}
+                emit(text){this.onresult?.({results:[[{transcript:text,confidence:1}]]});}
               }
               window.webkitSpeechRecognition=FakeRecognition;
             });
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V481'&&window.__modVoiceCommandsV481&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V482'&&window.__modVoiceCommandsV482&&window.__modTodayCreateRenderV480,{timeout:30000});
             await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
             await page.reload({waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V481'&&window.__modVoiceCommandsV481?.supported===true,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V482'&&window.__modVoiceCommandsV482?.supported===true,{timeout:30000});
 
             const v480=await page.evaluate(()=>{
               const date=getBerlinDateKey();
@@ -101,53 +103,54 @@ jobs:
               ui.setNewTaskToday(true);
               const select=document.getElementById('newTodayBlockV480');
               select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));
-              document.getElementById('taskInput').value='V480 Browser Test';
-              addTask();
+              document.getElementById('taskInput').value='V480 Browser Test';addTask();
               const task=tasks.find(t=>t.text==='V480 Browser Test');
               const card=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
-              const button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');
-              const actions=card?.querySelector('.icon-actions');
-              const before=button?.getBoundingClientRect();
-              const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0};
+              const button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]'),actions=card?.querySelector('.icon-actions'),before=button?.getBoundingClientRect();
+              const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions};
               toggleToday(task.id);
               const card2=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
-              const button2=card2?.querySelector('.icon-actions button[onclick*="toggleToday("]');
-              const actions2=card2?.querySelector('.icon-actions');
-              const after=button2?.getBoundingClientRect();
-              return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},row:!!document.getElementById('newTodayRowV480'),b2:b2.id};
+              const button2=card2?.querySelector('.icon-actions button[onclick*="toggleToday("]'),actions2=card2?.querySelector('.icon-actions'),after=button2?.getBoundingClientRect();
+              return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},b2:b2.id};
             });
             const norm=v=>String(v||'').replace(/\s+/g,'');
             if(v480.created.today==null||!v480.created.block||!v480.created.selected||v480.created.icon!=='calendar')throw new Error('Preserved V480 create/today behavior failed');
             if(v480.created.layout?.x!==12||v480.created.layout?.y!==4||v480.created.state!=='open'||norm(v480.created.transform)!=='translate(12px,4px)')throw new Error('Preserved V480 synchronous layout failed');
-            if(v480.after.today!==null||v480.after.selected||v480.after.icon!=='calendar'||v480.after.state!=='open'||norm(v480.after.transform)!=='translate(12px,4px)'||v480.after.dx>1||v480.after.dy>1)throw new Error('Preserved V480 stable Today action failed');
+            if(v480.after.today!==null||v480.after.selected||v480.after.icon!=='calendar'||v480.after.dx>1||v480.after.dy>1)throw new Error('Preserved V480 stable Today action failed');
 
-            const initial=await page.evaluate(()=>({supported:window.__modVoiceCommandsV481.supported,noApi:window.__modVoiceCommandsV481.noOpenAiApi,confirm:window.__modVoiceCommandsV481.confirmationRequired,ui:!!document.getElementById('voiceCommandTestV481'),button:!document.getElementById('voiceStartV481')?.disabled}));
-            if(!initial.supported||!initial.noApi||!initial.confirm||!initial.ui||!initial.button)throw new Error('V481 voice test UI/capabilities missing');
+            const variants=await page.evaluate(()=>[
+              'Neue Aufgabe Bart putzen heute Arbeitsblock 2',
+              'Neue Aufgabe, Bart putzen, heute, Arbeits Block 2',
+              'Neue Aufgabe Bart putzen heute Block zwei',
+              'Neue Aufgabe Bart putzen heute Arbeitsblock Nummer zwei'
+            ].map(x=>window.__modVoiceCommandsV482.parseTranscript(x)));
+            if(variants.some(v=>v.type!=='create'||v.text!=='Bart putzen'||v.block!==2||v.today!==true))throw new Error('V482 Arbeitsblock title cleanup failed: '+JSON.stringify(variants));
 
-            await page.click('#voiceStartV481');
-            await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
-            await page.evaluate(()=>window.__v481FakeRecognition.emit('Neue Aufgabe Sprachtest heute Arbeitsblock zwei hohe Priorität'));
-            const createPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV481.pending,tasks:tasks.filter(t=>t.text==='Sprachtest').length,preview:document.getElementById('voicePreviewV481')?.textContent||''}));
-            if(createPreview.tasks!==0||createPreview.pending?.type!=='create'||createPreview.pending?.text!=='Sprachtest'||createPreview.pending?.block!==2||createPreview.pending?.priority!=='high'||createPreview.pending?.today!==true||!/AUSFÜHREN/.test(createPreview.preview))throw new Error('V481 create command was not safely previewed');
-            await page.click('[data-v481-execute]');
+            const caps=await page.evaluate(()=>({supported:window.__modVoiceCommandsV482.supported,noApi:window.__modVoiceCommandsV482.noOpenAiApi,confirm:window.__modVoiceCommandsV482.confirmationRequired,micStop:window.__modVoiceCommandsV482.microphoneStop,titleCleanup:window.__modVoiceCommandsV482.blockTitleCleanup,ui:!!document.getElementById('voiceCommandTestV482')}));
+            if(!caps.supported||!caps.noApi||!caps.confirm||!caps.micStop||!caps.titleCleanup||!caps.ui)throw new Error('V482 capabilities/UI missing');
+
+            await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);
+            const stopButton=await page.textContent('#voiceStartV482');if(!/STOPPEN/.test(stopButton||''))throw new Error('V482 stop button label missing');
+            await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===false&&window.__modVoiceCommandsV482.stopping===false);
+            const stopCalls=await page.evaluate(()=>window.__v482FakeRecognition?.stopCalls||0);if(stopCalls!==1)throw new Error('Second tap did not call recognition.stop()');
+
+            await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);
+            await page.evaluate(()=>window.__v482FakeRecognition.emit('Neue Aufgabe Sprachtest heute Arbeits Block 2 hohe Priorität'));
+            await page.waitForFunction(()=>window.__modVoiceCommandsV482.pending?.type==='create');
+            const createPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV482.pending,tasks:tasks.filter(t=>t.text==='Sprachtest').length,preview:document.getElementById('voicePreviewV482')?.textContent||'',abortCalls:window.__v482FakeRecognition?.abortCalls||0}));
+            if(createPreview.tasks!==0||createPreview.pending?.text!=='Sprachtest'||createPreview.pending?.block!==2||createPreview.pending?.priority!=='high'||createPreview.pending?.today!==true||!/AUSFÜHREN/.test(createPreview.preview)||createPreview.abortCalls<1)throw new Error('V482 create preview/result release failed');
+            await page.click('[data-v482-execute]');
             const created=await page.evaluate(()=>{const t=tasks.find(x=>x.text==='Sprachtest');return {exists:!!t,today:t?.todayDate,block:t?.todayWorkBlockId,priority:t?.priority,status:t?.status,date:getBerlinDateKey()};});
-            if(!created.exists||created.today!==created.date||created.block!==v480.b2||created.priority!=='high'||created.status!=='open')throw new Error('V481 create command execution failed');
+            if(!created.exists||created.today!==created.date||created.block!==v480.b2||created.priority!=='high'||created.status!=='open')throw new Error('V482 create execution failed');
 
-            await page.click('#voiceStartV481');
-            await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
-            await page.evaluate(()=>window.__v481FakeRecognition.emit('Starte Sprachtest'));
-            const startPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV481.pending,status:tasks.find(t=>t.text==='Sprachtest')?.status}));
-            if(startPreview.pending?.type!=='start'||startPreview.pending?.resolvedTask?.text!=='Sprachtest'||startPreview.status!=='open')throw new Error('V481 start command skipped confirmation or failed resolution');
-            await page.click('[data-v481-execute]');
-            const started=await page.evaluate(()=>tasks.find(t=>t.text==='Sprachtest')?.status);
-            if(started!=='running')throw new Error('V481 start command execution failed');
+            await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);await page.evaluate(()=>window.__v482FakeRecognition.emit('Starte Sprachtest'));await page.waitForFunction(()=>window.__modVoiceCommandsV482.pending?.type==='start');
+            const startPreview=await page.evaluate(()=>({p:window.__modVoiceCommandsV482.pending,status:tasks.find(t=>t.text==='Sprachtest')?.status}));
+            if(startPreview.p?.resolvedTask?.text!=='Sprachtest'||startPreview.status!=='open')throw new Error('V482 start confirmation/resolution failed');
+            await page.click('[data-v482-execute]');if(!(await page.evaluate(()=>tasks.find(t=>t.text==='Sprachtest')?.status==='running')))throw new Error('V482 start execution failed');
 
-            await page.click('#voiceStartV481');
-            await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
-            await page.evaluate(()=>window.__v481FakeRecognition.emit('Sprachtest ist fertig'));
-            const finishPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV481.pending,status:tasks.find(t=>t.text==='Sprachtest')?.status}));
-            if(finishPreview.pending?.type!=='finish'||finishPreview.pending?.resolvedTask?.text!=='Sprachtest'||finishPreview.status!=='running')throw new Error('V481 finish command parser/resolution failed');
-            console.log('V481 browser regression OK');
+            await page.click('#voiceStartV482');await page.waitForFunction(()=>window.__modVoiceCommandsV482.listening===true);await page.evaluate(()=>window.__v482FakeRecognition.emit('Sprachtest ist fertig'));await page.waitForFunction(()=>window.__modVoiceCommandsV482.pending?.type==='finish');
+            const finish=await page.evaluate(()=>window.__modVoiceCommandsV482.pending?.resolvedTask?.text==='Sprachtest'&&tasks.find(t=>t.text==='Sprachtest')?.status==='running');if(!finish)throw new Error('V482 finish parser/resolution failed');
+            console.log('V482 browser regression OK');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
