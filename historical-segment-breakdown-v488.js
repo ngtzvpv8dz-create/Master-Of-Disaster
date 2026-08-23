@@ -8,9 +8,12 @@
   const style=document.createElement('style');
   style.textContent=`
     .historical-segment-duration-v488{display:flex!important;flex-direction:column;gap:3px;align-items:flex-start}
+    .historical-segment-duration-v488 .v488-main,
+    .historical-segment-duration-v488 .v488-sub,
+    .historical-segment-duration-v488 .v488-pause{font-size:8.5px!important;line-height:1.15}
     .historical-segment-duration-v488 .v488-main{font-weight:800}
-    .historical-segment-duration-v488 .v488-sub{font-size:.72rem;opacity:.78;letter-spacing:.035em}
-    .historical-segment-duration-v488 .v488-pause{font-size:.69rem;opacity:.62;letter-spacing:.03em}
+    .historical-segment-duration-v488 .v488-sub{opacity:.78;letter-spacing:.035em}
+    .historical-segment-duration-v488 .v488-pause{opacity:.62;letter-spacing:.03em}
     .segment-total-v443.v488-breakdown{display:flex;flex-direction:column;gap:4px}
     .segment-total-v443.v488-breakdown .v488-total{font-weight:900}
     .segment-total-v443.v488-breakdown .v488-pause{opacity:.72;font-size:.82em}
@@ -167,6 +170,7 @@
     historicalProgressPreserved:true,
     legacyLiveTickerDetached:true,
     editorShowsBreakdown:true,
-    cardShowsBreakdown:true
+    cardShowsBreakdown:true,
+    cardBreakdownFontPx:8.5
   };
 })();
