@@ -45,8 +45,8 @@ jobs:
               const railResults=[];
               for(const tab of ['all','today','priority','due','active']){
                 await page.evaluate(t=>{switchTab(t);render();},tab);await page.waitForTimeout(250);
-                const result=await page.locator('.task:not(.archive-task)',{hasText:'V492 Live Kisten'}).first().evaluate(card=>{
-                  const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.task-number'),status=rail?.querySelector('.status-symbol');if(num)num.textContent='9999';
+                const result=await page.locator('.task:not(.archive-task):visible',{hasText:'V492 Live Kisten'}).first().evaluate(card=>{
+                  const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.task-number'),status=rail?.querySelector('.status-symbol');if(num)num.textContent='9.999';
                   const nr=num?.getBoundingClientRect(),sr=status?.getBoundingClientRect(),rr=rail?.getBoundingClientRect();
                   return {rail:!!rail,numTop:nr?.top,statusTop:sr?.top,width:rr?.width,overflow:num?num.scrollWidth-num.clientWidth:999};
                 });railResults.push(result);
@@ -55,7 +55,7 @@ jobs:
               out.fourDigitReady=railResults.every(r=>r.overflow<=0);
 
               await page.evaluate(()=>{switchTab('all');render();});await page.waitForTimeout(300);
-              const detail=await page.locator('.task:not(.archive-task)',{hasText:'V492 Live Kisten'}).first().evaluate(card=>{
+              const detail=await page.locator('.task:not(.archive-task):visible',{hasText:'V492 Live Kisten'}).first().evaluate(card=>{
                 const partial=card.querySelector('.v490-weight-partial'),copy=partial?.querySelector('.v492-weight-copy'),sub=partial?.nextElementSibling,overall=card.querySelector('.v490-overall-weight'),block=card.querySelector('.task-detail-v490');
                 const ps=partial?getComputedStyle(partial):null,os=overall?getComputedStyle(overall):null,bs=block?getComputedStyle(block):null;
                 return {copyX:copy?.getBoundingClientRect().left,subX:sub?.getBoundingClientRect().left+(parseFloat(getComputedStyle(sub).paddingLeft)||0),color:ps?.color,fontWeight:Number(ps?.fontWeight||999),overallColor:os?.color,overallWeight:Number(os?.fontWeight||999),border:bs?.borderTopWidth,actionsLast:card.querySelector('.task-content')?.lastElementChild===card.querySelector('.icon-actions'),arrows:card.querySelectorAll('.v491-order-button').length,todayIcon:card.querySelector('button[data-v480-today-action="1"]')?.dataset.iconV416||null};
@@ -67,14 +67,16 @@ jobs:
               out.todayIconsConsistent=detail.todayIcon==='calendarPin';
 
               await page.evaluate(()=>{switchTab('today');render();});await page.waitForTimeout(350);
-              const todayCard=page.locator('.today-task-active',{hasText:'V492 Live Kisten'}).first();
+              const todayCard=page.locator('.today-task-active:visible',{hasText:'V492 Live Kisten'}).first();
               out.todayArrows=(await todayCard.locator('.v491-order-button').count())===2&&(await todayCard.locator('.drag-handle').count())===0;
               const before=await todayCard.evaluate(card=>({h:card.getBoundingClientRect().height,html:card.innerHTML}));await page.waitForTimeout(2200);const after=await todayCard.evaluate(card=>({h:card.getBoundingClientRect().height,html:card.innerHTML}));
               out.cardStable=Math.abs(before.h-after.h)<=0.5&&before.html===after.html;
               out.nestedWeightPreserved=await todayCard.evaluate(card=>!!card.querySelector('.v490-weight-partial')&&!!card.querySelector('.v490-weight-subline'));
 
-              await page.evaluate(()=>{archive=[{archiveNumber:9999,archiveId:'live-v492-a',text:'V492 Live Archiv',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T14:00:00+02:00',activeDurationMs:3600000,archiveAccountingActiveDurationMs:3600000,actualDurationMs:3600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:3600000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]}];nextArchiveNumber=10000;saveArchive();switchTab('archive');render();});await page.waitForTimeout(350);
-              const ar=await page.locator('.archive-task',{hasText:'V492 Live Archiv'}).first().evaluate(card=>{const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.archive-number'),status=rail?.querySelector('.status-symbol');if(num)num.textContent='A9999';const nr=num?.getBoundingClientRect(),sr=status?.getBoundingClientRect(),rr=rail?.getBoundingClientRect();return {ok:!!rail&&nr.top<sr.top&&rr.width>=45&&num.scrollWidth<=num.clientWidth,font:[...card.querySelectorAll('.task-detail-v490>div')].map(x=>getComputedStyle(x).fontSize)};});
+              await page.evaluate(()=>{archive=[{archiveNumber:1,archiveId:'live-v492-a',text:'V492 Live Archiv',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T14:00:00+02:00',activeDurationMs:3600000,archiveAccountingActiveDurationMs:3600000,actualDurationMs:3600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:3600000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]}];nextArchiveNumber=2;saveArchive();switchTab('archive');render();});await page.waitForTimeout(350);
+              const archiveCard=page.locator('.archive-task:visible',{hasText:'V492 Live Archiv'}).first();
+              if(!(await archiveCard.count()))throw new Error('Visible V492 archive smoke card missing');
+              const ar=await archiveCard.evaluate(card=>{const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.archive-number'),status=rail?.querySelector('.status-symbol');if(num)num.textContent='A9999';const nr=num?.getBoundingClientRect(),sr=status?.getBoundingClientRect(),rr=rail?.getBoundingClientRect();return {ok:!!rail&&nr.top<sr.top&&rr.width>=45&&num.scrollWidth<=num.clientWidth,font:[...card.querySelectorAll('.task-detail-v490>div')].map(x=>getComputedStyle(x).fontSize)};});
               out.archiveRailReady=ar.ok;out.archiveCompactPreserved=ar.font.every(x=>x==='8.5px');
 
               await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V492 Live Log');switchTab('log');});await page.waitForTimeout(120);
