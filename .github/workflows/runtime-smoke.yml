@@ -23,7 +23,7 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:640}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            const out={status:'FAIL',version:'V488',live:false,bundle:false,metricsCurrent:false,segmentActiveCorrect:false,historicalActivePreserved:false,totalActiveCorrect:false,segmentGapsExcluded:false,cardBreakdownCorrect:false,editorBreakdownCorrect:false,scrollFixPreserved:false,terminalDeletePreserved:false,archiveSequenceRepair:true,remoteReopenCompleted:true,cookingParallel:true,integrity:true,renderStability:true,workBlocksPreserved:true,fixedShell:true,errors:[]};
+            const out={status:'FAIL',version:'V488',live:false,bundle:false,metricsCurrent:false,segmentActiveCorrect:false,historicalActivePreserved:false,totalActiveCorrect:false,segmentGapsExcluded:false,cardBreakdownCorrect:false,cardStableAfterTicker:false,editorBreakdownCorrect:false,scrollFixPreserved:false,terminalDeletePreserved:false,archiveSequenceRepair:true,remoteReopenCompleted:true,cookingParallel:true,integrity:true,renderStability:true,workBlocksPreserved:true,fixedShell:true,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
@@ -46,12 +46,16 @@ jobs:
                     {startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}
                   ]}];archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();
               });await page.waitForTimeout(150);
-              const state=await page.evaluate(()=>{const t=tasks[0],m=window.__modHistoricalSegmentBreakdownV488.segmentMetrics(t);return {m,calc:liveDuration(t),card:document.querySelector('.task .duration')?.innerText||''};});
+              const expectedCard=['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN'];
+              const state=await page.evaluate(()=>{const t=tasks[0],m=window.__modHistoricalSegmentBreakdownV488.segmentMetrics(t),el=document.querySelector('.task .duration');return {m,calc:liveDuration(t),card:el?.innerText||'',liveKind:el?.getAttribute('data-live-kind')||null};});
               out.segmentActiveCorrect=state.m.activeMs===8880000;
               out.historicalActivePreserved=state.m.historicalMs===8760000;
               out.totalActiveCorrect=state.m.totalActiveMs===17640000&&state.calc===17640000;
               out.segmentGapsExcluded=state.m.gapMs===8760000&&state.m.activeMs!==state.m.totalActiveMs;
-              out.cardBreakdownCorrect=['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN'].every(x=>state.card.includes(x));
+              out.cardBreakdownCorrect=state.liveKind===null&&expectedCard.every(x=>state.card.includes(x));
+              await page.waitForTimeout(1250);
+              const stableCard=await page.locator('.task .duration').innerText();
+              out.cardStableAfterTicker=expectedCard.every(x=>stableCard.includes(x));
 
               await page.evaluate(()=>askManualTimes(217));await page.waitForTimeout(80);
               const editor=await page.locator('#segmentTotalV443').innerText();
