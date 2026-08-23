@@ -32,7 +32,7 @@ jobs:
               if marker not in index: raise SystemExit(f'Missing V485 index marker: {marker}')
           for marker in ['master-of-disaster-v485-terminal-delete','terminal-delete-v485.js','remote-task-reopen-v484.js','today-create-render-v480.js','development-metrics.json']:
               if marker not in sw: raise SystemExit(f'Missing V485 service worker marker: {marker}')
-          for marker in ["const BUILD_VERSION='V485'",'deleteTerminalTask','deleteArchivedTask','compactArchiveNumbers','dynamicArchiveRenumber:true','statisticsFollowRemainingData:true','stableArchiveIdsPreserved:true','confirmationRequired:true','__modTerminalDeleteV485']:
+          for marker in ["const BUILD_VERSION='V485'",'deleteTerminalTask','deleteArchivedTask','compactArchiveNumbers','ensureAbortedSection','dynamicArchiveRenumber:true','statisticsFollowRemainingData:true','stableArchiveIdsPreserved:true','confirmationRequired:true','abortedTasksVisible:true','__modTerminalDeleteV485']:
               if marker not in v485: raise SystemExit(f'Missing V485 behavior: {marker}')
           for marker in ["const BUILD_VERSION='V484'",'reopenCompletedTask','__modRemoteTaskReopenV484']:
               if marker not in v484: raise SystemExit(f'Missing preserved V484 behavior: {marker}')
