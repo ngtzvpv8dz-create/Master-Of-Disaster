@@ -17,17 +17,19 @@ jobs:
           node-version: '20'
       - name: Syntax and wiring
         run: |
+          node --check ui-alignment-v493.js
           node --check task-card-rail-polish-v492.js
           node --check ui-card-stability-v491.js
           node --check nested-task-weight-layout-v490.js
           node --check task-time-weight-details-v489.js
           node --check historical-segment-breakdown-v488.js
           node --check app.js
-          grep -q 'BUILD: V492' index.html
-          grep -q 'task-card-rail-polish-v492.js?v=492-1954' index.html
-          grep -q 'master-of-disaster-v492-number-status-weight-polish' sw.js
-          grep -q 'numberAndStatusLeftAligned:true' task-card-rail-polish-v492.js
-      - name: Browser regression V492
+          grep -q 'BUILD: V493' index.html
+          grep -q 'ui-alignment-v493.js?v=493-2035' index.html
+          grep -q 'master-of-disaster-v493-active-source-input-alignment' sw.js
+          grep -q 'numberTitleBottomAligned:true' ui-alignment-v493.js
+          grep -q 'activeSourceLabelsV493:true' historical-segment-breakdown-v488.js
+      - name: Browser regression V493
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -40,40 +42,66 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V492'&&window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V493'&&window.__modUiAlignmentV493&&window.__modTaskCardRailPolishV492&&window.__modNestedTaskWeightLayoutV490,{timeout:30000});
+
             await page.evaluate(()=>{
               const day=getBerlinDateKey();
               localStorage.removeItem(window.__modTodayWorkBlocksV474.storageKey);
-              tasks=[{id:4921,text:'Kisten sortieren V492',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:8760000,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:00:00+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}]},{id:4922,text:'Büro wischen V492',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null,activeSegments:[],pauseTotalMs:0}];
-              weightPhases=[{id:1,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{id:2,weightKg:12.3,startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{id:3,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}];
-              weightState={isWearing:false,currentWeightKg:8};archive=[];nextArchiveNumber=1;saveTasks();saveArchive();saveWeight();window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();
+              tasks=[
+                {id:263,text:'V493 Nur Altzeit 30m',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:1800000,activeDurationMs:1800000,actualDurationMs:1800000,startedAt:'2026-06-12T10:00:00+02:00',pausedAt:'2026-06-12T10:30:00+02:00',pauseTotalMs:0,activeSegments:[]},
+                {id:264,text:'V493 Nur Altzeit 90m',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:2,todayWorkBlockId:null,importedHistoricalProgressDurationMs:5400000,activeDurationMs:5400000,actualDurationMs:5400000,startedAt:'2026-06-12T11:00:00+02:00',pausedAt:'2026-06-12T12:30:00+02:00',pauseTotalMs:0,activeSegments:[]},
+                {id:265,text:'V493 Alt plus App',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:3,todayWorkBlockId:null,importedHistoricalProgressDurationMs:1800000,activeDurationMs:null,actualDurationMs:null,startedAt:'2026-08-23T18:00:00+02:00',pausedAt:'2026-08-23T18:10:00+02:00',pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T18:00:00+02:00',endedAt:'2026-08-23T18:10:00+02:00'}]}
+              ];
+              weightPhases=[{id:49301,weightKg:12.3,startedAt:'2026-08-23T18:00:00+02:00',endedAt:'2026-08-23T18:10:00+02:00'}];
+              weightState={isWearing:false,currentWeightKg:12.3};archive=[];nextArchiveNumber=1;
+              saveTasks();saveArchive();saveWeight();window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();switchTab('all');render();
             });
-            for(const tab of ['all','today','priority','due','active']){
-              await page.evaluate(t=>{switchTab(t);render();},tab);await page.waitForTimeout(250);
-              const card=page.locator('.task:not(.archive-task):visible',{hasText:'Kisten sortieren V492'}).first();
-              if(!(await card.count()))throw new Error(tab+': task missing');
-              const rail=await card.evaluate(card=>{const r=card.querySelector(':scope > .v492-number-status-rail'),n=r?.querySelector('.task-number'),s=r?.querySelector('.status-symbol');if(n)n.textContent='9.999';const nr=n?.getBoundingClientRect(),sr=s?.getBoundingClientRect();return {ok:!!r&&nr.top<sr.top&&n.scrollWidth<=n.clientWidth&&getComputedStyle(n).textAlign==='left'&&getComputedStyle(s).justifyContent==='flex-start',width:r?.getBoundingClientRect().width};});
-              if(!rail.ok||rail.width<41)throw new Error(tab+': rail failed '+JSON.stringify(rail));
+            await page.waitForTimeout(500);
+
+            const summaries=await page.evaluate(()=>{
+              const out={};
+              for(const id of [263,264,265]){
+                const card=document.querySelector(`.task[data-v490-task-id="${id}"]`);
+                out[id]={
+                  summary:card?.querySelector('.historical-segment-duration-v488')?.innerText||'',
+                  historicalDetail:card?.querySelectorAll('.v490-historical').length||0,
+                  segments:card?.querySelectorAll('.task-detail-v490 .v490-segment').length||0,
+                  nestedWeight:card?.querySelectorAll('.v490-weight-nested').length||0
+                };
+              }
+              return out;
+            });
+            for(const id of [263,264]){
+              const s=summaries[id];
+              if(!s.summary.includes('SEIT APP AKTIV · 00:00:00'))throw new Error(id+' must show zero since-app active: '+s.summary);
+              const expected=id===263?'00:30:00':'01:30:00';
+              if(!s.summary.includes('+ VOR APP AKTIV · '+expected)||!s.summary.includes('= GESAMT AKTIV · '+expected))throw new Error(id+' source split wrong: '+s.summary);
+              if(s.historicalDetail!==0||s.segments!==0)throw new Error(id+' duplicated historical detail/range: '+JSON.stringify(s));
             }
-            await page.evaluate(()=>{switchTab('all');render();});await page.waitForTimeout(250);
-            const card=page.locator('.task:not(.archive-task):visible',{hasText:'Kisten sortieren V492'}).first();
-            const w=await card.evaluate(card=>{const p=card.querySelector('.v490-weight-partial'),copy=p?.querySelector('.v492-weight-copy'),sub=p?.nextElementSibling,o=card.querySelector('.v490-overall-weight'),d=card.querySelector('.task-detail-v490');return {aligned:p?.dataset.v492Aligned==='true'&&sub?.classList.contains('v492-weight-subline-aligned'),copyX:copy?.getBoundingClientRect().left,subX:sub?.getBoundingClientRect().left+(parseFloat(getComputedStyle(sub).paddingLeft)||0),color:p?getComputedStyle(p).color:null,fw:p?getComputedStyle(p).fontWeight:null,overall:o?getComputedStyle(o).color:null,ofw:o?getComputedStyle(o).fontWeight:null,border:d?getComputedStyle(d).borderTopWidth:null,actionsLast:card.querySelector('.task-content')?.lastElementChild===card.querySelector('.icon-actions')};});
-            if(!w.aligned||Math.abs(w.copyX-w.subX)>0.75||w.color!=='rgb(126, 139, 104)'||w.overall!=='rgb(126, 139, 104)'||w.fw!=='400'||w.ofw!=='400'||w.border!=='1px'||!w.actionsLast)throw new Error('Weight/layout polish failed '+JSON.stringify(w));
-            await page.evaluate(()=>{switchTab('today');render();});await page.waitForTimeout(250);
-            const today=page.locator('.today-task-active:visible',{hasText:'Kisten sortieren V492'}).first();
-            if((await today.locator('.v491-order-button').count())!==2||(await today.locator('.drag-handle').count())!==0)throw new Error('V491 arrows regressed');
-            const before=await today.evaluate(c=>({h:c.getBoundingClientRect().height,html:c.innerHTML}));await page.waitForTimeout(1200);const after=await today.evaluate(c=>({h:c.getBoundingClientRect().height,html:c.innerHTML}));if(Math.abs(before.h-after.h)>0.5||before.html!==after.html)throw new Error('Card stability regressed');
-            await page.evaluate(()=>{
-              const item={archiveNumber:1,archiveId:'v492-a',text:'Archiv Rail V492',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T14:00:00+02:00',activeDurationMs:3600000,archiveAccountingActiveDurationMs:3600000,actualDurationMs:3600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:3600000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]};
-              const host=document.getElementById('viewContainer');host.innerHTML='';host.appendChild(archiveCard(item));window.__modTaskCardRailPolishV492.enhanceAll();
-            });await page.waitForTimeout(100);
-            const archived=page.locator('.archive-task:visible',{hasText:'Archiv Rail V492'}).first();
-            if(!(await archived.count()))throw new Error('Visible archiveCard fixture missing');
-            const ar=await archived.evaluate(card=>{const r=card.querySelector(':scope > .v492-number-status-rail'),n=r?.querySelector('.archive-number'),s=r?.querySelector('.status-symbol');if(n)n.textContent='A9999';const nr=n?.getBoundingClientRect(),sr=s?.getBoundingClientRect();return {ok:!!r&&nr.top<sr.top&&n.scrollWidth<=n.clientWidth&&getComputedStyle(n).textAlign==='left'&&getComputedStyle(s).justifyContent==='flex-start',width:r?.getBoundingClientRect().width,font:[...card.querySelectorAll('.task-detail-v490>div')].map(x=>getComputedStyle(x).fontSize)};});
-            if(!ar.ok||ar.width<45||ar.font.some(x=>x!=='8.5px'))throw new Error('Archive layout failed '+JSON.stringify(ar));
-            const preserved=await page.evaluate(()=>!!(window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478));
+            if(!summaries[265].summary.includes('SEIT APP AKTIV · 00:10:00')||!summaries[265].summary.includes('+ VOR APP AKTIV · 00:30:00')||!summaries[265].summary.includes('= GESAMT AKTIV · 00:40:00'))throw new Error('265 app/history split wrong: '+summaries[265].summary);
+            if(summaries[265].historicalDetail!==0||summaries[265].segments!==1||summaries[265].nestedWeight<1)throw new Error('265 exact segment/weight detail regressed: '+JSON.stringify(summaries[265]));
+
+            const heading=await page.locator('.task[data-v490-task-id="264"]:visible').evaluate(card=>{
+              function glyph(el){const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){const t=n.textContent||'';const i=t.search(/\S/);if(i>=0){const r=document.createRange();r.setStart(n,i);r.setEnd(n,Math.min(i+1,t.length));return r.getBoundingClientRect();}}return el.getBoundingClientRect();}
+              const rail=card.querySelector(':scope>.v492-number-status-rail'),num=rail.querySelector('.task-number'),status=rail.querySelector('.status-symbol'),title=card.querySelector('.task-text');num.textContent='9.999';window.__modUiAlignmentV493.alignNumberWithTitle(card);const nr=glyph(num),tr=glyph(title),sr=status.getBoundingClientRect();return {diff:Math.abs(nr.bottom-tr.bottom),statusBelow:sr.top>=nr.bottom-0.5,overflow:num.scrollWidth-num.clientWidth,aligned:num.dataset.v493TitleAligned};
+            });
+            if(heading.diff>0.8||!heading.statusBelow||heading.overflow>0||heading.aligned!=='true')throw new Error('Number/title alignment failed: '+JSON.stringify(heading));
+
+            const options=await page.evaluate(()=>{
+              const rows=[...document.querySelectorAll('#inputPanel .option-row')];rows.forEach(r=>r.style.width='220px');window.__modUiAlignmentV493.alignInputOptions();
+              const type=document.getElementById('newTypeWork'),self=document.getElementById('newTypeSelfrunner'),prio=document.getElementById('newPriorityNormal'),high=document.getElementById('newPriorityHigh');
+              const tw=type.getBoundingClientRect(),ts=self.getBoundingClientRect(),pn=prio.getBoundingClientRect(),ph=high.getBoundingClientRect();
+              return {typeWrapped:ts.top>tw.top+1,typeAligned:Math.abs(ts.left-tw.left),priorityWrapped:ph.top>pn.top+1,priorityAligned:Math.abs(ph.left-pn.left),wrappers:document.querySelectorAll('#inputPanel .v493-option-buttons').length};
+            });
+            if(!options.typeWrapped||options.typeAligned>0.8||!options.priorityWrapped||options.priorityAligned>0.8||options.wrappers!==4)throw new Error('Input option indentation failed: '+JSON.stringify(options));
+
+            await page.evaluate(()=>{const item={archiveNumber:9999,archiveId:'v493-a',text:'V493 Archiv Titel',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[]};const host=document.getElementById('viewContainer');host.innerHTML='';const card=archiveCard(item);host.appendChild(card);window.__modTaskCardRailPolishV492.enhanceAll();window.__modUiAlignmentV493.enhanceAll();});await page.waitForTimeout(100);
+            const archiveHeading=await page.locator('.archive-task:visible',{hasText:'V493 Archiv Titel'}).evaluate(card=>{const r=card.querySelector(':scope>.v492-number-status-rail'),n=r.querySelector('.archive-number'),s=r.querySelector('.status-symbol');n.textContent='A9999';window.__modUiAlignmentV493.alignNumberWithTitle(card);return {overflow:n.scrollWidth-n.clientWidth,statusBelow:s.getBoundingClientRect().top>=n.getBoundingClientRect().bottom-1};});
+            if(archiveHeading.overflow>0||!archiveHeading.statusBelow)throw new Error('Archive A9999 alignment regressed: '+JSON.stringify(archiveHeading));
+
+            const preserved=await page.evaluate(()=>!!(window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478));
             if(!preserved)throw new Error('Preserved modules missing');
-            console.log('V492 browser regression OK');
+            console.log('V493 browser regression OK');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
