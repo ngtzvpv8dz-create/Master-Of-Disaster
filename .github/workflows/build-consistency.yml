@@ -16,25 +16,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V480 build
+      - name: Verify V481 build
         shell: python
         run: |
           from pathlib import Path
           import json
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          v481=Path('voice-commands-v481.js').read_text(encoding='utf-8')
           v480=Path('today-create-render-v480.js').read_text(encoding='utf-8')
           v479=Path('render-stability-v479.js').read_text(encoding='utf-8')
           v478=Path('remote-archive-sequence-v478.js').read_text(encoding='utf-8')
           v477=Path('statistics-alignment-v477.js').read_text(encoding='utf-8')
           v475=Path('fixed-app-header-v475.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V480','23.08.2026 · 08:01','today-create-render-v480.js?v=480-0801',"version:'V480'",'modV480TodayCreateRenderDone']:
-              if marker not in index: raise SystemExit(f'Missing V480 index marker: {marker}')
-          for marker in ['master-of-disaster-v480-today-create-render','today-create-render-v480.js','render-stability-v479.js','development-metrics.json']:
-              if marker not in sw: raise SystemExit(f'Missing V480 service worker marker: {marker}')
-          for marker in ["const BUILD_VERSION='V480'",'applyVisibleLayoutsSync','normalizeTodayActions','directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true','__modTodayCreateRenderV480']:
-              if marker not in v480: raise SystemExit(f'Missing V480 behavior: {marker}')
+          for marker in ['BUILD: V481','23.08.2026 · 08:28','voice-commands-v481.js?v=481-0828',"version:'V481'",'modV481VoiceCommandDone']:
+              if marker not in index: raise SystemExit(f'Missing V481 index marker: {marker}')
+          for marker in ['master-of-disaster-v481-free-voice-command-test','voice-commands-v481.js','today-create-render-v480.js','development-metrics.json']:
+              if marker not in sw: raise SystemExit(f'Missing V481 service worker marker: {marker}')
+          for marker in ["const BUILD_VERSION='V481'",'window.SpeechRecognition||window.webkitSpeechRecognition','parseTranscript','acceptTranscript','executePending','noOpenAiApi:true','confirmationRequired:true',"supportedCommands:['create','start','finish']",'__modVoiceCommandsV481']:
+              if marker not in v481: raise SystemExit(f'Missing V481 behavior: {marker}')
+          for marker in ["const BUILD_VERSION='V480'",'directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true','__modTodayCreateRenderV480']:
+              if marker not in v480: raise SystemExit(f'Missing preserved V480 behavior: {marker}')
           for marker in ["const BUILD_VERSION='V479'",'synchronousPostRender:true','__modRenderStabilityV479']:
               if marker not in v479: raise SystemExit(f'Missing preserved V479 behavior: {marker}')
           for marker in ["const COMMAND='RENUMBER_ARCHIVE_GAP'",'sequence_contiguous:true','__modRemoteArchiveSequenceV478']:
@@ -43,21 +46,21 @@ jobs:
               if marker not in v477: raise SystemExit(f'Missing preserved V477 behavior: {marker}')
           for marker in ['appFixedTopV475','headerAndTabsTogether:true','dynamicHeight:true','__modFixedAppHeaderV475']:
               if marker not in v475: raise SystemExit(f'Missing preserved V475 behavior: {marker}')
-          if metrics.get('version')!='V480' or metrics.get('automated') is not True:
-              raise SystemExit('Bundled metrics snapshot is not V480/automated')
-          print('V480 build consistency OK')
+          if metrics.get('version')!='V481' or metrics.get('automated') is not True:
+              raise SystemExit('Bundled metrics snapshot is not V481/automated')
+          print('V481 build consistency OK')
       - name: JavaScript syntax
-        run: node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
+        run: node --check voice-commands-v481.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - name: Generator produces current repository metrics
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
           cat /tmp/metrics.log
           node - <<'NODE'
           const m=require('/tmp/development-metrics.json');
-          if(m.version!=='V480'||!m.automated)throw new Error('Generated version/automation flag wrong');
+          if(m.version!=='V481'||!m.automated)throw new Error('Generated version/automation flag wrong');
           if(m.repository.reachableCommits<500)throw new Error('Commit history unexpectedly short');
           if(m.repository.currentFiles<40)throw new Error('File count unexpectedly low');
           if(m.repository.currentTextLines<10000)throw new Error('Text line count unexpectedly low');
           if(m.repository.currentBytes<500000)throw new Error('Repository byte count unexpectedly low');
-          console.log('V480 generated metrics sane');
+          console.log('V481 generated metrics sane');
           NODE

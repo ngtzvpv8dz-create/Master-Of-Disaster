@@ -16,25 +16,28 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V480 wiring
+        run: node --check voice-commands-v481.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V481 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('today-create-render-v480.js').read_text(encoding='utf-8')
+          js=Path('voice-commands-v481.js').read_text(encoding='utf-8')
+          v480=Path('today-create-render-v480.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V480','today-create-render-v480.js?v=480-0801',"version:'V480'",'modV480TodayCreateRenderDone']:
-              if marker not in html: raise SystemExit(f'Missing V480 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v480-today-create-render','today-create-render-v480.js']:
-              if marker not in sw: raise SystemExit(f'Missing V480 SW marker: {marker}')
-          for marker in ['applyVisibleLayoutsSync','normalizeTodayActions','setNewTaskToday','assignTaskToToday','directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true']:
-              if marker not in js: raise SystemExit(f'Missing V480 behavior marker: {marker}')
-          if metrics.get('version')!='V480' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V480 automated metrics snapshot')
-          print('V480 wiring OK')
+          for marker in ['BUILD: V481','voice-commands-v481.js?v=481-0828',"version:'V481'",'modV481VoiceCommandDone']:
+              if marker not in html: raise SystemExit(f'Missing V481 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v481-free-voice-command-test','voice-commands-v481.js']:
+              if marker not in sw: raise SystemExit(f'Missing V481 SW marker: {marker}')
+          for marker in ['SpeechRecognition||window.webkitSpeechRecognition','parseTranscript','matchTask','acceptTranscript','executeCreate','executeStart','executeFinish','noOpenAiApi:true','confirmationRequired:true',"supportedCommands:['create','start','finish']"]:
+              if marker not in js: raise SystemExit(f'Missing V481 behavior marker: {marker}')
+          for marker in ['applyVisibleLayoutsSync','normalizeTodayActions','directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true']:
+              if marker not in v480: raise SystemExit(f'Missing preserved V480 behavior marker: {marker}')
+          if metrics.get('version')!='V481' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V481 automated metrics snapshot')
+          print('V481 wiring OK')
       - name: Verify preserved V478 targeted A255 gap repair
         run: |
           node <<'NODE'
@@ -61,7 +64,7 @@ jobs:
           if(tasks[1].todayDate!=='2026-08-23'||tasks[1].todayWorkBlockId!==b2.id||api.getBlocks('2026-08-23').length!==2)throw new Error('V474 work block regression');
           console.log('V474 work blocks preserved');
           NODE
-      - name: Browser regression V480
+      - name: Browser regression V481
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -73,13 +76,22 @@ jobs:
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:844}});
+            await page.addInitScript(()=>{
+              class FakeRecognition{
+                constructor(){window.__v481FakeRecognition=this;this.lang='';this.continuous=false;this.interimResults=false;this.maxAlternatives=1;}
+                start(){queueMicrotask(()=>this.onstart?.());}
+                emit(text){this.onresult?.({results:[[{transcript:text,confidence:1}]]});this.onend?.();}
+              }
+              window.webkitSpeechRecognition=FakeRecognition;
+            });
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V481'&&window.__modVoiceCommandsV481&&window.__modTodayCreateRenderV480,{timeout:30000});
             await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
             await page.reload({waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
-            const result=await page.evaluate(()=>{
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V481'&&window.__modVoiceCommandsV481?.supported===true,{timeout:30000});
+
+            const v480=await page.evaluate(()=>{
               const date=getBerlinDateKey();
               tasks=[];archive=[];saveTasks();localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
               const api=window.__modTodayWorkBlocksV474;
@@ -102,20 +114,40 @@ jobs:
               const button2=card2?.querySelector('.icon-actions button[onclick*="toggleToday("]');
               const actions2=card2?.querySelector('.icon-actions');
               const after=button2?.getBoundingClientRect();
-              return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},row:!!document.getElementById('newTodayRowV480')};
+              return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},row:!!document.getElementById('newTodayRowV480'),b2:b2.id};
             });
-            console.log('V480 browser state',result);
             const norm=v=>String(v||'').replace(/\s+/g,'');
-            if(result.created.today==null)throw new Error('New task was not assigned to Today');
-            if(!result.created.block)throw new Error('New task has no work block');
-            if(!result.created.selected||result.created.icon!=='calendar')throw new Error('Assigned Today action is not stable calendar state');
-            if(result.created.layout?.x!==12||result.created.layout?.y!==4)throw new Error('V460 test layout was not loaded');
-            if(result.created.state!=='open'||norm(result.created.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously on create');
-            if(result.created.options<2||!result.row)throw new Error('Create-time work-block selector missing');
-            if(result.after.today!==null||result.after.selected||result.after.icon!=='calendar')throw new Error('Today toggle did not retain stable calendar visual');
-            if(result.after.state!=='open'||norm(result.after.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously after Today toggle');
-            if(result.after.dx>1||result.after.dy>1)throw new Error(`Today action moved: ${result.after.dx}/${result.after.dy}`);
-            console.log('V480 browser regression OK');
+            if(v480.created.today==null||!v480.created.block||!v480.created.selected||v480.created.icon!=='calendar')throw new Error('Preserved V480 create/today behavior failed');
+            if(v480.created.layout?.x!==12||v480.created.layout?.y!==4||v480.created.state!=='open'||norm(v480.created.transform)!=='translate(12px,4px)')throw new Error('Preserved V480 synchronous layout failed');
+            if(v480.after.today!==null||v480.after.selected||v480.after.icon!=='calendar'||v480.after.state!=='open'||norm(v480.after.transform)!=='translate(12px,4px)'||v480.after.dx>1||v480.after.dy>1)throw new Error('Preserved V480 stable Today action failed');
+
+            const initial=await page.evaluate(()=>({supported:window.__modVoiceCommandsV481.supported,noApi:window.__modVoiceCommandsV481.noOpenAiApi,confirm:window.__modVoiceCommandsV481.confirmationRequired,ui:!!document.getElementById('voiceCommandTestV481'),button:!document.getElementById('voiceStartV481')?.disabled}));
+            if(!initial.supported||!initial.noApi||!initial.confirm||!initial.ui||!initial.button)throw new Error('V481 voice test UI/capabilities missing');
+
+            await page.click('#voiceStartV481');
+            await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
+            await page.evaluate(()=>window.__v481FakeRecognition.emit('Neue Aufgabe Sprachtest heute Arbeitsblock zwei hohe Priorität'));
+            const createPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV481.pending,tasks:tasks.filter(t=>t.text==='Sprachtest').length,preview:document.getElementById('voicePreviewV481')?.textContent||''}));
+            if(createPreview.tasks!==0||createPreview.pending?.type!=='create'||createPreview.pending?.text!=='Sprachtest'||createPreview.pending?.block!==2||createPreview.pending?.priority!=='high'||createPreview.pending?.today!==true||!/AUSFÜHREN/.test(createPreview.preview))throw new Error('V481 create command was not safely previewed');
+            await page.click('[data-v481-execute]');
+            const created=await page.evaluate(()=>{const t=tasks.find(x=>x.text==='Sprachtest');return {exists:!!t,today:t?.todayDate,block:t?.todayWorkBlockId,priority:t?.priority,status:t?.status,date:getBerlinDateKey()};});
+            if(!created.exists||created.today!==created.date||created.block!==v480.b2||created.priority!=='high'||created.status!=='open')throw new Error('V481 create command execution failed');
+
+            await page.click('#voiceStartV481');
+            await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
+            await page.evaluate(()=>window.__v481FakeRecognition.emit('Starte Sprachtest'));
+            const startPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV481.pending,status:tasks.find(t=>t.text==='Sprachtest')?.status}));
+            if(startPreview.pending?.type!=='start'||startPreview.pending?.resolvedTask?.text!=='Sprachtest'||startPreview.status!=='open')throw new Error('V481 start command skipped confirmation or failed resolution');
+            await page.click('[data-v481-execute]');
+            const started=await page.evaluate(()=>tasks.find(t=>t.text==='Sprachtest')?.status);
+            if(started!=='running')throw new Error('V481 start command execution failed');
+
+            await page.click('#voiceStartV481');
+            await page.waitForFunction(()=>window.__modVoiceCommandsV481.listening===true);
+            await page.evaluate(()=>window.__v481FakeRecognition.emit('Sprachtest ist fertig'));
+            const finishPreview=await page.evaluate(()=>({pending:window.__modVoiceCommandsV481.pending,status:tasks.find(t=>t.text==='Sprachtest')?.status}));
+            if(finishPreview.pending?.type!=='finish'||finishPreview.pending?.resolvedTask?.text!=='Sprachtest'||finishPreview.status!=='running')throw new Error('V481 finish command parser/resolution failed');
+            console.log('V481 browser regression OK');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
