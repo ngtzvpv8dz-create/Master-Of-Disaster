@@ -16,97 +16,106 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check voice-result-v483.js && node --check voice-commands-v482.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check app.js
-      - name: Verify V483 wiring
+        run: node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V480 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('voice-result-v483.js').read_text(encoding='utf-8')
+          js=Path('today-create-render-v480.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V483','voice-result-v483.js?v=483-0858',"version:'V483'",'modV483VoiceResultDone']:
-              if marker not in html: raise SystemExit(f'Missing V483 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v483-voice-result-after-stop','voice-result-v483.js']:
-              if marker not in sw: raise SystemExit(f'Missing V483 SW marker: {marker}')
-          for marker in ['preservesResultAfterStop:true','noEarlyAbort:true','onaudioend','endGrace','scheduleWatchdog','__modVoiceResultV483']:
-              if marker not in js: raise SystemExit(f'Missing V483 behavior marker: {marker}')
-          if metrics.get('version')!='V483' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V483 automated metrics snapshot')
-          print('V483 wiring OK')
-      - name: Verify preserved V478 targeted archive repair
+          for marker in ['BUILD: V480','today-create-render-v480.js?v=480-0801',"version:'V480'",'modV480TodayCreateRenderDone']:
+              if marker not in html: raise SystemExit(f'Missing V480 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v480-today-create-render','today-create-render-v480.js']:
+              if marker not in sw: raise SystemExit(f'Missing V480 SW marker: {marker}')
+          for marker in ['applyVisibleLayoutsSync','normalizeTodayActions','setNewTaskToday','assignTaskToToday','directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true']:
+              if marker not in js: raise SystemExit(f'Missing V480 behavior marker: {marker}')
+          if metrics.get('version')!='V480' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V480 automated metrics snapshot')
+          print('V480 wiring OK')
+      - name: Verify preserved V478 targeted A255 gap repair
         run: |
           node <<'NODE'
           const fs=require('fs');
           global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          global.archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`A${i+1}`}));for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`A${n}`});
+          global.archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`Aufgabe ${i+1}`,activeDurationMs:i*1000}));
+          for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`Aufgabe ${n}`,activeDurationMs:n*1000});
           global.nextArchiveNumber=263;let saved=0;global.saveArchive=()=>saved++;global.render=()=>{};
           eval(fs.readFileSync('remote-archive-sequence-v478.js','utf8'));
           const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b);
           if(archive.length!==261||nums.some((n,i)=>n!==i+1)||nextArchiveNumber!==262||r.shifted!==7||!r.sequence_contiguous||saved!==1)throw new Error('V478 archive repair regression');
           console.log('V478 archive repair preserved');
           NODE
-      - name: Browser regression V483
+      - name: Verify preserved V474 work blocks
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),store=new Map();
+          global.window=global;global.currentTab='all';global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.addEventListener=()=>{};global.setTimeout=()=>0;global.CSS={escape:s=>String(s)};
+          global.document={addEventListener(){},getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {id:'',textContent:'',className:'',style:{},appendChild(){},append(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},toggle(){}}}},head:{appendChild(){}},body:{appendChild(){}}};
+          global.getBerlinDateKey=()=> '2026-08-23';global.render=null;global.saveEdit=null;global.saveTasks=()=>{};global.tasks=[{id:1,text:'A',todayDate:'2026-08-23',todayOrder:1,status:'open'},{id:2,text:'B',todayDate:null,todayOrder:null,status:'open'}];
+          eval(fs.readFileSync('today-work-blocks-v474.js','utf8'));
+          const api=window.__modTodayWorkBlocksV474,blocks=api.ensureTodayModel('2026-08-23',[]),b2=api.addBlock('ZWEI',{date:'2026-08-23',render:false});
+          api.assignTaskToToday(2,b2.id,{date:'2026-08-23',render:false});
+          if(tasks[1].todayDate!=='2026-08-23'||tasks[1].todayWorkBlockId!==b2.id||api.getBlocks('2026-08-23').length!==2)throw new Error('V474 work block regression');
+          console.log('V474 work blocks preserved');
+          NODE
+      - name: Browser regression V480
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
           npx playwright install chromium >/dev/null 2>&1
           python3 -m http.server 8787 >/tmp/mod-http.log 2>&1 &
+          echo $! >/tmp/mod-http.pid
           node <<'NODE'
           const {chromium}=require('playwright');
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:844}});
-            await page.addInitScript(()=>{
-              class FakeRecognition{
-                constructor(){window.__v483Fake=this;this.stopCount=0;this.abortCount=0;this.lang='';this.continuous=false;this.interimResults=false;this.maxAlternatives=1;}
-                start(){queueMicrotask(()=>this.onstart?.());}
-                stop(){this.stopCount++;queueMicrotask(()=>this.onaudioend?.());}
-                abort(){this.abortCount++;queueMicrotask(()=>{this.onerror?.({error:'aborted'});this.onend?.();});}
-                emit(text){const row=[{transcript:text,confidence:1}];row.isFinal=true;this.onresult?.({resultIndex:0,results:[row]});}
-                end(){this.onend?.();}
-              }
-              window.webkitSpeechRecognition=FakeRecognition;
-            });
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V483'&&window.__modVoiceResultV483?.supported&&window.__modVoiceCommandsV482&&window.__modTodayWorkBlocksV474,{timeout:30000});
-            const setup=await page.evaluate(()=>{
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
+            await page.reload({waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            const result=await page.evaluate(()=>{
+              const date=getBerlinDateKey();
               tasks=[];archive=[];saveTasks();localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
-              const date=getBerlinDateKey(),api=window.__modTodayWorkBlocksV474;
-              const b1=api.addBlock('',{date,render:false}),b2=api.addBlock('SPÄTER',{date,render:false});switchTab('all');render();
-              const parser=window.__modVoiceCommandsV482;
-              const variants=['Neue Aufgabe, Bart putzen, heute, Arbeitsblock 2','Neue Aufgabe Bart putzen heute Arbeits Block 2','Neue Aufgabe Bart putzen heute Block zwei','Neue Aufgabe Bart putzen heute Arbeitsblock Nummer zwei'].map(x=>parser.parseTranscript(x));
-              return {b2:b2.id,variants,ui:!!document.getElementById('voiceCommandTestV483'),old:!!document.getElementById('voiceCommandTestV482')};
+              const api=window.__modTodayWorkBlocksV474;
+              const b1=api.addBlock('',{date,render:false}),b2=api.addBlock('SPÄTER',{date,render:false});
+              switchTab('all');render();
+              const ui=window.__modTodayCreateRenderV480;
+              ui.setNewTaskToday(true);
+              const select=document.getElementById('newTodayBlockV480');
+              select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));
+              document.getElementById('taskInput').value='V480 Browser Test';
+              addTask();
+              const task=tasks.find(t=>t.text==='V480 Browser Test');
+              const card=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
+              const button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');
+              const actions=card?.querySelector('.icon-actions');
+              const before=button?.getBoundingClientRect();
+              const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0};
+              toggleToday(task.id);
+              const card2=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
+              const button2=card2?.querySelector('.icon-actions button[onclick*="toggleToday("]');
+              const actions2=card2?.querySelector('.icon-actions');
+              const after=button2?.getBoundingClientRect();
+              return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},row:!!document.getElementById('newTodayRowV480')};
             });
-            if(!setup.ui||setup.old)throw new Error('V483 UI did not replace V482 UI');
-            if(setup.variants.some(x=>x.type!=='create'||x.text!=='Bart putzen'||x.block!==2||x.today!==true))throw new Error('Preserved V482 work-block parser failed');
-
-            await page.click('#voiceStartV483');
-            await page.waitForFunction(()=>window.__modVoiceResultV483.listening===true);
-            await page.click('#voiceStartV483');
-            await page.waitForFunction(()=>window.__modVoiceResultV483.stopping===true&&window.__v483Fake.stopCount===1);
-            await page.waitForTimeout(900);
-            const beforeLate=await page.evaluate(()=>({abort:window.__v483Fake.abortCount,pending:window.__modVoiceResultV483.pending,audioEnded:window.__modVoiceResultV483.audioEnded}));
-            if(beforeLate.abort!==0||beforeLate.pending!==null||!beforeLate.audioEnded)throw new Error('V483 aborted before delayed Safari result could arrive');
-            await page.evaluate(()=>window.__v483Fake.emit('Neue Aufgabe, Bart putzen, heute, Arbeitsblock 2'));
-            await page.waitForFunction(()=>window.__modVoiceResultV483.pending?.type==='create');
-            await page.evaluate(()=>window.__v483Fake.end());
-            const preview=await page.evaluate(()=>({p:window.__modVoiceResultV483.pending,count:tasks.filter(t=>t.text==='Bart putzen').length,text:document.getElementById('voicePreviewV483')?.textContent||''}));
-            if(preview.count!==0||preview.p?.text!=='Bart putzen'||preview.p?.block!==2||preview.p?.today!==true||!/AUSFÜHREN/.test(preview.text))throw new Error('Delayed result did not produce safe V483 preview');
-            await page.click('[data-v483-execute]');
-            const created=await page.evaluate((b2)=>{const t=tasks.find(x=>x.text==='Bart putzen');return {ok:!!t&&t.todayDate===getBerlinDateKey()&&t.todayWorkBlockId===b2&&t.status==='open',text:t?.text};},setup.b2);
-            if(!created.ok||created.text!=='Bart putzen')throw new Error('V483 create execution failed');
-
-            await page.evaluate(()=>window.__modVoiceResultV483.acceptTranscript('Starte Bart putzen'));
-            const startPreview=await page.evaluate(()=>({p:window.__modVoiceResultV483.pending,status:tasks.find(t=>t.text==='Bart putzen')?.status}));
-            if(startPreview.p?.resolvedTask?.text!=='Bart putzen'||startPreview.status!=='open')throw new Error('Start resolution failed');
-            await page.click('[data-v483-execute]');
-            if(!await page.evaluate(()=>tasks.find(t=>t.text==='Bart putzen')?.status==='running'))throw new Error('Start execution failed');
-            await page.evaluate(()=>window.__modVoiceResultV483.acceptTranscript('Bart putzen ist fertig'));
-            if(!await page.evaluate(()=>window.__modVoiceResultV483.pending?.type==='finish'&&window.__modVoiceResultV483.pending?.resolvedTask?.text==='Bart putzen'))throw new Error('Finish parse failed');
-            console.log('V483 browser regression OK');
+            console.log('V480 browser state',result);
+            const norm=v=>String(v||'').replace(/\s+/g,'');
+            if(result.created.today==null)throw new Error('New task was not assigned to Today');
+            if(!result.created.block)throw new Error('New task has no work block');
+            if(!result.created.selected||result.created.icon!=='calendar')throw new Error('Assigned Today action is not stable calendar state');
+            if(result.created.layout?.x!==12||result.created.layout?.y!==4)throw new Error('V460 test layout was not loaded');
+            if(result.created.state!=='open'||norm(result.created.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously on create');
+            if(result.created.options<2||!result.row)throw new Error('Create-time work-block selector missing');
+            if(result.after.today!==null||result.after.selected||result.after.icon!=='calendar')throw new Error('Today toggle did not retain stable calendar visual');
+            if(result.after.state!=='open'||norm(result.after.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously after Today toggle');
+            if(result.after.dx>1||result.after.dy>1)throw new Error(`Today action moved: ${result.after.dx}/${result.after.dy}`);
+            console.log('V480 browser regression OK');
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
