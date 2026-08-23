@@ -27,7 +27,7 @@ jobs:
             try{
               for(let i=0;i<24;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=/BUILD: V478/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V478');
+                const build=await p.evaluate(()=>window.__MOD_BUILD__?.version==='V478'&&window.__modDevVersion?.version==='V478').catch(()=>false);
                 let liveMetrics=null;
                 try{liveMetrics=await p.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
                 if(build&&liveMetrics?.version==='V478'&&liveMetrics?.sourceCommit&&liveMetrics.sourceCommit!=='pending'&&liveMetrics?.repository?.currentTextLines>10000){out.live=true;break;}
