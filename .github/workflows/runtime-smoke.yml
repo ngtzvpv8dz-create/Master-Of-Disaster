@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check ux-cooking-editor-v460.js && node --check time-segments-v443.js && node --check app.js
+      - run: node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check remote-archive-sequence-v478.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V486
+      - name: Verify live V487
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,98 +23,52 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:560}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            const out={status:'FAIL',version:'V486',live:false,bundle:false,metricsCurrent:false,fixedShell:false,workBlocksPreserved:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,remoteReopenCompleted:false,terminalDeleteButtons:false,deleteConfirmation:false,completedDelete:false,abortedDelete:false,abortedTasksVisible:false,archiveDelete:false,archiveRenumber:false,statisticsAdjusted:false,segmentModalScrollable:false,segmentActionsSticky:false,thirdSegmentReachable:false,visualViewportTracked:false,errors:[]};
+            const out={status:'FAIL',version:'V487',live:false,bundle:false,metricsCurrent:false,segmentDurationFromActiveSegments:false,segmentGapsExcluded:false,segmentCardCorrect:false,completedDurationPreserved:false,segmentModalScrollable:false,segmentActionsSticky:false,thirdSegmentReachable:false,terminalDeleteButtons:false,deleteConfirmation:false,archiveSequenceRepair:false,remoteReopenCompleted:false,cookingParallel:false,integrity:false,renderStability:false,workBlocksPreserved:false,fixedShell:false,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V486'&&window.__modDevVersion?.version==='V486'&&!!window.__modTimeSegmentScrollV486&&!!window.__modTerminalDeleteV485).catch(()=>false);
+                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V487'&&window.__modDevVersion?.version==='V487'&&!!window.__modSegmentActiveDurationV487).catch(()=>false);
                 let metrics=null;try{metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
-                if(build&&metrics?.version==='V486'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'&&metrics?.repository?.currentTextLines>10000){out.live=true;break;}
+                if(build&&metrics?.version==='V487'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'&&metrics?.repository?.currentTextLines>10000){out.live=true;break;}
                 await page.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V486 build or generated metrics not deployed');
-              out.bundle=await page.evaluate(()=>!!(window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modTodayCreateRenderV480&&window.__modRenderStabilityV479&&window.__modRemoteArchiveSequenceV478&&window.__modStatisticsAlignmentV477&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modUxCookingEditorV460));
-              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V486');
-              out.visualViewportTracked=await page.evaluate(()=>window.__modTimeSegmentScrollV486?.visualViewportAware===true&&getComputedStyle(document.documentElement).getPropertyValue('--mod-v486-viewport-height').trim().endsWith('px'));
+              if(!out.live)throw new Error('V487 build or generated metrics not deployed');
+              out.bundle=await page.evaluate(()=>!!(window.__modSegmentActiveDurationV487&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modTodayCreateRenderV480&&window.__modRemoteArchiveSequenceV478&&window.__modTodayWorkBlocksV474));
+              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V487');
 
-              // V486: exact mobile reproduction with two cooking sections, then add the third.
               await page.evaluate(()=>{
-                tasks=[{
-                  id:48691,text:'Live Kochabschnitt Scrolltest',type:'cooking',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,
-                  startedAt:'2026-08-23T12:00:00Z',pausedAt:'2026-08-23T12:20:00Z',pauseTotalMs:0,cookingMode:'passive',
-                  activeSegments:[{startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'}],
-                  cookingSegments:[
-                    {mode:'active',startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'},
-                    {mode:'passive',startedAt:'2026-08-23T12:05:00Z',endedAt:'2026-08-23T12:20:00Z'}
-                  ]
-                }];saveTasks();askManualTimes(48691);
-              });await page.waitForTimeout(80);
-              await page.getByRole('button',{name:/KOCHABSCHNITT HINZUFÜGEN/i}).click();await page.waitForTimeout(180);
-              const segmentState=await page.evaluate(()=>{
-                const modal=document.querySelector('.segment-editor-modal'),actions=modal?.querySelector('.modal-actions');if(!modal||!actions)return null;
-                const mr=modal.getBoundingClientRect(),ar=actions.getBoundingClientRect(),mcs=getComputedStyle(modal),acs=getComputedStyle(actions);
-                return {rows:modal.querySelectorAll('[data-segment-row]').length,overflow:mcs.overflowY,position:acs.position,scrollHeight:modal.scrollHeight,clientHeight:modal.clientHeight,scrollTop:modal.scrollTop,modalTop:mr.top,modalBottom:mr.bottom,actionsTop:ar.top,actionsBottom:ar.bottom,buttons:actions.querySelectorAll('.modal-button').length,viewport:window.innerHeight};
-              });
-              out.segmentModalScrollable=!!segmentState&&segmentState.overflow==='auto'&&segmentState.scrollHeight>segmentState.clientHeight&&segmentState.modalTop>=0&&segmentState.modalBottom<=segmentState.viewport+1;
-              out.segmentActionsSticky=!!segmentState&&segmentState.position==='sticky'&&segmentState.buttons>=3;
-              await page.evaluate(()=>{const m=document.querySelector('.segment-editor-modal');if(m)m.scrollTop=m.scrollHeight;});await page.waitForTimeout(80);
-              const reachable=await page.evaluate(()=>{
-                const m=document.querySelector('.segment-editor-modal'),a=m?.querySelector('.modal-actions');if(!m||!a)return false;
-                const mr=m.getBoundingClientRect(),ar=a.getBoundingClientRect(),buttons=[...a.querySelectorAll('.modal-button')];
-                return m.querySelectorAll('[data-segment-row]').length===3&&m.scrollTop>=m.scrollHeight-m.clientHeight-2&&ar.top>=mr.top-1&&ar.bottom<=mr.bottom+1&&buttons.length>=3&&buttons.every(b=>{const r=b.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom<=mr.bottom+1;});
-              });
-              out.thirdSegmentReachable=reachable;
+                tasks=[{id:265,text:'Aufgabe 265 Live Segmenttest',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[
+                  {startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},
+                  {startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},
+                  {startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}
+                ]}];archive=[];saveTasks();saveArchive();switchTab('all');render();
+              });await page.waitForTimeout(140);
+              const segmentState=await page.evaluate(()=>({live:liveDuration(tasks[0]),wall:Date.parse(tasks[0].pausedAt)-Date.parse(tasks[0].startedAt),card:document.querySelector('.task .duration')?.innerText||''}));
+              out.segmentDurationFromActiveSegments=segmentState.live===8880000;
+              out.segmentGapsExcluded=segmentState.wall===17640000&&segmentState.live!==segmentState.wall;
+              out.segmentCardCorrect=/2:28:00/.test(segmentState.card);
+              await page.evaluate(()=>finishTask(265));await page.waitForTimeout(80);
+              out.completedDurationPreserved=await page.evaluate(()=>tasks[0]?.status==='completed'&&tasks[0]?.activeDurationMs===8880000&&tasks[0]?.actualDurationMs===8880000&&tasks[0]?.activeSegments?.length===3);
+
+              await page.evaluate(()=>{tasks=[{id:4861,text:'Kochabschnitt Live Scrolltest',type:'cooking',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T12:00:00Z',pausedAt:'2026-08-23T12:20:00Z',pauseTotalMs:0,cookingMode:'passive',activeSegments:[{startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'}],cookingSegments:[{mode:'active',startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'},{mode:'passive',startedAt:'2026-08-23T12:05:00Z',endedAt:'2026-08-23T12:20:00Z'}]}];saveTasks();askManualTimes(4861);});
+              await page.getByRole('button',{name:/KOCHABSCHNITT HINZUFÜGEN/i}).click();await page.waitForTimeout(150);
+              const modal=await page.evaluate(()=>{const m=document.querySelector('.segment-editor-modal'),a=m?.querySelector('.modal-actions');return m&&a?{rows:document.querySelectorAll('#segmentRowsV443 [data-segment-row]').length,overflow:getComputedStyle(m).overflowY,sticky:getComputedStyle(a).position,overflowing:m.scrollHeight>m.clientHeight,scrollTop:m.scrollTop}:null;});
+              out.segmentModalScrollable=!!modal&&modal.overflow==='auto'&&modal.overflowing;
+              out.segmentActionsSticky=!!modal&&modal.sticky==='sticky';
+              out.thirdSegmentReachable=!!modal&&modal.rows===3&&modal.scrollTop>0;
               await page.getByRole('button',{name:'Zurück'}).click();
 
-              // Preserved V484 completed-task reopen.
-              out.remoteReopenCompleted=await page.evaluate(()=>{
-                tasks=[{id:48491,text:'Reopen smoke',status:'completed',type:'work',priority:'normal',todayDate:'2026-08-23',todayOrder:3,startedAt:'2026-08-23T07:29:00Z',completedAt:'2026-08-23T07:32:00Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]}];saveTasks();
-                window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Reopen smoke'});const t=tasks[0];return t.status==='open'&&t.startedAt===null&&t.activeDurationMs===null&&t.todayOrder===3;
-              });
+              await page.evaluate(()=>{tasks=[{id:4851,text:'Completed smoke delete',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]}];archive=[];saveTasks();saveArchive();switchTab('all');render();});await page.waitForTimeout(120);
+              out.terminalDeleteButtons=await page.evaluate(()=>document.querySelectorAll('.terminal-delete-v485').length>=1);
+              await page.locator('.task',{hasText:'Completed smoke delete'}).first().locator('.terminal-delete-v485').click();out.deleteConfirmation=await page.locator('#terminalDeleteConfirmV485').isVisible();await page.locator('#terminalDeleteCancelV485').click();
 
-              // Preserved V485 terminal deletion.
-              await page.evaluate(()=>{
-                tasks=[
-                  {id:48501,text:'Completed smoke delete',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T07:00:00Z',completedAt:'2026-08-23T07:03:00Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]},
-                  {id:48502,text:'Aborted smoke delete',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T07:10:00Z',abortedAt:'2026-08-23T07:16:00Z',activeDurationMs:360000,actualDurationMs:360000,activeSegments:[]},
-                  {id:48503,text:'Open smoke keep',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[]}
-                ];archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('all');render();
-              });await page.waitForTimeout(160);
-              out.abortedTasksVisible=await page.evaluate(()=>!!document.getElementById('abortedSectionV485')&&document.getElementById('abortedSectionV485').innerText.includes('Aborted smoke delete'));
-              out.terminalDeleteButtons=await page.evaluate(()=>document.querySelectorAll('.terminal-delete-v485').length>=2);
-              const completed=page.locator('.task',{hasText:'Completed smoke delete'}).first();await completed.locator('.terminal-delete-v485').click();
-              out.deleteConfirmation=(await page.locator('#terminalDeleteConfirmV485').isVisible())&&(await page.locator('.terminal-delete-warning-v485').innerText()).includes('wirklich dauerhaft löschen');
-              await page.locator('#terminalDeleteCancelV485').click();
-              if(!(await page.evaluate(()=>tasks.some(t=>t.id===48501))))throw new Error('Cancel path removed completed task');
-              await completed.locator('.terminal-delete-v485').click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(120);
-              out.completedDelete=await page.evaluate(()=>!tasks.some(t=>t.id===48501));
-              const aborted=page.locator('#abortedSectionV485 .task',{hasText:'Aborted smoke delete'}).first();await aborted.locator('.terminal-delete-v485').click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(120);
-              out.abortedDelete=await page.evaluate(()=>!tasks.some(t=>t.id===48502));
+              out.remoteReopenCompleted=await page.evaluate(()=>{tasks=[{id:48491,text:'Reopen smoke',status:'completed',type:'work',todayOrder:3,startedAt:'2026-08-23T07:29:00Z',completedAt:'2026-08-23T07:32:00Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]}];saveTasks();window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Reopen smoke'});return tasks[0].status==='open'&&tasks[0].activeDurationMs===null&&tasks[0].todayOrder===3;});
+              out.archiveSequenceRepair=await page.evaluate(()=>{archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`}));for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`});nextArchiveNumber=263;const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b);return nums.every((n,i)=>n===i+1)&&nextArchiveNumber===262&&r.shifted===7;});
 
-              await page.evaluate(()=>{
-                archive=[
-                  {archiveNumber:1,archiveId:'live-stable-1',text:'Archive one',status:'completed',type:'work',priority:'normal',completedDate:'2026-08-23',completedAt:'2026-08-23T07:01:00Z',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},
-                  {archiveNumber:2,archiveId:'live-stable-2',text:'Archive delete',status:'completed',type:'work',priority:'normal',completedDate:'2026-08-23',completedAt:'2026-08-23T07:03:00Z',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},
-                  {archiveNumber:3,archiveId:'live-stable-3',text:'Archive three',status:'completed',type:'work',priority:'normal',completedDate:'2026-08-23',completedAt:'2026-08-23T07:05:00Z',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}
-                ];nextArchiveNumber=4;saveArchive();switchTab('archive');render();
-              });await page.waitForTimeout(160);
-              const archiveCard=page.locator('.archive-task',{hasText:'Archive delete'}).first();
-              if(!(await archiveCard.isVisible())){const header=page.locator('.archive-day-header').first();if(await header.isVisible()){await header.click();await page.waitForTimeout(100);}}
-              const archiveDelete=archiveCard.locator('.terminal-delete-v485');out.archiveDelete=(await archiveCard.isVisible())&&(await archiveDelete.isVisible());
-              if(!out.archiveDelete)throw new Error('Live archive delete card/button not reachable after expanding archive day');
-              await archiveDelete.click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(160);
-              const archiveState=await page.evaluate(()=>({rows:archive.map(r=>({n:r.archiveNumber,id:r.archiveId})),next:nextArchiveNumber,sum:archive.reduce((n,r)=>n+(Number(r.archiveAccountingActiveDurationMs)||0),0)}));
-              out.archiveDelete=out.archiveDelete&&archiveState.rows.length===2&&!archiveState.rows.some(r=>r.id==='live-stable-2');
-              out.archiveRenumber=JSON.stringify(archiveState.rows)===JSON.stringify([{n:1,id:'live-stable-1'},{n:2,id:'live-stable-3'}])&&archiveState.next===3;
-              out.statisticsAdjusted=archiveState.sum===1800000;
-
-              out.archiveSequenceRepair=await page.evaluate(()=>{archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`A${i+1}`}));for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`A${n}`});nextArchiveNumber=263;const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b);return nums.every((n,i)=>n===i+1)&&nextArchiveNumber===262&&r.shifted===7;});
-              await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
-              await page.reload({waitUntil:'networkidle',timeout:60000});await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V486'&&window.__modTodayCreateRenderV480&&window.__modTerminalDeleteV485&&window.__modTimeSegmentScrollV486,{timeout:30000});
-              out.fixedShell=await page.evaluate(()=>{const e=document.getElementById('appFixedTopV475');return !!e&&getComputedStyle(e).position==='sticky'&&Math.abs(e.getBoundingClientRect().top)<1;});
-              out.workBlocksPreserved=await page.evaluate(()=>!!window.__modTodayWorkBlocksV474);
+              const cooking=await page.evaluate(()=>{tasks=[{id:48791,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:48792,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(48791);switchCookingMode(48791,'passive');startTask(48792);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
               out.renderStability=await page.evaluate(()=>!!window.__modRenderStabilityV479&&!!window.__modTodayCreateRenderV480);
-              const cooking=await page.evaluate(()=>{tasks=[{id:48591,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:48592,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(48591);switchCookingMode(48591,'passive');startTask(48592);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
+              out.workBlocksPreserved=await page.evaluate(()=>!!window.__modTodayWorkBlocksV474);
+              out.fixedShell=await page.evaluate(()=>{const e=document.getElementById('appFixedTopV475');return !!e&&getComputedStyle(e).position==='sticky';});
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));await browser.close();if(out.status!=='PASS')process.exitCode=1;

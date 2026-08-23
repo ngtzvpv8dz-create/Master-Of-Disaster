@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d0f">
   <title>Master of Disaster</title>
-  <!-- BUILD: V486 · 23.08.2026 · 15:11 -->
+  <!-- BUILD: V487 · 23.08.2026 · 15:28 -->
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
@@ -76,6 +76,7 @@
   <div id="modalContainer"></div>
 
   <script src="./app.js?v=446-1228"></script>
+  <script src="./segment-active-duration-v487.js?v=487-1528"></script>
   <script src="./segment-duration-v444.js?v=446-1228"></script>
   <script src="./time-segments-v443.js?v=446-1228"></script>
   <script src="./retroactive-complete-v445.js?v=446-1228"></script>
@@ -127,7 +128,7 @@
   <script src="./time-segment-scroll-v486.js?v=486-1511"></script>
   <script>
     (function(){
-      const meta={version:'V486',date:'23.08.2026',time:'15:11',build:'23.08.2026 · 15:11 Uhr'};
+      const meta={version:'V487',date:'23.08.2026',time:'15:28',build:'23.08.2026 · 15:28 Uhr'};
       window.__MOD_BUILD__=meta;
       function patchBuild(){
         window.__modDevVersion={...meta,patch:patchBuild};
@@ -149,13 +150,13 @@
         const testRun=params.has('reg')||params.has('smoke');
         if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
         if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
-        if(!testRun&&!sessionStorage.getItem('modV486SegmentScrollDone')){
-          sessionStorage.setItem('modV486SegmentScrollDone','1');
+        if(!testRun&&!sessionStorage.getItem('modV487SegmentDurationDone')){
+          sessionStorage.setItem('modV487SegmentDurationDone','1');
           const u=new URL(location.href);
-          u.searchParams.set('v486segment',Date.now().toString());
+          u.searchParams.set('v487segments',Date.now().toString());
           location.replace(u.toString());
         }
-      }catch(e){console.warn('V486 time segment scroll cleanup:',e);}
+      }catch(e){console.warn('V487 active segment duration cleanup:',e);}
     })();
   </script>
 </body>
