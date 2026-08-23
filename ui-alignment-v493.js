@@ -1,8 +1,9 @@
-/* V493 · TITEL/NUMMER-AUSRICHTUNG + EINGABE-OPTIONEN */
+/* V493 · TITEL/NUMMER-AUSRICHTUNG + EINGABE-OPTIONEN + KLARE AKTIVQUELLEN */
 (function(){
   'use strict';
 
   const BUILD_VERSION='V493';
+  const EPSILON_MS=1000;
   let observer=null;
   let queued=false;
 
@@ -78,6 +79,45 @@
     return true;
   }
 
+  function taskForCard(card){
+    if(!card||card.classList.contains('archive-task'))return null;
+    const id=Number(card.dataset.v490TaskId||card.querySelector('.duration[data-task-id]')?.dataset.taskId);
+    if(!Number.isFinite(id))return null;
+    try{return typeof getTask==='function'?getTask(id):null;}catch(_){return null;}
+  }
+
+  function cleanupHistoricalDetail(card){
+    const task=taskForCard(card);
+    const history=Math.max(0,Number(task&&task.importedHistoricalProgressDurationMs)||0);
+    if(!(history>0))return false;
+
+    const detail=card.querySelector('.task-detail-v490');
+    if(!detail)return false;
+    detail.querySelectorAll('.v490-historical').forEach(el=>el.remove());
+
+    const exact=Array.isArray(task.activeSegments)
+      ? task.activeSegments.filter(segment=>segment&&segment.startedAt)
+      : [];
+    let appActiveMs=null;
+    try{
+      const metrics=window.__modHistoricalSegmentBreakdownV488?.segmentMetrics?.(task,exact,Date.now());
+      if(metrics)appActiveMs=Math.max(0,Number(metrics.activeMs)||0);
+    }catch(_){ }
+
+    /*
+      Keine modernen Segmente + kein nachweisbarer Seit-App-Anteil:
+      Dann ist die alte Start/Ende-Fallback-Zeile keine eigene moderne
+      Aktivphase und wird nicht noch einmal unter dem Trenner ausgegeben.
+    */
+    if(!exact.length&&appActiveMs!==null&&appActiveMs<=EPSILON_MS){
+      detail.querySelectorAll('.v490-segment').forEach(el=>el.remove());
+    }
+
+    if(!detail.children.length)detail.remove();
+    card.dataset.v493HistoricalDetailClean='true';
+    return true;
+  }
+
   function injectStyle(){
     if(document.getElementById('uiAlignmentV493Style'))return;
     const style=document.createElement('style');
@@ -114,7 +154,10 @@
     queued=false;
     injectStyle();
     alignInputOptions();
-    document.querySelectorAll('#viewContainer .task,#viewContainer .archive-task').forEach(alignNumberWithTitle);
+    document.querySelectorAll('#viewContainer .task,#viewContainer .archive-task').forEach(card=>{
+      alignNumberWithTitle(card);
+      cleanupHistoricalDetail(card);
+    });
     return true;
   }
 
@@ -153,12 +196,16 @@
     enhanceAll,
     alignNumberWithTitle,
     alignInputOptions,
+    cleanupHistoricalDetail,
     numberTitleBottomAligned:true,
     statusStillBelowNumber:true,
     fourDigitRailPreserved:true,
     wrappedOptionRowsIndented:true,
     typeOptionsAligned:true,
     priorityOptionsAligned:true,
+    activeSourceLabels:true,
+    duplicateHistoricalDetailRemoved:true,
+    historicalOnlyFallbackRangeHidden:true,
     dataSemanticsUntouched:true
   };
 })();
