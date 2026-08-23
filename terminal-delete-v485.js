@@ -8,9 +8,12 @@
   'use strict';
   const BUILD_VERSION='V485';
   const TERMINAL_STATUSES=new Set(['completed','aborted']);
+  let observer=null;
+  let enhanceQueued=false;
 
   const esc=v=>typeof escapeHtml==='function'?escapeHtml(String(v??'')):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clone=v=>{try{return JSON.parse(JSON.stringify(v));}catch(_){return v;}};
+  const norm=v=>String(v??'').trim().replace(/\s+/g,' ').toLocaleLowerCase('de-DE');
 
   function durationContribution(row){
     if(!row)return 0;
@@ -175,10 +178,30 @@
     document.head.appendChild(style);
   }
 
+  function fallbackRowForCard(card){
+    if(card.classList.contains('archive-task')){
+      const numberText=String(card.querySelector('.archive-number')?.textContent||'').trim();
+      const match=numberText.match(/A\s*0*(\d+)/i);
+      if(match){const byNumber=(archive||[]).find(row=>Number(row?.archiveNumber)===Number(match[1]));if(byNumber)return byNumber;}
+      const text=String(card.querySelector('.task-text')?.textContent||'').trim();
+      if(text){const byText=(archive||[]).filter(row=>norm(row?.text)===norm(text));if(byText.length===1)return byText[0];}
+      return null;
+    }
+    for(const button of card.querySelectorAll('button[onclick]')){
+      const match=String(button.getAttribute('onclick')||'').match(/(?:startTask|pauseTask|resumeTask|finishTask|askManualTimes|toggleToday|startEditing|askDelete|askAbort|repeatTask|completeSelfrunner)\((\d+)\)/);
+      if(match){const row=(tasks||[]).find(item=>String(item?.id)===String(match[1]));if(row)return row;}
+    }
+    const text=String(card.querySelector('.task-text')?.textContent||'').trim();
+    if(text){const byText=(tasks||[]).filter(row=>norm(row?.text)===norm(text));if(byText.length===1)return byText[0];}
+    return null;
+  }
+
   function rowForCard(card){
     const api=window.__modCategoriesV412;
-    if(typeof api?.rowForCard==='function')return api.rowForCard(card);
-    return null;
+    if(typeof api?.rowForCard==='function'){
+      try{const row=api.rowForCard(card);if(row)return row;}catch(_){}
+    }
+    return fallbackRowForCard(card);
   }
 
   function ensureAbortedSection(){
@@ -199,6 +222,7 @@
   }
 
   function enhanceDeleteActions(){
+    enhanceQueued=false;
     const container=document.getElementById('viewContainer');
     if(!container)return;
     injectStyle();
@@ -225,11 +249,31 @@
     });
   }
 
+  function queueEnhance(){
+    if(enhanceQueued)return;
+    enhanceQueued=true;
+    setTimeout(enhanceDeleteActions,0);
+  }
+
+  function scheduleEnhance(){
+    queueEnhance();
+    setTimeout(enhanceDeleteActions,60);
+    setTimeout(enhanceDeleteActions,180);
+  }
+
+  function ensureObserver(){
+    const container=document.getElementById('viewContainer');
+    if(!container||observer||typeof MutationObserver==='undefined')return;
+    observer=new MutationObserver(()=>queueEnhance());
+    observer.observe(container,{childList:true,subtree:true});
+  }
+
   const previousRender=typeof render==='function'?render:null;
   if(previousRender){
     window.render=function(){
       const result=previousRender.apply(this,arguments);
-      setTimeout(enhanceDeleteActions,0);
+      ensureObserver();
+      scheduleEnhance();
       return result;
     };
   }
@@ -243,11 +287,14 @@
     openDeleteConfirm,
     ensureAbortedSection,
     enhanceDeleteActions,
+    scheduleEnhance,
+    fallbackRowForCard,
     dynamicArchiveRenumber:true,
     statisticsFollowRemainingData:true,
     stableArchiveIdsPreserved:true,
     confirmationRequired:true,
-    abortedTasksVisible:true
+    abortedTasksVisible:true,
+    archiveDeleteUiStable:true
   };
-  window.addEventListener('load',()=>setTimeout(enhanceDeleteActions,350));
+  window.addEventListener('load',()=>{ensureObserver();setTimeout(scheduleEnhance,350);});
 })();
