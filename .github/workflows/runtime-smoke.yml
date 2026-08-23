@@ -13,66 +13,58 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check live-log-v453.js && node --check app.js
+      - run: node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check live-log-v453.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V489
+      - name: Verify live V490
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
           (async()=>{
             const browser=await chromium.launch({headless:true});
-            const page=await browser.newPage({viewport:{width:390,height:700}});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            const out={status:'FAIL',version:'V489',live:false,bundle:false,metricsCurrent:false,pausedTimeRanges:false,pausedWeightOverlap:false,completedDetails:false,abortedDetails:false,archiveDetails:false,historicalNoInventedTimes:false,compactLog:false,v488Preserved:false,scrollFixPreserved:false,terminalDeletePreserved:false,remoteReopenCompleted:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,workBlocksPreserved:false,fixedShell:false,errors:[]};
+            const out={status:'FAIL',version:'V490',live:false,bundle:false,metricsCurrent:false,nestedOverallWeight:false,segmentNestedWeight:false,partialWeightTwoLines:false,duplicateTotalRemoved:false,historicalNoteRemoved:false,archiveCompactLayout:false,historicalUnknownsBlank:false,compactLog:false,v489Preserved:false,v488Preserved:false,scrollFixPreserved:false,terminalDeletePreserved:false,remoteReopenCompleted:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,workBlocksPreserved:false,fixedShell:false,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V489'&&window.__modDevVersion?.version==='V489'&&!!window.__modTaskTimeWeightDetailsV489).catch(()=>false);
+                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V490'&&window.__modDevVersion?.version==='V490'&&!!window.__modNestedTaskWeightLayoutV490).catch(()=>false);
                 let metrics=null;try{metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
-                if(build&&metrics?.version==='V489'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'){out.live=true;break;}
+                if(build&&metrics?.version==='V490'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'){out.live=true;break;}
                 await page.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V489 build or generated metrics not deployed');
-              out.bundle=await page.evaluate(()=>!!(window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modSegmentActiveDurationV487&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478&&window.__modLiveLogV453));
-              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V489');
+              if(!out.live)throw new Error('V490 build or generated metrics not deployed');
+              out.bundle=await page.evaluate(()=>!!(window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modSegmentActiveDurationV487&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478&&window.__modLiveLogV453));
+              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V490');
 
               await page.evaluate(()=>{
-                tasks=[
-                  {id:4891,text:'V489 Live Pausiert',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:00:00+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}]},
-                  {id:4892,text:'V489 Live Erledigt',type:'work',status:'completed',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T17:58:19+02:00',completedAt:'2026-08-23T18:03:19+02:00',activeDurationMs:300000,actualDurationMs:300000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T17:58:19+02:00',endedAt:'2026-08-23T18:03:19+02:00'}]},
-                  {id:4893,text:'V489 Live Abgebrochen',type:'work',status:'aborted',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T18:10:00+02:00',abortedAt:'2026-08-23T18:20:00+02:00',activeDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-23T18:10:00+02:00',endedAt:'2026-08-23T18:20:00+02:00'}]}
-                ];
-                weightPhases=[{id:9001,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:20:00+02:00'},{id:9002,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:10:00+02:00'}];
-                weightState={isWearing:false,currentWeightKg:8};archive=[];nextArchiveNumber=265;saveTasks();saveArchive();saveWeight();switchTab('all');render();
-              });await page.waitForTimeout(400);
-              const pausedText=await page.locator('.task',{hasText:'V489 Live Pausiert'}).first().innerText();
-              out.pausedTimeRanges=['13:00:00–14:00:00 · 01:00:00','14:15:00–15:00:00 · 00:45:00','15:30:00–16:00:00 · 00:30:00','GESAMT AKTIV · 02:15:00'].every(x=>pausedText.includes(x));
-              out.pausedWeightOverlap=['MIT ZUSATZGEWICHT · 01:15:00 VON 02:15:00','13:10:00–14:00:00 · 00:50:00 · 12,3 kg','14:15:00–14:20:00 · 00:05:00 · 12,3 kg','15:40:00–16:00:00 · 00:20:00 · 8 kg'].every(x=>pausedText.includes(x));
-              const completedText=await page.locator('.task',{hasText:'V489 Live Erledigt'}).first().innerText();
-              out.completedDetails=completedText.includes('17:58:19–18:03:19 · 00:05:00')&&completedText.includes('GESAMT AKTIV · 00:05:00');
-              await page.waitForTimeout(200);
-              const aborted=page.locator('#abortedSectionV485 .task',{hasText:'V489 Live Abgebrochen'}).first();
-              out.abortedDetails=await aborted.count()?((await aborted.innerText()).includes('18:10:00–18:20:00 · 00:10:00')):false;
+                tasks=[{id:4901,text:'V490 Live Kisten',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:00:00+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}]}];
+                weightPhases=[{id:9201,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{id:9202,weightKg:12.3,startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{id:9203,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}];weightState={isWearing:false,currentWeightKg:8};archive=[];nextArchiveNumber=1;saveTasks();saveArchive();saveWeight();switchTab('all');render();
+              });await page.waitForTimeout(1400);
+              const card=page.locator('.task',{hasText:'V490 Live Kisten'}).first();
+              const text=await card.innerText();
+              out.nestedOverallWeight=text.includes('= GESAMT AKTIV · 04:41:00')&&text.includes('↳ 🏋️ DAVON 01:55:00 MIT ZUSATZGEWICHT');
+              out.segmentNestedWeight=text.includes('13:00:00–14:00:00 · 01:00:00')&&text.includes('↳ 🏋️ INKL. ZUSATZGEWICHT · 13:10:00–14:00:00')&&text.includes('14:15:00–15:00:00 · 00:45:00')&&text.includes('↳ 🏋️ INKL. ZUSATZGEWICHT · 12,3 kg');
+              out.partialWeightTwoLines=(await card.locator('.v490-weight-partial').count())===2&&(await card.locator('.v490-weight-subline').count())===2;
+              out.duplicateTotalRemoved=(text.match(/GESAMT AKTIV · 04:41:00/g)||[]).length===1;
+              out.historicalNoteRemoved=text.includes('HISTORISCH · 02:26:00')&&!text.includes('keine exakten Segmentzeiten dokumentiert')&&!text.includes('Uhrzeit der Gewichtsnutzung nicht exakt dokumentiert');
 
-              await page.evaluate(()=>{archive=[
-                {archiveNumber:1,archiveId:'live-v489-a1',text:'V489 Archiv Detail',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T15:00:00+02:00',activeDurationMs:6300000,archiveAccountingActiveDurationMs:6300000,actualDurationMs:6300000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'},{startedAt:'2026-08-22T14:15:00+02:00',endedAt:'2026-08-22T15:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:2700000,weightActiveSegments:[{startedAt:'2026-08-22T13:15:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]},
-                {archiveNumber:2,archiveId:'live-v489-a2',text:'V489 Alt ohne Uhrzeit',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:null,completedAt:null,activeDurationMs:600000,archiveAccountingActiveDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],historicalWeightKg:8,weightedActiveDurationMs:600000,historicalWeightNote:'historisch vollständig mit 8 kg'}
-              ];nextArchiveNumber=3;saveArchive();switchTab('archive');render();});await page.waitForTimeout(350);
-              const archiveText=await page.locator('.archive-task',{hasText:'V489 Archiv Detail'}).first().textContent();
-              out.archiveDetails=['13:00:00–14:00:00 · 01:00:00','14:15:00–15:00:00 · 00:45:00','GESAMT AKTIV · 01:45:00','MIT ZUSATZGEWICHT · 00:45:00 VON 01:45:00','13:15:00–14:00:00 · 00:45:00 · 12,3 kg'].every(x=>archiveText.includes(x));
-              const oldText=await page.locator('.archive-task',{hasText:'V489 Alt ohne Uhrzeit'}).first().textContent();
-              out.historicalNoInventedTimes=oldText.includes('DAUER · 00:10:00 · keine exakten Uhrzeiten dokumentiert')&&oldText.includes('Uhrzeit der Gewichtsnutzung nicht exakt dokumentiert')&&!/\d{2}:\d{2}:\d{2}–\d{2}:\d{2}:\d{2}/.test(oldText);
+              await page.evaluate(()=>{archive=[{archiveNumber:1,archiveId:'live-v490-a1',text:'V490 Archiv Layout',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T15:00:00+02:00',activeDurationMs:6300000,archiveAccountingActiveDurationMs:6300000,actualDurationMs:6300000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'},{startedAt:'2026-08-22T14:15:00+02:00',endedAt:'2026-08-22T15:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:6300000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3},{startedAt:'2026-08-22T14:15:00+02:00',endedAt:'2026-08-22T15:00:00+02:00',historicalWeightKg:12.3}]},{archiveNumber:2,archiveId:'live-v490-a2',text:'V490 Historisch unbekannt',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:null,completedAt:null,activeDurationMs:600000,archiveAccountingActiveDurationMs:600000,actualDurationMs:600000,pauseTotalMs:0,activeSegments:[],historicalWeightKg:8,weightedActiveDurationMs:600000}];nextArchiveNumber=3;saveArchive();switchTab('archive');render();});await page.waitForTimeout(450);
+              const archived=page.locator('.archive-task',{hasText:'V490 Archiv Layout'}).first();
+              const archivedText=await archived.innerText();
+              const archiveStyle=await archived.evaluate(card=>({detail:getComputedStyle(card.querySelector('.task-detail-v490')).fontSize,lines:[...card.querySelectorAll('.task-detail-v490>div')].map(x=>getComputedStyle(x).fontSize),old:card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').length}));
+              out.archiveCompactLayout=archivedText.includes('↳ 🏋️ KOMPLETT INKL. ZUSATZGEWICHT')&&archivedText.includes('13:00:00–14:00:00 · 01:00:00')&&!archivedText.includes('GESAMT AKTIV')&&archiveStyle.detail==='8.5px'&&archiveStyle.lines.every(x=>x==='8.5px')&&archiveStyle.old===0;
+              const unknownText=await page.locator('.archive-task',{hasText:'V490 Historisch unbekannt'}).first().innerText();
+              out.historicalUnknownsBlank=unknownText.includes('KOMPLETT INKL. ZUSATZGEWICHT')&&!/\d{2}:\d{2}:\d{2}–\d{2}:\d{2}:\d{2}/.test(unknownText)&&!unknownText.includes('keine exakten')&&!unknownText.includes('nicht exakt dokumentiert');
 
-              await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V489 Live Log Test');switchTab('log');});await page.waitForTimeout(150);
-              const log=await page.evaluate(()=>{const r=document.querySelector('.log-row-v453'),m=document.querySelector('.log-message-v453'),c=document.querySelector('.log-chip-v453');return {r:r?getComputedStyle(r).fontSize:null,m:m?getComputedStyle(m).fontSize:null,c:c?getComputedStyle(c).fontSize:null};});
-              out.compactLog=log.r==='8.5px'&&log.m==='8.5px'&&log.c==='8.5px';
-
+              await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V490 Live Log');switchTab('log');});await page.waitForTimeout(120);
+              out.compactLog=await page.evaluate(()=>getComputedStyle(document.querySelector('.log-message-v453')).fontSize==='8.5px');
+              out.v489Preserved=await page.evaluate(()=>!!window.__modTaskTimeWeightDetailsV489?.perTaskWeightOverlap);
               out.v488Preserved=await page.evaluate(()=>window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5);
               out.scrollFixPreserved=await page.evaluate(()=>!!window.__modTimeSegmentScrollV486);
               out.terminalDeletePreserved=await page.evaluate(()=>!!window.__modTerminalDeleteV485?.confirmationRequired);
               out.remoteReopenCompleted=await page.evaluate(()=>!!window.__modRemoteTaskReopenV484);
               out.archiveSequenceRepair=await page.evaluate(()=>!!window.__modRemoteArchiveSequenceV478);
-              const cooking=await page.evaluate(()=>{tasks=[{id:4901,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:4902,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(4901);switchCookingMode(4901,'passive');startTask(4902);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              const cooking=await page.evaluate(()=>{tasks=[{id:4911,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:4912,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(4911);switchCookingMode(4911,'passive');startTask(4912);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
               out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
               out.renderStability=await page.evaluate(()=>!!window.__modRenderStabilityV479&&!!window.__modTodayCreateRenderV480);
               out.workBlocksPreserved=await page.evaluate(()=>!!window.__modTodayWorkBlocksV474);
