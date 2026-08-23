@@ -16,66 +16,77 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V484 wiring
+        run: node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V485 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('remote-task-reopen-v484.js').read_text(encoding='utf-8')
+          js=Path('terminal-delete-v485.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V484','remote-task-reopen-v484.js?v=484-0936',"version:'V484'",'modV484RemoteReopenDone']:
-              if marker not in html: raise SystemExit(f'Missing V484 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v484-remote-reopen','remote-task-reopen-v484.js','today-create-render-v480.js']:
-              if marker not in sw: raise SystemExit(f'Missing V484 SW marker: {marker}')
-          for marker in ["const COMMAND='REOPEN_COMPLETED_TASK'",'resolveCompletedTask','reopenCompletedTask','reset_to_never_started:true','__modRemoteTaskReopenV484']:
-              if marker not in js: raise SystemExit(f'Missing V484 behavior marker: {marker}')
-          if metrics.get('version')!='V484' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V484 automated metrics snapshot')
-          print('V484 wiring OK')
-      - name: Verify V484 completed task reset
+          for marker in ['BUILD: V485','terminal-delete-v485.js?v=485-0954',"version:'V485'",'modV485TerminalDeleteDone']:
+              if marker not in html: raise SystemExit(f'Missing V485 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v485-terminal-delete','terminal-delete-v485.js']:
+              if marker not in sw: raise SystemExit(f'Missing V485 SW marker: {marker}')
+          for marker in ['deleteTerminalTask','deleteArchivedTask','compactArchiveNumbers','ensureAbortedSection','decorateArchiveCard','archiveCardHook:true','confirmationRequired:true','abortedTasksVisible:true']:
+              if marker not in js: raise SystemExit(f'Missing V485 behavior marker: {marker}')
+          if metrics.get('version')!='V485' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V485 automated metrics snapshot')
+          print('V485 wiring OK')
+      - name: Verify V485 deletion accounting and archive renumber
         run: |
           node <<'NODE'
           const fs=require('fs');
-          global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          global.tasks=[{id:4841,text:'Kühlschrank reinigen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:'2026-08-23',todayOrder:4,startedAt:'2026-08-23T07:29:00.000Z',pausedAt:null,completedAt:'2026-08-23T07:32:00.000Z',abortedAt:null,pauseTotalMs:0,activeDurationMs:180000,actualDurationMs:180000,leisureDurationMs:null,passiveDurationMs:null,cookingActiveDurationMs:null,cookingPassiveDurationMs:null,cookingMode:'active',activeSegments:[{startedAt:'2026-08-23T07:29:00.000Z',endedAt:'2026-08-23T07:32:00.000Z'}],cookingSegments:[]}];
-          let saves=0,renders=0;global.saveTasks=()=>saves++;global.render=()=>renders++;global.normalizeTodayOrder=()=>{};
-          eval(fs.readFileSync('remote-task-reopen-v484.js','utf8'));
-          const r=window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'}),t=tasks[0];
-          if(t.status!=='open'||t.startedAt!==null||t.completedAt!==null||t.activeDurationMs!==null||t.actualDurationMs!==null||t.activeSegments.length!==0)throw new Error('V484 did not clear accidental completion');
-          if(t.todayDate!=='2026-08-23'||t.todayOrder!==4||t.priority!=='normal'||r.previous.active_duration_ms!==180000||!r.reset_to_never_started||saves!==1||renders!==1)throw new Error('V484 did not preserve metadata/result contract');
-          let refused=false;try{window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'});}catch(_){refused=true;}if(!refused)throw new Error('V484 must refuse an already-open task');
-          console.log('V484 reopen regression OK');
+          global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};
+          global.document={addEventListener:()=>{},visibilityState:'visible',getElementById:()=>null};
+          global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
+          let taskSaves=0,archiveSaves=0;
+          global.saveTasks=()=>taskSaves++;global.saveArchive=()=>archiveSaves++;global.render=()=>{};
+          global.tasks=[
+            {id:1,text:'Falsch erledigt',status:'completed',type:'work',activeDurationMs:180000,actualDurationMs:180000},
+            {id:2,text:'Falsch abgebrochen',status:'aborted',type:'work',activeDurationMs:360000,actualDurationMs:360000},
+            {id:3,text:'Offen lassen',status:'open',type:'work',activeDurationMs:null,actualDurationMs:null}
+          ];
+          global.archive=[
+            {archiveNumber:1,archiveId:'stable-1',text:'A1',status:'completed',type:'work',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},
+            {archiveNumber:2,archiveId:'stable-2',text:'A2 löschen',status:'completed',type:'work',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},
+            {archiveNumber:3,archiveId:'stable-3',text:'A3',status:'completed',type:'work',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}
+          ];
+          global.nextArchiveNumber=4;
+          eval(fs.readFileSync('terminal-delete-v485.js','utf8'));
+          const api=window.__modTerminalDeleteV485;
+          const c=api.deleteTerminalTask(1),a=api.deleteTerminalTask(2);
+          if(tasks.map(t=>t.id).join(',')!=='3'||c.removed_active_ms!==180000||a.removed_active_ms!==360000||taskSaves!==2)throw new Error('Terminal deletion failed');
+          let refused=false;try{api.deleteTerminalTask(3);}catch(_){refused=true;}if(!refused)throw new Error('Open task deletion was not refused');
+          const sum=()=>archive.reduce((n,r)=>n+(Number(r.archiveAccountingActiveDurationMs)||Number(r.activeDurationMs)||0),0);
+          const before=sum(),r=api.deleteArchivedTask({archiveId:'stable-2'}),after=sum();
+          if(before-after!==180000)throw new Error('Deleted archive duration still affects statistics source');
+          if(archive.length!==2||archive[0].archiveNumber!==1||archive[1].archiveNumber!==2||archive[1].archiveId!=='stable-3'||nextArchiveNumber!==3)throw new Error('Archive renumber/stable ID failed');
+          if(r.old_archive_number!==2||r.removed_active_ms!==180000||!r.archive_ids_preserved||archiveSaves!==1)throw new Error('Archive delete result contract failed');
+          console.log('V485 deletion accounting/renumber OK');
           NODE
-      - name: Verify preserved V478 targeted A255 gap repair
+      - name: Verify preserved V484 reopen
         run: |
           node <<'NODE'
-          const fs=require('fs');
-          global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          global.archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`Aufgabe ${i+1}`,activeDurationMs:i*1000}));
-          for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`Aufgabe ${n}`,activeDurationMs:n*1000});
-          global.nextArchiveNumber=263;let saved=0;global.saveArchive=()=>saved++;global.render=()=>{};
-          eval(fs.readFileSync('remote-archive-sequence-v478.js','utf8'));
-          const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b);
-          if(archive.length!==261||nums.some((n,i)=>n!==i+1)||nextArchiveNumber!==262||r.shifted!==7||!r.sequence_contiguous||saved!==1)throw new Error('V478 archive repair regression');
+          const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
+          global.tasks=[{id:4841,text:'Kühlschrank reinigen',status:'completed',type:'work',priority:'normal',todayDate:'2026-08-23',todayOrder:4,startedAt:'2026-08-23T07:29:00.000Z',completedAt:'2026-08-23T07:32:00.000Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[{startedAt:'2026-08-23T07:29:00.000Z',endedAt:'2026-08-23T07:32:00.000Z'}]}];
+          global.saveTasks=()=>{};global.render=()=>{};
+          eval(fs.readFileSync('remote-task-reopen-v484.js','utf8'));const t=tasks[0];window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'});
+          if(t.status!=='open'||t.startedAt!==null||t.completedAt!==null||t.activeDurationMs!==null||t.todayOrder!==4)throw new Error('V484 reopen regression');
+          console.log('V484 reopen preserved');
+          NODE
+      - name: Verify preserved V478 targeted archive repair
+        run: |
+          node <<'NODE'
+          const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
+          global.archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`A${i+1}`}));for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`A${n}`});global.nextArchiveNumber=263;global.saveArchive=()=>{};global.render=()=>{};
+          eval(fs.readFileSync('remote-archive-sequence-v478.js','utf8'));const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>x.archiveNumber).sort((a,b)=>a-b);
+          if(nums.some((n,i)=>n!==i+1)||nextArchiveNumber!==262||r.shifted!==7)throw new Error('V478 archive repair regression');
           console.log('V478 archive repair preserved');
           NODE
-      - name: Verify preserved V474 work blocks
-        run: |
-          node <<'NODE'
-          const fs=require('fs'),store=new Map();
-          global.window=global;global.currentTab='all';global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.addEventListener=()=>{};global.setTimeout=()=>0;global.CSS={escape:s=>String(s)};
-          global.document={addEventListener(){},getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {id:'',textContent:'',className:'',style:{},appendChild(){},append(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},toggle(){}}}},head:{appendChild(){}},body:{appendChild(){}}};
-          global.getBerlinDateKey=()=> '2026-08-23';global.render=null;global.saveEdit=null;global.saveTasks=()=>{};global.tasks=[{id:1,text:'A',todayDate:'2026-08-23',todayOrder:1,status:'open'},{id:2,text:'B',todayDate:null,todayOrder:null,status:'open'}];
-          eval(fs.readFileSync('today-work-blocks-v474.js','utf8'));
-          const api=window.__modTodayWorkBlocksV474,b2=api.addBlock('ZWEI',{date:'2026-08-23',render:false});
-          api.assignTaskToToday(2,b2.id,{date:'2026-08-23',render:false});
-          if(tasks[1].todayDate!=='2026-08-23'||tasks[1].todayWorkBlockId!==b2.id||api.getBlocks('2026-08-23').length<1)throw new Error('V474 work block regression');
-          console.log('V474 work blocks preserved');
-          NODE
-      - name: Browser regression V484
+      - name: Browser regression V485
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -88,25 +99,51 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V484'&&window.__modRemoteTaskReopenV484&&window.__modTodayCreateRenderV480,{timeout:30000});
-            const reopen=await page.evaluate(()=>{
-              tasks=[{id:4842,text:'Kühlschrank reinigen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:'2026-08-23',todayOrder:2,startedAt:'2026-08-23T07:29:00.000Z',completedAt:'2026-08-23T07:32:00.000Z',pausedAt:null,abortedAt:null,pauseTotalMs:0,activeDurationMs:180000,actualDurationMs:180000,activeSegments:[{startedAt:'2026-08-23T07:29:00.000Z',endedAt:'2026-08-23T07:32:00.000Z'}],cookingSegments:[]}];saveTasks();
-              const r=window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'}),t=tasks[0];
-              return {result:r,status:t.status,startedAt:t.startedAt,completedAt:t.completedAt,active:t.activeDurationMs,actual:t.actualDurationMs,today:t.todayDate,order:t.todayOrder,segments:t.activeSegments.length};
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V485'&&window.__modTerminalDeleteV485&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.evaluate(()=>{
+              tasks=[
+                {id:4851,text:'Erledigt löschen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T07:00:00Z',completedAt:'2026-08-23T07:03:00Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]},
+                {id:4852,text:'Abgebrochen löschen',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T07:10:00Z',abortedAt:'2026-08-23T07:16:00Z',activeDurationMs:360000,actualDurationMs:360000,activeSegments:[]},
+                {id:4853,text:'Offen behalten',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,activeSegments:[]}
+              ];archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('all');render();
             });
-            if(reopen.status!=='open'||reopen.startedAt!==null||reopen.completedAt!==null||reopen.active!==null||reopen.actual!==null||reopen.segments!==0||reopen.today!=='2026-08-23'||reopen.order!==2||!reopen.result.reset_to_never_started)throw new Error('V484 browser reopen failed');
-            await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
-            await page.reload({waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V484'&&window.__modTodayCreateRenderV480,{timeout:30000});
-            const result=await page.evaluate(()=>{
-              const date=getBerlinDateKey();tasks=[];archive=[];saveTasks();localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
-              const api=window.__modTodayWorkBlocksV474,b1=api.addBlock('',{date,render:false}),b2=api.addBlock('SPÄTER',{date,render:false});
-              switchTab('all');render();const ui=window.__modTodayCreateRenderV480;ui.setNewTaskToday(true);const select=document.getElementById('newTodayBlockV480');select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('taskInput').value='V484 Browser Test';addTask();
-              const task=tasks.find(t=>t.text==='V484 Browser Test'),card=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V484 Browser Test'),button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]'),actions=card?.querySelector('.icon-actions');
-              return {today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0,row:!!document.getElementById('newTodayRowV480')};
+            await page.waitForTimeout(180);
+            const initial=await page.evaluate(()=>({aborted:!!document.getElementById('abortedSectionV485'),buttons:document.querySelectorAll('.terminal-delete-v485').length,text:document.body.innerText}));
+            if(!initial.aborted||initial.buttons<2||!initial.text.includes('ABGEBROCHEN'))throw new Error('Terminal delete buttons/aborted section missing');
+            const completedCard=page.locator('.task',{hasText:'Erledigt löschen'}).first();
+            await completedCard.locator('.terminal-delete-v485').click();
+            if(!(await page.locator('#terminalDeleteConfirmV485').isVisible())||!(await page.locator('.terminal-delete-warning-v485').innerText()).includes('wirklich dauerhaft löschen'))throw new Error('Delete confirmation missing');
+            await page.locator('#terminalDeleteCancelV485').click();
+            if(!(await page.evaluate(()=>tasks.some(t=>t.id===4851))))throw new Error('Cancel deleted task');
+            await completedCard.locator('.terminal-delete-v485').click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(120);
+            if(await page.evaluate(()=>tasks.some(t=>t.id===4851)))throw new Error('Completed task not deleted');
+            const abortedCard=page.locator('#abortedSectionV485 .task',{hasText:'Abgebrochen löschen'}).first();await abortedCard.locator('.terminal-delete-v485').click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(120);
+            if(await page.evaluate(()=>tasks.some(t=>t.id===4852)))throw new Error('Aborted task not deleted');
+
+            await page.evaluate(()=>{
+              archive=[
+                {archiveNumber:1,archiveId:'stable-1',text:'Archiv eins',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,completedDate:'2026-08-23',completedAt:'2026-08-23T07:01:00Z',archivedAt:'2026-08-23T07:02:00Z',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},
+                {archiveNumber:2,archiveId:'stable-2',text:'Archiv löschen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,completedDate:'2026-08-23',completedAt:'2026-08-23T07:03:00Z',archivedAt:'2026-08-23T07:04:00Z',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},
+                {archiveNumber:3,archiveId:'stable-3',text:'Archiv drei',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,completedDate:'2026-08-23',completedAt:'2026-08-23T07:05:00Z',archivedAt:'2026-08-23T07:06:00Z',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}
+              ];nextArchiveNumber=4;saveArchive();switchTab('archive');render();
             });
-            const norm=v=>String(v||'').replace(/\s+/g,'');
-            if(!result.today||!result.block||!result.selected||result.icon!=='calendar'||result.layout?.x!==12||result.layout?.y!==4||result.state!=='open'||norm(result.transform)!=='translate(12px,4px)'||result.options<2||!result.row)throw new Error('Preserved V480 browser behavior failed');
-            console.log('V484 browser regression OK');await browser.close();
+            await page.waitForTimeout(180);
+            const archiveCard=page.locator('.archive-task',{hasText:'Archiv löschen'}).first();
+            if(await archiveCard.isVisible())throw new Error('Archive fixture unexpectedly started expanded; collapsed-state coverage lost');
+            const dayHeader=page.locator('.archive-day-header').first();
+            if(!(await dayHeader.isVisible()))throw new Error('Archive day header missing');
+            await dayHeader.click();await page.waitForTimeout(100);
+            if(!(await archiveCard.isVisible()))throw new Error('Archive day did not expand');
+            const archiveDelete=archiveCard.locator('.terminal-delete-v485');
+            if((await archiveDelete.count())!==1||!(await archiveDelete.isVisible()))throw new Error('Archive delete button missing after expanding day');
+            await archiveDelete.click();
+            if(!(await page.locator('#terminalDeleteConfirmV485').isVisible()))throw new Error('Archive delete confirmation missing');
+            await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(150);
+            const arch=await page.evaluate(()=>({rows:archive.map(r=>({n:r.archiveNumber,id:r.archiveId})),next:nextArchiveNumber,sum:archive.reduce((n,r)=>n+(Number(r.archiveAccountingActiveDurationMs)||0),0)}));
+            if(JSON.stringify(arch.rows)!==JSON.stringify([{n:1,id:'stable-1'},{n:2,id:'stable-3'}])||arch.next!==3||arch.sum!==1800000)throw new Error('Archive deletion/renumber/statistics source failed');
+            await page.reload({waitUntil:'networkidle',timeout:60000});await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V485'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            const preserved=await page.evaluate(()=>({v480:!!window.__modTodayCreateRenderV480,v484:!!window.__modRemoteTaskReopenV484,workBlocks:!!window.__modTodayWorkBlocksV474,archiveRepair:!!window.__modRemoteArchiveSequenceV478}));
+            if(!Object.values(preserved).every(Boolean))throw new Error('Preserved feature bundle missing');
+            console.log('V485 browser regression OK');await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
