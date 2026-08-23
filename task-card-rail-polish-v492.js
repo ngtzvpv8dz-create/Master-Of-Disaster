@@ -122,13 +122,13 @@
         min-width:0!important;
       }
 
-      /* V492: Gewicht bewusst so dezent wie die kleinen Archiv-Gewichtszeilen. */
+      /* V492: Gewicht wie die kleinen Archiv-Gewichtszeilen: dunkler und nicht fett. */
       #viewContainer .v490-overall-weight,
       #viewContainer .v490-weight-nested,
       #viewContainer .v490-weight-subline{
         color:#7e8b68!important;
-        font-weight:500!important;
-        opacity:.9!important;
+        font-weight:400!important;
+        opacity:.92!important;
       }
       #viewContainer .v490-weight-nested[data-v492-aligned="true"]{
         display:grid!important;
@@ -142,13 +142,13 @@
         width:28px!important;
         white-space:nowrap!important;
         color:inherit!important;
-        font-weight:500!important;
+        font-weight:400!important;
       }
       #viewContainer .v492-weight-copy{
         display:block!important;
         min-width:0!important;
         color:inherit!important;
-        font-weight:500!important;
+        font-weight:400!important;
       }
       #viewContainer .v490-weight-subline.v492-weight-subline-aligned{
         padding-left:40px!important;
