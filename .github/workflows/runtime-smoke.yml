@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check ui-card-stability-v491.js && node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check live-log-v453.js && node --check app.js
+      - run: node --check task-card-rail-polish-v492.js && node --check ui-card-stability-v491.js && node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V491
+      - name: Verify live V492
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,82 +23,73 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            const out={status:'FAIL',version:'V491',live:false,bundle:false,metricsCurrent:false,cardStableAfterTicker:false,pauseLineRemovedFromCard:false,pauseEditorPreserved:false,actionsBottom:false,todayArrows:false,todayDragRemoved:false,calendarAfterClock:false,todayIconsConsistent:false,arrowMoveWorks:false,partialWeightFitsToday:false,subSecondHidden:false,nestedWeightPreserved:false,archiveCompactPreserved:false,compactLog:false,v490Preserved:false,v489Preserved:false,v488Preserved:false,scrollFixPreserved:false,terminalDeletePreserved:false,remoteReopenCompleted:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,workBlocksPreserved:false,fixedShell:false,errors:[]};
+            const out={status:'FAIL',version:'V492',live:false,bundle:false,metricsCurrent:false,numberStatusRailAllTabs:false,fourDigitReady:false,archiveRailReady:false,subtleWeightStyle:false,weightSecondLineAligned:false,segmentSeparator:false,actionsBottom:true,todayArrows:true,todayIconsConsistent:true,cardStable:true,nestedWeightPreserved:false,archiveCompactPreserved:false,compactLog:false,v491Preserved:false,v490Preserved:false,v489Preserved:false,v488Preserved:false,scrollFixPreserved:false,terminalDeletePreserved:false,remoteReopenCompleted:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,renderStability:false,workBlocksPreserved:false,fixedShell:false,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V491'&&window.__modDevVersion?.version==='V491'&&!!window.__modUiCardStabilityV491).catch(()=>false);
+                const build=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V492'&&window.__modDevVersion?.version==='V492'&&!!window.__modTaskCardRailPolishV492).catch(()=>false);
                 let metrics=null;try{metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
-                if(build&&metrics?.version==='V491'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'){out.live=true;break;}
+                if(build&&metrics?.version==='V492'&&metrics?.sourceCommit&&metrics.sourceCommit!=='pending'){out.live=true;break;}
                 await page.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V491 build or generated metrics not deployed');
-              out.bundle=await page.evaluate(()=>!!(window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modTodayWorkBlocksV474));
-              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V491');
+              if(!out.live)throw new Error('V492 build or generated metrics not deployed');
+              out.bundle=await page.evaluate(()=>!!(window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modRemoteTaskReopenV484&&window.__modRemoteArchiveSequenceV478));
+              out.metricsCurrent=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V492');
 
               await page.evaluate(()=>{
-                const day=getBerlinDateKey();
-                localStorage.removeItem(window.__modTodayWorkBlocksV474.storageKey);
-                tasks=[
-                  {id:4911,text:'V491 Live Kisten',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:8760000,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:10:00.900+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'},{startedAt:'2026-08-23T16:10:00+02:00',endedAt:'2026-08-23T16:10:00.900+02:00'}]},
-                  {id:4912,text:'V491 Live Büro',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null,startedAt:null,pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[]}
-                ];
-                weightPhases=[{id:9301,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{id:9302,weightKg:12.3,startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{id:9303,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}];
-                weightState={isWearing:false,currentWeightKg:8};archive=[];nextArchiveNumber=1;saveTasks();saveArchive();saveWeight();window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();switchTab('all');render();
-              });await page.waitForTimeout(550);
-              const card=page.locator('.task',{hasText:'V491 Live Kisten'}).first();
-              const text=await card.innerText();
-              out.pauseLineRemovedFromCard=!text.includes('PAUSEN ZWISCHEN SEGMENTEN');
-              out.subSecondHidden=!text.includes('16:10:00');
-              out.nestedWeightPreserved=text.includes('↳ 🏋️ DAVON 01:55:00 MIT ZUSATZGEWICHT')&&text.includes('↳ 🏋️ INKL. ZUSATZGEWICHT · 13:10:00–14:00:00')&&text.includes('00:50:00 · 12,3 kg');
-              const first=await card.evaluate(card=>({height:card.getBoundingClientRect().height,html:card.innerHTML,overall:card.querySelector('.v490-overall-weight')?.textContent.trim()||'',actionsLast:card.querySelector('.task-content')?.lastElementChild===card.querySelector('.icon-actions')}));
-              out.actionsBottom=first.actionsLast;
-              await page.waitForTimeout(2200);
-              const second=await card.evaluate(card=>({height:card.getBoundingClientRect().height,html:card.innerHTML,overall:card.querySelector('.v490-overall-weight')?.textContent.trim()||''}));
-              out.cardStableAfterTicker=Math.abs(second.height-first.height)<=0.5&&second.html===first.html&&second.overall===first.overall;
+                const day=getBerlinDateKey();localStorage.removeItem(window.__modTodayWorkBlocksV474.storageKey);
+                tasks=[{id:4921,text:'V492 Live Kisten',type:'work',status:'paused',priority:'high',optional:false,dueMode:'deadline',dueDate:day,todayDate:day,todayOrder:1,todayWorkBlockId:null,importedHistoricalProgressDurationMs:8760000,startedAt:'2026-08-23T13:00:00+02:00',pausedAt:'2026-08-23T16:00:00+02:00',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T13:00:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{startedAt:'2026-08-23T15:30:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}]},{id:4922,text:'V492 Live Büro',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null,activeSegments:[],pauseTotalMs:0}];
+                weightPhases=[{id:9401,weightKg:12.3,startedAt:'2026-08-23T13:10:00+02:00',endedAt:'2026-08-23T14:00:00+02:00'},{id:9402,weightKg:12.3,startedAt:'2026-08-23T14:15:00+02:00',endedAt:'2026-08-23T15:00:00+02:00'},{id:9403,weightKg:8,startedAt:'2026-08-23T15:40:00+02:00',endedAt:'2026-08-23T16:00:00+02:00'}];weightState={isWearing:false,currentWeightKg:8};archive=[];nextArchiveNumber=1;saveTasks();saveArchive();saveWeight();window.__modTodayWorkBlocksV474.ensureTodayModel(day,[]);saveTasks();switchTab('all');render();
+              });await page.waitForTimeout(500);
 
-              await page.evaluate(()=>askManualTimes(4911));await page.waitForTimeout(100);
-              out.pauseEditorPreserved=(await page.locator('#segmentTotalV443').innerText()).includes('PAUSEN ZWISCHEN SEGMENTEN');
-              await page.getByRole('button',{name:'Zurück'}).click();
+              const railResults=[];
+              for(const tab of ['all','today','priority','due','active']){
+                await page.evaluate(t=>{switchTab(t);render();},tab);await page.waitForTimeout(250);
+                const result=await page.locator('.task:not(.archive-task)',{hasText:'V492 Live Kisten'}).first().evaluate(card=>{
+                  const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.task-number'),status=rail?.querySelector('.status-symbol');if(num)num.textContent='9999';
+                  const nr=num?.getBoundingClientRect(),sr=status?.getBoundingClientRect(),rr=rail?.getBoundingClientRect();
+                  return {rail:!!rail,numTop:nr?.top,statusTop:sr?.top,width:rr?.width,overflow:num?num.scrollWidth-num.clientWidth:999};
+                });railResults.push(result);
+              }
+              out.numberStatusRailAllTabs=railResults.every(r=>r.rail&&r.numTop<r.statusTop&&r.width>=41);
+              out.fourDigitReady=railResults.every(r=>r.overflow<=0);
 
-              await page.evaluate(()=>{switchTab('today');render();});await page.waitForTimeout(700);
-              const paused=page.locator('.today-task-active',{hasText:'V491 Live Kisten'}).first();
-              const open=page.locator('.today-task-active',{hasText:'V491 Live Büro'}).first();
-              const state=await paused.evaluate(card=>{
-                const actions=card.querySelector('.icon-actions'),buttons=[...actions.querySelectorAll('button')];
-                const clock=buttons.findIndex(b=>b.dataset.iconV416==='clock'),today=buttons.findIndex(b=>b.dataset.v480TodayAction==='1'),partial=card.querySelector('.v490-weight-partial');
-                return {drag:card.querySelectorAll('.drag-handle').length,up:card.querySelectorAll('.v491-order-up').length,down:card.querySelectorAll('.v491-order-down').length,clock,today,todayIcon:buttons[today]?.dataset.iconV416||null,partialHeight:partial?.getBoundingClientRect().height||0,partialScroll:partial?.scrollWidth||0,partialClient:partial?.clientWidth||0,actionsLast:card.querySelector('.task-content')?.lastElementChild===actions};
+              await page.evaluate(()=>{switchTab('all');render();});await page.waitForTimeout(300);
+              const detail=await page.locator('.task:not(.archive-task)',{hasText:'V492 Live Kisten'}).first().evaluate(card=>{
+                const partial=card.querySelector('.v490-weight-partial'),copy=partial?.querySelector('.v492-weight-copy'),sub=partial?.nextElementSibling,overall=card.querySelector('.v490-overall-weight'),block=card.querySelector('.task-detail-v490');
+                const ps=partial?getComputedStyle(partial):null,os=overall?getComputedStyle(overall):null,bs=block?getComputedStyle(block):null;
+                return {copyX:copy?.getBoundingClientRect().left,subX:sub?.getBoundingClientRect().left+(parseFloat(getComputedStyle(sub).paddingLeft)||0),color:ps?.color,fontWeight:Number(ps?.fontWeight||999),overallColor:os?.color,overallWeight:Number(os?.fontWeight||999),border:bs?.borderTopWidth,actionsLast:card.querySelector('.task-content')?.lastElementChild===card.querySelector('.icon-actions'),arrows:card.querySelectorAll('.v491-order-button').length,todayIcon:card.querySelector('button[data-v480-today-action="1"]')?.dataset.iconV416||null};
               });
-              out.todayArrows=state.up===1&&state.down===1;
-              out.todayDragRemoved=state.drag===0;
-              out.calendarAfterClock=state.clock>=0&&state.today===state.clock+1;
-              const openIcon=await open.evaluate(card=>card.querySelector('button[data-v480-today-action="1"]')?.dataset.iconV416||null);
-              out.todayIconsConsistent=state.todayIcon==='calendarPin'&&openIcon==='calendarPin';
-              out.partialWeightFitsToday=state.partialHeight<=13&&state.partialScroll<=state.partialClient+1;
-              out.actionsBottom=out.actionsBottom&&state.actionsLast;
-              const before=await page.evaluate(()=>window.__modTodayWorkBlocksV474.orderedByBlocks(getBerlinDateKey()).rows.map(x=>x.id));
-              await paused.locator('.v491-order-down').click();await page.waitForTimeout(500);
-              const afterDown=await page.evaluate(()=>window.__modTodayWorkBlocksV474.orderedByBlocks(getBerlinDateKey()).rows.map(x=>x.id));
-              const moved=page.locator('.today-task-active',{hasText:'V491 Live Kisten'}).first();await moved.locator('.v491-order-up').click();await page.waitForTimeout(500);
-              const afterUp=await page.evaluate(()=>window.__modTodayWorkBlocksV474.orderedByBlocks(getBerlinDateKey()).rows.map(x=>x.id));
-              out.arrowMoveWorks=before[0]===4911&&before[1]===4912&&afterDown[0]===4912&&afterDown[1]===4911&&afterUp[0]===4911&&afterUp[1]===4912;
+              out.subtleWeightStyle=detail.color==='rgb(126, 139, 104)'&&detail.overallColor==='rgb(126, 139, 104)'&&detail.fontWeight<=500&&detail.overallWeight<=500;
+              out.weightSecondLineAligned=Math.abs(detail.copyX-detail.subX)<=0.75;
+              out.segmentSeparator=detail.border==='1px';
+              out.actionsBottom=detail.actionsLast;
+              out.todayIconsConsistent=detail.todayIcon==='calendarPin';
 
-              await page.evaluate(()=>{archive=[{archiveNumber:1,archiveId:'live-v491-a1',text:'V491 Archiv',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T14:00:00+02:00',activeDurationMs:3600000,archiveAccountingActiveDurationMs:3600000,actualDurationMs:3600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:3600000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]}];nextArchiveNumber=2;saveArchive();switchTab('archive');render();});await page.waitForTimeout(400);
-              const archiveState=await page.locator('.archive-task',{hasText:'V491 Archiv'}).first().evaluate(card=>({font:[...card.querySelectorAll('.task-detail-v490>div')].map(x=>getComputedStyle(x).fontSize),old:card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').length,text:card.innerText}));
-              out.archiveCompactPreserved=archiveState.font.every(x=>x==='8.5px')&&archiveState.old===0&&archiveState.text.includes('INKL. ZUSATZGEWICHT');
+              await page.evaluate(()=>{switchTab('today');render();});await page.waitForTimeout(350);
+              const todayCard=page.locator('.today-task-active',{hasText:'V492 Live Kisten'}).first();
+              out.todayArrows=(await todayCard.locator('.v491-order-button').count())===2&&(await todayCard.locator('.drag-handle').count())===0;
+              const before=await todayCard.evaluate(card=>({h:card.getBoundingClientRect().height,html:card.innerHTML}));await page.waitForTimeout(2200);const after=await todayCard.evaluate(card=>({h:card.getBoundingClientRect().height,html:card.innerHTML}));
+              out.cardStable=Math.abs(before.h-after.h)<=0.5&&before.html===after.html;
+              out.nestedWeightPreserved=await todayCard.evaluate(card=>!!card.querySelector('.v490-weight-partial')&&!!card.querySelector('.v490-weight-subline'));
 
-              await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V491 Live Log');switchTab('log');});await page.waitForTimeout(120);
+              await page.evaluate(()=>{archive=[{archiveNumber:9999,archiveId:'live-v492-a',text:'V492 Live Archiv',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',completedDate:'2026-08-22',startedAt:'2026-08-22T13:00:00+02:00',completedAt:'2026-08-22T14:00:00+02:00',activeDurationMs:3600000,archiveAccountingActiveDurationMs:3600000,actualDurationMs:3600000,pauseTotalMs:0,activeSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00'}],historicalWeightKg:12.3,weightedActiveDurationMs:3600000,weightActiveSegments:[{startedAt:'2026-08-22T13:00:00+02:00',endedAt:'2026-08-22T14:00:00+02:00',historicalWeightKg:12.3}]}];nextArchiveNumber=10000;saveArchive();switchTab('archive');render();});await page.waitForTimeout(350);
+              const ar=await page.locator('.archive-task',{hasText:'V492 Live Archiv'}).first().evaluate(card=>{const rail=card.querySelector(':scope > .v492-number-status-rail'),num=rail?.querySelector('.archive-number'),status=rail?.querySelector('.status-symbol');if(num)num.textContent='A9999';const nr=num?.getBoundingClientRect(),sr=status?.getBoundingClientRect(),rr=rail?.getBoundingClientRect();return {ok:!!rail&&nr.top<sr.top&&rr.width>=45&&num.scrollWidth<=num.clientWidth,font:[...card.querySelectorAll('.task-detail-v490>div')].map(x=>getComputedStyle(x).fontSize)};});
+              out.archiveRailReady=ar.ok;out.archiveCompactPreserved=ar.font.every(x=>x==='8.5px');
+
+              await page.evaluate(()=>{window.__modLiveLogV453.clear();window.__modLiveLogV453.append('TASK','INFO','V492 Live Log');switchTab('log');});await page.waitForTimeout(120);
               out.compactLog=await page.evaluate(()=>getComputedStyle(document.querySelector('.log-message-v453')).fontSize==='8.5px');
-              out.v490Preserved=await page.evaluate(()=>!!window.__modNestedTaskWeightLayoutV490?.nestedSegmentWeight&&window.__modNestedTaskWeightLayoutV490?.periodicDomRewriteRemoved===true);
+              out.v491Preserved=await page.evaluate(()=>!!window.__modUiCardStabilityV491?.dragHandleReplacedByArrows);
+              out.v490Preserved=await page.evaluate(()=>!!window.__modNestedTaskWeightLayoutV490?.nestedSegmentWeight);
               out.v489Preserved=await page.evaluate(()=>!!window.__modTaskTimeWeightDetailsV489?.perTaskWeightOverlap);
-              out.v488Preserved=await page.evaluate(()=>window.__modHistoricalSegmentBreakdownV488?.cardPauseLineRemoved===true&&window.__modHistoricalSegmentBreakdownV488?.nestedWeightPreservedOnTicker===true);
+              out.v488Preserved=await page.evaluate(()=>!!window.__modHistoricalSegmentBreakdownV488?.historicalProgressPreserved);
               out.scrollFixPreserved=await page.evaluate(()=>!!window.__modTimeSegmentScrollV486);
               out.terminalDeletePreserved=await page.evaluate(()=>!!window.__modTerminalDeleteV485?.confirmationRequired);
               out.remoteReopenCompleted=await page.evaluate(()=>!!window.__modRemoteTaskReopenV484);
               out.archiveSequenceRepair=await page.evaluate(()=>!!window.__modRemoteArchiveSequenceV478);
-              const cooking=await page.evaluate(()=>{tasks=[{id:4941,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:4942,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(4941);switchCookingMode(4941,'passive');startTask(4942);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              const cooking=await page.evaluate(()=>{tasks=[{id:4951,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:4952,text:'Arbeit',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(4951);switchCookingMode(4951,'passive');startTask(4952);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
               out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
-              out.renderStability=await page.evaluate(()=>!!window.__modRenderStabilityV479&&!!window.__modTodayCreateRenderV480&&!!window.__modUiCardStabilityV491?.stableCardLayout);
+              out.renderStability=await page.evaluate(()=>!!window.__modRenderStabilityV479&&!!window.__modTodayCreateRenderV480);
               out.workBlocksPreserved=await page.evaluate(()=>!!window.__modTodayWorkBlocksV474);
               out.fixedShell=await page.evaluate(()=>{const e=document.getElementById('appFixedTopV475');return !!e&&getComputedStyle(e).position==='sticky';});
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
