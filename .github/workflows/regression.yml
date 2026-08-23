@@ -30,7 +30,7 @@ jobs:
               if marker not in html: raise SystemExit(f'Missing V488 HTML marker: {marker}')
           for marker in ['master-of-disaster-v488-historical-segment-breakdown','historical-segment-breakdown-v488.js']:
               if marker not in sw: raise SystemExit(f'Missing V488 SW marker: {marker}')
-          for marker in ['historicalProgressPreserved:true','pausesExcludedFromSegmentActive:true','segmentMetrics','patchVisibleCards']:
+          for marker in ['historicalProgressPreserved:true','pausesExcludedFromSegmentActive:true','legacyLiveTickerDetached:true','segmentMetrics','patchVisibleCards']:
               if marker not in js: raise SystemExit(f'Missing V488 behavior marker: {marker}')
           if metrics.get('version')!='V488' or metrics.get('automated') is not True:
               raise SystemExit('Expected V488 automated metrics snapshot')
@@ -77,15 +77,19 @@ jobs:
             await page.waitForTimeout(120);
             const state=await page.evaluate(()=>{
               const task=tasks[0],m=window.__modHistoricalSegmentBreakdownV488.segmentMetrics(task);
-              return {card:document.querySelector('.task .duration')?.innerText||'',segments:m.activeMs,history:m.historicalMs,total:m.totalActiveMs,gaps:m.gapMs,calc:liveDuration(task)};
+              const el=document.querySelector('.task .duration');
+              return {card:el?.innerText||'',segments:m.activeMs,history:m.historicalMs,total:m.totalActiveMs,gaps:m.gapMs,calc:liveDuration(task),liveKind:el?.getAttribute('data-live-kind')||null};
             });
             if(state.segments!==8880000)throw new Error(`Segment active time wrong: ${state.segments}`);
             if(state.history!==8760000)throw new Error(`Historical active time wrong: ${state.history}`);
             if(state.total!==17640000||state.calc!==17640000)throw new Error('Total active accounting must remain 04:54:00');
             if(state.gaps!==8760000)throw new Error(`Expected 02:26:00 segment gaps, got ${state.gaps}`);
-            for(const expected of ['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN']){
-              if(!state.card.includes(expected))throw new Error(`Card breakdown missing ${expected}: ${state.card}`);
-            }
+            if(state.liveKind!==null)throw new Error('V488 card is still attached to legacy data-live-kind ticker');
+            const expectedCard=['AKTIV · 02:28:00','HISTORISCH · 02:26:00','GESAMT AKTIV · 04:54:00','PAUSEN ZWISCHEN SEGMENTEN · 02:26:00 · NICHT ENTHALTEN'];
+            for(const expected of expectedCard){if(!state.card.includes(expected))throw new Error(`Card breakdown missing ${expected}: ${state.card}`);}
+            await page.waitForTimeout(1250);
+            const stableCard=await page.locator('.task .duration').innerText();
+            for(const expected of expectedCard){if(!stableCard.includes(expected))throw new Error(`Live ticker overwrote V488 card after 1.25s: ${stableCard}`);}
 
             await page.evaluate(()=>askManualTimes(217));await page.waitForTimeout(80);
             const editor=await page.locator('#segmentTotalV443').innerText();
@@ -94,7 +98,6 @@ jobs:
             }
             await page.getByRole('button',{name:'Zurück'}).click();
 
-            // V486 scroll fix remains present.
             await page.evaluate(()=>{tasks=[{id:4861,text:'Kochen',type:'cooking',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T12:00:00Z',pausedAt:'2026-08-23T12:20:00Z',pauseTotalMs:0,cookingMode:'passive',activeSegments:[{startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'}],cookingSegments:[{mode:'active',startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'},{mode:'passive',startedAt:'2026-08-23T12:05:00Z',endedAt:'2026-08-23T12:20:00Z'}]}];saveTasks();askManualTimes(4861);});
             await page.getByRole('button',{name:/KOCHABSCHNITT HINZUFÜGEN/i}).click();await page.waitForTimeout(120);
             const modal=await page.evaluate(()=>{const m=document.querySelector('.segment-editor-modal'),a=m?.querySelector('.modal-actions');return m&&a?{rows:document.querySelectorAll('#segmentRowsV443 [data-segment-row]').length,overflow:getComputedStyle(m).overflowY,sticky:getComputedStyle(a).position}:null;});
