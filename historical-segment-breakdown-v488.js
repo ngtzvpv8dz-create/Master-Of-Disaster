@@ -76,15 +76,24 @@
   }
 
   function breakdownHtml(metrics){
-    const pauseLine=metrics.gapMs>0
-      ? `<span class="v488-pause">PAUSEN ZWISCHEN SEGMENTEN · ${formatDuration(metrics.gapMs)} · NICHT ENTHALTEN</span>`
-      : '';
     return `
       <span class="v488-main">AKTIV · ${formatDuration(metrics.activeMs)}</span>
       <span class="v488-sub">+ HISTORISCH · ${formatDuration(metrics.historicalMs)}</span>
       <span class="v488-sub">= GESAMT AKTIV · ${formatDuration(metrics.totalActiveMs)}</span>
-      ${pauseLine}
     `;
+  }
+
+  function preserveNestedWeightHtml(el){
+    const row=el?.querySelector?.('.v490-overall-weight,.v491-overall-weight');
+    return row?row.outerHTML:'';
+  }
+
+  function restoreNestedWeight(el,html){
+    if(!el||!html)return false;
+    const total=[...el.querySelectorAll('.v488-sub')].find(node=>/^=\s*GESAMT AKTIV/i.test(String(node.textContent||'').trim()));
+    if(!total)return false;
+    total.insertAdjacentHTML('afterend',html);
+    return true;
   }
 
   function patchVisibleCards(){
@@ -102,7 +111,13 @@
       el.classList.add('historical-segment-duration-v488');
       el.removeAttribute('data-live-kind');
       el.dataset.v488Breakdown='true';
-      el.innerHTML=breakdownHtml(metrics);
+      const signature=`${Math.floor(metrics.activeMs/1000)}|${Math.floor(metrics.historicalMs/1000)}|${Math.floor(metrics.totalActiveMs/1000)}`;
+      if(el.dataset.v488Signature!==signature){
+        const nested=preserveNestedWeightHtml(el);
+        el.innerHTML=breakdownHtml(metrics);
+        restoreNestedWeight(el,nested);
+        el.dataset.v488Signature=signature;
+      }
       patched+=1;
     });
     return patched;
@@ -171,6 +186,9 @@
     legacyLiveTickerDetached:true,
     editorShowsBreakdown:true,
     cardShowsBreakdown:true,
-    cardBreakdownFontPx:8.5
+    cardBreakdownFontPx:8.5,
+    cardPauseLineRemoved:true,
+    nestedWeightPreservedOnTicker:true,
+    unchangedCardsDoNotRewriteDom:true
   };
 })();
