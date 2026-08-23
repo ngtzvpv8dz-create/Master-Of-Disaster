@@ -113,7 +113,7 @@
     block.className='task-detail-v490';
     block.dataset.v490Detail='true';
 
-    const segments=Array.isArray(data.timeInfo.exactSegments)?data.timeInfo.exactSegments:[];
+    const segments=(Array.isArray(data.timeInfo.exactSegments)?data.timeInfo.exactSegments:[]).filter(segment=>(Number(segment.durationMs)||0)>=1000);
     const parts=[];
 
     if(archived){
@@ -122,9 +122,11 @@
     }
 
     if(segments.length){
-      segments.forEach((segment,index)=>{
+      segments.forEach(segment=>{
+        const originalSegments=Array.isArray(data.timeInfo.exactSegments)?data.timeInfo.exactSegments:[];
+        const originalIndex=originalSegments.indexOf(segment);
         parts.push(`<div class="v490-segment">🕒 ${esc(rangeText(segment.startedAt,segment.endedAt))} · ${esc(duration(segment.durationMs))}</div>`);
-        const nested=segmentWeightRows(segment,index,data);
+        const nested=segmentWeightRows(segment,originalIndex,data);
         if(nested)parts.push(nested);
       });
     }else if(item&&item.startedAt){
@@ -161,8 +163,7 @@
     const historical=card.querySelector('.historical-segment-duration-v488');
     if(historical){
       const total=[...historical.querySelectorAll('.v488-sub')].find(el=>/^=\s*GESAMT AKTIV/i.test(String(el.textContent||'').trim()));
-      const pause=historical.querySelector('.v488-pause');
-      if(total){historical.insertBefore(line,pause||total.nextSibling);return true;}
+      if(total){total.insertAdjacentElement('afterend',line);return true;}
     }
 
     const anchor=card.querySelector('.duration,.task-leisure-duration,.task-cooking-active');
@@ -264,7 +265,6 @@
 
   window.addEventListener('load',()=>setTimeout(refresh,0));
   setTimeout(refresh,0);
-  setInterval(()=>{try{enhanceVisibleCards();}catch(_){ }},1000);
 
   window.__modNestedTaskWeightLayoutV490={
     version:BUILD_VERSION,
@@ -283,6 +283,8 @@
     historicalNoteRemoved:true,
     archiveMatchesTaskLayout:true,
     archiveDetailFontPx:8.5,
-    historicalUnknownsStayBlank:true
+    historicalUnknownsStayBlank:true,
+    periodicDomRewriteRemoved:true,
+    subSecondSegmentsHidden:true
   };
 })();

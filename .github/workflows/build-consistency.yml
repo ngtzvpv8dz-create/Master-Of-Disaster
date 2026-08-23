@@ -16,39 +16,39 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V490 build
+      - name: Verify V491 build
         shell: python
         run: |
           from pathlib import Path
           import json
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          v491=Path('ui-card-stability-v491.js').read_text(encoding='utf-8')
           v490=Path('nested-task-weight-layout-v490.js').read_text(encoding='utf-8')
-          v489=Path('task-time-weight-details-v489.js').read_text(encoding='utf-8')
           v488=Path('historical-segment-breakdown-v488.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V490','23.08.2026 · 18:53','nested-task-weight-layout-v490.js?v=490-1853',"version:'V490'",'modV490NestedWeightLayoutDone']:
-              if marker not in index: raise SystemExit(f'Missing V490 index marker: {marker}')
-          for marker in ['master-of-disaster-v490-nested-weight-layout','nested-task-weight-layout-v490.js','task-time-weight-details-v489.js','historical-segment-breakdown-v488.js','segment-active-duration-v487.js','time-segment-scroll-v486.js']:
-              if marker not in sw: raise SystemExit(f'Missing V490 service worker marker: {marker}')
-          for marker in ["const BUILD_VERSION='V490'",'nestedSegmentWeight:true','partialWeightTwoLines:true','fullSegmentWeightCompact:true','overallWeightIndented:true','duplicateTotalRemoved:true','historicalNoteRemoved:true','archiveMatchesTaskLayout:true','archiveDetailFontPx:8.5','historicalUnknownsStayBlank:true','__modNestedTaskWeightLayoutV490']:
-              if marker not in v490: raise SystemExit(f'Missing V490 behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V489'",'perTaskWeightOverlap:true','compactLogFontPx:8.5','__modTaskTimeWeightDetailsV489']:
-              if marker not in v489: raise SystemExit(f'Missing preserved V489 behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V488'",'historicalProgressPreserved:true','cardBreakdownFontPx:8.5','__modHistoricalSegmentBreakdownV488']:
-              if marker not in v488: raise SystemExit(f'Missing preserved V488 behavior: {marker}')
-          if metrics.get('version')!='V490' or metrics.get('automated') is not True:
-              raise SystemExit('Bundled metrics snapshot is not V490/automated')
-          print('V490 build consistency OK')
+          for marker in ['BUILD: V491','23.08.2026 · 19:26','ui-card-stability-v491.js?v=491-1926',"version:'V491'",'modV491CardStabilityDone']:
+              if marker not in index: raise SystemExit(f'Missing V491 index marker: {marker}')
+          for marker in ['master-of-disaster-v491-card-stability-controls','ui-card-stability-v491.js','nested-task-weight-layout-v490.js','historical-segment-breakdown-v488.js','today-work-blocks-v474.js']:
+              if marker not in sw: raise SystemExit(f'Missing V491 service worker marker: {marker}')
+          for marker in ["const BUILD_VERSION='V491'",'dragHandleReplacedByArrows:true','actionsAlwaysBottom:true','todayActionAfterClock:true','todayIconConsistentAcrossStatuses:true','selectedTodayUsesCalendarPin:true','stableCardLayout:true','__modUiCardStabilityV491']:
+              if marker not in v491: raise SystemExit(f'Missing V491 behavior: {marker}')
+          for marker in ["const BUILD_VERSION='V490'",'periodicDomRewriteRemoved:true','subSecondSegmentsHidden:true','nestedSegmentWeight:true','archiveDetailFontPx:8.5','__modNestedTaskWeightLayoutV490']:
+              if marker not in v490: raise SystemExit(f'Missing preserved/updated V490 behavior: {marker}')
+          for marker in ["const BUILD_VERSION='V488'",'cardPauseLineRemoved:true','nestedWeightPreservedOnTicker:true','unchangedCardsDoNotRewriteDom:true','historicalProgressPreserved:true','__modHistoricalSegmentBreakdownV488']:
+              if marker not in v488: raise SystemExit(f'Missing V488/V491 stability behavior: {marker}')
+          if metrics.get('version')!='V491' or metrics.get('automated') is not True:
+              raise SystemExit('Bundled metrics snapshot is not V491/automated')
+          print('V491 build consistency OK')
       - name: JavaScript syntax
-        run: node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check ux-cooking-editor-v460.js && node --check time-segments-v443.js && node --check live-log-v453.js && node --check app.js
+        run: node --check ui-card-stability-v491.js && node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check ux-cooking-editor-v460.js && node --check time-segments-v443.js && node --check live-log-v453.js && node --check app.js
       - name: Generator produces current repository metrics
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
           cat /tmp/metrics.log
           node - <<'NODE'
           const m=require('/tmp/development-metrics.json');
-          if(m.version!=='V490'||!m.automated)throw new Error('Generated version/automation flag wrong');
+          if(m.version!=='V491'||!m.automated)throw new Error('Generated version/automation flag wrong');
           if(m.repository.currentFiles<40||m.repository.currentTextLines<10000||m.repository.currentBytes<500000)throw new Error('Generated repository metrics unexpectedly small');
-          console.log('V490 generated metrics sane');
+          console.log('V491 generated metrics sane');
           NODE
