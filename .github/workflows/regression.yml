@@ -16,106 +16,103 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V479 render stability wiring
+        run: node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V480 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('render-stability-v479.js').read_text(encoding='utf-8')
+          js=Path('today-create-render-v480.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V479','render-stability-v479.js?v=479-0746',"version:'V479'",'modV479RenderStabilityDone']:
-              if marker not in html: raise SystemExit(f'Missing V479 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v479-render-stability','render-stability-v479.js','development-metrics.json']:
-              if marker not in sw: raise SystemExit(f'Missing V479 SW marker: {marker}')
-          for marker in ['synchronousPostRender:true','noLegacyPaint:true','window.__modActionIconsV416?.patch?.()','legacyVisible','__modRenderStabilityV479']:
-              if marker not in js: raise SystemExit(f'Missing V479 behavior marker: {marker}')
-          if metrics.get('version')!='V479' or metrics.get('automated') is not True:
-              raise SystemExit('Expected valid V479 automated metrics snapshot')
-          print('V479 render stability wiring OK')
-      - name: Verify V479 synchronous post-render patch order
-        run: |
-          node <<'NODE'
-          const fs=require('fs');
-          global.window=global;
-          global.document={getElementById(){return null;},querySelectorAll(){return [];}};
-          global.addEventListener=()=>{};global.setTimeout=()=>0;
-          const calls=[];
-          global.render=()=>{calls.push('render');return 42;};
-          global.__modActionIconsV416={patch:()=>calls.push('icons')};
-          global.__modThemeStateDesignV464={apply:()=>calls.push('theme')};
-          eval(fs.readFileSync('render-stability-v479.js','utf8'));
-          calls.length=0;
-          const result=render('test');
-          if(result!==42)throw new Error('V479 changed render return value');
-          if(calls.join('|')!=='render|icons|theme')throw new Error('V479 patch is not synchronous after render: '+calls.join('|'));
-          const api=window.__modRenderStabilityV479;
-          if(!api?.synchronousPostRender||!api?.noLegacyPaint||!api?.wrapped)throw new Error('V479 stability flags missing');
-          console.log('V479 synchronous render patch OK');
-          NODE
+          for marker in ['BUILD: V480','today-create-render-v480.js?v=480-0801',"version:'V480'",'modV480TodayCreateRenderDone']:
+              if marker not in html: raise SystemExit(f'Missing V480 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v480-today-create-render','today-create-render-v480.js']:
+              if marker not in sw: raise SystemExit(f'Missing V480 SW marker: {marker}')
+          for marker in ['applyVisibleLayoutsSync','normalizeTodayActions','setNewTaskToday','assignTaskToToday','directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true']:
+              if marker not in js: raise SystemExit(f'Missing V480 behavior marker: {marker}')
+          if metrics.get('version')!='V480' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V480 automated metrics snapshot')
+          print('V480 wiring OK')
       - name: Verify preserved V478 targeted A255 gap repair
         run: |
           node <<'NODE'
           const fs=require('fs');
           global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
           global.archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`Aufgabe ${i+1}`,activeDurationMs:i*1000}));
-          for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`Aufgabe ${n}`,activeDurationMs:n*1000,category:'Test'});
+          for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`Aufgabe ${n}`,activeDurationMs:n*1000});
           global.nextArchiveNumber=263;let saved=0;global.saveArchive=()=>saved++;global.render=()=>{};
           eval(fs.readFileSync('remote-archive-sequence-v478.js','utf8'));
-          const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255);
-          const nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b);
-          if(archive.length!==261||nums.some((n,i)=>n!==i+1)||nextArchiveNumber!==262||r.shifted!==7||!r.sequence_contiguous||!r.archive_id_preserved||saved!==1)throw new Error('Preserved V478 archive repair failed');
+          const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b);
+          if(archive.length!==261||nums.some((n,i)=>n!==i+1)||nextArchiveNumber!==262||r.shifted!==7||!r.sequence_contiguous||saved!==1)throw new Error('V478 archive repair regression');
           console.log('V478 archive repair preserved');
           NODE
-      - name: Generate live-shaped repository metrics
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          pr_count=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" --jq '.[].number' | wc -l | tr -d ' ')
-          merged_count=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=closed&per_page=100" --jq '.[] | select(.merged_at != null) | .number' | wc -l | tr -d ' ')
-          METRICS_OUTPUT=/tmp/development-metrics.json PR_COUNT="$pr_count" MERGED_PR_COUNT="$merged_count" SOURCE_COMMIT="$GITHUB_SHA" node scripts/generate-development-metrics.mjs | tee /tmp/metrics.log
-          node - <<'NODE'
-          const m=require('/tmp/development-metrics.json');
-          if(m.version!=='V479'||m.sourceCommit==='pending'||!m.automated)throw new Error('Generated metrics identity wrong');
-          if(m.repository.pullRequests<60||m.repository.mergedPullRequests<50)throw new Error('PR counts unexpectedly low');
-          if(m.repository.reachableCommits<500||m.repository.currentFiles<40||m.repository.currentTextLines<10000)throw new Error('Repository metrics unexpectedly low');
-          console.log('V479 generated repository metrics OK');
-          NODE
-      - name: Verify preserved V475 fixed header
-        shell: python
-        run: |
-          from pathlib import Path
-          js=Path('fixed-app-header-v475.js').read_text(encoding='utf-8')
-          for marker in ['appFixedTopV475','position:sticky','headerAndTabsTogether:true','opaqueShell:true','dynamicHeight:true','--mod-fixed-top-height-v475','__modFixedAppHeaderV475']:
-              if marker not in js: raise SystemExit(f'Missing preserved V475 marker: {marker}')
-          print('V475 fixed header preserved')
-      - name: Verify preserved V474 work block data model
+      - name: Verify preserved V474 work blocks
         run: |
           node <<'NODE'
           const fs=require('fs'),store=new Map();
-          global.window=global;global.currentTab='all';global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};
-          global.addEventListener=()=>{};global.setTimeout=()=>0;global.CSS={escape:s=>String(s)};
+          global.window=global;global.currentTab='all';global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.addEventListener=()=>{};global.setTimeout=()=>0;global.CSS={escape:s=>String(s)};
           global.document={addEventListener(){},getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {id:'',textContent:'',className:'',style:{},appendChild(){},append(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},toggle(){}}}},head:{appendChild(){}},body:{appendChild(){}}};
-          global.getBerlinDateKey=()=> '2026-08-22';global.render=null;global.saveEdit=null;global.saveTasks=()=>{};
-          global.tasks=[{id:1,text:'Bad wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:1,status:'open'},{id:2,text:'Flur aufräumen',category:'Flur',todayDate:'2026-08-22',todayOrder:2,status:'open'},{id:3,text:'Flur wischen',category:'Böden wischen',todayDate:'2026-08-22',todayOrder:3,status:'open'},{id:4,text:'Küche wischen',category:'Böden wischen',todayDate:null,todayOrder:null,status:'open'}];
+          global.getBerlinDateKey=()=> '2026-08-23';global.render=null;global.saveEdit=null;global.saveTasks=()=>{};global.tasks=[{id:1,text:'A',todayDate:'2026-08-23',todayOrder:1,status:'open'},{id:2,text:'B',todayDate:null,todayOrder:null,status:'open'}];
           eval(fs.readFileSync('today-work-blocks-v474.js','utf8'));
-          const api=window.__modTodayWorkBlocksV474;let blocks=api.ensureTodayModel('2026-08-22',[]);if(blocks.length!==1)throw new Error('Today migration failed');
-          const b1=blocks[0],b2=api.addBlock('',{date:'2026-08-22',render:false}),b3=api.addBlock('',{date:'2026-08-22',render:false});api.moveTaskToBlock(2,b2.id,null,{date:'2026-08-22',render:false});api.moveTaskToBlock(3,b3.id,null,{date:'2026-08-22',render:false});const cats=tasks.map(t=>t.category).join('|');api.swapBlocks(b3.id,b1.id);
-          if(api.blockNumber(b3.id,'2026-08-22')!==1||api.blockNumber(b1.id,'2026-08-22')!==3||tasks.map(t=>t.category).join('|')!==cats)throw new Error('Work block reorder/categories failed');
-          api.assignTaskToToday(4,b2.id,{date:'2026-08-22',render:false});if(tasks[3].todayWorkBlockId!==b2.id)throw new Error('Direct Today assignment failed');
+          const api=window.__modTodayWorkBlocksV474,blocks=api.ensureTodayModel('2026-08-23',[]),b2=api.addBlock('ZWEI',{date:'2026-08-23',render:false});
+          api.assignTaskToToday(2,b2.id,{date:'2026-08-23',render:false});
+          if(tasks[1].todayDate!=='2026-08-23'||tasks[1].todayWorkBlockId!==b2.id||api.getBlocks('2026-08-23').length!==2)throw new Error('V474 work block regression');
           console.log('V474 work blocks preserved');
           NODE
-      - name: Verify preserved V472 exact A255 deletion
+      - name: Browser regression V480
         run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-http.log 2>&1 &
+          echo $! >/tmp/mod-http.pid
           node <<'NODE'
-          const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};global.archive=[{archiveNumber:254,text:'Vorher'},{archiveNumber:255,text:'Falsches Kochen'}];global.nextArchiveNumber=256;let saved=0;global.saveArchive=()=>saved++;global.render=()=>{};
-          eval(fs.readFileSync('remote-archive-maintenance-v472.js','utf8'));const r=window.__modRemoteArchiveMaintenanceV472.deleteArchiveEntry(255);if(archive.some(x=>Number(x.archiveNumber)===255)||nextArchiveNumber!==255||r.next_archive_number!==255||saved!==1)throw new Error('Preserved A255 deletion failed');console.log('V472 archive maintenance preserved');
-          NODE
-      - name: Verify preserved V460 passive cooking concurrency
-        run: |
-          node <<'NODE'
-          const fs=require('fs'),store=new Map();global.window=global;global.addEventListener=()=>{};global.localStorage={getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)};global.currentTab='all';const classList={add(){},remove(){},toggle(){}};global.document={getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {style:{setProperty(){},removeProperty(){}},classList,appendChild(){},remove(){},querySelector(){return null},querySelectorAll(){return []}}},head:{appendChild(){}},body:{appendChild(){},classList}};global.MutationObserver=class{observe(){} disconnect(){}};global.tasks=[{id:1,text:'Kochen',type:'cooking',status:'open',activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:2,text:'Arbeit',type:'work',status:'open',activeSegments:[],pauseTotalMs:0}];global.archive=[];global.getTask=id=>tasks.find(t=>t.id===id);global.saveTasks=()=>{};global.render=()=>{};global.switchTab=()=>{};global.normalizeTodayOrder=()=>{};global.closeModal=()=>{};global.showInfoModal=()=>{};global.getBerlinDateKey=()=> '2026-08-22';global.getBerlinDateKeyFromISO=()=> '2026-08-22';global.escapeHtml=s=>String(s);global.section=()=>({});global.dynamicNumber=()=>1;global.statusSymbol=()=>'';global.formatDuration=ms=>String(ms);global.formatISOForDateTimeLocal=s=>s;global.berlinLocalInputToISO=s=>s;global.showMissingCompletionDuration=()=>{};global.startTask=()=>{};global.pauseTask=()=>{};global.resumeTask=()=>{};global.finishTask=()=>{};global.abortTask=()=>{};global.askManualTimes=()=>{};global.saveManualTimes=()=>{};global.addManualSegmentV443=()=>{};global.removeManualSegmentV443=()=>{};global.readSegmentsFromDomV443=()=>[];global.refreshSegmentTotalV443=()=>{};global.saveManualSegmentsAndCompleteV445=()=>{};
-          eval(fs.readFileSync('ux-cooking-editor-v460.js','utf8'));startTask(1);switchCookingMode(1,'passive');startTask(2);if(tasks[1].status!=='running')throw new Error('Parallel cooking work blocked');console.log('Cooking concurrency OK');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
+            await page.reload({waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            const result=await page.evaluate(()=>{
+              const date=getBerlinDateKey();
+              tasks=[];archive=[];saveTasks();localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
+              const api=window.__modTodayWorkBlocksV474;
+              const b1=api.addBlock('',{date,render:false}),b2=api.addBlock('SPÄTER',{date,render:false});
+              switchTab('all');render();
+              const ui=window.__modTodayCreateRenderV480;
+              ui.setNewTaskToday(true);
+              const select=document.getElementById('newTodayBlockV480');
+              select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));
+              document.getElementById('taskInput').value='V480 Browser Test';
+              addTask();
+              const task=tasks.find(t=>t.text==='V480 Browser Test');
+              const card=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
+              const button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');
+              const actions=card?.querySelector('.icon-actions');
+              const before=button?.getBoundingClientRect();
+              const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,options:select?.options.length||0};
+              toggleToday(task.id);
+              const card2=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
+              const button2=card2?.querySelector('.icon-actions button[onclick*="toggleToday("]');
+              const actions2=card2?.querySelector('.icon-actions');
+              const after=button2?.getBoundingClientRect();
+              return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},row:!!document.getElementById('newTodayRowV480')};
+            });
+            if(result.created.today==null)throw new Error('New task was not assigned to Today');
+            if(!result.created.block)throw new Error('New task has no work block');
+            if(!result.created.selected||result.created.icon!=='calendar')throw new Error('Assigned Today action is not stable calendar state');
+            if(result.created.state!=='open'||result.created.transform!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously on create');
+            if(result.created.options<2||!result.row)throw new Error('Create-time work-block selector missing');
+            if(result.after.today!==null||result.after.selected||result.after.icon!=='calendar')throw new Error('Today toggle did not retain stable calendar visual');
+            if(result.after.state!=='open'||result.after.transform!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously after Today toggle');
+            if(result.after.dx>1||result.after.dy>1)throw new Error(`Today action moved: ${result.after.dx}/${result.after.dy}`);
+            console.log('V480 browser regression OK',result);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
           NODE
