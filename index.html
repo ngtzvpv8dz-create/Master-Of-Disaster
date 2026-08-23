@@ -11,7 +11,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d0f">
   <title>Master of Disaster</title>
-  <!-- BUILD: V484 · 23.08.2026 · 09:36 -->
+  <!-- BUILD: V485 · 23.08.2026 · 09:54 -->
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
@@ -123,9 +123,10 @@
   <script src="./statistics-alignment-v477.js?v=477-1440"></script>
   <script src="./render-stability-v479.js?v=479-0746"></script>
   <script src="./today-create-render-v480.js?v=480-0801"></script>
+  <script src="./terminal-delete-v485.js?v=485-0954"></script>
   <script>
     (function(){
-      const meta={version:'V484',date:'23.08.2026',time:'09:36',build:'23.08.2026 · 09:36 Uhr'};
+      const meta={version:'V485',date:'23.08.2026',time:'09:54',build:'23.08.2026 · 09:54 Uhr'};
       window.__MOD_BUILD__=meta;
       function patchBuild(){
         window.__modDevVersion={...meta,patch:patchBuild};
@@ -147,13 +148,13 @@
         const testRun=params.has('reg')||params.has('smoke');
         if('serviceWorker'in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
         if('caches'in window){const keys=await caches.keys();await Promise.all(keys.map(k=>caches.delete(k)));}
-        if(!testRun&&!sessionStorage.getItem('modV484RemoteReopenDone')){
-          sessionStorage.setItem('modV484RemoteReopenDone','1');
+        if(!testRun&&!sessionStorage.getItem('modV485TerminalDeleteDone')){
+          sessionStorage.setItem('modV485TerminalDeleteDone','1');
           const u=new URL(location.href);
-          u.searchParams.set('v484reopen',Date.now().toString());
+          u.searchParams.set('v485delete',Date.now().toString());
           location.replace(u.toString());
         }
-      }catch(e){console.warn('V484 remote reopen cleanup:',e);}
+      }catch(e){console.warn('V485 terminal delete cleanup:',e);}
     })();
   </script>
 </body>
