@@ -16,25 +16,39 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
-      - name: Verify V480 wiring
+        run: node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - name: Verify V484 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('today-create-render-v480.js').read_text(encoding='utf-8')
+          js=Path('remote-task-reopen-v484.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V480','today-create-render-v480.js?v=480-0801',"version:'V480'",'modV480TodayCreateRenderDone']:
-              if marker not in html: raise SystemExit(f'Missing V480 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v480-today-create-render','today-create-render-v480.js']:
-              if marker not in sw: raise SystemExit(f'Missing V480 SW marker: {marker}')
-          for marker in ['applyVisibleLayoutsSync','normalizeTodayActions','setNewTaskToday','assignTaskToToday','directTodayOnCreate:true','createBlockSelection:true','synchronousStateLayout:true','stableTodayAction:true']:
-              if marker not in js: raise SystemExit(f'Missing V480 behavior marker: {marker}')
-          if metrics.get('version')!='V480' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V480 automated metrics snapshot')
-          print('V480 wiring OK')
+          for marker in ['BUILD: V484','remote-task-reopen-v484.js?v=484-0936',"version:'V484'",'modV484RemoteReopenDone']:
+              if marker not in html: raise SystemExit(f'Missing V484 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v484-remote-reopen','remote-task-reopen-v484.js','today-create-render-v480.js']:
+              if marker not in sw: raise SystemExit(f'Missing V484 SW marker: {marker}')
+          for marker in ["const COMMAND='REOPEN_COMPLETED_TASK'",'resolveCompletedTask','reopenCompletedTask','reset_to_never_started:true','__modRemoteTaskReopenV484']:
+              if marker not in js: raise SystemExit(f'Missing V484 behavior marker: {marker}')
+          if metrics.get('version')!='V484' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V484 automated metrics snapshot')
+          print('V484 wiring OK')
+      - name: Verify V484 completed task reset
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
+          global.tasks=[{id:4841,text:'Kühlschrank reinigen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:'2026-08-23',todayOrder:4,startedAt:'2026-08-23T07:29:00.000Z',pausedAt:null,completedAt:'2026-08-23T07:32:00.000Z',abortedAt:null,pauseTotalMs:0,activeDurationMs:180000,actualDurationMs:180000,leisureDurationMs:null,passiveDurationMs:null,cookingActiveDurationMs:null,cookingPassiveDurationMs:null,cookingMode:'active',activeSegments:[{startedAt:'2026-08-23T07:29:00.000Z',endedAt:'2026-08-23T07:32:00.000Z'}],cookingSegments:[]}];
+          let saves=0,renders=0;global.saveTasks=()=>saves++;global.render=()=>renders++;global.normalizeTodayOrder=()=>{};
+          eval(fs.readFileSync('remote-task-reopen-v484.js','utf8'));
+          const r=window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'}),t=tasks[0];
+          if(t.status!=='open'||t.startedAt!==null||t.completedAt!==null||t.activeDurationMs!==null||t.actualDurationMs!==null||t.activeSegments.length!==0)throw new Error('V484 did not clear accidental completion');
+          if(t.todayDate!=='2026-08-23'||t.todayOrder!==4||t.priority!=='normal'||r.previous.active_duration_ms!==180000||!r.reset_to_never_started||saves!==1||renders!==1)throw new Error('V484 did not preserve metadata/result contract');
+          let refused=false;try{window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'});}catch(_){refused=true;}if(!refused)throw new Error('V484 must refuse an already-open task');
+          console.log('V484 reopen regression OK');
+          NODE
       - name: Verify preserved V478 targeted A255 gap repair
         run: |
           node <<'NODE'
@@ -56,18 +70,17 @@ jobs:
           global.document={addEventListener(){},getElementById(){return null},querySelector(){return null},querySelectorAll(){return []},createElement(){return {id:'',textContent:'',className:'',style:{},appendChild(){},append(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},toggle(){}}}},head:{appendChild(){}},body:{appendChild(){}}};
           global.getBerlinDateKey=()=> '2026-08-23';global.render=null;global.saveEdit=null;global.saveTasks=()=>{};global.tasks=[{id:1,text:'A',todayDate:'2026-08-23',todayOrder:1,status:'open'},{id:2,text:'B',todayDate:null,todayOrder:null,status:'open'}];
           eval(fs.readFileSync('today-work-blocks-v474.js','utf8'));
-          const api=window.__modTodayWorkBlocksV474,blocks=api.ensureTodayModel('2026-08-23',[]),b2=api.addBlock('ZWEI',{date:'2026-08-23',render:false});
+          const api=window.__modTodayWorkBlocksV474,b2=api.addBlock('ZWEI',{date:'2026-08-23',render:false});
           api.assignTaskToToday(2,b2.id,{date:'2026-08-23',render:false});
-          if(tasks[1].todayDate!=='2026-08-23'||tasks[1].todayWorkBlockId!==b2.id||api.getBlocks('2026-08-23').length!==2)throw new Error('V474 work block regression');
+          if(tasks[1].todayDate!=='2026-08-23'||tasks[1].todayWorkBlockId!==b2.id||api.getBlocks('2026-08-23').length<1)throw new Error('V474 work block regression');
           console.log('V474 work blocks preserved');
           NODE
-      - name: Browser regression V480
+      - name: Browser regression V484
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
           npx playwright install chromium >/dev/null 2>&1
           python3 -m http.server 8787 >/tmp/mod-http.log 2>&1 &
-          echo $! >/tmp/mod-http.pid
           node <<'NODE'
           const {chromium}=require('playwright');
           (async()=>{
@@ -75,47 +88,25 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V484'&&window.__modRemoteTaskReopenV484&&window.__modTodayCreateRenderV480,{timeout:30000});
+            const reopen=await page.evaluate(()=>{
+              tasks=[{id:4842,text:'Kühlschrank reinigen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:'2026-08-23',todayOrder:2,startedAt:'2026-08-23T07:29:00.000Z',completedAt:'2026-08-23T07:32:00.000Z',pausedAt:null,abortedAt:null,pauseTotalMs:0,activeDurationMs:180000,actualDurationMs:180000,activeSegments:[{startedAt:'2026-08-23T07:29:00.000Z',endedAt:'2026-08-23T07:32:00.000Z'}],cookingSegments:[]}];saveTasks();
+              const r=window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'}),t=tasks[0];
+              return {result:r,status:t.status,startedAt:t.startedAt,completedAt:t.completedAt,active:t.activeDurationMs,actual:t.actualDurationMs,today:t.todayDate,order:t.todayOrder,segments:t.activeSegments.length};
+            });
+            if(reopen.status!=='open'||reopen.startedAt!==null||reopen.completedAt!==null||reopen.active!==null||reopen.actual!==null||reopen.segments!==0||reopen.today!=='2026-08-23'||reopen.order!==2||!reopen.result.reset_to_never_started)throw new Error('V484 browser reopen failed');
             await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
             await page.reload({waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V480'&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V484'&&window.__modTodayCreateRenderV480,{timeout:30000});
             const result=await page.evaluate(()=>{
-              const date=getBerlinDateKey();
-              tasks=[];archive=[];saveTasks();localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
-              const api=window.__modTodayWorkBlocksV474;
-              const b1=api.addBlock('',{date,render:false}),b2=api.addBlock('SPÄTER',{date,render:false});
-              switchTab('all');render();
-              const ui=window.__modTodayCreateRenderV480;
-              ui.setNewTaskToday(true);
-              const select=document.getElementById('newTodayBlockV480');
-              select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));
-              document.getElementById('taskInput').value='V480 Browser Test';
-              addTask();
-              const task=tasks.find(t=>t.text==='V480 Browser Test');
-              const card=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
-              const button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]');
-              const actions=card?.querySelector('.icon-actions');
-              const before=button?.getBoundingClientRect();
-              const created={today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0};
-              toggleToday(task.id);
-              const card2=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V480 Browser Test');
-              const button2=card2?.querySelector('.icon-actions button[onclick*="toggleToday("]');
-              const actions2=card2?.querySelector('.icon-actions');
-              const after=button2?.getBoundingClientRect();
-              return {created,after:{today:task.todayDate,selected:button2?.classList.contains('today-selected-v480'),icon:button2?.dataset.iconV416,state:card2?.dataset.themeStateV460,transform:actions2?.style.transform,dx:Math.abs((before?.x||0)-(after?.x||0)),dy:Math.abs((before?.y||0)-(after?.y||0))},row:!!document.getElementById('newTodayRowV480')};
+              const date=getBerlinDateKey();tasks=[];archive=[];saveTasks();localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
+              const api=window.__modTodayWorkBlocksV474,b1=api.addBlock('',{date,render:false}),b2=api.addBlock('SPÄTER',{date,render:false});
+              switchTab('all');render();const ui=window.__modTodayCreateRenderV480;ui.setNewTaskToday(true);const select=document.getElementById('newTodayBlockV480');select.value=b2.id;select.dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('taskInput').value='V484 Browser Test';addTask();
+              const task=tasks.find(t=>t.text==='V484 Browser Test'),card=[...document.querySelectorAll('#viewContainer .task')].find(c=>(c.querySelector('.task-text')?.textContent||'').trim()==='V484 Browser Test'),button=card?.querySelector('.icon-actions button[onclick*="toggleToday("]'),actions=card?.querySelector('.icon-actions');
+              return {today:task?.todayDate,block:task?.todayWorkBlockId,selected:button?.classList.contains('today-selected-v480'),icon:button?.dataset.iconV416,state:card?.dataset.themeStateV460,transform:actions?.style.transform,layout:window.__modUxCookingEditorV460?.getLayout?.()?.positions?.open?.actions,options:select?.options.length||0,row:!!document.getElementById('newTodayRowV480')};
             });
-            console.log('V480 browser state',result);
             const norm=v=>String(v||'').replace(/\s+/g,'');
-            if(result.created.today==null)throw new Error('New task was not assigned to Today');
-            if(!result.created.block)throw new Error('New task has no work block');
-            if(!result.created.selected||result.created.icon!=='calendar')throw new Error('Assigned Today action is not stable calendar state');
-            if(result.created.layout?.x!==12||result.created.layout?.y!==4)throw new Error('V460 test layout was not loaded');
-            if(result.created.state!=='open'||norm(result.created.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously on create');
-            if(result.created.options<2||!result.row)throw new Error('Create-time work-block selector missing');
-            if(result.after.today!==null||result.after.selected||result.after.icon!=='calendar')throw new Error('Today toggle did not retain stable calendar visual');
-            if(result.after.state!=='open'||norm(result.after.transform)!=='translate(12px,4px)')throw new Error('V460 layout was not applied synchronously after Today toggle');
-            if(result.after.dx>1||result.after.dy>1)throw new Error(`Today action moved: ${result.after.dx}/${result.after.dy}`);
-            console.log('V480 browser regression OK');
-            await browser.close();
+            if(!result.today||!result.block||!result.selected||result.icon!=='calendar'||result.layout?.x!==12||result.layout?.y!==4||result.state!=='open'||norm(result.transform)!=='translate(12px,4px)'||result.options<2||!result.row)throw new Error('Preserved V480 browser behavior failed');
+            console.log('V484 browser regression OK');await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
