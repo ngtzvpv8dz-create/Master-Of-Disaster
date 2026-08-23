@@ -16,45 +16,48 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V485 build
+      - name: Verify V486 build
         shell: python
         run: |
           from pathlib import Path
           import json
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
+          v486=Path('time-segment-scroll-v486.js').read_text(encoding='utf-8')
           v485=Path('terminal-delete-v485.js').read_text(encoding='utf-8')
           v484=Path('remote-task-reopen-v484.js').read_text(encoding='utf-8')
           v480=Path('today-create-render-v480.js').read_text(encoding='utf-8')
           v478=Path('remote-archive-sequence-v478.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V485','23.08.2026 · 09:54','terminal-delete-v485.js?v=485-0954',"version:'V485'",'modV485TerminalDeleteDone']:
-              if marker not in index: raise SystemExit(f'Missing V485 index marker: {marker}')
-          for marker in ['master-of-disaster-v485-terminal-delete','terminal-delete-v485.js','remote-task-reopen-v484.js','today-create-render-v480.js','development-metrics.json']:
-              if marker not in sw: raise SystemExit(f'Missing V485 service worker marker: {marker}')
-          for marker in ["const BUILD_VERSION='V485'",'deleteTerminalTask','deleteArchivedTask','compactArchiveNumbers','ensureAbortedSection','dynamicArchiveRenumber:true','statisticsFollowRemainingData:true','stableArchiveIdsPreserved:true','confirmationRequired:true','abortedTasksVisible:true','__modTerminalDeleteV485']:
-              if marker not in v485: raise SystemExit(f'Missing V485 behavior: {marker}')
+          for marker in ['BUILD: V486','23.08.2026 · 15:11','time-segment-scroll-v486.js?v=486-1511',"version:'V486'",'modV486SegmentScrollDone']:
+              if marker not in index: raise SystemExit(f'Missing V486 index marker: {marker}')
+          for marker in ['master-of-disaster-v486-time-segment-scroll','time-segment-scroll-v486.js','terminal-delete-v485.js','remote-task-reopen-v484.js','today-create-render-v480.js','development-metrics.json']:
+              if marker not in sw: raise SystemExit(f'Missing V486 service worker marker: {marker}')
+          for marker in ["BUILD_VERSION='V486'",'--mod-v486-viewport-height','overflow-y:auto!important','position:sticky','revealNewestSegment','scrollableModal:true','stickyActions:true','visualViewportAware:true','__modTimeSegmentScrollV486']:
+              if marker not in v486: raise SystemExit(f'Missing V486 behavior: {marker}')
+          for marker in ["const BUILD_VERSION='V485'",'deleteTerminalTask','deleteArchivedTask','compactArchiveNumbers','dynamicArchiveRenumber:true','statisticsFollowRemainingData:true','stableArchiveIdsPreserved:true','confirmationRequired:true','abortedTasksVisible:true','__modTerminalDeleteV485']:
+              if marker not in v485: raise SystemExit(f'Missing preserved V485 behavior: {marker}')
           for marker in ["const BUILD_VERSION='V484'",'reopenCompletedTask','__modRemoteTaskReopenV484']:
               if marker not in v484: raise SystemExit(f'Missing preserved V484 behavior: {marker}')
           for marker in ["const BUILD_VERSION='V480'",'stableTodayAction:true','__modTodayCreateRenderV480']:
               if marker not in v480: raise SystemExit(f'Missing preserved V480 behavior: {marker}')
           for marker in ["const COMMAND='RENUMBER_ARCHIVE_GAP'",'sequence_contiguous:true','__modRemoteArchiveSequenceV478']:
               if marker not in v478: raise SystemExit(f'Missing preserved V478 behavior: {marker}')
-          if metrics.get('version')!='V485' or metrics.get('automated') is not True:
-              raise SystemExit('Bundled metrics snapshot is not V485/automated')
-          print('V485 build consistency OK')
+          if metrics.get('version')!='V486' or metrics.get('automated') is not True:
+              raise SystemExit('Bundled metrics snapshot is not V486/automated')
+          print('V486 build consistency OK')
       - name: JavaScript syntax
-        run: node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check ux-cooking-editor-v460.js && node --check app.js
+        run: node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check ux-cooking-editor-v460.js && node --check time-segments-v443.js && node --check app.js
       - name: Generator produces current repository metrics
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
           cat /tmp/metrics.log
           node - <<'NODE'
           const m=require('/tmp/development-metrics.json');
-          if(m.version!=='V485'||!m.automated)throw new Error('Generated version/automation flag wrong');
+          if(m.version!=='V486'||!m.automated)throw new Error('Generated version/automation flag wrong');
           if(m.repository.reachableCommits<500)throw new Error('Commit history unexpectedly short');
           if(m.repository.currentFiles<40)throw new Error('File count unexpectedly low');
           if(m.repository.currentTextLines<10000)throw new Error('Text line count unexpectedly low');
           if(m.repository.currentBytes<500000)throw new Error('Repository byte count unexpectedly low');
-          console.log('V485 generated metrics sane');
+          console.log('V486 generated metrics sane');
           NODE
