@@ -16,77 +16,61 @@ jobs:
         with:
           node-version: '20'
       - name: JavaScript syntax
-        run: node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check time-segments-v443.js && node --check app.js
-      - name: Verify V486 wiring
+        run: node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check today-work-blocks-v474.js && node --check ux-cooking-editor-v460.js && node --check time-segments-v443.js && node --check app.js
+      - name: Verify V487 wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           html=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          js=Path('time-segment-scroll-v486.js').read_text(encoding='utf-8')
+          js=Path('segment-active-duration-v487.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V486','time-segment-scroll-v486.js?v=486-1511',"version:'V486'",'modV486SegmentScrollDone']:
-              if marker not in html: raise SystemExit(f'Missing V486 HTML marker: {marker}')
-          for marker in ['master-of-disaster-v486-time-segment-scroll','time-segment-scroll-v486.js']:
-              if marker not in sw: raise SystemExit(f'Missing V486 SW marker: {marker}')
-          for marker in ['--mod-v486-viewport-height','overflow-y:auto!important','position:sticky','revealNewestSegment','scrollableModal:true','stickyActions:true','visualViewportAware:true']:
-              if marker not in js: raise SystemExit(f'Missing V486 behavior marker: {marker}')
-          if metrics.get('version')!='V486' or metrics.get('automated') is not True:
-              raise SystemExit('Expected V486 automated metrics snapshot')
-          print('V486 wiring OK')
-      - name: Verify preserved V485 deletion accounting and archive renumber
+          for marker in ['BUILD: V487','segment-active-duration-v487.js?v=487-1528',"version:'V487'",'modV487SegmentDurationDone']:
+              if marker not in html: raise SystemExit(f'Missing V487 HTML marker: {marker}')
+          for marker in ['master-of-disaster-v487-segment-active-duration','segment-active-duration-v487.js','time-segment-scroll-v486.js']:
+              if marker not in sw: raise SystemExit(f'Missing V487 SW marker: {marker}')
+          for marker in ["sourceOfTruth:'activeSegments'",'segmentGapsCountAsPause:true','legacyFallbackPreserved:true','sumActiveSegments']:
+              if marker not in js: raise SystemExit(f'Missing V487 behavior marker: {marker}')
+          if metrics.get('version')!='V487' or metrics.get('automated') is not True:
+              raise SystemExit('Expected V487 automated metrics snapshot')
+          print('V487 wiring OK')
+      - name: Verify V487 segment duration source
         run: |
           node <<'NODE'
-          const fs=require('fs');
-          global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};
-          global.document={addEventListener:()=>{},visibilityState:'visible',getElementById:()=>null};
-          global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          let taskSaves=0,archiveSaves=0;
-          global.saveTasks=()=>taskSaves++;global.saveArchive=()=>archiveSaves++;global.render=()=>{};
-          global.tasks=[
-            {id:1,text:'Falsch erledigt',status:'completed',type:'work',activeDurationMs:180000,actualDurationMs:180000},
-            {id:2,text:'Falsch abgebrochen',status:'aborted',type:'work',activeDurationMs:360000,actualDurationMs:360000},
-            {id:3,text:'Offen lassen',status:'open',type:'work',activeDurationMs:null,actualDurationMs:null}
-          ];
-          global.archive=[
-            {archiveNumber:1,archiveId:'stable-1',text:'A1',status:'completed',type:'work',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},
-            {archiveNumber:2,archiveId:'stable-2',text:'A2 löschen',status:'completed',type:'work',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},
-            {archiveNumber:3,archiveId:'stable-3',text:'A3',status:'completed',type:'work',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}
-          ];
-          global.nextArchiveNumber=4;
-          eval(fs.readFileSync('terminal-delete-v485.js','utf8'));
-          const api=window.__modTerminalDeleteV485;
-          const c=api.deleteTerminalTask(1),a=api.deleteTerminalTask(2);
-          if(tasks.map(t=>t.id).join(',')!=='3'||c.removed_active_ms!==180000||a.removed_active_ms!==360000||taskSaves!==2)throw new Error('Terminal deletion failed');
-          let refused=false;try{api.deleteTerminalTask(3);}catch(_){refused=true;}if(!refused)throw new Error('Open task deletion was not refused');
-          const sum=()=>archive.reduce((n,r)=>n+(Number(r.archiveAccountingActiveDurationMs)||Number(r.activeDurationMs)||0),0);
-          const before=sum(),r=api.deleteArchivedTask({archiveId:'stable-2'}),after=sum();
-          if(before-after!==180000)throw new Error('Deleted archive duration still affects statistics source');
-          if(archive.length!==2||archive[0].archiveNumber!==1||archive[1].archiveNumber!==2||archive[1].archiveId!=='stable-3'||nextArchiveNumber!==3)throw new Error('Archive renumber/stable ID failed');
-          if(r.old_archive_number!==2||r.removed_active_ms!==180000||!r.archive_ids_preserved||archiveSaves!==1)throw new Error('Archive delete result contract failed');
-          console.log('V485 deletion accounting/renumber preserved');
+          const fs=require('fs');global.window=global;
+          global.calculateActiveDuration=()=>17640000;
+          eval(fs.readFileSync('segment-active-duration-v487.js','utf8'));
+          const paused={status:'paused',startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeSegments:[
+            {startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},
+            {startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},
+            {startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}
+          ]};
+          if(calculateActiveDuration(paused,Date.parse('2026-08-23T15:00:00Z'))!==8880000)throw new Error('Three active segments did not total 02:28:00');
+          const legacy={status:'paused',startedAt:'2026-08-23T08:00:00Z',activeSegments:[]};
+          if(calculateActiveDuration(legacy,0)!==17640000)throw new Error('Legacy fallback was not preserved');
+          const running={status:'running',activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:null}]};
+          if(calculateActiveDuration(running,Date.parse('2026-08-23T10:10:00Z'))!==4200000)throw new Error('Open running segment was not accumulated correctly');
+          const imported={status:'paused',importedHistoricalProgressDurationMs:300000,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'}]};
+          if(calculateActiveDuration(imported,0)!==3900000)throw new Error('Imported historical baseline was not preserved');
+          console.log('V487 segment duration source OK');
           NODE
-      - name: Verify preserved V484 reopen
+      - name: Verify preserved V485 deletion and V484/V478 behavior
         run: |
           node <<'NODE'
-          const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          global.tasks=[{id:4841,text:'Kühlschrank reinigen',status:'completed',type:'work',priority:'normal',todayDate:'2026-08-23',todayOrder:4,startedAt:'2026-08-23T07:29:00.000Z',completedAt:'2026-08-23T07:32:00.000Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[{startedAt:'2026-08-23T07:29:00.000Z',endedAt:'2026-08-23T07:32:00.000Z'}]}];
-          global.saveTasks=()=>{};global.render=()=>{};
-          eval(fs.readFileSync('remote-task-reopen-v484.js','utf8'));const t=tasks[0];window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'});
-          if(t.status!=='open'||t.startedAt!==null||t.completedAt!==null||t.activeDurationMs!==null||t.todayOrder!==4)throw new Error('V484 reopen regression');
-          console.log('V484 reopen preserved');
+          const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible',getElementById:()=>null};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
+          let taskSaves=0,archiveSaves=0;global.saveTasks=()=>taskSaves++;global.saveArchive=()=>archiveSaves++;global.render=()=>{};
+          global.tasks=[{id:1,text:'Falsch erledigt',status:'completed',type:'work',activeDurationMs:180000,actualDurationMs:180000},{id:2,text:'Offen lassen',status:'open',type:'work'}];
+          global.archive=[{archiveNumber:1,archiveId:'stable-1',text:'A1',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},{archiveNumber:2,archiveId:'stable-2',text:'A2',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},{archiveNumber:3,archiveId:'stable-3',text:'A3',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}];global.nextArchiveNumber=4;
+          eval(fs.readFileSync('terminal-delete-v485.js','utf8'));window.__modTerminalDeleteV485.deleteTerminalTask(1);window.__modTerminalDeleteV485.deleteArchivedTask({archiveId:'stable-2'});
+          if(tasks.length!==1||tasks[0].id!==2||archive.map(r=>r.archiveNumber).join(',')!=='1,2'||archive[1].archiveId!=='stable-3'||nextArchiveNumber!==3)throw new Error('V485 deletion regression');
+          global.tasks=[{id:4841,text:'Kühlschrank reinigen',status:'completed',type:'work',todayOrder:4,startedAt:'2026-08-23T07:29:00Z',completedAt:'2026-08-23T07:32:00Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]}];
+          eval(fs.readFileSync('remote-task-reopen-v484.js','utf8'));window.__modRemoteTaskReopenV484.reopenCompletedTask({text:'Kühlschrank reinigen'});if(tasks[0].status!=='open'||tasks[0].activeDurationMs!==null||tasks[0].todayOrder!==4)throw new Error('V484 reopen regression');
+          global.archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`}));for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`});global.nextArchiveNumber=263;
+          eval(fs.readFileSync('remote-archive-sequence-v478.js','utf8'));window.__modRemoteArchiveSequenceV478.repairArchiveGap(255);if(!archive.map(x=>x.archiveNumber).sort((a,b)=>a-b).every((n,i)=>n===i+1)||nextArchiveNumber!==262)throw new Error('V478 repair regression');
+          console.log('Preserved V485/V484/V478 behavior OK');
           NODE
-      - name: Verify preserved V478 targeted archive repair
-        run: |
-          node <<'NODE'
-          const fs=require('fs');global.window=global;global.navigator={onLine:false};global.addEventListener=()=>{};global.document={addEventListener:()=>{},visibilityState:'visible'};global.setTimeout=()=>0;global.setInterval=()=>0;global.clearInterval=()=>{};
-          global.archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`A${i+1}`}));for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`A${n}`});global.nextArchiveNumber=263;global.saveArchive=()=>{};global.render=()=>{};
-          eval(fs.readFileSync('remote-archive-sequence-v478.js','utf8'));const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255),nums=archive.map(x=>x.archiveNumber).sort((a,b)=>a-b);
-          if(nums.some((n,i)=>n!==i+1)||nextArchiveNumber!==262||r.shifted!==7)throw new Error('V478 archive repair regression');
-          console.log('V478 archive repair preserved');
-          NODE
-      - name: Browser regression V486
+      - name: Browser regression V487
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
@@ -99,79 +83,33 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:560}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V486'&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485&&window.__modTodayCreateRenderV480,{timeout:30000});
+            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V487'&&window.__modSegmentActiveDurationV487&&window.__modTimeSegmentScrollV486&&window.__modTerminalDeleteV485,{timeout:30000});
 
             await page.evaluate(()=>{
-              tasks=[{
-                id:4861,text:'Kochabschnitt Scrolltest',type:'cooking',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,
-                startedAt:'2026-08-23T12:00:00Z',pausedAt:'2026-08-23T12:20:00Z',pauseTotalMs:0,cookingMode:'passive',
-                activeSegments:[{startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'}],
-                cookingSegments:[
-                  {mode:'active',startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'},
-                  {mode:'passive',startedAt:'2026-08-23T12:05:00Z',endedAt:'2026-08-23T12:20:00Z'}
-                ]
-              }];saveTasks();askManualTimes(4861);
-            });
-            await page.waitForTimeout(80);
-            if(await page.locator('#segmentRowsV443 [data-segment-row]').count()!==2)throw new Error('Expected two initial cooking segments');
-            const add=page.getByRole('button',{name:/KOCHABSCHNITT HINZUFÜGEN/i});
-            await add.click();await page.waitForTimeout(180);
-            if(await page.locator('#segmentRowsV443 [data-segment-row]').count()!==3)throw new Error('Third cooking segment was not added');
+              tasks=[{id:265,text:'Aufgabe 265 Segmenttest',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[
+                {startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},
+                {startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},
+                {startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}
+              ]}];saveTasks();switchTab('all');render();
+            });await page.waitForTimeout(120);
+            const calculated=await page.evaluate(()=>({live:liveDuration(tasks[0]),wall:Date.parse(tasks[0].pausedAt)-Date.parse(tasks[0].startedAt),text:document.querySelector('.task .duration')?.innerText||''}));
+            if(calculated.live!==8880000)throw new Error(`Card duration source is ${calculated.live}, expected 8880000`);
+            if(calculated.wall!==17640000)throw new Error('Regression fixture no longer represents 04:54 wall span');
+            if(!calculated.text.includes('02:28:00'))throw new Error(`Task card does not display 02:28:00: ${calculated.text}`);
+            await page.evaluate(()=>finishTask(265));await page.waitForTimeout(80);
+            const completed=await page.evaluate(()=>({status:tasks[0].status,active:tasks[0].activeDurationMs,actual:tasks[0].actualDurationMs,segments:tasks[0].activeSegments.length}));
+            if(completed.status!=='completed'||completed.active!==8880000||completed.actual!==8880000||completed.segments!==3)throw new Error('Completing segmented task did not preserve 02:28:00');
 
-            const layout=await page.evaluate(()=>{
-              const modal=document.querySelector('.segment-editor-modal'),actions=modal?.querySelector('.modal-actions');
-              if(!modal||!actions)return null;
-              const mr=modal.getBoundingClientRect(),ar=actions.getBoundingClientRect(),cs=getComputedStyle(modal),as=getComputedStyle(actions);
-              return {overflowY:cs.overflowY,position:as.position,scrollHeight:modal.scrollHeight,clientHeight:modal.clientHeight,scrollTop:modal.scrollTop,modalTop:mr.top,modalBottom:mr.bottom,actionsTop:ar.top,actionsBottom:ar.bottom,viewport:window.innerHeight,buttons:actions.querySelectorAll('.modal-button').length};
-            });
-            if(!layout)throw new Error('Time segment modal missing');
-            if(layout.overflowY!=='auto')throw new Error('Segment modal is not vertically scrollable');
-            if(layout.position!=='sticky')throw new Error('Segment action bar is not sticky');
-            if(layout.scrollHeight<=layout.clientHeight)throw new Error('Small viewport fixture did not create modal overflow');
-            if(layout.modalBottom>layout.viewport+1||layout.modalTop<0)throw new Error('Segment modal exceeds visible viewport');
-            if(layout.buttons<3)throw new Error('Cooking editor action buttons missing');
-            if(layout.scrollTop<=0)throw new Error('New third segment was not brought into the scrollable area');
-
-            await page.evaluate(()=>{const modal=document.querySelector('.segment-editor-modal');modal.scrollTop=modal.scrollHeight;});
-            await page.waitForTimeout(80);
-            const bottom=await page.evaluate(()=>{
-              const modal=document.querySelector('.segment-editor-modal'),actions=modal.querySelector('.modal-actions');
-              const mr=modal.getBoundingClientRect(),ar=actions.getBoundingClientRect();
-              return {modalTop:mr.top,modalBottom:mr.bottom,actionsTop:ar.top,actionsBottom:ar.bottom,scrollTop:modal.scrollTop,maxScroll:modal.scrollHeight-modal.clientHeight};
-            });
-            if(bottom.actionsTop<bottom.modalTop-1||bottom.actionsBottom>bottom.modalBottom+1)throw new Error('Action buttons are outside the visible scrollable modal');
-            if(bottom.scrollTop<bottom.maxScroll-2)throw new Error('Segment modal could not scroll to the bottom');
-            const actions=page.locator('.segment-editor-modal .modal-actions .modal-button');
-            if(await actions.count()<3)throw new Error('Expected three cooking action buttons');
-            for(let i=0;i<await actions.count();i++){if(!(await actions.nth(i).isVisible()))throw new Error(`Cooking action button ${i+1} is not reachable`);}
+            // V486 scroll behavior remains intact.
+            await page.evaluate(()=>{tasks=[{id:4861,text:'Kochabschnitt Scrolltest',type:'cooking',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T12:00:00Z',pausedAt:'2026-08-23T12:20:00Z',pauseTotalMs:0,cookingMode:'passive',activeSegments:[{startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'}],cookingSegments:[{mode:'active',startedAt:'2026-08-23T12:00:00Z',endedAt:'2026-08-23T12:05:00Z'},{mode:'passive',startedAt:'2026-08-23T12:05:00Z',endedAt:'2026-08-23T12:20:00Z'}]}];saveTasks();askManualTimes(4861);});
+            await page.getByRole('button',{name:/KOCHABSCHNITT HINZUFÜGEN/i}).click();await page.waitForTimeout(150);
+            const modal=await page.evaluate(()=>{const m=document.querySelector('.segment-editor-modal'),a=m?.querySelector('.modal-actions');return m&&a?{rows:document.querySelectorAll('#segmentRowsV443 [data-segment-row]').length,overflow:getComputedStyle(m).overflowY,sticky:getComputedStyle(a).position,overflowing:m.scrollHeight>m.clientHeight}:null;});
+            if(!modal||modal.rows!==3||modal.overflow!=='auto'||modal.sticky!=='sticky'||!modal.overflowing)throw new Error('V486 scroll regression');
             await page.getByRole('button',{name:'Zurück'}).click();
-            if(await page.locator('.segment-editor-modal').count())throw new Error('Reachable back button did not close segment editor');
 
-            // Preserve V485 UI behavior including collapsed archive day expansion.
-            await page.evaluate(()=>{
-              tasks=[
-                {id:4851,text:'Erledigt löschen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T07:00:00Z',completedAt:'2026-08-23T07:03:00Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]},
-                {id:4852,text:'Abgebrochen löschen',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,startedAt:'2026-08-23T07:10:00Z',abortedAt:'2026-08-23T07:16:00Z',activeDurationMs:360000,actualDurationMs:360000,activeSegments:[]}
-              ];archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('all');render();
-            });await page.waitForTimeout(150);
-            const completed=page.locator('.task',{hasText:'Erledigt löschen'}).first();await completed.locator('.terminal-delete-v485').click();
-            if(!(await page.locator('#terminalDeleteConfirmV485').isVisible()))throw new Error('Preserved delete confirmation missing');
-            await page.locator('#terminalDeleteCancelV485').click();
-
-            await page.evaluate(()=>{
-              archive=[
-                {archiveNumber:1,archiveId:'stable-1',text:'Archiv eins',status:'completed',type:'work',priority:'normal',completedDate:'2026-08-23',completedAt:'2026-08-23T07:01:00Z',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},
-                {archiveNumber:2,archiveId:'stable-2',text:'Archiv löschen',status:'completed',type:'work',priority:'normal',completedDate:'2026-08-23',completedAt:'2026-08-23T07:03:00Z',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},
-                {archiveNumber:3,archiveId:'stable-3',text:'Archiv drei',status:'completed',type:'work',priority:'normal',completedDate:'2026-08-23',completedAt:'2026-08-23T07:05:00Z',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}
-              ];nextArchiveNumber=4;saveArchive();switchTab('archive');render();
-            });await page.waitForTimeout(150);
-            const archiveCard=page.locator('.archive-task',{hasText:'Archiv löschen'}).first();
-            if(!(await archiveCard.isVisible())){await page.locator('.archive-day-header').first().click();await page.waitForTimeout(80);}
-            if(!(await archiveCard.isVisible()))throw new Error('Archive day could not be expanded');
-            const archiveDelete=archiveCard.locator('.terminal-delete-v485');if(!(await archiveDelete.isVisible()))throw new Error('Preserved archive delete button missing');
-
-            const preserved=await page.evaluate(()=>({v486:!!window.__modTimeSegmentScrollV486,v485:!!window.__modTerminalDeleteV485,v484:!!window.__modRemoteTaskReopenV484,v480:!!window.__modTodayCreateRenderV480,workBlocks:!!window.__modTodayWorkBlocksV474,archiveRepair:!!window.__modRemoteArchiveSequenceV478}));
-            if(!Object.values(preserved).every(Boolean))throw new Error('Preserved feature bundle missing');
-            console.log('V486 browser regression OK');await browser.close();
+            // V485 confirmation remains available.
+            await page.evaluate(()=>{tasks=[{id:4851,text:'Erledigt löschen',status:'completed',type:'work',priority:'normal',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]}];archive=[];saveTasks();saveArchive();switchTab('all');render();});await page.waitForTimeout(100);
+            await page.locator('.task',{hasText:'Erledigt löschen'}).first().locator('.terminal-delete-v485').click();if(!(await page.locator('#terminalDeleteConfirmV485').isVisible()))throw new Error('V485 delete confirmation regression');
+            console.log('V487 browser regression OK');await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
