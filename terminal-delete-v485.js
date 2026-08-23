@@ -204,6 +204,17 @@
     return fallbackRowForCard(card);
   }
 
+  function decorateArchiveCard(card,row){
+    if(!card||!row)return card;
+    injectStyle();
+    card.querySelectorAll('.archive-test-delete-button:not(.terminal-delete-v485)').forEach(button=>button.remove());
+    if(card.querySelector('.terminal-delete-v485'))return card;
+    const edit=card.querySelector('.archive-category-edit-v412');
+    const button=makeDeleteButton('archive',row);
+    if(edit)edit.insertAdjacentElement('afterend',button);else card.appendChild(button);
+    return card;
+  }
+
   function ensureAbortedSection(){
     const container=document.getElementById('viewContainer');
     if(!container||typeof currentTab==='undefined'||currentTab!=='all'||!Array.isArray(tasks)||typeof taskCard!=='function')return false;
@@ -240,12 +251,7 @@
 
     container.querySelectorAll('.archive-task').forEach(card=>{
       const row=rowForCard(card);
-      if(!row)return;
-      card.querySelectorAll('.archive-test-delete-button:not(.terminal-delete-v485)').forEach(button=>button.remove());
-      if(card.querySelector('.terminal-delete-v485'))return;
-      const edit=card.querySelector('.archive-category-edit-v412');
-      const button=makeDeleteButton('archive',row);
-      if(edit)edit.insertAdjacentElement('afterend',button);else card.appendChild(button);
+      if(row)decorateArchiveCard(card,row);
     });
   }
 
@@ -266,6 +272,15 @@
     if(!container||observer||typeof MutationObserver==='undefined')return;
     observer=new MutationObserver(()=>queueEnhance());
     observer.observe(container,{childList:true,subtree:true});
+  }
+
+  const previousArchiveCard=typeof archiveCard==='function'?archiveCard:null;
+  if(previousArchiveCard){
+    archiveCard=function(item){
+      const card=previousArchiveCard.apply(this,arguments);
+      return decorateArchiveCard(card,item);
+    };
+    window.archiveCard=archiveCard;
   }
 
   const previousRender=typeof render==='function'?render:null;
@@ -290,12 +305,14 @@
     enhanceDeleteActions,
     scheduleEnhance,
     fallbackRowForCard,
+    decorateArchiveCard,
     dynamicArchiveRenumber:true,
     statisticsFollowRemainingData:true,
     stableArchiveIdsPreserved:true,
     confirmationRequired:true,
     abortedTasksVisible:true,
-    archiveDeleteUiStable:true
+    archiveDeleteUiStable:true,
+    archiveCardHook:true
   };
   window.addEventListener('load',()=>{ensureObserver();setTimeout(scheduleEnhance,350);});
 })();
