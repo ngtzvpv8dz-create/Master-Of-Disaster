@@ -30,7 +30,7 @@ jobs:
               if marker not in html: raise SystemExit(f'Missing V485 HTML marker: {marker}')
           for marker in ['master-of-disaster-v485-terminal-delete','terminal-delete-v485.js']:
               if marker not in sw: raise SystemExit(f'Missing V485 SW marker: {marker}')
-          for marker in ['deleteTerminalTask','deleteArchivedTask','compactArchiveNumbers','ensureAbortedSection','confirmationRequired:true','abortedTasksVisible:true']:
+          for marker in ['deleteTerminalTask','deleteArchivedTask','compactArchiveNumbers','ensureAbortedSection','decorateArchiveCard','archiveCardHook:true','confirmationRequired:true','abortedTasksVisible:true']:
               if marker not in js: raise SystemExit(f'Missing V485 behavior marker: {marker}')
           if metrics.get('version')!='V485' or metrics.get('automated') is not True:
               raise SystemExit('Expected V485 automated metrics snapshot')
@@ -100,15 +100,14 @@ jobs:
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
             await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V485'&&window.__modTerminalDeleteV485&&window.__modTodayCreateRenderV480,{timeout:30000});
-            const setup=await page.evaluate(()=>{
+            await page.evaluate(()=>{
               tasks=[
                 {id:4851,text:'Erledigt löschen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T07:00:00Z',completedAt:'2026-08-23T07:03:00Z',activeDurationMs:180000,actualDurationMs:180000,activeSegments:[]},
                 {id:4852,text:'Abgebrochen löschen',status:'aborted',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,startedAt:'2026-08-23T07:10:00Z',abortedAt:'2026-08-23T07:16:00Z',activeDurationMs:360000,actualDurationMs:360000,activeSegments:[]},
                 {id:4853,text:'Offen behalten',status:'open',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,activeSegments:[]}
               ];archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('all');render();
-              return true;
             });
-            await page.waitForTimeout(150);
+            await page.waitForTimeout(180);
             const initial=await page.evaluate(()=>({aborted:!!document.getElementById('abortedSectionV485'),buttons:document.querySelectorAll('.terminal-delete-v485').length,text:document.body.innerText}));
             if(!initial.aborted||initial.buttons<2||!initial.text.includes('ABGEBROCHEN'))throw new Error('Terminal delete buttons/aborted section missing');
             const completedCard=page.locator('.task',{hasText:'Erledigt löschen'}).first();
@@ -120,20 +119,40 @@ jobs:
             if(await page.evaluate(()=>tasks.some(t=>t.id===4851)))throw new Error('Completed task not deleted');
             const abortedCard=page.locator('#abortedSectionV485 .task',{hasText:'Abgebrochen löschen'}).first();await abortedCard.locator('.terminal-delete-v485').click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(120);
             if(await page.evaluate(()=>tasks.some(t=>t.id===4852)))throw new Error('Aborted task not deleted');
+
             await page.evaluate(()=>{
               archive=[
-                {archiveNumber:1,archiveId:'stable-1',text:'Archiv eins',status:'completed',type:'work',priority:'normal',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},
-                {archiveNumber:2,archiveId:'stable-2',text:'Archiv löschen',status:'completed',type:'work',priority:'normal',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},
-                {archiveNumber:3,archiveId:'stable-3',text:'Archiv drei',status:'completed',type:'work',priority:'normal',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}
+                {archiveNumber:1,archiveId:'stable-1',text:'Archiv eins',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,completedDate:'2026-08-23',completedAt:'2026-08-23T07:01:00Z',archivedAt:'2026-08-23T07:02:00Z',activeDurationMs:600000,archiveAccountingActiveDurationMs:600000},
+                {archiveNumber:2,archiveId:'stable-2',text:'Archiv löschen',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,completedDate:'2026-08-23',completedAt:'2026-08-23T07:03:00Z',archivedAt:'2026-08-23T07:04:00Z',activeDurationMs:180000,archiveAccountingActiveDurationMs:180000},
+                {archiveNumber:3,archiveId:'stable-3',text:'Archiv drei',status:'completed',type:'work',priority:'normal',optional:false,dueMode:'none',dueDate:null,completedDate:'2026-08-23',completedAt:'2026-08-23T07:05:00Z',archivedAt:'2026-08-23T07:06:00Z',activeDurationMs:1200000,archiveAccountingActiveDurationMs:1200000}
               ];nextArchiveNumber=4;saveArchive();switchTab('archive');render();
             });
-            await page.waitForTimeout(150);
-            const archiveCard=page.locator('.archive-task',{hasText:'Archiv löschen'}).first();
-            if(!(await archiveCard.locator('.terminal-delete-v485').isVisible()))throw new Error('Archive delete button missing');
-            await archiveCard.locator('.terminal-delete-v485').click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(150);
+            await page.waitForTimeout(220);
+            const debug=await page.evaluate(()=>{
+              const api=window.__modTerminalDeleteV485;
+              const cards=[...document.querySelectorAll('.archive-task')];
+              const before=cards.map((card,index)=>{
+                let cat=null,fall=null;
+                try{const r=window.__modCategoriesV412?.rowForCard?.(card);cat=r?{id:r.archiveId,n:r.archiveNumber,text:r.text}:null;}catch(e){cat={error:String(e)}}
+                try{const r=api.fallbackRowForCard(card);fall=r?{id:r.archiveId,n:r.archiveNumber,text:r.text}:null;}catch(e){fall={error:String(e)}}
+                return {index,number:card.querySelector('.archive-number')?.textContent?.trim()||null,text:card.querySelector('.task-text')?.textContent?.trim()||null,hasButton:!!card.querySelector('.terminal-delete-v485'),buttonDisplay:card.querySelector('.terminal-delete-v485')?getComputedStyle(card.querySelector('.terminal-delete-v485')).display:null,hasCategoryEdit:!!card.querySelector('.archive-category-edit-v412'),cat,fall,html:card.outerHTML.slice(0,1200)};
+              });
+              let direct=null;
+              try{const node=archiveCard(archive[1]);direct={hasButton:!!node?.querySelector?.('.terminal-delete-v485'),html:node?.outerHTML?.slice(0,1200)||null};}catch(e){direct={error:String(e)}}
+              api.enhanceDeleteActions();
+              const after=[...document.querySelectorAll('.archive-task')].map((card,index)=>({index,text:card.querySelector('.task-text')?.textContent?.trim()||null,hasButton:!!card.querySelector('.terminal-delete-v485'),buttonDisplay:card.querySelector('.terminal-delete-v485')?getComputedStyle(card.querySelector('.terminal-delete-v485')).display:null}));
+              return {currentTab,cardCount:cards.length,totalButtons:document.querySelectorAll('.archive-task .terminal-delete-v485').length,before,direct,after};
+            });
+            console.log('V485 ARCHIVE DEBUG',JSON.stringify(debug,null,2));
+            const matching=page.locator('.archive-task',{hasText:'Archiv löschen'});
+            const count=await matching.count();
+            const visible=[];for(let i=0;i<count;i++)visible.push({cardVisible:await matching.nth(i).isVisible(),buttons:await matching.nth(i).locator('.terminal-delete-v485').count(),buttonVisible:await matching.nth(i).locator('.terminal-delete-v485').count()?await matching.nth(i).locator('.terminal-delete-v485').first().isVisible():false});
+            console.log('V485 MATCHING ARCHIVE CARDS',JSON.stringify(visible));
+            const archiveCardLocator=matching.first();
+            if(!(await archiveCardLocator.locator('.terminal-delete-v485').isVisible()))throw new Error('Archive delete button missing after diagnostics');
+            await archiveCardLocator.locator('.terminal-delete-v485').click();await page.locator('#terminalDeleteConfirmV485').click();await page.waitForTimeout(150);
             const arch=await page.evaluate(()=>({rows:archive.map(r=>({n:r.archiveNumber,id:r.archiveId})),next:nextArchiveNumber,sum:archive.reduce((n,r)=>n+(Number(r.archiveAccountingActiveDurationMs)||0),0)}));
             if(JSON.stringify(arch.rows)!==JSON.stringify([{n:1,id:'stable-1'},{n:2,id:'stable-3'}])||arch.next!==3||arch.sum!==1800000)throw new Error('Archive deletion/renumber/statistics source failed');
-            await page.evaluate(()=>localStorage.setItem('masterOfDisasterThemeStateLayoutV460',JSON.stringify({gridStep:2,selectedState:'open',positions:{open:{actions:{anchor:'free',x:12,y:4}}}})));
             await page.reload({waitUntil:'networkidle',timeout:60000});await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V485'&&window.__modTodayCreateRenderV480,{timeout:30000});
             const preserved=await page.evaluate(()=>({v480:!!window.__modTodayCreateRenderV480,v484:!!window.__modRemoteTaskReopenV484,workBlocks:!!window.__modTodayWorkBlocksV474,archiveRepair:!!window.__modRemoteArchiveSequenceV478}));
             if(!Object.values(preserved).every(Boolean))throw new Error('Preserved feature bundle missing');
