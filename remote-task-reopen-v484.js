@@ -67,7 +67,7 @@
     task.activeSegments=[];
     task.cookingSegments=[];
 
-    if(typeof normalizeTodayOrder==='function')normalizeTodayOrder();
+    /* Preserve todayDate/todayOrder exactly. Reopening is not a reordering action. */
     if(typeof saveTasks==='function')saveTasks();
     else if(typeof safeStorageSet==='function')safeStorageSet('masterOfDisasterTasks',JSON.stringify(tasks));
     if(typeof render==='function')render();
