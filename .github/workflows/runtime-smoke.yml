@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check scripts/generate-development-metrics.mjs && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
+      - run: node --check remote-archive-sequence-v478.js && node --check statistics-alignment-v477.js && node --check development-stats-current-v476.js && node --check scripts/generate-development-metrics.mjs && node --check fixed-app-header-v475.js && node --check today-work-blocks-v474.js && node --check category-group-drag-v473.js && node --check remote-archive-maintenance-v472.js && node --check theme-editor-help-stability-v470.js && node --check ux-cooking-editor-v460.js && node --check app.js
       - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
-      - name: Verify live V477 statistics summary alignment
+      - name: Verify live V478 archive sequence repair
         run: |
           cat > smoke.js <<'JS'
           const {chromium}=require('playwright'),fs=require('fs');
@@ -23,23 +23,23 @@ jobs:
             const b=await chromium.launch({headless:true});
             const p=await b.newPage({viewport:{width:390,height:844}});
             await p.route('**/*',r=>/supabase\.co/.test(r.request().url())?r.abort():r.continue());
-            const out={status:'FAIL',version:'V477',live:false,bundle:false,metricsCurrent:false,appDevelopmentCurrent:false,fiveDevelopmentBlocks:false,summaryPaddingAligned:false,cardsAligned:false,fixedAlignmentPatch:false,historicalGit:false,fixedShell:false,contentScrolls:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,cookingParallel:false,integrity:false,errors:[]};
+            const out={status:'FAIL',version:'V478',live:false,bundle:false,metricsCurrent:false,appDevelopmentCurrent:false,fiveDevelopmentBlocks:false,summaryPaddingAligned:false,cardsAligned:false,fixedAlignmentPatch:false,historicalGit:false,fixedShell:false,contentScrolls:false,workBlocksPreserved:false,allSearchPreserved:false,categoryGroupingPreserved:false,themeHelpPreserved:false,previewOffset:false,archiveMaintenance:false,archiveSequenceRepair:false,cookingParallel:false,integrity:false,errors:[]};
             try{
               for(let i=0;i<24;i++){
                 await p.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-                const build=/BUILD: V477/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V477');
+                const build=/BUILD: V478/.test(await p.content())&&await p.evaluate(()=>window.__modDevVersion?.version==='V478');
                 let liveMetrics=null;
                 try{liveMetrics=await p.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
-                if(build&&liveMetrics?.version==='V477'&&liveMetrics?.sourceCommit&&liveMetrics.sourceCommit!=='pending'&&liveMetrics?.repository?.currentTextLines>10000){out.live=true;break;}
+                if(build&&liveMetrics?.version==='V478'&&liveMetrics?.sourceCommit&&liveMetrics.sourceCommit!=='pending'&&liveMetrics?.repository?.currentTextLines>10000){out.live=true;break;}
                 await p.waitForTimeout(10000);
               }
-              if(!out.live)throw new Error('V477 build or generated metrics not deployed');
-              out.bundle=await p.evaluate(()=>!!(window.__modStatisticsAlignmentV477&&window.__modDevelopmentStatsCurrentV476&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modRemoteArchiveMaintenanceV472&&window.__modUxCookingEditorV460));
+              if(!out.live)throw new Error('V478 build or generated metrics not deployed');
+              out.bundle=await p.evaluate(()=>!!(window.__modRemoteArchiveSequenceV478&&window.__modStatisticsAlignmentV477&&window.__modDevelopmentStatsCurrentV476&&window.__modFixedAppHeaderV475&&window.__modTodayWorkBlocksV474&&window.__modCategoryGroupDragV473&&window.__modThemeEditorHelpStabilityV470&&window.__modRemoteArchiveMaintenanceV472&&window.__modUxCookingEditorV460));
 
               const date=await p.evaluate(()=>getBerlinDateKey());
               await p.evaluate((date)=>{
                 localStorage.removeItem('masterOfDisasterTodayWorkBlocksV474');
-                tasks=Array.from({length:34},(_,i)=>({id:47700+i,text:`Scroll Aufgabe ${i+1}`,category:i%3===0?'Haushalt':i%3===1?'Böden wischen':'Sonstiges',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:i<8?date:null,todayOrder:i<8?i+1:null,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}));
+                tasks=Array.from({length:34},(_,i)=>({id:47800+i,text:`Scroll Aufgabe ${i+1}`,category:i%3===0?'Haushalt':i%3===1?'Böden wischen':'Sonstiges',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:i<8?date:null,todayOrder:i<8?i+1:null,startedAt:null,pausedAt:null,pauseTotalMs:0,completedAt:null,activeDurationMs:null,abortedAt:null,activeSegments:[]}));
                 archive=[];saveTasks();switchTab('all');render();window.scrollTo(0,0);
               },date);
               await p.waitForTimeout(450);
@@ -67,8 +67,8 @@ jobs:
                 const m=api?.metrics;
                 return {count:dev.length,summary:first?.querySelector(':scope>summary')?.textContent||'',body:first?.textContent||'',version:m?.version||'',source:m?.sourceCommit||'',lines:m?.repository?.currentTextLines||0,commits:m?.repository?.reachableCommits||0,prs:m?.repository?.pullRequests||0,historical:api?.historicalFromGit===true,refPadding,paddings,refLeft,cardLefts,fixed:fix?.fixedSummaryPadding===true&&fix?.dynamicIndentRemoved===true};
               });
-              out.metricsCurrent=stats.version==='V477'&&stats.source!=='pending'&&stats.lines>10000&&stats.commits>500&&stats.prs>60;
-              out.appDevelopmentCurrent=/APP-ENTWICKLUNG · AKTUELL · V477/.test(stats.summary)&&/TEXTZEILEN AKTUELL/.test(stats.body)&&!/APP-ENTWICKLUNG · V451/.test(stats.summary);
+              out.metricsCurrent=stats.version==='V478'&&stats.source!=='pending'&&stats.lines>10000&&stats.commits>500&&stats.prs>60;
+              out.appDevelopmentCurrent=/APP-ENTWICKLUNG · AKTUELL · V478/.test(stats.summary)&&/TEXTZEILEN AKTUELL/.test(stats.body)&&!/APP-ENTWICKLUNG · V451/.test(stats.summary);
               out.fiveDevelopmentBlocks=stats.count===5;
               out.summaryPaddingAligned=stats.refPadding!==null&&stats.paddings.length===5&&stats.paddings.every(v=>Math.abs(v-stats.refPadding)<=0.5);
               out.cardsAligned=stats.refLeft!==null&&stats.cardLefts.length===5&&stats.cardLefts.every(v=>Math.abs(v-stats.refLeft)<=1);
@@ -85,7 +85,19 @@ jobs:
               out.themeHelpPreserved=await p.evaluate(()=>window.__modThemeEditorHelpStabilityV470?.stickyHelpStable===true);
               out.previewOffset=await p.evaluate(()=>{const e=document.getElementById('themeStickyPreviewV460');return !!e&&Math.abs(parseFloat(getComputedStyle(e).bottom)-50)<1;});
               out.archiveMaintenance=await p.evaluate(()=>window.__modRemoteArchiveMaintenanceV472?.queueStatus==='processing'&&window.__modRemoteArchiveMaintenanceV472?.command==='DELETE_ARCHIVE_ENTRY');
-              const cooking=await p.evaluate(()=>{tasks=[{id:47791,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47792,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47791);switchCookingMode(47791,'passive');startTask(47792);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
+              out.archiveSequenceRepair=await p.evaluate(()=>{
+                archive=Array.from({length:254},(_,i)=>({archiveNumber:i+1,archiveId:`stable-${i+1}`,text:`Archiv ${i+1}`,status:'completed',type:'work',activeDurationMs:i*1000}));
+                for(let n=256;n<=262;n++)archive.push({archiveNumber:n,archiveId:`stable-${n}`,text:`Archiv ${n}`,status:'completed',type:'work',activeDurationMs:n*1000});
+                nextArchiveNumber=263;
+                const before=archive.find(x=>x.archiveNumber===256),identity=before.archiveId,duration=before.activeDurationMs;
+                const r=window.__modRemoteArchiveSequenceV478.repairArchiveGap(255);
+                const nums=archive.map(x=>Number(x.archiveNumber)).sort((a,b)=>a-b);
+                const moved=archive.find(x=>x.archiveId===identity);
+                const ok=archive.length===261&&nums.every((n,i)=>n===i+1)&&moved?.archiveNumber===255&&moved?.activeDurationMs===duration&&nextArchiveNumber===262&&r.shifted===7&&r.sequence_contiguous===true&&r.archive_id_preserved===true;
+                archive=[];nextArchiveNumber=1;saveArchive();
+                return ok;
+              });
+              const cooking=await p.evaluate(()=>{tasks=[{id:47891,text:'Kochen',type:'cooking',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],cookingSegments:[],cookingMode:'active',pauseTotalMs:0},{id:47892,text:'Arbeitsfläche',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,activeSegments:[],pauseTotalMs:0}];saveTasks();startTask(47891);switchCookingMode(47891,'passive');startTask(47892);const rep=collectDataIntegrityReport();return {parallel:tasks[1].status==='running',errors:rep.errors||[]};});
               out.cookingParallel=cooking.parallel;out.integrity=cooking.errors.length===0;
               out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
