@@ -138,3 +138,22 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadMeaningfulHistoryV500,180);});
   setTimeout(loadMeaningfulHistoryV500,980);
 })();
+
+/* V501 · HEUTE-AKTIONSREIHENFOLGE / MARKER-FIX LOADER */
+(function(){
+  function loadTodayActionOrderV501(){
+    if(window.__modTodayActionOrderV501)return true;
+    if(document.querySelector('script[data-today-action-order-v501-loader="1"]'))return false;
+    const s=document.createElement('script');
+    s.src='./today-action-order-v501.js?v=501-1210';
+    s.dataset.todayActionOrderV501Loader='1';
+    s.onerror=()=>{try{s.remove();}catch(_){}};
+    document.head.appendChild(s);
+    return false;
+  }
+  loadTodayActionOrderV501();
+  window.addEventListener('load',()=>setTimeout(loadTodayActionOrderV501,650));
+  window.addEventListener('focus',()=>setTimeout(loadTodayActionOrderV501,200));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadTodayActionOrderV501,200);});
+  setTimeout(loadTodayActionOrderV501,1100);
+})();
