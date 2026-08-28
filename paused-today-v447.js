@@ -119,3 +119,22 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadLogStabilityV499,150);});
   setTimeout(loadLogStabilityV499,900);
 })();
+
+/* V500 · RELEVANTE HISTORY / KOMPAKTER LOG LOADER */
+(function(){
+  function loadMeaningfulHistoryV500(){
+    if(window.__modMeaningfulHistoryV500)return true;
+    if(document.querySelector('script[data-meaningful-history-v500-loader="1"]'))return false;
+    const s=document.createElement('script');
+    s.src='./meaningful-history-v500.js?v=500-1123';
+    s.dataset.meaningfulHistoryV500Loader='1';
+    s.onerror=()=>{try{s.remove();}catch(_){}};
+    document.head.appendChild(s);
+    return false;
+  }
+  loadMeaningfulHistoryV500();
+  window.addEventListener('load',()=>setTimeout(loadMeaningfulHistoryV500,580));
+  window.addEventListener('focus',()=>setTimeout(loadMeaningfulHistoryV500,180));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadMeaningfulHistoryV500,180);});
+  setTimeout(loadMeaningfulHistoryV500,980);
+})();
