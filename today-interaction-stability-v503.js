@@ -3,6 +3,8 @@
      solange der Arbeitsblock nicht ausdrücklich geändert wird.
    - Die HEUTE-Aktion entfernt eine bereits zugewiesene Aufgabe zuverlässig
      aus dem Tagesplan, ohne sie versehentlich neu einzusortieren.
+   - Bereits gestartete/pausierte Aufgaben können bewusst aus HEUTE ausgeblendet
+     werden, ohne ihre Zeit- oder Verlaufsdaten anzutasten.
    - Pause wird im HEUTE-Tab direkt auf die laufende Aufgabe delegiert, damit
      der erste Tastendruck auch während nachgelagerter UI-Patches wirksam ist.
 */
@@ -12,6 +14,7 @@
 
   const BUILD_VERSION='V503';
   let saveEditWrapped=false;
+  let toggleTodayWrapped=false;
   let captureBound=false;
   let handlingClick=false;
 
@@ -106,6 +109,28 @@
     return true;
   }
 
+  function wrapToggleToday(){
+    if(toggleTodayWrapped||typeof window.toggleToday!=='function')return toggleTodayWrapped;
+    const base=window.toggleToday;
+
+    window.toggleToday=function(id){
+      const date=today();
+      const before=taskById(id);
+      const wasToday=before&&String(before.todayDate||'')===String(date);
+      const result=base.apply(this,arguments);
+      const row=taskById(id);
+      if(!wasToday&&row&&String(row.todayDate||'')===String(date)&&row.todayHiddenDate){
+        row.todayHiddenDate=null;
+        save();
+        rerender();
+      }
+      return result;
+    };
+
+    toggleTodayWrapped=true;
+    return true;
+  }
+
   function isTodayAction(button){
     if(!button)return false;
     const onclick=String(button.getAttribute('onclick')||'');
@@ -117,7 +142,9 @@
 
   function removeFromToday(id){
     const row=taskById(id);
-    if(!row||String(row.todayDate||'')!==String(today()))return false;
+    const date=today();
+    if(!row||String(row.todayDate||'')!==String(date))return false;
+    if(['running','paused'].includes(String(row.status||'')))row.todayHiddenDate=date;
     row.todayDate=null;
     row.todayOrder=null;
     row.todayWorkBlockId=null;
@@ -170,6 +197,7 @@
 
   function ensure(){
     if(!wrapSaveEdit())setTimeout(ensure,40);
+    if(!wrapToggleToday())setTimeout(ensure,40);
     bindCapture();
   }
 
@@ -179,6 +207,7 @@
   window.__modTodayInteractionStabilityV503={
     version:BUILD_VERSION,
     wrapSaveEdit,
+    wrapToggleToday,
     snapshotTodayPlan,
     restoreTodayPlan,
     removeFromToday,
@@ -186,6 +215,7 @@
     editKeepsExactTodayPosition:true,
     explicitBlockChangeStillMoves:true,
     todayRemovalDirect:true,
+    pausedTodayManualHide:true,
     firstPauseClickDirect:true,
     dataSemanticsUntouched:true
   };
