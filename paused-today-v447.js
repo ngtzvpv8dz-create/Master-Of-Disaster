@@ -41,3 +41,29 @@
   window.__modPausedTodayV447={version:'V447',patch:patchPausedTodayButtons};
   window.addEventListener('load',()=>setTimeout(patchPausedTodayButtons,350));
 })();
+
+/* V496 · PWA RECOVERY LOADER
+   Lädt die eng abgesicherte Recovery-Brücke im echten PWA-Kontext, damit
+   localStorage, Archiv und Supabase-Session aus demselben App-Speicher stammen.
+*/
+(function(){
+  function loadRecoveryV496(){
+    if(window.__modAccidentalCompletionRecoveryV496){
+      try{window.__modAccidentalCompletionRecoveryV496.poll?.();}catch(_){}
+      return true;
+    }
+    if(document.querySelector('script[data-recovery-v496-loader="1"]'))return false;
+    const s=document.createElement('script');
+    s.src='./remote-accidental-completion-recovery-v496.js?v=496-pwa-0952';
+    s.dataset.recoveryV496Loader='1';
+    s.onload=()=>{try{window.__modAccidentalCompletionRecoveryV496?.poll?.();}catch(_){}};
+    s.onerror=()=>{try{s.remove();}catch(_){}};
+    document.head.appendChild(s);
+    return false;
+  }
+  loadRecoveryV496();
+  window.addEventListener('load',()=>setTimeout(loadRecoveryV496,300));
+  window.addEventListener('focus',()=>setTimeout(loadRecoveryV496,80));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadRecoveryV496,80);});
+  setTimeout(loadRecoveryV496,700);
+})();
