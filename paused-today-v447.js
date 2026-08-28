@@ -100,3 +100,22 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadSafetyNetV498,120);});
   setTimeout(loadSafetyNetV498,820);
 })();
+
+/* V499 · LOG-STABILITÄTSFIX LOADER */
+(function(){
+  function loadLogStabilityV499(){
+    if(window.__modLogStabilityV499)return true;
+    if(document.querySelector('script[data-log-stability-v499-loader="1"]'))return false;
+    const s=document.createElement('script');
+    s.src='./log-stability-v499.js?v=499-1105';
+    s.dataset.logStabilityV499Loader='1';
+    s.onerror=()=>{try{s.remove();}catch(_){}};
+    document.head.appendChild(s);
+    return false;
+  }
+  loadLogStabilityV499();
+  window.addEventListener('load',()=>setTimeout(loadLogStabilityV499,500));
+  window.addEventListener('focus',()=>setTimeout(loadLogStabilityV499,150));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadLogStabilityV499,150);});
+  setTimeout(loadLogStabilityV499,900);
+})();
