@@ -1,25 +1,26 @@
 {
   "schema": "master-of-disaster-development-metrics",
   "schemaVersion": 1,
-  "version": "V494",
-  "generatedAt": "28.08.2026 · 12:23",
-  "sourceCommit": "848a1224dd9cfecace6540bee6c2e8edd80b9eff",
+  "version": "V502",
+  "generatedAt": "28.08.2026 · 12:38",
+  "sourceCommit": "55bf7ac65365a15814c6d3771d6431a7aaac8b03",
   "automated": true,
+  "versionSource": "highest-current-root-module-version",
   "excludes": [
     "development-metrics.json"
   ],
   "repository": {
-    "reachableCommits": 1006,
-    "pullRequests": 107,
-    "mergedPullRequests": 106,
-    "currentFiles": 83,
-    "rootFiles": 77,
+    "reachableCommits": 1015,
+    "pullRequests": 108,
+    "mergedPullRequests": 107,
+    "currentFiles": 84,
+    "rootFiles": 78,
     "workflowFiles": 5,
-    "javascriptFiles": 69,
+    "javascriptFiles": 70,
     "cssFiles": 3,
-    "currentTextLines": 31442,
-    "currentBytes": 1835446,
-    "currentTextBytes": 1232720,
+    "currentTextLines": 31588,
+    "currentBytes": 1831011,
+    "currentTextBytes": 1228285,
     "imageBytes": 602726,
     "otherBinaryBytes": 0
   }
