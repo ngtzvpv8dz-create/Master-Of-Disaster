@@ -81,3 +81,22 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadSegmentRepairV497,90);});
   setTimeout(loadSegmentRepairV497,760);
 })();
+
+/* V498 · GLOBAL HISTORY / BACKUP SAFETY-NET LOADER */
+(function(){
+  function loadSafetyNetV498(){
+    if(window.__modRecoveryHistoryV498)return true;
+    if(document.querySelector('script[data-safety-net-v498-loader="1"]'))return false;
+    const s=document.createElement('script');
+    s.src='./history-safety-net-v498.js?v=498-1041';
+    s.dataset.safetyNetV498Loader='1';
+    s.onerror=()=>{try{s.remove();}catch(_){}};
+    document.head.appendChild(s);
+    return false;
+  }
+  loadSafetyNetV498();
+  window.addEventListener('load',()=>setTimeout(loadSafetyNetV498,420));
+  window.addEventListener('focus',()=>setTimeout(loadSafetyNetV498,120));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadSafetyNetV498,120);});
+  setTimeout(loadSafetyNetV498,820);
+})();
