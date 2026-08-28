@@ -42,16 +42,10 @@
   window.addEventListener('load',()=>setTimeout(patchPausedTodayButtons,350));
 })();
 
-/* V496 · PWA RECOVERY LOADER
-   Lädt die eng abgesicherte Recovery-Brücke im echten PWA-Kontext, damit
-   localStorage, Archiv und Supabase-Session aus demselben App-Speicher stammen.
-*/
+/* V496 · PWA RECOVERY LOADER */
 (function(){
   function loadRecoveryV496(){
-    if(window.__modAccidentalCompletionRecoveryV496){
-      try{window.__modAccidentalCompletionRecoveryV496.poll?.();}catch(_){}
-      return true;
-    }
+    if(window.__modAccidentalCompletionRecoveryV496){try{window.__modAccidentalCompletionRecoveryV496.poll?.();}catch(_){}return true;}
     if(document.querySelector('script[data-recovery-v496-loader="1"]'))return false;
     const s=document.createElement('script');
     s.src='./remote-accidental-completion-recovery-v496.js?v=496-pwa-0952';
@@ -66,4 +60,24 @@
   window.addEventListener('focus',()=>setTimeout(loadRecoveryV496,80));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadRecoveryV496,80);});
   setTimeout(loadRecoveryV496,700);
+})();
+
+/* V497 · PWA SEGMENT REPAIR LOADER */
+(function(){
+  function loadSegmentRepairV497(){
+    if(window.__modTaskSegmentRepairV497){try{window.__modTaskSegmentRepairV497.poll?.();}catch(_){}return true;}
+    if(document.querySelector('script[data-segment-repair-v497-loader="1"]'))return false;
+    const s=document.createElement('script');
+    s.src='./remote-task-segment-repair-v497.js?v=497-pwa-1003';
+    s.dataset.segmentRepairV497Loader='1';
+    s.onload=()=>{try{window.__modTaskSegmentRepairV497?.poll?.();}catch(_){}};
+    s.onerror=()=>{try{s.remove();}catch(_){}};
+    document.head.appendChild(s);
+    return false;
+  }
+  loadSegmentRepairV497();
+  window.addEventListener('load',()=>setTimeout(loadSegmentRepairV497,340));
+  window.addEventListener('focus',()=>setTimeout(loadSegmentRepairV497,90));
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(loadSegmentRepairV497,90);});
+  setTimeout(loadSegmentRepairV497,760);
 })();
