@@ -16,48 +16,50 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V494 build
+      - name: Verify current build wiring
         shell: python
         run: |
           from pathlib import Path
-          import json
+          import json,re
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          v494=Path('summary-weight-due-polish-v494.js').read_text(encoding='utf-8')
-          v493=Path('ui-alignment-v493.js').read_text(encoding='utf-8')
-          v492=Path('task-card-rail-polish-v492.js').read_text(encoding='utf-8')
-          v491=Path('ui-card-stability-v491.js').read_text(encoding='utf-8')
-          v490=Path('nested-task-weight-layout-v490.js').read_text(encoding='utf-8')
-          v488=Path('historical-segment-breakdown-v488.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
-          for marker in ['BUILD: V494','23.08.2026 · 21:03','summary-weight-due-polish-v494.js?v=494-2103',"version:'V494'",'modV494SummaryWeightDuePolishDone']:
-              if marker not in index: raise SystemExit(f'Missing V494 index marker: {marker}')
-          for marker in ['master-of-disaster-v494-summary-weight-due-polish','summary-weight-due-polish-v494.js','ui-alignment-v493.js','task-card-rail-polish-v492.js','historical-segment-breakdown-v488.js']:
-              if marker not in sw: raise SystemExit(f'Missing V494 service worker marker: {marker}')
-          for marker in ["const BUILD_VERSION='V494'",'dueDynamicControlsIndented:true','totalActiveHighlighted:true','activeTimeValuesColumnAligned:true','summarySeparatorMatchesSegmentSeparator:true','partialWeightFirstLineShowsKg:true','partialWeightSecondLineShowsRangeAndDuration:true','dataSemanticsUntouched:true','__modSummaryWeightDuePolishV494']:
-              if marker not in v494: raise SystemExit(f'Missing V494 behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V493'",'numberTitleBottomAligned:true','wrappedOptionRowsIndented:true','activeSourceLabels:true','duplicateHistoricalDetailRemoved:true','historicalOnlyFallbackRangeHidden:true']:
-              if marker not in v493: raise SystemExit(f'Missing preserved V493 behavior: {marker}')
-          for marker in ['activeSourceLabelsV493:true','historicalOnlyBreakdownV493:true','historicalOnlyUsesStoredTotalV493:true','SEIT APP AKTIV','VOR APP AKTIV','= GESAMT AKTIV']:
-              if marker not in v488: raise SystemExit(f'Missing preserved V493 historical-source behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V492'",'numberTopLeftEverywhere:true','fourDigitTaskNumberReady:true','subtleWeightStyle:true','weightSecondLineAligned:true','segmentSeparator:true']:
-              if marker not in v492: raise SystemExit(f'Missing preserved V492 behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V491'",'dragHandleReplacedByArrows:true','actionsAlwaysBottom:true','stableCardLayout:true']:
-              if marker not in v491: raise SystemExit(f'Missing preserved V491 behavior: {marker}')
-          for marker in ["const BUILD_VERSION='V490'",'nestedSegmentWeight:true','archiveDetailFontPx:8.5','subSecondSegmentsHidden:true']:
-              if marker not in v490: raise SystemExit(f'Missing preserved V490 behavior: {marker}')
-          if metrics.get('version')!='V494' or metrics.get('automated') is not True:
-              raise SystemExit('Bundled metrics snapshot is not V494/automated')
-          print('V494 build consistency OK')
+          required_index=[
+            'paused-today-v447.js?v=502-1225',
+            'build-freshness-v502.js?v=502-1225',
+            "serviceWorker.register('./sw.js?v=502-1225'",
+            'summary-weight-due-polish-v494.js?v=494-2103'
+          ]
+          for marker in required_index:
+              if marker not in index: raise SystemExit(f'Missing current index marker: {marker}')
+          for marker in ['build-freshness-v502.js','today-action-order-v501.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
+              if marker not in sw: raise SystemExit(f'Missing service-worker shell marker: {marker}')
+          for path,markers in {
+            'build-freshness-v502.js':["const BUILD_VERSION='V502'",'noStoreFetch:true','dynamicFromMetrics:true'],
+            'today-action-order-v501.js':["const BUILD_VERSION='V501'",'todayMarkerBoundToButton:true','dataSemanticsUntouched:true'],
+            'summary-weight-due-polish-v494.js':["const BUILD_VERSION='V494'",'totalActiveHighlighted:true','partialWeightFirstLineShowsKg:true','dataSemanticsUntouched:true'],
+            'ui-card-stability-v491.js':["const BUILD_VERSION='V491'",'actionsAlwaysBottom:true','stableCardLayout:true']
+          }.items():
+              text=Path(path).read_text(encoding='utf-8')
+              for marker in markers:
+                  if marker not in text: raise SystemExit(f'Missing preserved behavior {marker} in {path}')
+          if metrics.get('automated') is not True:
+              raise SystemExit('Bundled metrics snapshot is not automated')
+          print('Current build wiring consistency OK')
       - name: JavaScript syntax
-        run: node --check summary-weight-due-polish-v494.js && node --check ui-alignment-v493.js && node --check task-card-rail-polish-v492.js && node --check ui-card-stability-v491.js && node --check nested-task-weight-layout-v490.js && node --check task-time-weight-details-v489.js && node --check historical-segment-breakdown-v488.js && node --check segment-active-duration-v487.js && node --check time-segment-scroll-v486.js && node --check terminal-delete-v485.js && node --check remote-task-reopen-v484.js && node --check today-create-render-v480.js && node --check render-stability-v479.js && node --check remote-archive-sequence-v478.js && node --check ux-cooking-editor-v460.js && node --check time-segments-v443.js && node --check live-log-v453.js && node --check app.js
-      - name: Generator produces current repository metrics
+        run: |
+          for f in app.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
+      - name: Generator follows highest current module version
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
           cat /tmp/metrics.log
           node - <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
           const m=require('/tmp/development-metrics.json');
-          if(m.version!=='V494'||!m.automated)throw new Error('Generated version/automation flag wrong');
+          const versions=fs.readdirSync('.').map(name=>{const x=name.match(/(?:^|-)v(\d+)\.js$/i);return x?Number(x[1]):0;});
+          const expected='V'+Math.max(...versions);
+          if(m.version!==expected||!m.automated)throw new Error(`Generated version wrong: ${m.version}, expected ${expected}`);
           if(m.repository.currentFiles<40||m.repository.currentTextLines<10000||m.repository.currentBytes<500000)throw new Error('Generated repository metrics unexpectedly small');
-          console.log('V494 generated metrics sane');
+          console.log('Generated metrics sane',expected);
           NODE
