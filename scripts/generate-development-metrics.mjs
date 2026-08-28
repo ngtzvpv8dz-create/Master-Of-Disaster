@@ -5,7 +5,6 @@ import {execSync} from 'node:child_process';
 const root=process.cwd();
 const output=process.env.METRICS_OUTPUT||path.join(root,'development-metrics.json');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
-const version=(index.match(/BUILD:\s*(V\d+)/)||[])[1]||(index.match(/version:'(V\d+)'/)||[])[1]||'UNKNOWN';
 const excludedDirs=new Set(['.git','node_modules']);
 const excludedFiles=new Set(['development-metrics.json']);
 const textExt=new Set(['.js','.mjs','.cjs','.ts','.tsx','.jsx','.css','.html','.htm','.json','.md','.txt','.yml','.yaml','.webmanifest','.xml','.svg','.csv']);
@@ -21,6 +20,18 @@ function walk(dir){
   }
 }
 walk(root);
+
+function detectCurrentVersion(){
+  const numbers=[];
+  for(const match of index.matchAll(/V(\d+)/gi))numbers.push(Number(match[1])||0);
+  for(const f of files){
+    if(f.rel.includes('/'))continue;
+    for(const match of f.rel.matchAll(/(?:^|[-_])v(\d+)(?=[-_.]|$)/gi))numbers.push(Number(match[1])||0);
+  }
+  const highest=Math.max(0,...numbers);
+  return highest?`V${highest}`:'UNKNOWN';
+}
+const version=detectCurrentVersion();
 
 let currentBytes=0,currentTextBytes=0,currentTextLines=0,imageBytes=0,otherBinaryBytes=0;
 let javascriptFiles=0,cssFiles=0,workflowFiles=0,rootFiles=0;
@@ -56,6 +67,7 @@ const metrics={
   generatedAt,
   sourceCommit,
   automated:true,
+  versionSource:'highest-current-root-module-version',
   excludes:['development-metrics.json'],
   repository:{
     reachableCommits,
