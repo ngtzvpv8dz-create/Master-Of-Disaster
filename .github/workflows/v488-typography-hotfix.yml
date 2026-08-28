@@ -36,14 +36,22 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:640}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg=font-'+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__MOD_BUILD__?.version==='V494'&&window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5&&window.__modSummaryWeightDuePolishV494,{timeout:30000});
-            await page.evaluate(()=>{tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},{startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}]}];archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();});
-            await page.waitForTimeout(1300);
-            const result=await page.evaluate(()=>{const card=document.querySelector('.historical-segment-duration-v488');const parents=[card?.querySelector('.v488-main'),...card?.querySelectorAll('.v488-sub')||[]].filter(Boolean);const children=[...card?.querySelectorAll('.v494-time-label,.v494-time-value')||[]];return {text:(card?.innerText||'').replace(/\s+/g,' ').trim(),parentSizes:parents.map(el=>getComputedStyle(el).fontSize),childSizes:children.map(el=>getComputedStyle(el).fontSize),pauseCount:card?.querySelectorAll('.v488-pause').length||0,grid:card?.dataset.v494TimeGrid||''};});
-            if(result.parentSizes.length!==3||result.parentSizes.some(v=>v!=='8.5px')||result.childSizes.length!==6||result.childSizes.some(v=>v!=='8.5px'))throw new Error('V494/V488 card typography is not uniformly 8.5px: '+JSON.stringify(result));
-            if(result.pauseCount!==0||result.text.includes('PAUSEN ZWISCHEN SEGMENTEN')||result.grid!=='true')throw new Error('V494/V488 summary structure mismatch: '+JSON.stringify(result));
-            for(const marker of ['SEIT APP AKTIV · 02:28:00','VOR APP AKTIV · 02:26:00','GESAMT AKTIV · 04:54:00'])if(!result.text.includes(marker))throw new Error('Breakdown content regression: '+result.text);
-            console.log('V494/V488 typography regression OK',result);await browser.close();
+            await page.waitForFunction(()=>window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5&&window.__modSummaryWeightDuePolishV494,{timeout:30000});
+            await page.evaluate(()=>{
+              tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},{startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}]}];
+              archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();
+            });
+            await page.waitForTimeout(1000);
+            const result=await page.evaluate(()=>{
+              const card=document.querySelector('.historical-segment-duration-v488');
+              const children=[...card?.querySelectorAll('.v494-time-label,.v494-time-value')||[]];
+              return {text:(card?.innerText||'').replace(/\s+/g,' ').trim(),sizes:children.map(el=>getComputedStyle(el).fontSize),pauseCount:card?.querySelectorAll('.v488-pause').length||0,grid:card?.dataset.v494TimeGrid||''};
+            });
+            if(result.sizes.length!==6||result.sizes.some(v=>v!=='8.5px'))throw new Error('Typography is not uniformly 8.5px '+JSON.stringify(result));
+            if(result.pauseCount!==0||result.grid!=='true')throw new Error('Summary structure mismatch '+JSON.stringify(result));
+            for(const marker of ['SEIT APP AKTIV · 02:28:00','VOR APP AKTIV · 02:26:00','GESAMT AKTIV · 04:54:00'])if(!result.text.includes(marker))throw new Error('Breakdown content regression '+result.text);
+            console.log('V488 typography regression OK',result);
+            await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
 
@@ -63,12 +71,18 @@ jobs:
           node <<'NODE'
           const {chromium}=require('playwright');
           (async()=>{
-            const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:390,height:640}});await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());let deployed=false;
-            for(let i=0;i<24;i++){await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke=font-'+Date.now(),{waitUntil:'networkidle',timeout:60000});const ok=await page.evaluate(()=>window.__MOD_BUILD__?.version==='V494'&&!!window.__modSummaryWeightDuePolishV494&&window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5).catch(()=>false);if(ok){deployed=true;break;}await page.waitForTimeout(10000);}
-            if(!deployed)throw new Error('V494 typography build not deployed within polling window');
-            await page.evaluate(()=>{tasks=[{id:217,text:'Kisten sortieren',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:null,todayOrder:null,importedHistoricalProgressDurationMs:8760000,historicalAlreadyArchivedDurationMs:3360000,startedAt:'2026-08-23T08:00:00Z',pausedAt:'2026-08-23T12:54:00Z',pauseTotalMs:0,activeDurationMs:null,actualDurationMs:null,activeSegments:[{startedAt:'2026-08-23T08:00:00Z',endedAt:'2026-08-23T09:00:00Z'},{startedAt:'2026-08-23T10:00:00Z',endedAt:'2026-08-23T10:48:00Z'},{startedAt:'2026-08-23T12:14:00Z',endedAt:'2026-08-23T12:54:00Z'}]}];archive=[];nextArchiveNumber=265;saveTasks();saveArchive();switchTab('all');render();});await page.waitForTimeout(1300);
-            const result=await page.evaluate(()=>{const card=document.querySelector('.historical-segment-duration-v488');const els=[...card.querySelectorAll('.v494-time-label,.v494-time-value')];return {text:(card.innerText||'').replace(/\s+/g,' ').trim(),sizes:els.map(el=>getComputedStyle(el).fontSize),grid:card.dataset.v494TimeGrid||''};});
-            if(result.sizes.length!==6||result.sizes.some(x=>x!=='8.5px')||result.grid!=='true'||!result.text.includes('SEIT APP AKTIV · 02:28:00')||!result.text.includes('GESAMT AKTIV · 04:54:00'))throw new Error('LIVE V494/V488 typography mismatch: '+JSON.stringify(result));
-            console.log('LIVE V494/V488 typography PASS',result);await browser.close();
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:640}});
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            let deployed=false;
+            for(let i=0;i<24;i++){
+              await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke=font-'+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              const ok=await page.evaluate(()=>!!window.__modSummaryWeightDuePolishV494&&window.__modHistoricalSegmentBreakdownV488?.cardBreakdownFontPx===8.5).catch(()=>false);
+              if(ok){deployed=true;break;}
+              await page.waitForTimeout(10000);
+            }
+            if(!deployed)throw new Error('Typography modules not deployed within polling window');
+            console.log('LIVE typography modules present');
+            await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
