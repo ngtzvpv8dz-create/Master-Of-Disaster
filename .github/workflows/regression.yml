@@ -18,6 +18,8 @@ jobs:
       - name: Syntax and wiring
         run: |
           node --check app.js
+          node --check today-paused-v446.js
+          node --check today-interaction-stability-v503.js
           node --check summary-weight-due-polish-v494.js
           node --check ui-alignment-v493.js
           node --check task-card-rail-polish-v492.js
@@ -28,10 +30,14 @@ jobs:
           node --check paused-today-v447.js
           node --check today-action-order-v501.js
           node --check build-freshness-v502.js
+          node tests/v503-today-interaction.test.cjs
           grep -q 'paused-today-v447.js?v=502-1225' index.html
           grep -q 'build-freshness-v502.js?v=502-1225' index.html
+          grep -q 'today-interaction-stability-v503.js?v=503-1803' index.html
           grep -q "serviceWorker.register('./sw.js?v=502-1225'" index.html
           grep -q 'todayMarkerBoundToButton:true' today-action-order-v501.js
+          grep -q 'pausedTodayManualHide:true' today-interaction-stability-v503.js
+          grep -q 'todayHiddenDate' today-paused-v446.js
           grep -q 'noStoreFetch:true' build-freshness-v502.js
       - name: Browser regression current build
         run: |
@@ -46,13 +52,14 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502,{timeout:30000});
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503,{timeout:30000});
             const day=await page.evaluate(()=>getBerlinDateKey());
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
               tasks=[
                 {id:50101,text:'V501 offene Aufgabe',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null},
-                {id:50102,text:'V501 El Porcador',type:'selfrunner',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null}
+                {id:50102,text:'V501 El Porcador',type:'selfrunner',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null},
+                {id:50301,text:'V503 pausierte Aufgabe',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:3,todayWorkBlockId:null,startedAt:new Date().toISOString(),pausedAt:new Date().toISOString(),activeSegments:[{startedAt:new Date().toISOString(),endedAt:new Date().toISOString()}]}
               ];
               archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('today');render();
             },day);
@@ -63,19 +70,29 @@ jobs:
                 const actions=card.querySelector('.icon-actions');
                 const buttons=[...actions?.querySelectorAll(':scope>button')||[]];
                 const ranks=buttons.map(b=>Number(b.dataset.v501ActionOrder||9999));
-                const today=buttons.find(b=>b.classList.contains('v501-today-action'));
+                const today=buttons.find(b=>b.classList.contains('v501-today-action')||b.classList.contains('paused-today-v447'));
                 return {
+                  text:card.querySelector('.task-text')?.textContent||'',
                   ordered:ranks.every((v,i)=>i===0||ranks[i-1]<=v),
                   todayInside:!!today&&today.parentElement===actions,
                   todayPosition:today?getComputedStyle(today).position:null,
-                  todaySelected:today?.classList.contains('today-selected-v480')||false
+                  todaySelected:today?.classList.contains('today-selected-v480')||today?.classList.contains('selected')||false
                 };
               });
             });
-            if(result.length<2||result.some(x=>!x.ordered||!x.todayInside||x.todayPosition!=='relative'||!x.todaySelected))throw new Error('V501 action layout regression '+JSON.stringify(result));
-            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version}));
-            if(!/^V\d+$/.test(build.v||'')||build.loaded!=='V502')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
-            console.log('Current browser regression OK',result,build);
+            if(result.length<3||result.some(x=>!x.ordered||!x.todayInside||x.todayPosition!=='relative'||!x.todaySelected))throw new Error('V501 action layout regression '+JSON.stringify(result));
+            const pausedBefore=await page.evaluate(()=>!![...document.querySelectorAll('#viewContainer .task:not(.archive-task)')].find(card=>(card.querySelector('.task-text')?.textContent||'').includes('V503 pausierte Aufgabe')));
+            if(!pausedBefore)throw new Error('V503 paused fixture missing before removal');
+            await page.evaluate(()=>window.__modTodayInteractionStabilityV503.removeFromToday(50301));
+            await page.waitForTimeout(350);
+            const pausedAfter=await page.evaluate(()=>({
+              visible:!![...document.querySelectorAll('#viewContainer .task:not(.archive-task)')].find(card=>(card.querySelector('.task-text')?.textContent||'').includes('V503 pausierte Aufgabe')),
+              task:(tasks||[]).find(t=>t.id===50301)
+            }));
+            if(pausedAfter.visible||pausedAfter.task?.todayDate!==null||pausedAfter.task?.todayHiddenDate!==day)throw new Error('V503 paused Today removal regression '+JSON.stringify(pausedAfter));
+            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version}));
+            if(!/^V\d+$/.test(build.v||'')||build.loaded!=='V502'||build.v503!=='V503')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
+            console.log('Current browser regression OK',result,pausedAfter,build);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
