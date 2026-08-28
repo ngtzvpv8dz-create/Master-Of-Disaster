@@ -27,16 +27,18 @@ jobs:
           required_index=[
             'paused-today-v447.js?v=502-1225',
             'build-freshness-v502.js?v=502-1225',
+            'today-interaction-stability-v503.js?v=503-1803',
             "serviceWorker.register('./sw.js?v=502-1225'",
             'summary-weight-due-polish-v494.js?v=494-2103'
           ]
           for marker in required_index:
               if marker not in index: raise SystemExit(f'Missing current index marker: {marker}')
-          for marker in ['build-freshness-v502.js','today-action-order-v501.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
+          for marker in ['build-freshness-v502.js','today-action-order-v501.js','today-interaction-stability-v503.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
               if marker not in sw: raise SystemExit(f'Missing service-worker shell marker: {marker}')
           for path,markers in {
             'build-freshness-v502.js':["const BUILD_VERSION='V502'",'noStoreFetch:true','dynamicFromMetrics:true'],
             'today-action-order-v501.js':["const BUILD_VERSION='V501'",'todayMarkerBoundToButton:true','dataSemanticsUntouched:true'],
+            'today-interaction-stability-v503.js':["const BUILD_VERSION='V503'",'editKeepsExactTodayPosition:true','todayRemovalDirect:true','firstPauseClickDirect:true','dataSemanticsUntouched:true'],
             'summary-weight-due-polish-v494.js':["const BUILD_VERSION='V494'",'totalActiveHighlighted:true','partialWeightFirstLineShowsKg:true','dataSemanticsUntouched:true'],
             'ui-card-stability-v491.js':["const BUILD_VERSION='V491'",'actionsAlwaysBottom:true','stableCardLayout:true']
           }.items():
@@ -48,7 +50,7 @@ jobs:
           print('Current build wiring consistency OK')
       - name: JavaScript syntax
         run: |
-          for f in app.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
+          for f in app.js today-interaction-stability-v503.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
       - name: Generator follows highest current module version
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
