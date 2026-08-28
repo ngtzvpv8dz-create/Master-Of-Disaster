@@ -50,7 +50,7 @@ jobs:
               }
               if(!out.live)throw new Error(`Current build not deployed: expected ${expected}, metrics=${metrics?.version||'none'}`);
               out.metricsCurrent=vn(metrics?.version)>=vn(expected)&&!!metrics?.sourceCommit&&metrics.sourceCommit!=='pending';
-              out.bundle=await page.evaluate(()=>!!(window.__modBuildFreshnessV502&&window.__modTodayActionOrderV501&&window.__modMeaningfulHistoryV500&&window.__modLogStabilityV499&&window.__modHistorySafetyNetV498));
+              out.bundle=await page.evaluate(()=>!!(window.__modBuildFreshnessV502&&window.__modTodayActionOrderV501&&window.__modMeaningfulHistoryV500&&window.__modLogStabilityV499&&window.__modRecoveryHistoryV498));
               out.preservedCore=await page.evaluate(()=>!!(window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTodayWorkBlocksV474));
 
               await page.evaluate(()=>{switchTab('dev');render();});
