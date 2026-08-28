@@ -1,11 +1,12 @@
 /* V495 · REMOTE TODAY WORK BLOCK CONTROL
-   Dedicated bridge for date-specific work blocks. It only consumes commands
-   parked as ready_v495 so older app versions cannot reject them.
+   Dedicated bridge for date-specific work blocks. Parked commands use the
+   allowed status "done" with processed_at = null so older app versions ignore them.
 */
 (function(){
   const POLL_MS=5000;
-  const STATUS='ready_v495';
+  const PARKED_STATUS='done';
   const ACTIVE=new Set(['open','running','paused']);
+  const COMMANDS=['SET_TODAY_WORK_BLOCK','REPORT_TODAY_WORK_BLOCKS'];
   let busy=false,timer=null;
 
   const norm=v=>String(v||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('de-DE');
@@ -116,7 +117,7 @@
     try{
       const s=await getSession();
       if(!s)return;
-      const {data,error}=await s.client.from('remote_commands').select('id,command,payload,created_at').eq('user_id',s.userId).eq('status',STATUS).order('created_at',{ascending:true}).limit(10);
+      const {data,error}=await s.client.from('remote_commands').select('id,command,payload,created_at').eq('user_id',s.userId).eq('status',PARKED_STATUS).is('processed_at',null).in('command',COMMANDS).order('created_at',{ascending:true}).limit(10);
       if(error)throw error;
       for(const row of(data||[]))await processOne(s.client,row);
     }catch(error){console.warn('V495 remote work block poll:',error);}
@@ -127,5 +128,5 @@
   window.addEventListener('focus',()=>setTimeout(poll,200));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(poll,200);});
   window.addEventListener('load',()=>setTimeout(start,900));
-  window.__modRemoteWorkBlocksV495={version:'V495',poll,pollMs:POLL_MS,status:STATUS,setBlock,snapshot};
+  window.__modRemoteWorkBlocksV495={version:'V495',poll,pollMs:POLL_MS,status:PARKED_STATUS,setBlock,snapshot};
 })();
