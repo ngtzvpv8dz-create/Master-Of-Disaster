@@ -25,6 +25,8 @@
 
   function taskRelevantToday(task,day){
     if(!task)return false;
+    const active=['open','running','paused'].includes(String(task.status||''));
+    if(active&&String(task.todayHiddenDate||'')===String(day))return false;
     if(task.todayDate===day)return true;
     if(berlinDayFromIso(task.startedAt)===day)return true;
     if(berlinDayFromIso(task.completedAt)===day)return true;
