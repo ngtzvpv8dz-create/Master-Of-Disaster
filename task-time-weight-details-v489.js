@@ -281,13 +281,33 @@
     injectStyle();
   }
 
+  function refreshRunningCards(){
+    const layout=window.__modNestedTaskWeightLayoutV490;
+    if(!layout||typeof layout.attach!=='function')return 0;
+    let refreshed=0;
+    document.querySelectorAll('#viewContainer .task.running').forEach(card=>{
+      const rawId=card.dataset.v490TaskId||card.dataset.id||card.querySelector('[data-task-id]')?.dataset.taskId;
+      if(rawId==null)return;
+      let row=null;
+      try{
+        row=typeof getTask==='function'
+          ? getTask(Number(rawId))
+          : (Array.isArray(tasks)?tasks:[]).find(item=>String(item&&item.id)===String(rawId))||null;
+      }catch(_){row=null;}
+      if(!row||String(row.status||'')!=='running')return;
+      layout.attach(card,row,false);
+      refreshed+=1;
+    });
+    return refreshed;
+  }
+
   refresh();
   window.addEventListener('load',()=>{refresh();setTimeout(()=>{try{if(typeof render==='function')render();}catch(_){ }},0);});
   setInterval(()=>{
     try{
       refresh();
       if(typeof currentTab!=='undefined'&&['all','today','priority','due','active','completed','archive'].includes(currentTab)&&document.querySelector('.task.running')){
-        if(typeof render==='function')render();
+        refreshRunningCards();
       }
     }catch(_){ }
   },1000);
@@ -300,11 +320,14 @@
     overlapWeightRows,
     attachDetail,
     refresh,
+    refreshRunningCards,
     perTaskTimeRanges:true,
     perTaskWeightOverlap:true,
     appliesToPausedCompletedAbortedAndArchive:true,
     historicalTimesNeverInvented:true,
     compactLogFontPx:8.5,
-    detailFontPx:8.5
+    detailFontPx:8.5,
+    periodicFullRenderRemovedV505:true,
+    runningCardOnlyRefreshV505:true
   };
 })();
