@@ -15,6 +15,7 @@ jobs:
           node-version: '20'
       - name: Syntax
         run: |
+          node --check running-task-render-stability-v505.js
           node --check build-freshness-v502.js
           node --check today-action-order-v501.js
           node --check meaningful-history-v500.js
@@ -50,7 +51,30 @@ jobs:
               }
               if(!out.live)throw new Error(`Current build not deployed: expected ${expected}, metrics=${metrics?.version||'none'}`);
               out.metricsCurrent=vn(metrics?.version)>=vn(expected)&&!!metrics?.sourceCommit&&metrics.sourceCommit!=='pending';
-              out.bundle=await page.evaluate(()=>!!(window.__modBuildFreshnessV502&&window.__modTodayActionOrderV501&&window.__modMeaningfulHistoryV500&&window.__modLogStabilityV499&&window.__modRecoveryHistoryV498));
+
+              // V498/V499/V500 werden absichtlich dynamisch bzw. asynchron initialisiert.
+              // Nicht direkt nach networkidle prüfen, sondern auf ihre echte Runtime-Bereitschaft warten.
+              try{
+                await page.waitForFunction(()=>!!(
+                  window.__modBuildFreshnessV502&&
+                  window.__modTodayActionOrderV501&&
+                  window.__modMeaningfulHistoryV500&&
+                  window.__modLogStabilityV499&&
+                  window.__modRecoveryHistoryV498&&
+                  window.__modRunningTaskRenderStabilityV505
+                ),undefined,{timeout:15000});
+              }catch(_){ }
+              const bundleState=await page.evaluate(()=>({
+                v502:!!window.__modBuildFreshnessV502,
+                v501:!!window.__modTodayActionOrderV501,
+                v500:!!window.__modMeaningfulHistoryV500,
+                v499:!!window.__modLogStabilityV499,
+                v498:!!window.__modRecoveryHistoryV498,
+                v505:!!window.__modRunningTaskRenderStabilityV505,
+                v505Verified:window.__modRunningTaskRenderStabilityV505?.verify?.()===true
+              }));
+              console.log('Runtime bundle readiness',bundleState);
+              out.bundle=Object.values(bundleState).every(Boolean);
               out.preservedCore=await page.evaluate(()=>!!(window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTodayWorkBlocksV474));
 
               await page.evaluate(()=>{switchTab('dev');render();});
