@@ -20,6 +20,7 @@ jobs:
           node --check app.js
           node --check today-paused-v446.js
           node --check today-interaction-stability-v503.js
+          node --check category-create-stability-v504.js
           node --check summary-weight-due-polish-v494.js
           node --check ui-alignment-v493.js
           node --check task-card-rail-polish-v492.js
@@ -34,10 +35,13 @@ jobs:
           grep -q 'paused-today-v447.js?v=502-1225' index.html
           grep -q 'build-freshness-v502.js?v=502-1225' index.html
           grep -q 'today-interaction-stability-v503.js?v=503-1803' index.html
-          grep -q "serviceWorker.register('./sw.js?v=502-1225'" index.html
+          grep -q 'category-create-stability-v504.js?v=504-1319' index.html
+          grep -q "serviceWorker.register('./sw.js?v=504-1319'" index.html
           grep -q 'todayMarkerBoundToButton:true' today-action-order-v501.js
           grep -q 'pausedTodayManualHide:true' today-interaction-stability-v503.js
           grep -q 'todayHiddenDate' today-paused-v446.js
+          grep -q 'explicitNewCategoryWins:true' category-create-stability-v504.js
+          grep -q 'suggestionCategoryFallbackOnly:true' category-create-stability-v504.js
           grep -q 'noStoreFetch:true' build-freshness-v502.js
       - name: Browser regression current build
         run: |
@@ -52,7 +56,7 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503,{timeout:30000});
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504,{timeout:30000});
             const day=await page.evaluate(()=>getBerlinDateKey());
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
@@ -90,9 +94,38 @@ jobs:
               task:(tasks||[]).find(t=>t.id===50301)
             }));
             if(pausedAfter.visible||pausedAfter.task?.todayDate!==null||pausedAfter.task?.todayHiddenDate!==day)throw new Error('V503 paused Today removal regression '+JSON.stringify(pausedAfter));
-            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version}));
-            if(!/^V\d+$/.test(build.v||'')||build.loaded!=='V502'||build.v503!=='V503')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
-            console.log('Current browser regression OK',result,pausedAfter,build);
+
+            await page.evaluate(()=>{
+              localStorage.setItem('masterOfDisasterCategoriesV405',JSON.stringify(['Haushalt','Verlauf']));
+              tasks=[];archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('all');render();
+            });
+            await page.waitForTimeout(350);
+            const categoryCreate=await page.evaluate(()=>{
+              const input=document.getElementById('taskInput');
+              const select=document.getElementById('newCategoryV412');
+              if(!input||!select)throw new Error('V504 create controls missing');
+
+              input.value='V504 manuelle Kategorie';
+              select.value='Haushalt';
+              select.dispatchEvent(new Event('change',{bubbles:true}));
+              window.__modPendingSuggestionCategory=null;
+              addTask();
+              const manual=(tasks||[]).find(t=>t.text==='V504 manuelle Kategorie');
+
+              input.value='V504 Vorschlags-Fallback';
+              select.value='';
+              select.dispatchEvent(new Event('change',{bubbles:true}));
+              window.__modPendingSuggestionCategory='Verlauf';
+              addTask();
+              const fallback=(tasks||[]).find(t=>t.text==='V504 Vorschlags-Fallback');
+
+              return {manual:manual?.category??null,fallback:fallback?.category??null};
+            });
+            if(categoryCreate.manual!=='Haushalt'||categoryCreate.fallback!=='Verlauf')throw new Error('V504 category create regression '+JSON.stringify(categoryCreate));
+
+            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version}));
+            if(build.v!=='V504'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
+            console.log('Current browser regression OK',result,pausedAfter,categoryCreate,build);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
