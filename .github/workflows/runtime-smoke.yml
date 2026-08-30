@@ -15,6 +15,8 @@ jobs:
           node-version: '20'
       - name: Syntax
         run: |
+          node --check task-title-library-v507.js
+          node --check backup-source-fallback-v506.js
           node --check backup-stability-v506.js
           node --check running-task-render-stability-v505.js
           node --check build-freshness-v502.js
@@ -53,8 +55,6 @@ jobs:
               if(!out.live)throw new Error(`Current build not deployed: expected ${expected}, metrics=${metrics?.version||'none'}`);
               out.metricsCurrent=vn(metrics?.version)>=vn(expected)&&!!metrics?.sourceCommit&&metrics.sourceCommit!=='pending';
 
-              // V498/V499/V500 werden absichtlich dynamisch bzw. asynchron initialisiert.
-              // Nicht direkt nach networkidle prüfen, sondern auf ihre echte Runtime-Bereitschaft warten.
               try{
                 await page.waitForFunction(()=>!!(
                   window.__modBuildFreshnessV502&&
@@ -63,7 +63,9 @@ jobs:
                   window.__modLogStabilityV499&&
                   window.__modRecoveryHistoryV498&&
                   window.__modRunningTaskRenderStabilityV505&&
-                  window.__modBackupStabilityV506
+                  window.__modBackupStabilityV506&&
+                  window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&
+                  window.__modTaskTitleLibraryV507
                 ),undefined,{timeout:15000});
               }catch(_){ }
               const bundleState=await page.evaluate(()=>({
@@ -75,7 +77,11 @@ jobs:
                 v505:!!window.__modRunningTaskRenderStabilityV505,
                 v505Verified:window.__modRunningTaskRenderStabilityV505?.verify?.()===true,
                 v506:!!window.__modBackupStabilityV506,
-                v506Verified:window.__modBackupStabilityV506?.verify?.()===true
+                v506Verified:window.__modBackupStabilityV506?.verify?.()===true,
+                v506Source:window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',
+                v506SourceVerified:window.__modBackupSourceFallbackV506?.verify?.()===true,
+                v507:window.__modTaskTitleLibraryV507?.version==='V507',
+                v507Verified:window.__modTaskTitleLibraryV507?.verify?.()===true
               }));
               console.log('Runtime bundle readiness',bundleState);
               out.bundle=Object.values(bundleState).every(Boolean);
