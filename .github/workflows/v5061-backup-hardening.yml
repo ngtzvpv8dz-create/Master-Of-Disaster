@@ -1,0 +1,108 @@
+name: V506.1 Backup Hardening
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  backup-hardening:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax and markers
+        run: |
+          node --check backup-stability-v506.js
+          grep -q "patchRevision:PATCH_VERSION" backup-stability-v506.js
+          grep -q "noAutomaticBlobNavigation:true" backup-stability-v506.js
+          grep -q "weeklyCloudPayloadLightweight:true" backup-stability-v506.js
+          grep -q "fullBackupCaptureInterception:true" backup-stability-v506.js
+      - name: Browser backup behavior
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v5061-http.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?v5061='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506?.patchRevision==='V506.1',{timeout:30000});
+            const verify=await page.evaluate(()=>window.__modBackupStabilityV506.verify());
+            if(!verify)throw new Error('V506.1 module verify failed');
+
+            await page.evaluate(()=>{switchTab('dev');render();});
+            await page.waitForTimeout(500);
+
+            const full=await page.evaluate(async()=>{
+              const mod=window.__modBackupStabilityV506;
+              const api=window.__modRecoveryHistoryV498;
+              const button=document.getElementById('fullBackupV397');
+              if(!button)throw new Error('Full backup button missing');
+              const oldFetch=window.fetch,oldZip=window.JSZip,oldExport=api.exportPackage;
+              class FakeZip{
+                folder(){return this;}
+                file(){return this;}
+                async generateAsync(){return new Blob(['fake-zip'],{type:'application/zip'});}
+              }
+              window.JSZip=FakeZip;
+              window.fetch=async url=>String(url).includes('/git/trees/main')
+                ? {ok:true,json:async()=>({sha:'test-tree',tree:[]})}
+                : {ok:true,arrayBuffer:async()=>new ArrayBuffer(0)};
+              api.exportPackage=async()=>({schema:'master-of-disaster-safety-net',version:1,points:[],logs:[]});
+              const before=location.href;
+              await mod.createFullBackup(button);
+              const ready=!!document.querySelector('#modBackupModalV5061 [data-share-v5061]');
+              const after=location.href;
+              window.fetch=oldFetch;window.JSZip=oldZip;api.exportPackage=oldExport;
+              document.querySelector('#modBackupModalV5061 [data-close-v5061]')?.click();
+              return {ready,sameUrl:before===after,buttonText:button.textContent};
+            });
+            if(!full.ready||!full.sameUrl)throw new Error('Full backup explicit handoff regression '+JSON.stringify(full));
+
+            const weekly=await page.evaluate(async()=>{
+              const mod=window.__modBackupStabilityV506;
+              const button=document.querySelector('[data-weekly-create-v498]');
+              if(!button)throw new Error('Weekly backup button missing');
+              localStorage.setItem('masterOfDisasterLiveLogV453','VERY-LARGE-LOG-MUST-NOT-BE-UPLOADED');
+              localStorage.setItem('masterOfDisasterV5061Fixture','fixture');
+              const calls={};
+              const client={
+                auth:{getSession:async()=>({data:{session:{user:{id:'test-user'}}},error:null})},
+                from(){
+                  return {
+                    insert(rows){calls.insert=rows;return {select(){return {limit:async()=>({data:[{id:1,key:rows[0].key,created_at:new Date().toISOString()}],error:null})}}};},
+                    select(){return {eq(){return {like(){return {order:async()=>({data:[{id:1}],error:null})}}}}};},
+                    delete(){return {eq(){return {in:async()=>({error:null})}}};}
+                  };
+                }
+              };
+              const oldClient=window.getSupabaseClient;
+              window.getSupabaseClient=()=>client;
+              await mod.createWeeklyCloudBackup(button);
+              window.getSupabaseClient=oldClient;
+              const payload=calls.insert?.[0]?.payload;
+              document.querySelector('#modBackupModalV5061 [data-close-v5061]')?.click();
+              return {
+                bundleVersion:payload?.bundleVersion,
+                format:payload?.format,
+                historyMode:payload?.history?.mode,
+                hasSafety:Object.prototype.hasOwnProperty.call(payload||{},'safety'),
+                containsLiveLog:Object.prototype.hasOwnProperty.call(payload?.localStorage||{},'masterOfDisasterLiveLogV453'),
+                fixture:payload?.localStorage?.masterOfDisasterV5061Fixture
+              };
+            });
+            if(weekly.bundleVersion!==2||weekly.format!=='weekly-light-v5061'||weekly.historyMode!=='local-only'||weekly.hasSafety||weekly.containsLiveLog||weekly.fixture!=='fixture'){
+              throw new Error('Weekly lightweight payload regression '+JSON.stringify(weekly));
+            }
+            console.log('V506.1 backup hardening PASS',full,weekly);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
