@@ -22,6 +22,8 @@ jobs:
           node --check today-interaction-stability-v503.js
           node --check category-create-stability-v504.js
           node --check backup-stability-v506.js
+          node --check backup-source-fallback-v506.js
+          node --check task-title-library-v507.js
           node --check history-safety-net-v498.js
           node --check running-task-render-stability-v505.js
           node --check summary-weight-due-polish-v494.js
@@ -41,12 +43,19 @@ jobs:
           grep -q 'category-create-stability-v504.js?v=504-1319' index.html
           grep -q 'running-task-render-stability-v505.js?v=505-1353' index.html
           grep -q 'backup-stability-v506.js?v=506-1131' index.html
-          grep -q "serviceWorker.register('./sw.js?v=506-1131'" index.html
+          grep -q 'backup-source-fallback-v506.js?v=506-1244' index.html
+          grep -q 'task-title-library-v507.js?v=507-1345' index.html
+          grep -q 'data-tab="titles"' index.html
+          grep -q "serviceWorker.register('./sw.js?v=507-1345'" index.html
           grep -q 'running-task-render-stability-v505.js' sw.js
           grep -q 'backup-stability-v506.js' sw.js
+          grep -q 'backup-source-fallback-v506.js' sw.js
+          grep -q 'task-title-library-v507.js' sw.js
           grep -q 'dbReconnectV506:true' history-safety-net-v498.js
           grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
           grep -q 'ZIP TEILEN / IN DATEIEN SICHERN' history-safety-net-v498.js
+          grep -q 'codeloadBypassed:true' backup-source-fallback-v506.js
+          grep -q 'rawGithubFileFallback:true' backup-source-fallback-v506.js
           grep -q 'todayMarkerBoundToButton:true' today-action-order-v501.js
           grep -q 'pausedTodayManualHide:true' today-interaction-stability-v503.js
           grep -q 'todayHiddenDate' today-paused-v446.js
@@ -56,6 +65,8 @@ jobs:
           grep -q 'runningCardOnlyRefreshV505:true' task-time-weight-details-v489.js
           grep -q 'fullViewTickerRemoved:true' running-task-render-stability-v505.js
           grep -q 'terminalActionsStayStable:true' running-task-render-stability-v505.js
+          grep -q 'knownOnlySuggestions:true' task-title-library-v507.js
+          grep -q 'manualHistoricalMerge:true' task-title-library-v507.js
           grep -q 'noStoreFetch:true' build-freshness-v502.js
       - name: Browser regression current build
         run: |
@@ -70,7 +81,7 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506,{timeout:30000});
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507,{timeout:30000});
             const day=await page.evaluate(()=>getBerlinDateKey());
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
@@ -181,13 +192,15 @@ jobs:
                 afterOk:after?.schema==='master-of-disaster-safety-net'&&Array.isArray(after.points)&&Array.isArray(after.logs),
                 reconnect:api.dbReconnectV506===true,
                 iosHandoff:api.iosBackupHandoffV506===true,
-                verify:window.__modBackupStabilityV506?.verify?.()===true
+                verify:window.__modBackupStabilityV506?.verify?.()===true,
+                sourceFallback:window.__modBackupSourceFallbackV506?.verify?.()===true,
+                sourcePatch:window.__modBackupSourceFallbackV506?.patchRevision
               };
             });
-            if(!Object.values(backupReconnect).every(Boolean))throw new Error('V506 backup reconnect regression '+JSON.stringify(backupReconnect));
+            if(!backupReconnect.beforeOk||!backupReconnect.afterOk||!backupReconnect.reconnect||!backupReconnect.iosHandoff||!backupReconnect.verify||!backupReconnect.sourceFallback||backupReconnect.sourcePatch!=='V506.3')throw new Error('V506 backup reconnect regression '+JSON.stringify(backupReconnect));
 
-            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version}));
-            if(build.v!=='V506'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
+            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version,v506source:window.__modBackupSourceFallbackV506?.patchRevision,v507:window.__modTaskTitleLibraryV507?.version}));
+            if(build.v!=='V507'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
             console.log('Current browser regression OK',result,pausedAfter,categoryCreate,ticker,backupReconnect,build);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
