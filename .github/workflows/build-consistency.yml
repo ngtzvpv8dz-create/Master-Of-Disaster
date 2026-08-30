@@ -30,12 +30,13 @@ jobs:
             'today-interaction-stability-v503.js?v=503-1803',
             'category-create-stability-v504.js?v=504-1319',
             'running-task-render-stability-v505.js?v=505-1353',
-            "serviceWorker.register('./sw.js?v=505-1353'",
+            'backup-stability-v506.js?v=506-1131',
+            "serviceWorker.register('./sw.js?v=506-1131'",
             'summary-weight-due-polish-v494.js?v=494-2103'
           ]
           for marker in required_index:
               if marker not in index: raise SystemExit(f'Missing current index marker: {marker}')
-          for marker in ['build-freshness-v502.js','today-action-order-v501.js','today-interaction-stability-v503.js','category-create-stability-v504.js','running-task-render-stability-v505.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
+          for marker in ['build-freshness-v502.js','today-action-order-v501.js','today-interaction-stability-v503.js','category-create-stability-v504.js','running-task-render-stability-v505.js','backup-stability-v506.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
               if marker not in sw: raise SystemExit(f'Missing service-worker shell marker: {marker}')
           for path,markers in {
             'build-freshness-v502.js':["const BUILD_VERSION='V502'",'noStoreFetch:true','dynamicFromMetrics:true'],
@@ -43,6 +44,8 @@ jobs:
             'today-interaction-stability-v503.js':["const BUILD_VERSION='V503'",'editKeepsExactTodayPosition:true','todayRemovalDirect:true','firstPauseClickDirect:true','dataSemanticsUntouched:true'],
             'category-create-stability-v504.js':["const BUILD_VERSION='V504'",'explicitNewCategoryWins:true','suggestionCategoryFallbackOnly:true','dataSemanticsUntouched:true'],
             'running-task-render-stability-v505.js':["const BUILD_VERSION='V505'",'fullViewTickerRemoved:true','runningCardOnlyRefresh:true','unrelatedCardsKeepDom:true','terminalActionsStayStable:true','dataSemanticsUntouched:true'],
+            'backup-stability-v506.js':["const BUILD_VERSION='V506'",'indexedDbReconnect:true','iphoneZipUsesExplicitHandoff:true','safetyModuleRemainsV498:true','dataSemanticsUntouched:true'],
+            'history-safety-net-v498.js':['withDbReconnect','dbReconnectV506:true','iosBackupHandoffV506:true','ZIP TEILEN / IN DATEIEN SICHERN','DATENSICHERHEIT · MODUL V498'],
             'task-time-weight-details-v489.js':['refreshRunningCards','periodicFullRenderRemovedV505:true','runningCardOnlyRefreshV505:true'],
             'summary-weight-due-polish-v494.js':["const BUILD_VERSION='V494'",'totalActiveHighlighted:true','partialWeightFirstLineShowsKg:true','dataSemanticsUntouched:true'],
             'ui-card-stability-v491.js':["const BUILD_VERSION='V491'",'actionsAlwaysBottom:true','stableCardLayout:true']
@@ -61,7 +64,7 @@ jobs:
           print('Current build wiring consistency OK')
       - name: JavaScript syntax
         run: |
-          for f in app.js running-task-render-stability-v505.js category-create-stability-v504.js today-interaction-stability-v503.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
+          for f in app.js backup-stability-v506.js running-task-render-stability-v505.js history-safety-net-v498.js category-create-stability-v504.js today-interaction-stability-v503.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
       - name: Generator follows highest current module version
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log

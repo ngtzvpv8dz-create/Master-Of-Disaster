@@ -26,6 +26,7 @@
   ]);
 
   let dbPromise=null;
+  let dbHandle=null;
   let initialized=false;
   let restoring=false;
   let lastSnapshot=null;
@@ -55,10 +56,22 @@
     return {dateKey:`${p.year}-${p.month}-${p.day}`,dateLabel:`${p.weekday}, ${p.day}.${p.month}.${p.year}`,clock:`${p.hour}:${p.minute}:${p.second}`,file:`${p.year}-${p.month}-${p.day}_${p.hour}-${p.minute}-${p.second}`};
   }
 
+  function isDbConnectionClosingError(error){
+    const name=String(error?.name||'');
+    const message=String(error?.message||error||'');
+    return name==='InvalidStateError'||/database connection is closing|connection is closing|connection is closed|database is closing/i.test(message);
+  }
+  function resetDbConnection(db=null){
+    if(db&&dbHandle&&db!==dbHandle)return;
+    const current=dbHandle;
+    dbHandle=null;
+    dbPromise=null;
+    try{current?.close?.();}catch(_){}
+  }
   function openDb(){
     if(dbPromise)return dbPromise;
-    dbPromise=new Promise((resolve,reject)=>{
-      if(!('indexedDB' in window)){reject(new Error('IndexedDB ist auf diesem Gerät nicht verfügbar.'));return;}
+    if(!('indexedDB' in window))return Promise.reject(new Error('IndexedDB ist auf diesem Gerät nicht verfügbar.'));
+    const pending=new Promise((resolve,reject)=>{
       const req=indexedDB.open(DB_NAME,DB_VERSION);
       req.onupgradeneeded=()=>{
         const db=req.result;
@@ -71,56 +84,69 @@
           store.createIndex('at','at',{unique:false});
         }
       };
-      req.onsuccess=()=>resolve(req.result);
-      req.onerror=()=>reject(req.error||new Error('IndexedDB konnte nicht geöffnet werden.'));
+      req.onsuccess=()=>{
+        const db=req.result;
+        dbHandle=db;
+        const invalidate=()=>{if(dbHandle===db){dbHandle=null;dbPromise=null;}};
+        db.onclose=invalidate;
+        db.onversionchange=()=>{try{db.close();}catch(_){}invalidate();};
+        resolve(db);
+      };
+      req.onerror=()=>{dbPromise=null;reject(req.error||new Error('IndexedDB konnte nicht geöffnet werden.'));};
     });
-    return dbPromise;
+    dbPromise=pending;
+    return pending;
+  }
+  async function withDbReconnect(operation){
+    let db=await openDb();
+    try{return await operation(db);}
+    catch(error){
+      if(!isDbConnectionClosingError(error))throw error;
+      resetDbConnection(db);
+      db=await openDb();
+      return operation(db);
+    }
   }
 
   async function storePut(storeName,value){
-    const db=await openDb();
-    return new Promise((resolve,reject)=>{
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
       const tx=db.transaction(storeName,'readwrite');
       tx.objectStore(storeName).put(clone(value));
       tx.oncomplete=()=>resolve(value);
       tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Schreibfehler.'));
-    });
+    }));
   }
   async function storeGet(storeName,id){
-    const db=await openDb();
-    return new Promise((resolve,reject)=>{
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
       const req=db.transaction(storeName,'readonly').objectStore(storeName).get(id);
       req.onsuccess=()=>resolve(req.result||null);
       req.onerror=()=>reject(req.error||new Error('IndexedDB-Lesefehler.'));
-    });
+    }));
   }
   async function storeGetAll(storeName){
-    const db=await openDb();
-    return new Promise((resolve,reject)=>{
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
       const req=db.transaction(storeName,'readonly').objectStore(storeName).getAll();
       req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);
       req.onerror=()=>reject(req.error||new Error('IndexedDB-Lesefehler.'));
-    });
+    }));
   }
   async function storeDeleteMany(storeName,ids){
     if(!ids.length)return;
-    const db=await openDb();
-    return new Promise((resolve,reject)=>{
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
       const tx=db.transaction(storeName,'readwrite');
       const store=tx.objectStore(storeName);
       ids.forEach(id=>store.delete(id));
       tx.oncomplete=resolve;
       tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Löschfehler.'));
-    });
+    }));
   }
   async function storeClear(storeName){
-    const db=await openDb();
-    return new Promise((resolve,reject)=>{
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
       const tx=db.transaction(storeName,'readwrite');
       tx.objectStore(storeName).clear();
       tx.oncomplete=resolve;
       tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Löschfehler.'));
-    });
+    }));
   }
 
   async function pruneStore(storeName,maxRows){
@@ -428,6 +454,35 @@
     await pruneAll();
   }
 
+  function isIosDevice(){
+    try{return /iPad|iPhone|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&Number(navigator.maxTouchPoints)>1);}catch(_){return false;}
+  }
+  function directBlobDownload(blob,filename){
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+  }
+  function presentIosBackup(blob,filename,summary){
+    const root=modal('VOLLBACKUP BEREIT ✅',`<div style="padding:4px 2px 12px;line-height:1.55">${esc(summary)}<br><br><span style="opacity:.72">Auf dem iPhone wird die ZIP bewusst erst über einen zweiten Tipp an iOS übergeben. Dadurch verlässt die PWA nicht mehr ungewollt den DEV-Tab.</span></div><button type="button" class="mod-action-v498 primary" data-share-backup-v506>📤 ZIP TEILEN / IN DATEIEN SICHERN</button>`);
+    const share=root.querySelector('[data-share-backup-v506]');
+    share?.addEventListener('click',async()=>{
+      try{
+        if(typeof File!=='function'||typeof navigator.share!=='function')return directBlobDownload(blob,filename);
+        const file=new File([blob],filename,{type:'application/zip'});
+        if(typeof navigator.canShare==='function'&&!navigator.canShare({files:[file]}))return directBlobDownload(blob,filename);
+        await navigator.share({files:[file],title:'Master of Disaster Vollbackup'});
+        share.textContent='✅ ZIP AN IOS ÜBERGEBEN';
+      }catch(error){
+        if(error?.name==='AbortError')return;
+        showInfoModal?.('Vollbackup konnte nicht übergeben werden',error?.message||String(error));
+      }
+    });
+  }
+  function deliverFullBackupBlob(blob,filename,summary){
+    if(isIosDevice()){presentIosBackup(blob,filename,summary);return 'ios-share';}
+    directBlobDownload(blob,filename);showInfoModal?.('Vollbackup erstellt ✅',summary);return 'download';
+  }
+
   async function createEnhancedFullBackup(){
     const button=document.getElementById('fullBackupV397');if(button?.disabled)return;
     const setState=(text,disabled)=>{if(button){button.textContent=text;button.disabled=!!disabled;}};
@@ -441,7 +496,7 @@
       const complete=createCompleteBackupPayload();complete.masterVersion=BUILD_VERSION;complete.fullBackupCreatedAt=nowIso();const safety=await exportPackage();const local=collectAllMasterLocalStorage();
       dataFolder.file('complete-data-backup.json',JSON.stringify(complete,null,2));dataFolder.file('localstorage-master-of-disaster.json',JSON.stringify(local,null,2));dataFolder.file('recovery-history-v498.json',JSON.stringify(safety,null,2));dataFolder.file('live-log-7-days.json',JSON.stringify(safety.logs,null,2));
       const info=['MASTER OF DISASTER · VOLLSTÄNDIGES KOMPLETT-BACKUP','====================================================',`Build: ${BUILD_VERSION}`,`Erstellt: ${stamp.dateLabel} ${stamp.clock} Europe/Berlin`,`Git-Stand/Tree: ${tree.sha||'unbekannt'}`,`Repo-Dateien: ${files.length-failed.length}/${files.length}`,`Wiederherstellungspunkte: ${safety.points.length}`,`7-Tage-Logeinträge: ${safety.logs.length}`,'','DATA/complete-data-backup.json = App-Datenstand','DATA/localstorage-master-of-disaster.json = lokale App-Werte','DATA/recovery-history-v498.json = Wiederherstellungspunkte + 7-Tage-Log','DATA/live-log-7-days.json = lesbarer 7-Tage-Log','',failed.length?'Fehlgeschlagene Repo-Dateien:\n'+failed.join('\n'):'Keine fehlgeschlagenen Repo-Dateien.'].join('\n');zip.file('BACKUP-INFO.txt',info);
-      setState('⏳ ZIP WIRD GEPACKT…',true);const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Master-of-Disaster_${BUILD_VERSION}_Vollbackup_${stamp.file}.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);setState('✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);showInfoModal?.('Vollbackup erstellt ✅',`Code + App-Daten + ${safety.points.length} Wiederherstellungspunkte + ${safety.logs.length} Logeinträge wurden gesichert.`);
+      setState('⏳ ZIP WIRD GEPACKT…',true);const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});const filename=`Master-of-Disaster_${BUILD_VERSION}_Vollbackup_${stamp.file}.zip`;const summary=`Code + App-Daten + ${safety.points.length} Wiederherstellungspunkte + ${safety.logs.length} Logeinträge wurden gesichert.`;deliverFullBackupBlob(blob,filename,summary);setState('✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
     }catch(error){console.error('V498 Vollbackup fehlgeschlagen:',error);setState('📦 VOLLSTÄNDIGES KOMPLETT-BACKUP',false);showInfoModal?.('Vollbackup fehlgeschlagen',error?.message||String(error));}
   }
   function installBackupOverride(){const btn=document.getElementById('fullBackupV397');if(!btn||btn.dataset.v498Enhanced==='1')return;btn.dataset.v498Enhanced='1';btn.textContent='📦 VOLLSTÄNDIGES KOMPLETT-BACKUP';btn.onclick=createEnhancedFullBackup;const wrap=document.getElementById('fullBackupWrapV397');const note=wrap?.querySelector('div:nth-child(2)');if(note)note.textContent='ZIP mit aktuellem Programmcode + kompletten App-Daten + 7-Tage-Log + Wiederherstellungspunkten.';}
@@ -466,7 +521,7 @@
     try{if(typeof currentTab!=='undefined'&&currentTab!=='dev')return;}catch(_){return;}
     if(document.getElementById('modDevSafetyV498'))return;
     const host=document.querySelector('.dev-panel')||document.getElementById('viewContainer');if(!host)return;
-    const wrap=document.createElement('section');wrap.id='modDevSafetyV498';wrap.className='mod-dev-safety-v498';wrap.innerHTML=`<div style="font-size:10px;font-weight:900;letter-spacing:.8px">🔴 DATENSICHERHEIT V498</div><div style="font-size:10px;line-height:1.5;opacity:.82">7-Tage-Zeitmaschine lokal · Vollbackup inkl. Historie · datierte Cloud-Wochenstände</div><button type="button" class="mod-action-v498" data-weekly-create-v498>☁️ WOCHEN-CLOUDBACKUP ERSTELLEN</button><button type="button" class="mod-action-v498" data-weekly-list-v498>☁️ WOCHEN-CLOUDBACKUPS ANZEIGEN</button><button type="button" class="mod-action-v498" data-zip-import-v498>📥 VOLLBACKUP-ZIP IMPORTIEREN</button><input type="file" accept=".zip,application/zip" data-zip-file-v498 hidden>`;host.appendChild(wrap);wrap.querySelector('[data-weekly-create-v498]')?.addEventListener('click',createWeeklyCloudBackup);wrap.querySelector('[data-weekly-list-v498]')?.addEventListener('click',listWeeklyCloudBackups);const fileInput=wrap.querySelector('[data-zip-file-v498]');wrap.querySelector('[data-zip-import-v498]')?.addEventListener('click',()=>fileInput?.click());fileInput?.addEventListener('change',event=>{const file=event.target.files?.[0];if(file)importFullBackupZip(file);event.target.value='';});
+    const wrap=document.createElement('section');wrap.id='modDevSafetyV498';wrap.className='mod-dev-safety-v498';wrap.innerHTML=`<div style="font-size:10px;font-weight:900;letter-spacing:.8px">🔴 DATENSICHERHEIT · MODUL V498</div><div style="font-size:10px;line-height:1.5;opacity:.82">Sicherheitsmodul seit V498 · 7-Tage-Zeitmaschine lokal · Vollbackup inkl. Historie · datierte Cloud-Wochenstände</div><button type="button" class="mod-action-v498" data-weekly-create-v498>☁️ WOCHEN-CLOUDBACKUP ERSTELLEN</button><button type="button" class="mod-action-v498" data-weekly-list-v498>☁️ WOCHEN-CLOUDBACKUPS ANZEIGEN</button><button type="button" class="mod-action-v498" data-zip-import-v498>📥 VOLLBACKUP-ZIP IMPORTIEREN</button><input type="file" accept=".zip,application/zip" data-zip-file-v498 hidden>`;host.appendChild(wrap);wrap.querySelector('[data-weekly-create-v498]')?.addEventListener('click',createWeeklyCloudBackup);wrap.querySelector('[data-weekly-list-v498]')?.addEventListener('click',listWeeklyCloudBackups);const fileInput=wrap.querySelector('[data-zip-file-v498]');wrap.querySelector('[data-zip-import-v498]')?.addEventListener('click',()=>fileInput?.click());fileInput?.addEventListener('change',event=>{const file=event.target.files?.[0];if(file)importFullBackupZip(file);event.target.value='';});
   }
 
   function showRestoreNotice(){try{const msg=sessionStorage.getItem('modV498RestoreNotice');if(msg){sessionStorage.removeItem('modV498RestoreNotice');setTimeout(()=>showInfoModal?.('Wiederherstellung abgeschlossen ✅',msg),350);}}catch(_){} }
@@ -490,8 +545,8 @@
     setInterval(()=>{mirrorLiveLogs().catch(()=>{});if(!restoring)queueCapture(80);try{if(currentTab==='log'&&logFollow)renderEnhancedLog();}catch(_){}},5000);
     window.addEventListener('focus',()=>{mirrorLiveLogs(true).catch(()=>{});queueCapture(80);});
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){mirrorLiveLogs(true).catch(()=>{});queueCapture(80);}});
-    window.__modRecoveryHistoryV498={version:BUILD_VERSION,dbName:DB_NAME,retentionMs:RETENTION_MS,openQuickHistory,openPoint,restoreFullPoint,surgicalUndo,recentPoints,readSevenDayLogs,renderEnhancedLog,exportPackage,importPackage,createWeeklyCloudBackup,listWeeklyCloudBackups,createEnhancedFullBackup,importFullBackupZip,captureSnapshot,mirrorLiveLogs,pruneAll};
-    try{window.__modLiveLogV453?.append?.('SYSTEM','PASS','Datensicherheitsnetz V498 aktiv · 7-Tage-Verlauf + Wiederherstellungspunkte');}catch(_){}
+    window.__modRecoveryHistoryV498={version:BUILD_VERSION,dbName:DB_NAME,retentionMs:RETENTION_MS,openQuickHistory,openPoint,restoreFullPoint,surgicalUndo,recentPoints,readSevenDayLogs,renderEnhancedLog,exportPackage,importPackage,createWeeklyCloudBackup,listWeeklyCloudBackups,createEnhancedFullBackup,importFullBackupZip,captureSnapshot,mirrorLiveLogs,pruneAll,resetDbConnection,deliverFullBackupBlob,dbReconnectV506:true,iosBackupHandoffV506:true};
+    try{window.__modLiveLogV453?.append?.('SYSTEM','PASS','Datensicherheitsnetz V498 aktiv · DB-Reconnect V506 · 7-Tage-Verlauf + Wiederherstellungspunkte');}catch(_){}
   }
 
   function waitForDependencies(){

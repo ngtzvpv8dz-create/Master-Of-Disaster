@@ -88,7 +88,7 @@
     if(window.__modRecoveryHistoryV498)return true;
     if(document.querySelector('script[data-safety-net-v498-loader="1"]'))return false;
     const s=document.createElement('script');
-    s.src='./history-safety-net-v498.js?v=498-1041';
+    s.src='./history-safety-net-v498.js?v=506-backup-1131';
     s.dataset.safetyNetV498Loader='1';
     s.onerror=()=>{try{s.remove();}catch(_){}};
     document.head.appendChild(s);
