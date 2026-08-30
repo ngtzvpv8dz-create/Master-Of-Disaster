@@ -21,6 +21,8 @@ jobs:
           node --check today-paused-v446.js
           node --check today-interaction-stability-v503.js
           node --check category-create-stability-v504.js
+          node --check backup-stability-v506.js
+          node --check history-safety-net-v498.js
           node --check running-task-render-stability-v505.js
           node --check summary-weight-due-polish-v494.js
           node --check ui-alignment-v493.js
@@ -38,8 +40,13 @@ jobs:
           grep -q 'today-interaction-stability-v503.js?v=503-1803' index.html
           grep -q 'category-create-stability-v504.js?v=504-1319' index.html
           grep -q 'running-task-render-stability-v505.js?v=505-1353' index.html
-          grep -q "serviceWorker.register('./sw.js?v=505-1353'" index.html
+          grep -q 'backup-stability-v506.js?v=506-1131' index.html
+          grep -q "serviceWorker.register('./sw.js?v=506-1131'" index.html
           grep -q 'running-task-render-stability-v505.js' sw.js
+          grep -q 'backup-stability-v506.js' sw.js
+          grep -q 'dbReconnectV506:true' history-safety-net-v498.js
+          grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
+          grep -q 'ZIP TEILEN / IN DATEIEN SICHERN' history-safety-net-v498.js
           grep -q 'todayMarkerBoundToButton:true' today-action-order-v501.js
           grep -q 'pausedTodayManualHide:true' today-interaction-stability-v503.js
           grep -q 'todayHiddenDate' today-paused-v446.js
@@ -63,7 +70,7 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505,{timeout:30000});
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506,{timeout:30000});
             const day=await page.evaluate(()=>getBerlinDateKey());
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
@@ -111,21 +118,18 @@ jobs:
               const input=document.getElementById('taskInput');
               const select=document.getElementById('newCategoryV412');
               if(!input||!select)throw new Error('V504 create controls missing');
-
               input.value='V504 manuelle Kategorie';
               select.value='Haushalt';
               select.dispatchEvent(new Event('change',{bubbles:true}));
               window.__modPendingSuggestionCategory=null;
               addTask();
               const manual=(tasks||[]).find(t=>t.text==='V504 manuelle Kategorie');
-
               input.value='V504 Vorschlags-Fallback';
               select.value='';
               select.dispatchEvent(new Event('change',{bubbles:true}));
               window.__modPendingSuggestionCategory='Verlauf';
               addTask();
               const fallback=(tasks||[]).find(t=>t.text==='V504 Vorschlags-Fallback');
-
               return {manual:manual?.category??null,fallback:fallback?.category??null};
             });
             if(categoryCreate.manual!=='Haushalt'||categoryCreate.fallback!=='Verlauf')throw new Error('V504 category create regression '+JSON.stringify(categoryCreate));
@@ -133,15 +137,8 @@ jobs:
             await page.evaluate(day=>{
               const now=Date.now();
               tasks=[
-                {
-                  id:50501,text:'V505 Wäsche abnehmen',type:'work',status:'running',priority:'normal',optional:false,dueMode:'none',dueDate:null,
-                  todayDate:day,todayOrder:1,todayWorkBlockId:null,startedAt:new Date(now-5000).toISOString(),activeSegments:[{startedAt:new Date(now-5000).toISOString(),endedAt:null}]
-                },
-                {
-                  id:50502,text:'V505 Wäsche waschen',type:'work',status:'completed',priority:'normal',optional:false,dueMode:'none',dueDate:null,
-                  todayDate:day,todayOrder:2,todayWorkBlockId:null,startedAt:new Date(now-12000).toISOString(),completedAt:new Date(now-7000).toISOString(),completedDate:day,
-                  activeDurationMs:5000,actualDurationMs:5000,activeSegments:[{startedAt:new Date(now-12000).toISOString(),endedAt:new Date(now-7000).toISOString()}]
-                }
+                {id:50501,text:'V505 Wäsche abnehmen',type:'work',status:'running',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null,startedAt:new Date(now-5000).toISOString(),activeSegments:[{startedAt:new Date(now-5000).toISOString(),endedAt:null}]},
+                {id:50502,text:'V505 Wäsche waschen',type:'work',status:'completed',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null,startedAt:new Date(now-12000).toISOString(),completedAt:new Date(now-7000).toISOString(),completedDate:day,activeDurationMs:5000,actualDurationMs:5000,activeSegments:[{startedAt:new Date(now-12000).toISOString(),endedAt:new Date(now-7000).toISOString()}]}
               ];
               archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('today');render();
             },day);
@@ -166,27 +163,32 @@ jobs:
               const completed=document.querySelector('#viewContainer .task[data-v490-task-id="50502"]');
               const del=completed?.querySelector('.terminal-delete-v485');
               const after=running?.querySelector('.task-detail-v490')?.textContent||'';
-              const result={
-                renderCalls:window.__v505RenderCalls,
-                completedCardSame:completed===window.__v505CompletedCard,
-                deleteButtonSame:del===window.__v505DeleteButton,
-                deleteStillVisible:!!del,
-                runningDetailBefore:window.__v505RunningDetailBefore,
-                runningDetailAfter:after,
-                runningDetailChanged:after!==window.__v505RunningDetailBefore,
-                verify:window.__modRunningTaskRenderStabilityV505.verify()
-              };
+              const result={renderCalls:window.__v505RenderCalls,completedCardSame:completed===window.__v505CompletedCard,deleteButtonSame:del===window.__v505DeleteButton,deleteStillVisible:!!del,runningDetailBefore:window.__v505RunningDetailBefore,runningDetailAfter:after,runningDetailChanged:after!==window.__v505RunningDetailBefore,verify:window.__modRunningTaskRenderStabilityV505.verify()};
               window.render=window.__v505BaseRender;
               delete window.__v505BaseRender;
               return result;
             });
-            if(ticker.renderCalls!==0||!ticker.completedCardSame||!ticker.deleteButtonSame||!ticker.deleteStillVisible||!ticker.runningDetailChanged||!ticker.verify){
-              throw new Error('V505 running-task flicker regression '+JSON.stringify(ticker));
-            }
+            if(ticker.renderCalls!==0||!ticker.completedCardSame||!ticker.deleteButtonSame||!ticker.deleteStillVisible||!ticker.runningDetailChanged||!ticker.verify)throw new Error('V505 running-task flicker regression '+JSON.stringify(ticker));
 
-            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version}));
-            if(build.v!=='V505'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
-            console.log('Current browser regression OK',result,pausedAfter,categoryCreate,ticker,build);
+            const backupReconnect=await page.evaluate(async()=>{
+              const api=window.__modRecoveryHistoryV498;
+              if(!api)throw new Error('V498 backup API missing');
+              const before=await api.exportPackage();
+              api.resetDbConnection();
+              const after=await api.exportPackage();
+              return {
+                beforeOk:before?.schema==='master-of-disaster-safety-net'&&Array.isArray(before.points)&&Array.isArray(before.logs),
+                afterOk:after?.schema==='master-of-disaster-safety-net'&&Array.isArray(after.points)&&Array.isArray(after.logs),
+                reconnect:api.dbReconnectV506===true,
+                iosHandoff:api.iosBackupHandoffV506===true,
+                verify:window.__modBackupStabilityV506?.verify?.()===true
+              };
+            });
+            if(!Object.values(backupReconnect).every(Boolean))throw new Error('V506 backup reconnect regression '+JSON.stringify(backupReconnect));
+
+            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version}));
+            if(build.v!=='V506'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
+            console.log('Current browser regression OK',result,pausedAfter,categoryCreate,ticker,backupReconnect,build);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
