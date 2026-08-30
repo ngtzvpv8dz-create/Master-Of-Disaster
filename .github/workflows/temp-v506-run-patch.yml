@@ -1,0 +1,34 @@
+name: Temporary V506 Backup Patch Runner
+on:
+  push:
+    branches: [ fix/v506-backup-safety-stability ]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Apply V506 patch
+        run: python scripts/temp_v506_backup_patch.py
+      - name: Verify patched module
+        run: |
+          node --check history-safety-net-v498.js
+          grep -q 'dbReconnectV506:true' history-safety-net-v498.js
+          grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
+          grep -q 'withDbReconnect' history-safety-net-v498.js
+          grep -q 'ZIP TEILEN / IN DATEIEN SICHERN' history-safety-net-v498.js
+      - name: Commit patched module and remove helpers
+        run: |
+          rm .github/workflows/temp-v506-run-patch.yml scripts/temp_v506_backup_patch.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add history-safety-net-v498.js .github/workflows/temp-v506-run-patch.yml scripts/temp_v506_backup_patch.py
+          git commit -m "V506: stabilize backup database and iPhone ZIP handoff"
+          git push
