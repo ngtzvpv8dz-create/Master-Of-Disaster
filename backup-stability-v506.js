@@ -1,20 +1,27 @@
-/* V506.1 · BACKUP- UND DATENSICHERHEITS-STABILITÄT
+/* V506.2 · BACKUP- UND DATENSICHERHEITS-STABILITÄT
    - V498 öffnet eine geschlossene IndexedDB-Verbindung automatisch neu.
-   - Vollbackup wird niemals mehr automatisch per Blob-Link ausgelöst.
-   - Die fertige ZIP wird erst nach einem echten zweiten Tipp per Share-Sheet übergeben.
-   - Wochen-Cloudbackups speichern ab V506.1 nur den wiederherstellbaren App-Stand,
-     nicht mehr die komplette 7-Tage-Historie mit hunderten Voll-Snapshots in einer JSON-Zeile.
-   - Bestehende ältere Wochenstände bleiben weiterhin wiederherstellbar.
+   - Vollbackup wird niemals automatisch per Blob-Link ausgelöst.
+   - V506.2 baut das Vollbackup speicherschonend als STORE-ZIP:
+     GitHub-Code kommt als bereits gepacktes Quellcode-ZIP, History/Log werden per IndexedDB-Cursor
+     zeilenweise direkt in das äußere ZIP geschrieben statt komplett in den RAM geladen.
+   - Ein Crash-Marker zeigt nach einem iOS-WebView-Neustart den letzten Backup-Schritt an.
+   - Wochen-Cloudbackups bleiben im kompakten V506.1-Format.
 */
 (function(){
   'use strict';
-  if(window.__modBackupStabilityV506?.patchRevision==='V506.1')return;
+  if(window.__modBackupStabilityV506?.patchRevision==='V506.2')return;
 
   const BUILD_VERSION='V506';
-  const PATCH_VERSION='V506.1';
+  const PATCH_VERSION='V506.2';
   const WEEKLY_PREFIX='weekly_complete_backup_v1_';
   const WEEKLY_KEEP=12;
   const LIVE_LOG_KEY='masterOfDisasterLiveLogV453';
+  const SAFETY_DB='MasterOfDisasterSafetyNetV498';
+  const SAFETY_DB_VERSION=1;
+  const POINT_STORE='recoveryPoints';
+  const LOG_STORE='logEntries';
+  const RETENTION_MS=7*24*60*60*1000;
+  const CRASH_MARKER='modV5062FullBackupStage';
   const EXCLUDED_WEEKLY_KEYS=new Set([
     LIVE_LOG_KEY,
     'masterOfDisasterPreRestoreBackup',
@@ -26,9 +33,11 @@
   let captureInstalled=false;
   let activeObjectUrl=null;
 
+  const enc=new TextEncoder();
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const nowIso=()=>new Date().toISOString();
   const currentBuild=()=>String(window.__MOD_BUILD__?.version||BUILD_VERSION);
+  const safeParse=(value,fallback)=>{try{return JSON.parse(value);}catch(_){return fallback;}};
 
   function berlinParts(value=new Date()){
     const date=value instanceof Date?value:new Date(value);
@@ -56,8 +65,20 @@
 
   function showError(title,error){
     const text=error?.message||String(error||'Unbekannter Fehler');
-    console.error(`V506.1 ${title}:`,error);
+    console.error(`V506.2 ${title}:`,error);
     modal(title,`<div style="line-height:1.55;opacity:.88">${esc(text)}</div>`);
+  }
+
+  function markFullStage(stage,extra={}){
+    try{localStorage.setItem(CRASH_MARKER,JSON.stringify({patch:PATCH_VERSION,stage,at:Date.now(),...extra}));}catch(_){}
+  }
+  function clearFullStage(){try{localStorage.removeItem(CRASH_MARKER);}catch(_){} }
+  function showInterruptedFullBackup(){
+    let state=null;
+    try{state=safeParse(localStorage.getItem(CRASH_MARKER),null);localStorage.removeItem(CRASH_MARKER);}catch(_){}
+    if(!state||state.patch!==PATCH_VERSION||!state.stage)return;
+    if(Date.now()-Number(state.at||0)>60*60*1000)return;
+    setTimeout(()=>modal('VOLLBACKUP WURDE ABGEBROCHEN',`<div style="line-height:1.55">Das iPhone hat die PWA während des Vollbackups neu geladen.<br><br><strong>Letzter Schritt:</strong> ${esc(state.stage)}<br><br><span style="opacity:.72">Dieser Marker ist absichtlich drin. Falls es noch einmal passiert, wissen wir damit exakt, an welcher Stelle WebKit ausgestiegen ist.</span></div>`),500);
   }
 
   function collectAllMasterLocalStorage(){
@@ -116,7 +137,7 @@
       if(error?.name==='AbortError')return;
       fallback.style.display='block';
       button.textContent='⚠️ TEILEN NICHT MÖGLICH';
-      console.warn('V506.1 Share-Sheet:',error);
+      console.warn('V506.2 Share-Sheet:',error);
     }
   }
 
@@ -128,63 +149,231 @@
     share?.addEventListener('click',()=>shareBackupFile(blob,filename,share,fallback));
   }
 
+  const CRC_TABLE=(()=>{
+    const table=new Uint32Array(256);
+    for(let n=0;n<256;n++){
+      let c=n;
+      for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);
+      table[n]=c>>>0;
+    }
+    return table;
+  })();
+
+  function crcUpdate(crc,bytes){
+    let c=crc>>>0;
+    for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&0xff]^(c>>>8);
+    return c>>>0;
+  }
+
+  function u16(view,offset,value){view.setUint16(offset,value,true);}
+  function u32(view,offset,value){view.setUint32(offset,value>>>0,true);}
+
+  function dosStamp(date=new Date()){
+    const year=Math.max(1980,date.getFullYear());
+    return {
+      time:((date.getHours()&31)<<11)|((date.getMinutes()&63)<<5)|((Math.floor(date.getSeconds()/2))&31),
+      date:(((year-1980)&127)<<9)|(((date.getMonth()+1)&15)<<5)|(date.getDate()&31)
+    };
+  }
+
+  function bytesOf(value){
+    if(value instanceof Uint8Array)return value;
+    if(value instanceof ArrayBuffer)return new Uint8Array(value);
+    if(ArrayBuffer.isView(value))return new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
+    return enc.encode(String(value??''));
+  }
+
+  class StoreZipWriter{
+    constructor(){
+      this.chunks=[];
+      this.entries=[];
+      this.offset=0;
+      this.stamp=dosStamp();
+    }
+    push(bytes){
+      const b=bytesOf(bytes);
+      if(!b.byteLength)return;
+      this.chunks.push(b);
+      this.offset+=b.byteLength;
+    }
+    async add(name,producer){
+      const nameBytes=enc.encode(name);
+      const localOffset=this.offset;
+      const header=new Uint8Array(30+nameBytes.length);
+      const hv=new DataView(header.buffer);
+      u32(hv,0,0x04034b50);u16(hv,4,20);u16(hv,6,0x0808);u16(hv,8,0);
+      u16(hv,10,this.stamp.time);u16(hv,12,this.stamp.date);
+      u32(hv,14,0);u32(hv,18,0);u32(hv,22,0);u16(hv,26,nameBytes.length);u16(hv,28,0);
+      header.set(nameBytes,30);this.push(header);
+      let crc=0xffffffff,size=0;
+      const emit=value=>{
+        const b=bytesOf(value);
+        if(!b.byteLength)return;
+        crc=crcUpdate(crc,b);size+=b.byteLength;this.push(b);
+      };
+      await producer(emit);
+      crc=(crc^0xffffffff)>>>0;
+      if(size>0xffffffff||localOffset>0xffffffff)throw new Error('Vollbackup ist für das klassische ZIP-Format zu groß.');
+      const descriptor=new Uint8Array(16),dv=new DataView(descriptor.buffer);
+      u32(dv,0,0x08074b50);u32(dv,4,crc);u32(dv,8,size);u32(dv,12,size);this.push(descriptor);
+      this.entries.push({nameBytes,localOffset,crc,size,time:this.stamp.time,date:this.stamp.date});
+      return size;
+    }
+    async addBlob(name,blob){
+      return this.add(name,async emit=>{
+        if(blob?.stream){
+          const reader=blob.stream().getReader();
+          try{for(;;){const {done,value}=await reader.read();if(done)break;emit(value);}}
+          finally{try{reader.releaseLock();}catch(_){} }
+        }else emit(new Uint8Array(await blob.arrayBuffer()));
+      });
+    }
+    finish(){
+      const centralStart=this.offset;
+      for(const e of this.entries){
+        const c=new Uint8Array(46+e.nameBytes.length),v=new DataView(c.buffer);
+        u32(v,0,0x02014b50);u16(v,4,20);u16(v,6,20);u16(v,8,0x0808);u16(v,10,0);
+        u16(v,12,e.time);u16(v,14,e.date);u32(v,16,e.crc);u32(v,20,e.size);u32(v,24,e.size);
+        u16(v,28,e.nameBytes.length);u16(v,30,0);u16(v,32,0);u16(v,34,0);u16(v,36,0);u32(v,38,0);u32(v,42,e.localOffset);
+        c.set(e.nameBytes,46);this.push(c);
+      }
+      const centralSize=this.offset-centralStart;
+      const end=new Uint8Array(22),v=new DataView(end.buffer);
+      u32(v,0,0x06054b50);u16(v,4,0);u16(v,6,0);u16(v,8,this.entries.length);u16(v,10,this.entries.length);
+      u32(v,12,centralSize);u32(v,16,centralStart);u16(v,20,0);this.push(end);
+      return new Blob(this.chunks,{type:'application/zip'});
+    }
+  }
+
+  function openSafetyDb(){
+    return new Promise((resolve,reject)=>{
+      const req=indexedDB.open(SAFETY_DB,SAFETY_DB_VERSION);
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error||new Error('IndexedDB-Historie konnte nicht geöffnet werden.'));
+      req.onblocked=()=>reject(new Error('IndexedDB-Historie ist blockiert.'));
+    });
+  }
+
+  async function scanSafetyStore(storeName,onRow){
+    const db=await openSafetyDb();
+    try{
+      await new Promise((resolve,reject)=>{
+        let tx;
+        try{tx=db.transaction(storeName,'readonly');}catch(error){reject(error);return;}
+        const req=tx.objectStore(storeName).openCursor();
+        req.onsuccess=()=>{
+          const cursor=req.result;
+          if(!cursor)return;
+          try{onRow(cursor.value);}catch(error){reject(error);return;}
+          cursor.continue();
+        };
+        req.onerror=()=>reject(req.error||new Error('IndexedDB-Cursorfehler.'));
+        tx.oncomplete=resolve;
+        tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Lesefehler.'));
+        tx.onabort=()=>reject(tx.error||new Error('IndexedDB-Lesevorgang abgebrochen.'));
+      });
+    }finally{try{db.close();}catch(_){} }
+  }
+
+  async function addSafetyPackage(writer,progress){
+    const cutoff=Date.now()-RETENTION_MS;
+    let pointCount=0,logCount=0,firstPoint=true,firstLog=true;
+    await writer.add('DATA/recovery-history-v498.json',async emit=>{
+      emit(`{"schema":"master-of-disaster-safety-net","version":1,"build":"V498","exportedAt":${JSON.stringify(nowIso())},"retentionDays":7,"points":[`);
+      await scanSafetyStore(POINT_STORE,row=>{
+        const t=new Date(row?.at).getTime();if(!Number.isFinite(t)||t<cutoff)return;
+        if(!firstPoint)emit(',');firstPoint=false;emit(JSON.stringify(row));pointCount++;
+        if(pointCount%25===0)progress(`HISTORIE ${pointCount}…`);
+      });
+      emit('],"logs":[');
+      await scanSafetyStore(LOG_STORE,row=>{
+        const t=new Date(row?.at).getTime();if(!Number.isFinite(t)||t<cutoff)return;
+        if(!firstLog)emit(',');firstLog=false;emit(JSON.stringify(row));logCount++;
+        if(logCount%250===0)progress(`LOG ${logCount}…`);
+      });
+      emit(']}');
+    });
+    await writer.add('DATA/live-log-7-days.json',async emit=>{
+      let first=true;emit('[');
+      await scanSafetyStore(LOG_STORE,row=>{
+        const t=new Date(row?.at).getTime();if(!Number.isFinite(t)||t<cutoff)return;
+        if(!first)emit(',');first=false;emit(JSON.stringify(row));
+      });
+      emit(']');
+    });
+    return {pointCount,logCount};
+  }
+
+  async function fetchSourceArchive(){
+    const treeRes=await fetch('https://api.github.com/repos/ngtzvpv8dz-create/Master-Of-Disaster/git/trees/main',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
+    if(!treeRes.ok)throw new Error(`GitHub-Stand konnte nicht geladen werden (${treeRes.status}).`);
+    const tree=await treeRes.json();
+    const archiveRes=await fetch('https://codeload.github.com/ngtzvpv8dz-create/Master-Of-Disaster/zip/refs/heads/main',{cache:'no-store'});
+    if(!archiveRes.ok)throw new Error(`GitHub-Codearchiv konnte nicht geladen werden (${archiveRes.status}).`);
+    return {sha:tree.sha||'unbekannt',blob:await archiveRes.blob()};
+  }
+
   async function createFullBackup(button){
     if(fullBusy)return;
     fullBusy=true;
+    markFullStage('START');
     try{
       setButtonState(button,'⏳ BACKUP WIRD GEBAUT…',true);
-      if(typeof JSZip!=='function')throw new Error('ZIP-Bibliothek wurde nicht geladen.');
       if(!navigator.onLine)throw new Error('Für das Code-Vollbackup wird Internet benötigt.');
+      if(!('indexedDB' in window))throw new Error('IndexedDB ist auf diesem Gerät nicht verfügbar.');
       const api=window.__modRecoveryHistoryV498;
-      if(!api?.exportPackage)throw new Error('Datensicherheitsmodul V498 ist noch nicht bereit.');
+      if(!api?.captureSnapshot)throw new Error('Datensicherheitsmodul V498 ist noch nicht bereit.');
 
-      const stamp=berlinParts(),zip=new JSZip(),appFolder=zip.folder('APP'),dataFolder=zip.folder('DATA');
-      const treeRes=await fetch('https://api.github.com/repos/ngtzvpv8dz-create/Master-Of-Disaster/git/trees/main?recursive=1',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});
-      if(!treeRes.ok)throw new Error(`GitHub-Dateiliste konnte nicht geladen werden (${treeRes.status}).`);
-      const tree=await treeRes.json();
-      const files=(tree.tree||[]).filter(x=>x?.type==='blob'&&x.path),failed=[];
-      for(let i=0;i<files.length;i++){
-        const item=files[i];
-        setButtonState(button,`⏳ CODE ${i+1}/${files.length}…`,true);
-        try{
-          const url='https://raw.githubusercontent.com/ngtzvpv8dz-create/Master-Of-Disaster/main/'+item.path.split('/').map(encodeURIComponent).join('/');
-          const res=await fetch(url,{cache:'no-store'});
-          if(!res.ok)throw new Error(String(res.status));
-          appFolder.file(item.path,await res.arrayBuffer(),{binary:true});
-        }catch(error){failed.push(`${item.path} · ${error?.message||error}`);}
-      }
+      const stamp=berlinParts(),writer=new StoreZipWriter();
+      markFullStage('GITHUB-CODEARCHIV');
+      setButtonState(button,'⏳ CODEARCHIV WIRD GELADEN…',true);
+      const source=await fetchSourceArchive();
+      await writer.addBlob('APP/source-main.zip',source.blob);
 
+      markFullStage('AKTUELLER APP-DATENSTAND');
+      setButtonState(button,'⏳ APP-DATEN WERDEN GESICHERT…',true);
       const complete=createCompleteBackupPayload();
       complete.masterVersion=currentBuild();
       complete.backupPatch=PATCH_VERSION;
       complete.fullBackupCreatedAt=nowIso();
-      const safety=await api.exportPackage();
       const local=collectAllMasterLocalStorage();
-      dataFolder.file('complete-data-backup.json',JSON.stringify(complete,null,2));
-      dataFolder.file('localstorage-master-of-disaster.json',JSON.stringify(local,null,2));
-      dataFolder.file('recovery-history-v498.json',JSON.stringify(safety,null,2));
-      dataFolder.file('live-log-7-days.json',JSON.stringify(safety.logs||[],null,2));
-      zip.file('BACKUP-INFO.txt',[
+      await writer.add('DATA/complete-data-backup.json',emit=>emit(JSON.stringify(complete)));
+      await writer.add('DATA/localstorage-master-of-disaster.json',emit=>emit(JSON.stringify(local)));
+
+      markFullStage('7-TAGE-HISTORIE / WIEDERHERSTELLUNGSPUNKTE');
+      setButtonState(button,'⏳ HISTORIE WIRD GESTREAMT…',true);
+      try{await api.mirrorLiveLogs?.(true);}catch(_){}
+      const counts=await addSafetyPackage(writer,text=>setButtonState(button,`⏳ ${text}`,true));
+
+      markFullStage('ZIP-VERZEICHNIS');
+      setButtonState(button,'⏳ ZIP WIRD ABGESCHLOSSEN…',true);
+      await writer.add('BACKUP-INFO.txt',emit=>emit([
         'MASTER OF DISASTER · VOLLSTÄNDIGES KOMPLETT-BACKUP',
         '====================================================',
         `Build: ${currentBuild()} · Backup-Hotfix ${PATCH_VERSION}`,
         `Erstellt: ${stamp.dateLabel} ${stamp.clock} Europe/Berlin`,
-        `Git-Stand/Tree: ${tree.sha||'unbekannt'}`,
-        `Repo-Dateien: ${files.length-failed.length}/${files.length}`,
-        `Wiederherstellungspunkte: ${(safety.points||[]).length}`,
-        `7-Tage-Logeinträge: ${(safety.logs||[]).length}`,
+        `Git-Stand: ${source.sha}`,
+        'APP/source-main.zip = kompletter aktueller GitHub-Quellcode von main',
+        'DATA/complete-data-backup.json = kompletter aktueller App-Datenstand',
+        'DATA/localstorage-master-of-disaster.json = lokale Master-of-Disaster-Werte',
+        'DATA/recovery-history-v498.json = 7-Tage-Wiederherstellungspunkte + Log',
+        'DATA/live-log-7-days.json = 7-Tage-Log',
+        `Wiederherstellungspunkte: ${counts.pointCount}`,
+        `7-Tage-Logeinträge: ${counts.logCount}`,
         '',
-        failed.length?'Fehlgeschlagene Repo-Dateien:\n'+failed.join('\n'):'Keine fehlgeschlagenen Repo-Dateien.'
-      ].join('\n'));
-
-      setButtonState(button,'⏳ ZIP WIRD GEPACKT…',true);
-      const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+        'V506.2-Hinweis: Das äußere ZIP wird absichtlich ohne erneute Kompression gestreamt, damit iOS nicht mehrere vollständige Kopien der History gleichzeitig im RAM halten muss.'
+      ].join('\n')));
+      const blob=writer.finish();
       const filename=`Master-of-Disaster_${currentBuild()}_Vollbackup_${stamp.file}.zip`;
-      const summary=`Code + App-Daten + ${(safety.points||[]).length} Wiederherstellungspunkte + ${(safety.logs||[]).length} Logeinträge wurden in die ZIP gepackt.`;
+      const summary=`Code + App-Daten + ${counts.pointCount} Wiederherstellungspunkte + ${counts.logCount} Logeinträge wurden speicherschonend in die ZIP geschrieben.`;
+      clearFullStage();
       presentFullBackup(blob,filename,summary);
       setButtonState(button,'✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
     }catch(error){
       setButtonState(button,'📦 VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
+      const marker=safeParse(localStorage.getItem(CRASH_MARKER),null);
+      clearFullStage();
+      if(marker?.stage)error=new Error(`${error?.message||error} · Schritt: ${marker.stage}`);
       showError('Vollbackup fehlgeschlagen',error);
     }finally{fullBusy=false;}
   }
@@ -226,7 +415,7 @@
   }
 
   function makeGuard(api,label){
-    return {id:`rp-${Date.now()}-v5061-${Math.random().toString(36).slice(2,7)}`,at:nowIso(),version:PATCH_VERSION,type:'guard',label,area:'EDIT',snapshot:api.captureSnapshot(),delta:null,directState:true};
+    return {id:`rp-${Date.now()}-v5062-${Math.random().toString(36).slice(2,7)}`,at:nowIso(),version:PATCH_VERSION,type:'guard',label,area:'EDIT',snapshot:api.captureSnapshot(),delta:null,directState:true};
   }
 
   async function restoreWeeklyCloud(key){
@@ -303,7 +492,8 @@
       api&&api.dbReconnectV506===true&&typeof api.resetDbConnection==='function'&&
       captureInstalled&&
       window.__modBackupStabilityV506?.noAutomaticBlobNavigation===true&&
-      window.__modBackupStabilityV506?.weeklyCloudPayloadLightweight===true
+      window.__modBackupStabilityV506?.weeklyCloudPayloadLightweight===true&&
+      window.__modBackupStabilityV506?.memorySafeFullBackupV5062===true
     );
   }
 
@@ -318,6 +508,7 @@
       createWeeklyCloudBackup,
       listWeeklyCloudBackups,
       restoreWeeklyCloud,
+      StoreZipWriter,
       indexedDbReconnect:true,
       iphoneZipUsesExplicitHandoff:true,
       noAutomaticBlobNavigation:true,
@@ -325,10 +516,15 @@
       weeklyCloudPayloadLightweight:true,
       weeklyHistoryStaysLocal:true,
       legacyWeeklyRestoreSupported:true,
+      memorySafeFullBackupV5062:true,
+      historyCursorStreamingV5062:true,
+      nestedGithubSourceArchiveV5062:true,
+      crashStageMarkerV5062:true,
       safetyModuleRemainsV498:true,
       dataSemanticsUntouched:true
     };
     showRestoreNotice();
+    showInterruptedFullBackup();
     return true;
   }
 
