@@ -1,0 +1,257 @@
+name: Temporary V506 Backup Patch
+on:
+  push:
+    branches: [ fix/v506-backup-safety-stability ]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch V498 safely
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('history-safety-net-v498.js')
+          s=p.read_text(encoding='utf-8')
+
+          s=s.replace("  let dbPromise=null;\n", "  let dbPromise=null;\n  let dbHandle=null;\n")
+
+          old=r'''  function openDb(){
+    if(dbPromise)return dbPromise;
+    dbPromise=new Promise((resolve,reject)=>{
+      if(!('indexedDB' in window)){reject(new Error('IndexedDB ist auf diesem Gerät nicht verfügbar.'));return;}
+      const req=indexedDB.open(DB_NAME,DB_VERSION);
+      req.onupgradeneeded=()=>{
+        const db=req.result;
+        if(!db.objectStoreNames.contains(POINT_STORE)){
+          const store=db.createObjectStore(POINT_STORE,{keyPath:'id'});
+          store.createIndex('at','at',{unique:false});
+        }
+        if(!db.objectStoreNames.contains(LOG_STORE)){
+          const store=db.createObjectStore(LOG_STORE,{keyPath:'id'});
+          store.createIndex('at','at',{unique:false});
+        }
+      };
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error||new Error('IndexedDB konnte nicht geöffnet werden.'));
+    });
+    return dbPromise;
+  }
+
+  async function storePut(storeName,value){
+    const db=await openDb();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(storeName,'readwrite');
+      tx.objectStore(storeName).put(clone(value));
+      tx.oncomplete=()=>resolve(value);
+      tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Schreibfehler.'));
+    });
+  }
+  async function storeGet(storeName,id){
+    const db=await openDb();
+    return new Promise((resolve,reject)=>{
+      const req=db.transaction(storeName,'readonly').objectStore(storeName).get(id);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error||new Error('IndexedDB-Lesefehler.'));
+    });
+  }
+  async function storeGetAll(storeName){
+    const db=await openDb();
+    return new Promise((resolve,reject)=>{
+      const req=db.transaction(storeName,'readonly').objectStore(storeName).getAll();
+      req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);
+      req.onerror=()=>reject(req.error||new Error('IndexedDB-Lesefehler.'));
+    });
+  }
+  async function storeDeleteMany(storeName,ids){
+    if(!ids.length)return;
+    const db=await openDb();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(storeName,'readwrite');
+      const store=tx.objectStore(storeName);
+      ids.forEach(id=>store.delete(id));
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Löschfehler.'));
+    });
+  }
+  async function storeClear(storeName){
+    const db=await openDb();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(storeName,'readwrite');
+      tx.objectStore(storeName).clear();
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Löschfehler.'));
+    });
+  }
+'''
+          new=r'''  function isDbConnectionClosingError(error){
+    const name=String(error?.name||'');
+    const message=String(error?.message||error||'');
+    return name==='InvalidStateError'||/database connection is closing|connection is closing|connection is closed|database is closing/i.test(message);
+  }
+  function resetDbConnection(db=null){
+    if(db&&dbHandle&&db!==dbHandle)return;
+    const current=dbHandle;
+    dbHandle=null;
+    dbPromise=null;
+    try{current?.close?.();}catch(_){}
+  }
+  function openDb(){
+    if(dbPromise)return dbPromise;
+    if(!('indexedDB' in window))return Promise.reject(new Error('IndexedDB ist auf diesem Gerät nicht verfügbar.'));
+    const pending=new Promise((resolve,reject)=>{
+      const req=indexedDB.open(DB_NAME,DB_VERSION);
+      req.onupgradeneeded=()=>{
+        const db=req.result;
+        if(!db.objectStoreNames.contains(POINT_STORE)){
+          const store=db.createObjectStore(POINT_STORE,{keyPath:'id'});
+          store.createIndex('at','at',{unique:false});
+        }
+        if(!db.objectStoreNames.contains(LOG_STORE)){
+          const store=db.createObjectStore(LOG_STORE,{keyPath:'id'});
+          store.createIndex('at','at',{unique:false});
+        }
+      };
+      req.onsuccess=()=>{
+        const db=req.result;
+        dbHandle=db;
+        const invalidate=()=>{if(dbHandle===db){dbHandle=null;dbPromise=null;}};
+        db.onclose=invalidate;
+        db.onversionchange=()=>{try{db.close();}catch(_){}invalidate();};
+        resolve(db);
+      };
+      req.onerror=()=>{dbPromise=null;reject(req.error||new Error('IndexedDB konnte nicht geöffnet werden.'));};
+    });
+    dbPromise=pending;
+    return pending;
+  }
+  async function withDbReconnect(operation){
+    let db=await openDb();
+    try{return await operation(db);}
+    catch(error){
+      if(!isDbConnectionClosingError(error))throw error;
+      resetDbConnection(db);
+      db=await openDb();
+      return operation(db);
+    }
+  }
+
+  async function storePut(storeName,value){
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
+      const tx=db.transaction(storeName,'readwrite');
+      tx.objectStore(storeName).put(clone(value));
+      tx.oncomplete=()=>resolve(value);
+      tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Schreibfehler.'));
+    }));
+  }
+  async function storeGet(storeName,id){
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
+      const req=db.transaction(storeName,'readonly').objectStore(storeName).get(id);
+      req.onsuccess=()=>resolve(req.result||null);
+      req.onerror=()=>reject(req.error||new Error('IndexedDB-Lesefehler.'));
+    }));
+  }
+  async function storeGetAll(storeName){
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
+      const req=db.transaction(storeName,'readonly').objectStore(storeName).getAll();
+      req.onsuccess=()=>resolve(Array.isArray(req.result)?req.result:[]);
+      req.onerror=()=>reject(req.error||new Error('IndexedDB-Lesefehler.'));
+    }));
+  }
+  async function storeDeleteMany(storeName,ids){
+    if(!ids.length)return;
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
+      const tx=db.transaction(storeName,'readwrite');
+      const store=tx.objectStore(storeName);
+      ids.forEach(id=>store.delete(id));
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Löschfehler.'));
+    }));
+  }
+  async function storeClear(storeName){
+    return withDbReconnect(db=>new Promise((resolve,reject)=>{
+      const tx=db.transaction(storeName,'readwrite');
+      tx.objectStore(storeName).clear();
+      tx.oncomplete=resolve;
+      tx.onerror=()=>reject(tx.error||new Error('IndexedDB-Löschfehler.'));
+    }));
+  }
+'''
+          if old not in s: raise SystemExit('V498 DB block not found')
+          s=s.replace(old,new,1)
+
+          anchor="  async function createEnhancedFullBackup(){\n"
+          helper=r'''  function isIosDevice(){
+    try{return /iPad|iPhone|iPod/i.test(navigator.userAgent||'')||(navigator.platform==='MacIntel'&&Number(navigator.maxTouchPoints)>1);}catch(_){return false;}
+  }
+  function directBlobDownload(blob,filename){
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+  }
+  function presentIosBackup(blob,filename,summary){
+    const root=modal('VOLLBACKUP BEREIT ✅',`<div style="padding:4px 2px 12px;line-height:1.55">${esc(summary)}<br><br><span style="opacity:.72">Auf dem iPhone wird die ZIP bewusst erst über einen zweiten Tipp an iOS übergeben. Dadurch verlässt die PWA nicht mehr ungewollt den DEV-Tab.</span></div><button type="button" class="mod-action-v498 primary" data-share-backup-v506>📤 ZIP TEILEN / IN DATEIEN SICHERN</button>`);
+    const share=root.querySelector('[data-share-backup-v506]');
+    share?.addEventListener('click',async()=>{
+      try{
+        if(typeof File!=='function'||typeof navigator.share!=='function')return directBlobDownload(blob,filename);
+        const file=new File([blob],filename,{type:'application/zip'});
+        if(typeof navigator.canShare==='function'&&!navigator.canShare({files:[file]}))return directBlobDownload(blob,filename);
+        await navigator.share({files:[file],title:'Master of Disaster Vollbackup'});
+        share.textContent='✅ ZIP AN IOS ÜBERGEBEN';
+      }catch(error){
+        if(error?.name==='AbortError')return;
+        showInfoModal?.('Vollbackup konnte nicht übergeben werden',error?.message||String(error));
+      }
+    });
+  }
+  function deliverFullBackupBlob(blob,filename,summary){
+    if(isIosDevice()){presentIosBackup(blob,filename,summary);return 'ios-share';}
+    directBlobDownload(blob,filename);showInfoModal?.('Vollbackup erstellt ✅',summary);return 'download';
+  }
+
+'''
+          if anchor not in s: raise SystemExit('V498 full-backup anchor missing')
+          s=s.replace(anchor,helper+anchor,1)
+
+          old_delivery="      setState('⏳ ZIP WIRD GEPACKT…',true);const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`Master-of-Disaster_${BUILD_VERSION}_Vollbackup_${stamp.file}.zip`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);setState('✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);showInfoModal?.('Vollbackup erstellt ✅',`Code + App-Daten + ${safety.points.length} Wiederherstellungspunkte + ${safety.logs.length} Logeinträge wurden gesichert.`);"
+          new_delivery="      setState('⏳ ZIP WIRD GEPACKT…',true);const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});const filename=`Master-of-Disaster_${BUILD_VERSION}_Vollbackup_${stamp.file}.zip`;const summary=`Code + App-Daten + ${safety.points.length} Wiederherstellungspunkte + ${safety.logs.length} Logeinträge wurden gesichert.`;deliverFullBackupBlob(blob,filename,summary);setState('✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);"
+          if old_delivery not in s: raise SystemExit('V498 old blob delivery not found')
+          s=s.replace(old_delivery,new_delivery,1)
+
+          old_panel="<div style=\"font-size:10px;font-weight:900;letter-spacing:.8px\">🔴 DATENSICHERHEIT V498</div><div style=\"font-size:10px;line-height:1.5;opacity:.82\">7-Tage-Zeitmaschine lokal · Vollbackup inkl. Historie · datierte Cloud-Wochenstände</div>"
+          new_panel="<div style=\"font-size:10px;font-weight:900;letter-spacing:.8px\">🔴 DATENSICHERHEIT · MODUL V498</div><div style=\"font-size:10px;line-height:1.5;opacity:.82\">Sicherheitsmodul seit V498 · 7-Tage-Zeitmaschine lokal · Vollbackup inkl. Historie · datierte Cloud-Wochenstände</div>"
+          if old_panel not in s: raise SystemExit('V498 panel label missing')
+          s=s.replace(old_panel,new_panel,1)
+
+          old_api="createEnhancedFullBackup,importFullBackupZip,captureSnapshot,mirrorLiveLogs,pruneAll};"
+          new_api="createEnhancedFullBackup,importFullBackupZip,captureSnapshot,mirrorLiveLogs,pruneAll,resetDbConnection,deliverFullBackupBlob,dbReconnectV506:true,iosBackupHandoffV506:true};"
+          if old_api not in s: raise SystemExit('V498 export api marker missing')
+          s=s.replace(old_api,new_api,1)
+
+          old_log="Datensicherheitsnetz V498 aktiv · 7-Tage-Verlauf + Wiederherstellungspunkte"
+          new_log="Datensicherheitsnetz V498 aktiv · DB-Reconnect V506 · 7-Tage-Verlauf + Wiederherstellungspunkte"
+          if old_log not in s: raise SystemExit('V498 init log marker missing')
+          s=s.replace(old_log,new_log,1)
+
+          p.write_text(s,encoding='utf-8')
+      - name: Verify patched syntax and markers
+        run: |
+          node --check history-safety-net-v498.js
+          grep -q 'dbReconnectV506:true' history-safety-net-v498.js
+          grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
+          grep -q 'withDbReconnect' history-safety-net-v498.js
+          grep -q 'ZIP TEILEN / IN DATEIEN SICHERN' history-safety-net-v498.js
+      - name: Commit patch and remove temporary workflow
+        run: |
+          rm .github/workflows/temp-v506-backup-patch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add history-safety-net-v498.js .github/workflows/temp-v506-backup-patch.yml
+          git commit -m "V506: stabilize backup database and iPhone ZIP handoff"
+          git push
