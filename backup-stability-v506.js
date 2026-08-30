@@ -142,10 +142,11 @@
   }
 
   function presentFullBackup(blob,filename,summary){
+    const root=modal('VOLLBACKUP BEREIT ✅',`<div style="padding:4px 2px 12px;line-height:1.55">${esc(summary)}<br><br><span style="opacity:.72">Die ZIP ist fertig. Nichts wird automatisch geöffnet oder heruntergeladen. Erst der nächste echte Tipp übergibt die Datei an iOS.</span></div><button type="button" data-share-v5061 style="width:100%;color:inherit;border:1px solid rgba(224,75,75,.7);background:rgba(224,75,75,.12);border-radius:10px;padding:11px;font:inherit;font-weight:800">📤 ZIP TEILEN / IN DATEIEN SICHERN</button><a data-download-v5061 href="#" style="display:none;margin-top:9px;text-align:center;color:inherit;border:1px solid rgba(255,255,255,.17);background:rgba(255,255,255,.05);border-radius:10px;padding:11px;text-decoration:none;font-weight:800">⬇️ ZIP MANUELL ÖFFNEN / LADEN</a>`);
     activeObjectUrl=URL.createObjectURL(blob);
-    const root=modal('VOLLBACKUP BEREIT ✅',`<div style="padding:4px 2px 12px;line-height:1.55">${esc(summary)}<br><br><span style="opacity:.72">Die ZIP ist fertig. Nichts wird automatisch geöffnet oder heruntergeladen. Erst der nächste echte Tipp übergibt die Datei an iOS.</span></div><button type="button" data-share-v5061 style="width:100%;color:inherit;border:1px solid rgba(224,75,75,.7);background:rgba(224,75,75,.12);border-radius:10px;padding:11px;font:inherit;font-weight:800">📤 ZIP TEILEN / IN DATEIEN SICHERN</button><a data-download-v5061 href="${esc(activeObjectUrl)}" download="${esc(filename)}" style="display:none;margin-top:9px;text-align:center;color:inherit;border:1px solid rgba(255,255,255,.17);background:rgba(255,255,255,.05);border-radius:10px;padding:11px;text-decoration:none;font-weight:800">⬇️ ZIP MANUELL ÖFFNEN / LADEN</a>`);
     const share=root.querySelector('[data-share-v5061]');
     const fallback=root.querySelector('[data-download-v5061]');
+    if(fallback){fallback.href=activeObjectUrl;fallback.download=filename;}
     share?.addEventListener('click',()=>shareBackupFile(blob,filename,share,fallback));
   }
 
