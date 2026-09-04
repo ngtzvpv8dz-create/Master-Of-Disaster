@@ -1,0 +1,133 @@
+name: V508 Archive Weight Layout
+on:
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  archive-weight-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax, wiring and backup isolation
+        run: |
+          node --check archive-weight-layout-v508.js
+          grep -q 'archive-weight-layout-v508.js?v=508-0709' index.html
+          grep -q "serviceWorker.register('./sw.js?v=508-0709'" index.html
+          grep -q 'archive-weight-layout-v508.js' sw.js
+          grep -q 'archiveUsesTaskSegmentHierarchy:true' archive-weight-layout-v508.js
+          grep -q 'archivedExactWeightSummaryDeduplicated:true' archive-weight-layout-v508.js
+          grep -q 'mainSegmentDateYY:true' archive-weight-layout-v508.js
+          grep -q 'nestedWeightDateNotDuplicated:true' archive-weight-layout-v508.js
+          grep -q 'existingArchiveRenderOnly:true' archive-weight-layout-v508.js
+          grep -q 'iosTextAutosizeGuard:true' archive-weight-layout-v508.js
+          changed="$(git diff --name-only origin/main...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Eq '^(backup-stability-v506\.js|backup-source-fallback-v506\.js|history-safety-net-v498\.js|full-backup-v397\.js|iphone-backup-v400\.js)$'; then
+            echo 'V508 must not modify backup or safety modules'
+            exit 1
+          fi
+      - name: Browser archive hierarchy and dates
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v508-http.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3});
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?v508='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modArchiveWeightLayoutV508&&window.__modNestedTaskWeightLayoutV490&&window.__modSummaryWeightDuePolishV494&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',{timeout:30000});
+
+            await page.evaluate(()=>{
+              const a1='2026-08-15T08:00:00+02:00',a2='2026-08-15T08:10:00+02:00';
+              const b1='2026-08-16T09:00:00+02:00',b2='2026-08-16T09:10:00+02:00';
+              tasks=[];
+              archive=[{
+                archiveNumber:50801,
+                archiveId:'v508-archive-1',
+                text:'V508 Archiv mit Zusatzgewicht',
+                type:'work',status:'completed',priority:'normal',optional:false,category:'Test',
+                completedDate:'2026-08-16',startedAt:a1,completedAt:b2,
+                activeDurationMs:1200000,actualDurationMs:1200000,archiveAccountingActiveDurationMs:1200000,
+                activeSegments:[
+                  {startedAt:a1,endedAt:a2},
+                  {startedAt:b1,endedAt:b2}
+                ],
+                weightActiveSegments:[
+                  {startedAt:'2026-08-15T08:02:00+02:00',endedAt:'2026-08-15T08:05:00+02:00',weightKg:12.3},
+                  {startedAt:b1,endedAt:b2,weightKg:8}
+                ]
+              }];
+              nextArchiveNumber=50802;
+              saveTasks();saveArchive();switchTab('archive');render();
+            });
+            await page.waitForTimeout(900);
+
+            const archiveResult=await page.evaluate(()=>{
+              const card=document.querySelector('#viewContainer .archive-task');
+              if(!card)throw new Error('V508 archive card missing');
+              const detail=card.querySelector('.task-detail-v490.v508-archive-detail');
+              const segments=[...detail?.querySelectorAll(':scope > .v490-segment')||[]];
+              const weights=[...detail?.querySelectorAll('.v490-weight-nested,.v490-weight-subline')||[]];
+              return {
+                module:window.__modArchiveWeightLayoutV508?.version,
+                verify:window.__modArchiveWeightLayoutV508?.verify?.(),
+                cardClass:card.classList.contains('v508-archive-card'),
+                titlePx:parseFloat(getComputedStyle(card.querySelector('.task-text')).fontSize),
+                detailPx:parseFloat(getComputedStyle(detail).fontSize),
+                segmentTexts:segments.map(x=>x.textContent.trim()),
+                weightTexts:weights.map(x=>x.textContent.trim()),
+                nestedAfterFirst:!!segments[0]?.nextElementSibling?.classList.contains('v490-weight-nested'),
+                nestedAfterSecond:!!segments[1]?.nextElementSibling?.classList.contains('v490-weight-nested'),
+                overallCount:detail?.querySelectorAll('.v490-overall-weight-archive').length||0,
+                legacyCount:card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').length,
+                autosize:getComputedStyle(card).webkitTextSizeAdjust||getComputedStyle(card).textSizeAdjust||''
+              };
+            });
+            if(archiveResult.module!=='V508'||!archiveResult.verify||!archiveResult.cardClass)throw new Error('V508 module/card missing '+JSON.stringify(archiveResult));
+            if(archiveResult.titlePx>11||archiveResult.detailPx>9)throw new Error('V508 archive typography enlarged '+JSON.stringify(archiveResult));
+            if(archiveResult.segmentTexts.length!==2||!archiveResult.segmentTexts[0].includes('15.08.26')||!archiveResult.segmentTexts[1].includes('16.08.26')||archiveResult.segmentTexts.some(x=>x.includes('2026')))throw new Error('V508 main segment date regression '+JSON.stringify(archiveResult));
+            if(archiveResult.weightTexts.some(x=>/15\.08\.26|16\.08\.26|2026/.test(x)))throw new Error('V508 nested weight date duplicated '+JSON.stringify(archiveResult));
+            if(!archiveResult.nestedAfterFirst||!archiveResult.nestedAfterSecond||archiveResult.overallCount!==0||archiveResult.legacyCount!==0)throw new Error('V508 archive hierarchy/duplicate regression '+JSON.stringify(archiveResult));
+
+            await page.evaluate(()=>{
+              const a1='2026-08-15T10:00:00+02:00',a2='2026-08-15T10:05:00+02:00';
+              tasks=[{
+                id:50802,text:'Kisten sortieren V508',type:'work',status:'paused',priority:'normal',optional:false,category:'Test',
+                startedAt:a1,pausedAt:a2,activeDurationMs:300000,actualDurationMs:300000,
+                activeSegments:[{startedAt:a1,endedAt:a2}],
+                weightActiveSegments:[{startedAt:'2026-08-15T10:01:00+02:00',endedAt:'2026-08-15T10:03:00+02:00',weightKg:12.3}]
+              }];
+              archive=[];saveTasks();saveArchive();switchTab('all');render();
+            });
+            await page.waitForTimeout(700);
+            const current=await page.evaluate(()=>{
+              const card=document.querySelector('#viewContainer .task:not(.archive-task)');
+              const segment=card?.querySelector('.task-detail-v490>.v490-segment');
+              const nested=[...card?.querySelectorAll('.v490-weight-nested,.v490-weight-subline')||[]].map(x=>x.textContent.trim());
+              return {segment:segment?.textContent.trim()||'',nested};
+            });
+            if(!current.segment.includes('15.08.26')||current.segment.includes('2026'))throw new Error('V508 current task date missing '+JSON.stringify(current));
+            if(current.nested.some(x=>/15\.08\.26|2026/.test(x)))throw new Error('V508 current nested weight date duplicated '+JSON.stringify(current));
+
+            const preserved=await page.evaluate(()=>({
+              backup:window.__modBackupStabilityV506?.verify?.()===true,
+              source:window.__modBackupSourceFallbackV506?.verify?.()===true,
+              sourcePatch:window.__modBackupSourceFallbackV506?.patchRevision,
+              title:window.__modTaskTitleLibraryV507?.verify?.()===true
+            }));
+            if(!preserved.backup||!preserved.source||preserved.sourcePatch!=='V506.3'||!preserved.title)throw new Error('V508 preserved modules regression '+JSON.stringify(preserved));
+
+            console.log('V508 archive weight layout PASS',{archiveResult,current,preserved});
+            await browser.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE
