@@ -24,6 +24,7 @@ jobs:
           node --check backup-stability-v506.js
           node --check backup-source-fallback-v506.js
           node --check task-title-library-v507.js
+          node --check archive-weight-layout-v508.js
           node --check history-safety-net-v498.js
           node --check running-task-render-stability-v505.js
           node --check summary-weight-due-polish-v494.js
@@ -45,12 +46,14 @@ jobs:
           grep -q 'backup-stability-v506.js?v=506-1131' index.html
           grep -q 'backup-source-fallback-v506.js?v=506-1244' index.html
           grep -q 'task-title-library-v507.js?v=507-1345' index.html
+          grep -q 'archive-weight-layout-v508.js?v=508-0709' index.html
           grep -q 'data-tab="titles"' index.html
-          grep -q "serviceWorker.register('./sw.js?v=507-1345'" index.html
+          grep -q "serviceWorker.register('./sw.js?v=508-0709'" index.html
           grep -q 'running-task-render-stability-v505.js' sw.js
           grep -q 'backup-stability-v506.js' sw.js
           grep -q 'backup-source-fallback-v506.js' sw.js
           grep -q 'task-title-library-v507.js' sw.js
+          grep -q 'archive-weight-layout-v508.js' sw.js
           grep -q 'dbReconnectV506:true' history-safety-net-v498.js
           grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
           grep -q 'ZIP TEILEN / IN DATEIEN SICHERN' history-safety-net-v498.js
@@ -67,6 +70,9 @@ jobs:
           grep -q 'terminalActionsStayStable:true' running-task-render-stability-v505.js
           grep -q 'knownOnlySuggestions:true' task-title-library-v507.js
           grep -q 'manualHistoricalMerge:true' task-title-library-v507.js
+          grep -q 'archiveUsesTaskSegmentHierarchy:true' archive-weight-layout-v508.js
+          grep -q 'nestedWeightDateNotDuplicated:true' archive-weight-layout-v508.js
+          grep -q 'dataSemanticsUntouched:true' archive-weight-layout-v508.js
           grep -q 'noStoreFetch:true' build-freshness-v502.js
       - name: Browser regression current build
         run: |
@@ -81,7 +87,7 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507,{timeout:30000});
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:30000});
             const day=await page.evaluate(()=>getBerlinDateKey());
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
@@ -181,6 +187,13 @@ jobs:
             });
             if(ticker.renderCalls!==0||!ticker.completedCardSame||!ticker.deleteButtonSame||!ticker.deleteStillVisible||!ticker.runningDetailChanged||!ticker.verify)throw new Error('V505 running-task flicker regression '+JSON.stringify(ticker));
 
+            const v508=await page.evaluate(()=>({
+              version:window.__modArchiveWeightLayoutV508?.version,
+              verify:window.__modArchiveWeightLayoutV508?.verify?.(),
+              date:window.__modArchiveWeightLayoutV508?.shortDateYY?.('2026-08-15T12:00:00+02:00')
+            }));
+            if(v508.version!=='V508'||!v508.verify||v508.date!=='15.08.26')throw new Error('V508 module regression '+JSON.stringify(v508));
+
             const backupReconnect=await page.evaluate(async()=>{
               const api=window.__modRecoveryHistoryV498;
               if(!api)throw new Error('V498 backup API missing');
@@ -199,9 +212,9 @@ jobs:
             });
             if(!backupReconnect.beforeOk||!backupReconnect.afterOk||!backupReconnect.reconnect||!backupReconnect.iosHandoff||!backupReconnect.verify||!backupReconnect.sourceFallback||backupReconnect.sourcePatch!=='V506.3')throw new Error('V506 backup reconnect regression '+JSON.stringify(backupReconnect));
 
-            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version,v506source:window.__modBackupSourceFallbackV506?.patchRevision,v507:window.__modTaskTitleLibraryV507?.version}));
-            if(build.v!=='V507'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
-            console.log('Current browser regression OK',result,pausedAfter,categoryCreate,ticker,backupReconnect,build);
+            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version,v506source:window.__modBackupSourceFallbackV506?.patchRevision,v507:window.__modTaskTitleLibraryV507?.version,v508:window.__modArchiveWeightLayoutV508?.version}));
+            if(build.v!=='V508'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507'||build.v508!=='V508')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
+            console.log('Current browser regression OK',result,pausedAfter,categoryCreate,ticker,v508,backupReconnect,build);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
