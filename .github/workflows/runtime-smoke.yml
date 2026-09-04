@@ -15,6 +15,7 @@ jobs:
           node-version: '20'
       - name: Syntax
         run: |
+          node --check archive-weight-layout-v508.js
           node --check task-title-library-v507.js
           node --check backup-source-fallback-v506.js
           node --check backup-stability-v506.js
@@ -65,7 +66,8 @@ jobs:
                   window.__modRunningTaskRenderStabilityV505&&
                   window.__modBackupStabilityV506&&
                   window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&
-                  window.__modTaskTitleLibraryV507
+                  window.__modTaskTitleLibraryV507&&
+                  window.__modArchiveWeightLayoutV508
                 ),undefined,{timeout:15000});
               }catch(_){ }
               const bundleState=await page.evaluate(()=>({
@@ -81,7 +83,9 @@ jobs:
                 v506Source:window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',
                 v506SourceVerified:window.__modBackupSourceFallbackV506?.verify?.()===true,
                 v507:window.__modTaskTitleLibraryV507?.version==='V507',
-                v507Verified:window.__modTaskTitleLibraryV507?.verify?.()===true
+                v507Verified:window.__modTaskTitleLibraryV507?.verify?.()===true,
+                v508:window.__modArchiveWeightLayoutV508?.version==='V508',
+                v508Verified:window.__modArchiveWeightLayoutV508?.verify?.()===true
               }));
               console.log('Runtime bundle readiness',bundleState);
               out.bundle=Object.values(bundleState).every(Boolean);
