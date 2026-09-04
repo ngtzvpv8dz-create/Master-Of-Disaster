@@ -76,6 +76,29 @@
     return id==null?null:taskById(id);
   }
 
+  function ensureV420Guard(host){
+    if(!host||host.querySelector(':scope > .v508-v420-guard'))return false;
+    const marker=document.createElement('span');
+    marker.className='v420-weight-icon v508-v420-guard';
+    marker.setAttribute('aria-hidden','true');
+    marker.dataset.v508V420Guard='true';
+    host.appendChild(marker);
+    return true;
+  }
+
+  function protectFromLegacyV420(card,block=null){
+    if(card){
+      const title=card.querySelector('.task-text');
+      if(title)ensureV420Guard(title);
+    }
+    const detail=block||card?.querySelector('.task-detail-v490.v508-archive-detail');
+    if(detail){
+      ensureV420Guard(detail);
+      detail.querySelectorAll('.v490-weight-nested,.v490-overall-weight-archive').forEach(ensureV420Guard);
+    }
+    return true;
+  }
+
   function setTextIfChanged(node,text){
     if(!node)return false;
     const wanted=String(text??'');
@@ -137,6 +160,7 @@
     }
 
     normalizeNestedWeight(block);
+    protectFromLegacyV420(null,block);
     return block;
   }
 
@@ -153,6 +177,7 @@
     card.classList.add('v508-archive-card');
     if(item.archiveId!=null)card.dataset.v490ArchiveId=String(item.archiveId);
     if(item.archiveNumber!=null)card.dataset.v490ArchiveNumber=String(item.archiveNumber);
+    protectFromLegacyV420(card);
 
     card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').forEach(el=>el.remove());
     const host=card.querySelector('.task-content')||card;
@@ -162,12 +187,14 @@
     if(stable){
       existing.forEach(el=>{if(el!==stable)el.remove();});
       finalizeArchiveDetail(stable,item);
+      protectFromLegacyV420(card,stable);
       return card;
     }
 
     existing.forEach(el=>el.remove());
     const block=prepareArchiveDetail(item);
     if(block)host.appendChild(block);
+    protectFromLegacyV420(card,block);
     return card;
   }
 
@@ -256,6 +283,7 @@
     const style=document.createElement('style');
     style.id='archiveWeightLayoutV508Style';
     style.textContent=`
+      .v508-v420-guard{display:none!important}
       /* V508: iOS darf einzelne gewichtete Archivkarten nicht selbständig aufblasen. */
       #viewContainer .archive-task.v508-archive-card,
       #viewContainer .archive-task.v508-archive-card>.task-content,
@@ -392,6 +420,7 @@
     prepareArchiveDetail,
     compactArchive,
     enhanceVisible,
+    protectFromLegacyV420,
     queueRepair,
     scheduleBoundedRepairs,
     verify,
@@ -402,6 +431,7 @@
     existingArchiveRenderOnly:true,
     iosTextAutosizeGuard:true,
     lateV490OverwriteHealed:true,
+    legacyV420StructuralGuard:true,
     observerLoopRemoved:true,
     boundedLateRepair:true,
     dataSemanticsUntouched:true,
