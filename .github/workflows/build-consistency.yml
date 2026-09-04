@@ -33,13 +33,14 @@ jobs:
             'backup-stability-v506.js?v=506-1131',
             'backup-source-fallback-v506.js?v=506-1244',
             'task-title-library-v507.js?v=507-1345',
+            'archive-weight-layout-v508.js?v=508-0709',
             'data-tab="titles"',
-            "serviceWorker.register('./sw.js?v=507-1345'",
+            "serviceWorker.register('./sw.js?v=508-0709'",
             'summary-weight-due-polish-v494.js?v=494-2103'
           ]
           for marker in required_index:
               if marker not in index: raise SystemExit(f'Missing current index marker: {marker}')
-          for marker in ['build-freshness-v502.js','today-action-order-v501.js','today-interaction-stability-v503.js','category-create-stability-v504.js','running-task-render-stability-v505.js','backup-stability-v506.js','backup-source-fallback-v506.js','task-title-library-v507.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
+          for marker in ['build-freshness-v502.js','today-action-order-v501.js','today-interaction-stability-v503.js','category-create-stability-v504.js','running-task-render-stability-v505.js','backup-stability-v506.js','backup-source-fallback-v506.js','task-title-library-v507.js','archive-weight-layout-v508.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
               if marker not in sw: raise SystemExit(f'Missing service-worker shell marker: {marker}')
           for path,markers in {
             'build-freshness-v502.js':["const BUILD_VERSION='V502'",'noStoreFetch:true','dynamicFromMetrics:true'],
@@ -50,6 +51,7 @@ jobs:
             'backup-stability-v506.js':["const BUILD_VERSION='V506'",'indexedDbReconnect:true','iphoneZipUsesExplicitHandoff:true','safetyModuleRemainsV498:true','dataSemanticsUntouched:true'],
             'backup-source-fallback-v506.js':["const PATCH_VERSION='V506.3'",'codeloadBypassed:true','rawGithubFileFallback:true','sourceArchiveStoreZip:true'],
             'task-title-library-v507.js':["const BUILD_VERSION='V507'",'knownOnlySuggestions:true','emptyFocusShowsAllOpen:true','unlimitedScrollableSuggestions:true','alwaysShowsUsageCount:true','knownCategoryAutoSelect:true','manualSuggestionHide:true','manualHistoricalMerge:true','archivedTitlesRenamedOnMerge:true','uncategorizedLastInAll:true','backupModulesUntouched:true'],
+            'archive-weight-layout-v508.js':["const BUILD_VERSION='V508'",'archiveUsesTaskSegmentHierarchy:true','archivedExactWeightSummaryDeduplicated:true','mainSegmentDateYY:true','nestedWeightDateNotDuplicated:true','existingArchiveRenderOnly:true','iosTextAutosizeGuard:true','dataSemanticsUntouched:true','backupModulesUntouched:true'],
             'history-safety-net-v498.js':['withDbReconnect','dbReconnectV506:true','iosBackupHandoffV506:true','ZIP TEILEN / IN DATEIEN SICHERN','DATENSICHERHEIT · MODUL V498'],
             'task-time-weight-details-v489.js':['refreshRunningCards','periodicFullRenderRemovedV505:true','runningCardOnlyRefreshV505:true'],
             'summary-weight-due-polish-v494.js':["const BUILD_VERSION='V494'",'totalActiveHighlighted:true','partialWeightFirstLineShowsKg:true','dataSemanticsUntouched:true'],
@@ -69,14 +71,13 @@ jobs:
           print('Current build wiring consistency OK')
       - name: JavaScript syntax
         run: |
-          for f in app.js task-title-library-v507.js backup-source-fallback-v506.js backup-stability-v506.js running-task-render-stability-v505.js history-safety-net-v498.js category-create-stability-v504.js today-interaction-stability-v503.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
+          for f in app.js archive-weight-layout-v508.js task-title-library-v507.js backup-source-fallback-v506.js backup-stability-v506.js running-task-render-stability-v505.js history-safety-net-v498.js category-create-stability-v504.js today-interaction-stability-v503.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
       - name: Generator follows highest current module version
         run: |
           METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
           cat /tmp/metrics.log
           node - <<'NODE'
           const fs=require('fs');
-          const path=require('path');
           const m=require('/tmp/development-metrics.json');
           const versions=fs.readdirSync('.').map(name=>{const x=name.match(/(?:^|-)v(\d+)\.js$/i);return x?Number(x[1]):0;});
           const expected='V'+Math.max(...versions);
