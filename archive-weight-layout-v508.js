@@ -4,7 +4,8 @@
 
   const BUILD_VERSION='V508';
   const BERLIN='Europe/Berlin';
-  const EPSILON_MS=1000;
+  let observer=null;
+  let repairQueued=false;
 
   function base(){return window.__modNestedTaskWeightLayoutV490||null;}
   function polish(){return window.__modSummaryWeightDuePolishV494||null;}
@@ -76,6 +77,14 @@
     return id==null?null:taskById(id);
   }
 
+  function setTextIfChanged(node,text){
+    if(!node)return false;
+    const wanted=String(text??'');
+    if(String(node.textContent||'')===wanted)return false;
+    node.textContent=wanted;
+    return true;
+  }
+
   function patchSegmentDates(block,item,archived=false){
     if(!block||!item)return false;
     const api=base();
@@ -88,13 +97,13 @@
       rows.forEach((row,index)=>{
         const segment=segments[index];
         if(!segment)return;
-        row.textContent=segmentText(segment.startedAt,segment.endedAt,segment.durationMs);
+        setTextIfChanged(row,segmentText(segment.startedAt,segment.endedAt,segment.durationMs));
         row.dataset.v508SegmentDate='true';
       });
     }else if(rows.length&&item.startedAt){
       const end=terminalEnd(item,data?.now||Date.now());
       const total=Math.max(0,Number(data?.timeInfo?.knownTotalMs)||0);
-      rows[0].textContent=segmentText(item.startedAt,end,total||null);
+      setTextIfChanged(rows[0],segmentText(item.startedAt,end,total||null));
       rows[0].dataset.v508SegmentDate='true';
     }
     return rows.some(row=>row.dataset.v508SegmentDate==='true');
@@ -113,11 +122,8 @@
     return true;
   }
 
-  function prepareArchiveDetail(item){
-    const api=base();
-    if(!api?.makeDetailBlock)return null;
-    const block=api.makeDetailBlock(item,true);
-    if(!block)return null;
+  function finalizeArchiveDetail(block,item){
+    if(!block||!item)return block;
     block.classList.add('v508-archive-detail');
     block.dataset.v508ArchiveDetail='true';
     patchSegmentDates(block,item,true);
@@ -128,23 +134,41 @@
       overall.remove();
     }else if(overall){
       const firstSegment=block.querySelector('.v490-segment');
-      if(firstSegment)firstSegment.insertAdjacentElement('afterend',overall);
+      if(firstSegment&&firstSegment.nextElementSibling!==overall)firstSegment.insertAdjacentElement('afterend',overall);
     }
 
     normalizeNestedWeight(block);
     return block;
   }
 
+  function prepareArchiveDetail(item){
+    const api=base();
+    if(!api?.makeDetailBlock)return null;
+    const block=api.makeDetailBlock(item,true);
+    if(!block)return null;
+    return finalizeArchiveDetail(block,item);
+  }
+
   function compactArchive(card,item){
     if(!card||!item)return card;
     card.classList.add('v508-archive-card');
-    card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').forEach(el=>el.remove());
-    const host=card.querySelector('.task-content')||card;
-    host.querySelectorAll('.task-detail-v490').forEach(el=>el.remove());
-    const block=prepareArchiveDetail(item);
-    if(block)host.appendChild(block);
     if(item.archiveId!=null)card.dataset.v490ArchiveId=String(item.archiveId);
     if(item.archiveNumber!=null)card.dataset.v490ArchiveNumber=String(item.archiveNumber);
+
+    card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').forEach(el=>el.remove());
+    const host=card.querySelector('.task-content')||card;
+    const existing=[...host.querySelectorAll(':scope > .task-detail-v490')];
+    const stable=existing.find(el=>el.classList.contains('v508-archive-detail'))||null;
+
+    if(stable){
+      existing.forEach(el=>{if(el!==stable)el.remove();});
+      finalizeArchiveDetail(stable,item);
+      return card;
+    }
+
+    existing.forEach(el=>el.remove());
+    const block=prepareArchiveDetail(item);
+    if(block)host.appendChild(block);
     return card;
   }
 
@@ -167,6 +191,26 @@
     document.querySelectorAll('#viewContainer .task:not(.archive-task)').forEach(card=>{
       const item=taskByCard(card);if(item)dateCurrentTask(card,item);
     });
+    return true;
+  }
+
+  function queueRepair(){
+    if(repairQueued)return;
+    repairQueued=true;
+    requestAnimationFrame(()=>{
+      repairQueued=false;
+      try{enhanceVisible();}catch(_){ }
+    });
+  }
+
+  function observeLateRewrites(){
+    const root=document.getElementById('viewContainer');
+    if(observer||!root)return false;
+    observer=new MutationObserver(mutations=>{
+      const relevant=mutations.some(mutation=>mutation.type==='childList'&&(mutation.addedNodes.length||mutation.removedNodes.length));
+      if(relevant)queueRepair();
+    });
+    observer.observe(root,{childList:true,subtree:true});
     return true;
   }
 
@@ -303,7 +347,7 @@
     );
   }
 
-  function refresh(){injectStyle();wrapCards();wrapRunningRefresh();enhanceVisible();}
+  function refresh(){injectStyle();wrapCards();wrapRunningRefresh();observeLateRewrites();enhanceVisible();}
 
   const previousRender=typeof window.render==='function'?window.render:null;
   if(previousRender&&!previousRender.__v508Wrapped){
@@ -319,6 +363,7 @@
   injectStyle();
   wrapCards();
   wrapRunningRefresh();
+  observeLateRewrites();
   setTimeout(refresh,0);
   window.addEventListener('load',()=>setTimeout(refresh,0));
 
@@ -331,6 +376,7 @@
     prepareArchiveDetail,
     compactArchive,
     enhanceVisible,
+    queueRepair,
     verify,
     archiveUsesTaskSegmentHierarchy:true,
     archivedExactWeightSummaryDeduplicated:true,
@@ -338,6 +384,7 @@
     nestedWeightDateNotDuplicated:true,
     existingArchiveRenderOnly:true,
     iosTextAutosizeGuard:true,
+    lateV490OverwriteHealed:true,
     dataSemanticsUntouched:true,
     backupModulesUntouched:true
   };
