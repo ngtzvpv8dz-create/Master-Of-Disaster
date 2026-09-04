@@ -26,6 +26,7 @@ jobs:
           grep -q 'nestedWeightDateNotDuplicated:true' archive-weight-layout-v508.js
           grep -q 'existingArchiveRenderOnly:true' archive-weight-layout-v508.js
           grep -q 'iosTextAutosizeGuard:true' archive-weight-layout-v508.js
+          grep -q 'lateV490OverwriteHealed:true' archive-weight-layout-v508.js
           changed="$(git diff --name-only origin/main...HEAD)"
           printf '%s\n' "$changed"
           if printf '%s\n' "$changed" | grep -Eq '^(backup-stability-v506\.js|backup-source-fallback-v506\.js|history-safety-net-v498\.js|full-backup-v397\.js|iphone-backup-v400\.js)$'; then
@@ -70,30 +71,41 @@ jobs:
               nextArchiveNumber=50802;
               saveTasks();saveArchive();switchTab('archive');render();
             });
-            await page.waitForTimeout(900);
+            await page.waitForTimeout(500);
+
+            // Simulate the exact late V490 rewrite that used to win after V508.
+            await page.evaluate(()=>window.__modNestedTaskWeightLayoutV490.enhanceVisibleCards());
+            await page.waitForTimeout(250);
 
             const archiveResult=await page.evaluate(()=>{
               const card=document.querySelector('#viewContainer .archive-task');
               if(!card)throw new Error('V508 archive card missing');
               const detail=card.querySelector('.task-detail-v490.v508-archive-detail');
-              const segments=[...detail?.querySelectorAll(':scope > .v490-segment')||[]];
-              const weights=[...detail?.querySelectorAll('.v490-weight-nested,.v490-weight-subline')||[]];
+              if(!detail){
+                const raw=card.querySelector('.task-detail-v490');
+                throw new Error('V508 archive detail not restored; raw='+String(raw?.outerHTML||'none').slice(0,1200));
+              }
+              const title=card.querySelector('.task-text');
+              if(!title)throw new Error('V508 archive title missing');
+              const segments=[...detail.querySelectorAll(':scope > .v490-segment')];
+              const weights=[...detail.querySelectorAll('.v490-weight-nested,.v490-weight-subline')];
               return {
                 module:window.__modArchiveWeightLayoutV508?.version,
                 verify:window.__modArchiveWeightLayoutV508?.verify?.(),
+                healed:window.__modArchiveWeightLayoutV508?.lateV490OverwriteHealed===true,
                 cardClass:card.classList.contains('v508-archive-card'),
-                titlePx:parseFloat(getComputedStyle(card.querySelector('.task-text')).fontSize),
+                titlePx:parseFloat(getComputedStyle(title).fontSize),
                 detailPx:parseFloat(getComputedStyle(detail).fontSize),
                 segmentTexts:segments.map(x=>x.textContent.trim()),
                 weightTexts:weights.map(x=>x.textContent.trim()),
                 nestedAfterFirst:!!segments[0]?.nextElementSibling?.classList.contains('v490-weight-nested'),
                 nestedAfterSecond:!!segments[1]?.nextElementSibling?.classList.contains('v490-weight-nested'),
-                overallCount:detail?.querySelectorAll('.v490-overall-weight-archive').length||0,
+                overallCount:detail.querySelectorAll('.v490-overall-weight-archive').length,
                 legacyCount:card.querySelectorAll('.archive-task-weight-details,.archive-task-weight,.task-detail-v489').length,
                 autosize:getComputedStyle(card).webkitTextSizeAdjust||getComputedStyle(card).textSizeAdjust||''
               };
             });
-            if(archiveResult.module!=='V508'||!archiveResult.verify||!archiveResult.cardClass)throw new Error('V508 module/card missing '+JSON.stringify(archiveResult));
+            if(archiveResult.module!=='V508'||!archiveResult.verify||!archiveResult.healed||!archiveResult.cardClass)throw new Error('V508 module/card missing '+JSON.stringify(archiveResult));
             if(archiveResult.titlePx>11||archiveResult.detailPx>9)throw new Error('V508 archive typography enlarged '+JSON.stringify(archiveResult));
             if(archiveResult.segmentTexts.length!==2||!archiveResult.segmentTexts[0].includes('15.08.26')||!archiveResult.segmentTexts[1].includes('16.08.26')||archiveResult.segmentTexts.some(x=>x.includes('2026')))throw new Error('V508 main segment date regression '+JSON.stringify(archiveResult));
             if(archiveResult.weightTexts.some(x=>/15\.08\.26|16\.08\.26|2026/.test(x)))throw new Error('V508 nested weight date duplicated '+JSON.stringify(archiveResult));
