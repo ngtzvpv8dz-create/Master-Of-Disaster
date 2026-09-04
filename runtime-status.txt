@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": "V508",
+  "live": true,
+  "metricsCurrent": true,
+  "bundle": true,
+  "devCurrent": true,
+  "actionOrder": true,
+  "todayMarkerBound": true,
+  "serviceWorker": true,
+  "preservedCore": true,
+  "errors": []
+}
