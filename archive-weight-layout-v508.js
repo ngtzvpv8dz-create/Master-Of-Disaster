@@ -4,7 +4,6 @@
 
   const BUILD_VERSION='V508';
   const BERLIN='Europe/Berlin';
-  let observer=null;
   let repairQueued=false;
 
   function base(){return window.__modNestedTaskWeightLayoutV490||null;}
@@ -194,23 +193,19 @@
     return true;
   }
 
-  function queueRepair(){
-    if(repairQueued)return;
+  function queueRepair(delay=0){
+    if(repairQueued)return false;
     repairQueued=true;
     setTimeout(()=>{
       repairQueued=false;
       try{enhanceVisible();}catch(_){ }
-    },0);
+    },Math.max(0,Number(delay)||0));
+    return true;
   }
 
-  function observeLateRewrites(){
-    const root=document.getElementById('viewContainer');
-    if(observer||!root)return false;
-    observer=new MutationObserver(mutations=>{
-      const relevant=mutations.some(mutation=>mutation.type==='childList'&&(mutation.addedNodes.length||mutation.removedNodes.length));
-      if(relevant)queueRepair();
-    });
-    observer.observe(root,{childList:true,subtree:true});
+  function scheduleBoundedRepairs(){
+    queueRepair(0);
+    setTimeout(()=>{try{enhanceVisible();}catch(_){ }},60);
     return true;
   }
 
@@ -239,6 +234,20 @@
     };
     wrapped.__v508Wrapped=true;
     api.attach=wrapped;
+    return true;
+  }
+
+  function wrapLegacyEnhancer(){
+    const api=base();
+    if(!api||typeof api.enhanceVisibleCards!=='function'||api.enhanceVisibleCards.__v508Wrapped)return false;
+    const previous=api.enhanceVisibleCards;
+    const wrapped=function(){
+      const result=previous.apply(this,arguments);
+      try{enhanceVisible();}catch(_){ }
+      return result;
+    };
+    wrapped.__v508Wrapped=true;
+    api.enhanceVisibleCards=wrapped;
     return true;
   }
 
@@ -341,19 +350,26 @@
     return !!(
       api&&
       typeof api.makeDetailBlock==='function'&&
+      typeof api.enhanceVisibleCards==='function'&&
       shortDateYY('2026-08-15T12:00:00+02:00')==='15.08.26'&&
       segmentText('2026-08-15T10:00:00+02:00','2026-08-15T10:01:00+02:00',60000).includes('15.08.26')&&
       !segmentText('2026-08-15T10:00:00+02:00','2026-08-15T10:01:00+02:00',60000).includes('2026')
     );
   }
 
-  function refresh(){injectStyle();wrapCards();wrapRunningRefresh();observeLateRewrites();enhanceVisible();}
+  function refresh(){
+    injectStyle();
+    wrapCards();
+    wrapRunningRefresh();
+    wrapLegacyEnhancer();
+    enhanceVisible();
+  }
 
   const previousRender=typeof window.render==='function'?window.render:null;
   if(previousRender&&!previousRender.__v508Wrapped){
     const wrappedRender=function(){
       const result=previousRender.apply(this,arguments);
-      setTimeout(()=>{try{refresh();}catch(_){ }},0);
+      scheduleBoundedRepairs();
       return result;
     };
     wrappedRender.__v508Wrapped=true;
@@ -363,9 +379,9 @@
   injectStyle();
   wrapCards();
   wrapRunningRefresh();
-  observeLateRewrites();
-  setTimeout(refresh,0);
-  window.addEventListener('load',()=>setTimeout(refresh,0));
+  wrapLegacyEnhancer();
+  scheduleBoundedRepairs();
+  window.addEventListener('load',()=>setTimeout(()=>{try{refresh();scheduleBoundedRepairs();}catch(_){ }},0));
 
   window.__modArchiveWeightLayoutV508={
     version:BUILD_VERSION,
@@ -377,6 +393,7 @@
     compactArchive,
     enhanceVisible,
     queueRepair,
+    scheduleBoundedRepairs,
     verify,
     archiveUsesTaskSegmentHierarchy:true,
     archivedExactWeightSummaryDeduplicated:true,
@@ -385,6 +402,8 @@
     existingArchiveRenderOnly:true,
     iosTextAutosizeGuard:true,
     lateV490OverwriteHealed:true,
+    observerLoopRemoved:true,
+    boundedLateRepair:true,
     dataSemanticsUntouched:true,
     backupModulesUntouched:true
   };
