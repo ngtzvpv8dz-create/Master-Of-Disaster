@@ -27,6 +27,9 @@ jobs:
           grep -q 'existingArchiveRenderOnly:true' archive-weight-layout-v508.js
           grep -q 'iosTextAutosizeGuard:true' archive-weight-layout-v508.js
           grep -q 'lateV490OverwriteHealed:true' archive-weight-layout-v508.js
+          grep -q 'legacyV420StructuralGuard:true' archive-weight-layout-v508.js
+          grep -q 'observerLoopRemoved:true' archive-weight-layout-v508.js
+          grep -q 'boundedLateRepair:true' archive-weight-layout-v508.js
           changed="$(git diff --name-only origin/main...HEAD)"
           printf '%s\n' "$changed"
           if printf '%s\n' "$changed" | grep -Eq '^(backup-stability-v506\.js|backup-source-fallback-v506\.js|history-safety-net-v498\.js|full-backup-v397\.js|iphone-backup-v400\.js)$'; then
@@ -46,7 +49,7 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:3});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?v508='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modArchiveWeightLayoutV508&&window.__modNestedTaskWeightLayoutV490&&window.__modSummaryWeightDuePolishV494&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',{timeout:30000});
+            await page.waitForFunction(()=>window.__modArchiveWeightLayoutV508&&window.__modNestedTaskWeightLayoutV490&&window.__modSummaryWeightDuePolishV494&&window.__modUnifiedIconsV420&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',{timeout:30000});
 
             await page.evaluate(()=>{
               const a1='2026-08-15T08:00:00+02:00',a2='2026-08-15T08:10:00+02:00';
@@ -73,8 +76,10 @@ jobs:
             });
             await page.waitForTimeout(500);
 
-            // Simulate the exact late V490 rewrite that used to win after V508.
+            // Provoke the two legacy writers that previously destroyed the compact archive DOM.
+            await page.evaluate(()=>window.__modUnifiedIconsV420.patch(document));
             await page.evaluate(()=>window.__modNestedTaskWeightLayoutV490.enhanceVisibleCards());
+            await page.evaluate(()=>window.__modUnifiedIconsV420.patch(document));
             await page.waitForTimeout(250);
 
             const archiveResult=await page.evaluate(()=>{
@@ -87,12 +92,17 @@ jobs:
               }
               const title=card.querySelector('.task-text');
               if(!title)throw new Error('V508 archive title missing');
+              const mainRow=card.querySelector('.task-main-row');
+              const taskContent=card.querySelector('.task-content');
+              if(!mainRow||!taskContent)throw new Error('V508 archive structure damaged by V420');
               const segments=[...detail.querySelectorAll(':scope > .v490-segment')];
               const weights=[...detail.querySelectorAll('.v490-weight-nested,.v490-weight-subline')];
               return {
                 module:window.__modArchiveWeightLayoutV508?.version,
                 verify:window.__modArchiveWeightLayoutV508?.verify?.(),
                 healed:window.__modArchiveWeightLayoutV508?.lateV490OverwriteHealed===true,
+                v420Guard:window.__modArchiveWeightLayoutV508?.legacyV420StructuralGuard===true,
+                guardCount:card.querySelectorAll('.v508-v420-guard').length,
                 cardClass:card.classList.contains('v508-archive-card'),
                 titlePx:parseFloat(getComputedStyle(title).fontSize),
                 detailPx:parseFloat(getComputedStyle(detail).fontSize),
@@ -105,7 +115,7 @@ jobs:
                 autosize:getComputedStyle(card).webkitTextSizeAdjust||getComputedStyle(card).textSizeAdjust||''
               };
             });
-            if(archiveResult.module!=='V508'||!archiveResult.verify||!archiveResult.healed||!archiveResult.cardClass)throw new Error('V508 module/card missing '+JSON.stringify(archiveResult));
+            if(archiveResult.module!=='V508'||!archiveResult.verify||!archiveResult.healed||!archiveResult.v420Guard||!archiveResult.cardClass||archiveResult.guardCount<2)throw new Error('V508 module/card guard missing '+JSON.stringify(archiveResult));
             if(archiveResult.titlePx>11||archiveResult.detailPx>9)throw new Error('V508 archive typography enlarged '+JSON.stringify(archiveResult));
             if(archiveResult.segmentTexts.length!==2||!archiveResult.segmentTexts[0].includes('15.08.26')||!archiveResult.segmentTexts[1].includes('16.08.26')||archiveResult.segmentTexts.some(x=>x.includes('2026')))throw new Error('V508 main segment date regression '+JSON.stringify(archiveResult));
             if(archiveResult.weightTexts.some(x=>/15\.08\.26|16\.08\.26|2026/.test(x)))throw new Error('V508 nested weight date duplicated '+JSON.stringify(archiveResult));
