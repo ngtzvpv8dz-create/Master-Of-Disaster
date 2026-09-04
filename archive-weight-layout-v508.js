@@ -197,10 +197,10 @@
   function queueRepair(){
     if(repairQueued)return;
     repairQueued=true;
-    requestAnimationFrame(()=>{
+    setTimeout(()=>{
       repairQueued=false;
       try{enhanceVisible();}catch(_){ }
-    });
+    },0);
   }
 
   function observeLateRewrites(){
