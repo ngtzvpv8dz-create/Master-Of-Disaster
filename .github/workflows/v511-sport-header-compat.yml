@@ -1,0 +1,128 @@
+name: V511 Sport Header Compatibility
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  header-compat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JavaScript syntax
+        run: |
+          node --check sport-header-compat-v511.js
+          node --check sport-mode-v510.js
+          node --check running-task-render-stability-v505.js
+      - name: Browser S and recovery R regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v511-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          let browser,page,stage='boot';
+          const snapshot=async()=>{
+            try{return await page?.evaluate(()=>({
+              title:document.querySelector('.header h1')?.textContent?.trim()||null,
+              html:document.querySelector('.header h1')?.innerHTML||null,
+              hasS:!!document.getElementById('sportSwitchV510'),
+              hasR:!!document.querySelector('.mod-undo-r-v498'),
+              sportApi:!!window.__modSportModeV510,
+              recoveryApi:!!window.__modRecoveryHistoryV498,
+              compatApi:!!window.__modSportHeaderCompatV511,
+              mode:window.__modSportModeV510?.currentMode?.()||null,
+              modal:!!document.getElementById('modSafetyNetModalV498')
+            }))||{};}catch(error){return {snapshotError:String(error)};}
+          };
+          (async()=>{
+            browser=await chromium.launch({headless:true});
+            page=await browser.newPage({viewport:{width:390,height:844}});
+            page.on('console',msg=>fs.appendFileSync('/tmp/v511-console.txt',`[${msg.type()}] ${msg.text()}\n`));
+            page.on('pageerror',error=>fs.appendFileSync('/tmp/v511-console.txt',`[pageerror] ${error.stack||error}\n`));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            stage='goto';
+            await page.goto('http://127.0.0.1:8787/?reg=v511',{waitUntil:'networkidle',timeout:60000});
+            stage='wait-apis';
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modRecoveryHistoryV498&&window.__modSportHeaderCompatV511&&document.getElementById('sportSwitchV510')&&document.querySelector('.mod-undo-r-v498'),{timeout:30000});
+
+            stage='fixture';
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-08';
+              tasks=[{id:51101,text:'V511 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              if(typeof render==='function')render();
+            });
+            await page.waitForTimeout(300);
+
+            stage='initial';
+            const initial=await page.evaluate(()=>{
+              const h1=document.querySelector('.header h1');
+              const r=document.querySelector('.mod-undo-r-v498');
+              const s=document.getElementById('sportSwitchV510');
+              return {text:h1?.textContent?.trim(),hasR:!!r,hasS:!!s,rColor:r?getComputedStyle(r).color:null,verify:window.__modSportHeaderCompatV511.verify(),task:(tasks||[]).find(t=>t.id===51101)?.text};
+            });
+            if(initial.text!=='MASTER OF DISASTER'||!initial.hasR||!initial.hasS||!initial.verify||initial.task!=='V511 Bestandsschutz')throw new Error('V511 initial header '+JSON.stringify(initial));
+
+            stage='open-r-todo';
+            await page.click('.mod-undo-r-v498');
+            await page.waitForSelector('#modSafetyNetModalV498',{state:'visible',timeout:10000});
+            await page.evaluate(()=>document.getElementById('modSafetyNetModalV498')?.remove());
+
+            stage='switch-sport';
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(450);
+            const sport=await page.evaluate(()=>({
+              mode:window.__modSportModeV510.currentMode(),
+              hasR:!!document.querySelector('.mod-undo-r-v498'),
+              hasS:!!document.getElementById('sportSwitchV510'),
+              text:document.querySelector('.header h1')?.textContent?.trim(),
+              task:(tasks||[]).find(t=>t.id===51101)?.text
+            }));
+            if(sport.mode!=='sport'||!sport.hasR||!sport.hasS||sport.text!=='MASTER OF DISASTER'||sport.task!=='V511 Bestandsschutz')throw new Error('V511 sport header '+JSON.stringify(sport));
+
+            stage='open-r-sport';
+            await page.click('.mod-undo-r-v498');
+            await page.waitForSelector('#modSafetyNetModalV498',{state:'visible',timeout:10000});
+            await page.evaluate(()=>document.getElementById('modSafetyNetModalV498')?.remove());
+            stage='switch-back';
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(300);
+
+            stage='back';
+            const back=await page.evaluate(()=>({
+              mode:window.__modSportModeV510.currentMode(),
+              hasR:!!document.querySelector('.mod-undo-r-v498'),
+              hasS:!!document.getElementById('sportSwitchV510'),
+              text:document.querySelector('.header h1')?.textContent?.trim(),
+              task:(tasks||[]).find(t=>t.id===51101)?.text
+            }));
+            if(back.mode!=='todo'||!back.hasR||!back.hasS||back.text!=='MASTER OF DISASTER'||back.task!=='V511 Bestandsschutz')throw new Error('V511 return header '+JSON.stringify(back));
+            fs.writeFileSync('/tmp/v511-pass.txt',JSON.stringify({initial,sport,back},null,2));
+            console.log('V511 S + recovery R PASS',initial,sport,back);
+            await browser.close();
+          })().catch(async error=>{
+            const state=await snapshot();
+            fs.writeFileSync('/tmp/v511-error.txt',`stage=${stage}\n${error.stack||error}\nstate=${JSON.stringify(state,null,2)}\n`);
+            try{await browser?.close();}catch(_){}
+            console.error(error);process.exit(1);
+          });
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v511-header-diagnostics
+          path: |
+            /tmp/v511-error.txt
+            /tmp/v511-pass.txt
+            /tmp/v511-console.txt
+            /tmp/mod-v511-http.log
+          if-no-files-found: ignore
