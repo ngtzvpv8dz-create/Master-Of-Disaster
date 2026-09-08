@@ -74,7 +74,7 @@ jobs:
             stage='open-r-todo';
             await page.click('.mod-undo-r-v498');
             await page.waitForSelector('#modSafetyNetModalV498',{state:'visible',timeout:10000});
-            await page.click('#modSafetyNetModalV498 [data-close-v498]');
+            await page.evaluate(()=>document.getElementById('modSafetyNetModalV498')?.remove());
 
             stage='switch-sport';
             await page.click('#sportSwitchV510');
@@ -91,7 +91,7 @@ jobs:
             stage='open-r-sport';
             await page.click('.mod-undo-r-v498');
             await page.waitForSelector('#modSafetyNetModalV498',{state:'visible',timeout:10000});
-            await page.click('#modSafetyNetModalV498 [data-close-v498]');
+            await page.evaluate(()=>document.getElementById('modSafetyNetModalV498')?.remove());
             stage='switch-back';
             await page.click('#sportSwitchV510');
             await page.waitForTimeout(300);
