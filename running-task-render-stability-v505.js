@@ -36,16 +36,17 @@
   };
 })();
 
-/* V510 · SPORT MODE BOOTSTRAP
-   Wird an einer bereits geladenen stabilen Stelle eingehängt, damit V510 keine
-   bestehende To-do-Renderlogik ersetzen muss. CSS und Sportmodul bleiben getrennt.
+/* V510/V511 · SPORT MODE BOOTSTRAP
+   V510 lädt die getrennte Sportoberfläche.
+   V511 stellt die Kompatibilität zwischen blauem S und rotem V498-Recovery-R sicher.
 */
 (function(){
   'use strict';
   if(window.__modSportBootstrapV510)return;
-  const VERSION='V510';
+  const VERSION='V511';
   const cssHref='./sport-mode-v510.css?v=510-2254';
   const jsSrc='./sport-mode-v510.js?v=510-2254';
+  const compatSrc='./sport-header-compat-v511.js?v=511-2311';
 
   function ensureCss(){
     if(document.querySelector('link[data-sport-v510]'))return;
@@ -56,16 +57,28 @@
     document.head.appendChild(link);
   }
 
+  function ensureCompat(){
+    if(window.__modSportHeaderCompatV511||document.querySelector('script[data-sport-compat-v511]'))return;
+    const script=document.createElement('script');
+    script.src=compatSrc;
+    script.defer=true;
+    script.dataset.sportCompatV511='true';
+    document.head.appendChild(script);
+  }
+
   function ensureScript(){
-    if(window.__modSportModeV510||document.querySelector('script[data-sport-v510]'))return;
+    if(window.__modSportModeV510){ensureCompat();return;}
+    const existing=document.querySelector('script[data-sport-v510]');
+    if(existing){existing.addEventListener('load',ensureCompat,{once:true});return;}
     const script=document.createElement('script');
     script.src=jsSrc;
     script.defer=true;
     script.dataset.sportV510='true';
+    script.addEventListener('load',ensureCompat,{once:true});
     document.head.appendChild(script);
   }
 
   ensureCss();
   ensureScript();
-  window.__modSportBootstrapV510={version:VERSION,ensureCss,ensureScript,assetsSeparated:true,todoDataUntouched:true};
+  window.__modSportBootstrapV510={version:VERSION,ensureCss,ensureScript,ensureCompat,assetsSeparated:true,todoDataUntouched:true,recoveryRCompatibilityV511:true};
 })();
