@@ -1,1 +1,0 @@
-V511 restores compatibility between the blue Sport/Switch S in MASTER and the red V498 recovery R at the end of DISASTER. No task, archive, history, or sport data migration.
