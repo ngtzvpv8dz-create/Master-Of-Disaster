@@ -16,6 +16,8 @@
   const TODO_EYEBROW='WEEK-AND-END-TO-DO-DINGSI';
   const SPORT_EYEBROW='SPORT · FITX · TRACKING';
   const reducedMotion=()=>window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let switchObserver=null;
+  let ensureTimer=null;
 
   const seedSession={
     id:'fitx-2026-09-08-1803',
@@ -166,7 +168,7 @@
     const h1=document.querySelector('.header h1');
     if(!h1)return false;
     let button=document.getElementById(SWITCH_ID);
-    if(button)return true;
+    if(button&&h1.contains(button))return true;
     const text=String(h1.textContent||'').trim().replace(/\s+/g,' ');
     if(text!=='MASTER OF DISASTER')return false;
     h1.textContent='';
@@ -177,12 +179,38 @@
     button.className='sport-switch-v510';
     button.textContent='S';
     button.setAttribute('aria-label','Zwischen To-do und Sport wechseln');
-    button.setAttribute('aria-pressed','false');
+    button.setAttribute('aria-pressed',document.body.classList.contains('mod-sport-mode-v510')?'true':'false');
     button.title='To-do / Sport wechseln';
     button.addEventListener('click',toggleMode);
     h1.appendChild(button);
     h1.appendChild(document.createTextNode('TER OF DISASTER'));
     return true;
+  }
+
+  function ensureChrome(){
+    const installed=installSwitch();
+    if(installed)setEyebrow(currentMode());
+    ensureRoot();
+    return installed;
+  }
+
+  function startSwitchGuard(){
+    if(ensureTimer)clearInterval(ensureTimer);
+    let tries=0;
+    ensureTimer=setInterval(()=>{
+      tries+=1;
+      ensureChrome();
+      if(document.getElementById(SWITCH_ID)&&tries>=12){clearInterval(ensureTimer);ensureTimer=null;}
+      else if(tries>=40){clearInterval(ensureTimer);ensureTimer=null;}
+    },250);
+
+    if(switchObserver)return;
+    const header=document.querySelector('.header');
+    if(!header||typeof MutationObserver!=='function')return;
+    switchObserver=new MutationObserver(()=>{
+      if(!document.getElementById(SWITCH_ID))queueMicrotask(()=>ensureChrome());
+    });
+    switchObserver.observe(header,{childList:true,subtree:true,characterData:true});
   }
 
   function animateTotal(){
@@ -206,7 +234,7 @@
 
   function setMode(mode,{persist=true,animate=true}={}){
     mode=mode==='sport'?'sport':'todo';
-    installSwitch();renderSport();
+    ensureChrome();renderSport();
     const root=document.getElementById(ROOT_ID),button=document.getElementById(SWITCH_ID);
     document.body.classList.toggle('mod-sport-mode-v510',mode==='sport');
     document.body.dataset.modAppModeV510=mode;
@@ -222,16 +250,17 @@
   function currentMode(){return document.body.classList.contains('mod-sport-mode-v510')?'sport':'todo';}
 
   function init(){
-    installSwitch();renderSport();
+    ensureChrome();renderSport();startSwitchGuard();
     const stored=localStorage.getItem(MODE_KEY)==='sport'?'sport':'todo';
     setMode(stored,{persist:false,animate:false});
   }
 
   const baseRender=typeof window.render==='function'?window.render:null;
-  if(baseRender){window.render=function(){const out=baseRender.apply(this,arguments);setTimeout(()=>{installSwitch();renderSport();setMode(currentMode(),{persist:false,animate:false});},0);return out;};}
+  if(baseRender){window.render=function(){const out=baseRender.apply(this,arguments);setTimeout(()=>{ensureChrome();renderSport();setMode(currentMode(),{persist:false,animate:false});},0);return out;};}
 
+  window.__modSportModeV510={version:VERSION,toggle:toggleMode,setMode,currentMode,render:renderSport,installSwitch,ensureChrome,loadSessions,saveSessions,dataKey:DATA_KEY,modeKey:MODE_KEY,switchGuard:true};
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
   window.addEventListener('load',()=>setTimeout(init,110));
-  setTimeout(init,0);
-
-  window.__modSportModeV510={version:VERSION,toggle:toggleMode,setMode,currentMode,render:renderSport,loadSessions,saveSessions,dataKey:DATA_KEY,modeKey:MODE_KEY};
 })();
