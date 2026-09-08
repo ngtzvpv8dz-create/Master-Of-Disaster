@@ -25,13 +25,29 @@ jobs:
           npx playwright install chromium >/dev/null 2>&1
           python3 -m http.server 8787 >/tmp/mod-v510-http.log 2>&1 &
           node <<'NODE'
+          const fs=require('fs');
           const {chromium}=require('playwright');
           (async()=>{
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:844}});
+            const consoleLines=[];
+            const pageErrors=[];
+            page.on('console',msg=>consoleLines.push(msg.type()+': '+msg.text()));
+            page.on('pageerror',err=>pageErrors.push(String(err&&err.stack||err)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg=v510',{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSportModeV510&&document.getElementById('sportSwitchV510'),{timeout:30000});
+            await page.waitForTimeout(1500);
+            const beforeWait=await page.evaluate(()=>({
+              sportApi:!!window.__modSportModeV510,
+              bootstrap:!!window.__modSportBootstrapV510,
+              runningModule:!!window.__modRunningTaskRenderStabilityV505,
+              switchPresent:!!document.getElementById('sportSwitchV510'),
+              sportScript:[...document.scripts].map(s=>s.src).filter(Boolean).filter(src=>src.includes('sport-mode-v510')),
+              sportCss:[...document.querySelectorAll('link[rel="stylesheet"]')].map(l=>l.href).filter(href=>href.includes('sport-mode-v510')),
+              h1:document.querySelector('.header h1')?.textContent||null
+            }));
+            fs.writeFileSync('/tmp/v510-before.json',JSON.stringify({beforeWait,consoleLines,pageErrors},null,2));
+            await page.waitForFunction(()=>window.__modSportModeV510&&document.getElementById('sportSwitchV510'),null,{timeout:30000});
             const initial=await page.evaluate(()=>({
               mode:window.__modSportModeV510.currentMode(),
               sport:document.body.classList.contains('mod-sport-mode-v510'),
@@ -48,7 +64,7 @@ jobs:
             });
             await page.waitForTimeout(200);
             await page.click('#sportSwitchV510');
-            await page.waitForTimeout(500);
+            await page.waitForTimeout(600);
             const sport=await page.evaluate(()=>({
               mode:window.__modSportModeV510.currentMode(),
               bodySport:document.body.classList.contains('mod-sport-mode-v510'),
@@ -68,8 +84,24 @@ jobs:
               inputDisplay:getComputedStyle(document.getElementById('inputPanel')).display,
               task:(tasks||[]).find(t=>t.id===51001)?.text
             }));
+            fs.writeFileSync('/tmp/v510-result.json',JSON.stringify({initial,sport,back,consoleLines,pageErrors},null,2));
             if(back.mode!=='todo'||back.bodySport||back.inputDisplay==='none'||back.task!=='V510 Bestandsschutz')throw new Error('V510 return state '+JSON.stringify(back));
             console.log('V510 sport mode switch PASS',sport,back);
             await browser.close();
-          })().catch(error=>{console.error(error);process.exit(1);});
+          })().catch(error=>{
+            fs.writeFileSync('/tmp/v510-error.txt',String(error&&error.stack||error));
+            console.error(error);
+            process.exit(1);
+          });
           NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v510-sport-diagnostics
+          path: |
+            /tmp/v510-before.json
+            /tmp/v510-result.json
+            /tmp/v510-error.txt
+            /tmp/mod-v510-http.log
+          if-no-files-found: ignore
