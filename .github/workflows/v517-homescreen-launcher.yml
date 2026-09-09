@@ -1,4 +1,4 @@
-name: V519 Homescreen Launcher
+name: V520 Six-Tile Launcher Design
 on:
   pull_request:
     branches: [ main ]
@@ -17,34 +17,34 @@ jobs:
       - name: Syntax and wiring
         run: |
           node --check app-hub-launcher-v517.js
-          node --check build-version-v519.js
-          node --check running-task-render-stability-v505.js
-          node --check sw.js
           test -f assets/icons/todo-v519-1024.png
           test -f assets/icons/sport-v519-1024.png
+          test -f assets/icons/kistology-v520-1024.PNG
           test -f assets/icons/food-v519-1024.png
           test -f assets/icons/future-v519-1024.png
-          grep -q 'app-hub-launcher-v517.css?v=519-2229' running-task-render-stability-v505.js
-          grep -q 'app-hub-launcher-v517.js?v=519-2229' running-task-render-stability-v505.js
-          grep -q 'build-version-v519.js?v=519-2229' running-task-render-stability-v505.js
-          grep -q 'master-of-disaster-v519-valid-icons' sw.js
-          grep -q 'assets/icons/todo-v519-1024.png' sw.js
-          grep -q 'assets/icons/sport-v519-1024.png' sw.js
-          grep -q 'assets/icons/food-v519-1024.png' sw.js
-          grep -q 'assets/icons/future-v519-1024.png' sw.js
-      - name: Validate PNG assets with decoder and pixel content
+          test -f assets/icons/backstage-v520-1024.PNG
+          grep -q "const VERSION='V520'" app-hub-launcher-v517.js
+          grep -q "label:'KISTOLOGY'" app-hub-launcher-v517.js
+          grep -q "label:'BACKSTAGE'" app-hub-launcher-v517.js
+          grep -q 'sixTileGrid:true' app-hub-launcher-v517.js
+          grep -q 'iconOnlyPanel:true' app-hub-launcher-v517.js
+          grep -q 'grid-template-rows:repeat(3,auto)' app-hub-launcher-v517.css
+          grep -q 'border-radius:16px' app-hub-launcher-v517.css
+      - name: Validate launcher PNG assets
         run: |
           python3 -m pip install --disable-pip-version-check pillow >/dev/null 2>&1
           python3 <<'PY'
           from PIL import Image, ImageStat
           from pathlib import Path
           paths=[
-            Path('assets/icons/todo-v519-1024.png'),
-            Path('assets/icons/sport-v519-1024.png'),
-            Path('assets/icons/food-v519-1024.png'),
-            Path('assets/icons/future-v519-1024.png'),
+            (Path('assets/icons/todo-v519-1024.png'), True),
+            (Path('assets/icons/sport-v519-1024.png'), True),
+            (Path('assets/icons/kistology-v520-1024.PNG'), False),
+            (Path('assets/icons/food-v519-1024.png'), True),
+            (Path('assets/icons/future-v519-1024.png'), True),
+            (Path('assets/icons/backstage-v520-1024.PNG'), False),
           ]
-          for path in paths:
+          for path, exact_1024 in paths:
             data=path.read_bytes()
             if not data or data[:8] != b'\x89PNG\r\n\x1a\n':
               raise SystemExit(f'Invalid PNG signature: {path}')
@@ -52,8 +52,11 @@ jobs:
               im.load()
               if im.format != 'PNG':
                 raise SystemExit(f'Invalid format: {path} -> {im.format}')
-              if im.size != (1024,1024):
+              w,h=im.size
+              if exact_1024 and im.size != (1024,1024):
                 raise SystemExit(f'Invalid size: {path} -> {im.size}')
+              if not exact_1024 and (w != h or w < 1024):
+                raise SystemExit(f'Invalid generated icon size: {path} -> {im.size}')
               sample=im.convert('RGB').resize((64,64))
               stat=ImageStat.Stat(sample)
               extrema=sample.getextrema()
@@ -62,14 +65,14 @@ jobs:
               span=max(hi-lo for lo,hi in extrema)
               if brightest < 160 or span < 100 or std < 18:
                 raise SystemExit(f'Visually empty/flat icon: {path} brightness={brightest} span={span} std={std:.2f}')
-            print(f'{path}: PNG 1024x1024 decode+pixels PASS ({len(data)} bytes, brightness={brightest}, span={span}, std={std:.2f})')
+            print(f'{path}: PNG {w}x{h} decode+pixels PASS ({len(data)} bytes)')
           PY
       - name: Browser launcher regression
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
           npx playwright install chromium >/dev/null 2>&1
-          python3 -m http.server 8787 >/tmp/mod-v519-http.log 2>&1 &
+          python3 -m http.server 8787 >/tmp/mod-v520-http.log 2>&1 &
           node <<'NODE'
           const fs=require('fs');
           const {chromium}=require('playwright');
@@ -78,90 +81,108 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             const errors=[];
             await page.addInitScript(()=>{
-              window.__v519ImgErrors=[];
+              window.__v520ImgErrors=[];
               window.addEventListener('error',event=>{
                 const t=event&&event.target;
-                if(t&&t.tagName==='IMG')window.__v519ImgErrors.push(t.currentSrc||t.src||'img-error');
+                if(t&&t.tagName==='IMG')window.__v520ImgErrors.push(t.currentSrc||t.src||'img-error');
               },true);
             });
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            await page.goto('http://127.0.0.1:8787/?reg=v519',{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV517&&window.__modBuildVersionV519,null,{timeout:30000});
+            await page.goto('http://127.0.0.1:8787/?reg=v520',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV520,null,{timeout:30000});
             await page.evaluate(()=>{
               const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-09';
-              tasks=[{id:51901,text:'V519 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              tasks=[{id:52001,text:'V520 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
               if(typeof saveTasks==='function')saveTasks();
               window.__modAppHubV515.show();
-              window.__modHubLauncherV517.render();
+              window.__modHubLauncherV520.render();
             });
-            await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV519==='ready',null,{timeout:10000});
+            await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV520==='ready',null,{timeout:10000});
             await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-            await page.waitForTimeout(400);
+            await page.waitForTimeout(450);
 
-            const initial=await page.evaluate(()=>({
-              hub:document.body.classList.contains('mod-app-hub-v515'),
-              surface:document.body.dataset.modAppSurfaceV515,
-              grid:document.querySelectorAll('.mod-hub-app-grid-v517').length,
-              slots:[...document.querySelectorAll('.mod-hub-app-slot-v517')].map(x=>x.className),
-              wideCards:document.querySelectorAll('.mod-hub-card-v515').length,
-              buttons:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.dataset.modHubLaunchV517),
-              labels:[...document.querySelectorAll('.mod-hub-app-label-v517')].map(x=>x.textContent.trim()),
-              images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight,complete:x.complete})),
-              build:window.__modBuildVersionV519?.version,
-              flags:{...window.__modHubLauncherV517},
-              task:(tasks||[]).find(t=>t.id===51901)?.text,
-              imgErrors:window.__v519ImgErrors||[]
-            }));
-            const expected=['todo-v519-1024.png','sport-v519-1024.png','food-v519-1024.png','future-v519-1024.png'];
-            if(!initial.hub||initial.surface!=='hub'||initial.grid!==1||initial.slots.length!==4||initial.wideCards!==0||JSON.stringify(initial.buttons)!==JSON.stringify(['todo','sport','food','future'])||initial.labels[0]!=='TO-DO'||initial.labels[1]!=='SPORT'||initial.labels[2]!=='FOOD'||initial.labels[3]!==''||initial.images.some((x,i)=>!x.complete||x.w<=0||x.h<=0||!x.src.includes(expected[i]))||initial.build!=='V519'||initial.flags.homescreenStyle!==true||initial.flags.wideCardsRemoved!==true||initial.flags.finalAssetsV519!==true||initial.task!=='V519 Bestandsschutz'||initial.imgErrors.length!==0)throw new Error('V519 launcher initial '+JSON.stringify({initial,errors}));
+            const initial=await page.evaluate(()=>{
+              const shell=document.querySelector('#modAppHubV515 .mod-hub-shell-v515');
+              const rect=shell?.getBoundingClientRect();
+              const style=shell?getComputedStyle(shell):null;
+              return {
+                hub:document.body.classList.contains('mod-app-hub-v515'),
+                surface:document.body.dataset.modAppSurfaceV515,
+                grid:document.querySelectorAll('.mod-hub-app-grid-v517').length,
+                intro:document.querySelectorAll('.mod-hub-intro-v517').length,
+                slots:[...document.querySelectorAll('.mod-hub-app-slot-v517')].map(x=>x.className),
+                buttons:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.dataset.modHubLaunchV517),
+                labels:[...document.querySelectorAll('.mod-hub-app-label-v517')].map(x=>x.textContent.trim()),
+                disabled:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.getAttribute('aria-disabled')),
+                images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight,complete:x.complete})),
+                panel:{
+                  width:rect?.width||0,
+                  height:rect?.height||0,
+                  radius:parseFloat(style?.borderTopLeftRadius||'0'),
+                  border:parseFloat(style?.borderTopWidth||'0')
+                },
+                flags:{...window.__modHubLauncherV520},
+                task:(tasks||[]).find(t=>t.id===52001)?.text,
+                imgErrors:window.__v520ImgErrors||[]
+              };
+            });
+            const expectedButtons=['todo','sport','kistology','food','future','backstage'];
+            const expectedLabels=['TO-DO','SPORT','KISTOLOGY','FOOD','FUTURE','BACKSTAGE'];
+            const expectedDisabled=[null,null,'true','true','true','true'];
+            const expectedImages=['todo-v519-1024.png','sport-v519-1024.png','kistology-v520-1024.PNG','food-v519-1024.png','future-v519-1024.png','backstage-v520-1024.PNG'];
+            if(!initial.hub||initial.surface!=='hub'||initial.grid!==1||initial.intro!==0||initial.slots.length!==6||JSON.stringify(initial.buttons)!==JSON.stringify(expectedButtons)||JSON.stringify(initial.labels)!==JSON.stringify(expectedLabels)||JSON.stringify(initial.disabled)!==JSON.stringify(expectedDisabled)||initial.images.some((x,i)=>!x.complete||x.w<=0||x.h<=0||!x.src.includes(expectedImages[i]))||initial.panel.width<=0||initial.panel.width>350||initial.panel.height<250||initial.panel.height>420||initial.panel.radius<12||initial.panel.border<1||initial.flags.version!=='V520'||initial.flags.sixTileGrid!==true||initial.flags.iconOnlyPanel!==true||initial.flags.finalAssetsV520!==true||initial.task!=='V520 Bestandsschutz'||initial.imgErrors.length!==0)throw new Error('V520 launcher initial '+JSON.stringify({initial,errors}));
 
-            await page.screenshot({path:'/tmp/v519-launcher.png',fullPage:true});
+            await page.screenshot({path:'/tmp/v520-launcher.png',fullPage:true});
 
             await page.click('.mod-hub-app-button-todo-v517');
             await page.waitForTimeout(220);
-            const todo=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===51901)?.text}));
-            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V519 Bestandsschutz')throw new Error('V519 todo '+JSON.stringify(todo));
+            const todo=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===52001)?.text}));
+            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V520 Bestandsschutz')throw new Error('V520 todo '+JSON.stringify(todo));
 
             await page.evaluate(()=>{
-              window.__v519Health=[];
-              window.addEventListener('mod:health-sync-request',e=>window.__v519Health.push(e.detail));
+              window.__v520Health=[];
+              window.addEventListener('mod:health-sync-request',e=>window.__v520Health.push(e.detail));
               window.__modAppHubV515.show();
-              window.__modHubLauncherV517.render();
+              window.__modHubLauncherV520.render();
             });
             await page.waitForTimeout(180);
             await page.click('.mod-hub-app-button-sport-v517');
             await page.waitForTimeout(260);
-            const sport=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v519Health||[],task:(tasks||[]).find(t=>t.id===51901)?.text}));
-            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V519 Bestandsschutz')throw new Error('V519 sport '+JSON.stringify(sport));
+            const sport=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v520Health||[],task:(tasks||[]).find(t=>t.id===52001)?.text}));
+            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V520 Bestandsschutz')throw new Error('V520 sport '+JSON.stringify(sport));
 
-            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV517.render();});
+            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV520.render();});
             await page.waitForTimeout(150);
-            await page.evaluate(()=>document.querySelector('.mod-hub-app-button-food-v517')?.click());
-            await page.waitForTimeout(120);
-            await page.evaluate(()=>document.querySelector('.mod-hub-app-button-future-v517')?.click());
-            await page.waitForTimeout(120);
-            const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===51901)?.text,imgErrors:window.__v519ImgErrors||[]}));
-            if(!prepared.hub||prepared.surface!=='hub'||prepared.task!=='V519 Bestandsschutz'||prepared.imgErrors.length!==0)throw new Error('V519 prepared '+JSON.stringify(prepared));
+            await page.evaluate(()=>{
+              for(const id of ['kistology','food','future','backstage']){
+                document.querySelector(`.mod-hub-app-button-${id}-v517`)?.click();
+              }
+            });
+            await page.waitForTimeout(180);
+            const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===52001)?.text,imgErrors:window.__v520ImgErrors||[]}));
+            if(!prepared.hub||prepared.surface!=='hub'||prepared.task!=='V520 Bestandsschutz'||prepared.imgErrors.length!==0)throw new Error('V520 prepared '+JSON.stringify(prepared));
 
-            if(errors.length)throw new Error('V519 page errors '+JSON.stringify(errors));
-            fs.writeFileSync('/tmp/v519-result.json',JSON.stringify({initial,todo,sport,prepared,errors},null,2));
-            console.log('V519 homescreen launcher PASS');
+            if(errors.length)throw new Error('V520 page errors '+JSON.stringify(errors));
+            fs.writeFileSync('/tmp/v520-result.json',JSON.stringify({initial,todo,sport,prepared,errors},null,2));
+            console.log('V520 six-tile launcher PASS');
             await browser.close();
-          })().catch(error=>{fs.writeFileSync('/tmp/v519-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          })().catch(error=>{fs.writeFileSync('/tmp/v520-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
           NODE
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v519-launcher-diagnostics
+          name: v520-launcher-diagnostics
           path: |
-            /tmp/v519-result.json
-            /tmp/v519-error.txt
-            /tmp/v519-launcher.png
-            /tmp/mod-v519-http.log
+            /tmp/v520-result.json
+            /tmp/v520-error.txt
+            /tmp/v520-launcher.png
+            /tmp/mod-v520-http.log
             assets/icons/todo-v519-1024.png
             assets/icons/sport-v519-1024.png
+            assets/icons/kistology-v520-1024.PNG
             assets/icons/food-v519-1024.png
             assets/icons/future-v519-1024.png
+            assets/icons/backstage-v520-1024.PNG
           if-no-files-found: ignore

@@ -1,34 +1,84 @@
-/* V517 · HOMESCREEN LAUNCHER */
+/* V520 · SIX-TILE HOMESCREEN LAUNCHER */
 body.mod-app-hub-v515 #modAppHubV515{
-  padding-top:10px;
+  position:relative;
+  padding-top:12px;
+  background:
+    radial-gradient(ellipse at 12% 16%,rgba(54,219,141,.035),transparent 34%),
+    radial-gradient(ellipse at 66% 10%,rgba(156,79,255,.028),transparent 31%),
+    radial-gradient(ellipse at 91% 27%,rgba(36,190,255,.03),transparent 35%),
+    radial-gradient(ellipse at 18% 49%,rgba(239,66,177,.024),transparent 36%),
+    radial-gradient(ellipse at 78% 48%,rgba(239,190,54,.025),transparent 35%),
+    radial-gradient(ellipse at 32% 76%,rgba(42,151,255,.028),transparent 38%),
+    radial-gradient(ellipse at 71% 82%,rgba(47,202,142,.022),transparent 39%),
+    radial-gradient(ellipse at 94% 92%,rgba(178,74,255,.022),transparent 34%),
+    linear-gradient(165deg,#090b0e 0%,#0d1014 48%,#080a0d 100%);
+}
+body.mod-app-hub-v515 .header .eyebrow{
+  display:none !important;
 }
 #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
-  width:min(100%,430px);
-  padding:8px 10px 24px;
+  position:relative;
+  box-sizing:border-box;
+  width:min(100%,350px);
+  margin:0 auto;
+  padding:24px 18px 20px;
+  overflow:hidden;
+  border:1px solid transparent;
+  border-radius:16px;
+  background:
+    radial-gradient(circle at 24% 18%,rgba(255,95,43,.10),transparent 22%) padding-box,
+    radial-gradient(circle at 76% 18%,rgba(21,203,255,.11),transparent 22%) padding-box,
+    radial-gradient(circle at 24% 50%,rgba(255,67,177,.10),transparent 22%) padding-box,
+    radial-gradient(circle at 76% 50%,rgba(48,226,132,.10),transparent 22%) padding-box,
+    radial-gradient(circle at 24% 82%,rgba(174,78,255,.11),transparent 22%) padding-box,
+    radial-gradient(circle at 76% 82%,rgba(255,199,61,.10),transparent 22%) padding-box,
+    linear-gradient(160deg,rgba(18,21,26,.96) 0%,rgba(12,15,19,.98) 52%,rgba(8,10,13,.99) 100%) padding-box,
+    conic-gradient(from 218deg,
+      rgba(229,66,255,.82) 0 7%,
+      rgba(255,255,255,.11) 11% 19%,
+      rgba(255,121,46,.84) 24% 31%,
+      rgba(255,255,255,.09) 36% 44%,
+      rgba(35,216,255,.88) 49% 57%,
+      rgba(255,255,255,.10) 62% 70%,
+      rgba(255,209,58,.84) 76% 84%,
+      rgba(132,74,255,.82) 90% 96%,
+      rgba(229,66,255,.82) 100%) border-box;
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.44),
+    0 0 17px rgba(44,211,255,.10),
+    0 0 29px rgba(166,77,255,.075),
+    0 0 40px rgba(255,164,55,.045),
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(0,0,0,.34);
+  -webkit-backdrop-filter:blur(16px) saturate(125%);
+  backdrop-filter:blur(16px) saturate(125%);
 }
-#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-intro-v517{
-  text-align:center;
-  padding:14px 8px 4px;
-}
-.mod-hub-kicker-v517{
-  font-size:10px;
-  font-weight:850;
-  letter-spacing:.22em;
-  color:rgba(255,255,255,.42);
-}
-.mod-hub-title-v517{
-  margin:8px 0 0;
-  font-size:clamp(26px,7vw,34px);
-  line-height:1.02;
-  letter-spacing:-.035em;
-  color:#f7f9fb;
+#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:
+    radial-gradient(ellipse at 10% 18%,rgba(255,112,46,.085),transparent 22%),
+    radial-gradient(ellipse at 91% 14%,rgba(27,210,255,.085),transparent 23%),
+    radial-gradient(ellipse at 12% 78%,rgba(187,72,255,.075),transparent 24%),
+    radial-gradient(ellipse at 89% 83%,rgba(255,203,55,.072),transparent 24%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.022),
+    inset 0 0 26px rgba(255,255,255,.014);
 }
 .mod-hub-app-grid-v517{
+  position:relative;
+  z-index:1;
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:30px 34px;
-  width:min(100%,300px);
-  margin:32px auto 0;
+  grid-template-rows:repeat(3,auto);
+  column-gap:34px;
+  row-gap:22px;
+  width:min(100%,310px);
+  margin:0 auto;
+  padding:0;
 }
 .mod-hub-app-slot-v517{
   display:flex;
@@ -73,8 +123,10 @@ body.mod-app-hub-v515 #modAppHubV515{
 }
 .mod-hub-app-button-todo-v517{--mod-hub-glow:rgba(255,116,58,.22);}
 .mod-hub-app-button-sport-v517{--mod-hub-glow:rgba(45,211,255,.24);}
+.mod-hub-app-button-kistology-v517{--mod-hub-glow:rgba(255,71,181,.25);}
 .mod-hub-app-button-food-v517{--mod-hub-glow:rgba(51,232,139,.24);}
 .mod-hub-app-button-future-v517{--mod-hub-glow:rgba(184,92,255,.26);}
+.mod-hub-app-button-backstage-v517{--mod-hub-glow:rgba(255,202,66,.25);}
 .mod-hub-app-icon-v517{
   display:block;
   width:100%;
@@ -95,9 +147,7 @@ body.mod-app-hub-v515 #modAppHubV515{
   color:rgba(255,255,255,.84);
   text-align:center;
   text-shadow:0 1px 5px rgba(0,0,0,.45);
-}
-.mod-hub-app-label-empty-v517{
-  opacity:0;
+  white-space:nowrap;
 }
 .mod-hub-app-button-v517:active{
   transform:translateY(2px) scale(.92);
@@ -133,23 +183,21 @@ body.mod-app-hub-v515 #modAppHubV515{
   0%,100%{transform:perspective(320px) rotateX(3deg) rotateY(-4deg) scale(1)}
   45%{transform:perspective(320px) rotateX(0deg) rotateY(0deg) scale(.9);filter:brightness(1.18)}
 }
-#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-backdrop-v515{
-  background:
-    radial-gradient(circle at 23% 34%,rgba(255,95,43,.09),transparent 24%),
-    radial-gradient(circle at 78% 34%,rgba(21,203,255,.11),transparent 25%),
-    radial-gradient(circle at 24% 76%,rgba(48,226,132,.1),transparent 24%),
-    radial-gradient(circle at 78% 76%,rgba(174,78,255,.11),transparent 24%),
-    linear-gradient(160deg,#090b0e 0%,#111318 48%,#080a0d 100%);
-}
+#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-backdrop-v515,
 #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-glow-v515,
 #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-grid-v515{
   display:none;
 }
 @media (max-width:390px){
+  #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
+    width:min(100%,336px);
+    padding:22px 16px 18px;
+    border-radius:15px;
+  }
   .mod-hub-app-grid-v517{
-    width:min(100%,276px);
-    gap:28px 30px;
-    margin-top:28px;
+    width:min(100%,284px);
+    column-gap:30px;
+    row-gap:20px;
   }
   .mod-hub-app-button-v517{
     width:70px;
@@ -159,10 +207,23 @@ body.mod-app-hub-v515 #modAppHubV515{
   .mod-hub-app-face-v517{
     border-radius:17px;
   }
+  .mod-hub-app-label-v517{
+    font-size:10.5px;
+    margin-top:7px;
+  }
+}
+@media (max-height:720px){
+  #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
+    padding-top:18px;
+    padding-bottom:16px;
+  }
+  .mod-hub-app-grid-v517{
+    row-gap:16px;
+  }
 }
 @media (min-width:700px){
   #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
-    padding-top:34px;
+    margin-top:18px;
   }
 }
 @media (prefers-reduced-motion:reduce){
