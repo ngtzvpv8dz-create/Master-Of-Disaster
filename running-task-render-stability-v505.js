@@ -90,3 +90,42 @@
   ensureBuild();
   window.__modSportBootstrapV510={version:VERSION,ensureCss,ensureScript,ensureCompat,ensureTabs,ensureBuild,assetsSeparated:true,todoDataUntouched:true,recoveryRCompatibilityV511:true,animatedSportTabsV512:true};
 })();
+
+/* V515 · MODULAR APP HUB BOOTSTRAP
+   Lädt den Startbildschirm getrennt von To-do und Sport.
+*/
+(function(){
+  'use strict';
+  if(window.__modAppHubBootstrapV515)return;
+  const VERSION='V515';
+  const cssHref='./app-hub-v515.css?v=515-0938';
+  const jsSrc='./app-hub-v515.js?v=515-0938';
+  const buildSrc='./build-version-v515.js?v=515-0938';
+
+  function ensureCss(){
+    if(document.querySelector('link[data-app-hub-v515]'))return;
+    const link=document.createElement('link');
+    link.rel='stylesheet';link.href=cssHref;link.dataset.appHubV515='true';
+    document.head.appendChild(link);
+  }
+
+  function ensureBuild(){
+    if(window.__modBuildVersionV515||document.querySelector('script[data-build-v515]'))return;
+    const script=document.createElement('script');
+    script.src=buildSrc;script.defer=true;script.dataset.buildV515='true';
+    document.head.appendChild(script);
+  }
+
+  function ensureScript(){
+    if(window.__modAppHubV515)return;
+    if(document.querySelector('script[data-app-hub-v515]'))return;
+    const script=document.createElement('script');
+    script.src=jsSrc;script.defer=true;script.dataset.appHubV515='true';
+    document.head.appendChild(script);
+  }
+
+  ensureCss();
+  ensureScript();
+  ensureBuild();
+  window.__modAppHubBootstrapV515={version:VERSION,ensureCss,ensureScript,ensureBuild,modularLauncher:true,todoDataUntouched:true,sportDataUntouched:true,healthHookOnly:true};
+})();
