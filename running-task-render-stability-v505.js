@@ -169,16 +169,16 @@
   window.__modHubIconButtonsBootstrapV516={version:VERSION,ensureCss,ensureScript,ensureBuild,iconTileLauncher:true,exactIconAssetsDeferred:false,primaryAreaIconsBundled:true,todoDataUntouched:true,sportDataUntouched:true};
 })();
 
-/* V518 · FINAL ICONS + CLEAN START BOOTSTRAP
-   Lädt den bestehenden kompakten Launcher mit finalen GitHub-Assets und V518-Buildmarker.
+/* V519 · VALID PNG ICONS + CLEAN START BOOTSTRAP
+   Lädt den bestehenden kompakten Launcher mit validierten PNG-Assets und V519-Buildmarker.
 */
 (function(){
   'use strict';
   if(window.__modHubLauncherBootstrapV517)return;
-  const VERSION='V518';
-  const cssHref='./app-hub-launcher-v517.css?v=518-1920';
-  const jsSrc='./app-hub-launcher-v517.js?v=518-1920';
-  const buildSrc='./build-version-v518.js?v=518-1920';
+  const VERSION='V519';
+  const cssHref='./app-hub-launcher-v517.css?v=519-2229';
+  const jsSrc='./app-hub-launcher-v517.js?v=519-2229';
+  const buildSrc='./build-version-v519.js?v=519-2229';
 
   function ensureCss(){
     if(document.querySelector('link[data-hub-launcher-v517]'))return;
@@ -188,9 +188,9 @@
   }
 
   function ensureBuild(){
-    if(window.__modBuildVersionV518||document.querySelector('script[data-build-v518]'))return;
+    if(window.__modBuildVersionV519||document.querySelector('script[data-build-v519]'))return;
     const script=document.createElement('script');
-    script.src=buildSrc;script.defer=true;script.dataset.buildV518='true';
+    script.src=buildSrc;script.defer=true;script.dataset.buildV519='true';
     document.head.appendChild(script);
   }
 
@@ -205,7 +205,8 @@
   ensureCss();
   ensureScript();
   ensureBuild();
-  const api={version:VERSION,ensureCss,ensureScript,ensureBuild,homescreenStyle:true,compactGrid:true,foodPrepared:true,futureCategoryPrepared:true,finalAssetsV518:true,cleanStartV518:true,todoDataUntouched:true,sportDataUntouched:true};
+  const api={version:VERSION,ensureCss,ensureScript,ensureBuild,homescreenStyle:true,compactGrid:true,foodPrepared:true,futureCategoryPrepared:true,finalAssetsV519:true,cleanStartV519:true,todoDataUntouched:true,sportDataUntouched:true};
   window.__modHubLauncherBootstrapV517=api;
   window.__modHubLauncherBootstrapV518=api;
+  window.__modHubLauncherBootstrapV519=api;
 })();
