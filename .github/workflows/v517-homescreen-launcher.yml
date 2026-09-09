@@ -107,6 +107,7 @@ jobs:
               slots:[...document.querySelectorAll('.mod-hub-app-slot-v517')].map(x=>x.className),
               buttons:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.dataset.modHubLaunchV517),
               labels:[...document.querySelectorAll('.mod-hub-app-label-v517')].map(x=>x.textContent.trim()),
+              disabled:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.getAttribute('aria-disabled')),
               images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight,complete:x.complete})),
               flags:{...window.__modHubLauncherV520},
               task:(tasks||[]).find(t=>t.id===52001)?.text,
@@ -114,8 +115,9 @@ jobs:
             }));
             const expectedButtons=['todo','sport','kistology','food','future','backstage'];
             const expectedLabels=['TO-DO','SPORT','KISTOLOGY','FOOD','FUTURE','BACKSTAGE'];
+            const expectedDisabled=[null,null,'true','true','true','true'];
             const expectedImages=['todo-v519-1024.png','sport-v519-1024.png','kistology-v520-1024.PNG','food-v519-1024.png','future-v519-1024.png','backstage-v520-1024.PNG'];
-            if(!initial.hub||initial.surface!=='hub'||initial.grid!==1||initial.slots.length!==6||JSON.stringify(initial.buttons)!==JSON.stringify(expectedButtons)||JSON.stringify(initial.labels)!==JSON.stringify(expectedLabels)||initial.images.some((x,i)=>!x.complete||x.w<=0||x.h<=0||!x.src.includes(expectedImages[i]))||initial.flags.version!=='V520'||initial.flags.sixTileGrid!==true||initial.flags.finalAssetsV520!==true||initial.task!=='V520 Bestandsschutz'||initial.imgErrors.length!==0)throw new Error('V520 launcher initial '+JSON.stringify({initial,errors}));
+            if(!initial.hub||initial.surface!=='hub'||initial.grid!==1||initial.slots.length!==6||JSON.stringify(initial.buttons)!==JSON.stringify(expectedButtons)||JSON.stringify(initial.labels)!==JSON.stringify(expectedLabels)||JSON.stringify(initial.disabled)!==JSON.stringify(expectedDisabled)||initial.images.some((x,i)=>!x.complete||x.w<=0||x.h<=0||!x.src.includes(expectedImages[i]))||initial.flags.version!=='V520'||initial.flags.sixTileGrid!==true||initial.flags.finalAssetsV520!==true||initial.task!=='V520 Bestandsschutz'||initial.imgErrors.length!==0)throw new Error('V520 launcher initial '+JSON.stringify({initial,errors}));
 
             await page.screenshot({path:'/tmp/v520-launcher.png',fullPage:true});
 
@@ -138,10 +140,12 @@ jobs:
 
             await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV520.render();});
             await page.waitForTimeout(150);
-            for(const id of ['kistology','food','future','backstage']){
-              await page.click(`.mod-hub-app-button-${id}-v517`);
-              await page.waitForTimeout(80);
-            }
+            await page.evaluate(()=>{
+              for(const id of ['kistology','food','future','backstage']){
+                document.querySelector(`.mod-hub-app-button-${id}-v517`)?.click();
+              }
+            });
+            await page.waitForTimeout(180);
             const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===52001)?.text,imgErrors:window.__v520ImgErrors||[]}));
             if(!prepared.hub||prepared.surface!=='hub'||prepared.task!=='V520 Bestandsschutz'||prepared.imgErrors.length!==0)throw new Error('V520 prepared '+JSON.stringify(prepared));
 
