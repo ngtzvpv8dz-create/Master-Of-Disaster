@@ -27,6 +27,9 @@ jobs:
           grep -q 'app-hub-icon-buttons-v516.js' sw.js
           grep -q 'app-hub-icon-buttons-v516.css' sw.js
           grep -q 'build-version-v516.js' sw.js
+          grep -q "V419 · check" app-hub-icon-buttons-v516.js
+          grep -q "V420 · weight" app-hub-icon-buttons-v516.js
+          grep -q "V419 · cooking" app-hub-icon-buttons-v516.js
       - name: Browser icon launcher regression
         run: |
           npm init -y >/dev/null 2>&1
@@ -59,13 +62,17 @@ jobs:
               outerButtons:document.querySelectorAll('button.mod-hub-card-v515').length,
               cards:document.querySelectorAll('article.mod-hub-card-v515[data-mod-hub-icon-buttons-v516="done"]').length,
               iconButtons:[...document.querySelectorAll('.mod-hub-icon-button-v516[data-mod-hub-open]')].map(x=>x.dataset.modHubOpen),
+              iconAssets:[...document.querySelectorAll('.mod-hub-icon-button-v516[data-mod-hub-open]')].map(x=>x.dataset.modHubIconAsset),
+              iconOrigins:[...document.querySelectorAll('.mod-hub-icon-button-v516[data-mod-hub-open]')].map(x=>x.dataset.modHubIconOrigin),
+              svgCount:document.querySelectorAll('.mod-hub-original-icon-v516 svg').length,
               exactBundled:window.__modHubIconButtonsV516.exactAreaIconAssetsBundled,
+              originalSvg:window.__modHubIconButtonsV516.originalGitHubSvgIcons,
               primary:window.__modHubIconButtonsV516.iconTileIsPrimaryButton,
               wholeCard:window.__modHubIconButtonsV516.wholeCardIsButton,
               build:window.__modBuildVersionV516?.version,
               task:(tasks||[]).find(t=>t.id===51601)?.text
             }));
-            if(!initial.hub||initial.outerButtons!==0||initial.cards!==3||JSON.stringify(initial.iconButtons)!==JSON.stringify(['todo','sport','food'])||initial.exactBundled!==false||initial.primary!==true||initial.wholeCard!==false||initial.build!=='V516'||initial.task!=='V516 Bestandsschutz')throw new Error('V516 initial '+JSON.stringify({initial,errors}));
+            if(!initial.hub||initial.outerButtons!==0||initial.cards!==3||JSON.stringify(initial.iconButtons)!==JSON.stringify(['todo','sport','food'])||JSON.stringify(initial.iconAssets)!==JSON.stringify(['original-svg','original-svg','original-svg'])||JSON.stringify(initial.iconOrigins)!==JSON.stringify(['V419 · check','V420 · weight','V419 · cooking'])||initial.svgCount!==3||initial.exactBundled!==true||initial.originalSvg!==true||initial.primary!==true||initial.wholeCard!==false||initial.build!=='V516'||initial.task!=='V516 Bestandsschutz')throw new Error('V516 initial '+JSON.stringify({initial,errors}));
 
             await page.click('.mod-hub-icon-button-todo-v516');
             await page.waitForTimeout(200);
@@ -93,7 +100,7 @@ jobs:
 
             if(errors.length)throw new Error('V516 page errors '+JSON.stringify(errors));
             fs.writeFileSync('/tmp/v516-result.json',JSON.stringify({initial,todo,sport,food,errors},null,2));
-            console.log('V516 hub icon buttons PASS');
+            console.log('V516 hub original icon buttons PASS');
             await browser.close();
           })().catch(error=>{fs.writeFileSync('/tmp/v516-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
           NODE
