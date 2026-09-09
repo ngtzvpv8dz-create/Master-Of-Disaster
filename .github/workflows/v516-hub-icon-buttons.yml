@@ -20,9 +20,11 @@ jobs:
           node --check build-version-v516.js
           node --check running-task-render-stability-v505.js
           node --check sw.js
-          grep -q 'app-hub-icon-buttons-v516.css?v=516-0959' running-task-render-stability-v505.js
-          grep -q 'app-hub-icon-buttons-v516.js?v=516-0959' running-task-render-stability-v505.js
-          grep -q 'build-version-v516.js?v=516-0959' running-task-render-stability-v505.js
+          grep -q 'app-hub-icon-buttons-v516.css?v=516-1142' running-task-render-stability-v505.js
+          grep -q 'app-hub-icon-buttons-v516.js?v=516-1142' running-task-render-stability-v505.js
+          grep -q 'build-version-v516.js?v=516-1142' running-task-render-stability-v505.js
+          grep -q 'originalGitHubSvgIcons:true' running-task-render-stability-v505.js
+          grep -q 'exactIconAssetsDeferred:false' running-task-render-stability-v505.js
           grep -q 'master-of-disaster-v516-hub-icon-buttons' sw.js
           grep -q 'app-hub-icon-buttons-v516.js' sw.js
           grep -q 'app-hub-icon-buttons-v516.css' sw.js
