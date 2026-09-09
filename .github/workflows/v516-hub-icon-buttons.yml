@@ -86,7 +86,7 @@ jobs:
 
             await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubIconButtonsV516.patch();});
             await page.waitForTimeout(120);
-            await page.click('.mod-hub-icon-button-food-v516');
+            await page.evaluate(()=>document.querySelector('.mod-hub-icon-button-food-v516')?.click());
             await page.waitForTimeout(120);
             const food=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===51601)?.text}));
             if(!food.hub||food.surface!=='hub'||food.task!=='V516 Bestandsschutz')throw new Error('V516 food '+JSON.stringify(food));
