@@ -62,9 +62,9 @@ jobs:
               hasR:!!document.querySelector('.mod-undo-r-v498'),
               hasS:!!document.getElementById('sportSwitchV510'),
               task:(tasks||[]).find(t=>t.id===51201)?.text,
-              build:window.__MOD_BUILD__?.version||null
+              build:window.__modBuildVersionV512?.version||window.__MOD_BUILD__?.version||null
             }));
-            if(JSON.stringify(initial.labels)!==JSON.stringify(['FITX','X-TRAINING','AKTIVITÄTEN','STATISTIK'])||initial.active!=='fitx'||initial.panel!=='fitx'||initial.duration!=='2:33'||!initial.hasR||!initial.hasS||initial.task!=='V512 Bestandsschutz')throw new Error('V512 initial '+JSON.stringify(initial));
+            if(JSON.stringify(initial.labels)!==JSON.stringify(['FITX','X-TRAINING','AKTIVITÄTEN','STATISTIK'])||initial.active!=='fitx'||initial.panel!=='fitx'||initial.duration!=='2:33'||!initial.hasR||!initial.hasS||initial.task!=='V512 Bestandsschutz'||initial.build!=='V512')throw new Error('V512 initial '+JSON.stringify(initial));
 
             async function clickTab(id){
               await page.click(`button[data-sport-tab-v512="${id}"]`);

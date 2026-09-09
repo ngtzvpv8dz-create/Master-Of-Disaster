@@ -36,24 +36,21 @@
   };
 })();
 
-/* V510–V513 · SPORT MODE BOOTSTRAP
+/* V510–V512 · SPORT MODE BOOTSTRAP
    V510 lädt die getrennte Sportoberfläche.
    V511 erhält das rote Recovery-R neben dem blauen S.
    V512 ergänzt vier vertikale Sporttabs mit sichtbarer Wechselanimation.
-   V513 ergänzt Zahlencountup, Wellenläufer und umlaufenden Rahmenlichtschweif.
 */
 (function(){
   'use strict';
   if(window.__modSportBootstrapV510)return;
-  const VERSION='V513';
-  const cssHref='./sport-mode-v510.css?v=513-0524';
-  const jsSrc='./sport-mode-v510.js?v=513-0524';
-  const compatSrc='./sport-header-compat-v511.js?v=513-0524';
-  const tabsCssHref='./sport-tabs-v512.css?v=513-0524';
-  const tabsJsSrc='./sport-tabs-v512.js?v=513-0524';
-  const motionCssHref='./sport-motion-v513.css?v=513-0524';
-  const motionJsSrc='./sport-motion-v513.js?v=513-0524';
-  const buildSrc='./build-version-v513.js?v=513-0524';
+  const VERSION='V512';
+  const cssHref='./sport-mode-v510.css?v=512-0436';
+  const jsSrc='./sport-mode-v510.js?v=512-0436';
+  const compatSrc='./sport-header-compat-v511.js?v=512-0436';
+  const tabsCssHref='./sport-tabs-v512.css?v=512-0436';
+  const tabsJsSrc='./sport-tabs-v512.js?v=512-0436';
+  const buildSrc='./build-version-v512.js?v=512-0436';
 
   function ensureCss(){
     if(!document.querySelector('link[data-sport-v510]')){
@@ -62,9 +59,6 @@
     if(!document.querySelector('link[data-sport-tabs-v512]')){
       const link=document.createElement('link');link.rel='stylesheet';link.href=tabsCssHref;link.dataset.sportTabsV512='true';document.head.appendChild(link);
     }
-    if(!document.querySelector('link[data-sport-motion-v513]')){
-      const link=document.createElement('link');link.rel='stylesheet';link.href=motionCssHref;link.dataset.sportMotionV513='true';document.head.appendChild(link);
-    }
   }
 
   function ensureCompat(){
@@ -72,21 +66,14 @@
     const script=document.createElement('script');script.src=compatSrc;script.defer=true;script.dataset.sportCompatV511='true';document.head.appendChild(script);
   }
 
-  function ensureMotion(){
-    if(window.__modSportMotionV513||document.querySelector('script[data-sport-motion-v513]'))return;
-    const script=document.createElement('script');script.src=motionJsSrc;script.defer=true;script.dataset.sportMotionV513='true';document.head.appendChild(script);
-  }
-
   function ensureTabs(){
-    if(window.__modSportTabsV512){ensureMotion();return;}
-    const existing=document.querySelector('script[data-sport-tabs-v512]');
-    if(existing){existing.addEventListener('load',ensureMotion,{once:true});return;}
-    const script=document.createElement('script');script.src=tabsJsSrc;script.defer=true;script.dataset.sportTabsV512='true';script.addEventListener('load',ensureMotion,{once:true});document.head.appendChild(script);
+    if(window.__modSportTabsV512||document.querySelector('script[data-sport-tabs-v512]'))return;
+    const script=document.createElement('script');script.src=tabsJsSrc;script.defer=true;script.dataset.sportTabsV512='true';document.head.appendChild(script);
   }
 
   function ensureBuild(){
-    if(window.__modBuildVersionV513||document.querySelector('script[data-build-v513]'))return;
-    const script=document.createElement('script');script.src=buildSrc;script.defer=true;script.dataset.buildV513='true';document.head.appendChild(script);
+    if(window.__modBuildVersionV512||document.querySelector('script[data-build-v512]'))return;
+    const script=document.createElement('script');script.src=buildSrc;script.defer=true;script.dataset.buildV512='true';document.head.appendChild(script);
   }
 
   function afterSportReady(){ensureCompat();ensureTabs();ensureBuild();}
@@ -101,5 +88,5 @@
   ensureCss();
   ensureScript();
   ensureBuild();
-  window.__modSportBootstrapV510={version:VERSION,ensureCss,ensureScript,ensureCompat,ensureTabs,ensureMotion,ensureBuild,assetsSeparated:true,todoDataUntouched:true,recoveryRCompatibilityV511:true,animatedSportTabsV512:true,sportMotionPolishV513:true};
+  window.__modSportBootstrapV510={version:VERSION,ensureCss,ensureScript,ensureCompat,ensureTabs,ensureBuild,assetsSeparated:true,todoDataUntouched:true,recoveryRCompatibilityV511:true,animatedSportTabsV512:true};
 })();
