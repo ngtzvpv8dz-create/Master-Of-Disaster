@@ -19,7 +19,7 @@ jobs:
           test -f app-hub-preview-match-v521.css
           grep -q 'app-hub-preview-match-v521.css?v=521-0016' app-hub-v515.css
           grep -q 'html body.mod-app-hub-v515' app-hub-preview-match-v521.css
-          grep -q 'header.header' app-hub-preview-match-v521.css
+          grep -q '#appFixedTopV475' app-hub-preview-match-v521.css
           grep -q 'background:transparent !important' app-hub-preview-match-v521.css
       - name: Browser preview-match regression
         run: |
@@ -44,14 +44,23 @@ jobs:
             await page.waitForTimeout(500);
             const result=await page.evaluate(()=>{
               const body=getComputedStyle(document.body);
-              const header=document.querySelector('main.app > header.header');
+              const fixed=document.getElementById('appFixedTopV475');
+              const header=fixed?.querySelector('.header')||document.querySelector('main.app > header.header')||document.querySelector('.header');
+              if(!header)throw new Error('header-not-found');
               const hs=getComputedStyle(header);
+              const fs=fixed?getComputedStyle(fixed):null;
               const hub=document.getElementById('modAppHubV515');
               const hbs=getComputedStyle(hub);
               const shell=document.querySelector('#modAppHubV515 .mod-hub-shell-v515');
               const ss=getComputedStyle(shell);
               return {
                 bodyBackground:body.backgroundImage,
+                fixedShell:fixed?{
+                  background:fs.backgroundImage,
+                  backgroundColor:fs.backgroundColor,
+                  borderBottom:parseFloat(fs.borderBottomWidth||'0'),
+                  shadow:fs.boxShadow
+                }:null,
                 header:{
                   background:hs.backgroundImage,
                   radius:parseFloat(hs.borderTopLeftRadius||'0'),
@@ -67,6 +76,7 @@ jobs:
             });
             if(!result.bodyBackground.includes('radial-gradient'))throw new Error('V521 body ambient background missing '+JSON.stringify(result));
             if(!result.header.background.includes('radial-gradient')||result.header.radius<12||result.header.border<1||result.header.shadow==='none')throw new Error('V521 floating header card missing '+JSON.stringify(result));
+            if(result.fixedShell&&(result.fixedShell.background!=='none'||result.fixedShell.backgroundColor!=='rgba(0, 0, 0, 0)'||result.fixedShell.borderBottom>0||result.fixedShell.shadow!=='none'))throw new Error('V521 fixed shell still paints opaque top block '+JSON.stringify(result));
             if(result.hub.background!=='none'||result.hub.backgroundColor!=='rgba(0, 0, 0, 0)')throw new Error('V521 hub still paints rectangular backdrop '+JSON.stringify(result));
             if(result.shell.radius<12||result.shell.border<1||result.slots!==6)throw new Error('V521 launcher shell regression '+JSON.stringify(result));
             if(errors.length)throw new Error('V521 page errors '+JSON.stringify(errors));
