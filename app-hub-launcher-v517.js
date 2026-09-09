@@ -1,19 +1,19 @@
-/* V518 · HOMESCREEN LAUNCHER ASSET UPGRADE
+/* V519 · VALID PNG ICONS HOTFIX
    - Keeps the compact V517 2x2 launcher and navigation behavior.
-   - Uses the final high-resolution GitHub-hosted launcher icons.
-   - Releases the V518 first-paint gate only after the final launcher assets settle.
+   - Replaces the broken V518 WebP assets with validated PNG icons.
+   - Preserves the V518 clean-start gate and releases it only after all four final assets settle.
 */
 (function(){
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V518';
+  const VERSION='V519';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
-    todo:'./assets/icons/todo-v518-1024.webp?v=518-1920',
-    sport:'./assets/icons/sport-v518-1024.webp?v=518-1920',
-    food:'./assets/icons/food-v518-1024.webp?v=518-1920',
-    future:'./assets/icons/future-v518-1024.webp?v=518-1920'
+    todo:'./assets/icons/todo-v519-1024.png?v=519-2229',
+    sport:'./assets/icons/sport-v519-1024.png?v=519-2229',
+    food:'./assets/icons/food-v519-1024.png?v=519-2229',
+    future:'./assets/icons/future-v519-1024.png?v=519-2229'
   };
   const MODULES=[
     {id:'todo',label:'TO-DO',active:true},
@@ -29,8 +29,7 @@
   function hubApi(){return window.__modAppHubV515||null;}
 
   function iconMarkup(item){
-    const src=SOURCES[item.id];
-    return `<img class="mod-hub-app-icon-v517" src="${src}" alt="" draggable="false" decoding="async">`;
+    return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async">`;
   }
 
   function labelMarkup(item){
@@ -58,21 +57,23 @@
 
   function waitForImage(img){
     if(img.complete){
-      if(img.naturalWidth>0&&typeof img.decode==='function')return img.decode().catch(()=>{});
-      return Promise.resolve();
+      if(img.naturalWidth>0&&typeof img.decode==='function')return img.decode();
+      return img.naturalWidth>0?Promise.resolve():Promise.reject(new Error('image-decode-failed'));
     }
-    return new Promise(resolve=>{
-      let done=false;
-      const finish=()=>{
-        if(done)return;
-        done=true;
-        img.removeEventListener('load',finish);
-        img.removeEventListener('error',finish);
-        if(img.naturalWidth>0&&typeof img.decode==='function')img.decode().catch(()=>{}).finally(resolve);
+    return new Promise((resolve,reject)=>{
+      const loaded=()=>{
+        cleanup();
+        if(img.naturalWidth<=0){reject(new Error('image-width-zero'));return;}
+        if(typeof img.decode==='function')img.decode().then(resolve,reject);
         else resolve();
       };
-      img.addEventListener('load',finish,{once:true});
-      img.addEventListener('error',finish,{once:true});
+      const failed=()=>{cleanup();reject(new Error('image-load-error'));};
+      const cleanup=()=>{
+        img.removeEventListener('load',loaded);
+        img.removeEventListener('error',failed);
+      };
+      img.addEventListener('load',loaded,{once:true});
+      img.addEventListener('error',failed,{once:true});
     });
   }
 
@@ -82,16 +83,16 @@
     const finish=(reason)=>{
       if(finished||generation!==renderGeneration||!root.isConnected||!shell.isConnected)return;
       finished=true;
-      const loaded=images.filter(img=>img.complete&&img.naturalWidth>0).length;
+      const loaded=images.filter(img=>img.complete&&img.naturalWidth>0&&img.naturalHeight>0).length;
       const allLoaded=images.length===MODULES.length&&loaded===images.length;
-      root.dataset.modHubAssetsV518=allLoaded?'ready':'degraded';
-      root.dataset.modHubAssetCountV518=String(loaded);
-      root.dataset.modHubAssetReleaseV518=String(reason||'settled');
-      if(allLoaded)document.documentElement.classList.add('mod-hub-assets-ready-v518');
+      root.dataset.modHubAssetsV519=allLoaded?'ready':'degraded';
+      root.dataset.modHubAssetCountV519=String(loaded);
+      root.dataset.modHubAssetReleaseV519=String(reason||'settled');
+      if(allLoaded)document.documentElement.classList.add('mod-hub-assets-ready-v519');
       try{window.__modReleaseHubBootV518?.(allLoaded?'assets-ready':'assets-fallback');}catch(_){}
     };
 
-    Promise.all(images.map(waitForImage)).then(()=>finish('settled'));
+    Promise.all(images.map(waitForImage)).then(()=>finish('settled')).catch(()=>finish('decode-error'));
     setTimeout(()=>finish('timeout'),3000);
   }
 
@@ -135,7 +136,7 @@
       });
 
       root.dataset.modHubLauncherV517='ready';
-      root.dataset.modHubFinalV518='ready';
+      root.dataset.modHubFinalV519='ready';
       settleFinalAssets(root,shell,generation);
       return true;
     }finally{patching=false;}
@@ -169,12 +170,13 @@
     sportDataUntouched:true,
     foodPrepared:true,
     futureCategoryPrepared:true,
-    finalAssetsV518:true,
-    githubHostedAssetsV518:true,
-    cleanStartReleaseV518:true
+    finalAssetsV519:true,
+    githubHostedAssetsV519:true,
+    cleanStartReleaseV519:true
   };
   window.__modHubLauncherV517=publicApi;
   window.__modHubLauncherV518=publicApi;
+  window.__modHubLauncherV519=publicApi;
 
   let tries=0;
   const boot=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(boot);},75);

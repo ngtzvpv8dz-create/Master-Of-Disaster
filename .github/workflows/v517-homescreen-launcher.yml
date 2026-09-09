@@ -1,4 +1,4 @@
-name: V517-V518 Homescreen Launcher
+name: V519 Homescreen Launcher
 on:
   pull_request:
     branches: [ main ]
@@ -17,27 +17,59 @@ jobs:
       - name: Syntax and wiring
         run: |
           node --check app-hub-launcher-v517.js
-          node --check build-version-v518.js
+          node --check build-version-v519.js
           node --check running-task-render-stability-v505.js
           node --check sw.js
-          test -f assets/icons/todo-v518-1024.webp
-          test -f assets/icons/sport-v518-1024.webp
-          test -f assets/icons/food-v518-1024.webp
-          test -f assets/icons/future-v518-1024.webp
-          grep -q 'app-hub-launcher-v517.css?v=518-1920' running-task-render-stability-v505.js
-          grep -q 'app-hub-launcher-v517.js?v=518-1920' running-task-render-stability-v505.js
-          grep -q 'build-version-v518.js?v=518-1920' running-task-render-stability-v505.js
-          grep -q 'master-of-disaster-v518-final-icons-clean-start' sw.js
-          grep -q 'assets/icons/todo-v518-1024.webp' sw.js
-          grep -q 'assets/icons/sport-v518-1024.webp' sw.js
-          grep -q 'assets/icons/food-v518-1024.webp' sw.js
-          grep -q 'assets/icons/future-v518-1024.webp' sw.js
+          test -f assets/icons/todo-v519-1024.png
+          test -f assets/icons/sport-v519-1024.png
+          test -f assets/icons/food-v519-1024.png
+          test -f assets/icons/future-v519-1024.png
+          grep -q 'app-hub-launcher-v517.css?v=519-2229' running-task-render-stability-v505.js
+          grep -q 'app-hub-launcher-v517.js?v=519-2229' running-task-render-stability-v505.js
+          grep -q 'build-version-v519.js?v=519-2229' running-task-render-stability-v505.js
+          grep -q 'master-of-disaster-v519-valid-icons' sw.js
+          grep -q 'assets/icons/todo-v519-1024.png' sw.js
+          grep -q 'assets/icons/sport-v519-1024.png' sw.js
+          grep -q 'assets/icons/food-v519-1024.png' sw.js
+          grep -q 'assets/icons/future-v519-1024.png' sw.js
+      - name: Validate PNG assets with decoder and pixel content
+        run: |
+          python3 -m pip install --disable-pip-version-check pillow >/dev/null 2>&1
+          python3 <<'PY'
+          from PIL import Image, ImageStat
+          from pathlib import Path
+          paths=[
+            Path('assets/icons/todo-v519-1024.png'),
+            Path('assets/icons/sport-v519-1024.png'),
+            Path('assets/icons/food-v519-1024.png'),
+            Path('assets/icons/future-v519-1024.png'),
+          ]
+          for path in paths:
+            data=path.read_bytes()
+            if not data or data[:8] != b'\x89PNG\r\n\x1a\n':
+              raise SystemExit(f'Invalid PNG signature: {path}')
+            with Image.open(path) as im:
+              im.load()
+              if im.format != 'PNG':
+                raise SystemExit(f'Invalid format: {path} -> {im.format}')
+              if im.size != (1024,1024):
+                raise SystemExit(f'Invalid size: {path} -> {im.size}')
+              sample=im.convert('RGB').resize((64,64))
+              stat=ImageStat.Stat(sample)
+              extrema=sample.getextrema()
+              std=sum(stat.stddev)/3
+              brightest=max(hi for lo,hi in extrema)
+              span=max(hi-lo for lo,hi in extrema)
+              if brightest < 160 or span < 100 or std < 18:
+                raise SystemExit(f'Visually empty/flat icon: {path} brightness={brightest} span={span} std={std:.2f}')
+            print(f'{path}: PNG 1024x1024 decode+pixels PASS ({len(data)} bytes, brightness={brightest}, span={span}, std={std:.2f})')
+          PY
       - name: Browser launcher regression
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
           npx playwright install chromium >/dev/null 2>&1
-          python3 -m http.server 8787 >/tmp/mod-v517-http.log 2>&1 &
+          python3 -m http.server 8787 >/tmp/mod-v519-http.log 2>&1 &
           node <<'NODE'
           const fs=require('fs');
           const {chromium}=require('playwright');
@@ -45,18 +77,27 @@ jobs:
             const browser=await chromium.launch({headless:true});
             const page=await browser.newPage({viewport:{width:390,height:844}});
             const errors=[];
+            await page.addInitScript(()=>{
+              window.__v519ImgErrors=[];
+              window.addEventListener('error',event=>{
+                const t=event&&event.target;
+                if(t&&t.tagName==='IMG')window.__v519ImgErrors.push(t.currentSrc||t.src||'img-error');
+              },true);
+            });
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            await page.goto('http://127.0.0.1:8787/?reg=v517',{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV517&&window.__modBuildVersionV518,null,{timeout:30000});
+            await page.goto('http://127.0.0.1:8787/?reg=v519',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV517&&window.__modBuildVersionV519,null,{timeout:30000});
             await page.evaluate(()=>{
               const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-09';
-              tasks=[{id:51701,text:'V518 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              tasks=[{id:51901,text:'V519 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
               if(typeof saveTasks==='function')saveTasks();
               window.__modAppHubV515.show();
               window.__modHubLauncherV517.render();
             });
-            await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV518==='ready',null,{timeout:10000});
+            await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV519==='ready',null,{timeout:10000});
+            await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+            await page.waitForTimeout(400);
 
             const initial=await page.evaluate(()=>({
               hub:document.body.classList.contains('mod-app-hub-v515'),
@@ -66,32 +107,33 @@ jobs:
               wideCards:document.querySelectorAll('.mod-hub-card-v515').length,
               buttons:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.dataset.modHubLaunchV517),
               labels:[...document.querySelectorAll('.mod-hub-app-label-v517')].map(x=>x.textContent.trim()),
-              images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight})),
-              build:window.__modBuildVersionV518?.version,
+              images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight,complete:x.complete})),
+              build:window.__modBuildVersionV519?.version,
               flags:{...window.__modHubLauncherV517},
-              task:(tasks||[]).find(t=>t.id===51701)?.text
+              task:(tasks||[]).find(t=>t.id===51901)?.text,
+              imgErrors:window.__v519ImgErrors||[]
             }));
-            const expected=['todo-v518-1024.webp','sport-v518-1024.webp','food-v518-1024.webp','future-v518-1024.webp'];
-            if(!initial.hub||initial.surface!=='hub'||initial.grid!==1||initial.slots.length!==4||initial.wideCards!==0||JSON.stringify(initial.buttons)!==JSON.stringify(['todo','sport','food','future'])||initial.labels[0]!=='TO-DO'||initial.labels[1]!=='SPORT'||initial.labels[2]!=='FOOD'||initial.labels[3]!==''||initial.images.some((x,i)=>x.w<=0||x.h<=0||!x.src.includes(expected[i]))||initial.build!=='V518'||initial.flags.homescreenStyle!==true||initial.flags.wideCardsRemoved!==true||initial.flags.finalAssetsV518!==true||initial.task!=='V518 Bestandsschutz')throw new Error('V518 launcher initial '+JSON.stringify({initial,errors}));
+            const expected=['todo-v519-1024.png','sport-v519-1024.png','food-v519-1024.png','future-v519-1024.png'];
+            if(!initial.hub||initial.surface!=='hub'||initial.grid!==1||initial.slots.length!==4||initial.wideCards!==0||JSON.stringify(initial.buttons)!==JSON.stringify(['todo','sport','food','future'])||initial.labels[0]!=='TO-DO'||initial.labels[1]!=='SPORT'||initial.labels[2]!=='FOOD'||initial.labels[3]!==''||initial.images.some((x,i)=>!x.complete||x.w<=0||x.h<=0||!x.src.includes(expected[i]))||initial.build!=='V519'||initial.flags.homescreenStyle!==true||initial.flags.wideCardsRemoved!==true||initial.flags.finalAssetsV519!==true||initial.task!=='V519 Bestandsschutz'||initial.imgErrors.length!==0)throw new Error('V519 launcher initial '+JSON.stringify({initial,errors}));
 
-            await page.screenshot({path:'/tmp/v518-launcher.png',fullPage:true});
+            await page.screenshot({path:'/tmp/v519-launcher.png',fullPage:true});
 
             await page.click('.mod-hub-app-button-todo-v517');
             await page.waitForTimeout(220);
-            const todo=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===51701)?.text}));
-            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V518 Bestandsschutz')throw new Error('V518 todo '+JSON.stringify(todo));
+            const todo=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===51901)?.text}));
+            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V519 Bestandsschutz')throw new Error('V519 todo '+JSON.stringify(todo));
 
             await page.evaluate(()=>{
-              window.__v518Health=[];
-              window.addEventListener('mod:health-sync-request',e=>window.__v518Health.push(e.detail));
+              window.__v519Health=[];
+              window.addEventListener('mod:health-sync-request',e=>window.__v519Health.push(e.detail));
               window.__modAppHubV515.show();
               window.__modHubLauncherV517.render();
             });
             await page.waitForTimeout(180);
             await page.click('.mod-hub-app-button-sport-v517');
             await page.waitForTimeout(260);
-            const sport=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v518Health||[],task:(tasks||[]).find(t=>t.id===51701)?.text}));
-            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V518 Bestandsschutz')throw new Error('V518 sport '+JSON.stringify(sport));
+            const sport=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v519Health||[],task:(tasks||[]).find(t=>t.id===51901)?.text}));
+            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V519 Bestandsschutz')throw new Error('V519 sport '+JSON.stringify(sport));
 
             await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV517.render();});
             await page.waitForTimeout(150);
@@ -99,23 +141,27 @@ jobs:
             await page.waitForTimeout(120);
             await page.evaluate(()=>document.querySelector('.mod-hub-app-button-future-v517')?.click());
             await page.waitForTimeout(120);
-            const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===51701)?.text}));
-            if(!prepared.hub||prepared.surface!=='hub'||prepared.task!=='V518 Bestandsschutz')throw new Error('V518 prepared '+JSON.stringify(prepared));
+            const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===51901)?.text,imgErrors:window.__v519ImgErrors||[]}));
+            if(!prepared.hub||prepared.surface!=='hub'||prepared.task!=='V519 Bestandsschutz'||prepared.imgErrors.length!==0)throw new Error('V519 prepared '+JSON.stringify(prepared));
 
-            if(errors.length)throw new Error('V518 page errors '+JSON.stringify(errors));
-            fs.writeFileSync('/tmp/v518-result.json',JSON.stringify({initial,todo,sport,prepared,errors},null,2));
-            console.log('V517/V518 homescreen launcher PASS');
+            if(errors.length)throw new Error('V519 page errors '+JSON.stringify(errors));
+            fs.writeFileSync('/tmp/v519-result.json',JSON.stringify({initial,todo,sport,prepared,errors},null,2));
+            console.log('V519 homescreen launcher PASS');
             await browser.close();
-          })().catch(error=>{fs.writeFileSync('/tmp/v518-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          })().catch(error=>{fs.writeFileSync('/tmp/v519-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
           NODE
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v518-launcher-diagnostics
+          name: v519-launcher-diagnostics
           path: |
-            /tmp/v518-result.json
-            /tmp/v518-error.txt
-            /tmp/v518-launcher.png
-            /tmp/mod-v517-http.log
+            /tmp/v519-result.json
+            /tmp/v519-error.txt
+            /tmp/v519-launcher.png
+            /tmp/mod-v519-http.log
+            assets/icons/todo-v519-1024.png
+            assets/icons/sport-v519-1024.png
+            assets/icons/food-v519-1024.png
+            assets/icons/future-v519-1024.png
           if-no-files-found: ignore
