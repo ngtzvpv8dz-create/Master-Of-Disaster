@@ -1,0 +1,118 @@
+name: V516 Hub Icon Buttons
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  hub-icon-buttons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax and wiring
+        run: |
+          node --check app-hub-icon-buttons-v516.js
+          node --check build-version-v516.js
+          node --check running-task-render-stability-v505.js
+          node --check sw.js
+          test -f apple-touch-icon.png
+          test -f sport-icon-v516.webp
+          grep -q "todo:'./apple-touch-icon.png?v=516-1155'" app-hub-icon-buttons-v516.js
+          grep -q "sport:'./sport-icon-v516.webp?v=516-1155'" app-hub-icon-buttons-v516.js
+          grep -q 'app-hub-icon-buttons-v516.css?v=516-1155' running-task-render-stability-v505.js
+          grep -q 'app-hub-icon-buttons-v516.js?v=516-1155' running-task-render-stability-v505.js
+          grep -q 'build-version-v516.js?v=516-1155' running-task-render-stability-v505.js
+          grep -q 'primaryAreaIconsBundled:true' running-task-render-stability-v505.js
+          grep -q 'master-of-disaster-v516-hub-icon-buttons' sw.js
+          grep -q 'apple-touch-icon.png' sw.js
+          grep -q 'sport-icon-v516.webp' sw.js
+      - name: Browser icon launcher regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v516-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v516',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubIconButtonsV516&&window.__modBuildVersionV516,null,{timeout:30000});
+
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-09';
+              tasks=[{id:51601,text:'V516 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.__modAppHubV515.show();
+              window.__modHubIconButtonsV516.patch();
+            });
+            await page.waitForTimeout(350);
+
+            const initial=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              outerButtons:document.querySelectorAll('button.mod-hub-card-v515').length,
+              cards:document.querySelectorAll('article.mod-hub-card-v515[data-mod-hub-icon-buttons-v516="done"]').length,
+              iconButtons:[...document.querySelectorAll('.mod-hub-icon-button-v516[data-mod-hub-open]')].map(x=>x.dataset.modHubOpen),
+              iconAssets:[...document.querySelectorAll('.mod-hub-icon-button-v516[data-mod-hub-open]')].map(x=>({type:x.dataset.modHubOpen,asset:x.dataset.modHubIconAsset,src:x.querySelector('img')?.getAttribute('src')||null,naturalWidth:x.querySelector('img')?.naturalWidth||0})),
+              exactBundled:window.__modHubIconButtonsV516.exactAreaIconAssetsBundled,
+              primaryBundled:window.__modHubIconButtonsV516.primaryAreaIconsBundled,
+              primary:window.__modHubIconButtonsV516.iconTileIsPrimaryButton,
+              wholeCard:window.__modHubIconButtonsV516.wholeCardIsButton,
+              build:window.__modBuildVersionV516?.version,
+              task:(tasks||[]).find(t=>t.id===51601)?.text
+            }));
+            const todoAsset=initial.iconAssets.find(x=>x.type==='todo');
+            const sportAsset=initial.iconAssets.find(x=>x.type==='sport');
+            const foodAsset=initial.iconAssets.find(x=>x.type==='food');
+            if(!initial.hub||initial.outerButtons!==0||initial.cards!==3||JSON.stringify(initial.iconButtons)!==JSON.stringify(['todo','sport','food'])||initial.exactBundled!==true||initial.primaryBundled!==true||initial.primary!==true||initial.wholeCard!==false||initial.build!=='V516'||initial.task!=='V516 Bestandsschutz'||todoAsset?.asset!=='image'||todoAsset?.naturalWidth<=0||!todoAsset?.src?.includes('apple-touch-icon.png')||sportAsset?.asset!=='image'||sportAsset?.naturalWidth<=0||!sportAsset?.src?.includes('sport-icon-v516.webp')||foodAsset?.asset!=='fallback')throw new Error('V516 initial '+JSON.stringify({initial,errors}));
+
+            await page.click('.mod-hub-icon-button-todo-v516');
+            await page.waitForTimeout(200);
+            const todo=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===51601)?.text}));
+            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V516 Bestandsschutz')throw new Error('V516 todo '+JSON.stringify(todo));
+
+            await page.evaluate(()=>{
+              window.__v516Health=[];
+              window.addEventListener('mod:health-sync-request',e=>window.__v516Health.push(e.detail));
+              window.__modAppHubV515.show();
+              window.__modHubIconButtonsV516.patch();
+            });
+            await page.waitForTimeout(120);
+            await page.click('.mod-hub-icon-button-sport-v516');
+            await page.waitForTimeout(300);
+            const sport=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v516Health||[],task:(tasks||[]).find(t=>t.id===51601)?.text}));
+            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V516 Bestandsschutz')throw new Error('V516 sport '+JSON.stringify(sport));
+
+            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubIconButtonsV516.patch();});
+            await page.waitForTimeout(120);
+            await page.evaluate(()=>document.querySelector('.mod-hub-icon-button-food-v516')?.click());
+            await page.waitForTimeout(120);
+            const food=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===51601)?.text}));
+            if(!food.hub||food.surface!=='hub'||food.task!=='V516 Bestandsschutz')throw new Error('V516 food '+JSON.stringify(food));
+
+            if(errors.length)throw new Error('V516 page errors '+JSON.stringify(errors));
+            fs.writeFileSync('/tmp/v516-result.json',JSON.stringify({initial,todo,sport,food,errors},null,2));
+            console.log('V516 hub icon buttons PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v516-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v516-hub-icon-buttons-diagnostics
+          path: |
+            /tmp/v516-result.json
+            /tmp/v516-error.txt
+            /tmp/mod-v516-http.log
+          if-no-files-found: ignore
