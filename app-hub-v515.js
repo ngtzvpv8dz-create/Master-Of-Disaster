@@ -3,6 +3,8 @@
    - To-do and Sport remain existing independent surfaces.
    - Sport entry exposes a Health-sync hook without implementing transport yet.
    - Food is reserved as a visible future module.
+   V518 compatibility: when the final launcher layer is present, hub renders are
+   synchronously upgraded before the browser gets a chance to paint legacy cards.
 */
 (function(){
   'use strict';
@@ -104,8 +106,14 @@
     return true;
   }
 
+  function renderCurrentHub(){
+    const rendered=render();
+    try{window.__modHubLauncherV517?.render?.();}catch(_){}
+    return rendered;
+  }
+
   function show(){
-    render();
+    renderCurrentHub();
     try{sportApi()?.setMode?.('todo',{persist:false,animate:false});}catch(_){}
     try{localStorage.setItem(sportApi()?.modeKey||'masterOfDisasterAppModeV510','todo');}catch(_){}
     document.body.classList.add(HUB_CLASS);
@@ -160,16 +168,24 @@
     hide,
     open,
     render,
+    renderCurrentHub,
     dispatchHealthSync,
     shouldAutoStartHub,
     healthEvent:HEALTH_EVENT,
     rootId:ROOT_ID,
     hubClass:HUB_CLASS,
     foodReserved:true,
-    healthTransportConnected:false
+    healthTransportConnected:false,
+    finalLauncherCompatibilityV518:true
   };
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
-  window.addEventListener('load',()=>{if(shouldAutoStartHub())setTimeout(show,220);},{once:true});
+  window.addEventListener('load',()=>{
+    if(!shouldAutoStartHub())return;
+    setTimeout(()=>{
+      if(window.__modHubLauncherV517&&document.body.classList.contains(HUB_CLASS))return;
+      show();
+    },220);
+  },{once:true});
 })();

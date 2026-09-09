@@ -169,16 +169,16 @@
   window.__modHubIconButtonsBootstrapV516={version:VERSION,ensureCss,ensureScript,ensureBuild,iconTileLauncher:true,exactIconAssetsDeferred:false,primaryAreaIconsBundled:true,todoDataUntouched:true,sportDataUntouched:true};
 })();
 
-/* V517 · HOMESCREEN LAUNCHER BOOTSTRAP
-   Ersetzt die breiten Hub-Karten durch ein kompaktes 2x2-App-Raster.
+/* V518 · FINAL ICONS + CLEAN START BOOTSTRAP
+   Lädt den bestehenden kompakten Launcher mit finalen GitHub-Assets und V518-Buildmarker.
 */
 (function(){
   'use strict';
   if(window.__modHubLauncherBootstrapV517)return;
-  const VERSION='V517';
-  const cssHref='./app-hub-launcher-v517.css?v=517-1245';
-  const jsSrc='./app-hub-launcher-v517.js?v=517-1245';
-  const buildSrc='./build-version-v517.js?v=517-1245';
+  const VERSION='V518';
+  const cssHref='./app-hub-launcher-v517.css?v=518-1920';
+  const jsSrc='./app-hub-launcher-v517.js?v=518-1920';
+  const buildSrc='./build-version-v518.js?v=518-1920';
 
   function ensureCss(){
     if(document.querySelector('link[data-hub-launcher-v517]'))return;
@@ -188,9 +188,9 @@
   }
 
   function ensureBuild(){
-    if(window.__modBuildVersionV517||document.querySelector('script[data-build-v517]'))return;
+    if(window.__modBuildVersionV518||document.querySelector('script[data-build-v518]'))return;
     const script=document.createElement('script');
-    script.src=buildSrc;script.defer=true;script.dataset.buildV517='true';
+    script.src=buildSrc;script.defer=true;script.dataset.buildV518='true';
     document.head.appendChild(script);
   }
 
@@ -205,5 +205,7 @@
   ensureCss();
   ensureScript();
   ensureBuild();
-  window.__modHubLauncherBootstrapV517={version:VERSION,ensureCss,ensureScript,ensureBuild,homescreenStyle:true,compactGrid:true,foodPrepared:true,futureCategoryPrepared:true,todoDataUntouched:true,sportDataUntouched:true};
+  const api={version:VERSION,ensureCss,ensureScript,ensureBuild,homescreenStyle:true,compactGrid:true,foodPrepared:true,futureCategoryPrepared:true,finalAssetsV518:true,cleanStartV518:true,todoDataUntouched:true,sportDataUntouched:true};
+  window.__modHubLauncherBootstrapV517=api;
+  window.__modHubLauncherBootstrapV518=api;
 })();
