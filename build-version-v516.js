@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   if(window.__modBuildVersionV516)return;
-  const meta={version:'V516',date:'09.09.2026',time:'09:59',build:'09.09.2026 · 09:59 Uhr'};
+  const meta={version:'V516',date:'09.09.2026',time:'11:42',build:'09.09.2026 · 11:42 Uhr'};
   function patch(){
     window.__MOD_BUILD__=meta;
     window.__modDevVersion={...meta,patch};
