@@ -1,0 +1,270 @@
+/* V515 · MODULAR APP HUB */
+body.mod-app-hub-v515{
+  overflow-x:hidden;
+  background:#0b0d0f;
+}
+body.mod-app-hub-v515 .tabs-wrapper,
+body.mod-app-hub-v515 #inputPanel,
+body.mod-app-hub-v515 #weightContainer,
+body.mod-app-hub-v515 #viewContainer,
+body.mod-app-hub-v515 #sportRootV510{
+  display:none !important;
+}
+body:not(.mod-app-hub-v515) #modAppHubV515{
+  display:none !important;
+}
+body.mod-app-hub-v515 .header{
+  position:relative;
+  z-index:5;
+  background:transparent !important;
+  box-shadow:none !important;
+  border-bottom-color:transparent !important;
+}
+body.mod-app-hub-v515 .header .eyebrow{
+  opacity:.58;
+  letter-spacing:.18em;
+}
+
+.mod-app-hub-v515{
+  position:relative;
+  min-height:calc(100svh - 112px);
+  isolation:isolate;
+  overflow:hidden;
+  padding:14px 14px max(28px,env(safe-area-inset-bottom));
+}
+.mod-hub-backdrop-v515{
+  position:absolute;
+  inset:-80px -60px -120px;
+  z-index:-2;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(255,255,255,.045),transparent 38%),
+    linear-gradient(160deg,#0a0c0f 0%,#111318 48%,#090b0e 100%);
+}
+.mod-hub-glow-v515{
+  position:absolute;
+  width:330px;
+  height:330px;
+  border-radius:50%;
+  filter:blur(52px);
+  opacity:.34;
+  transform:translateZ(0);
+}
+.mod-hub-glow-todo-v515{
+  left:-145px;
+  top:80px;
+  background:radial-gradient(circle,#ff6a2a 0%,#c52f1c 42%,transparent 72%);
+}
+.mod-hub-glow-sport-v515{
+  right:-165px;
+  top:240px;
+  background:radial-gradient(circle,#25d9ff 0%,#087c9b 40%,transparent 72%);
+}
+.mod-hub-grid-v515{
+  position:absolute;
+  inset:0;
+  opacity:.2;
+  background-image:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:28px 28px;
+  -webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 88%);
+  mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 88%);
+}
+.mod-hub-shell-v515{
+  width:min(100%,760px);
+  margin:0 auto;
+  padding:18px 0 8px;
+}
+.mod-hub-intro-v515{
+  padding:12px 8px 22px;
+}
+.mod-hub-kicker-v515{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.22em;
+  color:rgba(255,255,255,.54);
+}
+.mod-hub-title-v515{
+  margin:8px 0 6px;
+  font-size:clamp(31px,8.5vw,54px);
+  line-height:.98;
+  letter-spacing:-.04em;
+  color:#f7f9fb;
+}
+.mod-hub-copy-v515{
+  margin:0;
+  color:rgba(255,255,255,.62);
+  font-size:15px;
+}
+.mod-hub-modules-v515{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+}
+.mod-hub-card-v515{
+  position:relative;
+  display:grid;
+  grid-template-columns:84px 1fr auto;
+  align-items:center;
+  min-height:128px;
+  width:100%;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:26px;
+  padding:18px;
+  overflow:hidden;
+  text-align:left;
+  color:#fff;
+  background:linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.045));
+  box-shadow:
+    0 18px 34px rgba(0,0,0,.3),
+    inset 0 1px 0 rgba(255,255,255,.11),
+    inset 0 -1px 0 rgba(0,0,0,.25);
+  -webkit-backdrop-filter:blur(14px) saturate(130%);
+  backdrop-filter:blur(14px) saturate(130%);
+  transform:translateZ(0);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+  cursor:pointer;
+}
+.mod-hub-card-v515::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  opacity:.78;
+  pointer-events:none;
+}
+.mod-hub-card-todo-v515::before{
+  background:linear-gradient(115deg,rgba(255,89,36,.27),transparent 44%,rgba(255,167,64,.06));
+}
+.mod-hub-card-sport-v515::before{
+  background:linear-gradient(115deg,rgba(0,198,255,.24),transparent 45%,rgba(22,245,217,.06));
+}
+.mod-hub-card-food-v515::before{
+  background:linear-gradient(115deg,rgba(118,223,137,.15),transparent 45%,rgba(246,207,91,.05));
+}
+.mod-hub-card-v515:active{
+  transform:scale(.985) translateY(1px);
+}
+@media (hover:hover){
+  .mod-hub-card-v515:hover{
+    transform:translateY(-3px);
+    border-color:rgba(255,255,255,.18);
+  }
+  .mod-hub-card-todo-v515:hover{box-shadow:0 20px 42px rgba(0,0,0,.34),0 0 34px rgba(255,86,35,.12),inset 0 1px 0 rgba(255,255,255,.12);}
+  .mod-hub-card-sport-v515:hover{box-shadow:0 20px 42px rgba(0,0,0,.34),0 0 34px rgba(26,206,255,.12),inset 0 1px 0 rgba(255,255,255,.12);}
+}
+.mod-hub-card-shine-v515{
+  position:absolute;
+  top:-55%;
+  left:-30%;
+  width:52%;
+  height:210%;
+  transform:rotate(18deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+  pointer-events:none;
+}
+.mod-hub-icon-v515{
+  position:relative;
+  z-index:1;
+  width:66px;
+  height:66px;
+  display:grid;
+  place-items:center;
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 12px 26px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.18);
+  transform:perspective(220px) rotateX(7deg) rotateY(-7deg);
+}
+.mod-hub-card-todo-v515 .mod-hub-icon-v515{
+  background:linear-gradient(145deg,#ff7440,#c93c27 62%,#6d2118);
+  box-shadow:0 12px 28px rgba(114,32,21,.44),0 0 24px rgba(255,90,44,.14),inset 0 1px 0 rgba(255,255,255,.25);
+}
+.mod-hub-card-sport-v515 .mod-hub-icon-v515{
+  background:linear-gradient(145deg,#22d9ff,#098caf 56%,#064f66);
+  box-shadow:0 12px 28px rgba(0,69,92,.46),0 0 24px rgba(21,207,255,.16),inset 0 1px 0 rgba(255,255,255,.25);
+}
+.mod-hub-card-food-v515 .mod-hub-icon-v515{
+  background:linear-gradient(145deg,#78c786,#386c48 58%,#203b2a);
+  opacity:.72;
+}
+.mod-hub-icon-line{
+  display:block;
+  font-size:34px;
+  line-height:1;
+  font-weight:900;
+  color:#fff;
+  text-shadow:0 2px 10px rgba(0,0,0,.25);
+}
+.mod-hub-icon-sport{font-style:italic;letter-spacing:-.08em;}
+.mod-hub-card-text-v515{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  min-width:0;
+}
+.mod-hub-card-text-v515 strong{
+  font-size:24px;
+  letter-spacing:.045em;
+  line-height:1;
+}
+.mod-hub-card-text-v515 small{
+  font-size:13px;
+  color:rgba(255,255,255,.58);
+  white-space:normal;
+}
+.mod-hub-arrow-v515{
+  position:relative;
+  z-index:1;
+  display:grid;
+  place-items:center;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);
+  font-size:20px;
+  color:rgba(255,255,255,.8);
+}
+.mod-hub-badge-v515{
+  position:relative;
+  z-index:1;
+  align-self:start;
+  padding:7px 9px;
+  border-radius:999px;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.12em;
+  color:rgba(255,255,255,.72);
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);
+}
+.mod-hub-card-food-v515{
+  opacity:.72;
+}
+.mod-hub-footer-v515{
+  padding:18px 8px 0;
+  text-align:center;
+  font-size:11px;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.28);
+}
+.mod-hub-nudge-v515{
+  animation:modHubNudgeV515 .4s ease;
+}
+@keyframes modHubNudgeV515{
+  0%,100%{transform:translateX(0)}
+  30%{transform:translateX(-4px)}
+  60%{transform:translateX(4px)}
+}
+@media (min-width:720px){
+  .mod-hub-shell-v515{padding-top:44px}
+  .mod-hub-modules-v515{grid-template-columns:1fr 1fr}
+  .mod-hub-card-food-v515{grid-column:1 / -1}
+}
+@media (prefers-reduced-motion:reduce){
+  .mod-hub-card-v515{transition:none}
+  .mod-hub-nudge-v515{animation:none}
+}
