@@ -1,19 +1,19 @@
-/* V517 · HOMESCREEN LAUNCHER
-   - Replaces the wide V515/V516 hub cards with a compact 2x2 app launcher.
-   - Keeps the existing To-do/Sport navigation and Sport Health hook.
-   - Adds Food plus a silent fourth future category slot.
+/* V518 · HOMESCREEN LAUNCHER ASSET UPGRADE
+   - Keeps the compact V517 2x2 launcher and navigation behavior.
+   - Uses the final high-resolution GitHub-hosted launcher icons.
+   - Releases the V518 first-paint gate only after the final launcher assets settle.
 */
 (function(){
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V517';
+  const VERSION='V518';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
-    todo:'./apple-touch-icon.png?v=517-1245',
-    sport:'./sport-icon-v516.webp?v=517-1245',
-    food:'./food-icon-v517.svg?v=517-1245',
-    future:'./future-icon-v517.svg?v=517-1245'
+    todo:'./assets/icons/todo-v518-1024.webp?v=518-1920',
+    sport:'./assets/icons/sport-v518-1024.webp?v=518-1920',
+    food:'./assets/icons/food-v518-1024.webp?v=518-1920',
+    future:'./assets/icons/future-v518-1024.webp?v=518-1920'
   };
   const MODULES=[
     {id:'todo',label:'TO-DO',active:true},
@@ -24,12 +24,13 @@
 
   let observer=null;
   let patching=false;
+  let renderGeneration=0;
 
   function hubApi(){return window.__modAppHubV515||null;}
 
   function iconMarkup(item){
     const src=SOURCES[item.id];
-    return `<img class="mod-hub-app-icon-v517" src="${src}" alt="" draggable="false">`;
+    return `<img class="mod-hub-app-icon-v517" src="${src}" alt="" draggable="false" decoding="async">`;
   }
 
   function labelMarkup(item){
@@ -55,6 +56,45 @@
     return item.id;
   }
 
+  function waitForImage(img){
+    if(img.complete){
+      if(img.naturalWidth>0&&typeof img.decode==='function')return img.decode().catch(()=>{});
+      return Promise.resolve();
+    }
+    return new Promise(resolve=>{
+      let done=false;
+      const finish=()=>{
+        if(done)return;
+        done=true;
+        img.removeEventListener('load',finish);
+        img.removeEventListener('error',finish);
+        if(img.naturalWidth>0&&typeof img.decode==='function')img.decode().catch(()=>{}).finally(resolve);
+        else resolve();
+      };
+      img.addEventListener('load',finish,{once:true});
+      img.addEventListener('error',finish,{once:true});
+    });
+  }
+
+  function settleFinalAssets(root,shell,generation){
+    const images=[...shell.querySelectorAll('.mod-hub-app-icon-v517')];
+    let finished=false;
+    const finish=(reason)=>{
+      if(finished||generation!==renderGeneration||!root.isConnected||!shell.isConnected)return;
+      finished=true;
+      const loaded=images.filter(img=>img.complete&&img.naturalWidth>0).length;
+      const allLoaded=images.length===MODULES.length&&loaded===images.length;
+      root.dataset.modHubAssetsV518=allLoaded?'ready':'degraded';
+      root.dataset.modHubAssetCountV518=String(loaded);
+      root.dataset.modHubAssetReleaseV518=String(reason||'settled');
+      if(allLoaded)document.documentElement.classList.add('mod-hub-assets-ready-v518');
+      try{window.__modReleaseHubBootV518?.(allLoaded?'assets-ready':'assets-fallback');}catch(_){}
+    };
+
+    Promise.all(images.map(waitForImage)).then(()=>finish('settled'));
+    setTimeout(()=>finish('timeout'),3000);
+  }
+
   function renderLauncher(){
     if(patching)return false;
     const root=document.getElementById(ROOT_ID);
@@ -64,6 +104,7 @@
 
     patching=true;
     try{
+      const generation=++renderGeneration;
       shell.dataset.modHubLauncherV517='ready';
       shell.innerHTML=`
         <div class="mod-hub-intro-v517">
@@ -94,6 +135,8 @@
       });
 
       root.dataset.modHubLauncherV517='ready';
+      root.dataset.modHubFinalV518='ready';
+      settleFinalAssets(root,shell,generation);
       return true;
     }finally{patching=false;}
   }
@@ -112,7 +155,7 @@
     return true;
   }
 
-  window.__modHubLauncherV517={
+  const publicApi={
     version:VERSION,
     render:renderLauncher,
     sources:{...SOURCES},
@@ -125,8 +168,13 @@
     todoDataUntouched:true,
     sportDataUntouched:true,
     foodPrepared:true,
-    futureCategoryPrepared:true
+    futureCategoryPrepared:true,
+    finalAssetsV518:true,
+    githubHostedAssetsV518:true,
+    cleanStartReleaseV518:true
   };
+  window.__modHubLauncherV517=publicApi;
+  window.__modHubLauncherV518=publicApi;
 
   let tries=0;
   const boot=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(boot);},75);
