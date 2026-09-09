@@ -16,6 +16,16 @@
 
   function sportApi(){return window.__modSportModeV510||null;}
 
+  function shouldAutoStartHub(){
+    try{
+      const params=new URL(location.href).searchParams;
+      const reg=params.get('reg');
+      if(reg==='v515')return true;
+      if(params.has('reg')||params.has('smoke'))return false;
+    }catch(_){}
+    return true;
+  }
+
   function dispatchHealthSync(source){
     const detail={source:String(source||'sport-entry'),requestedAt:new Date().toISOString(),version:VERSION};
     window.dispatchEvent(new CustomEvent(HEALTH_EVENT,{detail}));
@@ -138,18 +148,10 @@
     },true);
   }
 
-  function installHomeGesture(){
-    document.addEventListener('dblclick',event=>{
-      const header=event.target?.closest?.('.header');
-      if(!header||document.body.classList.contains(HUB_CLASS))return;
-      show();
-    });
-  }
-
   function init(){
     render();
     installSportSwitchCapture();
-    show();
+    if(shouldAutoStartHub())show();
   }
 
   window.__modAppHubV515={
@@ -159,6 +161,7 @@
     open,
     render,
     dispatchHealthSync,
+    shouldAutoStartHub,
     healthEvent:HEALTH_EVENT,
     rootId:ROOT_ID,
     hubClass:HUB_CLASS,
@@ -166,8 +169,7 @@
     healthTransportConnected:false
   };
 
-  installHomeGesture();
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
-  window.addEventListener('load',()=>setTimeout(show,220),{once:true});
+  window.addEventListener('load',()=>{if(shouldAutoStartHub())setTimeout(show,220);},{once:true});
 })();
