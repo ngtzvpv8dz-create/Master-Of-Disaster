@@ -36,49 +36,55 @@
   };
 })();
 
-/* V510/V511 · SPORT MODE BOOTSTRAP
+/* V510–V512 · SPORT MODE BOOTSTRAP
    V510 lädt die getrennte Sportoberfläche.
-   V511 stellt die Kompatibilität zwischen blauem S und rotem V498-Recovery-R sicher.
+   V511 erhält das rote Recovery-R neben dem blauen S.
+   V512 ergänzt vier vertikale Sporttabs mit sichtbarer Wechselanimation.
 */
 (function(){
   'use strict';
   if(window.__modSportBootstrapV510)return;
-  const VERSION='V511';
-  const cssHref='./sport-mode-v510.css?v=510-2254';
-  const jsSrc='./sport-mode-v510.js?v=510-2254';
-  const compatSrc='./sport-header-compat-v511.js?v=511-2311';
+  const VERSION='V512';
+  const cssHref='./sport-mode-v510.css?v=512-0436';
+  const jsSrc='./sport-mode-v510.js?v=512-0436';
+  const compatSrc='./sport-header-compat-v511.js?v=512-0436';
+  const tabsCssHref='./sport-tabs-v512.css?v=512-0436';
+  const tabsJsSrc='./sport-tabs-v512.js?v=512-0436';
 
   function ensureCss(){
-    if(document.querySelector('link[data-sport-v510]'))return;
-    const link=document.createElement('link');
-    link.rel='stylesheet';
-    link.href=cssHref;
-    link.dataset.sportV510='true';
-    document.head.appendChild(link);
+    if(!document.querySelector('link[data-sport-v510]')){
+      const link=document.createElement('link');
+      link.rel='stylesheet';link.href=cssHref;link.dataset.sportV510='true';document.head.appendChild(link);
+    }
+    if(!document.querySelector('link[data-sport-tabs-v512]')){
+      const link=document.createElement('link');
+      link.rel='stylesheet';link.href=tabsCssHref;link.dataset.sportTabsV512='true';document.head.appendChild(link);
+    }
   }
 
   function ensureCompat(){
     if(window.__modSportHeaderCompatV511||document.querySelector('script[data-sport-compat-v511]'))return;
     const script=document.createElement('script');
-    script.src=compatSrc;
-    script.defer=true;
-    script.dataset.sportCompatV511='true';
-    document.head.appendChild(script);
+    script.src=compatSrc;script.defer=true;script.dataset.sportCompatV511='true';document.head.appendChild(script);
   }
 
-  function ensureScript(){
-    if(window.__modSportModeV510){ensureCompat();return;}
-    const existing=document.querySelector('script[data-sport-v510]');
-    if(existing){existing.addEventListener('load',ensureCompat,{once:true});return;}
+  function ensureTabs(){
+    if(window.__modSportTabsV512||document.querySelector('script[data-sport-tabs-v512]'))return;
     const script=document.createElement('script');
-    script.src=jsSrc;
-    script.defer=true;
-    script.dataset.sportV510='true';
-    script.addEventListener('load',ensureCompat,{once:true});
-    document.head.appendChild(script);
+    script.src=tabsJsSrc;script.defer=true;script.dataset.sportTabsV512='true';document.head.appendChild(script);
+  }
+
+  function afterSportReady(){ensureCompat();ensureTabs();}
+
+  function ensureScript(){
+    if(window.__modSportModeV510){afterSportReady();return;}
+    const existing=document.querySelector('script[data-sport-v510]');
+    if(existing){existing.addEventListener('load',afterSportReady,{once:true});return;}
+    const script=document.createElement('script');
+    script.src=jsSrc;script.defer=true;script.dataset.sportV510='true';script.addEventListener('load',afterSportReady,{once:true});document.head.appendChild(script);
   }
 
   ensureCss();
   ensureScript();
-  window.__modSportBootstrapV510={version:VERSION,ensureCss,ensureScript,ensureCompat,assetsSeparated:true,todoDataUntouched:true,recoveryRCompatibilityV511:true};
+  window.__modSportBootstrapV510={version:VERSION,ensureCss,ensureScript,ensureCompat,ensureTabs,assetsSeparated:true,todoDataUntouched:true,recoveryRCompatibilityV511:true,animatedSportTabsV512:true};
 })();
