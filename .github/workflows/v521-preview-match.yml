@@ -48,7 +48,7 @@ jobs:
               const header=fixed?.querySelector('.header')||document.querySelector('main.app > header.header')||document.querySelector('.header');
               if(!header)throw new Error('header-not-found');
               const hs=getComputedStyle(header);
-              const fs=fixed?getComputedStyle(fixed):null;
+              const fxs=fixed?getComputedStyle(fixed):null;
               const hub=document.getElementById('modAppHubV515');
               const hbs=getComputedStyle(hub);
               const shell=document.querySelector('#modAppHubV515 .mod-hub-shell-v515');
@@ -56,10 +56,10 @@ jobs:
               return {
                 bodyBackground:body.backgroundImage,
                 fixedShell:fixed?{
-                  background:fs.backgroundImage,
-                  backgroundColor:fs.backgroundColor,
-                  borderBottom:parseFloat(fs.borderBottomWidth||'0'),
-                  shadow:fs.boxShadow
+                  background:fxs.backgroundImage,
+                  backgroundColor:fxs.backgroundColor,
+                  borderBottom:parseFloat(fxs.borderBottomWidth||'0'),
+                  shadow:fxs.boxShadow
                 }:null,
                 header:{
                   background:hs.backgroundImage,
@@ -70,8 +70,7 @@ jobs:
                 },
                 hub:{background:hbs.backgroundImage,backgroundColor:hbs.backgroundColor},
                 shell:{radius:parseFloat(ss.borderTopLeftRadius||'0'),border:parseFloat(ss.borderTopWidth||'0')},
-                slots:document.querySelectorAll('.mod-hub-app-slot-v517').length,
-                errors
+                slots:document.querySelectorAll('.mod-hub-app-slot-v517').length
               };
             });
             if(!result.bodyBackground.includes('radial-gradient'))throw new Error('V521 body ambient background missing '+JSON.stringify(result));
