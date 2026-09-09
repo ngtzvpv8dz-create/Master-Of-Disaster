@@ -49,14 +49,13 @@ jobs:
             await page.waitForTimeout(750);
             const ready=await page.evaluate(()=>({
               mode:window.__modSportModeV510.currentMode(),
-              count:document.querySelectorAll('[data-sport-tab-v512]').length,
-              html:document.getElementById('sportRootV510')?.innerHTML?.slice(0,700)||'',
-              errors:[]
+              count:document.querySelectorAll('button[data-sport-tab-v512]').length,
+              html:document.getElementById('sportRootV510')?.innerHTML?.slice(0,700)||''
             }));
             if(ready.mode!=='sport'||ready.count!==4)throw new Error('V512 sport readiness '+JSON.stringify({ready,errors}));
 
             const initial=await page.evaluate(()=>({
-              labels:[...document.querySelectorAll('[data-sport-tab-v512]')].map(x=>x.textContent.trim()),
+              labels:[...document.querySelectorAll('button[data-sport-tab-v512]')].map(x=>x.textContent.trim()),
               active:window.__modSportTabsV512.currentTab(),
               panel:document.querySelector('[data-sport-panel-v512]')?.dataset.sportPanelV512,
               duration:document.getElementById('sportDurationV510')?.textContent?.trim(),
@@ -68,14 +67,14 @@ jobs:
             if(JSON.stringify(initial.labels)!==JSON.stringify(['FITX','X-TRAINING','AKTIVITÄTEN','STATISTIK'])||initial.active!=='fitx'||initial.panel!=='fitx'||initial.duration!=='2:33'||!initial.hasR||!initial.hasS||initial.task!=='V512 Bestandsschutz'||initial.build!=='V512')throw new Error('V512 initial '+JSON.stringify(initial));
 
             async function clickTab(id){
-              await page.click(`[data-sport-tab-v512="${id}"]`);
+              await page.click(`button[data-sport-tab-v512="${id}"]`);
               await page.waitForFunction(tab=>window.__modSportTabsV512.currentTab()===tab&&document.querySelector('[data-sport-panel-v512]')?.dataset.sportPanelV512===tab,id,{timeout:5000});
               return page.evaluate(()=>({
                 active:window.__modSportTabsV512.currentTab(),
                 panel:document.querySelector('[data-sport-panel-v512]')?.dataset.sportPanelV512,
                 switchClass:document.getElementById('sportRootV510')?.classList.contains('sport-tab-switch-v512'),
                 panelAnimation:getComputedStyle(document.querySelector('[data-sport-panel-v512]')).animationName,
-                activeTransform:getComputedStyle(document.querySelector('[data-sport-tab-v512].active')).transform,
+                activeTransform:getComputedStyle(document.querySelector('button[data-sport-tab-v512].active')).transform,
                 task:(tasks||[]).find(t=>t.id===51201)?.text
               }));
             }
