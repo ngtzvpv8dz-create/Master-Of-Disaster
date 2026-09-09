@@ -2,6 +2,9 @@
 body.mod-app-hub-v515 #modAppHubV515{
   padding-top:10px;
 }
+body.mod-app-hub-v515 .header .eyebrow{
+  display:none !important;
+}
 #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
   width:min(100%,430px);
   padding:8px 10px 28px;
