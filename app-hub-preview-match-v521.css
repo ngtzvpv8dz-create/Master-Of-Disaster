@@ -20,14 +20,29 @@ html body.mod-app-hub-v515 main.app{
   background:transparent !important;
 }
 
+/* V475 moves the header into this sticky shell. In hub mode the shell itself
+   must disappear visually, leaving only the floating header card. */
+html body.mod-app-hub-v515 #appFixedTopV475{
+  margin:0 0 18px !important;
+  padding:calc(12px + env(safe-area-inset-top)) 0 0 !important;
+  background:transparent !important;
+  border-bottom:0 !important;
+  box-shadow:none !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475::before{
+  background:transparent !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475 .header,
 html body.mod-app-hub-v515 main.app > header.header{
   position:relative;
   z-index:5;
   overflow:hidden;
-  margin:8px 0 18px;
-  padding:22px 14px 20px;
+  margin:0 !important;
+  padding:22px 14px 20px !important;
   border:1px solid rgba(255,255,255,.075) !important;
-  border-radius:14px;
+  border-radius:14px !important;
   background:
     radial-gradient(ellipse at 14% 24%,rgba(45,213,255,.028),transparent 34%),
     radial-gradient(ellipse at 88% 70%,rgba(177,75,255,.025),transparent 38%),
@@ -41,6 +56,7 @@ html body.mod-app-hub-v515 main.app > header.header{
   backdrop-filter:blur(18px) saturate(118%);
 }
 
+html body.mod-app-hub-v515 #appFixedTopV475 .header::before,
 html body.mod-app-hub-v515 main.app > header.header::before{
   content:"";
   position:absolute;
@@ -52,12 +68,15 @@ html body.mod-app-hub-v515 main.app > header.header::before{
     radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.028),transparent 42%);
 }
 
+html body.mod-app-hub-v515 #appFixedTopV475 .header h1,
+html body.mod-app-hub-v515 #appFixedTopV475 .header .eyebrow,
 html body.mod-app-hub-v515 main.app > header.header h1,
 html body.mod-app-hub-v515 main.app > header.header .eyebrow{
   position:relative;
   z-index:1;
 }
 
+html body.mod-app-hub-v515 #appFixedTopV475 .header .eyebrow,
 html body.mod-app-hub-v515 main.app > header.header .eyebrow{
   display:none !important;
 }
@@ -69,9 +88,12 @@ html body.mod-app-hub-v515 #modAppHubV515{
 }
 
 @media (max-width:390px){
+  html body.mod-app-hub-v515 #appFixedTopV475{
+    margin-bottom:16px !important;
+  }
+  html body.mod-app-hub-v515 #appFixedTopV475 .header,
   html body.mod-app-hub-v515 main.app > header.header{
-    margin-bottom:16px;
-    padding:20px 12px 18px;
-    border-radius:13px;
+    padding:20px 12px 18px !important;
+    border-radius:13px !important;
   }
 }
