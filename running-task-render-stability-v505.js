@@ -129,3 +129,42 @@
   ensureBuild();
   window.__modAppHubBootstrapV515={version:VERSION,ensureCss,ensureScript,ensureBuild,modularLauncher:true,todoDataUntouched:true,sportDataUntouched:true,healthHookOnly:true};
 })();
+
+/* V516 · HUB ICON BUTTON BOOTSTRAP
+   Macht die Icon-Kachel selbst zum Launcher, ohne V515-Navigation anzufassen.
+*/
+(function(){
+  'use strict';
+  if(window.__modHubIconButtonsBootstrapV516)return;
+  const VERSION='V516';
+  const cssHref='./app-hub-icon-buttons-v516.css?v=516-0959';
+  const jsSrc='./app-hub-icon-buttons-v516.js?v=516-0959';
+  const buildSrc='./build-version-v516.js?v=516-0959';
+
+  function ensureCss(){
+    if(document.querySelector('link[data-hub-icon-buttons-v516]'))return;
+    const link=document.createElement('link');
+    link.rel='stylesheet';link.href=cssHref;link.dataset.hubIconButtonsV516='true';
+    document.head.appendChild(link);
+  }
+
+  function ensureBuild(){
+    if(window.__modBuildVersionV516||document.querySelector('script[data-build-v516]'))return;
+    const script=document.createElement('script');
+    script.src=buildSrc;script.defer=true;script.dataset.buildV516='true';
+    document.head.appendChild(script);
+  }
+
+  function ensureScript(){
+    if(window.__modHubIconButtonsV516)return;
+    if(document.querySelector('script[data-hub-icon-buttons-v516]'))return;
+    const script=document.createElement('script');
+    script.src=jsSrc;script.defer=true;script.dataset.hubIconButtonsV516='true';
+    document.head.appendChild(script);
+  }
+
+  ensureCss();
+  ensureScript();
+  ensureBuild();
+  window.__modHubIconButtonsBootstrapV516={version:VERSION,ensureCss,ensureScript,ensureBuild,iconTileLauncher:true,exactIconAssetsDeferred:true,todoDataUntouched:true,sportDataUntouched:true};
+})();
