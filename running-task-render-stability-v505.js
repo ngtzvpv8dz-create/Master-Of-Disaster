@@ -168,3 +168,42 @@
   ensureBuild();
   window.__modHubIconButtonsBootstrapV516={version:VERSION,ensureCss,ensureScript,ensureBuild,iconTileLauncher:true,exactIconAssetsDeferred:false,primaryAreaIconsBundled:true,todoDataUntouched:true,sportDataUntouched:true};
 })();
+
+/* V517 · HOMESCREEN LAUNCHER BOOTSTRAP
+   Ersetzt die breiten Hub-Karten durch ein kompaktes 2x2-App-Raster.
+*/
+(function(){
+  'use strict';
+  if(window.__modHubLauncherBootstrapV517)return;
+  const VERSION='V517';
+  const cssHref='./app-hub-launcher-v517.css?v=517-1245';
+  const jsSrc='./app-hub-launcher-v517.js?v=517-1245';
+  const buildSrc='./build-version-v517.js?v=517-1245';
+
+  function ensureCss(){
+    if(document.querySelector('link[data-hub-launcher-v517]'))return;
+    const link=document.createElement('link');
+    link.rel='stylesheet';link.href=cssHref;link.dataset.hubLauncherV517='true';
+    document.head.appendChild(link);
+  }
+
+  function ensureBuild(){
+    if(window.__modBuildVersionV517||document.querySelector('script[data-build-v517]'))return;
+    const script=document.createElement('script');
+    script.src=buildSrc;script.defer=true;script.dataset.buildV517='true';
+    document.head.appendChild(script);
+  }
+
+  function ensureScript(){
+    if(window.__modHubLauncherV517)return;
+    if(document.querySelector('script[data-hub-launcher-v517]'))return;
+    const script=document.createElement('script');
+    script.src=jsSrc;script.defer=true;script.dataset.hubLauncherV517='true';
+    document.head.appendChild(script);
+  }
+
+  ensureCss();
+  ensureScript();
+  ensureBuild();
+  window.__modHubLauncherBootstrapV517={version:VERSION,ensureCss,ensureScript,ensureBuild,homescreenStyle:true,compactGrid:true,foodPrepared:true,futureCategoryPrepared:true,todoDataUntouched:true,sportDataUntouched:true};
+})();
