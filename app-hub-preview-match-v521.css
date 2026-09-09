@@ -1,5 +1,5 @@
 /* V521 · PREVIEW MATCH: FULL-PAGE AMBIENT BACKGROUND + FLOATING HEADER CARD */
-body.mod-app-hub-v515{
+html body.mod-app-hub-v515{
   position:relative;
   min-height:100svh;
   background:
@@ -15,12 +15,12 @@ body.mod-app-hub-v515{
   background-attachment:fixed;
 }
 
-body.mod-app-hub-v515 .app{
+html body.mod-app-hub-v515 main.app{
   position:relative;
-  background:transparent;
+  background:transparent !important;
 }
 
-body.mod-app-hub-v515 .header{
+html body.mod-app-hub-v515 main.app > header.header{
   position:relative;
   z-index:5;
   overflow:hidden;
@@ -41,7 +41,7 @@ body.mod-app-hub-v515 .header{
   backdrop-filter:blur(18px) saturate(118%);
 }
 
-body.mod-app-hub-v515 .header::before{
+html body.mod-app-hub-v515 main.app > header.header::before{
   content:"";
   position:absolute;
   inset:0;
@@ -52,24 +52,24 @@ body.mod-app-hub-v515 .header::before{
     radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.028),transparent 42%);
 }
 
-body.mod-app-hub-v515 .header h1,
-body.mod-app-hub-v515 .header .eyebrow{
+html body.mod-app-hub-v515 main.app > header.header h1,
+html body.mod-app-hub-v515 main.app > header.header .eyebrow{
   position:relative;
   z-index:1;
 }
 
-body.mod-app-hub-v515 .header .eyebrow{
+html body.mod-app-hub-v515 main.app > header.header .eyebrow{
   display:none !important;
 }
 
-body.mod-app-hub-v515 #modAppHubV515{
+html body.mod-app-hub-v515 #modAppHubV515{
   position:relative;
   padding-top:12px;
   background:transparent !important;
 }
 
 @media (max-width:390px){
-  body.mod-app-hub-v515 .header{
+  html body.mod-app-hub-v515 main.app > header.header{
     margin-bottom:16px;
     padding:20px 12px 18px;
     border-radius:13px;
