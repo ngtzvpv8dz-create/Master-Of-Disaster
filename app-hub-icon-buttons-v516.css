@@ -36,6 +36,29 @@
   transform:perspective(220px) rotateX(7deg) rotateY(-7deg);
   transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
 }
+.mod-hub-original-icon-v516{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:44px;
+  height:44px;
+  color:#fff;
+  filter:drop-shadow(0 3px 8px rgba(0,0,0,.24));
+}
+.mod-hub-original-icon-v516 svg{
+  display:block;
+  width:100%;
+  height:100%;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.75;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+}
+.mod-hub-original-icon-todo-v516{width:46px;height:46px;}
+.mod-hub-original-icon-sport-v516{width:45px;height:45px;}
+.mod-hub-original-icon-food-v516{width:43px;height:43px;}
 .mod-hub-icon-button-v516:active{
   transform:scale(.93);
 }
@@ -57,19 +80,6 @@
   .mod-hub-icon-button-sport-v516:hover .mod-hub-icon-v515{
     box-shadow:0 16px 34px rgba(0,69,92,.52),0 0 34px rgba(21,207,255,.27),inset 0 1px 0 rgba(255,255,255,.28);
   }
-}
-.mod-hub-icon-image-v516{
-  display:block;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  border-radius:inherit;
-  user-select:none;
-  -webkit-user-drag:none;
-}
-.mod-hub-icon-button-v516[data-mod-hub-icon-asset="image"] .mod-hub-icon-v515{
-  overflow:hidden;
-  background:#111;
 }
 .mod-hub-icon-button-food-v516{
   cursor:default;
@@ -94,6 +104,10 @@
     width:70px;
     height:70px;
     border-radius:21px;
+  }
+  .mod-hub-original-icon-v516{
+    width:41px;
+    height:41px;
   }
 }
 @media (prefers-reduced-motion:reduce){
