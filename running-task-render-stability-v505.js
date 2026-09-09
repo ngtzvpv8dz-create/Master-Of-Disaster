@@ -131,15 +131,15 @@
 })();
 
 /* V516 · HUB ICON BUTTON BOOTSTRAP
-   Macht die Original-Icon-Kachel selbst zum Launcher, ohne V515-Navigation anzufassen.
+   Macht die Icon-Kachel selbst zum Launcher und lädt die finalen Bereichs-Assets.
 */
 (function(){
   'use strict';
   if(window.__modHubIconButtonsBootstrapV516)return;
   const VERSION='V516';
-  const cssHref='./app-hub-icon-buttons-v516.css?v=516-1142';
-  const jsSrc='./app-hub-icon-buttons-v516.js?v=516-1142';
-  const buildSrc='./build-version-v516.js?v=516-1142';
+  const cssHref='./app-hub-icon-buttons-v516.css?v=516-1155';
+  const jsSrc='./app-hub-icon-buttons-v516.js?v=516-1155';
+  const buildSrc='./build-version-v516.js?v=516-1155';
 
   function ensureCss(){
     if(document.querySelector('link[data-hub-icon-buttons-v516]'))return;
@@ -166,5 +166,5 @@
   ensureCss();
   ensureScript();
   ensureBuild();
-  window.__modHubIconButtonsBootstrapV516={version:VERSION,ensureCss,ensureScript,ensureBuild,iconTileLauncher:true,exactIconAssetsDeferred:false,originalGitHubSvgIcons:true,todoDataUntouched:true,sportDataUntouched:true};
+  window.__modHubIconButtonsBootstrapV516={version:VERSION,ensureCss,ensureScript,ensureBuild,iconTileLauncher:true,exactIconAssetsDeferred:false,primaryAreaIconsBundled:true,todoDataUntouched:true,sportDataUntouched:true};
 })();
