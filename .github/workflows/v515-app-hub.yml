@@ -1,0 +1,105 @@
+name: V515 App Hub
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  app-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JavaScript syntax
+        run: |
+          node --check app-hub-v515.js
+          node --check build-version-v515.js
+          node --check running-task-render-stability-v505.js
+          node --check sw.js
+      - name: Browser hub regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v515-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v515',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modBuildVersionV515&&document.getElementById('sportSwitchV510'),null,{timeout:30000});
+            await page.waitForTimeout(700);
+
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-09';
+              tasks=[{id:51501,text:'V515 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              if(typeof render==='function')render();
+            });
+            await page.waitForTimeout(350);
+
+            const initial=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              surface:document.body.dataset.modAppSurfaceV515,
+              mode:window.__modSportModeV510.currentMode(),
+              cards:[...document.querySelectorAll('[data-mod-hub-open]')].map(x=>x.dataset.modHubOpen),
+              foodReserved:window.__modAppHubV515.foodReserved,
+              healthConnected:window.__modAppHubV515.healthTransportConnected,
+              task:(tasks||[]).find(t=>t.id===51501)?.text,
+              build:window.__modBuildVersionV515?.version
+            }));
+            if(!initial.hub||initial.surface!=='hub'||initial.mode!=='todo'||JSON.stringify(initial.cards)!==JSON.stringify(['todo','sport','food'])||!initial.foodReserved||initial.healthConnected!==false||initial.task!=='V515 Bestandsschutz'||initial.build!=='V515')throw new Error('V515 initial '+JSON.stringify({initial,errors}));
+
+            await page.click('[data-mod-hub-open="todo"]');
+            await page.waitForTimeout(250);
+            const todo=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===51501)?.text}));
+            if(todo.hub||todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V515 Bestandsschutz')throw new Error('V515 todo '+JSON.stringify(todo));
+
+            await page.evaluate(()=>window.__modAppHubV515.show());
+            await page.waitForTimeout(150);
+            await page.evaluate(()=>{window.__v515HealthEvents=[];window.addEventListener('mod:health-sync-request',e=>window.__v515HealthEvents.push(e.detail));},{once:true});
+            await page.click('[data-mod-hub-open="sport"]');
+            await page.waitForTimeout(500);
+            const sport=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v515HealthEvents||[],task:(tasks||[]).find(t=>t.id===51501)?.text}));
+            if(sport.hub||sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V515 Bestandsschutz')throw new Error('V515 sport '+JSON.stringify(sport));
+
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(250);
+            const back=await page.evaluate(()=>({mode:window.__modSportModeV510.currentMode(),events:(window.__v515HealthEvents||[]).length}));
+            if(back.mode!=='todo'||back.events!==1)throw new Error('V515 sport-back '+JSON.stringify(back));
+
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(350);
+            const switchSport=await page.evaluate(()=>({mode:window.__modSportModeV510.currentMode(),events:window.__v515HealthEvents||[],task:(tasks||[]).find(t=>t.id===51501)?.text}));
+            if(switchSport.mode!=='sport'||switchSport.events.length!==2||switchSport.events[1].source!=='sport-switch'||switchSport.task!=='V515 Bestandsschutz')throw new Error('V515 switch-sport '+JSON.stringify(switchSport));
+
+            await page.reload({waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&document.body.classList.contains('mod-app-hub-v515'),null,{timeout:30000});
+            await page.waitForTimeout(500);
+            const reload=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===51501)?.text}));
+            if(!reload.hub||reload.surface!=='hub'||reload.mode!=='todo'||reload.task!=='V515 Bestandsschutz'||errors.length)throw new Error('V515 reload '+JSON.stringify({reload,errors}));
+
+            fs.writeFileSync('/tmp/v515-result.json',JSON.stringify({initial,todo,sport,back,switchSport,reload,errors},null,2));
+            console.log('V515 app hub PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v515-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v515-app-hub-diagnostics
+          path: |
+            /tmp/v515-result.json
+            /tmp/v515-error.txt
+            /tmp/mod-v515-http.log
+          if-no-files-found: ignore
