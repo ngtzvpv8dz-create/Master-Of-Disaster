@@ -1,0 +1,90 @@
+name: V521 Preview Match
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  preview-match:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          test -f app-hub-preview-match-v521.css
+          grep -q 'app-hub-preview-match-v521.css?v=521-0016' app-hub-v515.css
+          grep -q 'html body.mod-app-hub-v515' app-hub-preview-match-v521.css
+          grep -q 'header.header' app-hub-preview-match-v521.css
+          grep -q 'background:transparent !important' app-hub-preview-match-v521.css
+      - name: Browser preview-match regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v521-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v521',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV520,null,{timeout:30000});
+            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV520.render();});
+            await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV520==='ready',null,{timeout:10000});
+            await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+            await page.waitForTimeout(500);
+            const result=await page.evaluate(()=>{
+              const body=getComputedStyle(document.body);
+              const header=document.querySelector('main.app > header.header');
+              const hs=getComputedStyle(header);
+              const hub=document.getElementById('modAppHubV515');
+              const hbs=getComputedStyle(hub);
+              const shell=document.querySelector('#modAppHubV515 .mod-hub-shell-v515');
+              const ss=getComputedStyle(shell);
+              return {
+                bodyBackground:body.backgroundImage,
+                header:{
+                  background:hs.backgroundImage,
+                  radius:parseFloat(hs.borderTopLeftRadius||'0'),
+                  border:parseFloat(hs.borderTopWidth||'0'),
+                  shadow:hs.boxShadow,
+                  rect:header.getBoundingClientRect().toJSON()
+                },
+                hub:{background:hbs.backgroundImage,backgroundColor:hbs.backgroundColor},
+                shell:{radius:parseFloat(ss.borderTopLeftRadius||'0'),border:parseFloat(ss.borderTopWidth||'0')},
+                slots:document.querySelectorAll('.mod-hub-app-slot-v517').length,
+                errors
+              };
+            });
+            if(!result.bodyBackground.includes('radial-gradient'))throw new Error('V521 body ambient background missing '+JSON.stringify(result));
+            if(!result.header.background.includes('radial-gradient')||result.header.radius<12||result.header.border<1||result.header.shadow==='none')throw new Error('V521 floating header card missing '+JSON.stringify(result));
+            if(result.hub.background!=='none'||result.hub.backgroundColor!=='rgba(0, 0, 0, 0)')throw new Error('V521 hub still paints rectangular backdrop '+JSON.stringify(result));
+            if(result.shell.radius<12||result.shell.border<1||result.slots!==6)throw new Error('V521 launcher shell regression '+JSON.stringify(result));
+            if(errors.length)throw new Error('V521 page errors '+JSON.stringify(errors));
+            await page.screenshot({path:'/tmp/v521-preview-match.png',fullPage:true});
+            fs.writeFileSync('/tmp/v521-result.json',JSON.stringify(result,null,2));
+            console.log('V521 preview match PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v521-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v521-preview-match-diagnostics
+          path: |
+            /tmp/v521-result.json
+            /tmp/v521-error.txt
+            /tmp/v521-preview-match.png
+            /tmp/mod-v521-http.log
+            app-hub-preview-match-v521.css
+          if-no-files-found: ignore
