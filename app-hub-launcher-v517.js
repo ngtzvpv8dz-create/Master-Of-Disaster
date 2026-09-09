@@ -1,25 +1,30 @@
-/* V519 · VALID PNG ICONS HOTFIX
-   - Keeps the compact V517 2x2 launcher and navigation behavior.
-   - Replaces the broken V518 WebP assets with validated PNG icons.
-   - Preserves the V518 clean-start gate and releases it only after all four final assets settle.
+/* V520 · SIX-TILE LAUNCHER DESIGN
+   - Expands the compact launcher from 2x2 to 2x3.
+   - Adds KISTOLOGY and BACKSTAGE as prepared visual modules.
+   - Keeps TO-DO and SPORT as the only active modules for now.
+   - Preserves the V515 navigation hooks and V518 boot release compatibility.
 */
 (function(){
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V519';
+  const VERSION='V520';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
-    todo:'./assets/icons/todo-v519-1024.png?v=519-2229',
-    sport:'./assets/icons/sport-v519-1024.png?v=519-2229',
-    food:'./assets/icons/food-v519-1024.png?v=519-2229',
-    future:'./assets/icons/future-v519-1024.png?v=519-2229'
+    todo:'./assets/icons/todo-v519-1024.png?v=520-2329',
+    sport:'./assets/icons/sport-v519-1024.png?v=520-2329',
+    kistology:'./assets/icons/kistology-v520-1024.PNG?v=520-2329',
+    food:'./assets/icons/food-v519-1024.png?v=520-2329',
+    future:'./assets/icons/future-v519-1024.png?v=520-2329',
+    backstage:'./assets/icons/backstage-v520-1024.PNG?v=520-2329'
   };
   const MODULES=[
     {id:'todo',label:'TO-DO',active:true},
     {id:'sport',label:'SPORT',active:true},
+    {id:'kistology',label:'KISTOLOGY',active:false},
     {id:'food',label:'FOOD',active:false},
-    {id:'future',label:'',active:false}
+    {id:'future',label:'FUTURE',active:false},
+    {id:'backstage',label:'BACKSTAGE',active:false}
   ];
 
   let observer=null;
@@ -33,12 +38,20 @@
   }
 
   function labelMarkup(item){
-    if(item.label)return `<span class="mod-hub-app-label-v517">${item.label}</span>`;
-    return '<span class="mod-hub-app-label-v517 mod-hub-app-label-empty-v517" aria-hidden="true">&nbsp;</span>';
+    return `<span class="mod-hub-app-label-v517">${item.label}</span>`;
   }
 
   function legacyOpenMarker(item){
-    return item.id==='future'?'':` data-mod-hub-open="${item.id}"`;
+    return item.id==='todo'||item.id==='sport'?` data-mod-hub-open="${item.id}"`:'';
+  }
+
+  function ariaLabel(item){
+    if(item.id==='todo')return 'To-do öffnen';
+    if(item.id==='sport')return 'Sport öffnen';
+    if(item.id==='kistology')return 'Kistology Bereich vorbereitet';
+    if(item.id==='food')return 'Food Bereich vorbereitet';
+    if(item.id==='future')return 'Future Bereich vorbereitet';
+    return 'Backstage Bereich vorbereitet';
   }
 
   function pulse(button){
@@ -85,11 +98,11 @@
       finished=true;
       const loaded=images.filter(img=>img.complete&&img.naturalWidth>0&&img.naturalHeight>0).length;
       const allLoaded=images.length===MODULES.length&&loaded===images.length;
-      root.dataset.modHubAssetsV519=allLoaded?'ready':'degraded';
-      root.dataset.modHubAssetCountV519=String(loaded);
-      root.dataset.modHubAssetReleaseV519=String(reason||'settled');
-      if(allLoaded)document.documentElement.classList.add('mod-hub-assets-ready-v519');
-      try{window.__modReleaseHubBootV518?.(allLoaded?'assets-ready':'assets-fallback');}catch(_){}
+      root.dataset.modHubAssetsV520=allLoaded?'ready':'degraded';
+      root.dataset.modHubAssetCountV520=String(loaded);
+      root.dataset.modHubAssetReleaseV520=String(reason||'settled');
+      if(allLoaded)document.documentElement.classList.add('mod-hub-assets-ready-v520');
+      try{window.__modReleaseHubBootV518?.(allLoaded?'assets-ready-v520':'assets-fallback-v520');}catch(_){}
     };
 
     Promise.all(images.map(waitForImage)).then(()=>finish('settled')).catch(()=>finish('decode-error'));
@@ -118,7 +131,7 @@
               <button type="button"
                 class="mod-hub-app-button-v517 mod-hub-app-button-${item.id}-v517"
                 data-mod-hub-launch-v517="${item.id}"${legacyOpenMarker(item)}
-                aria-label="${item.id==='todo'?'To-do öffnen':item.id==='sport'?'Sport öffnen':item.id==='food'?'Food Bereich vorbereitet':'Weitere Kategorie vorbereitet'}"
+                aria-label="${ariaLabel(item)}"
                 ${item.active?'':'aria-disabled="true"'}>
                 <span class="mod-hub-app-face-v517">${iconMarkup(item)}</span>
               </button>
@@ -136,7 +149,7 @@
       });
 
       root.dataset.modHubLauncherV517='ready';
-      root.dataset.modHubFinalV519='ready';
+      root.dataset.modHubFinalV520='ready';
       settleFinalAssets(root,shell,generation);
       return true;
     }finally{patching=false;}
@@ -163,20 +176,24 @@
     modules:MODULES.map(item=>({...item})),
     homescreenStyle:true,
     compactGrid:true,
+    sixTileGrid:true,
     wideCardsRemoved:true,
     v515OpenMarkersPreserved:true,
     sportHealthHookPreserved:true,
     todoDataUntouched:true,
     sportDataUntouched:true,
+    kistologyPrepared:true,
     foodPrepared:true,
     futureCategoryPrepared:true,
-    finalAssetsV519:true,
-    githubHostedAssetsV519:true,
-    cleanStartReleaseV519:true
+    backstagePrepared:true,
+    finalAssetsV520:true,
+    githubHostedAssetsV520:true,
+    cleanStartReleaseV520:true
   };
   window.__modHubLauncherV517=publicApi;
   window.__modHubLauncherV518=publicApi;
   window.__modHubLauncherV519=publicApi;
+  window.__modHubLauncherV520=publicApi;
 
   let tries=0;
   const boot=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(boot);},75);
