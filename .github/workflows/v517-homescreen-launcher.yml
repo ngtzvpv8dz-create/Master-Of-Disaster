@@ -32,11 +32,11 @@ jobs:
           grep -q 'assets/icons/sport-v519-1024.png' sw.js
           grep -q 'assets/icons/food-v519-1024.png' sw.js
           grep -q 'assets/icons/future-v519-1024.png' sw.js
-      - name: Validate PNG assets with decoder
+      - name: Validate PNG assets with decoder and pixel content
         run: |
           python3 -m pip install --disable-pip-version-check pillow >/dev/null 2>&1
           python3 <<'PY'
-          from PIL import Image
+          from PIL import Image, ImageStat
           from pathlib import Path
           paths=[
             Path('assets/icons/todo-v519-1024.png'),
@@ -54,7 +54,15 @@ jobs:
                 raise SystemExit(f'Invalid format: {path} -> {im.format}')
               if im.size != (1024,1024):
                 raise SystemExit(f'Invalid size: {path} -> {im.size}')
-            print(f'{path}: PNG 1024x1024 decode PASS ({len(data)} bytes)')
+              sample=im.convert('RGB').resize((64,64))
+              stat=ImageStat.Stat(sample)
+              extrema=sample.getextrema()
+              std=sum(stat.stddev)/3
+              brightest=max(hi for lo,hi in extrema)
+              span=max(hi-lo for lo,hi in extrema)
+              if brightest < 160 or span < 100 or std < 18:
+                raise SystemExit(f'Visually empty/flat icon: {path} brightness={brightest} span={span} std={std:.2f}')
+            print(f'{path}: PNG 1024x1024 decode+pixels PASS ({len(data)} bytes, brightness={brightest}, span={span}, std={std:.2f})')
           PY
       - name: Browser launcher regression
         run: |
@@ -88,6 +96,8 @@ jobs:
               window.__modHubLauncherV517.render();
             });
             await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV519==='ready',null,{timeout:10000});
+            await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+            await page.waitForTimeout(400);
 
             const initial=await page.evaluate(()=>({
               hub:document.body.classList.contains('mod-app-hub-v515'),
@@ -150,4 +160,8 @@ jobs:
             /tmp/v519-error.txt
             /tmp/v519-launcher.png
             /tmp/mod-v519-http.log
+            assets/icons/todo-v519-1024.png
+            assets/icons/sport-v519-1024.png
+            assets/icons/food-v519-1024.png
+            assets/icons/future-v519-1024.png
           if-no-files-found: ignore
