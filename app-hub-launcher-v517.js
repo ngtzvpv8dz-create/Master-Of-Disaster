@@ -3,6 +3,7 @@
    - Adds KISTOLOGY and BACKSTAGE as prepared visual modules.
    - Keeps TO-DO and SPORT as the only active modules for now.
    - Preserves the V515 navigation hooks and V518 boot release compatibility.
+   - Uses a clean icon-only launcher panel without redundant intro copy.
 */
 (function(){
   'use strict';
@@ -121,10 +122,6 @@
       const generation=++renderGeneration;
       shell.dataset.modHubLauncherV517='ready';
       shell.innerHTML=`
-        <div class="mod-hub-intro-v517">
-          <div class="mod-hub-kicker-v517">DEINE BEREICHE</div>
-          <h2 class="mod-hub-title-v517">Was steht heute an?</h2>
-        </div>
         <div class="mod-hub-app-grid-v517" role="group" aria-label="Bereiche auswählen">
           ${MODULES.map(item=>`
             <div class="mod-hub-app-slot-v517 mod-hub-app-slot-${item.id}-v517">
@@ -177,6 +174,7 @@
     homescreenStyle:true,
     compactGrid:true,
     sixTileGrid:true,
+    iconOnlyPanel:true,
     wideCardsRemoved:true,
     v515OpenMarkersPreserved:true,
     sportHealthHookPreserved:true,
