@@ -69,15 +69,20 @@ html body.mod-app-hub-v515 main.app > header.header::before{
 }
 
 html body.mod-app-hub-v515 #appFixedTopV475 .header h1,
-html body.mod-app-hub-v515 #appFixedTopV475 .header .eyebrow,
-html body.mod-app-hub-v515 main.app > header.header h1,
-html body.mod-app-hub-v515 main.app > header.header .eyebrow{
+html body.mod-app-hub-v515 main.app > header.header h1{
   position:relative;
   z-index:1;
+  margin:0 !important;
+  font-size:clamp(25px,7.2vw,38px) !important;
+  line-height:1 !important;
+  letter-spacing:-1.3px !important;
+  white-space:nowrap !important;
 }
 
 html body.mod-app-hub-v515 #appFixedTopV475 .header .eyebrow,
 html body.mod-app-hub-v515 main.app > header.header .eyebrow{
+  position:relative;
+  z-index:1;
   display:none !important;
 }
 
