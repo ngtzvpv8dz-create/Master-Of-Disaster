@@ -37,6 +37,10 @@
     return '<span class="mod-hub-app-label-v517 mod-hub-app-label-empty-v517" aria-hidden="true">&nbsp;</span>';
   }
 
+  function legacyOpenMarker(item){
+    return item.id==='future'?'':` data-mod-hub-open="${item.id}"`;
+  }
+
   function pulse(button){
     button.classList.remove('mod-hub-app-pulse-v517');
     void button.offsetWidth;
@@ -71,7 +75,7 @@
             <div class="mod-hub-app-slot-v517 mod-hub-app-slot-${item.id}-v517">
               <button type="button"
                 class="mod-hub-app-button-v517 mod-hub-app-button-${item.id}-v517"
-                data-mod-hub-launch-v517="${item.id}"
+                data-mod-hub-launch-v517="${item.id}"${legacyOpenMarker(item)}
                 aria-label="${item.id==='todo'?'To-do öffnen':item.id==='sport'?'Sport öffnen':item.id==='food'?'Food Bereich vorbereitet':'Weitere Kategorie vorbereitet'}"
                 ${item.active?'':'aria-disabled="true"'}>
                 <span class="mod-hub-app-face-v517">${iconMarkup(item)}</span>
@@ -116,6 +120,7 @@
     homescreenStyle:true,
     compactGrid:true,
     wideCardsRemoved:true,
+    v515OpenMarkersPreserved:true,
     sportHealthHookPreserved:true,
     todoDataUntouched:true,
     sportDataUntouched:true,
