@@ -1,7 +1,7 @@
 /* V516 · HUB ICON BUTTONS
    - Turns the V515 hub cards into non-interactive shells.
    - The icon tile itself becomes the primary launcher button.
-   - Reuses the exact custom line-icon paths from V419/V420 history.
+   - Uses the existing To-do app icon and the final Sport icon asset.
    - Keeps V515 navigation, Health hook and data behavior untouched.
 */
 (function(){
@@ -11,42 +11,50 @@
   const VERSION='V516';
   const ROOT_ID='modAppHubV515';
   const TYPES=['todo','sport','food'];
+  const sources={
+    todo:'./apple-touch-icon.png?v=516-1155',
+    sport:'./sport-icon-v516.webp?v=516-1155',
+    food:''
+  };
   let observer=null;
   let patching=false;
-
-  const ICONS={
-    todo:{
-      origin:'V419 · check',
-      body:'<path d="m5 12.5 4.2 4.2L19 7"/>'
-    },
-    sport:{
-      origin:'V420 · weight',
-      body:'<path d="M8 8.5h8l1.5 11h-11Z"/><path d="M9.5 8.5a2.5 2.5 0 0 1 5 0"/><path d="M12 12v4M10 14h4"/>'
-    },
-    food:{
-      origin:'V419 · cooking',
-      body:'<path d="M7 4v7M10 4v7M7 8h3M8.5 11v9M16 4c-2 3-2 6 0 8v8"/>'
-    }
-  };
 
   function api(){return window.__modAppHubV515||null;}
   function validType(type){return TYPES.includes(type)?type:null;}
 
-  function iconMarkup(type){
+  function sourceFor(type){
     type=validType(type);
-    const icon=type&&ICONS[type];
-    if(!icon)return '';
-    return `<span class="mod-hub-original-icon-v516 mod-hub-original-icon-${type}-v516" data-mod-hub-icon-origin="${icon.origin}"><svg viewBox="0 0 24 24" aria-hidden="true">${icon.body}</svg></span>`;
+    if(!type)return '';
+    try{
+      const configured=window.__MOD_HUB_ICON_SOURCES__?.[type];
+      if(typeof configured==='string'&&configured.trim())return configured.trim();
+    }catch(_){}
+    return sources[type]||'';
+  }
+
+  function fallbackLabel(type){
+    if(type==='todo')return '✓';
+    if(type==='sport')return 'S';
+    return 'F';
+  }
+
+  function fallbackClass(type){
+    if(type==='todo')return 'mod-hub-icon-check';
+    if(type==='sport')return 'mod-hub-icon-sport';
+    return 'mod-hub-icon-food';
   }
 
   function applyIconVisual(button,type){
     const tile=button.querySelector('.mod-hub-icon-v515');
-    type=validType(type);
-    if(!tile||!type)return false;
-    tile.innerHTML=iconMarkup(type);
-    button.dataset.modHubIconAsset='original-svg';
-    button.dataset.modHubIconOrigin=ICONS[type].origin;
-    return true;
+    if(!tile)return;
+    const src=sourceFor(type);
+    if(src){
+      tile.innerHTML=`<img class="mod-hub-icon-image-v516" src="${src.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}" alt="" draggable="false">`;
+      button.dataset.modHubIconAsset='image';
+      return;
+    }
+    tile.innerHTML=`<span class="mod-hub-icon-line ${fallbackClass(type)}">${fallbackLabel(type)}</span>`;
+    button.dataset.modHubIconAsset='fallback';
   }
 
   function activate(type,card){
@@ -101,9 +109,6 @@
     patching=true;
     try{
       [...root.querySelectorAll('button.mod-hub-card-v515[data-mod-hub-open]')].forEach(transformCard);
-      root.querySelectorAll('.mod-hub-icon-button-v516[data-mod-hub-open]').forEach(button=>{
-        if(button.dataset.modHubIconAsset!=='original-svg')applyIconVisual(button,button.dataset.modHubOpen);
-      });
       root.dataset.modHubIconButtonsV516='ready';
       return true;
     }finally{patching=false;}
@@ -113,6 +118,14 @@
     const root=document.getElementById(ROOT_ID);
     if(!root)return false;
     root.querySelectorAll('.mod-hub-icon-button-v516[data-mod-hub-open]').forEach(button=>applyIconVisual(button,button.dataset.modHubOpen));
+    return true;
+  }
+
+  function setIconSource(type,src){
+    type=validType(type);
+    if(!type)return false;
+    sources[type]=typeof src==='string'?src.trim():'';
+    refreshIcons();
     return true;
   }
 
@@ -134,9 +147,10 @@
     version:VERSION,
     patch,
     refreshIcons,
-    iconOrigins:Object.fromEntries(Object.entries(ICONS).map(([type,icon])=>[type,icon.origin])),
+    setIconSource,
+    sourceFor,
+    primaryAreaIconsBundled:true,
     exactAreaIconAssetsBundled:true,
-    originalGitHubSvgIcons:true,
     iconTileIsPrimaryButton:true,
     wholeCardIsButton:false,
     v515NavigationPreserved:true,
