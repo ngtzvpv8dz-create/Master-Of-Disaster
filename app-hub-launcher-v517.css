@@ -1,6 +1,17 @@
 /* V520 · SIX-TILE HOMESCREEN LAUNCHER */
 body.mod-app-hub-v515 #modAppHubV515{
+  position:relative;
   padding-top:12px;
+  background:
+    radial-gradient(ellipse at 12% 16%,rgba(54,219,141,.035),transparent 34%),
+    radial-gradient(ellipse at 66% 10%,rgba(156,79,255,.028),transparent 31%),
+    radial-gradient(ellipse at 91% 27%,rgba(36,190,255,.03),transparent 35%),
+    radial-gradient(ellipse at 18% 49%,rgba(239,66,177,.024),transparent 36%),
+    radial-gradient(ellipse at 78% 48%,rgba(239,190,54,.025),transparent 35%),
+    radial-gradient(ellipse at 32% 76%,rgba(42,151,255,.028),transparent 38%),
+    radial-gradient(ellipse at 71% 82%,rgba(47,202,142,.022),transparent 39%),
+    radial-gradient(ellipse at 94% 92%,rgba(178,74,255,.022),transparent 34%),
+    linear-gradient(165deg,#090b0e 0%,#0d1014 48%,#080a0d 100%);
 }
 body.mod-app-hub-v515 .header .eyebrow{
   display:none !important;
@@ -12,21 +23,33 @@ body.mod-app-hub-v515 .header .eyebrow{
   margin:0 auto;
   padding:24px 18px 20px;
   overflow:hidden;
-  border:1px solid rgba(255,255,255,.16);
+  border:1px solid transparent;
   border-radius:16px;
   background:
-    radial-gradient(circle at 24% 18%,rgba(255,95,43,.10),transparent 22%),
-    radial-gradient(circle at 76% 18%,rgba(21,203,255,.11),transparent 22%),
-    radial-gradient(circle at 24% 50%,rgba(255,67,177,.10),transparent 22%),
-    radial-gradient(circle at 76% 50%,rgba(48,226,132,.10),transparent 22%),
-    radial-gradient(circle at 24% 82%,rgba(174,78,255,.11),transparent 22%),
-    radial-gradient(circle at 76% 82%,rgba(255,199,61,.10),transparent 22%),
-    linear-gradient(160deg,rgba(18,21,26,.96) 0%,rgba(12,15,19,.98) 52%,rgba(8,10,13,.99) 100%);
+    radial-gradient(circle at 24% 18%,rgba(255,95,43,.10),transparent 22%) padding-box,
+    radial-gradient(circle at 76% 18%,rgba(21,203,255,.11),transparent 22%) padding-box,
+    radial-gradient(circle at 24% 50%,rgba(255,67,177,.10),transparent 22%) padding-box,
+    radial-gradient(circle at 76% 50%,rgba(48,226,132,.10),transparent 22%) padding-box,
+    radial-gradient(circle at 24% 82%,rgba(174,78,255,.11),transparent 22%) padding-box,
+    radial-gradient(circle at 76% 82%,rgba(255,199,61,.10),transparent 22%) padding-box,
+    linear-gradient(160deg,rgba(18,21,26,.96) 0%,rgba(12,15,19,.98) 52%,rgba(8,10,13,.99) 100%) padding-box,
+    conic-gradient(from 218deg,
+      rgba(229,66,255,.82) 0 7%,
+      rgba(255,255,255,.11) 11% 19%,
+      rgba(255,121,46,.84) 24% 31%,
+      rgba(255,255,255,.09) 36% 44%,
+      rgba(35,216,255,.88) 49% 57%,
+      rgba(255,255,255,.10) 62% 70%,
+      rgba(255,209,58,.84) 76% 84%,
+      rgba(132,74,255,.82) 90% 96%,
+      rgba(229,66,255,.82) 100%) border-box;
   box-shadow:
-    0 18px 40px rgba(0,0,0,.42),
-    0 0 28px rgba(108,101,255,.07),
-    inset 0 1px 0 rgba(255,255,255,.11),
-    inset 0 -1px 0 rgba(0,0,0,.32);
+    0 18px 40px rgba(0,0,0,.44),
+    0 0 17px rgba(44,211,255,.10),
+    0 0 29px rgba(166,77,255,.075),
+    0 0 40px rgba(255,164,55,.045),
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -1px 0 rgba(0,0,0,.34);
   -webkit-backdrop-filter:blur(16px) saturate(125%);
   backdrop-filter:blur(16px) saturate(125%);
 }
@@ -36,9 +59,14 @@ body.mod-app-hub-v515 .header .eyebrow{
   inset:0;
   pointer-events:none;
   border-radius:inherit;
+  background:
+    radial-gradient(ellipse at 10% 18%,rgba(255,112,46,.085),transparent 22%),
+    radial-gradient(ellipse at 91% 14%,rgba(27,210,255,.085),transparent 23%),
+    radial-gradient(ellipse at 12% 78%,rgba(187,72,255,.075),transparent 24%),
+    radial-gradient(ellipse at 89% 83%,rgba(255,203,55,.072),transparent 24%);
   box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,.025),
-    inset 0 0 26px rgba(255,255,255,.015);
+    inset 0 0 0 1px rgba(255,255,255,.022),
+    inset 0 0 26px rgba(255,255,255,.014);
 }
 .mod-hub-app-grid-v517{
   position:relative;
