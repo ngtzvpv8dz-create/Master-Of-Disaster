@@ -3,6 +3,8 @@
    - only page content moves beneath the opaque themed shell
    - shell height is measured for scrollIntoView/anchor offsets
    - iPhone safe-area is respected without hard-coded header heights
+   V525 compatibility: the A-replacement home icon is global, but is a true no-op
+   while the app is already on the launcher homescreen.
 */
 (function(){
   'use strict';
@@ -11,6 +13,7 @@
   const SHELL_ID='appFixedTopV475';
   const STYLE_ID='appFixedTopV475Style';
   let resizeObserver=null;
+  let homeNavigationInstalled=false;
 
   function injectStyle(){
     if(document.getElementById(STYLE_ID))return;
@@ -69,8 +72,31 @@
     return height;
   }
 
+  function goHomeV525(){
+    const onHub=document.body.classList.contains('mod-app-hub-v515')||document.body.dataset.modAppSurfaceV515==='hub';
+    if(onHub)return false;
+    const hub=window.__modAppHubV515;
+    if(typeof hub?.show!=='function')return false;
+    hub.show();
+    try{window.scrollTo?.({top:0,left:0,behavior:'instant'});}catch(_){try{window.scrollTo?.(0,0);}catch(__){}}
+    return true;
+  }
+
+  function installHomeNavigation(){
+    if(homeNavigationInstalled)return;
+    homeNavigationInstalled=true;
+    document.addEventListener('click',event=>{
+      const button=event.target?.closest?.('#modHomeButtonV525');
+      if(!button)return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      goHomeV525();
+    },true);
+  }
+
   function install(){
     injectStyle();
+    installHomeNavigation();
     const app=document.querySelector('.app');
     if(!app)return false;
     let shell=document.getElementById(SHELL_ID);
@@ -120,6 +146,9 @@
     headerAndTabsTogether:true,
     opaqueShell:true,
     dynamicHeight:true,
+    homeNavigationV525:true,
+    goHomeV525,
+    installHomeNavigation,
     install,
     updateHeight,
     get height(){return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--mod-fixed-top-height-v475'))||0;}
