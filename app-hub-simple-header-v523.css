@@ -2,8 +2,9 @@
    Zurueck zu einem schlichten, durchgehenden Header. Keine Floating-Card,
    keine abgerundeten Ecken, keine zusaetzlichen Schatten-Spielereien.
    V526: Titeltypografie auf dem Homescreen exakt an die Unter-Apps angleichen.
-   V528: Boot-Header bereits vor Hub-Initialisierung mit finaler Hub-Geometrie rendern,
-   damit das obere Feld beim Start nicht mehr durch unsichtbare Tabs zusammenklappt. */
+   V528: Boot-Header bereits vor Hub-Initialisierung mit finaler Hub-Geometrie rendern.
+   V529: Auch den echten Zustand VOR Erzeugung des Fixed-Header-Shells abdecken,
+   damit beim allerersten Paint nichts mehr durch Reparenting/Body-Padding springt. */
 
 html body.mod-app-hub-v515 #appFixedTopV475,
 html.mod-hub-boot-pending-v518 #appFixedTopV475{
@@ -63,14 +64,35 @@ html.mod-hub-boot-pending-v518 main.app > header.header::before{
   display:none !important;
 }
 
-/* V528: Vor der Hub-Klasse duerfen weder Tabs noch Eyebrow Layout-Hoehe belegen.
-   V527 hatte die Eyebrow nur unsichtbar gemacht; visibility:hidden laesst ihren
-   Platz jedoch stehen. Die Tabs waren ebenfalls unsichtbar, aber noch im Layout.
-   Genau dieses spaetere Zusammenklappen war im iPhone-Video als Sprung sichtbar. */
+/* V528/V529: Vor der Hub-Klasse duerfen weder Tabs noch Eyebrow Layout-Hoehe
+   belegen. Wichtig: Die Tabs liegen ganz am Anfang noch DIREKT unter main.app.
+   V528 erwischte nur den bereits erzeugten Fixed-Header-Shell und damit einen
+   Zustand zu spaet. */
 html.mod-hub-boot-pending-v518 #appFixedTopV475 .tabs-wrapper,
+html.mod-hub-boot-pending-v518 main.app > .tabs-wrapper,
 html.mod-hub-boot-pending-v518 #appFixedTopV475 .header .eyebrow,
 html.mod-hub-boot-pending-v518 main.app > header.header .eyebrow{
   display:none !important;
+}
+
+/* V529: Bevor fixed-app-header-v475.js den Shell erzeugt, wird dessen gesamte
+   Aussen-Geometrie direkt auf den urspruenglichen Header gelegt. Nach dem
+   Reparenting verteilen sich dieselben Abstaende nur auf Shell + Header, die
+   sichtbare Position und Gesamthoehe bleiben dadurch gleich. */
+html.mod-hub-boot-pending-v518 body{
+  padding-top:0 !important;
+}
+html.mod-hub-boot-pending-v518 main.app > header.header{
+  box-sizing:border-box !important;
+  width:100vw !important;
+  max-width:none !important;
+  margin:0 -12px 18px -14px !important;
+  padding:calc(15px + env(safe-area-inset-top)) 12px 22px !important;
+  background:var(--mod-bg-top,#15191d) !important;
+  border:0 !important;
+  border-bottom:1px solid color-mix(in srgb,var(--mod-border,#30363b) 72%,transparent) !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
 }
 
 @media (max-width:390px){
@@ -80,9 +102,13 @@ html.mod-hub-boot-pending-v518 main.app > header.header .eyebrow{
   }
   html body.mod-app-hub-v515 #appFixedTopV475 .header,
   html body.mod-app-hub-v515 main.app > header.header,
-  html.mod-hub-boot-pending-v518 #appFixedTopV475 .header,
-  html.mod-hub-boot-pending-v518 main.app > header.header{
+  html.mod-hub-boot-pending-v518 #appFixedTopV475 .header{
     padding:3px 0 12px !important;
+    border-radius:0 !important;
+  }
+  html.mod-hub-boot-pending-v518 main.app > header.header{
+    margin-bottom:16px !important;
+    padding:calc(15px + env(safe-area-inset-top)) 12px 22px !important;
     border-radius:0 !important;
   }
 }
