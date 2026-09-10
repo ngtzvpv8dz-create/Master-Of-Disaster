@@ -1,0 +1,105 @@
+name: V531 Backstage Content Style
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  backstage-content-style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check backstage-v530.js
+          test -f backstage-content-v531.css
+          grep -q 'backstage-content-v531.css?v=531-content-machine-room' backstage-v530.js
+          grep -q '"./backstage-content-v531.css"' sw.js
+          grep -q 'body.mod-backstage-v531 #viewContainer .dev-panel' backstage-content-v531.css
+          grep -q 'body.mod-backstage-v531 #viewContainer .mod-log-v498' backstage-content-v531.css
+          grep -q 'body.mod-backstage-v531 #viewContainer .mod-backstage-placeholder-card-v531' backstage-content-v531.css
+      - name: Browser visual regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v531-content-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v531-content',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV531&&document.querySelector('link[data-mod-backstage-content-v531]'),null,{timeout:30000});
+            await page.evaluate(()=>{
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modBackstageV531.patchLauncher();
+            });
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForTimeout(350);
+            const dev=await page.evaluate(()=>{
+              const panel=document.querySelector('#viewContainer .dev-panel');
+              const card=document.querySelector('#viewContainer .dev-build-card');
+              const item=document.querySelector('#viewContainer .dev-build-item');
+              const ps=panel?getComputedStyle(panel):null;
+              const cs=card?getComputedStyle(card):null;
+              const is=item?getComputedStyle(item):null;
+              return {
+                panel:!!panel,card:!!card,item:!!item,
+                panelClip:ps?.clipPath||'',panelRadius:ps?.borderRadius||'',
+                cardClip:cs?.clipPath||'',cardRadius:cs?.borderRadius||'',
+                itemClip:is?.clipPath||'',itemRadius:is?.borderRadius||''
+              };
+            });
+            if(!dev.panel||!dev.card||!dev.item||!dev.panelClip||dev.panelClip==='none'||dev.panelRadius!=='0px'||!dev.cardClip||dev.cardClip==='none'||dev.cardRadius!=='0px'||!dev.itemClip||dev.itemClip==='none'||dev.itemRadius!=='0px')throw new Error('DEV content style '+JSON.stringify(dev));
+            await page.screenshot({path:'/tmp/v531-content-dev.png',fullPage:true});
+
+            await page.click('[data-backstage-section-v531="log"]');
+            await page.waitForTimeout(180);
+            const log=await page.evaluate(()=>{
+              const root=document.querySelector('#viewContainer .mod-log-v498')||document.querySelector('#viewContainer .live-log-v453');
+              const chip=document.querySelector('#viewContainer .mod-log-chip-v498')||document.querySelector('#viewContainer .log-chip-v453');
+              const cs=chip?getComputedStyle(chip):null;
+              return {root:!!root,chip:!!chip,clip:cs?.clipPath||'',radius:cs?.borderRadius||''};
+            });
+            if(!log.root||!log.chip||!log.clip||log.clip==='none'||log.radius!=='0px')throw new Error('LOG content style '+JSON.stringify(log));
+            await page.screenshot({path:'/tmp/v531-content-log.png',fullPage:true});
+
+            await page.click('[data-backstage-section-v531="system"]');
+            await page.waitForTimeout(100);
+            const system=await page.evaluate(()=>{
+              const card=document.querySelector('[data-backstage-placeholder-v531="system"] .mod-backstage-placeholder-card-v531');
+              const style=card?getComputedStyle(card):null;
+              return {card:!!card,clip:style?.clipPath||'',border:style?.borderTopColor||''};
+            });
+            if(!system.card||!system.clip||system.clip==='none')throw new Error('SYSTEM content style '+JSON.stringify(system));
+            await page.screenshot({path:'/tmp/v531-content-system.png',fullPage:true});
+            if(errors.length)throw new Error('Page errors '+JSON.stringify(errors));
+            fs.writeFileSync('/tmp/v531-content-result.json',JSON.stringify({dev,log,system,errors},null,2));
+            console.log('V531 BACKSTAGE CONTENT STYLE PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v531-content-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v531-backstage-content-style-diagnostics
+          path: |
+            /tmp/v531-content-dev.png
+            /tmp/v531-content-log.png
+            /tmp/v531-content-system.png
+            /tmp/v531-content-result.json
+            /tmp/v531-content-error.txt
+            /tmp/mod-v531-content-http.log
+          if-no-files-found: ignore
