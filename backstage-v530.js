@@ -45,13 +45,20 @@
   }
 
   function ensureScript(){
-    if(window.__modBackstageV531)return;
-    if(document.querySelector('script[data-mod-backstage-v531]'))return;
-    const script=document.createElement('script');
-    script.src='./backstage-v531.js?v=531-machine-room';
-    script.async=false;
-    script.dataset.modBackstageV531='true';
-    document.head.appendChild(script);
+    if(!window.__modBackstageV531&&!document.querySelector('script[data-mod-backstage-v531]')){
+      const script=document.createElement('script');
+      script.src='./backstage-v531.js?v=531-machine-room';
+      script.async=false;
+      script.dataset.modBackstageV531='true';
+      document.head.appendChild(script);
+    }
+    if(!window.__modBackstageSizeV532&&!document.querySelector('script[data-mod-backstage-size-v532]')){
+      const sizePatch=document.createElement('script');
+      sizePatch.src='./backstage-size-v532.js?v=532-system-size';
+      sizePatch.async=false;
+      sizePatch.dataset.modBackstageSizeV532='true';
+      document.head.appendChild(sizePatch);
+    }
   }
 
   ensureStyle();
