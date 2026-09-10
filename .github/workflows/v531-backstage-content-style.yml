@@ -17,9 +17,12 @@ jobs:
       - name: Wiring checks
         run: |
           node --check backstage-v530.js
+          node --check backstage-v531.js
           test -f backstage-content-v531.css
           grep -q 'backstage-content-v531.css?v=531-content-machine-room' backstage-v530.js
           grep -q '"./backstage-content-v531.css"' sw.js
+          grep -q 'master-of-disaster-v531-backstage-machine-room' sw.js
+          grep -q 'placeholderParksLegacyLogV531:true' backstage-v531.js
           grep -q 'body.mod-backstage-v531 #viewContainer .dev-panel' backstage-content-v531.css
           grep -q 'body.mod-backstage-v531 #viewContainer .mod-log-v498' backstage-content-v531.css
           grep -q 'body.mod-backstage-v531 #viewContainer .mod-backstage-placeholder-card-v531' backstage-content-v531.css
@@ -70,19 +73,26 @@ jobs:
               const root=document.querySelector('#viewContainer .mod-log-v498')||document.querySelector('#viewContainer .live-log-v453');
               const chip=document.querySelector('#viewContainer .mod-log-chip-v498')||document.querySelector('#viewContainer .log-chip-v453');
               const cs=chip?getComputedStyle(chip):null;
-              return {root:!!root,chip:!!chip,clip:cs?.clipPath||'',radius:cs?.borderRadius||''};
+              return {root:!!root,chip:!!chip,clip:cs?.clipPath||'',radius:cs?.borderRadius||'',current:typeof currentTab!=='undefined'?currentTab:null};
             });
-            if(!log.root||!log.chip||!log.clip||log.clip==='none'||log.radius!=='0px')throw new Error('LOG content style '+JSON.stringify(log));
+            if(!log.root||!log.chip||!log.clip||log.clip==='none'||log.radius!=='0px'||log.current!=='log')throw new Error('LOG content style '+JSON.stringify(log));
             await page.screenshot({path:'/tmp/v531-content-log.png',fullPage:true});
 
             await page.click('[data-backstage-section-v531="system"]');
-            await page.waitForTimeout(100);
+            await page.waitForTimeout(5400);
             const system=await page.evaluate(()=>{
               const card=document.querySelector('[data-backstage-placeholder-v531="system"] .mod-backstage-placeholder-card-v531');
               const style=card?getComputedStyle(card):null;
-              return {card:!!card,clip:style?.clipPath||'',border:style?.borderTopColor||''};
+              return {
+                card:!!card,
+                clip:style?.clipPath||'',
+                border:style?.borderTopColor||'',
+                active:window.__modBackstageV531?.activeSection,
+                current:typeof currentTab!=='undefined'?currentTab:null,
+                placeholderText:document.querySelector('[data-backstage-placeholder-v531="system"]')?.textContent||''
+              };
             });
-            if(!system.card||!system.clip||system.clip==='none')throw new Error('SYSTEM content style '+JSON.stringify(system));
+            if(!system.card||!system.clip||system.clip==='none'||system.active!=='system'||system.current!=='dev'||!/GRUNDGERÜST/.test(system.placeholderText))throw new Error('SYSTEM content style/stability '+JSON.stringify(system));
             await page.screenshot({path:'/tmp/v531-content-system.png',fullPage:true});
             if(errors.length)throw new Error('Page errors '+JSON.stringify(errors));
             fs.writeFileSync('/tmp/v531-content-result.json',JSON.stringify({dev,log,system,errors},null,2));
