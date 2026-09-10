@@ -89,7 +89,7 @@ jobs:
                 v507Verified:window.__modTaskTitleLibraryV507?.verify?.()===true,
                 v508:window.__modArchiveWeightLayoutV508?.version==='V508',
                 v508Verified:window.__modArchiveWeightLayoutV508?.verify?.()===true,
-                v530:window.__modBackstageV530?.version==='V530'
+                backstage:(()=>{const v=String(window.__modBackstageV530?.version||'');return /^V\d+$/.test(v)&&Number(v.slice(1))>=530;})()
               }));
               console.log('Runtime bundle readiness',bundleState);
               out.bundle=Object.values(bundleState).every(Boolean);
