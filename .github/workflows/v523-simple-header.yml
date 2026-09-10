@@ -71,7 +71,7 @@ jobs:
               const title=document.querySelector('.header h1');
               if(!title)throw new Error('title-missing');
               const style=getComputedStyle(title),rect=title.getBoundingClientRect();
-              return {fontSize:parseFloat(style.fontSize),letterSpacing:parseFloat(style.letterSpacing),width:rect.width,height:rect.height};
+              return {fontSize:parseFloat(style.fontSize),letterSpacing:parseFloat(style.letterSpacing),lineHeight:parseFloat(style.lineHeight),height:rect.height};
             });
             const titleMetrics={hub:await measureTitle()};
 
@@ -88,8 +88,8 @@ jobs:
             const same=(a,b,tolerance=.05)=>Math.abs(a-b)<=tolerance;
             for(const mode of ['todo','sport']){
               const m=titleMetrics[mode],h=titleMetrics.hub;
-              if(!same(h.fontSize,m.fontSize)||!same(h.letterSpacing,m.letterSpacing)||!same(h.width,m.width,.2)||!same(h.height,m.height,.2)){
-                throw new Error('V526 header title size jump '+JSON.stringify(titleMetrics));
+              if(!same(h.fontSize,m.fontSize)||!same(h.letterSpacing,m.letterSpacing)||!same(h.lineHeight,m.lineHeight)||!same(h.height,m.height,.2)){
+                throw new Error('V526 header title typography jump '+JSON.stringify(titleMetrics));
               }
             }
             if(errors.length) throw new Error('page errors '+JSON.stringify(errors));
