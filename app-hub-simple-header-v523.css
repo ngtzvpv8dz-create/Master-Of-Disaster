@@ -1,6 +1,7 @@
 /* V523 · SIMPLE FULL-WIDTH HUB HEADER
    Zurueck zu einem schlichten, durchgehenden Header. Keine Floating-Card,
-   keine abgerundeten Ecken, keine zusaetzlichen Schatten-Spielereien. */
+   keine abgerundeten Ecken, keine zusaetzlichen Schatten-Spielereien.
+   V526: Titeltypografie auf dem Homescreen exakt an die Unter-Apps angleichen. */
 
 html body.mod-app-hub-v515 #appFixedTopV475{
   box-sizing:border-box !important;
@@ -34,6 +35,16 @@ html body.mod-app-hub-v515 main.app > header.header{
   -webkit-backdrop-filter:none !important;
   backdrop-filter:none !important;
   transform:none !important;
+}
+
+/* V526: V521 hatte den Homescreen-Titel kleiner gemacht (25/7.2/38).
+   Hier gelten wieder exakt die Basiswerte der Unter-Apps, damit beim Wechsel
+   weder Groesse noch Laufweite springen. */
+html body.mod-app-hub-v515 #appFixedTopV475 .header h1,
+html body.mod-app-hub-v515 main.app > header.header h1{
+  font-size:clamp(28px,8vw,42px) !important;
+  line-height:1 !important;
+  letter-spacing:-1.5px !important;
 }
 
 html body.mod-app-hub-v515 #appFixedTopV475 .header::before,
