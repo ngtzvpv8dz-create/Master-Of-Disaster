@@ -37,23 +37,26 @@ jobs:
           node --check paused-today-v447.js
           node --check today-action-order-v501.js
           node --check build-freshness-v502.js
+          node --check backstage-v530.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'paused-today-v447.js?v=502-1225' index.html
           grep -q 'build-freshness-v502.js?v=502-1225' index.html
           grep -q 'today-interaction-stability-v503.js?v=503-1803' index.html
           grep -q 'category-create-stability-v504.js?v=504-1319' index.html
-          grep -q 'running-task-render-stability-v505.js?v=505-1353' index.html
+          grep -q 'running-task-render-stability-v505.js?v=' index.html
           grep -q 'backup-stability-v506.js?v=506-1131' index.html
           grep -q 'backup-source-fallback-v506.js?v=506-1244' index.html
           grep -q 'task-title-library-v507.js?v=507-1345' index.html
           grep -q 'archive-weight-layout-v508.js?v=508-0709' index.html
+          grep -q 'backstage-v530.js?v=' index.html
           grep -q 'data-tab="titles"' index.html
-          grep -q "serviceWorker.register('./sw.js?v=508-0709'" index.html
+          grep -q "serviceWorker.register('./sw.js?v=" index.html
           grep -q 'running-task-render-stability-v505.js' sw.js
           grep -q 'backup-stability-v506.js' sw.js
           grep -q 'backup-source-fallback-v506.js' sw.js
           grep -q 'task-title-library-v507.js' sw.js
           grep -q 'archive-weight-layout-v508.js' sw.js
+          grep -q 'backstage-v530.js' sw.js
           grep -q 'dbReconnectV506:true' history-safety-net-v498.js
           grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
           grep -q 'ZIP TEILEN / IN DATEIEN SICHERN' history-safety-net-v498.js
@@ -87,7 +90,7 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:30000});
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508&&window.__modBackstageV530,{timeout:30000});
             const day=await page.evaluate(()=>getBerlinDateKey());
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
@@ -212,8 +215,8 @@ jobs:
             });
             if(!backupReconnect.beforeOk||!backupReconnect.afterOk||!backupReconnect.reconnect||!backupReconnect.iosHandoff||!backupReconnect.verify||!backupReconnect.sourceFallback||backupReconnect.sourcePatch!=='V506.3')throw new Error('V506 backup reconnect regression '+JSON.stringify(backupReconnect));
 
-            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version,v506source:window.__modBackupSourceFallbackV506?.patchRevision,v507:window.__modTaskTitleLibraryV507?.version,v508:window.__modArchiveWeightLayoutV508?.version}));
-            if(build.v!=='V508'||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507'||build.v508!=='V508')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
+            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version,v506source:window.__modBackupSourceFallbackV506?.patchRevision,v507:window.__modTaskTitleLibraryV507?.version,v508:window.__modArchiveWeightLayoutV508?.version,v530:window.__modBackstageV530?.version}));
+            if(!/^V\d+$/.test(build.v||'')||Number(build.v.slice(1))<530||build.dynamic!==true||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507'||build.v508!=='V508'||build.v530!=='V530')throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
             console.log('Current browser regression OK',result,pausedAfter,categoryCreate,ticker,v508,backupReconnect,build);
             await browser.close();
           })().catch(e=>{console.error(e);process.exit(1)});
