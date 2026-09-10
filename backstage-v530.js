@@ -15,7 +15,8 @@
     todoDataUntouched:true,
     sportHealthHookPreserved:true,
     homeNavigationPreserved:true,
-    implementation:'V531'
+    implementation:'V531',
+    sizePatch:'V532'
   };
   window.__modBackstageLoaderV530=loader;
 
@@ -33,6 +34,13 @@
       content.href='./backstage-content-v531.css?v=531-content-machine-room';
       content.dataset.modBackstageContentV531='true';
       document.head.appendChild(content);
+    }
+    if(!document.querySelector('link[data-mod-backstage-size-v532]')){
+      const sizePatch=document.createElement('link');
+      sizePatch.rel='stylesheet';
+      sizePatch.href='./backstage-size-v532.css?v=532-system-size';
+      sizePatch.dataset.modBackstageSizeV532='true';
+      document.head.appendChild(sizePatch);
     }
   }
 
