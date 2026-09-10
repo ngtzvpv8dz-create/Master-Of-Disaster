@@ -1,4 +1,4 @@
-name: V523 Simple Header
+name: V525 Floating Launcher Header
 on:
   pull_request:
     branches: [ main ]
@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 jobs:
-  simple-header:
+  floating-header:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,14 +18,15 @@ jobs:
         run: |
           test -f app-hub-simple-header-v523.css
           grep -q 'app-hub-simple-header-v523.css?v=523-0656' app-hub-floating-v522.css
-          grep -q 'border-radius:0 !important' app-hub-simple-header-v523.css
-          grep -q 'box-shadow:none !important' app-hub-simple-header-v523.css
-      - name: Browser simple-header regression
+          grep -q 'V525 · FLOATING HUB HEADER FINAL OVERRIDE' app-hub-simple-header-v523.css
+          grep -q 'border-radius:16px !important' app-hub-simple-header-v523.css
+          grep -q 'background:transparent !important' app-hub-simple-header-v523.css
+      - name: Browser floating-header regression
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
           npx playwright install chromium >/dev/null 2>&1
-          python3 -m http.server 8787 >/tmp/mod-v523-http.log 2>&1 &
+          python3 -m http.server 8787 >/tmp/mod-v525-http.log 2>&1 &
           node <<'NODE'
           const fs=require('fs');
           const {chromium}=require('playwright');
@@ -35,7 +36,7 @@ jobs:
             const errors=[];
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            await page.goto('http://127.0.0.1:8787/?reg=v523',{waitUntil:'networkidle',timeout:60000});
+            await page.goto('http://127.0.0.1:8787/?reg=v525',{waitUntil:'networkidle',timeout:60000});
             await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV520,null,{timeout:30000});
             await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV520.render();});
             await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV520==='ready',null,{timeout:10000});
@@ -46,40 +47,40 @@ jobs:
               const header=fixed?.querySelector('.header')||document.querySelector('main.app > header.header')||document.querySelector('.header');
               const launcher=document.querySelector('#modAppHubV515 .mod-hub-shell-v515');
               if(!fixed||!header||!launcher) throw new Error('required-elements-missing');
-              const fsx=getComputedStyle(fixed), hs=getComputedStyle(header), ls=getComputedStyle(launcher), bs=getComputedStyle(document.body);
+              const fsx=getComputedStyle(fixed), hs=getComputedStyle(header), ls=getComputedStyle(launcher), bs=getComputedStyle(document.body), rs=getComputedStyle(document.getElementById('modAppHubV515'));
               return {
                 viewport:innerWidth,
                 title:(header.querySelector('h1')?.textContent||'').trim(),
                 bodyBackground:bs.backgroundImage,
+                rootBackground:rs.backgroundImage,
                 fixed:{rect:fixed.getBoundingClientRect().toJSON(),radius:parseFloat(fsx.borderTopLeftRadius||'0'),shadow:fsx.boxShadow,bg:fsx.backgroundColor,borderBottom:parseFloat(fsx.borderBottomWidth||'0')},
-                header:{radius:parseFloat(hs.borderTopLeftRadius||'0'),shadow:hs.boxShadow,bgImage:hs.backgroundImage,border:parseFloat(hs.borderTopWidth||'0')},
+                header:{rect:header.getBoundingClientRect().toJSON(),radius:parseFloat(hs.borderTopLeftRadius||'0'),shadow:hs.boxShadow,bgImage:hs.backgroundImage,border:parseFloat(hs.borderTopWidth||'0')},
                 launcher:{bg:ls.backgroundImage,slots:document.querySelectorAll('.mod-hub-app-slot-v517').length}
               };
             });
-            if(!result.bodyBackground.includes('radial-gradient')) throw new Error('ambient background changed '+JSON.stringify(result));
-            if(result.fixed.rect.left>1||result.fixed.rect.right<result.viewport-1) throw new Error('header shell not full width '+JSON.stringify(result));
-            if(result.fixed.radius!==0||result.header.radius!==0) throw new Error('rounded header corners remain '+JSON.stringify(result));
-            if(result.fixed.shadow!=='none'||result.header.shadow!=='none') throw new Error('floating header shadow remains '+JSON.stringify(result));
-            if(result.fixed.bg==='rgba(0, 0, 0, 0)'||result.fixed.borderBottom<1) throw new Error('simple header bar missing '+JSON.stringify(result));
-            if(result.header.bgImage!=='none'||result.header.border!==0) throw new Error('header still rendered as card '+JSON.stringify(result));
+            if(!result.bodyBackground.includes('radial-gradient')) throw new Error('ambient background missing '+JSON.stringify(result));
+            if(result.rootBackground!=='none') throw new Error('launcher root is not transparent '+JSON.stringify(result));
+            if(result.fixed.bg!=='rgba(0, 0, 0, 0)'||result.fixed.borderBottom!==0||result.fixed.shadow!=='none') throw new Error('full-width header strip still visible '+JSON.stringify(result));
+            if(result.header.rect.width>=result.viewport-20) throw new Error('header card is not floating '+JSON.stringify(result));
+            if(result.header.radius<12||result.header.border<1||result.header.shadow==='none'||!result.header.bgImage.includes('linear-gradient')) throw new Error('floating card styling missing '+JSON.stringify(result));
             if(!result.launcher.bg.includes('conic-gradient')||result.launcher.slots!==6) throw new Error('launcher regression '+JSON.stringify(result));
             if(!/MASTER\s+OF\s+DISASTER/i.test(result.title)) throw new Error('title regression '+JSON.stringify(result));
             if(errors.length) throw new Error('page errors '+JSON.stringify(errors));
-            await page.screenshot({path:'/tmp/v523-simple-header.png',fullPage:true});
-            fs.writeFileSync('/tmp/v523-result.json',JSON.stringify(result,null,2));
-            console.log('V523 SIMPLE HEADER PASS');
+            await page.screenshot({path:'/tmp/v525-floating-header.png',fullPage:true});
+            fs.writeFileSync('/tmp/v525-result.json',JSON.stringify(result,null,2));
+            console.log('V525 FLOATING HEADER PASS');
             await browser.close();
-          })().catch(error=>{fs.writeFileSync('/tmp/v523-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          })().catch(error=>{fs.writeFileSync('/tmp/v525-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
           NODE
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v523-simple-header-diagnostics
+          name: v525-floating-header-diagnostics
           path: |
-            /tmp/v523-simple-header.png
-            /tmp/v523-result.json
-            /tmp/v523-error.txt
-            /tmp/mod-v523-http.log
+            /tmp/v525-floating-header.png
+            /tmp/v525-result.json
+            /tmp/v525-error.txt
+            /tmp/mod-v525-http.log
             app-hub-simple-header-v523.css
           if-no-files-found: ignore
