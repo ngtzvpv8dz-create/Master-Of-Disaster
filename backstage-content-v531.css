@@ -1,0 +1,210 @@
+/* V531 · BACKSTAGE CONTENT / MASCHINENRAUM
+   Innere DEV-/LOG-/Systemflaechen greifen die gelbe Backstage-Sprache dezenter auf.
+   Semantische Warn-/Fehlerfarben bleiben erhalten; Funktion und Datenlogik unveraendert.
+*/
+
+body.mod-backstage-v531 #viewContainer{
+  --bs-content-border:rgba(224,186,98,.18);
+  --bs-content-border-strong:rgba(224,186,98,.28);
+  --bs-content-bg:rgba(15,16,17,.88);
+  --bs-content-bg-soft:rgba(224,186,98,.045);
+  --bs-content-text:#ece7dc;
+  --bs-content-muted:#9d998d;
+}
+
+/* DEV-Grundflaeche */
+body.mod-backstage-v531 #viewContainer .dev-panel{
+  position:relative;
+  margin:0!important;
+  padding:12px!important;
+  overflow:hidden;
+  border:1px solid var(--bs-content-border)!important;
+  border-radius:0!important;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.015),transparent 34%),
+    linear-gradient(180deg,rgba(19,20,21,.96),rgba(10,11,12,.94))!important;
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+}
+body.mod-backstage-v531 #viewContainer .dev-panel::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:18px;
+  bottom:18px;
+  width:2px;
+  background:linear-gradient(180deg,rgba(255,215,122,.60),rgba(224,186,98,.08));
+  pointer-events:none;
+}
+body.mod-backstage-v531 #viewContainer .dev-title{
+  margin:0 0 10px!important;
+  color:#d8bd78!important;
+  font-size:.62rem!important;
+  font-weight:950!important;
+  letter-spacing:.14em!important;
+  text-transform:uppercase;
+}
+
+/* DEV-Karten: deutlich ruhiger als die obere Backstage-Navigation */
+body.mod-backstage-v531 #viewContainer .dev-build-card,
+body.mod-backstage-v531 #viewContainer .supabase-dev-card,
+body.mod-backstage-v531 #viewContainer .mod-dev-safety-v498{
+  position:relative;
+  margin:0 0 10px!important;
+  padding:12px!important;
+  border:1px solid var(--bs-content-border)!important;
+  border-radius:0!important;
+  background:
+    linear-gradient(180deg,rgba(224,186,98,.040),rgba(255,255,255,.012)),
+    #101112!important;
+  clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);
+}
+body.mod-backstage-v531 #viewContainer .dev-build-card::before,
+body.mod-backstage-v531 #viewContainer .supabase-dev-card::before,
+body.mod-backstage-v531 #viewContainer .mod-dev-safety-v498::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:9px;
+  bottom:9px;
+  width:2px;
+  background:rgba(224,186,98,.22);
+  pointer-events:none;
+}
+body.mod-backstage-v531 #viewContainer .dev-build-title,
+body.mod-backstage-v531 #viewContainer .supabase-dev-title,
+body.mod-backstage-v531 #viewContainer .mod-dev-safety-v498 > div:first-child{
+  color:#e3ca88!important;
+  letter-spacing:.10em!important;
+}
+
+body.mod-backstage-v531 #viewContainer .dev-build-item{
+  position:relative;
+  border:1px solid rgba(224,186,98,.13)!important;
+  border-radius:0!important;
+  background:rgba(7,8,9,.52)!important;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+}
+body.mod-backstage-v531 #viewContainer .dev-build-item::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:7px;
+  bottom:7px;
+  width:1px;
+  background:rgba(224,186,98,.28);
+}
+body.mod-backstage-v531 #viewContainer .dev-build-label{
+  color:#9f9067!important;
+  letter-spacing:.09em!important;
+}
+body.mod-backstage-v531 #viewContainer .dev-build-value{
+  color:var(--bs-content-text)!important;
+}
+body.mod-backstage-v531 #viewContainer .supabase-status-detail{
+  color:var(--bs-content-muted)!important;
+}
+
+/* Bedienflaechen: gleiche Geometrie, Semantikfarben duerfen weiterhin sprechen */
+body.mod-backstage-v531 #viewContainer .dev-button,
+body.mod-backstage-v531 #viewContainer .supabase-dev-button,
+body.mod-backstage-v531 #viewContainer .mod-action-v498{
+  border-radius:0!important;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+}
+body.mod-backstage-v531 #viewContainer .dev-button{
+  border-color:rgba(224,186,98,.18)!important;
+  background:rgba(224,186,98,.035)!important;
+  color:#d8d2c4!important;
+}
+body.mod-backstage-v531 #viewContainer .supabase-dev-button:not(.primary):not(.danger),
+body.mod-backstage-v531 #viewContainer .mod-dev-safety-v498 .mod-action-v498:not(.primary){
+  border-color:rgba(224,186,98,.20)!important;
+  background:rgba(224,186,98,.045)!important;
+  color:#ddd5c2!important;
+}
+body.mod-backstage-v531 #viewContainer button:focus-visible,
+body.mod-backstage-v531 #viewContainer input:focus-visible{
+  outline:2px solid rgba(255,215,122,.72)!important;
+  outline-offset:2px!important;
+}
+
+/* LIVE-LOG und 7-Tage-Log: dieselbe Sprache, aber keine gelbe Wand */
+body.mod-backstage-v531 #viewContainer .live-log-v453,
+body.mod-backstage-v531 #viewContainer .mod-log-v498{
+  color:var(--bs-content-text);
+}
+body.mod-backstage-v531 #viewContainer .live-log-v453 h2,
+body.mod-backstage-v531 #viewContainer .mod-log-v498 h2{
+  color:#e5ca84;
+  letter-spacing:.06em;
+}
+body.mod-backstage-v531 #viewContainer .log-chip-v453,
+body.mod-backstage-v531 #viewContainer .mod-log-chip-v498{
+  border-radius:0!important;
+  border-color:rgba(224,186,98,.15)!important;
+  background:rgba(224,186,98,.025)!important;
+  color:#a9a59b!important;
+  clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);
+}
+body.mod-backstage-v531 #viewContainer .log-chip-v453.active,
+body.mod-backstage-v531 #viewContainer .mod-log-chip-v498.active{
+  border-color:rgba(224,186,98,.38)!important;
+  background:rgba(224,186,98,.105)!important;
+  color:#f0d58d!important;
+}
+body.mod-backstage-v531 #viewContainer .mod-log-search-v498{
+  border-radius:0!important;
+  border-color:rgba(224,186,98,.18)!important;
+  background:#0b0c0d!important;
+  color:var(--bs-content-text)!important;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+}
+body.mod-backstage-v531 #viewContainer .log-row-v453,
+body.mod-backstage-v531 #viewContainer .mod-log-day-v498,
+body.mod-backstage-v531 #viewContainer .mod-log-row-v498,
+body.mod-backstage-v531 #viewContainer .mod-point-v498{
+  border-radius:0!important;
+  background:rgba(255,255,255,.018)!important;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+}
+body.mod-backstage-v531 #viewContainer .log-row-v453:not([data-level="ERROR"]):not([data-level="WARN"]):not([data-level="PASS"]),
+body.mod-backstage-v531 #viewContainer .mod-log-day-v498,
+body.mod-backstage-v531 #viewContainer .mod-log-row-v498:not([data-level="ERROR"]):not([data-level="WARN"]),
+body.mod-backstage-v531 #viewContainer .mod-point-v498{
+  border-color:rgba(224,186,98,.12)!important;
+}
+body.mod-backstage-v531 #viewContainer .mod-log-day-v498 > summary{
+  color:#c8bc9e;
+}
+body.mod-backstage-v531 #viewContainer .mod-recovery-badge-v498{
+  border-radius:0!important;
+  clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);
+}
+
+/* Noch nicht verdrahtete Sektoren: optisch Teil des Systems, bewusst zurueckhaltend */
+body.mod-backstage-v531 #viewContainer .mod-backstage-placeholder-card-v531{
+  border-color:rgba(224,186,98,.20)!important;
+  background:
+    linear-gradient(135deg,rgba(224,186,98,.055),transparent 44%),
+    rgba(14,15,16,.92)!important;
+}
+body.mod-backstage-v531 #viewContainer .mod-backstage-placeholder-card-v531::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:13px;
+  bottom:13px;
+  width:2px;
+  background:rgba(224,186,98,.26);
+}
+body.mod-backstage-v531 #viewContainer .mod-backstage-placeholder-state-v531{
+  border-radius:0!important;
+  clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);
+}
+
+@media(max-width:430px){
+  body.mod-backstage-v531 #viewContainer .dev-panel{padding:9px!important}
+  body.mod-backstage-v531 #viewContainer .dev-build-card,
+  body.mod-backstage-v531 #viewContainer .supabase-dev-card,
+  body.mod-backstage-v531 #viewContainer .mod-dev-safety-v498{padding:10px!important}
+}

@@ -21,7 +21,7 @@ jobs:
           test -f backstage-v530.css
           grep -q 'backstage-v530.css?v=530-1425' index.html
           grep -q 'backstage-v530.js?v=530-1425' index.html
-          grep -q 'master-of-disaster-v530-backstage' sw.js
+          grep -Eq 'master-of-disaster-v530-backstage|master-of-disaster-v531-backstage-machine-room' sw.js
           grep -q '"./backstage-v530.css"' sw.js
           grep -q '"./backstage-v530.js"' sw.js
           grep -q "const VERSION='V530'" backstage-v530.js
