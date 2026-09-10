@@ -1,1 +1,0 @@
-V524 launcher icon optimization staging marker. Remove before merge.
