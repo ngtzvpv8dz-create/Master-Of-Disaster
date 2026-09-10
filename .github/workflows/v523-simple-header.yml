@@ -20,6 +20,8 @@ jobs:
           grep -q 'app-hub-simple-header-v523.css?v=523-0656' app-hub-floating-v522.css
           grep -q 'border-radius:0 !important' app-hub-simple-header-v523.css
           grep -q 'box-shadow:none !important' app-hub-simple-header-v523.css
+          grep -q 'font-size:clamp(28px,8vw,42px) !important' app-hub-simple-header-v523.css
+          grep -q 'letter-spacing:-1.5px !important' app-hub-simple-header-v523.css
       - name: Browser simple-header regression
         run: |
           npm init -y >/dev/null 2>&1
@@ -64,10 +66,36 @@ jobs:
             if(result.header.bgImage!=='none'||result.header.border!==0) throw new Error('header still rendered as card '+JSON.stringify(result));
             if(!result.launcher.bg.includes('conic-gradient')||result.launcher.slots!==6) throw new Error('launcher regression '+JSON.stringify(result));
             if(!/MASTER\s+OF\s+DISASTER/i.test(result.title)) throw new Error('title regression '+JSON.stringify(result));
+
+            const measureTitle=()=>page.evaluate(()=>{
+              const title=document.querySelector('.header h1');
+              if(!title)throw new Error('title-missing');
+              const style=getComputedStyle(title),rect=title.getBoundingClientRect();
+              return {fontSize:parseFloat(style.fontSize),letterSpacing:parseFloat(style.letterSpacing),lineHeight:parseFloat(style.lineHeight),height:rect.height};
+            });
+            const titleMetrics={hub:await measureTitle()};
+
+            await page.click('.mod-hub-app-button-todo-v517');
+            await page.waitForTimeout(180);
+            titleMetrics.todo=await measureTitle();
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(180);
+            await page.click('.mod-hub-app-button-sport-v517');
+            await page.waitForTimeout(220);
+            titleMetrics.sport=await measureTitle();
+
+            const same=(a,b,tolerance=.05)=>Math.abs(a-b)<=tolerance;
+            for(const mode of ['todo','sport']){
+              const m=titleMetrics[mode],h=titleMetrics.hub;
+              if(!same(h.fontSize,m.fontSize)||!same(h.letterSpacing,m.letterSpacing)||!same(h.lineHeight,m.lineHeight)||!same(h.height,m.height,.2)){
+                throw new Error('V526 header title typography jump '+JSON.stringify(titleMetrics));
+              }
+            }
             if(errors.length) throw new Error('page errors '+JSON.stringify(errors));
             await page.screenshot({path:'/tmp/v523-simple-header.png',fullPage:true});
-            fs.writeFileSync('/tmp/v523-result.json',JSON.stringify(result,null,2));
-            console.log('V523 SIMPLE HEADER PASS');
+            fs.writeFileSync('/tmp/v523-result.json',JSON.stringify({...result,titleMetrics},null,2));
+            console.log('V523 SIMPLE HEADER + V526 SIZE PARITY PASS');
             await browser.close();
           })().catch(error=>{fs.writeFileSync('/tmp/v523-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
           NODE
