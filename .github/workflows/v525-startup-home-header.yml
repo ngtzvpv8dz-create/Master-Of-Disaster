@@ -23,6 +23,7 @@ jobs:
           grep -q 'class="sport-switch-v510"' index.html
           grep -q 'class="mod-undo-r-v498"' index.html
           grep -q '<span class="mod-home-letter-v525" aria-hidden="true">A</span>' index.html
+          grep -q 'html.mod-hub-boot-pending-v518 .eyebrow,' index.html
           grep -q 'homeNavigationV525:true' fixed-app-header-v475.js
           grep -q 'mod-app-hub-v515' fixed-app-header-v475.js
           grep -q 'script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"' index.html
@@ -72,6 +73,15 @@ jobs:
             if(!header.sport.exists||!header.undo.exists||header.sport.color===header.undo.color)throw new Error('V525 immediate S/R accents '+JSON.stringify(header));
             if(header.htmlBg==='rgba(0, 0, 0, 0)')throw new Error('V525 dark boot background missing '+JSON.stringify(header));
 
+            const bootEyebrow=await page.evaluate(()=>{
+              document.documentElement.classList.add('mod-hub-boot-pending-v518');
+              const eyebrow=document.querySelector('.header .eyebrow');
+              const visibility=eyebrow?getComputedStyle(eyebrow).visibility:null;
+              document.documentElement.classList.remove('mod-hub-boot-pending-v518');
+              return visibility;
+            });
+            if(bootEyebrow!=='hidden')throw new Error('V527 boot eyebrow must stay hidden '+JSON.stringify({bootEyebrow}));
+
             await page.evaluate(()=>{
               const hub=window.__modAppHubV515;
               const original=hub.show.bind(hub);
@@ -100,7 +110,7 @@ jobs:
             if(homeState.calls!==2||!homeState.hub||homeState.surface!=='hub'||homeState.mode!=='todo')throw new Error('V525 home from sport '+JSON.stringify(homeState));
             if(errors.length)throw new Error('V525 page errors '+JSON.stringify(errors));
             await page.screenshot({path:'/tmp/v525-home-header.png',fullPage:true});
-            fs.writeFileSync('/tmp/v525-result.json',JSON.stringify({header,hubNoop,homeState,errors},null,2));
+            fs.writeFileSync('/tmp/v525-result.json',JSON.stringify({header,bootEyebrow,hubNoop,homeState,errors},null,2));
             console.log('V525 STARTUP + HOME HEADER PASS');
             await browser.close();
           })().catch(error=>{fs.writeFileSync('/tmp/v525-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
