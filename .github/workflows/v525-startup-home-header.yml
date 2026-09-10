@@ -29,7 +29,7 @@ jobs:
           grep -q 'script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"' index.html
           grep -q 'script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"' index.html
           grep -Eq './sw\.js\?v=525-fast-start|./sw\.js\?v=530-backstage' index.html
-          grep -Eq 'master-of-disaster-v525-fast-start|master-of-disaster-v530-backstage' sw.js
+          grep -Eq 'master-of-disaster-v525-fast-start|master-of-disaster-v530-backstage|master-of-disaster-v531-backstage-machine-room' sw.js
           grep -q 'setTimeout(()=>resolve(hit),350)' sw.js
           grep -q '"background_color": "#0b0d0f"' manifest.webmanifest
       - name: Browser navigation regression
