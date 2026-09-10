@@ -1,4 +1,4 @@
-name: V520 Six-Tile Launcher Design
+name: V524 Launcher Icon Optimization
 on:
   pull_request:
     branches: [ main ]
@@ -17,46 +17,37 @@ jobs:
       - name: Syntax and wiring
         run: |
           node --check app-hub-launcher-v517.js
-          test -f assets/icons/todo-v519-1024.png
-          test -f assets/icons/sport-v519-1024.png
-          test -f assets/icons/kistology-v520-1024.PNG
-          test -f assets/icons/food-v519-1024.png
-          test -f assets/icons/future-v519-1024.png
-          test -f assets/icons/backstage-v520-1024.PNG
-          grep -q "const VERSION='V520'" app-hub-launcher-v517.js
-          grep -q "label:'KISTOLOGY'" app-hub-launcher-v517.js
-          grep -q "label:'BACKSTAGE'" app-hub-launcher-v517.js
-          grep -q 'sixTileGrid:true' app-hub-launcher-v517.js
-          grep -q 'iconOnlyPanel:true' app-hub-launcher-v517.js
-          grep -q 'grid-template-rows:repeat(3,auto)' app-hub-launcher-v517.css
-          grep -q 'border-radius:16px' app-hub-launcher-v517.css
-      - name: Validate launcher PNG assets
+          node --check sw.js
+          for f in todo sport kistology food future backstage; do test -f "assets/icons/${f}-v524-192.png"; done
+          grep -q 'optimizedIcons192V524:true' app-hub-launcher-v517.js
+          grep -q 'allLauncherIconsEagerV524:true' app-hub-launcher-v517.js
+          grep -q '__modHubLauncherV524' app-hub-launcher-v517.js
+          for f in todo sport kistology food future backstage; do
+            grep -q "${f}-v524-192.png?v=524-192" app-hub-launcher-v517.js
+            grep -q "${f}-v524-192.png?v=524-192" index.html
+            grep -q "${f}-v524-192.png" sw.js
+          done
+          grep -q 'master-of-disaster-v524-192-icons' sw.js
+          grep -q './sw.js?v=524-192' index.html
+      - name: Validate optimized PNG assets
         run: |
           python3 -m pip install --disable-pip-version-check pillow >/dev/null 2>&1
           python3 <<'PY'
-          from PIL import Image, ImageStat
           from pathlib import Path
-          paths=[
-            (Path('assets/icons/todo-v519-1024.png'), True),
-            (Path('assets/icons/sport-v519-1024.png'), True),
-            (Path('assets/icons/kistology-v520-1024.PNG'), False),
-            (Path('assets/icons/food-v519-1024.png'), True),
-            (Path('assets/icons/future-v519-1024.png'), True),
-            (Path('assets/icons/backstage-v520-1024.PNG'), False),
-          ]
-          for path, exact_1024 in paths:
+          from PIL import Image, ImageStat
+          names=['todo','sport','kistology','food','future','backstage']
+          total=0
+          for name in names:
+            path=Path(f'assets/icons/{name}-v524-192.png')
             data=path.read_bytes()
-            if not data or data[:8] != b'\x89PNG\r\n\x1a\n':
+            if data[:8] != b'\x89PNG\r\n\x1a\n':
               raise SystemExit(f'Invalid PNG signature: {path}')
+            if len(data) > 100000:
+              raise SystemExit(f'Icon too large: {path} -> {len(data)} bytes')
             with Image.open(path) as im:
               im.load()
-              if im.format != 'PNG':
-                raise SystemExit(f'Invalid format: {path} -> {im.format}')
-              w,h=im.size
-              if exact_1024 and im.size != (1024,1024):
-                raise SystemExit(f'Invalid size: {path} -> {im.size}')
-              if not exact_1024 and (w != h or w < 1024):
-                raise SystemExit(f'Invalid generated icon size: {path} -> {im.size}')
+              if im.format!='PNG' or im.size!=(192,192):
+                raise SystemExit(f'Invalid icon: {path} -> {im.format} {im.size}')
               sample=im.convert('RGB').resize((64,64))
               stat=ImageStat.Stat(sample)
               extrema=sample.getextrema()
@@ -64,15 +55,19 @@ jobs:
               brightest=max(hi for lo,hi in extrema)
               span=max(hi-lo for lo,hi in extrema)
               if brightest < 160 or span < 100 or std < 18:
-                raise SystemExit(f'Visually empty/flat icon: {path} brightness={brightest} span={span} std={std:.2f}')
-            print(f'{path}: PNG {w}x{h} decode+pixels PASS ({len(data)} bytes)')
+                raise SystemExit(f'Visually empty/flat icon: {path}')
+            total += len(data)
+            print(f'{path}: 192x192 PNG PASS ({len(data)} bytes)')
+          if total > 500000:
+            raise SystemExit(f'Launcher icon set too large: {total} bytes')
+          print(f'V524 launcher icon set total: {total} bytes')
           PY
       - name: Browser launcher regression
         run: |
           npm init -y >/dev/null 2>&1
           npm install playwright@1.48.2 >/dev/null 2>&1
           npx playwright install chromium >/dev/null 2>&1
-          python3 -m http.server 8787 >/tmp/mod-v520-http.log 2>&1 &
+          python3 -m http.server 8787 >/tmp/mod-v524-http.log 2>&1 &
           node <<'NODE'
           const fs=require('fs');
           const {chromium}=require('playwright');
@@ -81,108 +76,87 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             const errors=[];
             await page.addInitScript(()=>{
-              window.__v520ImgErrors=[];
+              window.__v524ImgErrors=[];
               window.addEventListener('error',event=>{
                 const t=event&&event.target;
-                if(t&&t.tagName==='IMG')window.__v520ImgErrors.push(t.currentSrc||t.src||'img-error');
+                if(t&&t.tagName==='IMG')window.__v524ImgErrors.push(t.currentSrc||t.src||'img-error');
               },true);
             });
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            await page.goto('http://127.0.0.1:8787/?reg=v520',{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV520,null,{timeout:30000});
+            await page.goto('http://127.0.0.1:8787/?reg=v524',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV524,null,{timeout:30000});
             await page.evaluate(()=>{
-              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-09';
-              tasks=[{id:52001,text:'V520 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-10';
+              tasks=[{id:52401,text:'V524 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
               if(typeof saveTasks==='function')saveTasks();
               window.__modAppHubV515.show();
-              window.__modHubLauncherV520.render();
+              window.__modHubLauncherV524.render();
             });
             await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV520==='ready',null,{timeout:10000});
-            await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-            await page.waitForTimeout(450);
-
-            const initial=await page.evaluate(()=>{
-              const shell=document.querySelector('#modAppHubV515 .mod-hub-shell-v515');
-              const rect=shell?.getBoundingClientRect();
-              const style=shell?getComputedStyle(shell):null;
-              return {
-                hub:document.body.classList.contains('mod-app-hub-v515'),
-                surface:document.body.dataset.modAppSurfaceV515,
-                grid:document.querySelectorAll('.mod-hub-app-grid-v517').length,
-                intro:document.querySelectorAll('.mod-hub-intro-v517').length,
-                slots:[...document.querySelectorAll('.mod-hub-app-slot-v517')].map(x=>x.className),
-                buttons:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.dataset.modHubLaunchV517),
-                labels:[...document.querySelectorAll('.mod-hub-app-label-v517')].map(x=>x.textContent.trim()),
-                disabled:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.getAttribute('aria-disabled')),
-                images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight,complete:x.complete})),
-                panel:{
-                  width:rect?.width||0,
-                  height:rect?.height||0,
-                  radius:parseFloat(style?.borderTopLeftRadius||'0'),
-                  border:parseFloat(style?.borderTopWidth||'0')
-                },
-                flags:{...window.__modHubLauncherV520},
-                task:(tasks||[]).find(t=>t.id===52001)?.text,
-                imgErrors:window.__v520ImgErrors||[]
-              };
-            });
-            const expectedButtons=['todo','sport','kistology','food','future','backstage'];
-            const expectedLabels=['TO-DO','SPORT','KISTOLOGY','FOOD','FUTURE','BACKSTAGE'];
-            const expectedDisabled=[null,null,'true','true','true','true'];
-            const expectedImages=['todo-v519-1024.png','sport-v519-1024.png','kistology-v520-1024.PNG','food-v519-1024.png','future-v519-1024.png','backstage-v520-1024.PNG'];
-            if(!initial.hub||initial.surface!=='hub'||initial.grid!==1||initial.intro!==0||initial.slots.length!==6||JSON.stringify(initial.buttons)!==JSON.stringify(expectedButtons)||JSON.stringify(initial.labels)!==JSON.stringify(expectedLabels)||JSON.stringify(initial.disabled)!==JSON.stringify(expectedDisabled)||initial.images.some((x,i)=>!x.complete||x.w<=0||x.h<=0||!x.src.includes(expectedImages[i]))||initial.panel.width<=0||initial.panel.width>350||initial.panel.height<250||initial.panel.height>420||initial.panel.radius<12||initial.panel.border<1||initial.flags.version!=='V520'||initial.flags.sixTileGrid!==true||initial.flags.iconOnlyPanel!==true||initial.flags.finalAssetsV520!==true||initial.task!=='V520 Bestandsschutz'||initial.imgErrors.length!==0)throw new Error('V520 launcher initial '+JSON.stringify({initial,errors}));
-
-            await page.screenshot({path:'/tmp/v520-launcher.png',fullPage:true});
+            await page.waitForTimeout(250);
+            const initial=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              surface:document.body.dataset.modAppSurfaceV515,
+              buttons:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.dataset.modHubLaunchV517),
+              labels:[...document.querySelectorAll('.mod-hub-app-label-v517')].map(x=>x.textContent.trim()),
+              disabled:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.getAttribute('aria-disabled')),
+              images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight,complete:x.complete})),
+              flags:{optimized:window.__modHubLauncherV524.optimizedIcons192V524,eager:window.__modHubLauncherV524.allLauncherIconsEagerV524},
+              task:(tasks||[]).find(t=>t.id===52401)?.text,
+              imgErrors:window.__v524ImgErrors||[]
+            }));
+            const ids=['todo','sport','kistology','food','future','backstage'];
+            const labels=['TO-DO','SPORT','KISTOLOGY','FOOD','FUTURE','BACKSTAGE'];
+            const disabled=[null,null,'true','true','true','true'];
+            if(!initial.hub||initial.surface!=='hub'||JSON.stringify(initial.buttons)!==JSON.stringify(ids)||JSON.stringify(initial.labels)!==JSON.stringify(labels)||JSON.stringify(initial.disabled)!==JSON.stringify(disabled)||initial.images.length!==6||initial.images.some((x,i)=>!x.complete||x.w!==192||x.h!==192||!x.src.includes(`${ids[i]}-v524-192.png`))||!initial.flags.optimized||!initial.flags.eager||initial.task!=='V524 Bestandsschutz'||initial.imgErrors.length)throw new Error('V524 initial '+JSON.stringify({initial,errors}));
+            await page.screenshot({path:'/tmp/v524-launcher.png',fullPage:true});
 
             await page.click('.mod-hub-app-button-todo-v517');
-            await page.waitForTimeout(220);
-            const todo=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===52001)?.text}));
-            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V520 Bestandsschutz')throw new Error('V520 todo '+JSON.stringify(todo));
+            await page.waitForTimeout(180);
+            const todo=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===52401)?.text}));
+            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.task!=='V524 Bestandsschutz')throw new Error('V524 todo '+JSON.stringify(todo));
 
             await page.evaluate(()=>{
-              window.__v520Health=[];
-              window.addEventListener('mod:health-sync-request',e=>window.__v520Health.push(e.detail));
+              window.__v524Health=[];
+              window.addEventListener('mod:health-sync-request',e=>window.__v524Health.push(e.detail));
               window.__modAppHubV515.show();
-              window.__modHubLauncherV520.render();
+              window.__modHubLauncherV524.render();
             });
-            await page.waitForTimeout(180);
+            await page.waitForTimeout(120);
             await page.click('.mod-hub-app-button-sport-v517');
-            await page.waitForTimeout(260);
-            const sport=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v520Health||[],task:(tasks||[]).find(t=>t.id===52001)?.text}));
-            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V520 Bestandsschutz')throw new Error('V520 sport '+JSON.stringify(sport));
+            await page.waitForTimeout(220);
+            const sport=await page.evaluate(()=>({surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode(),events:window.__v524Health||[],task:(tasks||[]).find(t=>t.id===52401)?.text}));
+            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.events.length!==1||sport.events[0].source!=='hub-sport'||sport.task!=='V524 Bestandsschutz')throw new Error('V524 sport '+JSON.stringify(sport));
 
-            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV520.render();});
-            await page.waitForTimeout(150);
+            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV524.render();});
+            await page.waitForTimeout(120);
             await page.evaluate(()=>{
-              for(const id of ['kistology','food','future','backstage']){
-                document.querySelector(`.mod-hub-app-button-${id}-v517`)?.click();
-              }
+              for(const id of ['kistology','food','future','backstage'])document.querySelector(`.mod-hub-app-button-${id}-v517`)?.click();
             });
-            await page.waitForTimeout(180);
-            const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===52001)?.text,imgErrors:window.__v520ImgErrors||[]}));
-            if(!prepared.hub||prepared.surface!=='hub'||prepared.task!=='V520 Bestandsschutz'||prepared.imgErrors.length!==0)throw new Error('V520 prepared '+JSON.stringify(prepared));
-
-            if(errors.length)throw new Error('V520 page errors '+JSON.stringify(errors));
-            fs.writeFileSync('/tmp/v520-result.json',JSON.stringify({initial,todo,sport,prepared,errors},null,2));
-            console.log('V520 six-tile launcher PASS');
+            await page.waitForTimeout(120);
+            const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===52401)?.text}));
+            if(!prepared.hub||prepared.surface!=='hub'||prepared.task!=='V524 Bestandsschutz')throw new Error('V524 prepared '+JSON.stringify(prepared));
+            if(errors.length)throw new Error('V524 page errors '+JSON.stringify(errors));
+            fs.writeFileSync('/tmp/v524-result.json',JSON.stringify({initial,todo,sport,prepared,errors},null,2));
+            console.log('V524 192px launcher optimization PASS');
             await browser.close();
-          })().catch(error=>{fs.writeFileSync('/tmp/v520-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          })().catch(error=>{fs.writeFileSync('/tmp/v524-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
           NODE
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v520-launcher-diagnostics
+          name: v524-launcher-diagnostics
           path: |
-            /tmp/v520-result.json
-            /tmp/v520-error.txt
-            /tmp/v520-launcher.png
-            /tmp/mod-v520-http.log
-            assets/icons/todo-v519-1024.png
-            assets/icons/sport-v519-1024.png
-            assets/icons/kistology-v520-1024.PNG
-            assets/icons/food-v519-1024.png
-            assets/icons/future-v519-1024.png
-            assets/icons/backstage-v520-1024.PNG
+            /tmp/v524-result.json
+            /tmp/v524-error.txt
+            /tmp/v524-launcher.png
+            /tmp/mod-v524-http.log
+            assets/icons/todo-v524-192.png
+            assets/icons/sport-v524-192.png
+            assets/icons/kistology-v524-192.png
+            assets/icons/food-v524-192.png
+            assets/icons/future-v524-192.png
+            assets/icons/backstage-v524-192.png
           if-no-files-found: ignore

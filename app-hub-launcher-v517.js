@@ -1,4 +1,4 @@
-/* V520 · SIX-TILE LAUNCHER DESIGN
+/* V524 · 192PX ICON OPTIMIZATION ON V520 SIX-TILE LAUNCHER
    - Expands the compact launcher from 2x2 to 2x3.
    - Adds KISTOLOGY and BACKSTAGE as prepared visual modules.
    - Keeps TO-DO and SPORT as the only active modules for now.
@@ -12,12 +12,12 @@
   const VERSION='V520';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
-    todo:'./assets/icons/todo-v519-1024.png?v=520-2329',
-    sport:'./assets/icons/sport-v519-1024.png?v=520-2329',
-    kistology:'./assets/icons/kistology-v520-1024.PNG?v=520-2329',
-    food:'./assets/icons/food-v519-1024.png?v=520-2329',
-    future:'./assets/icons/future-v519-1024.png?v=520-2329',
-    backstage:'./assets/icons/backstage-v520-1024.PNG?v=520-2329'
+    todo:'./assets/icons/todo-v524-192.png?v=524-192',
+    sport:'./assets/icons/sport-v524-192.png?v=524-192',
+    kistology:'./assets/icons/kistology-v524-192.png?v=524-192',
+    food:'./assets/icons/food-v524-192.png?v=524-192',
+    future:'./assets/icons/future-v524-192.png?v=524-192',
+    backstage:'./assets/icons/backstage-v524-192.png?v=524-192'
   };
   const MODULES=[
     {id:'todo',label:'TO-DO',active:true},
@@ -35,7 +35,7 @@
   function hubApi(){return window.__modAppHubV515||null;}
 
   function iconMarkup(item){
-    return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async">`;
+    return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async" width="192" height="192">`;
   }
 
   function labelMarkup(item){
@@ -186,12 +186,15 @@
     backstagePrepared:true,
     finalAssetsV520:true,
     githubHostedAssetsV520:true,
-    cleanStartReleaseV520:true
+    cleanStartReleaseV520:true,
+    optimizedIcons192V524:true,
+    allLauncherIconsEagerV524:true
   };
   window.__modHubLauncherV517=publicApi;
   window.__modHubLauncherV518=publicApi;
   window.__modHubLauncherV519=publicApi;
   window.__modHubLauncherV520=publicApi;
+  window.__modHubLauncherV524=publicApi;
 
   let tries=0;
   const boot=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(boot);},75);
