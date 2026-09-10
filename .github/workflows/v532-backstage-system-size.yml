@@ -74,8 +74,9 @@ jobs:
             if(values.some(h=>h<190)||Math.max(...values)-Math.min(...values)>8)throw new Error('V532 placeholder heights '+JSON.stringify(heights));
             if(Object.values(heights).some(x=>x.minHeight!=='190px'||x.current!=='dev'||x.task!=='V532 Bestandsschutz'))throw new Error('V532 state '+JSON.stringify(heights));
             if(errors.length)throw new Error('V532 page errors '+JSON.stringify(errors));
+            const marker=await page.evaluate(()=>window.__modBackstageSizeV532||null);
             await page.screenshot({path:'/tmp/v532-backstage-system-size.png',fullPage:true});
-            fs.writeFileSync('/tmp/v532-result.json',JSON.stringify({heights,marker:window.__modBackstageSizeV532||null,errors},null,2));
+            fs.writeFileSync('/tmp/v532-result.json',JSON.stringify({heights,marker,errors},null,2));
             console.log('V532 BACKSTAGE SYSTEM SIZE PASS');
             await browser.close();
           })().catch(error=>{fs.writeFileSync('/tmp/v532-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
