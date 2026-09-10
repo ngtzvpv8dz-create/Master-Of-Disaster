@@ -22,6 +22,8 @@ jobs:
           grep -q 'box-shadow:none !important' app-hub-simple-header-v523.css
           grep -q 'font-size:clamp(28px,8vw,42px) !important' app-hub-simple-header-v523.css
           grep -q 'letter-spacing:-1.5px !important' app-hub-simple-header-v523.css
+          grep -q 'html.mod-hub-boot-pending-v518 #appFixedTopV475 .tabs-wrapper' app-hub-simple-header-v523.css
+          grep -q 'display:none !important' app-hub-simple-header-v523.css
       - name: Browser simple-header regression
         run: |
           npm init -y >/dev/null 2>&1
@@ -67,6 +69,29 @@ jobs:
             if(!result.launcher.bg.includes('conic-gradient')||result.launcher.slots!==6) throw new Error('launcher regression '+JSON.stringify(result));
             if(!/MASTER\s+OF\s+DISASTER/i.test(result.title)) throw new Error('title regression '+JSON.stringify(result));
 
+            const bootGeometry=await page.evaluate(()=>{
+              const root=document.documentElement, body=document.body;
+              const fixed=document.getElementById('appFixedTopV475');
+              const tabs=fixed?.querySelector('.tabs-wrapper');
+              const eyebrow=fixed?.querySelector('.header .eyebrow');
+              if(!fixed||!tabs||!eyebrow)throw new Error('boot-geometry-elements-missing');
+              body.classList.remove('mod-app-hub-v515');
+              delete body.dataset.modAppSurfaceV515;
+              root.classList.add('mod-hub-boot-pending-v518');
+              const boot={
+                rect:fixed.getBoundingClientRect().toJSON(),
+                tabsDisplay:getComputedStyle(tabs).display,
+                eyebrowDisplay:getComputedStyle(eyebrow).display
+              };
+              body.classList.add('mod-app-hub-v515');
+              body.dataset.modAppSurfaceV515='hub';
+              const hub={rect:fixed.getBoundingClientRect().toJSON()};
+              root.classList.remove('mod-hub-boot-pending-v518');
+              return {boot,hub};
+            });
+            if(bootGeometry.boot.tabsDisplay!=='none'||bootGeometry.boot.eyebrowDisplay!=='none')throw new Error('V528 boot-only elements still reserve layout '+JSON.stringify(bootGeometry));
+            if(Math.abs(bootGeometry.boot.rect.height-bootGeometry.hub.rect.height)>.6||Math.abs(bootGeometry.boot.rect.top-bootGeometry.hub.rect.top)>.6)throw new Error('V528 boot header geometry jumps '+JSON.stringify(bootGeometry));
+
             const measureTitle=()=>page.evaluate(()=>{
               const title=document.querySelector('.header h1');
               if(!title)throw new Error('title-missing');
@@ -94,8 +119,8 @@ jobs:
             }
             if(errors.length) throw new Error('page errors '+JSON.stringify(errors));
             await page.screenshot({path:'/tmp/v523-simple-header.png',fullPage:true});
-            fs.writeFileSync('/tmp/v523-result.json',JSON.stringify({...result,titleMetrics},null,2));
-            console.log('V523 SIMPLE HEADER + V526 SIZE PARITY PASS');
+            fs.writeFileSync('/tmp/v523-result.json',JSON.stringify({...result,bootGeometry,titleMetrics},null,2));
+            console.log('V523 SIMPLE HEADER + V526 SIZE PARITY + V528 BOOT STABILITY PASS');
             await browser.close();
           })().catch(error=>{fs.writeFileSync('/tmp/v523-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
           NODE

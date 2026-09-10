@@ -1,9 +1,12 @@
 /* V523 · SIMPLE FULL-WIDTH HUB HEADER
    Zurueck zu einem schlichten, durchgehenden Header. Keine Floating-Card,
    keine abgerundeten Ecken, keine zusaetzlichen Schatten-Spielereien.
-   V526: Titeltypografie auf dem Homescreen exakt an die Unter-Apps angleichen. */
+   V526: Titeltypografie auf dem Homescreen exakt an die Unter-Apps angleichen.
+   V528: Boot-Header bereits vor Hub-Initialisierung mit finaler Hub-Geometrie rendern,
+   damit das obere Feld beim Start nicht mehr durch unsichtbare Tabs zusammenklappt. */
 
-html body.mod-app-hub-v515 #appFixedTopV475{
+html body.mod-app-hub-v515 #appFixedTopV475,
+html.mod-hub-boot-pending-v518 #appFixedTopV475{
   box-sizing:border-box !important;
   width:100vw !important;
   max-width:none !important;
@@ -18,13 +21,16 @@ html body.mod-app-hub-v515 #appFixedTopV475{
   backdrop-filter:none !important;
 }
 
-html body.mod-app-hub-v515 #appFixedTopV475::before{
+html body.mod-app-hub-v515 #appFixedTopV475::before,
+html.mod-hub-boot-pending-v518 #appFixedTopV475::before{
   background:var(--mod-bg-top,#15191d) !important;
   border-radius:0 !important;
 }
 
 html body.mod-app-hub-v515 #appFixedTopV475 .header,
-html body.mod-app-hub-v515 main.app > header.header{
+html body.mod-app-hub-v515 main.app > header.header,
+html.mod-hub-boot-pending-v518 #appFixedTopV475 .header,
+html.mod-hub-boot-pending-v518 main.app > header.header{
   overflow:visible !important;
   margin:0 !important;
   padding:3px 0 12px !important;
@@ -41,24 +47,41 @@ html body.mod-app-hub-v515 main.app > header.header{
    Hier gelten wieder exakt die Basiswerte der Unter-Apps, damit beim Wechsel
    weder Groesse noch Laufweite springen. */
 html body.mod-app-hub-v515 #appFixedTopV475 .header h1,
-html body.mod-app-hub-v515 main.app > header.header h1{
+html body.mod-app-hub-v515 main.app > header.header h1,
+html.mod-hub-boot-pending-v518 #appFixedTopV475 .header h1,
+html.mod-hub-boot-pending-v518 main.app > header.header h1{
   font-size:clamp(28px,8vw,42px) !important;
   line-height:1 !important;
   letter-spacing:-1.5px !important;
 }
 
 html body.mod-app-hub-v515 #appFixedTopV475 .header::before,
-html body.mod-app-hub-v515 main.app > header.header::before{
+html body.mod-app-hub-v515 main.app > header.header::before,
+html.mod-hub-boot-pending-v518 #appFixedTopV475 .header::before,
+html.mod-hub-boot-pending-v518 main.app > header.header::before{
   content:none !important;
   display:none !important;
 }
 
+/* V528: Vor der Hub-Klasse duerfen weder Tabs noch Eyebrow Layout-Hoehe belegen.
+   V527 hatte die Eyebrow nur unsichtbar gemacht; visibility:hidden laesst ihren
+   Platz jedoch stehen. Die Tabs waren ebenfalls unsichtbar, aber noch im Layout.
+   Genau dieses spaetere Zusammenklappen war im iPhone-Video als Sprung sichtbar. */
+html.mod-hub-boot-pending-v518 #appFixedTopV475 .tabs-wrapper,
+html.mod-hub-boot-pending-v518 #appFixedTopV475 .header .eyebrow,
+html.mod-hub-boot-pending-v518 main.app > header.header .eyebrow{
+  display:none !important;
+}
+
 @media (max-width:390px){
-  html body.mod-app-hub-v515 #appFixedTopV475{
+  html body.mod-app-hub-v515 #appFixedTopV475,
+  html.mod-hub-boot-pending-v518 #appFixedTopV475{
     margin-bottom:16px !important;
   }
   html body.mod-app-hub-v515 #appFixedTopV475 .header,
-  html body.mod-app-hub-v515 main.app > header.header{
+  html body.mod-app-hub-v515 main.app > header.header,
+  html.mod-hub-boot-pending-v518 #appFixedTopV475 .header,
+  html.mod-hub-boot-pending-v518 main.app > header.header{
     padding:3px 0 12px !important;
     border-radius:0 !important;
   }
