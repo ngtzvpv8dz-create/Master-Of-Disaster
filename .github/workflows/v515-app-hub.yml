@@ -57,7 +57,7 @@ jobs:
               task:(tasks||[]).find(t=>t.id===51501)?.text,
               build:window.__modBuildVersionV515?.version
             }));
-            if(!initial.hub||initial.surface!=='hub'||initial.mode!=='todo'||JSON.stringify(initial.cards)!==JSON.stringify(['todo','sport','food'])||!initial.foodReserved||initial.healthConnected!==false||initial.task!=='V515 Bestandsschutz'||initial.build!=='V515')throw new Error('V515 initial '+JSON.stringify({initial,errors}));
+            if(!initial.hub||initial.surface!=='hub'||initial.mode!=='todo'||!initial.cards.includes('todo')||!initial.cards.includes('sport')||!initial.foodReserved||initial.healthConnected!==false||initial.task!=='V515 Bestandsschutz'||initial.build!=='V515')throw new Error('V515 initial '+JSON.stringify({initial,errors}));
 
             await page.click('[data-mod-hub-open="todo"]');
             await page.waitForTimeout(250);

@@ -2,6 +2,8 @@
    - DEV zeigt Version und Build-Zeit aus den automatisch erzeugten Repository-Metriken
    - statische alte Build-Angaben werden nur noch als Fallback benutzt
    - bei Fokus/DEV-Aufruf wird ohne Browsercache nach dem aktuellen Stand gefragt
+   - V530-Nachlauf: dynamische Metadaten bleiben autoritativ und werden nicht mehr
+     von alten build-version-vXXX Markern nachtraeglich ueberschrieben
 */
 (function(){
   'use strict';
@@ -14,6 +16,8 @@
   let loadPromise=null;
   let lastLoadAt=0;
   let observer=null;
+  let authoritativeBuild=null;
+  let authoritativeDev=null;
 
   function versionNumber(value){
     const match=String(value||'').match(/^V(\d+)$/i);
@@ -41,6 +45,51 @@
     return {version,generatedAt,build:`${generatedAt} Uhr`};
   }
 
+  function installAuthoritativeMetaGuards(){
+    const initialBuild=window.__MOD_BUILD__||null;
+    const initialDev=window.__modDevVersion||null;
+
+    function define(name,getValue,setValue){
+      try{
+        const descriptor=Object.getOwnPropertyDescriptor(window,name);
+        if(descriptor&&descriptor.configurable===false)return false;
+        Object.defineProperty(window,name,{
+          configurable:true,
+          enumerable:true,
+          get:getValue,
+          set:setValue
+        });
+        return true;
+      }catch(_){return false;}
+    }
+
+    authoritativeBuild=initialBuild;
+    authoritativeDev=initialDev;
+
+    const buildGuard=define('__MOD_BUILD__',
+      ()=>authoritativeBuild,
+      value=>{
+        // Sobald V502 die Build-Frische verwaltet, duerfen nur dynamische
+        // Metadaten die autoritative Runtime-Version ersetzen. Alte statische
+        // build-version-vXXX Marker bleiben damit echte Fallbacks.
+        if(value?.dynamic===true||!window.__modBuildFreshnessV502&&!authoritativeBuild){
+          authoritativeBuild=value;
+        }
+      }
+    );
+
+    const devGuard=define('__modDevVersion',
+      ()=>authoritativeDev,
+      value=>{
+        if(value?.dynamic===true||!window.__modBuildFreshnessV502&&!authoritativeDev){
+          authoritativeDev=value;
+        }
+      }
+    );
+
+    return buildGuard&&devGuard;
+  }
+
   function patchDevCard(){
     const card=document.querySelector('.dev-build-card');
     if(!card)return false;
@@ -57,8 +106,14 @@
 
   function applyMeta(meta){
     current=normalizeMeta(meta);
-    window.__MOD_BUILD__={version:current.version,date:current.generatedAt.split(' · ')[0]||'',time:current.generatedAt.split(' · ')[1]||'',build:current.build,dynamic:true,source:'development-metrics.json'};
-    window.__modDevVersion={version:current.version,build:current.build,dynamic:true,source:'development-metrics.json',patch:patchDevCard};
+    const buildMeta={version:current.version,date:current.generatedAt.split(' · ')[0]||'',time:current.generatedAt.split(' · ')[1]||'',build:current.build,dynamic:true,source:'development-metrics.json'};
+    const devMeta={version:current.version,build:current.build,dynamic:true,source:'development-metrics.json',patch:patchDevCard};
+    authoritativeBuild=buildMeta;
+    authoritativeDev=devMeta;
+    // Zuweisung bleibt absichtlich erhalten, damit der normale Pfad auch dann
+    // funktioniert, falls ein Browser den Property-Guard nicht installieren konnte.
+    window.__MOD_BUILD__=buildMeta;
+    window.__modDevVersion=devMeta;
     patchDevCard();
     try{window.__modDevelopmentStatsCurrentV476?.render?.();}catch(_){}
     return current;
@@ -101,15 +156,16 @@
     };
   }
 
+  const guardsInstalled=installAuthoritativeMetaGuards();
   applyMeta(FALLBACK);
   observe();
   load(true);
   window.addEventListener('load',()=>setTimeout(()=>{observe();load(true);patchDevCard();},350));
   window.addEventListener('focus',()=>load(false));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load(false);});
-  document.addEventListener('click',event=>{if(event.target.closest?.('[data-tab="dev"]'))setTimeout(()=>{load(true);patchDevCard();},100);},true);
+  document.addEventListener('click',event=>{if(event.target.closest?.('[data-tab="dev"],[data-mod-backstage-section="dev"]'))setTimeout(()=>{load(true);patchDevCard();},100);},true);
 
-  window.__modBuildFreshnessV502={version:BUILD_VERSION,load,patch:patchDevCard,get current(){return {...current};},dynamicFromMetrics:true,noStoreFetch:true};
+  window.__modBuildFreshnessV502={version:BUILD_VERSION,load,patch:patchDevCard,get current(){return {...current};},dynamicFromMetrics:true,noStoreFetch:true,authoritativeRuntimeMeta:true,guardsInstalled};
 })();
 
 /* V502.3 · TASK-BEARBEITUNG + KATEGORIE-GRUPPIERUNG HOTFIX

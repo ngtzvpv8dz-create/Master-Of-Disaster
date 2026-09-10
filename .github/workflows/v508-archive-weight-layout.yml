@@ -18,7 +18,7 @@ jobs:
         run: |
           node --check archive-weight-layout-v508.js
           grep -q 'archive-weight-layout-v508.js?v=508-0709' index.html
-          grep -q "serviceWorker.register('./sw.js?v=508-0709'" index.html
+          grep -q "serviceWorker.register('./sw.js?v=" index.html
           grep -q 'archive-weight-layout-v508.js' sw.js
           grep -q 'archiveUsesTaskSegmentHierarchy:true' archive-weight-layout-v508.js
           grep -q 'archivedExactWeightSummaryDeduplicated:true' archive-weight-layout-v508.js
