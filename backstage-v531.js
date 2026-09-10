@@ -53,6 +53,22 @@
     return false;
   }
 
+  function parkLegacyTabForPlaceholder(){
+    try{
+      if(typeof currentTab!=='undefined'&&REAL_TABS.has(String(currentTab))){
+        currentTab='dev';
+        return true;
+      }
+    }catch(_){}
+    try{
+      if('currentTab' in window&&REAL_TABS.has(String(window.currentTab))){
+        window.currentTab='dev';
+        return true;
+      }
+    }catch(_){}
+    return false;
+  }
+
   function isOpen(){return document.body.classList.contains(BODY_CLASS);}
 
   function tabMarkup(section){
@@ -122,6 +138,7 @@
         setTimeout(()=>{try{window.__modLiveLogV453?.renderLog?.();}catch(_){}},0);
       }
     }else{
+      parkLegacyTabForPlaceholder();
       renderPlaceholder(section);
     }
     syncNav();
@@ -269,6 +286,7 @@
     machineRoomStyleV531:true,
     fiveSectionShellV531:true,
     placeholdersDoNotInvokeLegacyTabsV531:true,
+    placeholderParksLegacyLogV531:true,
     devAndLogMoved:true,
     existingRenderersReused:true,
     todoDataUntouched:true,
