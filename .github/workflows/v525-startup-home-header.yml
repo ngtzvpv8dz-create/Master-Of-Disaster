@@ -1,0 +1,118 @@
+name: V525 Startup + Home Header
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  startup-home-header:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check sw.js
+          node --check fixed-app-header-v475.js
+          grep -q 'id="modBootV525Style"' index.html
+          grep -q 'id="modHomeButtonV525"' index.html
+          grep -q 'class="sport-switch-v510"' index.html
+          grep -q 'class="mod-undo-r-v498"' index.html
+          grep -q '<span class="mod-home-letter-v525" aria-hidden="true">A</span>' index.html
+          grep -q 'homeNavigationV525:true' fixed-app-header-v475.js
+          grep -q 'mod-app-hub-v515' fixed-app-header-v475.js
+          grep -q 'script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"' index.html
+          grep -q 'script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"' index.html
+          grep -q './sw.js?v=525-fast-start' index.html
+          grep -q 'master-of-disaster-v525-fast-start' sw.js
+          grep -q 'setTimeout(()=>resolve(hit),350)' sw.js
+          grep -q '"background_color": "#0b0d0f"' manifest.webmanifest
+      - name: Browser navigation regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v525-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v525',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modFixedAppHeaderV475?.homeNavigationV525,null,{timeout:30000});
+            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV524.render();});
+            await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV520==='ready',null,{timeout:10000});
+            await page.waitForTimeout(200);
+            const header=await page.evaluate(()=>{
+              const h1=document.querySelector('.header h1');
+              const home=document.getElementById('modHomeButtonV525');
+              const sport=document.getElementById('sportSwitchV510');
+              const undo=document.querySelector('.mod-undo-r-v498');
+              const hs=getComputedStyle(document.documentElement),bs=getComputedStyle(document.body);
+              return {
+                title:(h1?.textContent||'').replace(/\s+/g,' ').trim(),
+                aria:h1?.getAttribute('aria-label'),
+                home:{exists:!!home,svg:!!home?.querySelector('svg'),rect:home?.getBoundingClientRect().toJSON(),color:home?getComputedStyle(home).color:null},
+                sport:{exists:!!sport,color:sport?getComputedStyle(sport).color:null},
+                undo:{exists:!!undo,color:undo?getComputedStyle(undo).color:null},
+                htmlBg:hs.backgroundColor,
+                bodyBg:bs.backgroundColor
+              };
+            });
+            if(header.title!=='MASTER OF DISASTER'||header.aria!=='MASTER OF DISASTER')throw new Error('V525 title semantics '+JSON.stringify(header));
+            if(!header.home.exists||!header.home.svg||header.home.rect.width<15||header.home.rect.width>40)throw new Error('V525 home icon '+JSON.stringify(header));
+            if(!header.sport.exists||!header.undo.exists||header.sport.color===header.undo.color)throw new Error('V525 immediate S/R accents '+JSON.stringify(header));
+            if(header.htmlBg==='rgba(0, 0, 0, 0)')throw new Error('V525 dark boot background missing '+JSON.stringify(header));
+
+            await page.evaluate(()=>{
+              const hub=window.__modAppHubV515;
+              const original=hub.show.bind(hub);
+              window.__v525ShowCalls=0;
+              hub.show=function(){window.__v525ShowCalls++;return original(...arguments);};
+            });
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(100);
+            const hubNoop=await page.evaluate(()=>({calls:window.__v525ShowCalls,hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515}));
+            if(hubNoop.calls!==0||!hubNoop.hub||hubNoop.surface!=='hub')throw new Error('V525 home must be no-op on hub '+JSON.stringify(hubNoop));
+
+            await page.click('.mod-hub-app-button-todo-v517');
+            await page.waitForTimeout(120);
+            if((await page.evaluate(()=>document.body.dataset.modAppSurfaceV515))!=='todo')throw new Error('V525 todo open failed');
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(160);
+            let homeState=await page.evaluate(()=>({calls:window.__v525ShowCalls,hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515}));
+            if(homeState.calls!==1||!homeState.hub||homeState.surface!=='hub')throw new Error('V525 home from todo '+JSON.stringify(homeState));
+
+            await page.click('.mod-hub-app-button-sport-v517');
+            await page.waitForTimeout(180);
+            if((await page.evaluate(()=>document.body.dataset.modAppSurfaceV515))!=='sport')throw new Error('V525 sport open failed');
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(160);
+            homeState=await page.evaluate(()=>({calls:window.__v525ShowCalls,hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,mode:window.__modSportModeV510.currentMode()}));
+            if(homeState.calls!==2||!homeState.hub||homeState.surface!=='hub'||homeState.mode!=='todo')throw new Error('V525 home from sport '+JSON.stringify(homeState));
+            if(errors.length)throw new Error('V525 page errors '+JSON.stringify(errors));
+            await page.screenshot({path:'/tmp/v525-home-header.png',fullPage:true});
+            fs.writeFileSync('/tmp/v525-result.json',JSON.stringify({header,hubNoop,homeState,errors},null,2));
+            console.log('V525 STARTUP + HOME HEADER PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v525-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v525-startup-home-header-diagnostics
+          path: |
+            /tmp/v525-home-header.png
+            /tmp/v525-result.json
+            /tmp/v525-error.txt
+            /tmp/mod-v525-http.log
+          if-no-files-found: ignore
