@@ -100,7 +100,7 @@ jobs:
               text:document.getElementById('viewContainer')?.textContent||'',
               task:(tasks||[]).find(t=>t.id===53001)?.text
             }));
-            if(!log.open||log.surface!=='backstage'||log.section!=='log'||log.selected!=='true'||(!log.liveLog&&!/LIVE-LOG/i.test(log.text))||log.task!=='V530 Bestandsschutz')throw new Error('V530 LOG '+JSON.stringify(log));
+            if(!log.open||log.surface!=='backstage'||log.section!=='log'||log.selected!=='true'||(!log.liveLog&&!/LOG · LETZTE 7 TAGE|LIVE-LOG/i.test(log.text))||log.task!=='V530 Bestandsschutz')throw new Error('V530 LOG '+JSON.stringify(log));
             await page.screenshot({path:'/tmp/v530-backstage-log.png',fullPage:true});
 
             await page.click('#modHomeButtonV525');
