@@ -1,0 +1,92 @@
+name: V522 Floating Panels
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  floating-panels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring and scope checks
+        run: |
+          test -f app-hub-floating-v522.css
+          grep -q 'app-hub-floating-v522.css?v=522-0647' app-hub-v515.css
+          grep -q '0 34px 70px rgba(0,0,0,.30)' app-hub-floating-v522.css
+          grep -q '0 42px 82px rgba(0,0,0,.34)' app-hub-floating-v522.css
+          if grep -Eq '^[[:space:]]*background(-[a-z]+)?:' app-hub-floating-v522.css; then
+            echo 'V522 must not redefine backgrounds'
+            exit 1
+          fi
+      - name: Browser floating-depth regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v522-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const pageErrors=[];
+            page.on('pageerror',e=>pageErrors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v522',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV520,null,{timeout:30000});
+            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV520.render();});
+            await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV520==='ready',null,{timeout:10000});
+            await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+            await page.waitForTimeout(400);
+            const result=await page.evaluate(()=>{
+              const header=document.querySelector('#appFixedTopV475 .header')||document.querySelector('main.app > header.header')||document.querySelector('.header');
+              const shell=document.querySelector('#modAppHubV515 .mod-hub-shell-v515');
+              if(!header||!shell) throw new Error('header-or-shell-missing');
+              const hs=getComputedStyle(header);
+              const ss=getComputedStyle(shell);
+              const bs=getComputedStyle(document.body);
+              return {
+                title:(header.querySelector('h1')?.textContent||'').trim(),
+                bodyBackground:bs.backgroundImage,
+                headerBackground:hs.backgroundImage,
+                shellBackground:ss.backgroundImage,
+                headerShadow:hs.boxShadow,
+                shellShadow:ss.boxShadow,
+                headerBorder:hs.borderTopColor,
+                slots:document.querySelectorAll('.mod-hub-app-slot-v517').length
+              };
+            });
+            const shadowCount=s=>(s.match(/rgba?\(/g)||[]).length;
+            if(!result.bodyBackground.includes('radial-gradient')) throw new Error('existing body background lost '+JSON.stringify(result));
+            if(!result.headerBackground.includes('radial-gradient')) throw new Error('existing header surface lost '+JSON.stringify(result));
+            if(!result.shellBackground.includes('conic-gradient')) throw new Error('existing launcher surface lost '+JSON.stringify(result));
+            if(result.headerShadow==='none'||shadowCount(result.headerShadow)<5) throw new Error('header floating shadow too weak '+JSON.stringify(result));
+            if(result.shellShadow==='none'||shadowCount(result.shellShadow)<7) throw new Error('launcher floating shadow too weak '+JSON.stringify(result));
+            if(result.slots!==6) throw new Error('launcher slot regression '+JSON.stringify(result));
+            if(!/MASTER\s+OF\s+DISASTER/i.test(result.title)) throw new Error('header title regression '+JSON.stringify(result));
+            if(pageErrors.length) throw new Error('page errors '+JSON.stringify(pageErrors));
+            await page.screenshot({path:'/tmp/v522-floating-panels.png',fullPage:true});
+            fs.writeFileSync('/tmp/v522-result.json',JSON.stringify(result,null,2));
+            console.log('V522 FLOATING PANELS PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v522-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v522-floating-panels-diagnostics
+          path: |
+            /tmp/v522-floating-panels.png
+            /tmp/v522-result.json
+            /tmp/v522-error.txt
+            /tmp/mod-v522-http.log
+            app-hub-floating-v522.css
+          if-no-files-found: ignore
