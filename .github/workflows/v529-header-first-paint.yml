@@ -1,0 +1,91 @@
+name: V529 Header First Paint
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  header-first-paint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          grep -q 'html.mod-hub-boot-pending-v518 main.app > .tabs-wrapper' app-hub-simple-header-v523.css
+          grep -q 'html.mod-hub-boot-pending-v518 body' app-hub-simple-header-v523.css
+          grep -q 'padding:calc(15px + env(safe-area-inset-top)) 12px 22px !important' app-hub-simple-header-v523.css
+      - name: Browser true pre-shell regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v529-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:2});
+
+            const normal=await context.newPage();
+            await normal.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await normal.goto('http://127.0.0.1:8787/?reg=v529',{waitUntil:'networkidle',timeout:60000});
+            await normal.waitForFunction(()=>window.__modAppHubV515&&document.getElementById('appFixedTopV475'),null,{timeout:30000});
+            await normal.evaluate(()=>window.__modAppHubV515.show());
+            await normal.waitForTimeout(250);
+            const final=await normal.evaluate(()=>{
+              const shell=document.getElementById('appFixedTopV475');
+              const title=shell?.querySelector('.header h1');
+              if(!shell||!title)throw new Error('final-header-missing');
+              return {shell:shell.getBoundingClientRect().toJSON(),title:title.getBoundingClientRect().toJSON()};
+            });
+
+            const pre=await context.newPage();
+            await pre.route('**/fixed-app-header-v475.js*',route=>route.fulfill({status:200,contentType:'application/javascript',body:'/* V529: fixed header intentionally suppressed */'}));
+            await pre.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await pre.goto('http://127.0.0.1:8787/?reg=v529',{waitUntil:'networkidle',timeout:60000});
+            const beforeShell=await pre.evaluate(()=>{
+              const root=document.documentElement;
+              const body=document.body;
+              body.classList.remove('mod-app-hub-v515');
+              delete body.dataset.modAppSurfaceV515;
+              root.classList.add('mod-hub-boot-pending-v518');
+              const header=document.querySelector('main.app > header.header');
+              const tabs=document.querySelector('main.app > .tabs-wrapper');
+              const title=header?.querySelector('h1');
+              if(!header||!tabs||!title)throw new Error('true-pre-shell-elements-missing');
+              return {
+                header:header.getBoundingClientRect().toJSON(),
+                title:title.getBoundingClientRect().toJSON(),
+                tabsDisplay:getComputedStyle(tabs).display,
+                bodyPaddingTop:parseFloat(getComputedStyle(body).paddingTop||'0')
+              };
+            });
+
+            if(beforeShell.tabsDisplay!=='none')throw new Error('direct pre-shell tabs still reserve height '+JSON.stringify(beforeShell));
+            if(Math.abs(beforeShell.bodyPaddingTop)>0.1)throw new Error('pre-shell body top padding still changes geometry '+JSON.stringify(beforeShell));
+            if(Math.abs(beforeShell.header.height-final.shell.height)>.6)throw new Error('pre-shell/final header height mismatch '+JSON.stringify({beforeShell,final}));
+            if(Math.abs(beforeShell.title.top-final.title.top)>.6)throw new Error('pre-shell/final title top mismatch '+JSON.stringify({beforeShell,final}));
+            if(Math.abs(beforeShell.title.height-final.title.height)>.2)throw new Error('pre-shell/final title height mismatch '+JSON.stringify({beforeShell,final}));
+
+            fs.writeFileSync('/tmp/v529-result.json',JSON.stringify({beforeShell,final},null,2));
+            console.log('V529 TRUE PRE-SHELL HEADER STABILITY PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v529-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v529-header-first-paint-diagnostics
+          path: |
+            /tmp/v529-result.json
+            /tmp/v529-error.txt
+            /tmp/mod-v529-http.log
+            app-hub-simple-header-v523.css
+          if-no-files-found: ignore
