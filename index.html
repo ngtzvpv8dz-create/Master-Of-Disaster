@@ -1,17 +1,31 @@
 <!DOCTYPE html>
 <html lang="de" class="mod-hub-boot-pending-v518">
 <head>
-  <link rel="manifest" href="./manifest.webmanifest">
-  <meta name="theme-color" content="#151111">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Master of Disaster">
-  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=446-1228">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0b0d0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Master of Disaster">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=446-1228">
   <title>Master of Disaster</title>
-  <!-- BUILD: V518 · 09.09.2026 · 19:20 -->
+  <!-- V525: dunkler First Paint + sofortiger Markenheader -->
+  <style id="modBootV525Style">
+    html{background:#0b0d0f;color-scheme:dark}
+    body{background:#0b0d0f;color:#f3f3f3}
+    .mod-brand-title-v525{display:flex;align-items:center;justify-content:center;white-space:nowrap}
+    .mod-home-button-v525,
+    .sport-switch-v510,
+    .mod-undo-r-v498{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;background:transparent;font:inherit;font-weight:inherit;line-height:1;letter-spacing:inherit;vertical-align:baseline;cursor:pointer}
+    .mod-home-button-v525{position:relative;width:.74em;height:.82em;min-width:.74em;margin:0 -.015em;color:#f3f3f3;transform:translateY(.015em)}
+    .mod-home-button-v525 svg{display:block;width:.72em;height:.72em;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+    .mod-home-button-v525:active{transform:translateY(.015em) scale(.92)}
+    .mod-home-button-v525:focus-visible{outline:2px solid rgba(255,255,255,.8);outline-offset:3px;border-radius:4px}
+    .mod-home-letter-v525{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;border:0!important}
+    .sport-switch-v510{min-width:.72em;margin:0 -.04em;color:#19a9b5;text-shadow:0 0 14px rgba(25,169,181,.25)}
+    .mod-undo-r-v498{color:#e04b4b;text-shadow:0 0 14px rgba(224,75,75,.25)}
+  </style>
   <script>
     (function(){
       'use strict';
@@ -54,14 +68,15 @@
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="./supabase-config.js?v=446-1228"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script defer src="./supabase-config.js?v=525-0912"></script>
 </head>
 <body>
   <main class="app">
     <header class="header">
-      <h1>MASTER OF DISASTER</h1>
+      <h1 class="mod-brand-title-v525" aria-label="MASTER OF DISASTER"><span>M</span><button id="modHomeButtonV525" class="mod-home-button-v525" type="button" aria-label="Zum Master-of-Disaster-Homescreen" title="Homescreen" onclick="window.__modAppHubV515?.show?.();window.scrollTo?.({top:0,left:0,behavior:'instant'});"><span class="mod-home-letter-v525" aria-hidden="true">A</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-4.75v-6h-5.5v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button><button id="sportSwitchV510" class="sport-switch-v510" type="button" aria-label="Zwischen To-do und Sport wechseln" aria-pressed="false" title="To-do / Sport wechseln" onclick="window.__modSportModeV510?.toggle?.();">S</button><span>TER OF DISASTE</span><button class="mod-undo-r-v498" type="button" title="Rückgängig / Wiederherstellung" aria-label="Rückgängig und Wiederherstellung öffnen" onclick="window.__modRecoveryHistoryV498?.openQuickHistory?.();">R</button></h1>
       <div class="eyebrow">WEEK-AND-END-TO-DO-DINGSI</div>
     </header>
     <div class="tabs-wrapper"><nav class="tabs">
@@ -87,5 +102,5 @@
   <script src="./backup-source-fallback-v506.js?v=506-1244"></script>
   <script src="./task-title-library-v507.js?v=507-1345"></script>
   <script src="./archive-weight-layout-v508.js?v=508-0709"></script>
-  <script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=524-192',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V518 Service-Worker-Registrierung:',e);}})();</script>
+  <script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=525-fast-start',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V525 Service-Worker-Registrierung:',e);}})();</script>
 </body></html>
