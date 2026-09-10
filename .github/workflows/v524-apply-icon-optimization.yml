@@ -1,0 +1,91 @@
+name: V524 Apply Icon Optimization
+on:
+  push:
+    branches: [ v524-launcher-icons-192 ]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire 192px icons into launcher, preload and service worker
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+            p=Path(path)
+            text=p.read_text()
+            if old not in text:
+              raise SystemExit(f'Missing expected text in {path}: {old[:120]!r}')
+            p.write_text(text.replace(old,new,1))
+
+          launcher='app-hub-launcher-v517.js'
+          replacements={
+            "todo:'./assets/icons/todo-v519-1024.png?v=520-2329'":"todo:'./assets/icons/todo-v524-192.png?v=524-192'",
+            "sport:'./assets/icons/sport-v519-1024.png?v=520-2329'":"sport:'./assets/icons/sport-v524-192.png?v=524-192'",
+            "kistology:'./assets/icons/kistology-v520-1024.PNG?v=520-2329'":"kistology:'./assets/icons/kistology-v524-192.png?v=524-192'",
+            "food:'./assets/icons/food-v519-1024.png?v=520-2329'":"food:'./assets/icons/food-v524-192.png?v=524-192'",
+            "future:'./assets/icons/future-v519-1024.png?v=520-2329'":"future:'./assets/icons/future-v524-192.png?v=524-192'",
+            "backstage:'./assets/icons/backstage-v520-1024.PNG?v=520-2329'":"backstage:'./assets/icons/backstage-v524-192.png?v=524-192'",
+          }
+          p=Path(launcher); text=p.read_text()
+          for old,new in replacements.items():
+            if old not in text: raise SystemExit(f'Missing launcher source {old}')
+            text=text.replace(old,new,1)
+          text=text.replace('/* V520 · SIX-TILE LAUNCHER DESIGN','/* V524 · 192PX ICON OPTIMIZATION ON V520 SIX-TILE LAUNCHER',1)
+          text=text.replace('alt="" draggable="false" decoding="async">`;', 'alt="" draggable="false" decoding="async" width="192" height="192">`;',1)
+          text=text.replace('    cleanStartReleaseV520:true\n', '    cleanStartReleaseV520:true,\n    optimizedIcons192V524:true,\n    allLauncherIconsEagerV524:true\n',1)
+          text=text.replace('  window.__modHubLauncherV520=publicApi;\n', '  window.__modHubLauncherV520=publicApi;\n  window.__modHubLauncherV524=publicApi;\n',1)
+          p.write_text(text)
+
+          index=Path('index.html'); text=index.read_text()
+          old='''  <link rel="preload" as="image" href="./assets/icons/todo-v518-1024.webp?v=518-1920">\n  <link rel="preload" as="image" href="./assets/icons/sport-v518-1024.webp?v=518-1920">\n  <link rel="preload" as="image" href="./assets/icons/food-v518-1024.webp?v=518-1920">\n  <link rel="preload" as="image" href="./assets/icons/future-v518-1024.webp?v=518-1920">'''
+          new='''  <link rel="preload" as="image" type="image/png" href="./assets/icons/todo-v524-192.png?v=524-192">\n  <link rel="preload" as="image" type="image/png" href="./assets/icons/sport-v524-192.png?v=524-192">\n  <link rel="preload" as="image" type="image/png" href="./assets/icons/kistology-v524-192.png?v=524-192">\n  <link rel="preload" as="image" type="image/png" href="./assets/icons/food-v524-192.png?v=524-192">\n  <link rel="preload" as="image" type="image/png" href="./assets/icons/future-v524-192.png?v=524-192">\n  <link rel="preload" as="image" type="image/png" href="./assets/icons/backstage-v524-192.png?v=524-192">'''
+          if old not in text: raise SystemExit('Old preload block missing')
+          text=text.replace(old,new,1)
+          if "./sw.js?v=518-1920" not in text: raise SystemExit('Old SW cachebuster missing')
+          text=text.replace("./sw.js?v=518-1920","./sw.js?v=524-192",1)
+          index.write_text(text)
+
+          sw=Path('sw.js'); text=sw.read_text()
+          text=text.replace('master-of-disaster-v519-valid-icons','master-of-disaster-v524-192-icons',1)
+          old='''"./assets/icons/todo-v519-1024.png","./assets/icons/sport-v519-1024.png","./assets/icons/food-v519-1024.png","./assets/icons/future-v519-1024.png"'''
+          new='''"./assets/icons/todo-v524-192.png","./assets/icons/sport-v524-192.png","./assets/icons/kistology-v524-192.png","./assets/icons/food-v524-192.png","./assets/icons/future-v524-192.png","./assets/icons/backstage-v524-192.png"'''
+          if old not in text: raise SystemExit('Old SW icon list missing')
+          text=text.replace(old,new,1)
+          sw.write_text(text)
+
+          wf=Path('.github/workflows/v517-homescreen-launcher.yml'); text=wf.read_text()
+          text=text.replace('name: V520 Six-Tile Launcher Design','name: V524 Launcher Icon Optimization',1)
+          for old,new in {
+            'todo-v519-1024.png':'todo-v524-192.png',
+            'sport-v519-1024.png':'sport-v524-192.png',
+            'kistology-v520-1024.PNG':'kistology-v524-192.png',
+            'food-v519-1024.png':'food-v524-192.png',
+            'future-v519-1024.png':'future-v524-192.png',
+            'backstage-v520-1024.PNG':'backstage-v524-192.png',
+          }.items(): text=text.replace(old,new)
+          text=text.replace("          grep -q 'iconOnlyPanel:true' app-hub-launcher-v517.js\n", "          grep -q 'iconOnlyPanel:true' app-hub-launcher-v517.js\n          grep -q 'optimizedIcons192V524:true' app-hub-launcher-v517.js\n",1)
+          old_block='''          paths=[\n            (Path('assets/icons/todo-v524-192.png'), True),\n            (Path('assets/icons/sport-v524-192.png'), True),\n            (Path('assets/icons/kistology-v524-192.png'), False),\n            (Path('assets/icons/food-v524-192.png'), True),\n            (Path('assets/icons/future-v524-192.png'), True),\n            (Path('assets/icons/backstage-v524-192.png'), False),\n          ]\n          for path, exact_1024 in paths:'''
+          new_block='''          paths=[\n            Path('assets/icons/todo-v524-192.png'),\n            Path('assets/icons/sport-v524-192.png'),\n            Path('assets/icons/kistology-v524-192.png'),\n            Path('assets/icons/food-v524-192.png'),\n            Path('assets/icons/future-v524-192.png'),\n            Path('assets/icons/backstage-v524-192.png'),\n          ]\n          total=0\n          for path in paths:'''
+          if old_block not in text: raise SystemExit('Workflow path validation block missing')
+          text=text.replace(old_block,new_block,1)
+          old_size='''              if exact_1024 and im.size != (1024,1024):\n                raise SystemExit(f'Invalid size: {path} -> {im.size}')\n              if not exact_1024 and (w != h or w < 1024):\n                raise SystemExit(f'Invalid generated icon size: {path} -> {im.size}')'''
+          new_size='''              if im.size != (192,192):\n                raise SystemExit(f'Invalid optimized size: {path} -> {im.size}')\n              if len(data) > 100000:\n                raise SystemExit(f'Optimized icon too large: {path} -> {len(data)} bytes')\n              total += len(data)'''
+          if old_size not in text: raise SystemExit('Workflow old size checks missing')
+          text=text.replace(old_size,new_size,1)
+          text=text.replace("            print(f'{path}: PNG {w}x{h} decode+pixels PASS ({len(data)} bytes)')\n", "            print(f'{path}: PNG {w}x{h} decode+pixels PASS ({len(data)} bytes)')\n          if total > 500000:\n            raise SystemExit(f'Optimized launcher icon set too large: {total} bytes')\n          print(f'V524 launcher icon set total: {total} bytes')\n",1)
+          text=text.replace("x.w<=0||x.h<=0", "x.w!==192||x.h!==192",1)
+          text=text.replace("console.log('V520 six-tile launcher PASS');", "console.log('V524 192px launcher optimization PASS');",1)
+          wf.write_text(text)
+          PY
+      - name: Commit optimization wiring
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app-hub-launcher-v517.js index.html sw.js .github/workflows/v517-homescreen-launcher.yml
+          git commit -m 'V524: wire 192px icons for faster startup [skip ci]'
+          git push origin HEAD:${GITHUB_REF_NAME}
