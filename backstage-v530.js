@@ -15,7 +15,8 @@
     todoDataUntouched:true,
     sportHealthHookPreserved:true,
     homeNavigationPreserved:true,
-    implementation:'V531'
+    implementation:'V531',
+    sizePatch:'V532'
   };
   window.__modBackstageLoaderV530=loader;
 
@@ -34,16 +35,30 @@
       content.dataset.modBackstageContentV531='true';
       document.head.appendChild(content);
     }
+    if(!document.querySelector('link[data-mod-backstage-size-v532]')){
+      const sizePatch=document.createElement('link');
+      sizePatch.rel='stylesheet';
+      sizePatch.href='./backstage-size-v532.css?v=532-system-size';
+      sizePatch.dataset.modBackstageSizeV532='true';
+      document.head.appendChild(sizePatch);
+    }
   }
 
   function ensureScript(){
-    if(window.__modBackstageV531)return;
-    if(document.querySelector('script[data-mod-backstage-v531]'))return;
-    const script=document.createElement('script');
-    script.src='./backstage-v531.js?v=531-machine-room';
-    script.async=false;
-    script.dataset.modBackstageV531='true';
-    document.head.appendChild(script);
+    if(!window.__modBackstageV531&&!document.querySelector('script[data-mod-backstage-v531]')){
+      const script=document.createElement('script');
+      script.src='./backstage-v531.js?v=531-machine-room';
+      script.async=false;
+      script.dataset.modBackstageV531='true';
+      document.head.appendChild(script);
+    }
+    if(!window.__modBackstageSizeV532&&!document.querySelector('script[data-mod-backstage-size-v532]')){
+      const sizePatch=document.createElement('script');
+      sizePatch.src='./backstage-size-v532.js?v=532-system-size';
+      sizePatch.async=false;
+      sizePatch.dataset.modBackstageSizeV532='true';
+      document.head.appendChild(sizePatch);
+    }
   }
 
   ensureStyle();
