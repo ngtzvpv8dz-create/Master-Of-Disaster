@@ -1,0 +1,89 @@
+name: V532 Backstage System Size
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  backstage-system-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check backstage-v530.js
+          node --check sw.js
+          test -f backstage-size-v532.css
+          grep -q "sizePatch:'V532'" backstage-v530.js
+          grep -q 'backstage-size-v532.css?v=532-system-size' backstage-v530.js
+          grep -q '"./backstage-size-v532.css"' sw.js
+          grep -q 'min-height:190px' backstage-size-v532.css
+      - name: Browser size regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v532-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v532',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV531,null,{timeout:30000});
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-10';
+              tasks=[{id:53201,text:'V532 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              switchTab('all');
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modBackstageV531.patchLauncher();
+            });
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForTimeout(220);
+
+            const heights={};
+            for(const section of ['backup','restore','system']){
+              await page.click(`[data-backstage-section-v531="${section}"]`);
+              await page.waitForTimeout(100);
+              heights[section]=await page.evaluate(section=>{
+                const card=document.querySelector(`[data-backstage-placeholder-v531="${section}"] .mod-backstage-placeholder-card-v531`);
+                return {
+                  height:card?.getBoundingClientRect().height||0,
+                  minHeight:card?getComputedStyle(card).minHeight:null,
+                  current:typeof currentTab!=='undefined'?currentTab:null,
+                  task:(tasks||[]).find(t=>t.id===53201)?.text
+                };
+              },section);
+            }
+            const values=Object.values(heights).map(x=>x.height);
+            if(values.some(h=>h<190)||Math.max(...values)-Math.min(...values)>8)throw new Error('V532 placeholder heights '+JSON.stringify(heights));
+            if(Object.values(heights).some(x=>x.minHeight!=='190px'||x.current!=='dev'||x.task!=='V532 Bestandsschutz'))throw new Error('V532 state '+JSON.stringify(heights));
+            if(errors.length)throw new Error('V532 page errors '+JSON.stringify(errors));
+            await page.screenshot({path:'/tmp/v532-backstage-system-size.png',fullPage:true});
+            fs.writeFileSync('/tmp/v532-result.json',JSON.stringify({heights,errors},null,2));
+            console.log('V532 BACKSTAGE SYSTEM SIZE PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v532-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v532-backstage-system-size-diagnostics
+          path: |
+            /tmp/v532-backstage-system-size.png
+            /tmp/v532-result.json
+            /tmp/v532-error.txt
+            /tmp/mod-v532-http.log
+          if-no-files-found: ignore
