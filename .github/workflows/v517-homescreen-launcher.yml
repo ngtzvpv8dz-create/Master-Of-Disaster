@@ -29,7 +29,7 @@ jobs:
             grep -q "${f}-v524-192.png?v=524-192" index.html
             grep -q "${f}-v524-192.png" sw.js
           done
-          grep -Eq 'master-of-disaster-v524-192-icons|master-of-disaster-v525-fast-start|master-of-disaster-v530-backstage' sw.js
+          grep -Eq 'master-of-disaster-v524-192-icons|master-of-disaster-v525-fast-start|master-of-disaster-v530-backstage|master-of-disaster-v531-backstage-machine-room' sw.js
           grep -Eq './sw\.js\?v=524-192|./sw\.js\?v=525-fast-start|./sw\.js\?v=530-backstage' index.html
       - name: Validate optimized PNG assets
         run: |
