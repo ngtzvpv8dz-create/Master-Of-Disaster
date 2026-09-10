@@ -1,0 +1,161 @@
+name: V530 Backstage
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  backstage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check backstage-v530.js
+          node --check sw.js
+          test -f backstage-v530.css
+          grep -q 'backstage-v530.css?v=530-1425' index.html
+          grep -q 'backstage-v530.js?v=530-1425' index.html
+          grep -q 'master-of-disaster-v530-backstage' sw.js
+          grep -q '"./backstage-v530.css"' sw.js
+          grep -q '"./backstage-v530.js"' sw.js
+          grep -q "const VERSION='V530'" backstage-v530.js
+          grep -q 'devAndLogMoved:true' backstage-v530.js
+          grep -q 'existingRenderersReused:true' backstage-v530.js
+          grep -q 'todoDataUntouched:true' backstage-v530.js
+          if grep -q 'data-tab="dev" onclick="switchTab' index.html; then echo 'DEV still present in To-do tabs'; exit 1; fi
+          if grep -q 'data-tab="log" onclick="switchTab' index.html; then echo 'LOG still present in To-do tabs'; exit 1; fi
+      - name: Browser Backstage regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v530-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v530',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV530&&window.__modFixedAppHeaderV475?.homeNavigationV525,null,{timeout:30000});
+
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-10';
+              tasks=[{id:53001,text:'V530 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.__v530Health=[];
+              window.addEventListener('mod:health-sync-request',e=>window.__v530Health.push(e.detail));
+              switchTab('all');
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modBackstageV530.patchLauncher();
+            });
+            await page.waitForFunction(()=>document.querySelector('[data-mod-hub-launch-v517="backstage"]')?.getAttribute('aria-disabled')===null,null,{timeout:10000});
+            await page.waitForTimeout(180);
+
+            const launcher=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              backstageDisabled:document.querySelector('[data-mod-hub-launch-v517="backstage"]')?.getAttribute('aria-disabled'),
+              backstageLabel:document.querySelector('[data-mod-hub-launch-v517="backstage"]')?.getAttribute('aria-label'),
+              legacyDev:!!document.querySelector('.tabs-wrapper [data-tab="dev"]'),
+              legacyLog:!!document.querySelector('.tabs-wrapper [data-tab="log"]'),
+              task:(tasks||[]).find(t=>t.id===53001)?.text
+            }));
+            if(!launcher.hub||launcher.surface!=='hub'||launcher.backstageDisabled!==null||launcher.backstageLabel!=='Backstage öffnen'||launcher.legacyDev||launcher.legacyLog||launcher.task!=='V530 Bestandsschutz')throw new Error('V530 launcher '+JSON.stringify(launcher));
+
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForTimeout(260);
+            const dev=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              open:document.body.classList.contains('mod-backstage-v530'),
+              section:window.__modBackstageV530.activeSection,
+              navDisplay:getComputedStyle(document.getElementById('modBackstageV530')).display,
+              selected:document.querySelector('[data-backstage-section-v530="dev"]')?.getAttribute('aria-selected'),
+              devCard:!!document.querySelector('#viewContainer .dev-build-card'),
+              text:document.getElementById('viewContainer')?.textContent||'',
+              inputDisplay:getComputedStyle(document.getElementById('inputPanel')).display,
+              task:(tasks||[]).find(t=>t.id===53001)?.text
+            }));
+            if(!dev.open||dev.surface!=='backstage'||dev.section!=='dev'||dev.navDisplay==='none'||dev.selected!=='true'||(!dev.devCard&&!/DEVELOPER|DIAGNOSE/i.test(dev.text))||dev.inputDisplay!=='none'||dev.task!=='V530 Bestandsschutz')throw new Error('V530 DEV '+JSON.stringify(dev));
+            await page.screenshot({path:'/tmp/v530-backstage-dev.png',fullPage:true});
+
+            await page.click('[data-backstage-section-v530="log"]');
+            await page.waitForTimeout(180);
+            const log=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              open:document.body.classList.contains('mod-backstage-v530'),
+              section:window.__modBackstageV530.activeSection,
+              selected:document.querySelector('[data-backstage-section-v530="log"]')?.getAttribute('aria-selected'),
+              liveLog:!!document.getElementById('liveLogV453'),
+              text:document.getElementById('viewContainer')?.textContent||'',
+              task:(tasks||[]).find(t=>t.id===53001)?.text
+            }));
+            if(!log.open||log.surface!=='backstage'||log.section!=='log'||log.selected!=='true'||(!log.liveLog&&!/LIVE-LOG/i.test(log.text))||log.task!=='V530 Bestandsschutz')throw new Error('V530 LOG '+JSON.stringify(log));
+            await page.screenshot({path:'/tmp/v530-backstage-log.png',fullPage:true});
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(180);
+            const home=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              backstage:document.body.classList.contains('mod-backstage-v530'),
+              current:typeof currentTab!=='undefined'?currentTab:null,
+              task:(tasks||[]).find(t=>t.id===53001)?.text
+            }));
+            if(!home.hub||home.surface!=='hub'||home.backstage||home.current!=='all'||home.task!=='V530 Bestandsschutz')throw new Error('V530 Home '+JSON.stringify(home));
+
+            await page.click('.mod-hub-app-button-todo-v517');
+            await page.waitForTimeout(180);
+            const todo=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              mode:window.__modSportModeV510.currentMode(),
+              current:typeof currentTab!=='undefined'?currentTab:null,
+              inputDisplay:getComputedStyle(document.getElementById('inputPanel')).display,
+              task:(tasks||[]).find(t=>t.id===53001)?.text
+            }));
+            if(todo.surface!=='todo'||todo.mode!=='todo'||todo.current!=='all'||todo.inputDisplay==='none'||todo.task!=='V530 Bestandsschutz')throw new Error('V530 Todo restore '+JSON.stringify(todo));
+
+            await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV524.render();});
+            await page.waitForTimeout(120);
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForTimeout(160);
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(220);
+            const sport=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              mode:window.__modSportModeV510.currentMode(),
+              backstage:document.body.classList.contains('mod-backstage-v530'),
+              health:window.__v530Health||[],
+              current:typeof currentTab!=='undefined'?currentTab:null,
+              task:(tasks||[]).find(t=>t.id===53001)?.text
+            }));
+            if(sport.surface!=='sport'||sport.mode!=='sport'||sport.backstage||sport.health.length!==1||sport.health[0].source!=='sport-switch'||sport.current!=='all'||sport.task!=='V530 Bestandsschutz')throw new Error('V530 Sport '+JSON.stringify(sport));
+
+            if(errors.length)throw new Error('V530 page errors '+JSON.stringify(errors));
+            fs.writeFileSync('/tmp/v530-result.json',JSON.stringify({launcher,dev,log,home,todo,sport,errors},null,2));
+            console.log('V530 BACKSTAGE PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v530-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v530-backstage-diagnostics
+          path: |
+            /tmp/v530-backstage-dev.png
+            /tmp/v530-backstage-log.png
+            /tmp/v530-result.json
+            /tmp/v530-error.txt
+            /tmp/mod-v530-http.log
+          if-no-files-found: ignore
