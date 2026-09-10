@@ -1,0 +1,51 @@
+/* V523 · SIMPLE FULL-WIDTH HUB HEADER
+   Zurueck zu einem schlichten, durchgehenden Header. Keine Floating-Card,
+   keine abgerundeten Ecken, keine zusaetzlichen Schatten-Spielereien. */
+
+html body.mod-app-hub-v515 #appFixedTopV475{
+  margin:0 -12px 18px !important;
+  padding:calc(12px + env(safe-area-inset-top)) 12px 10px !important;
+  background:var(--mod-bg-top,#15191d) !important;
+  border:0 !important;
+  border-bottom:1px solid color-mix(in srgb,var(--mod-border,#30363b) 72%,transparent) !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475::before{
+  background:var(--mod-bg-top,#15191d) !important;
+  border-radius:0 !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475 .header,
+html body.mod-app-hub-v515 main.app > header.header{
+  overflow:visible !important;
+  margin:0 !important;
+  padding:3px 0 12px !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  -webkit-backdrop-filter:none !important;
+  backdrop-filter:none !important;
+  transform:none !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475 .header::before,
+html body.mod-app-hub-v515 main.app > header.header::before{
+  content:none !important;
+  display:none !important;
+}
+
+@media (max-width:390px){
+  html body.mod-app-hub-v515 #appFixedTopV475{
+    margin-bottom:16px !important;
+  }
+  html body.mod-app-hub-v515 #appFixedTopV475 .header,
+  html body.mod-app-hub-v515 main.app > header.header{
+    padding:3px 0 12px !important;
+    border-radius:0 !important;
+  }
+}
