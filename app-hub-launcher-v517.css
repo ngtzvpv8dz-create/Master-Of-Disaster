@@ -1,17 +1,8 @@
-/* V520 · SIX-TILE HOMESCREEN LAUNCHER */
+/* V521 · FLOATING LAUNCHER SURFACE ON V520 SIX-TILE HOMESCREEN LAUNCHER */
 body.mod-app-hub-v515 #modAppHubV515{
   position:relative;
   padding-top:12px;
-  background:
-    radial-gradient(ellipse at 12% 16%,rgba(54,219,141,.035),transparent 34%),
-    radial-gradient(ellipse at 66% 10%,rgba(156,79,255,.028),transparent 31%),
-    radial-gradient(ellipse at 91% 27%,rgba(36,190,255,.03),transparent 35%),
-    radial-gradient(ellipse at 18% 49%,rgba(239,66,177,.024),transparent 36%),
-    radial-gradient(ellipse at 78% 48%,rgba(239,190,54,.025),transparent 35%),
-    radial-gradient(ellipse at 32% 76%,rgba(42,151,255,.028),transparent 38%),
-    radial-gradient(ellipse at 71% 82%,rgba(47,202,142,.022),transparent 39%),
-    radial-gradient(ellipse at 94% 92%,rgba(178,74,255,.022),transparent 34%),
-    linear-gradient(165deg,#090b0e 0%,#0d1014 48%,#080a0d 100%);
+  background:transparent !important;
 }
 body.mod-app-hub-v515 .header .eyebrow{
   display:none !important;
@@ -233,5 +224,84 @@ body.mod-app-hub-v515 .header .eyebrow{
   }
   .mod-hub-app-pulse-v517 .mod-hub-app-face-v517{
     animation:none;
+  }
+}
+
+/* V521 · full-screen atmospheric launcher background + floating title card */
+body.mod-app-hub-v515{
+  min-height:100dvh;
+  padding-left:0 !important;
+  padding-right:0 !important;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom)) !important;
+  background:
+    radial-gradient(ellipse 78% 46% at -8% 10%,rgba(58,153,111,.050),transparent 72%),
+    radial-gradient(ellipse 70% 44% at 84% 7%,rgba(99,77,169,.042),transparent 74%),
+    radial-gradient(ellipse 76% 54% at 108% 33%,rgba(40,139,164,.045),transparent 76%),
+    radial-gradient(ellipse 74% 48% at 4% 45%,rgba(116,60,137,.034),transparent 76%),
+    radial-gradient(ellipse 90% 62% at 52% 67%,rgba(38,120,101,.032),transparent 80%),
+    radial-gradient(ellipse 68% 48% at 96% 77%,rgba(136,105,54,.030),transparent 76%),
+    radial-gradient(ellipse 82% 58% at 18% 94%,rgba(78,63,116,.032),transparent 78%),
+    linear-gradient(165deg,#090b0e 0%,#0d1014 48%,#080a0d 100%) !important;
+  background-attachment:fixed !important;
+}
+body.mod-app-hub-v515 .app{
+  width:100%;
+  max-width:600px;
+}
+body.mod-app-hub-v515 #appFixedTopV475{
+  position:relative !important;
+  top:auto !important;
+  z-index:20 !important;
+  margin:0 !important;
+  padding:calc(10px + env(safe-area-inset-top)) 0 0 !important;
+  background:transparent !important;
+  border-bottom:0 !important;
+  box-shadow:none !important;
+  isolation:auto !important;
+}
+body.mod-app-hub-v515 #appFixedTopV475::before{
+  background:transparent !important;
+  box-shadow:none !important;
+}
+body.mod-app-hub-v515 #appFixedTopV475 .header{
+  box-sizing:border-box;
+  width:min(calc(100% - 36px),350px);
+  margin:0 auto 14px !important;
+  padding:14px 16px 13px !important;
+  border:1px solid rgba(255,255,255,.105);
+  border-radius:16px;
+  background:
+    radial-gradient(ellipse at 18% 0%,rgba(53,184,157,.055),transparent 48%),
+    radial-gradient(ellipse at 92% 100%,rgba(141,72,177,.050),transparent 52%),
+    linear-gradient(160deg,rgba(18,21,25,.90),rgba(10,12,15,.86));
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.34),
+    0 0 24px rgba(80,142,170,.035),
+    inset 0 1px 0 rgba(255,255,255,.065);
+  -webkit-backdrop-filter:blur(16px) saturate(118%);
+  backdrop-filter:blur(16px) saturate(118%);
+}
+body.mod-app-hub-v515 #appFixedTopV475 .header h1{
+  font-size:clamp(27px,7.4vw,34px);
+  line-height:1;
+  letter-spacing:-1.2px;
+  white-space:nowrap;
+}
+body.mod-app-hub-v515 #modAppHubV515{
+  box-sizing:border-box;
+  width:100%;
+  min-height:0;
+  margin:0;
+  padding:2px 12px 0;
+  background:transparent !important;
+}
+@media (max-width:390px){
+  body.mod-app-hub-v515 #appFixedTopV475 .header{
+    width:min(calc(100% - 30px),336px);
+    padding:13px 14px 12px !important;
+    border-radius:15px;
+  }
+  body.mod-app-hub-v515 #appFixedTopV475 .header h1{
+    font-size:clamp(26px,7.15vw,31px);
   }
 }
