@@ -17,18 +17,20 @@ jobs:
       - name: Syntax and wiring
         run: |
           node --check app-hub-launcher-v517.js
+          node --check backstage-v530.js
           node --check sw.js
           for f in todo sport kistology food future backstage; do test -f "assets/icons/${f}-v524-192.png"; done
           grep -q 'optimizedIcons192V524:true' app-hub-launcher-v517.js
           grep -q 'allLauncherIconsEagerV524:true' app-hub-launcher-v517.js
           grep -q '__modHubLauncherV524' app-hub-launcher-v517.js
+          grep -q 'backstageActiveV530=true' backstage-v530.js
           for f in todo sport kistology food future backstage; do
             grep -q "${f}-v524-192.png?v=524-192" app-hub-launcher-v517.js
             grep -q "${f}-v524-192.png?v=524-192" index.html
             grep -q "${f}-v524-192.png" sw.js
           done
-          grep -Eq 'master-of-disaster-v524-192-icons|master-of-disaster-v525-fast-start' sw.js
-          grep -Eq './sw\.js\?v=524-192|./sw\.js\?v=525-fast-start' index.html
+          grep -Eq 'master-of-disaster-v524-192-icons|master-of-disaster-v525-fast-start|master-of-disaster-v530-backstage' sw.js
+          grep -Eq './sw\.js\?v=524-192|./sw\.js\?v=525-fast-start|./sw\.js\?v=530-backstage' index.html
       - name: Validate optimized PNG assets
         run: |
           python3 -m pip install --disable-pip-version-check pillow >/dev/null 2>&1
@@ -85,13 +87,14 @@ jobs:
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg=v524',{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV524,null,{timeout:30000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV530,null,{timeout:30000});
             await page.evaluate(()=>{
               const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-10';
               tasks=[{id:52401,text:'V524 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
               if(typeof saveTasks==='function')saveTasks();
               window.__modAppHubV515.show();
               window.__modHubLauncherV524.render();
+              window.__modBackstageV530.patchLauncher();
             });
             await page.waitForFunction(()=>document.getElementById('modAppHubV515')?.dataset.modHubAssetsV520==='ready',null,{timeout:10000});
             await page.waitForTimeout(250);
@@ -102,14 +105,14 @@ jobs:
               labels:[...document.querySelectorAll('.mod-hub-app-label-v517')].map(x=>x.textContent.trim()),
               disabled:[...document.querySelectorAll('[data-mod-hub-launch-v517]')].map(x=>x.getAttribute('aria-disabled')),
               images:[...document.querySelectorAll('.mod-hub-app-icon-v517')].map(x=>({src:x.getAttribute('src'),w:x.naturalWidth,h:x.naturalHeight,complete:x.complete})),
-              flags:{optimized:window.__modHubLauncherV524.optimizedIcons192V524,eager:window.__modHubLauncherV524.allLauncherIconsEagerV524},
+              flags:{optimized:window.__modHubLauncherV524.optimizedIcons192V524,eager:window.__modHubLauncherV524.allLauncherIconsEagerV524,backstage:window.__modHubLauncherV524.backstageActiveV530},
               task:(tasks||[]).find(t=>t.id===52401)?.text,
               imgErrors:window.__v524ImgErrors||[]
             }));
             const ids=['todo','sport','kistology','food','future','backstage'];
             const labels=['TO-DO','SPORT','KISTOLOGY','FOOD','FUTURE','BACKSTAGE'];
-            const disabled=[null,null,'true','true','true','true'];
-            if(!initial.hub||initial.surface!=='hub'||JSON.stringify(initial.buttons)!==JSON.stringify(ids)||JSON.stringify(initial.labels)!==JSON.stringify(labels)||JSON.stringify(initial.disabled)!==JSON.stringify(disabled)||initial.images.length!==6||initial.images.some((x,i)=>!x.complete||x.w!==192||x.h!==192||!x.src.includes(`${ids[i]}-v524-192.png`))||!initial.flags.optimized||!initial.flags.eager||initial.task!=='V524 Bestandsschutz'||initial.imgErrors.length)throw new Error('V524 initial '+JSON.stringify({initial,errors}));
+            const disabled=[null,null,'true','true','true',null];
+            if(!initial.hub||initial.surface!=='hub'||JSON.stringify(initial.buttons)!==JSON.stringify(ids)||JSON.stringify(initial.labels)!==JSON.stringify(labels)||JSON.stringify(initial.disabled)!==JSON.stringify(disabled)||initial.images.length!==6||initial.images.some((x,i)=>!x.complete||x.w!==192||x.h!==192||!x.src.includes(`${ids[i]}-v524-192.png`))||!initial.flags.optimized||!initial.flags.eager||!initial.flags.backstage||initial.task!=='V524 Bestandsschutz'||initial.imgErrors.length)throw new Error('V524 initial '+JSON.stringify({initial,errors}));
             await page.screenshot({path:'/tmp/v524-launcher.png',fullPage:true});
 
             await page.click('.mod-hub-app-button-todo-v517');
@@ -132,7 +135,7 @@ jobs:
             await page.evaluate(()=>{window.__modAppHubV515.show();window.__modHubLauncherV524.render();});
             await page.waitForTimeout(120);
             await page.evaluate(()=>{
-              for(const id of ['kistology','food','future','backstage'])document.querySelector(`.mod-hub-app-button-${id}-v517`)?.click();
+              for(const id of ['kistology','food','future'])document.querySelector(`.mod-hub-app-button-${id}-v517`)?.click();
             });
             await page.waitForTimeout(120);
             const prepared=await page.evaluate(()=>({hub:document.body.classList.contains('mod-app-hub-v515'),surface:document.body.dataset.modAppSurfaceV515,task:(tasks||[]).find(t=>t.id===52401)?.text}));
