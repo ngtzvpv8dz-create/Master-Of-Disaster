@@ -69,6 +69,7 @@
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
+  <link rel="stylesheet" href="./backstage-v530.css?v=530-1425">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -81,7 +82,7 @@
       <div class="eyebrow">WEEK-AND-END-TO-DO-DINGSI</div>
     </header>
     <div class="tabs-wrapper"><nav class="tabs">
-      <button class="tab-button active" data-tab="all" onclick="switchTab('all')">ALLE</button><button class="tab-button" data-tab="today" onclick="switchTab('today')">HEUTE</button><button class="tab-button" data-tab="priority" onclick="switchTab('priority')">PRIORITÄT</button><button class="tab-button" data-tab="due" onclick="switchTab('due')">FÄLLIG</button><button class="tab-button" data-tab="active" onclick="switchTab('active')">PAUSIERT</button><button class="tab-button" data-tab="archive" onclick="switchTab('archive')">ARCHIV</button><button class="tab-button" data-tab="statistics" onclick="switchTab('statistics')">STATISTIK</button><button class="tab-button" data-tab="categories" onclick="switchTab('categories')">KATEGORIEN</button><button class="tab-button" data-tab="titles" onclick="switchTab('titles')">TITEL</button><button class="tab-button" data-tab="theme" onclick="switchTab('theme')">THEME</button><button class="tab-button" data-tab="dev" onclick="switchTab('dev')">DEV</button><button class="tab-button" data-tab="log" onclick="switchTab('log')">LOG</button>
+      <button class="tab-button active" data-tab="all" onclick="switchTab('all')">ALLE</button><button class="tab-button" data-tab="today" onclick="switchTab('today')">HEUTE</button><button class="tab-button" data-tab="priority" onclick="switchTab('priority')">PRIORITÄT</button><button class="tab-button" data-tab="due" onclick="switchTab('due')">FÄLLIG</button><button class="tab-button" data-tab="active" onclick="switchTab('active')">PAUSIERT</button><button class="tab-button" data-tab="archive" onclick="switchTab('archive')">ARCHIV</button><button class="tab-button" data-tab="statistics" onclick="switchTab('statistics')">STATISTIK</button><button class="tab-button" data-tab="categories" onclick="switchTab('categories')">KATEGORIEN</button><button class="tab-button" data-tab="titles" onclick="switchTab('titles')">TITEL</button><button class="tab-button" data-tab="theme" onclick="switchTab('theme')">THEME</button>
     </nav></div>
     <section class="input-panel" id="inputPanel">
       <div class="task-input-wrap"><input id="taskInput" type="text" placeholder="Was steht an?" autocomplete="off"><div id="taskSuggestions" class="task-suggestions"></div></div>
@@ -99,9 +100,10 @@
   <script src="./today-interaction-stability-v503.js?v=503-1803"></script>
   <script src="./category-create-stability-v504.js?v=504-1319"></script>
   <script src="./running-task-render-stability-v505.js?v=518-1920"></script>
+  <script src="./backstage-v530.js?v=530-1425"></script>
   <script src="./backup-stability-v506.js?v=506-1131"></script>
   <script src="./backup-source-fallback-v506.js?v=506-1244"></script>
   <script src="./task-title-library-v507.js?v=507-1345"></script>
   <script src="./archive-weight-layout-v508.js?v=508-0709"></script>
-  <script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=525-fast-start',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V525 Service-Worker-Registrierung:',e);}})();</script>
+  <script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=530-backstage',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V530 Service-Worker-Registrierung:',e);}})();</script>
 </body></html>
