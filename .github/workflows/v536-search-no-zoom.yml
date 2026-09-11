@@ -1,0 +1,115 @@
+name: V536 Search No Zoom
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  search-no-zoom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check search-no-zoom-v536.js
+          node --check app-hub-launcher-v517.js
+          node --check sw.js
+          grep -q "const VERSION='V536'" search-no-zoom-v536.js
+          grep -q 'iOSFocusZoomPreventedV536:true' search-no-zoom-v536.js
+          grep -q 'dynamicSearchFieldsCoveredV536:true' search-no-zoom-v536.js
+          grep -q 'pinchZoomPreservedV536:true' search-no-zoom-v536.js
+          grep -q 'viewportLockNotUsedV536:true' search-no-zoom-v536.js
+          grep -q 'searchNoZoomLoaderV536:true' app-hub-launcher-v517.js
+          grep -q 'search-no-zoom-v536.js?v=536-search-no-zoom' app-hub-launcher-v517.js
+          grep -q '"./search-no-zoom-v536.js"' sw.js
+          ! grep -Eqi 'user-scalable\s*=\s*no|maximum-scale\s*=\s*1' search-no-zoom-v536.js
+      - name: Browser regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v536-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?v536test=1',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modSearchNoZoomV536?.version==='V536',null,{timeout:30000});
+            await page.waitForFunction(()=>window.__modKistologyV535?.version==='V535',null,{timeout:30000});
+
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-11';
+              tasks=[{id:53601,text:'V536 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modKistologyV535.patchLauncher();
+            });
+            await page.waitForTimeout(200);
+            await page.click('[data-mod-hub-launch-v517="kistology"]');
+            await page.waitForSelector('body.mod-kistology-v535 [data-kistology-search-v535]');
+
+            const initial=await page.evaluate(()=>{
+              const input=document.querySelector('[data-kistology-search-v535]');
+              const viewport=document.querySelector('meta[name="viewport"]')?.content||'';
+              return {
+                version:window.__modSearchNoZoomV536.version,
+                classed:input?.classList.contains('mod-search-no-zoom-v536'),
+                tagged:input?.dataset.modSearchNoZoomV536,
+                font:parseFloat(getComputedStyle(input).fontSize),
+                viewport,
+                locked:/user-scalable\s*=\s*no|maximum-scale\s*=\s*1/i.test(viewport),
+                task:(tasks||[]).find(t=>t.id===53601)?.text
+              };
+            });
+            if(initial.version!=='V536'||!initial.classed||initial.tagged!=='true'||initial.font<16||initial.locked||initial.task!=='V536 Bestandsschutz')throw new Error('V536 initial '+JSON.stringify(initial));
+
+            await page.evaluate(()=>{
+              const host=document.createElement('div');
+              host.id='v536DynamicHost';
+              host.innerHTML='<input id="futureSearchInput" type="text" placeholder="Suche im neuen Bereich"><input id="normalTextField" type="text" placeholder="Notiz">';
+              document.body.appendChild(host);
+            });
+            await page.waitForFunction(()=>document.getElementById('futureSearchInput')?.dataset.modSearchNoZoomV536==='true');
+            const dynamic=await page.evaluate(()=>{
+              const search=document.getElementById('futureSearchInput');
+              const normal=document.getElementById('normalTextField');
+              search.focus();
+              return {
+                searchClass:search.classList.contains('mod-search-no-zoom-v536'),
+                searchFont:parseFloat(getComputedStyle(search).fontSize),
+                normalClass:normal.classList.contains('mod-search-no-zoom-v536'),
+                visualScale:window.visualViewport?.scale||1,
+                task:(tasks||[]).find(t=>t.id===53601)?.text
+              };
+            });
+            if(!dynamic.searchClass||dynamic.searchFont<16||dynamic.normalClass||dynamic.visualScale!==1||dynamic.task!=='V536 Bestandsschutz')throw new Error('V536 dynamic '+JSON.stringify(dynamic));
+            if(errors.length)throw new Error('V536 page errors '+JSON.stringify(errors));
+
+            await page.screenshot({path:'/tmp/v536-search-no-zoom.png',fullPage:true});
+            fs.writeFileSync('/tmp/v536-result.json',JSON.stringify({initial,dynamic,errors},null,2));
+            console.log('V536 APP-WIDE SEARCH NO-ZOOM PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v536-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v536-search-no-zoom-diagnostics
+          path: |
+            /tmp/v536-search-no-zoom.png
+            /tmp/v536-result.json
+            /tmp/v536-error.txt
+            /tmp/mod-v536-http.log
+          if-no-files-found: ignore
