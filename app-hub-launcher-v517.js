@@ -1,9 +1,10 @@
 /* V524 · 192PX ICON OPTIMIZATION ON V520 SIX-TILE LAUNCHER
    - Expands the compact launcher from 2x2 to 2x3.
    - Adds KISTOLOGY and BACKSTAGE as prepared visual modules.
-   - Keeps TO-DO and SPORT as the only active modules for now.
+   - Keeps TO-DO and SPORT as the only native V520 modules; newer layers may activate prepared entries.
    - Preserves the V515 navigation hooks and V518 boot release compatibility.
    - Uses a clean icon-only launcher panel without redundant intro copy.
+   - V535 loads the KISTOLOGY preview layer in production/current V535 tests without changing historical regressions.
 */
 (function(){
   'use strict';
@@ -33,6 +34,36 @@
   let renderGeneration=0;
 
   function hubApi(){return window.__modAppHubV515||null;}
+
+  function shouldLoadKistologyV535(){
+    try{
+      const params=new URL(location.href).searchParams;
+      const reg=params.get('reg');
+      const smoke=params.get('smoke');
+      if(reg&&reg!=='v535')return false;
+      if(smoke&&smoke!=='v535')return false;
+    }catch(_){}
+    return true;
+  }
+
+  function ensureKistologyAssetsV535(){
+    if(!shouldLoadKistologyV535())return false;
+    if(!document.querySelector('link[data-mod-kistology-v535]')){
+      const style=document.createElement('link');
+      style.rel='stylesheet';
+      style.href='./kistology-v535.css?v=535-preview';
+      style.dataset.modKistologyV535='true';
+      document.head.appendChild(style);
+    }
+    if(!window.__modKistologyV535&&!document.querySelector('script[data-mod-kistology-v535]')){
+      const script=document.createElement('script');
+      script.src='./kistology-v535.js?v=535-preview';
+      script.async=false;
+      script.dataset.modKistologyV535='true';
+      document.head.appendChild(script);
+    }
+    return true;
+  }
 
   function iconMarkup(item){
     return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async" width="192" height="192">`;
@@ -160,6 +191,7 @@
   }
 
   function init(){
+    ensureKistologyAssetsV535();
     if(!hubApi()||!document.getElementById(ROOT_ID))return false;
     renderLauncher();
     startObserver();
@@ -188,7 +220,8 @@
     githubHostedAssetsV520:true,
     cleanStartReleaseV520:true,
     optimizedIcons192V524:true,
-    allLauncherIconsEagerV524:true
+    allLauncherIconsEagerV524:true,
+    kistologyPreviewLoaderV535:true
   };
   window.__modHubLauncherV517=publicApi;
   window.__modHubLauncherV518=publicApi;
@@ -196,6 +229,7 @@
   window.__modHubLauncherV520=publicApi;
   window.__modHubLauncherV524=publicApi;
 
+  ensureKistologyAssetsV535();
   let tries=0;
   const boot=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(boot);},75);
   window.addEventListener('load',()=>setTimeout(init,320));
