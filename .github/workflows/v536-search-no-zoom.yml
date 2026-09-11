@@ -43,7 +43,7 @@ jobs:
             const errors=[];
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-            await page.goto('http://127.0.0.1:8787/?v536test=1',{waitUntil:'networkidle',timeout:60000});
+            await page.goto('http://127.0.0.1:8787/?reg=v535&v536test=1',{waitUntil:'networkidle',timeout:60000});
             await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modSearchNoZoomV536?.version==='V536',null,{timeout:30000});
             await page.waitForFunction(()=>window.__modKistologyV535?.version==='V535',null,{timeout:30000});
 

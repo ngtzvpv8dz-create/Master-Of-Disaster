@@ -4,8 +4,9 @@
    - Keeps TO-DO and SPORT as the only native V520 modules; newer layers may activate prepared entries.
    - Preserves the V515 navigation hooks and V518 boot release compatibility.
    - Uses a clean icon-only launcher panel without redundant intro copy.
-   - V535 loads the KISTOLOGY preview layer in production/current V535 tests without changing historical regressions.
+   - V535 remains available for its historical KISTOLOGY preview regression.
    - V536 loads the app-wide search no-zoom guard on every surface.
+   - V537 loads the authenticated read-only KISTOLOGY Supabase snapshot in production/current V537 tests.
 */
 (function(){
   'use strict';
@@ -47,19 +48,21 @@
     return true;
   }
 
-  function shouldLoadKistologyV535(){
+  function kistologyRelease(){
     try{
       const params=new URL(location.href).searchParams;
       const reg=params.get('reg');
       const smoke=params.get('smoke');
-      if(reg&&reg!=='v535')return false;
-      if(smoke&&smoke!=='v535')return false;
+      if(reg==='v535'||smoke==='v535')return 'v535';
+      if(reg&&reg!=='v537')return null;
+      if(smoke&&smoke!=='v537')return null;
     }catch(_){}
-    return true;
+    return 'v537';
   }
 
   function ensureKistologyAssetsV535(){
-    if(!shouldLoadKistologyV535())return false;
+    const release=kistologyRelease();
+    if(!release)return false;
     if(!document.querySelector('link[data-mod-kistology-v535]')){
       const style=document.createElement('link');
       style.rel='stylesheet';
@@ -67,11 +70,21 @@
       style.dataset.modKistologyV535='true';
       document.head.appendChild(style);
     }
-    if(!window.__modKistologyV535&&!document.querySelector('script[data-mod-kistology-v535]')){
+    if(release==='v535'){
+      if(!window.__modKistologyV535&&!document.querySelector('script[data-mod-kistology-v535]')){
+        const script=document.createElement('script');
+        script.src='./kistology-v535.js?v=535-preview';
+        script.async=false;
+        script.dataset.modKistologyV535='true';
+        document.head.appendChild(script);
+      }
+      return true;
+    }
+    if(!window.__modKistologyV537&&!document.querySelector('script[data-mod-kistology-v537]')){
       const script=document.createElement('script');
-      script.src='./kistology-v535.js?v=535-preview';
+      script.src='./kistology-v537.js?v=537-live-snapshot';
       script.async=false;
-      script.dataset.modKistologyV535='true';
+      script.dataset.modKistologyV537='true';
       document.head.appendChild(script);
     }
     return true;
@@ -81,13 +94,8 @@
     return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async" width="192" height="192">`;
   }
 
-  function labelMarkup(item){
-    return `<span class="mod-hub-app-label-v517">${item.label}</span>`;
-  }
-
-  function legacyOpenMarker(item){
-    return item.id==='todo'||item.id==='sport'?` data-mod-hub-open="${item.id}"`:'';
-  }
+  function labelMarkup(item){return `<span class="mod-hub-app-label-v517">${item.label}</span>`;}
+  function legacyOpenMarker(item){return item.id==='todo'||item.id==='sport'?` data-mod-hub-open="${item.id}"`:'';}
 
   function ariaLabel(item){
     if(item.id==='todo')return 'To-do öffnen';
@@ -121,14 +129,10 @@
       const loaded=()=>{
         cleanup();
         if(img.naturalWidth<=0){reject(new Error('image-width-zero'));return;}
-        if(typeof img.decode==='function')img.decode().then(resolve,reject);
-        else resolve();
+        if(typeof img.decode==='function')img.decode().then(resolve,reject);else resolve();
       };
       const failed=()=>{cleanup();reject(new Error('image-load-error'));};
-      const cleanup=()=>{
-        img.removeEventListener('load',loaded);
-        img.removeEventListener('error',failed);
-      };
+      const cleanup=()=>{img.removeEventListener('load',loaded);img.removeEventListener('error',failed);};
       img.addEventListener('load',loaded,{once:true});
       img.addEventListener('error',failed,{once:true});
     });
@@ -148,7 +152,6 @@
       if(allLoaded)document.documentElement.classList.add('mod-hub-assets-ready-v520');
       try{window.__modReleaseHubBootV518?.(allLoaded?'assets-ready-v520':'assets-fallback-v520');}catch(_){}
     };
-
     Promise.all(images.map(waitForImage)).then(()=>finish('settled')).catch(()=>finish('decode-error'));
     setTimeout(()=>finish('timeout'),3000);
   }
@@ -235,7 +238,8 @@
     optimizedIcons192V524:true,
     allLauncherIconsEagerV524:true,
     kistologyPreviewLoaderV535:true,
-    searchNoZoomLoaderV536:true
+    searchNoZoomLoaderV536:true,
+    kistologyLiveSnapshotLoaderV537:true
   };
   window.__modHubLauncherV517=publicApi;
   window.__modHubLauncherV518=publicApi;
