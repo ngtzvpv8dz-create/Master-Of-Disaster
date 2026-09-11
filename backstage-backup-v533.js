@@ -14,6 +14,11 @@
   let observer=null;
   let captureInstalled=false;
   let fullBackupBusy=false;
+  let regressionBypass=false;
+  try{
+    const reg=new URL(location.href).searchParams.get('reg');
+    regressionBypass=Boolean(reg&&String(reg).toLowerCase()!=='v533');
+  }catch(_){}
 
   function backstageApi(){return window.__modBackstageV531||window.__modBackstageV530||null;}
   function safetyApi(){return window.__modRecoveryHistoryV498||null;}
@@ -31,6 +36,7 @@
   }
 
   function parkLegacyFullBackup(){
+    if(regressionBypass)return false;
     const wrap=document.getElementById('fullBackupWrapV397');
     if(!wrap)return false;
     const parking=ensureParking();
@@ -41,6 +47,7 @@
   }
 
   function ensureQuickFullBackupButton(){
+    if(regressionBypass)return null;
     const tabs=document.querySelector(`#${ROOT_ID} .mod-backstage-tabs-v531`);
     if(!tabs)return null;
     let button=tabs.querySelector('[data-backstage-action-v533="fullbackup"]');
@@ -66,6 +73,13 @@
     });
   }
 
+  function requiredSafetyMethod(name){
+    const api=safetyApi();
+    const method=api?.[name];
+    if(typeof method!=='function')throw new Error(`Backup-Funktion ${name} ist noch nicht verfügbar.`);
+    return method.bind(api);
+  }
+
   async function runFullBackup(){
     if(fullBackupBusy)return false;
     fullBackupBusy=true;
@@ -81,7 +95,7 @@
       throw new Error('Die Vollbackup-Funktion ist noch nicht verfügbar.');
     }catch(error){
       console.error('V533 Vollbackup:',error);
-      try{showInfoModal?.('Vollbackup nicht verfügbar',error?.message||String(error));}catch(_){}
+      try{window.showInfoModal?.('Vollbackup nicht verfügbar',error?.message||String(error));}catch(_){}
       return false;
     }finally{
       fullBackupBusy=false;
@@ -95,7 +109,7 @@
   }
 
   function renderBackupDashboard(){
-    if(!isOpen())return false;
+    if(regressionBypass||!isOpen())return false;
     const view=document.getElementById('viewContainer');
     if(!view)return false;
     parkLegacyFullBackup();
@@ -115,15 +129,14 @@
     view.querySelectorAll('[data-backup-action-v533]').forEach(button=>{
       button.addEventListener('click',async()=>{
         const action=button.dataset.backupActionV533;
-        const api=safetyApi();
         try{
           if(action==='fullbackup'){await runFullBackup();return;}
-          if(action==='weekly-create'){await api?.createWeeklyCloudBackup?.();return;}
-          if(action==='weekly-list'){await api?.listWeeklyCloudBackups?.();return;}
+          if(action==='weekly-create'){await requiredSafetyMethod('createWeeklyCloudBackup')();return;}
+          if(action==='weekly-list'){await requiredSafetyMethod('listWeeklyCloudBackups')();return;}
           if(action==='zip-import'){fileInput?.click();return;}
         }catch(error){
           console.error('V533 Backup-Aktion:',action,error);
-          try{showInfoModal?.('Backup-Aktion fehlgeschlagen',error?.message||String(error));}catch(_){}
+          try{window.showInfoModal?.('Backup-Aktion fehlgeschlagen',error?.message||String(error));}catch(_){}
         }
       });
     });
@@ -132,12 +145,10 @@
       event.target.value='';
       if(!file)return;
       try{
-        const api=safetyApi();
-        if(typeof api?.importFullBackupZip!=='function')throw new Error('ZIP-Import ist noch nicht verfügbar.');
-        await api.importFullBackupZip(file);
+        await requiredSafetyMethod('importFullBackupZip')(file);
       }catch(error){
         console.error('V533 ZIP-Import:',error);
-        try{showInfoModal?.('Vollbackup konnte nicht importiert werden',error?.message||String(error));}catch(_){}
+        try{window.showInfoModal?.('Vollbackup konnte nicht importiert werden',error?.message||String(error));}catch(_){}
       }
     });
     updateFullBackupBusyState();
@@ -146,6 +157,7 @@
   }
 
   function openBackup(){
+    if(regressionBypass)return false;
     const api=backstageApi();
     if(!api)return false;
     api.setSection?.('backup');
@@ -154,7 +166,7 @@
   }
 
   function installCapture(){
-    if(captureInstalled)return;
+    if(captureInstalled||regressionBypass)return;
     captureInstalled=true;
     window.addEventListener('click',event=>{
       if(!isOpen())return;
@@ -175,6 +187,7 @@
   }
 
   function patch(){
+    if(regressionBypass)return true;
     ensureQuickFullBackupButton();
     parkLegacyFullBackup();
     const api=backstageApi();
@@ -183,7 +196,7 @@
   }
 
   function observe(){
-    if(observer)return;
+    if(observer||regressionBypass)return;
     observer=new MutationObserver(()=>patch());
     observer.observe(document.documentElement,{childList:true,subtree:true});
   }
@@ -195,6 +208,7 @@
     renderBackupDashboard,
     runFullBackup,
     parkLegacyFullBackup,
+    regressionBypass,
     sixTileDeckV533:true,
     backupDashboardV533:true,
     existingBackupLogicReusedV533:true,
@@ -202,6 +216,7 @@
   };
   window.__modBackstageBackupV533=api;
 
+  if(regressionBypass)return;
   installCapture();
   observe();
   let tries=0;
