@@ -1,0 +1,144 @@
+name: V533 Backstage Backup Deck
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  backstage-backup-deck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check backstage-v530.js
+          node --check backstage-backup-v533.js
+          node --check sw.js
+          test -f backstage-backup-v533.css
+          grep -q "backupDeck:'V533'" backstage-v530.js
+          grep -q 'backstage-backup-v533.css?v=533-backup-deck' backstage-v530.js
+          grep -q 'backstage-backup-v533.js?v=533-backup-deck' backstage-v530.js
+          grep -q '"./backstage-backup-v533.css"' sw.js
+          grep -q '"./backstage-backup-v533.js"' sw.js
+          grep -q "const VERSION='V533'" backstage-backup-v533.js
+          grep -q 'sixTileDeckV533:true' backstage-backup-v533.js
+          grep -q 'backupDashboardV533:true' backstage-backup-v533.js
+          grep -q 'data-backstage-action-v533' backstage-backup-v533.js
+      - name: Browser Backstage backup regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v533-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v533',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV531&&window.__modBackstageBackupV533?.version==='V533',null,{timeout:30000});
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-11';
+              tasks=[{id:53301,text:'V533 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.__v533Calls={full:0,weekly:0,list:0,import:0};
+              const safety=window.__modRecoveryHistoryV498;
+              if(!safety)throw new Error('V498 safety API missing');
+              safety.createEnhancedFullBackup=async()=>{window.__v533Calls.full++;};
+              safety.createWeeklyCloudBackup=async()=>{window.__v533Calls.weekly++;};
+              safety.listWeeklyCloudBackups=async()=>{window.__v533Calls.list++;};
+              safety.importFullBackupZip=async file=>{if(file?.name==='backup.zip')window.__v533Calls.import++;};
+              switchTab('all');
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modBackstageV531.patchLauncher();
+            });
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForFunction(()=>document.querySelector('[data-backstage-action-v533="fullbackup"]'),null,{timeout:10000});
+            await page.waitForTimeout(300);
+            await page.waitForFunction(()=>{
+              const wrap=document.getElementById('fullBackupWrapV397');
+              return !wrap||wrap.dataset.modBackstageParkedV533==='true';
+            },null,{timeout:10000});
+
+            const deck=await page.evaluate(()=>{
+              const root=document.getElementById('modBackstageV530');
+              const buttons=[...root.querySelectorAll('.mod-backstage-tabs-v531 > button')];
+              return {
+                count:buttons.length,
+                labels:buttons.map(b=>b.querySelector('.mod-backstage-tab-label-v531')?.textContent.trim()),
+                indices:buttons.map(b=>b.querySelector('.mod-backstage-tab-index-v531')?.textContent.trim()),
+                heights:buttons.map(b=>Math.round(b.getBoundingClientRect().height*10)/10),
+                systemHeight:root.querySelector('[data-backstage-section-v531="system"]')?.getBoundingClientRect().height||0,
+                fullHeight:root.querySelector('[data-backstage-action-v533="fullbackup"]')?.getBoundingClientRect().height||0,
+                legacyInTabs:!!root.querySelector('.mod-backstage-tabs-v531 > #fullBackupWrapV397'),
+                parked:document.getElementById('fullBackupWrapV397')?.parentElement?.id||null,
+                task:(tasks||[]).find(t=>t.id===53301)?.text
+              };
+            });
+            if(deck.count!==6||JSON.stringify(deck.labels)!==JSON.stringify(['DEV','LOG','BACKUP','RESTORE','SYSTEM','VOLLBACKUP'])||JSON.stringify(deck.indices)!==JSON.stringify(['01','02','03','04','05','06']))throw new Error('V533 deck structure '+JSON.stringify(deck));
+            if(Math.max(...deck.heights)-Math.min(...deck.heights)>2||Math.abs(deck.systemHeight-deck.fullHeight)>2||deck.legacyInTabs||deck.task!=='V533 Bestandsschutz')throw new Error('V533 deck sizing '+JSON.stringify(deck));
+
+            await page.click('[data-backstage-section-v531="backup"]');
+            await page.waitForSelector('[data-backstage-backup-v533="true"]');
+            const backup=await page.evaluate(()=>({
+              active:window.__modBackstageV531.activeSection,
+              current:typeof currentTab!=='undefined'?currentTab:null,
+              cards:[...document.querySelectorAll('[data-backup-card-v533]')].map(x=>x.dataset.backupCardV533),
+              actions:[...document.querySelectorAll('[data-backup-action-v533]')].map(x=>x.dataset.backupActionV533),
+              task:(tasks||[]).find(t=>t.id===53301)?.text
+            }));
+            if(backup.active!=='backup'||backup.current!=='dev'||JSON.stringify(backup.cards)!==JSON.stringify(['B01','B02','B03','B04','B05'])||JSON.stringify(backup.actions)!==JSON.stringify(['fullbackup','weekly-create','weekly-list','zip-import'])||backup.task!=='V533 Bestandsschutz')throw new Error('V533 backup dashboard '+JSON.stringify(backup));
+
+            await page.click('[data-backup-action-v533="weekly-create"]');
+            await page.click('[data-backup-action-v533="weekly-list"]');
+            await page.click('[data-backup-action-v533="fullbackup"]');
+            await page.setInputFiles('[data-backup-file-v533]',{name:'backup.zip',mimeType:'application/zip',buffer:Buffer.from('PK-v533-test')});
+            await page.waitForTimeout(120);
+            await page.click('[data-backstage-action-v533="fullbackup"]');
+            await page.waitForTimeout(120);
+            const calls=await page.evaluate(()=>window.__v533Calls);
+            if(calls.full!==2||calls.weekly!==1||calls.list!==1||calls.import!==1)throw new Error('V533 action wiring '+JSON.stringify(calls));
+
+            await page.click('[data-backstage-section-v531="restore"]');
+            await page.waitForTimeout(80);
+            const restore=await page.evaluate(()=>({active:window.__modBackstageV531.activeSection,placeholder:document.querySelector('[data-backstage-placeholder-v531="restore"]')?.textContent||'',task:(tasks||[]).find(t=>t.id===53301)?.text}));
+            if(restore.active!=='restore'||!/GRUNDGERÜST/.test(restore.placeholder)||restore.task!=='V533 Bestandsschutz')throw new Error('V533 restore preservation '+JSON.stringify(restore));
+
+            await page.click('[data-backstage-section-v531="dev"]');
+            await page.waitForTimeout(180);
+            const dev=await page.evaluate(()=>({
+              active:window.__modBackstageV531.activeSection,
+              legacyVisible:!!document.querySelector('#viewContainer #fullBackupWrapV397'),
+              parked:document.getElementById('fullBackupWrapV397')?.parentElement?.id||null,
+              task:(tasks||[]).find(t=>t.id===53301)?.text
+            }));
+            if(dev.active!=='dev'||dev.legacyVisible||dev.task!=='V533 Bestandsschutz')throw new Error('V533 DEV cleanup '+JSON.stringify(dev));
+            if(errors.length)throw new Error('V533 page errors '+JSON.stringify(errors));
+
+            await page.screenshot({path:'/tmp/v533-backstage-backup.png',fullPage:true});
+            fs.writeFileSync('/tmp/v533-result.json',JSON.stringify({deck,backup,calls,restore,dev,errors},null,2));
+            console.log('V533 BACKSTAGE BACKUP DECK PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v533-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v533-backstage-backup-deck-diagnostics
+          path: |
+            /tmp/v533-backstage-backup.png
+            /tmp/v533-result.json
+            /tmp/v533-error.txt
+            /tmp/mod-v533-http.log
+          if-no-files-found: ignore
