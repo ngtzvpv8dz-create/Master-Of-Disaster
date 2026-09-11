@@ -14,13 +14,13 @@
   const BOXES=[
     {id:'box-01',label:'KISTE 01',row:'Reihe 1',categories:['Camping','Technik'],items:[
       {id:'DEMO-01',name:'Schwarze Kabelbinder',category:'Technik',detail:'Befestigung'},
-      {id:'DEMO-02',name:'Graues Panzer-/Gewebeband',category:'Werkzeug',detail:'Kleben'},
+      {id:'DEMO-02',name:'Graues Panzer-/Gewebeband',category:'Werkzeug',detail:'Kleben',aliases:['Panzerband','Gewebeband']},
       {id:'DEMO-03',name:'USB-C-Ladegerät 65 W',category:'Technik',detail:'Stromversorgung'},
       {id:'DEMO-04',name:'Karabinerhaken (Set)',category:'Camping',detail:'Outdoor'}
     ]},
     {id:'box-02',label:'KISTE 02',row:'Reihe 1',categories:['Werkzeug','Material'],items:[
       {id:'DEMO-05',name:'Bit-Set kompakt',category:'Werkzeug',detail:'Schrauben'},
-      {id:'DEMO-06',name:'Schwarzes Gewebeband',category:'Werkzeug',detail:'Kleben'},
+      {id:'DEMO-06',name:'Schwarzes Gewebeband',category:'Werkzeug',detail:'Kleben',aliases:['Tape']},
       {id:'DEMO-07',name:'Maßband 5 m',category:'Werkzeug',detail:'Messen'}
     ]},
     {id:'box-03',label:'KISTE 03',row:'Reihe 2',categories:['Elektronik','Kabel'],items:[
@@ -40,7 +40,7 @@
     ]},
     {id:'box-06',label:'KISTE 06',row:'Reihe 3',categories:['Ersatzteile','Sonstiges'],items:[
       {id:'DEMO-17',name:'Adapter-Set',category:'Ersatzteile',detail:'Adapter'},
-      {id:'DEMO-18',name:'Kleinteilebox',category:'Sonstiges',detail:'Aufbewahrung'},
+      {id:'DEMO-18',name:'Kleinteilebox',category:'Sonstiges',detail:'Aufbewahrung',status:'Noch prüfen'},
       {id:'DEMO-19',name:'Ersatzkabel',category:'Ersatzteile',detail:'Kabel'}
     ]}
   ];
@@ -82,11 +82,12 @@
   }
 
   function boxCard(box){
+    const pending=box.items.filter(item=>item.status==='Noch prüfen').length;
     return `<button type="button" class="mod-kistology-box-v535" data-kistology-box-v535="${box.id}" aria-label="${box.label} öffnen">
       <span class="mod-kistology-box-handle-v535" aria-hidden="true"></span>
       <span class="mod-kistology-box-label-v535">
         <strong>${box.label}</strong>
-        <small>${box.row} · ${box.items.length} Gegenstände</small>
+        <small>${box.row} · ${box.items.length} Gegenstände${pending?` · ${pending} prüfen`:''}</small>
         <span>${box.categories.join(' · ')}</span>
       </span>
       <span class="mod-kistology-box-mark-v535">${box.row.replace('Reihe ','R')}</span>
@@ -98,28 +99,36 @@
       <div class="mod-kistology-item-code-v535">${item.id}</div>
       <div class="mod-kistology-item-main-v535">
         <h4>${item.name}</h4>
-        <p>${item.category} · ${item.detail}</p>
+        <p>${item.category} · ${item.detail}${item.status?` · ${item.status}`:''}</p>
         <small>${item.boxLabel||''}${item.row?` · ${item.row}`:''}</small>
       </div>
       <span class="mod-kistology-item-arrow-v535" aria-hidden="true">›</span>
     </article>`;
   }
 
+  function matchesFilter(item,filter){
+    if(filter==='Alle')return true;
+    if(item.status===filter)return true;
+    return item.category===filter||item.categories.includes(filter);
+  }
+
   function matchingItems(){
     const q=normalize(query.trim());
     const filter=activeFilter;
     return allItems().filter(item=>{
-      const filterOk=filter==='Alle'||item.category===filter||item.categories.includes(filter);
-      if(!filterOk)return false;
+      if(!matchesFilter(item,filter))return false;
       if(!q)return true;
-      const hay=normalize([item.id,item.name,item.category,item.detail,item.boxLabel,item.row,item.categories.join(' ')].join(' '));
+      const hay=normalize([
+        item.id,item.name,item.category,item.detail,item.status||'',item.boxLabel,item.row,
+        item.categories.join(' '),(item.aliases||[]).join(' ')
+      ].join(' '));
       return hay.includes(q);
     });
   }
 
   function filteredBoxes(){
     if(activeFilter==='Alle')return BOXES;
-    return BOXES.filter(box=>box.categories.includes(activeFilter)||box.items.some(item=>item.category===activeFilter));
+    return BOXES.filter(box=>box.items.some(item=>matchesFilter({...item,categories:box.categories},activeFilter)));
   }
 
   function renderShelf(){
@@ -175,7 +184,7 @@
         <div class="mod-kistology-results-v535">
           ${results.length?results.map(item=>`<article class="mod-kistology-result-v535">
             <div class="mod-kistology-result-marker-v535"></div>
-            <div class="mod-kistology-result-main-v535"><span>${item.id}</span><h4>${item.name}</h4><p>${item.category} · ${item.detail}</p><small>${item.boxLabel} · ${item.row}</small></div>
+            <div class="mod-kistology-result-main-v535"><span>${item.id}</span><h4>${item.name}</h4><p>${item.category} · ${item.detail}${item.status?` · ${item.status}`:''}</p><small>${item.boxLabel} · ${item.row}</small></div>
             <button type="button" data-kistology-result-open-v535="${item.id}">Zur Kiste</button>
           </article>`).join(''):'<div class="mod-kistology-empty-v535">Nichts gefunden. Selbst das Chaos hat Grenzen.</div>'}
         </div>
@@ -375,6 +384,8 @@
     previewBoxes:BOXES,
     previewOnly:true,
     searchWorksV535:true,
+    searchAliasesV535:true,
+    statusFilterV535:true,
     shelfViewV535:true,
     pulledBoxV535:true,
     jumpToBoxV535:true,
