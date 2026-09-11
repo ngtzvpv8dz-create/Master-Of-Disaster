@@ -57,7 +57,9 @@ jobs:
             await page.waitForTimeout(220);
 
             const heights={};
-            for(const section of ['backup','restore','system']){
+            // BACKUP ist ab V533 kein Platzhalter mehr; V532 schützt weiterhin die
+            // verbleibenden vorbereiteten Karten RESTORE und SYSTEM.
+            for(const section of ['restore','system']){
               await page.click(`[data-backstage-section-v531="${section}"]`);
               await page.waitForTimeout(100);
               heights[section]=await page.evaluate(section=>{
