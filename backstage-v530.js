@@ -16,7 +16,8 @@
     sportHealthHookPreserved:true,
     homeNavigationPreserved:true,
     implementation:'V531',
-    sizePatch:'V532'
+    sizePatch:'V532',
+    backupDeck:'V533'
   };
   window.__modBackstageLoaderV530=loader;
 
@@ -42,6 +43,13 @@
       sizePatch.dataset.modBackstageSizeV532='true';
       document.head.appendChild(sizePatch);
     }
+    if(!document.querySelector('link[data-mod-backstage-backup-v533]')){
+      const backupDeck=document.createElement('link');
+      backupDeck.rel='stylesheet';
+      backupDeck.href='./backstage-backup-v533.css?v=533-backup-deck';
+      backupDeck.dataset.modBackstageBackupV533='true';
+      document.head.appendChild(backupDeck);
+    }
   }
 
   function ensureScript(){
@@ -58,6 +66,13 @@
       sizePatch.async=false;
       sizePatch.dataset.modBackstageSizeV532='true';
       document.head.appendChild(sizePatch);
+    }
+    if(!window.__modBackstageBackupV533&&!document.querySelector('script[data-mod-backstage-backup-v533]')){
+      const backupDeck=document.createElement('script');
+      backupDeck.src='./backstage-backup-v533.js?v=533-backup-deck';
+      backupDeck.async=false;
+      backupDeck.dataset.modBackstageBackupV533='true';
+      document.head.appendChild(backupDeck);
     }
   }
 
