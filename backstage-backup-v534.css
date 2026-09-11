@@ -1,0 +1,8 @@
+/* V534 · BACKSTAGE BACKUP CONSOLIDATION
+   Der sechste Control-Deck-Platz bleibt bewusst leer.
+   Vollbackup bleibt ausschließlich im BACKUP-Sektor verfügbar.
+*/
+
+#modBackstageV530 [data-backstage-action-v533="fullbackup"][data-mod-hidden-v534="true"]{
+  display:none !important;
+}

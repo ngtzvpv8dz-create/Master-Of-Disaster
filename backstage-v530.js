@@ -17,7 +17,8 @@
     homeNavigationPreserved:true,
     implementation:'V531',
     sizePatch:'V532',
-    backupDeck:'V533'
+    backupDeck:'V533',
+    backupConsolidation:'V534'
   };
   window.__modBackstageLoaderV530=loader;
 
@@ -50,6 +51,13 @@
       backupDeck.dataset.modBackstageBackupV533='true';
       document.head.appendChild(backupDeck);
     }
+    if(!document.querySelector('link[data-mod-backstage-backup-v534]')){
+      const backupConsolidation=document.createElement('link');
+      backupConsolidation.rel='stylesheet';
+      backupConsolidation.href='./backstage-backup-v534.css?v=534-backup-consolidation';
+      backupConsolidation.dataset.modBackstageBackupV534='true';
+      document.head.appendChild(backupConsolidation);
+    }
   }
 
   function ensureScript(){
@@ -73,6 +81,13 @@
       backupDeck.async=false;
       backupDeck.dataset.modBackstageBackupV533='true';
       document.head.appendChild(backupDeck);
+    }
+    if(!window.__modBackstageBackupV534&&!document.querySelector('script[data-mod-backstage-backup-v534]')){
+      const backupConsolidation=document.createElement('script');
+      backupConsolidation.src='./backstage-backup-v534.js?v=534-backup-consolidation';
+      backupConsolidation.async=false;
+      backupConsolidation.dataset.modBackstageBackupV534='true';
+      document.head.appendChild(backupConsolidation);
     }
   }
 
