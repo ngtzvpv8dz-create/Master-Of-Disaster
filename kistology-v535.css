@@ -1,0 +1,555 @@
+/* V535 · KISTOLOGY PREVIEW
+   Dunkles Lager/Archiv mit Magenta-Akzenten.
+   Reines UI-Layer: keine Inventar- oder App-Datenlogik.
+*/
+:root{
+  --kistology-v535-accent:#ec2b8c;
+  --kistology-v535-accent-bright:#ff4ca8;
+  --kistology-v535-accent-soft:rgba(236,43,140,.14);
+  --kistology-v535-bg:#090b0e;
+  --kistology-v535-panel:#101318;
+  --kistology-v535-panel-2:#161a20;
+  --kistology-v535-border:rgba(236,43,140,.28);
+  --kistology-v535-text:#f3f4f6;
+  --kistology-v535-muted:#9298a3;
+  --kistology-v535-cardboard:#8a755f;
+  --kistology-v535-cardboard-dark:#625140;
+}
+
+#modKistologyV535{display:none}
+body.mod-kistology-v535{
+  background:
+    radial-gradient(circle at 12% 12%,rgba(236,43,140,.08),transparent 30%),
+    linear-gradient(180deg,#0f1216 0%,#090b0e 56%,#07080a 100%);
+}
+body.mod-kistology-v535 #modAppHubV515,
+body.mod-kistology-v535 .tabs-wrapper,
+body.mod-kistology-v535 #inputPanel,
+body.mod-kistology-v535 #weightContainer,
+body.mod-kistology-v535 #viewContainer,
+body.mod-kistology-v535 #modBackstageV530,
+body.mod-kistology-v535 .sport-root-v510,
+body.mod-kistology-v535 .header .eyebrow{display:none!important}
+body.mod-kistology-v535 #modKistologyV535{display:block!important}
+body.mod-kistology-v535 #appFixedTopV475{background:#101318;--mod-bg-top:#101318}
+body.mod-kistology-v535 #appFixedTopV475::before{background:#101318}
+
+.mod-kistology-shell-v535{
+  position:relative;
+  box-sizing:border-box;
+  width:100%;
+  margin:4px 0 24px;
+  color:var(--kistology-v535-text);
+}
+
+.mod-kistology-head-v535{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  padding:15px 15px 14px;
+  border:1px solid rgba(255,255,255,.08);
+  background:
+    linear-gradient(135deg,rgba(236,43,140,.06),transparent 42%),
+    linear-gradient(180deg,#171b21,#101318);
+  border-radius:14px 14px 10px 10px;
+  overflow:hidden;
+  box-shadow:0 16px 38px rgba(0,0,0,.24);
+}
+.mod-kistology-head-v535::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:4px;
+  background:linear-gradient(180deg,var(--kistology-v535-accent-bright),rgba(236,43,140,.2));
+}
+.mod-kistology-head-v535::after{
+  content:'';
+  position:absolute;
+  right:14px;
+  bottom:0;
+  width:72px;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--kistology-v535-accent));
+  opacity:.7;
+}
+.mod-kistology-brand-v535{min-width:0}
+.mod-kistology-kicker-v535{
+  margin-bottom:5px;
+  color:rgba(255,255,255,.45);
+  font-size:.58rem;
+  font-weight:900;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+}
+.mod-kistology-brand-v535 h2{
+  margin:0;
+  color:#f7f7f8;
+  font-size:1.25rem;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:.07em;
+}
+.mod-kistology-brand-v535 h2::after{content:'LOGY';color:var(--kistology-v535-accent-bright);margin-left:-.01em}
+.mod-kistology-brand-v535 h2{font-size:0}
+.mod-kistology-brand-v535 h2::before{content:'KISTO';font-size:1.25rem;color:#f7f7f8}
+.mod-kistology-brand-v535 h2::after{font-size:1.25rem}
+.mod-kistology-brand-v535 p{
+  margin:6px 0 0;
+  color:var(--kistology-v535-muted);
+  font-size:.70rem;
+  letter-spacing:.08em;
+}
+.mod-kistology-preview-v535{
+  flex:none;
+  margin-top:2px;
+  padding:5px 8px;
+  border:1px solid rgba(236,43,140,.35);
+  border-radius:999px;
+  background:rgba(236,43,140,.08);
+  color:#ff78ba;
+  font-size:.56rem;
+  font-weight:950;
+  letter-spacing:.13em;
+}
+
+.mod-kistology-searchbar-v535{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:9px;
+  margin-top:10px;
+  padding:0 12px;
+  min-height:46px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:13px;
+  background:rgba(13,16,20,.96);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+.mod-kistology-searchbar-v535 > span{
+  width:14px;
+  height:14px;
+  border:2px solid #a7abb3;
+  border-radius:50%;
+  position:relative;
+  box-sizing:border-box;
+}
+.mod-kistology-searchbar-v535 > span::after{
+  content:'';
+  position:absolute;
+  width:6px;
+  height:2px;
+  right:-5px;
+  bottom:-2px;
+  border-radius:2px;
+  background:#a7abb3;
+  transform:rotate(45deg);
+}
+.mod-kistology-searchbar-v535 input{
+  min-width:0;
+  width:100%;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#f4f5f7;
+  font:inherit;
+  font-size:.80rem;
+}
+.mod-kistology-searchbar-v535 input::placeholder{color:#6f7580}
+.mod-kistology-searchbar-v535 button{
+  appearance:none;
+  border:0;
+  background:transparent;
+  color:#7c828c;
+  font-size:1.35rem;
+  line-height:1;
+  cursor:pointer;
+}
+.mod-kistology-searchbar-v535:focus-within{
+  border-color:rgba(236,43,140,.54);
+  box-shadow:0 0 0 2px rgba(236,43,140,.08),inset 0 1px 0 rgba(255,255,255,.03);
+}
+
+.mod-kistology-filters-v535{
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  padding:9px 1px 5px;
+  scrollbar-width:none;
+}
+.mod-kistology-filters-v535::-webkit-scrollbar{display:none}
+.mod-kistology-filters-v535 button{
+  appearance:none;
+  flex:none;
+  min-height:32px;
+  padding:0 12px;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:999px;
+  background:#11151a;
+  color:#9aa0a9;
+  font:inherit;
+  font-size:.66rem;
+  font-weight:800;
+  cursor:pointer;
+  transition:border-color .14s ease,background-color .14s ease,color .14s ease,transform .12s ease;
+}
+.mod-kistology-filters-v535 button.is-active{
+  border-color:rgba(236,43,140,.72);
+  background:rgba(236,43,140,.12);
+  color:#ff70b5;
+}
+.mod-kistology-filters-v535 button:active{transform:scale(.97)}
+
+.mod-kistology-content-v535{margin-top:7px}
+.mod-kistology-section-head-v535{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:8px;
+  padding:0 3px;
+}
+.mod-kistology-section-head-v535 > div{display:flex;align-items:baseline;gap:9px;min-width:0}
+.mod-kistology-section-head-v535 span{
+  color:#c6c8cd;
+  font-size:.61rem;
+  font-weight:950;
+  letter-spacing:.16em;
+}
+.mod-kistology-section-head-v535 strong{
+  color:#777e89;
+  font-size:.56rem;
+  font-weight:900;
+  letter-spacing:.10em;
+}
+.mod-kistology-section-head-v535 small{
+  flex:none;
+  color:rgba(236,43,140,.65);
+  font-size:.52rem;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+
+.mod-kistology-shelf-v535{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px 10px;
+  padding:14px 9px 16px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:12px;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 122px,rgba(255,255,255,.055) 122px 125px,rgba(0,0,0,.42) 125px 132px),
+    linear-gradient(180deg,#101419,#0b0e12);
+  overflow:hidden;
+}
+.mod-kistology-shelf-v535::before,
+.mod-kistology-shelf-v535::after{
+  content:'';
+  position:absolute;
+  top:0;
+  bottom:0;
+  width:5px;
+  background:linear-gradient(90deg,#151a20,#282e35,#11151a);
+  opacity:.8;
+}
+.mod-kistology-shelf-v535::before{left:2px}
+.mod-kistology-shelf-v535::after{right:2px}
+
+.mod-kistology-box-v535{
+  appearance:none;
+  -webkit-appearance:none;
+  position:relative;
+  min-width:0;
+  min-height:106px;
+  padding:30px 12px 11px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:5px 5px 3px 3px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.08),transparent 8%),
+    linear-gradient(145deg,#8b7762,#725f4c 58%,#5f4f40);
+  color:#121315;
+  text-align:left;
+  cursor:pointer;
+  box-shadow:0 8px 12px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.12);
+  overflow:hidden;
+  transform:translateZ(0);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.mod-kistology-box-v535::before{
+  content:'';
+  position:absolute;
+  left:-5%;
+  right:-5%;
+  top:18px;
+  height:1px;
+  background:rgba(22,20,18,.28);
+  box-shadow:0 2px 0 rgba(255,255,255,.06);
+}
+.mod-kistology-box-v535::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:5px;
+  background:rgba(27,22,18,.22);
+}
+.mod-kistology-box-v535:hover,
+.mod-kistology-box-v535:focus-visible{
+  border-color:rgba(255,76,168,.72);
+  box-shadow:0 10px 20px rgba(0,0,0,.38),0 0 0 1px rgba(236,43,140,.20);
+}
+.mod-kistology-box-v535:active{transform:translateY(2px) scale(.985)}
+.mod-kistology-box-handle-v535{
+  position:absolute;
+  top:8px;
+  left:50%;
+  width:42px;
+  height:10px;
+  transform:translateX(-50%);
+  border:1px solid rgba(18,18,18,.5);
+  border-radius:3px;
+  background:#24211d;
+  box-shadow:inset 0 2px 3px rgba(0,0,0,.38);
+}
+.mod-kistology-box-label-v535{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mod-kistology-box-label-v535 strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.84rem;
+  line-height:1.1;
+  font-weight:1000;
+  letter-spacing:.035em;
+}
+.mod-kistology-box-label-v535 small{
+  color:#2e2b27;
+  font-size:.59rem;
+  font-weight:800;
+}
+.mod-kistology-box-label-v535 span{
+  margin-top:4px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#25231f;
+  font-size:.55rem;
+  font-weight:750;
+}
+.mod-kistology-box-mark-v535{
+  position:absolute;
+  right:8px;
+  top:29px;
+  padding:2px 4px;
+  border:1px solid rgba(0,0,0,.42);
+  border-radius:2px;
+  font-size:.48rem;
+  font-weight:1000;
+}
+
+.mod-kistology-footnote-v535{
+  margin-top:8px;
+  padding:7px 3px 1px;
+  color:#656c76;
+  font-size:.51rem;
+  font-weight:900;
+  letter-spacing:.25em;
+  text-align:center;
+}
+
+.mod-kistology-back-v535{
+  appearance:none;
+  margin:1px 0 9px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#b1b5bd;
+  font:inherit;
+  font-size:.61rem;
+  font-weight:900;
+  letter-spacing:.12em;
+  cursor:pointer;
+}
+.mod-kistology-pulled-box-wrap-v535{
+  position:relative;
+  display:flex;
+  justify-content:center;
+  min-height:130px;
+  margin:0 0 12px;
+  padding:22px 14px 12px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/22px 100%,
+    linear-gradient(180deg,#0d1115,#080a0d);
+  perspective:800px;
+}
+.mod-kistology-pulled-box-wrap-v535::before{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:20px;
+  height:5px;
+  background:linear-gradient(180deg,#30363d,#171b20);
+  box-shadow:0 5px 14px rgba(0,0,0,.42);
+}
+.mod-kistology-pulled-box-v535{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:end;
+  width:min(86%,420px);
+  min-height:88px;
+  padding:31px 16px 12px;
+  box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:5px;
+  background:linear-gradient(145deg,#927c65,#6e5b49);
+  color:#171717;
+  box-shadow:0 18px 28px rgba(0,0,0,.46),0 0 24px rgba(236,43,140,.055);
+  transform-origin:center bottom;
+  animation:kistology-pull-v535 .24s cubic-bezier(.2,.8,.2,1) both;
+}
+.mod-kistology-pulled-box-v535 > div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.mod-kistology-pulled-box-v535 strong{font-size:1.05rem;font-weight:1000;letter-spacing:.04em}
+.mod-kistology-pulled-box-v535 small{font-size:.64rem;font-weight:800}
+.mod-kistology-pulled-box-v535 span:not(.mod-kistology-box-handle-v535){font-size:.57rem;font-weight:750}
+.mod-kistology-pulled-box-v535 b{align-self:start;padding:2px 4px;border:1px solid rgba(0,0,0,.42);font-size:.50rem}
+@keyframes kistology-pull-v535{
+  from{opacity:.15;transform:translateY(-22px) scale(.86) rotateX(-6deg)}
+  to{opacity:1;transform:translateY(0) scale(1) rotateX(0)}
+}
+
+.mod-kistology-stack-v535{display:flex;flex-direction:column;gap:8px;padding-bottom:3px}
+.mod-kistology-item-v535{
+  position:relative;
+  display:grid;
+  grid-template-columns:62px 1fr auto;
+  gap:11px;
+  align-items:center;
+  min-height:76px;
+  padding:10px 11px;
+  box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.085);
+  border-radius:10px;
+  background:linear-gradient(180deg,#171b21,#11151a);
+  box-shadow:0 7px 15px rgba(0,0,0,.16);
+  transition:border-color .16s ease,transform .16s ease,box-shadow .16s ease;
+}
+.mod-kistology-item-v535:nth-child(2n){transform:translateX(3px)}
+.mod-kistology-item-v535:nth-child(3n){transform:translateX(-2px)}
+.mod-kistology-item-v535.is-highlighted{
+  border-color:rgba(255,76,168,.82);
+  box-shadow:0 0 0 2px rgba(236,43,140,.10),0 10px 25px rgba(0,0,0,.22);
+  animation:kistology-highlight-v535 1.15s ease 1;
+}
+@keyframes kistology-highlight-v535{0%,100%{background:linear-gradient(180deg,#171b21,#11151a)}45%{background:linear-gradient(180deg,rgba(236,43,140,.20),#13151a)}}
+.mod-kistology-item-code-v535{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  align-self:stretch;
+  border:1px solid rgba(236,43,140,.16);
+  border-radius:8px;
+  background:rgba(236,43,140,.055);
+  color:#d85d9b;
+  font-size:.53rem;
+  font-weight:1000;
+  letter-spacing:.06em;
+}
+.mod-kistology-item-main-v535{min-width:0}
+.mod-kistology-item-main-v535 h4{
+  margin:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#f0f1f3;
+  font-size:.78rem;
+  line-height:1.25;
+}
+.mod-kistology-item-main-v535 p{margin:3px 0 0;color:#8f96a0;font-size:.62rem}
+.mod-kistology-item-main-v535 small{display:block;margin-top:4px;color:#686f79;font-size:.56rem}
+.mod-kistology-item-arrow-v535{color:#777e87;font-size:1.2rem}
+
+.mod-kistology-results-v535{display:flex;flex-direction:column;gap:8px}
+.mod-kistology-result-v535{
+  position:relative;
+  display:grid;
+  grid-template-columns:4px 1fr auto;
+  gap:10px;
+  align-items:center;
+  min-height:90px;
+  padding:11px 11px 11px 0;
+  border:1px solid rgba(255,255,255,.085);
+  border-radius:10px;
+  background:linear-gradient(180deg,#171b21,#11151a);
+  overflow:hidden;
+}
+.mod-kistology-result-marker-v535{align-self:stretch;background:linear-gradient(180deg,var(--kistology-v535-accent-bright),rgba(236,43,140,.22));box-shadow:0 0 15px rgba(236,43,140,.18)}
+.mod-kistology-result-main-v535{min-width:0}
+.mod-kistology-result-main-v535 > span{color:#d95c9c;font-size:.53rem;font-weight:1000;letter-spacing:.07em}
+.mod-kistology-result-main-v535 h4{margin:3px 0 0;color:#f0f1f3;font-size:.77rem;line-height:1.2}
+.mod-kistology-result-main-v535 p{margin:4px 0 0;color:#8e949d;font-size:.60rem}
+.mod-kistology-result-main-v535 small{display:block;margin-top:5px;color:#686f79;font-size:.55rem}
+.mod-kistology-result-v535 > button{
+  appearance:none;
+  min-height:34px;
+  padding:0 10px;
+  border:1px solid rgba(236,43,140,.58);
+  border-radius:8px;
+  background:rgba(236,43,140,.13);
+  color:#ff72b7;
+  font:inherit;
+  font-size:.59rem;
+  font-weight:950;
+  cursor:pointer;
+}
+.mod-kistology-result-v535 > button:active{transform:scale(.97)}
+.mod-kistology-empty-v535{
+  padding:30px 14px;
+  border:1px dashed rgba(255,255,255,.10);
+  border-radius:10px;
+  color:#737a84;
+  font-size:.68rem;
+  text-align:center;
+}
+
+.mod-kistology-data-note-v535{
+  margin-top:12px;
+  padding:9px 10px;
+  border-top:1px solid rgba(236,43,140,.13);
+  color:#5f6670;
+  font-size:.49rem;
+  font-weight:900;
+  letter-spacing:.11em;
+  text-align:center;
+}
+
+@media(max-width:430px){
+  .mod-kistology-shell-v535{margin-top:1px}
+  .mod-kistology-head-v535{padding:13px 12px 12px}
+  .mod-kistology-brand-v535 h2::before,.mod-kistology-brand-v535 h2::after{font-size:1.12rem}
+  .mod-kistology-brand-v535 p{font-size:.64rem}
+  .mod-kistology-searchbar-v535{min-height:44px;padding:0 11px}
+  .mod-kistology-searchbar-v535 input{font-size:.74rem}
+  .mod-kistology-shelf-v535{gap:14px 8px;padding:12px 8px 15px}
+  .mod-kistology-box-v535{min-height:102px;padding:29px 10px 10px}
+  .mod-kistology-box-label-v535 strong{font-size:.78rem}
+  .mod-kistology-item-v535{grid-template-columns:56px 1fr auto;gap:9px}
+  .mod-kistology-result-v535{grid-template-columns:4px 1fr;align-items:start}
+  .mod-kistology-result-v535 > button{grid-column:2;justify-self:start}
+}
+@media(max-width:350px){
+  .mod-kistology-shelf-v535{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  .mod-kistology-box-v535,.mod-kistology-item-v535,.mod-kistology-filters-v535 button{transition:none!important}
+  .mod-kistology-pulled-box-v535,.mod-kistology-item-v535.is-highlighted{animation:none!important}
+}
