@@ -5,6 +5,7 @@
    - Preserves the V515 navigation hooks and V518 boot release compatibility.
    - Uses a clean icon-only launcher panel without redundant intro copy.
    - V535 loads the KISTOLOGY preview layer in production/current V535 tests without changing historical regressions.
+   - V536 loads the app-wide search no-zoom guard on every surface.
 */
 (function(){
   'use strict';
@@ -34,6 +35,17 @@
   let renderGeneration=0;
 
   function hubApi(){return window.__modAppHubV515||null;}
+
+  function ensureSearchNoZoomV536(){
+    if(window.__modSearchNoZoomV536)return true;
+    if(document.querySelector('script[data-mod-search-no-zoom-v536]'))return true;
+    const script=document.createElement('script');
+    script.src='./search-no-zoom-v536.js?v=536-search-no-zoom';
+    script.async=false;
+    script.dataset.modSearchNoZoomV536='true';
+    document.head.appendChild(script);
+    return true;
+  }
 
   function shouldLoadKistologyV535(){
     try{
@@ -191,6 +203,7 @@
   }
 
   function init(){
+    ensureSearchNoZoomV536();
     ensureKistologyAssetsV535();
     if(!hubApi()||!document.getElementById(ROOT_ID))return false;
     renderLauncher();
@@ -221,7 +234,8 @@
     cleanStartReleaseV520:true,
     optimizedIcons192V524:true,
     allLauncherIconsEagerV524:true,
-    kistologyPreviewLoaderV535:true
+    kistologyPreviewLoaderV535:true,
+    searchNoZoomLoaderV536:true
   };
   window.__modHubLauncherV517=publicApi;
   window.__modHubLauncherV518=publicApi;
@@ -229,6 +243,7 @@
   window.__modHubLauncherV520=publicApi;
   window.__modHubLauncherV524=publicApi;
 
+  ensureSearchNoZoomV536();
   ensureKistologyAssetsV535();
   let tries=0;
   const boot=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(boot);},75);
