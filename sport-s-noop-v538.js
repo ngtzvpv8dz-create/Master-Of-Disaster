@@ -12,6 +12,7 @@
   const PRODUCTION_REVISION='V538.2';
   const SWITCH_ID='sportSwitchV510';
   const SPORT_HINT='Über das Haus geht es zurück zum Home-Bildschirm.';
+  let bodyObserver=null;
 
   function historicalNoopRoute(){
     try{
@@ -59,8 +60,19 @@
     syncChrome();
   }
 
+  function installHistoricalObserver(){
+    if(bodyObserver||typeof MutationObserver!=='function'||!document.body)return;
+    bodyObserver=new MutationObserver(()=>{
+      syncChrome();
+      setTimeout(syncChrome,0);
+      setTimeout(syncChrome,120);
+    });
+    bodyObserver.observe(document.body,{attributes:true,attributeFilter:['class']});
+  }
+
   function init(){
     window.addEventListener('click',capture,true);
+    installHistoricalObserver();
     syncChrome();
     return true;
   }
