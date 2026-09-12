@@ -1,4 +1,4 @@
-/* V539.1 · KISTOLOGY BADGE + TITLE POLISH */
+/* V539.2 · KISTOLOGY BADGE + TITLE POLISH */
 
 /* Bring the box code badge back to the older category-chip language:
    translucent magenta, outline, subtle glow instead of a solid neon pill. */
@@ -16,16 +16,16 @@
 /* Long container names may use up to three lines before truncation. */
 .mod-kistology-box-name-v539{
   -webkit-line-clamp:3;
-  font-size:.62rem;
+  font-size:.56rem;
   line-height:1.08;
 }
 .mod-kistology-openbox-name-v539{
   -webkit-line-clamp:3;
-  font-size:.82rem;
+  font-size:.76rem;
   line-height:1.08;
 }
 
 @media (max-width:390px){
-  .mod-kistology-box-name-v539{font-size:.59rem}
-  .mod-kistology-openbox-name-v539{font-size:.76rem}
+  .mod-kistology-box-name-v539{font-size:.53rem}
+  .mod-kistology-openbox-name-v539{font-size:.70rem}
 }
