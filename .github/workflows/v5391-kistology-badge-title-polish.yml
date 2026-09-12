@@ -18,14 +18,14 @@ jobs:
         run: |
           node --check app-hub-launcher-v517.js
           node --check sw.js
-          test -f kistology-v5391.css
+          test -f kistology-v539-badge-title-polish.css
           grep -q "return 'v5391'" app-hub-launcher-v517.js
           grep -q "reg==='v5391'" app-hub-launcher-v517.js
           grep -q 'kistologyBadgeTitlePolishLoaderV5391:true' app-hub-launcher-v517.js
-          grep -q 'kistology-v5391.css' app-hub-launcher-v517.js
-          grep -q '"./kistology-v5391.css"' sw.js
-          grep -q -- '-webkit-line-clamp:3' kistology-v5391.css
-          grep -q 'rgba(255,45,173,.10)' kistology-v5391.css
+          grep -q 'kistology-v539-badge-title-polish.css' app-hub-launcher-v517.js
+          grep -q '"./kistology-v539-badge-title-polish.css"' sw.js
+          grep -q -- '-webkit-line-clamp:3' kistology-v539-badge-title-polish.css
+          grep -q 'rgba(255,45,173,.10)' kistology-v539-badge-title-polish.css
           grep -q 'disabledInProductionV5382:true' sport-s-noop-v538.js
       - name: Mobile browser style regression
         run: |
