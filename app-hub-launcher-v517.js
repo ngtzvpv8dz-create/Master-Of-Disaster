@@ -6,7 +6,8 @@
    - Uses a clean icon-only launcher panel without redundant intro copy.
    - V535 remains available for its historical KISTOLOGY preview regression.
    - V536 loads the app-wide search no-zoom guard on every surface.
-   - V537 loads the authenticated read-only KISTOLOGY Supabase snapshot in production/current V537 tests.
+   - V537 remains available for its historical authenticated KISTOLOGY snapshot regression.
+   - V538 loads the polished object-only-search KISTOLOGY UI and the SPORT S no-op guard in production.
 */
 (function(){
   'use strict';
@@ -48,16 +49,41 @@
     return true;
   }
 
+  function currentV538Allowed(){
+    try{
+      const params=new URL(location.href).searchParams;
+      const reg=params.get('reg');
+      const smoke=params.get('smoke');
+      if(reg&&reg!=='v538')return false;
+      if(smoke&&smoke!=='v538')return false;
+    }catch(_){}
+    return true;
+  }
+
+  function ensureSportSNoopV538(){
+    if(!currentV538Allowed())return false;
+    if(window.__modSportSNoopV538)return true;
+    if(document.querySelector('script[data-mod-sport-s-noop-v538]'))return true;
+    const script=document.createElement('script');
+    script.src='./sport-s-noop-v538.js?v=538-s-noop';
+    script.async=false;
+    script.dataset.modSportSNoopV538='true';
+    document.head.appendChild(script);
+    return true;
+  }
+
   function kistologyRelease(){
     try{
       const params=new URL(location.href).searchParams;
       const reg=params.get('reg');
       const smoke=params.get('smoke');
       if(reg==='v535'||smoke==='v535')return 'v535';
-      if(reg&&reg!=='v537')return null;
-      if(smoke&&smoke!=='v537')return null;
+      if(reg==='v537'||smoke==='v537')return 'v537';
+      if(reg==='v538'||smoke==='v538')return 'v538';
+      if(params.get('v536test')==='1')return 'v535';
+      if(reg||smoke)return null;
     }catch(_){}
-    return 'v537';
+    return 'v538';
   }
 
   function ensureKistologyAssetsV535(){
@@ -80,20 +106,34 @@
       }
       return true;
     }
-    if(!window.__modKistologyV537&&!document.querySelector('script[data-mod-kistology-v537]')){
+    if(release==='v537'){
+      if(!window.__modKistologyV537&&!document.querySelector('script[data-mod-kistology-v537]')){
+        const script=document.createElement('script');
+        script.src='./kistology-v537.js?v=537-live-snapshot';
+        script.async=false;
+        script.dataset.modKistologyV537='true';
+        document.head.appendChild(script);
+      }
+      return true;
+    }
+    if(!document.querySelector('link[data-mod-kistology-v538]')){
+      const style=document.createElement('link');
+      style.rel='stylesheet';
+      style.href='./kistology-v538.css?v=538-polish';
+      style.dataset.modKistologyV538='true';
+      document.head.appendChild(style);
+    }
+    if(!window.__modKistologyV538&&!document.querySelector('script[data-mod-kistology-v538]')){
       const script=document.createElement('script');
-      script.src='./kistology-v537.js?v=537-live-snapshot';
+      script.src='./kistology-v538.js?v=538-polish';
       script.async=false;
-      script.dataset.modKistologyV537='true';
+      script.dataset.modKistologyV538='true';
       document.head.appendChild(script);
     }
     return true;
   }
 
-  function iconMarkup(item){
-    return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async" width="192" height="192">`;
-  }
-
+  function iconMarkup(item){return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async" width="192" height="192">`;}
   function labelMarkup(item){return `<span class="mod-hub-app-label-v517">${item.label}</span>`;}
   function legacyOpenMarker(item){return item.id==='todo'||item.id==='sport'?` data-mod-hub-open="${item.id}"`:'';}
 
@@ -126,11 +166,7 @@
       return img.naturalWidth>0?Promise.resolve():Promise.reject(new Error('image-decode-failed'));
     }
     return new Promise((resolve,reject)=>{
-      const loaded=()=>{
-        cleanup();
-        if(img.naturalWidth<=0){reject(new Error('image-width-zero'));return;}
-        if(typeof img.decode==='function')img.decode().then(resolve,reject);else resolve();
-      };
+      const loaded=()=>{cleanup();if(img.naturalWidth<=0){reject(new Error('image-width-zero'));return;}if(typeof img.decode==='function')img.decode().then(resolve,reject);else resolve();};
       const failed=()=>{cleanup();reject(new Error('image-load-error'));};
       const cleanup=()=>{img.removeEventListener('load',loaded);img.removeEventListener('error',failed);};
       img.addEventListener('load',loaded,{once:true});
@@ -162,35 +198,17 @@
     const shell=root?.querySelector('.mod-hub-shell-v515');
     if(!root||!shell)return false;
     if(shell.dataset.modHubLauncherV517==='ready'&&shell.querySelector('.mod-hub-app-grid-v517'))return true;
-
     patching=true;
     try{
       const generation=++renderGeneration;
       shell.dataset.modHubLauncherV517='ready';
-      shell.innerHTML=`
-        <div class="mod-hub-app-grid-v517" role="group" aria-label="Bereiche auswählen">
-          ${MODULES.map(item=>`
-            <div class="mod-hub-app-slot-v517 mod-hub-app-slot-${item.id}-v517">
-              <button type="button"
-                class="mod-hub-app-button-v517 mod-hub-app-button-${item.id}-v517"
-                data-mod-hub-launch-v517="${item.id}"${legacyOpenMarker(item)}
-                aria-label="${ariaLabel(item)}"
-                ${item.active?'':'aria-disabled="true"'}>
-                <span class="mod-hub-app-face-v517">${iconMarkup(item)}</span>
-              </button>
-              ${labelMarkup(item)}
-            </div>`).join('')}
-        </div>`;
-
+      shell.innerHTML=`<div class="mod-hub-app-grid-v517" role="group" aria-label="Bereiche auswählen">
+        ${MODULES.map(item=>`<div class="mod-hub-app-slot-v517 mod-hub-app-slot-${item.id}-v517"><button type="button" class="mod-hub-app-button-v517 mod-hub-app-button-${item.id}-v517" data-mod-hub-launch-v517="${item.id}"${legacyOpenMarker(item)} aria-label="${ariaLabel(item)}" ${item.active?'':'aria-disabled="true"'}><span class="mod-hub-app-face-v517">${iconMarkup(item)}</span></button>${labelMarkup(item)}</div>`).join('')}
+      </div>`;
       shell.querySelectorAll('[data-mod-hub-launch-v517]').forEach(button=>{
         const item=MODULES.find(entry=>entry.id===button.dataset.modHubLaunchV517);
-        button.addEventListener('click',event=>{
-          event.preventDefault();
-          event.stopPropagation();
-          if(item)activate(item,button);
-        });
+        button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(item)activate(item,button);});
       });
-
       root.dataset.modHubLauncherV517='ready';
       root.dataset.modHubFinalV520='ready';
       settleFinalAssets(root,shell,generation);
@@ -207,6 +225,7 @@
 
   function init(){
     ensureSearchNoZoomV536();
+    ensureSportSNoopV538();
     ensureKistologyAssetsV535();
     if(!hubApi()||!document.getElementById(ROOT_ID))return false;
     renderLauncher();
@@ -239,7 +258,9 @@
     allLauncherIconsEagerV524:true,
     kistologyPreviewLoaderV535:true,
     searchNoZoomLoaderV536:true,
-    kistologyLiveSnapshotLoaderV537:true
+    kistologyLiveSnapshotLoaderV537:true,
+    kistologyPolishLoaderV538:true,
+    sportSNoopLoaderV538:true
   };
   window.__modHubLauncherV517=publicApi;
   window.__modHubLauncherV518=publicApi;
@@ -248,6 +269,7 @@
   window.__modHubLauncherV524=publicApi;
 
   ensureSearchNoZoomV536();
+  ensureSportSNoopV538();
   ensureKistologyAssetsV535();
   let tries=0;
   const boot=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(boot);},75);
