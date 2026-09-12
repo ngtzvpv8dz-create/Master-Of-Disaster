@@ -1,0 +1,80 @@
+name: V538.2 Sport Safe Rollback
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  sport-safe-rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check sport-s-noop-v538.js
+          node --check sw.js
+          grep -q "PATCH_REVISION='V538.2'" sport-s-noop-v538.js
+          grep -q 'disabledInProductionV5382:true' sport-s-noop-v538.js
+          grep -q 'master-of-disaster-v5382-sport-safe-rollback' sw.js
+      - name: Browser production Sport responsiveness regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v5382-http.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          const fs=require('fs');
+          const timeout=(ms,label)=>new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timeout')),ms));
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modSportModeV510&&window.__modSportSNoopV538,null,{timeout:30000});
+            const rollback=await page.evaluate(()=>window.__modSportSNoopV538);
+            if(!rollback.disabledInProductionV5382||!rollback.legacySportFlowRestoredV5382)throw new Error('V538.2 rollback flag missing '+JSON.stringify(rollback));
+
+            await Promise.race([page.click('[data-mod-hub-launch-v517="sport"]'),timeout(4000,'sport launcher click')]);
+            await page.waitForTimeout(200);
+            let state=await page.evaluate(()=>({sport:document.body.classList.contains('mod-sport-mode-v510'),surface:document.body.dataset.modAppSurfaceV515}));
+            if(!state.sport||state.surface!=='sport')throw new Error('Sport launcher failed '+JSON.stringify(state));
+
+            const pulse=await Promise.race([page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve('responsive'))))),timeout(2000,'responsive after sport open')]);
+            if(pulse!=='responsive')throw new Error('Page not responsive after Sport open');
+
+            await Promise.race([page.click('#sportSwitchV510'),timeout(4000,'sport S click')]);
+            await page.waitForTimeout(180);
+            const afterS=await page.evaluate(()=>({responsive:true,sport:document.body.classList.contains('mod-sport-mode-v510'),mode:window.__modSportModeV510.currentMode?.(),surface:document.body.dataset.modAppSurfaceV515}));
+            await Promise.race([page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve(true)))),timeout(2000,'responsive after S')]);
+
+            await page.evaluate(()=>window.__modAppHubV515.show());
+            await page.waitForTimeout(120);
+            await Promise.race([page.click('[data-mod-hub-launch-v517="sport"]'),timeout(4000,'second sport launcher click')]);
+            await page.waitForTimeout(180);
+            const second=await page.evaluate(()=>({sport:document.body.classList.contains('mod-sport-mode-v510'),surface:document.body.dataset.modAppSurfaceV515}));
+            if(!second.sport||second.surface!=='sport')throw new Error('Second Sport open failed '+JSON.stringify(second));
+            await Promise.race([page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve(true)))),timeout(2000,'responsive after second Sport open')]);
+            if(errors.length)throw new Error('Page errors '+JSON.stringify(errors));
+            fs.writeFileSync('/tmp/v5382-result.json',JSON.stringify({rollback,state,afterS,second,errors},null,2));
+            console.log('V538.2 SPORT SAFE ROLLBACK PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v5382-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5382-sport-safe-rollback-diagnostics
+          path: |
+            /tmp/v5382-result.json
+            /tmp/v5382-error.txt
+            /tmp/mod-v5382-http.log
+          if-no-files-found: ignore
