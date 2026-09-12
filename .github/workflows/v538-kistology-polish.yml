@@ -1,0 +1,180 @@
+name: V538 Kistology Polish + Sport S Noop
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  kistology-polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check app-hub-launcher-v517.js
+          node --check kistology-v538.js
+          node --check sport-s-noop-v538.js
+          node --check sw.js
+          test -f kistology-v538.css
+          grep -q "const VERSION='V538'" kistology-v538.js
+          grep -q "RPC_NAME='kistology_snapshot_v1'" kistology-v538.js
+          grep -q 'exactAssignedCategoriesV538:true' kistology-v538.js
+          grep -q 'frequencyCategoryRankingRemovedV538:true' kistology-v538.js
+          grep -q 'duplicateBoxLabelsRemovedV538:true' kistology-v538.js
+          grep -q 'containerTypeAndDimensionsHiddenV538:true' kistology-v538.js
+          grep -q 'objectNameOnlySearchV538:true' kistology-v538.js
+          grep -q 'itemDetailViewV538:true' kistology-v538.js
+          grep -q 'sportSwitchNoopWhenOpenV538:true' sport-s-noop-v538.js
+          grep -q 'kistologyPolishLoaderV538:true' app-hub-launcher-v517.js
+          grep -q 'sportSNoopLoaderV538:true' app-hub-launcher-v517.js
+          grep -q 'kistology-v538.js?v=538-polish' app-hub-launcher-v517.js
+          grep -q 'sport-s-noop-v538.js?v=538-s-noop' app-hub-launcher-v517.js
+          grep -q '"./kistology-v538.js"' sw.js
+          grep -q '"./kistology-v538.css"' sw.js
+          grep -q '"./sport-s-noop-v538.js"' sw.js
+      - name: Browser regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v538-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v538',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modKistologyV538?.version==='V538'&&window.__modSportSNoopV538?.version==='V538',null,{timeout:30000});
+
+            const fixture={
+              schema_version:1,
+              mode:'readonly_snapshot',
+              containers:[
+                {code:'K1',name:null,container_type:'IKEA SAMLA Klein',dimensions:'39 × 28 × 14 cm',notes:'Interne Notiz',updated_at:'2026-09-06T15:40:37Z'},
+                {code:'K2',name:'Möbelzubehör',container_type:'IKEA SAMLA Klein',dimensions:'39 × 28 × 14 cm',notes:'',updated_at:'2026-09-06T16:03:09Z'}
+              ],
+              items:[
+                {source_id:'R1-P01',designation:'Anker Powerbank 20.000 mAh',category:'Powerbank',container_code:'K1',section:'Einsatz Fach 2',status:'eingelagert',details:{},verified_at:'2026-09-06T15:00:00Z',updated_at:'2026-09-06T15:00:00Z'},
+                {source_id:'R1-P02',designation:'Steckdosenadapter UK',category:'Powerbank',container_code:'K1',section:'Hauptfach',status:'eingelagert',details:{},verified_at:'2026-09-06T15:00:00Z',updated_at:'2026-09-06T15:00:00Z'},
+                {source_id:'R1-P03',designation:'USB-C Kabel 2 m',category:'Kabel',container_code:'K1',section:'Hauptfach',status:'eingelagert',details:{},verified_at:'2026-09-06T15:00:00Z',updated_at:'2026-09-06T15:00:00Z'},
+                {source_id:'R2-P01',designation:'IKEA Regalwinkel',category:'IKEA + anderes Möbelzubehör',container_code:'K2',section:'Hauptfach',status:'eingelagert',details:{},verified_at:'2026-09-06T16:00:00Z',updated_at:'2026-09-06T16:00:00Z'}
+              ]
+            };
+
+            await page.evaluate(fixture=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-12';
+              tasks=[{id:53801,text:'V538 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.getSupabaseClient=()=>({
+                auth:{getSession:async()=>({data:{session:{user:{id:'v538-test-user'}}},error:null})},
+                rpc:async(name)=>name==='kistology_snapshot_v1'?({data:fixture,error:null}):({data:null,error:{message:'unexpected rpc'}})
+              });
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modKistologyV538.patchLauncher();
+            },fixture);
+            await page.waitForTimeout(180);
+
+            await page.click('[data-mod-hub-launch-v517="kistology"]');
+            await page.waitForSelector('[data-kistology-view-v538="regal"]',{timeout:10000});
+            const shelf=await page.evaluate(()=>{
+              const k1=document.querySelector('[data-kistology-box-v538="K1"]');
+              const k2=document.querySelector('[data-kistology-box-v538="K2"]');
+              const k1Text=k1?.innerText||'';
+              const k2Text=k2?.innerText||'';
+              return {
+                boxes:document.querySelectorAll('[data-kistology-box-v538]').length,
+                meta:window.__modKistologyV538.getSnapshotMeta(),
+                k1Text,k2Text,
+                k1CodeCount:(k1Text.match(/K1/g)||[]).length,
+                typeLeak:/SAMLA|39 × 28/.test(k1Text+k2Text),
+                sourceLeak:/R1-P01|R1-P02|R1-P03|R2-P01/.test(document.getElementById('modKistologyV535')?.innerText||''),
+                task:(tasks||[]).find(t=>t.id===53801)?.text
+              };
+            });
+            if(shelf.boxes!==2||shelf.meta.items!==4||shelf.k1CodeCount!==1||shelf.typeLeak||shelf.sourceLeak||shelf.task!=='V538 Bestandsschutz')throw new Error('V538 shelf '+JSON.stringify(shelf));
+            if(!shelf.k1Text.includes('3 Gegenstände')||!shelf.k1Text.includes('2 Kategorien')||!shelf.k2Text.includes('Möbelzubehör')||!shelf.k2Text.includes('IKEA + anderes Möbelzubehör'))throw new Error('V538 shelf content '+JSON.stringify(shelf));
+
+            await page.click('[data-kistology-box-v538="K1"]');
+            await page.waitForSelector('[data-kistology-view-v538="box"]');
+            const opened=await page.evaluate(()=>{
+              const box=document.querySelector('[data-kistology-view-v538="box"]');
+              const text=box?.innerText||'';
+              const firstItem=box?.querySelector('[data-kistology-item-v538="R1-P01"]')?.innerText||'';
+              return {
+                codeCount:(text.match(/K1/g)||[]).length,
+                chips:[...box.querySelectorAll('.mod-kistology-category-chip-v538')].map(x=>x.textContent.trim()),
+                typeLeak:/SAMLA|39 × 28/.test(text),
+                firstItem,
+                sourceLeak:/R1-P01/.test(text)
+              };
+            });
+            if(opened.codeCount!==1||opened.typeLeak||opened.sourceLeak||opened.chips.length!==2||!opened.chips.includes('Powerbank')||!opened.chips.includes('Kabel'))throw new Error('V538 opened box '+JSON.stringify(opened));
+            if(opened.firstItem.includes('Powerbank')||opened.firstItem.includes('K1')||!opened.firstItem.includes('Einsatz Fach 2')||!opened.firstItem.includes('eingelagert'))throw new Error('V538 item card not reduced '+JSON.stringify(opened));
+
+            const search=page.locator('[data-kistology-search-v538]');
+            await search.fill('Powerbank');
+            await page.waitForSelector('[data-kistology-view-v538="search"]');
+            const results=await page.evaluate(()=>({
+              count:document.querySelectorAll('[data-kistology-result-v538]').length,
+              text:document.querySelector('[data-kistology-view-v538="search"]')?.innerText||''
+            }));
+            if(results.count!==1||!results.text.includes('Anker Powerbank 20.000 mAh')||results.text.includes('Steckdosenadapter UK')||results.text.includes('K1')||results.text.includes('eingelagert'))throw new Error('V538 object-only search '+JSON.stringify(results));
+
+            await page.click('[data-kistology-result-v538]');
+            await page.waitForSelector('[data-kistology-view-v538="detail"]');
+            const detail=await page.evaluate(()=>document.querySelector('[data-kistology-view-v538="detail"]')?.innerText||'');
+            if(!detail.includes('Anker Powerbank 20.000 mAh')||!detail.includes('Powerbank')||!detail.includes('K1')||!detail.includes('Einsatz Fach 2')||!detail.includes('eingelagert')||/R1-P01/.test(detail))throw new Error('V538 detail '+detail);
+
+            await page.click('[data-kistology-detail-openbox-v538]');
+            await page.waitForSelector('[data-kistology-item-v538="R1-P01"].is-highlighted');
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(150);
+            await page.evaluate(()=>window.__modSportModeV510.setMode('todo',{persist:false,animate:false}));
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(120);
+            const sportFirst=await page.evaluate(()=>window.__modSportModeV510.currentMode());
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(120);
+            const sportSecond=await page.evaluate(()=>window.__modSportModeV510.currentMode());
+            const hint=await page.evaluate(()=>document.querySelector('.sport-mode-hint-v510')?.textContent||'');
+            if(sportFirst!=='sport'||sportSecond!=='sport'||!/Haus/.test(hint))throw new Error('V538 Sport S no-op '+JSON.stringify({sportFirst,sportSecond,hint}));
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(150);
+            const final=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              surface:document.body.dataset.modAppSurfaceV515,
+              task:(tasks||[]).find(t=>t.id===53801)?.text,
+              kistologyKeys:Object.keys(localStorage).filter(k=>/kistology/i.test(k))
+            }));
+            if(!final.hub||final.surface!=='hub'||final.task!=='V538 Bestandsschutz'||final.kistologyKeys.length)throw new Error('V538 final '+JSON.stringify(final));
+            if(errors.length)throw new Error('V538 page errors '+JSON.stringify(errors));
+
+            await page.screenshot({path:'/tmp/v538-kistology.png',fullPage:true});
+            fs.writeFileSync('/tmp/v538-result.json',JSON.stringify({shelf,opened,results,detail,sportFirst,sportSecond,hint,final,errors},null,2));
+            console.log('V538 KISTOLOGY POLISH + SPORT S NOOP PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v538-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v538-kistology-polish-diagnostics
+          path: |
+            /tmp/v538-kistology.png
+            /tmp/v538-result.json
+            /tmp/v538-error.txt
+            /tmp/mod-v538-http.log
+          if-no-files-found: ignore
