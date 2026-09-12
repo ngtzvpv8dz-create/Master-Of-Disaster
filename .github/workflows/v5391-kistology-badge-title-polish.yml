@@ -1,0 +1,88 @@
+name: V539.1 Kistology Badge Title Polish
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  kistology-badge-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check app-hub-launcher-v517.js
+          node --check sw.js
+          test -f kistology-v539-badge-title-polish.css
+          grep -q "return 'v5391'" app-hub-launcher-v517.js
+          grep -q "reg==='v5391'" app-hub-launcher-v517.js
+          grep -q 'kistologyBadgeTitlePolishLoaderV5391:true' app-hub-launcher-v517.js
+          grep -q 'kistology-v539-badge-title-polish.css' app-hub-launcher-v517.js
+          grep -q '"./kistology-v539-badge-title-polish.css"' sw.js
+          grep -q -- '-webkit-line-clamp:3' kistology-v539-badge-title-polish.css
+          grep -q 'rgba(255,45,173,.10)' kistology-v539-badge-title-polish.css
+          grep -q 'disabledInProductionV5382:true' sport-s-noop-v538.js
+      - name: Mobile browser style regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8788 >/tmp/mod-v5391-http.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          const deadline=(promise,ms,label)=>Promise.race([promise,new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timeout')),ms))]);
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8788/?reg=v5391',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modKistologyV539?.version==='V539',null,{timeout:30000});
+            const fixture={schema_version:1,mode:'readonly_snapshot',containers:[
+              {code:'K2',name:'FOTO · ACTIONCAM · OPTIK UND WEITERES ZUBEHÖR MIT LANGEM NAMEN',container_type:'IKEA SAMLA Klein',dimensions:'39 × 28 × 14 cm',notes:'',updated_at:'2026-09-06T16:03:09Z'}
+            ],items:[
+              {source_id:'R2-P01',designation:'Actioncam Halterung',category:'FOTO · ACTIONCAM · OPTIK',container_code:'K2',section:'Hauptfach',status:'eingelagert',details:{},verified_at:'2026-09-06T16:00:00Z',updated_at:'2026-09-06T16:00:00Z'}
+            ]};
+            await page.evaluate(fixture=>{
+              window.getSupabaseClient=()=>({auth:{getSession:async()=>({data:{session:{user:{id:'v5391-test-user'}}},error:null})},rpc:async name=>name==='kistology_snapshot_v1'?({data:fixture,error:null}):({data:null,error:{message:'unexpected rpc'}})});
+              window.__modAppHubV515.show();window.__modHubLauncherV524.render();window.__modKistologyV539.patchLauncher();
+            },fixture);
+            await page.waitForTimeout(180);
+            await page.click('[data-mod-hub-launch-v517="kistology"]');
+            await page.waitForSelector('[data-kistology-view-v539="regal"]',{timeout:10000});
+            const style=await page.evaluate(()=>{
+              const box=document.querySelector('[data-kistology-box-v539="K2"]');
+              const name=box?.querySelector('.mod-kistology-box-name-v539');
+              const badge=box?.querySelector('.mod-kistology-box-code-v539');
+              const ns=name?getComputedStyle(name):null;
+              const bs=badge?getComputedStyle(badge):null;
+              return {
+                lineClamp:ns?.webkitLineClamp,
+                titleFont:ns?.fontSize,
+                badgeBackground:bs?.backgroundColor,
+                badgeBorder:bs?.borderTopColor,
+                badgeShadow:bs?.boxShadow,
+                badgeText:badge?.textContent.trim(),
+                loader:window.__modHubLauncherV524?.kistologyBadgeTitlePolishLoaderV5391,
+                v5391Css:!!document.querySelector('link[data-mod-kistology-v5391]')
+              };
+            });
+            if(style.lineClamp!=='3'||style.badgeText!=='K2'||!style.loader||!style.v5391Css)throw new Error('V539.1 style wiring '+JSON.stringify(style));
+            if(/rgb\(255,\s*88,\s*180\)|rgb\(232,\s*39,\s*139\)/.test(style.badgeBackground))throw new Error('V539.1 badge still solid '+JSON.stringify(style));
+            if(!style.badgeShadow||style.badgeShadow==='none')throw new Error('V539.1 badge glow missing '+JSON.stringify(style));
+            await page.click('#modHomeButtonV525');await page.waitForTimeout(120);
+            await deadline(page.click('[data-mod-hub-launch-v517="sport"]'),2500,'Sport launcher');
+            await page.waitForTimeout(180);
+            const sport=await deadline(page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>resolve({mode:window.__modSportModeV510.currentMode(),surface:document.body.dataset.modAppSurfaceV515})))),2000,'Sport responsiveness');
+            if(sport.mode!=='sport'||sport.surface!=='sport')throw new Error('V539.1 protected Sport path '+JSON.stringify(sport));
+            if(errors.length)throw new Error('V539.1 page errors '+JSON.stringify(errors));
+            console.log('V539.1 KISTOLOGY BADGE TITLE PASS',style);
+            await browser.close();
+          })().catch(error=>{console.error(error);process.exit(1);});
+          NODE
