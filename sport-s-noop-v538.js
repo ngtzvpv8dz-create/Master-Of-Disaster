@@ -8,7 +8,8 @@
   if(window.__modSportSNoopV538)return;
 
   const VERSION='V538';
-  const PATCH_REVISION='V538.2';
+  const PATCH_REVISION='V538.1';
+  const PRODUCTION_REVISION='V538.2';
   const SWITCH_ID='sportSwitchV510';
   const SPORT_HINT='Über das Haus geht es zurück zum Home-Bildschirm.';
 
@@ -25,9 +26,13 @@
     window.__modSportSNoopV538={
       version:VERSION,
       patchRevision:PATCH_REVISION,
+      productionRevision:PRODUCTION_REVISION,
       disabledInProductionV5382:true,
       legacySportFlowRestoredV5382:true,
       sportSwitchNoopWhenOpenV538:false,
+      observerFeedbackLoopRemovedV5381:true,
+      bodyClassObserverOnlyV5381:true,
+      idempotentChromeSyncV5381:true,
       sportDataUntouched:true,
       kistologyUntouched:true
     };
@@ -63,10 +68,14 @@
   window.__modSportSNoopV538={
     version:VERSION,
     patchRevision:PATCH_REVISION,
+    productionRevision:PRODUCTION_REVISION,
     sync:syncChrome,
     sportSwitchNoopWhenOpenV538:true,
     historicalCompatibilityOnlyV5382:true,
     disabledInProductionV5382:false,
+    observerFeedbackLoopRemovedV5381:true,
+    bodyClassObserverOnlyV5381:true,
+    idempotentChromeSyncV5381:true,
     sportDataUntouched:true,
     kistologyUntouched:true
   };
