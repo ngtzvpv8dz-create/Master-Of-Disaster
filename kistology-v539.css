@@ -1,0 +1,332 @@
+/* V539 · KISTOLOGY RUMMAGE CARDS */
+
+/* Shelf: real name left, prominent code right, category quiet below. */
+.mod-kistology-box-v539{
+  display:flex;
+  flex-direction:column;
+  min-height:112px;
+  padding:31px 12px 12px;
+}
+.mod-kistology-box-head-v539{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  gap:8px;
+  width:100%;
+  min-width:0;
+}
+.mod-kistology-box-name-v539{
+  display:-webkit-box;
+  min-width:0;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  color:#171614;
+  font-size:.72rem;
+  font-weight:1000;
+  line-height:1.12;
+  letter-spacing:.025em;
+  overflow-wrap:anywhere;
+}
+.mod-kistology-box-name-v539.is-empty{min-height:0}
+.mod-kistology-box-code-v539,
+.mod-kistology-openbox-code-v539{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+  min-width:32px;
+  min-height:24px;
+  padding:3px 7px;
+  box-sizing:border-box;
+  border:1px solid rgba(82,8,47,.52);
+  border-radius:999px;
+  background:linear-gradient(180deg,#ff58b4,#e8278b);
+  color:#241018;
+  box-shadow:0 3px 8px rgba(40,5,25,.25),inset 0 1px 0 rgba(255,255,255,.28);
+  font-size:.60rem;
+  font-weight:1000;
+  line-height:1;
+  letter-spacing:.06em;
+}
+.mod-kistology-box-count-v539{
+  display:block;
+  margin-top:5px;
+  color:#302c28;
+  font-size:.59rem;
+  font-weight:850;
+}
+.mod-kistology-box-category-v539{
+  display:block;
+  margin-top:5px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#39332e;
+  font-size:.54rem;
+  font-weight:760;
+  line-height:1.2;
+}
+
+/* Pulled box: same visual hierarchy as the shelf. */
+.mod-kistology-pulled-box-v539{
+  display:block;
+  width:min(90%,430px);
+  min-height:96px;
+  padding:31px 16px 14px;
+}
+.mod-kistology-openbox-head-v539{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;
+  gap:10px;
+  min-width:0;
+}
+.mod-kistology-openbox-name-v539{
+  display:-webkit-box;
+  min-width:0;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  color:#171614;
+  font-size:.92rem;
+  font-weight:1000;
+  line-height:1.12;
+  letter-spacing:.025em;
+  overflow-wrap:anywhere;
+}
+.mod-kistology-openbox-name-v539.is-empty{min-height:0}
+.mod-kistology-openbox-code-v539{justify-self:end}
+.mod-kistology-openbox-count-v539{
+  display:block;
+  margin-top:6px;
+  color:#2d2925;
+  font-size:.61rem;
+  font-weight:850;
+}
+.mod-kistology-category-chips-v539{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:9px;
+}
+.mod-kistology-category-chip-v539{
+  display:inline-flex;
+  align-items:center;
+  min-height:23px;
+  padding:4px 8px;
+  border:1px solid rgba(20,18,17,.28);
+  border-radius:999px;
+  background:rgba(255,255,255,.16);
+  color:#28231f;
+  font-size:.52rem;
+  font-weight:800;
+  line-height:1.15;
+  letter-spacing:.015em;
+}
+.mod-kistology-category-chip-v539.is-muted{opacity:.62}
+
+/* Navigation always starts at the same left edge. */
+.mod-kistology-back-v539{
+  display:block;
+  width:max-content;
+  margin-left:0;
+  margin-right:auto;
+  text-align:left;
+}
+
+/* Remove the old permanent 2–3px card staggering. */
+.mod-kistology-stack-v539 .mod-kistology-item-v535:nth-child(2n),
+.mod-kistology-stack-v539 .mod-kistology-item-v535:nth-child(3n){transform:none}
+
+.mod-kistology-stack-v539{
+  gap:8px;
+  perspective:900px;
+}
+.mod-kistology-item-card-v539{
+  display:block;
+  min-height:0;
+  padding:0;
+  overflow:visible;
+  transform:none;
+  transform-origin:center center;
+  transition:
+    transform .34s cubic-bezier(.22,1.22,.36,1),
+    border-color .22s ease,
+    box-shadow .34s ease,
+    background-color .26s ease,
+    margin .34s cubic-bezier(.22,1.15,.36,1),
+    opacity .24s ease;
+  will-change:transform;
+}
+.mod-kistology-item-card-v539.is-expanded{
+  z-index:3;
+  margin:6px 0 10px;
+  border-color:rgba(255,76,168,.72);
+  background:
+    linear-gradient(145deg,rgba(236,43,140,.08),transparent 44%),
+    linear-gradient(180deg,#1b1e25,#12151a);
+  box-shadow:0 18px 34px rgba(0,0,0,.34),0 0 0 1px rgba(236,43,140,.12);
+  transform:translateY(-3px) scale(1.012);
+}
+.mod-kistology-item-card-v539.is-above-expanded{
+  transform:translateY(-2px) scale(.997);
+  opacity:.88;
+}
+.mod-kistology-item-card-v539.is-below-expanded{
+  transform:translateY(2px) scale(.997);
+  opacity:.88;
+}
+
+.mod-kistology-item-toggle-v539{
+  appearance:none;
+  -webkit-appearance:none;
+  display:grid;
+  grid-template-columns:78px minmax(0,1fr) auto;
+  gap:11px;
+  align-items:center;
+  width:100%;
+  min-height:76px;
+  padding:10px 11px;
+  border:0;
+  border-radius:10px;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.mod-kistology-item-toggle-v539:focus-visible{
+  outline:2px solid rgba(255,76,168,.72);
+  outline-offset:2px;
+}
+
+/* Fach/NOJIG badge: smaller, centered and allowed to wrap cleanly. */
+.mod-kistology-section-badge-v539{
+  box-sizing:border-box;
+  min-height:52px;
+  padding:5px 5px;
+  text-align:center;
+  justify-content:center;
+  align-items:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  color:#e777af;
+  font-size:.47rem;
+  line-height:1.18;
+  letter-spacing:.035em;
+}
+
+.mod-kistology-item-main-v539 h4{
+  white-space:normal;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  overflow:hidden;
+  line-height:1.25;
+}
+.mod-kistology-item-status-v539{
+  overflow:hidden;
+  max-height:18px;
+  opacity:1;
+  transition:max-height .22s ease,opacity .18s ease,margin .22s ease;
+}
+.mod-kistology-item-card-v539.is-expanded .mod-kistology-item-status-v539{
+  max-height:0;
+  margin-top:0;
+  opacity:0;
+}
+.mod-kistology-item-arrow-v539{
+  transform:rotate(0deg);
+  transform-origin:center;
+  transition:transform .34s cubic-bezier(.22,1.22,.36,1),color .2s ease;
+}
+.mod-kistology-item-card-v539.is-expanded .mod-kistology-item-arrow-v539{
+  color:#ff58b4;
+  transform:rotate(90deg);
+}
+
+/* Inline details unfold in the same card instead of opening a new page. */
+.mod-kistology-item-details-wrap-v539{
+  display:grid;
+  grid-template-rows:0fr;
+  margin:0 11px;
+  opacity:0;
+  transition:
+    grid-template-rows .36s cubic-bezier(.22,1.08,.36,1),
+    opacity .22s ease,
+    margin .34s cubic-bezier(.22,1.08,.36,1);
+}
+.mod-kistology-item-card-v539.is-expanded .mod-kistology-item-details-wrap-v539{
+  grid-template-rows:1fr;
+  margin:0 11px 12px;
+  opacity:1;
+}
+.mod-kistology-item-details-v539{
+  min-height:0;
+  overflow:hidden;
+  border-top:1px solid rgba(255,255,255,.075);
+}
+.mod-kistology-inline-detail-row-v539{
+  display:grid;
+  grid-template-columns:minmax(78px,.7fr) minmax(0,1.5fr);
+  gap:12px;
+  align-items:start;
+  padding:10px 2px;
+  border-bottom:1px solid rgba(255,255,255,.055);
+}
+.mod-kistology-inline-detail-row-v539:last-child{border-bottom:0}
+.mod-kistology-inline-detail-row-v539 span{
+  color:rgba(255,255,255,.48);
+  font-size:.54rem;
+  font-weight:850;
+  text-transform:none;
+  letter-spacing:.07em;
+}
+.mod-kistology-inline-detail-row-v539 strong{
+  color:#f4eef2;
+  font-size:.68rem;
+  font-weight:750;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+
+.mod-kistology-result-button-v539{
+  width:100%;
+  appearance:none;
+  -webkit-appearance:none;
+  border:0;
+  background:inherit;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+  grid-template-columns:5px minmax(0,1fr) auto;
+  align-items:center;
+}
+.mod-kistology-result-button-v539:active{transform:scale(.992)}
+.mod-kistology-result-arrow-v539{
+  color:#ff2dad;
+  font-size:26px;
+  line-height:1;
+  padding-left:8px;
+}
+
+@media (max-width:390px){
+  .mod-kistology-box-name-v539{font-size:.68rem}
+  .mod-kistology-openbox-name-v539{font-size:.86rem}
+  .mod-kistology-item-toggle-v539{grid-template-columns:72px minmax(0,1fr) auto;gap:9px}
+  .mod-kistology-section-badge-v539{font-size:.44rem}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .mod-kistology-item-card-v539,
+  .mod-kistology-item-arrow-v539,
+  .mod-kistology-item-details-wrap-v539,
+  .mod-kistology-item-status-v539{transition:none!important}
+  .mod-kistology-item-card-v539.is-expanded,
+  .mod-kistology-item-card-v539.is-above-expanded,
+  .mod-kistology-item-card-v539.is-below-expanded{transform:none}
+  .mod-kistology-item-card-v539.is-above-expanded,
+  .mod-kistology-item-card-v539.is-below-expanded{opacity:1}
+}
