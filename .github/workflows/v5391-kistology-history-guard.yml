@@ -1,0 +1,28 @@
+name: V539.1 Historical V539 Guard
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  historical-v539:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Historical loader isolation
+        run: |
+          node --check app-hub-launcher-v517.js
+          node <<'NODE'
+          const fs=require('fs');
+          const text=fs.readFileSync('app-hub-launcher-v517.js','utf8');
+          if(!text.includes("if(reg==='v539'||smoke==='v539')return 'v539';"))throw new Error('historical V539 route missing');
+          if(!text.includes("if(reg==='v5391'||smoke==='v5391')return 'v5391';"))throw new Error('V539.1 route missing');
+          const block=text.slice(text.indexOf("if(release==='v5391'"),text.indexOf("if(!window.__modKistologyV539"));
+          if(!block.includes('kistology-v5391.css'))throw new Error('V539.1 css not isolated to V539.1 release');
+          console.log('V539 historical isolation PASS');
+          NODE
