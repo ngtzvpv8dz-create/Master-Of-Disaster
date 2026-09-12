@@ -6,8 +6,8 @@
    - Uses a clean icon-only launcher panel without redundant intro copy.
    - V535 remains available for its historical KISTOLOGY preview regression.
    - V536 loads the app-wide search no-zoom guard on every surface.
-   - V537 remains available for its historical authenticated KISTOLOGY snapshot regression.
-   - V538 loads the polished object-only-search KISTOLOGY UI and the SPORT S no-op guard in production.
+   - V537/V538 remain available for historical KISTOLOGY regressions.
+   - V539 is the production KISTOLOGY release with inline rummage cards.
 */
 (function(){
   'use strict';
@@ -80,10 +80,11 @@
       if(reg==='v535'||smoke==='v535')return 'v535';
       if(reg==='v537'||smoke==='v537')return 'v537';
       if(reg==='v538'||smoke==='v538')return 'v538';
+      if(reg==='v539'||smoke==='v539')return 'v539';
       if(params.get('v536test')==='1')return 'v535';
       if(reg||smoke)return null;
     }catch(_){}
-    return 'v538';
+    return 'v539';
   }
 
   function ensureKistologyAssetsV535(){
@@ -116,18 +117,35 @@
       }
       return true;
     }
-    if(!document.querySelector('link[data-mod-kistology-v538]')){
+    if(release==='v538'){
+      if(!document.querySelector('link[data-mod-kistology-v538]')){
+        const style=document.createElement('link');
+        style.rel='stylesheet';
+        style.href='./kistology-v538.css?v=538-polish';
+        style.dataset.modKistologyV538='true';
+        document.head.appendChild(style);
+      }
+      if(!window.__modKistologyV538&&!document.querySelector('script[data-mod-kistology-v538]')){
+        const script=document.createElement('script');
+        script.src='./kistology-v538.js?v=538-polish';
+        script.async=false;
+        script.dataset.modKistologyV538='true';
+        document.head.appendChild(script);
+      }
+      return true;
+    }
+    if(!document.querySelector('link[data-mod-kistology-v539]')){
       const style=document.createElement('link');
       style.rel='stylesheet';
-      style.href='./kistology-v538.css?v=538-polish';
-      style.dataset.modKistologyV538='true';
+      style.href='./kistology-v539.css?v=539-rummage';
+      style.dataset.modKistologyV539='true';
       document.head.appendChild(style);
     }
-    if(!window.__modKistologyV538&&!document.querySelector('script[data-mod-kistology-v538]')){
+    if(!window.__modKistologyV539&&!document.querySelector('script[data-mod-kistology-v539]')){
       const script=document.createElement('script');
-      script.src='./kistology-v538.js?v=538-polish';
+      script.src='./kistology-v539.js?v=539-rummage';
       script.async=false;
-      script.dataset.modKistologyV538='true';
+      script.dataset.modKistologyV539='true';
       document.head.appendChild(script);
     }
     return true;
@@ -260,6 +278,7 @@
     searchNoZoomLoaderV536:true,
     kistologyLiveSnapshotLoaderV537:true,
     kistologyPolishLoaderV538:true,
+    kistologyRummageLoaderV539:true,
     sportSNoopLoaderV538:true
   };
   window.__modHubLauncherV517=publicApi;
