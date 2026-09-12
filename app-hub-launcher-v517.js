@@ -146,7 +146,7 @@
     if(release==='v5391'&&!document.querySelector('link[data-mod-kistology-v5391]')){
       const style=document.createElement('link');
       style.rel='stylesheet';
-      style.href='./kistology-v5391.css?v=5391-badge-title-polish';
+      style.href='./kistology-v539-badge-title-polish.css?v=5391-badge-title-polish';
       style.dataset.modKistologyV5391='true';
       document.head.appendChild(style);
     }
