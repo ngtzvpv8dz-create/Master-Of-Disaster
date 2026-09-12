@@ -7,7 +7,8 @@
    - V535 remains available for its historical KISTOLOGY preview regression.
    - V536 loads the app-wide search no-zoom guard on every surface.
    - V537/V538 remain available for historical KISTOLOGY regressions.
-   - V539 is the production KISTOLOGY release with inline rummage cards.
+   - V539 remains available for its historical inline-rummage regression.
+   - V539.1 is the production KISTOLOGY style polish for badges and long box names.
 */
 (function(){
   'use strict';
@@ -81,10 +82,11 @@
       if(reg==='v537'||smoke==='v537')return 'v537';
       if(reg==='v538'||smoke==='v538')return 'v538';
       if(reg==='v539'||smoke==='v539')return 'v539';
+      if(reg==='v5391'||smoke==='v5391')return 'v5391';
       if(params.get('v536test')==='1')return 'v535';
       if(reg||smoke)return null;
     }catch(_){}
-    return 'v539';
+    return 'v5391';
   }
 
   function ensureKistologyAssetsV535(){
@@ -139,6 +141,13 @@
       style.rel='stylesheet';
       style.href='./kistology-v539.css?v=539-rummage';
       style.dataset.modKistologyV539='true';
+      document.head.appendChild(style);
+    }
+    if(release==='v5391'&&!document.querySelector('link[data-mod-kistology-v5391]')){
+      const style=document.createElement('link');
+      style.rel='stylesheet';
+      style.href='./kistology-v5391.css?v=5391-badge-title-polish';
+      style.dataset.modKistologyV5391='true';
       document.head.appendChild(style);
     }
     if(!window.__modKistologyV539&&!document.querySelector('script[data-mod-kistology-v539]')){
@@ -279,6 +288,7 @@
     kistologyLiveSnapshotLoaderV537:true,
     kistologyPolishLoaderV538:true,
     kistologyRummageLoaderV539:true,
+    kistologyBadgeTitlePolishLoaderV5391:true,
     sportSNoopLoaderV538:true
   };
   window.__modHubLauncherV517=publicApi;
