@@ -1,6 +1,6 @@
-/* V524 · 192PX ICON OPTIMIZATION ON V520 SIX-TILE LAUNCHER
-   - Expands the compact launcher from 2x2 to 2x3.
-   - Adds KISTOLOGY and BACKSTAGE as prepared visual modules.
+/* V540 · FUTURE PLACEHOLDER BECOMES PROGRESS
+   - Replaces the former FUTURE placeholder with PROGRESS.
+   - Adds the dedicated 192px Progress icon asset.
    - Keeps TO-DO and SPORT as the only native V520 modules; newer layers may activate prepared entries.
    - Preserves the V515 navigation hooks and V518 boot release compatibility.
    - Uses a clean icon-only launcher panel without redundant intro copy.
@@ -14,14 +14,14 @@
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V520';
+  const VERSION='V540';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
     todo:'./assets/icons/todo-v524-192.png?v=524-192',
     sport:'./assets/icons/sport-v524-192.png?v=524-192',
     kistology:'./assets/icons/kistology-v524-192.png?v=524-192',
     food:'./assets/icons/food-v524-192.png?v=524-192',
-    future:'./assets/icons/future-v524-192.png?v=524-192',
+    progress:'./assets/icons/progress-v540-192.png?v=540-progress',
     backstage:'./assets/icons/backstage-v524-192.png?v=524-192'
   };
   const MODULES=[
@@ -29,7 +29,7 @@
     {id:'sport',label:'SPORT',active:true},
     {id:'kistology',label:'KISTOLOGY',active:false},
     {id:'food',label:'FOOD',active:false},
-    {id:'future',label:'FUTURE',active:false},
+    {id:'progress',label:'PROGRESS',active:false},
     {id:'backstage',label:'BACKSTAGE',active:false}
   ];
 
@@ -169,7 +169,7 @@
     if(item.id==='sport')return 'Sport öffnen';
     if(item.id==='kistology')return 'Kistology Bereich vorbereitet';
     if(item.id==='food')return 'Food Bereich vorbereitet';
-    if(item.id==='future')return 'Future Bereich vorbereitet';
+    if(item.id==='progress')return 'Progress Bereich für übergreifenden Fortschritt vorbereitet';
     return 'Backstage Bereich vorbereitet';
   }
 
@@ -276,13 +276,14 @@
     sportDataUntouched:true,
     kistologyPrepared:true,
     foodPrepared:true,
-    futureCategoryPrepared:true,
+    progressCategoryPrepared:true,
     backstagePrepared:true,
     finalAssetsV520:true,
     githubHostedAssetsV520:true,
     cleanStartReleaseV520:true,
     optimizedIcons192V524:true,
     allLauncherIconsEagerV524:true,
+    progressIconV540:true,
     kistologyPreviewLoaderV535:true,
     searchNoZoomLoaderV536:true,
     kistologyLiveSnapshotLoaderV537:true,
@@ -296,6 +297,7 @@
   window.__modHubLauncherV519=publicApi;
   window.__modHubLauncherV520=publicApi;
   window.__modHubLauncherV524=publicApi;
+  window.__modHubLauncherV540=publicApi;
 
   ensureSearchNoZoomV536();
   ensureSportSNoopV538();
