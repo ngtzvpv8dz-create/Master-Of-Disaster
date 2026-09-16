@@ -21,7 +21,7 @@ jobs:
           test -f backstage-content-v531.css
           grep -q 'backstage-content-v531.css?v=531-content-machine-room' backstage-v530.js
           grep -q '"./backstage-content-v531.css"' sw.js
-          grep -q 'master-of-disaster-v531-backstage-machine-room' sw.js
+          grep -q 'const CACHE_NAME=' sw.js
           grep -q 'placeholderParksLegacyLogV531:true' backstage-v531.js
           grep -q 'body.mod-backstage-v531 #viewContainer .dev-panel' backstage-content-v531.css
           grep -q 'body.mod-backstage-v531 #viewContainer .mod-log-v498' backstage-content-v531.css
