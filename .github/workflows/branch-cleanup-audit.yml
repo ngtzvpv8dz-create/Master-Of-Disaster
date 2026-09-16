@@ -2,6 +2,11 @@ name: Branch Cleanup Audit
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/branch-cleanup-audit.yml
 
 permissions:
   contents: read
