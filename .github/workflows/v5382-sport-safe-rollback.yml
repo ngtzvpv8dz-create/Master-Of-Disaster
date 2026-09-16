@@ -20,7 +20,8 @@ jobs:
           node --check sw.js
           grep -q "PRODUCTION_REVISION='V538.2'" sport-s-noop-v538.js
           grep -q 'disabledInProductionV5382:true' sport-s-noop-v538.js
-          grep -q 'master-of-disaster-v531-backstage-machine-room' sw.js
+          grep -q '"./sport-s-noop-v538.js"' sw.js
+          grep -q 'const CACHE_NAME=' sw.js
       - name: Browser production Sport responsiveness regression
         run: |
           npm init -y >/dev/null 2>&1
