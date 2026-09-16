@@ -15,30 +15,33 @@ Für jede neue Codeänderung gilt grundsätzlich:
 5. Solange der PR noch nicht gemergt ist, Korrekturen weiterhin auf demselben Branch durchführen; neue Commits werden automatisch Bestandteil des offenen PR.
 6. Automatische Tests/CI prüfen und Fehler vor dem Merge beheben.
 7. Erst nach erfolgreicher Prüfung den PR nach `main` mergen.
-8. Deployment/Bereitstellung prüfen.
-9. Die echte PWA auf dem iPhone bzw. im vorgesehenen Produktionsbetrieb testen.
-10. Eine Änderung erst dann als **LIVE/PASS** bezeichnen, wenn der reale Runtime-Test erfolgreich war.
-11. Den zugehörigen Entwicklungsbranch erst **nach LIVE/PASS** löschen.
+8. Der gemergte Entwicklungsbranch darf anschließend automatisch gelöscht werden. Der gemergte Code und die PR-/Commit-Historie bleiben auf `main` bzw. in Git erhalten.
+9. Deployment/Bereitstellung prüfen.
+10. Die echte PWA auf dem iPhone bzw. im vorgesehenen Produktionsbetrieb testen.
+11. Eine Änderung erst dann als **LIVE/PASS** bezeichnen, wenn der reale Runtime-Test erfolgreich war.
 
 ## Fehler nach dem Merge
 
 Wird ein Fehler erst nach dem Merge bzw. im realen PWA-Test festgestellt:
 
-- den bereits gemergten alten Branch nicht wieder als normalen Entwicklungszweig weiterverwenden,
+- der bereits gemergte Branch muss nicht erhalten oder wiederhergestellt werden,
 - stattdessen einen **neuen Hotfix-/Korrektur-Branch vom aktuellen `main`** erstellen,
 - Korrektur dort durchführen,
 - neuen PR erstellen,
 - erneut mergen, deployen und real testen,
-- nach LIVE/PASS auch diesen Branch löschen.
+- auch dieser Branch kann nach erfolgreichem Merge automatisch gelöscht werden.
+
+Damit sind Branch-Lebensdauer und LIVE/PASS bewusst getrennt: Ein Branch darf nach dem Merge verschwinden, obwohl die Änderung erst nach dem späteren echten PWA-Test als LIVE/PASS gilt.
 
 ## Branch-Hygiene
 
-- Gemergte und erfolgreich getestete Arbeitsbranches sollen nicht dauerhaft liegen bleiben.
+- Gemergte Arbeitsbranches sollen nicht dauerhaft liegen bleiben; automatische Löschung nach dem Merge ist ausdrücklich erwünscht.
 - Alte Branches nicht für neue, fachlich andere Änderungen wiederverwenden.
 - Vor manuellen Änderungen über die GitHub-Weboberfläche immer prüfen, **welcher Branch ausgewählt ist**.
 - Direkte Änderungen auf `main` nur in ausdrücklich begründeten Ausnahmefällen.
 - Parallel laufende Branches nur dann, wenn tatsächlich parallel an getrennten Themen gearbeitet wird.
 - Branch-Namen sollen den Zweck erkennen lassen, z. B. `vNNN-thema`, `fix/...`, `hotfix/...`, `docs/...` oder `cleanup/...`.
+- Bei Altbeständen werden Branches vor dem Löschen maschinell geprüft. Branches mit einzigartigen, nicht in `main` enthaltenen Commits werden nicht automatisch gelöscht.
 
 ## Bedeutung der Statusbegriffe
 
