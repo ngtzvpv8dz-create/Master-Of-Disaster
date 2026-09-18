@@ -88,10 +88,10 @@ body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
 /* FINANZEN: gleiche sichtbare Größenordnung wie die übrigen Header.
    Monospace bleibt, aber ohne die bisherige horizontale Schrumpfung. */
 html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
-  font-size:clamp(28px,8vw,42px)!important;
+  font-size:clamp(30px,8.5vw,44px)!important;
   line-height:1!important;
-  letter-spacing:.005em!important;
-  transform:scaleX(1.025)!important;
+  letter-spacing:.01em!important;
+  transform:scaleX(1.035)!important;
   transform-origin:center!important;
 }
 
@@ -113,8 +113,8 @@ body.mod-food-v544 .mod-surface-mark-glyph-v556{
 /* Auf kleinen Geräten dieselbe Geometrie, keine zusätzliche Finance-Stauchung. */
 @media(max-width:700px){
   html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
-    font-size:clamp(28px,8vw,42px)!important;
-    letter-spacing:.005em!important;
-    transform:scaleX(1.025)!important;
+    font-size:clamp(30px,8.5vw,44px)!important;
+    letter-spacing:.01em!important;
+    transform:scaleX(1.035)!important;
   }
 }
