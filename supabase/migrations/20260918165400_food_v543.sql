@@ -44,6 +44,7 @@ create table if not exists public.food_inventory (
 
 create index if not exists food_meals_user_date_idx on public.food_meals (user_id, meal_date, sort_order);
 create index if not exists food_meal_ingredients_meal_idx on public.food_meal_ingredients (meal_id, sort_order);
+create index if not exists food_meal_ingredients_user_idx on public.food_meal_ingredients (user_id);
 create index if not exists food_inventory_user_order_idx on public.food_inventory (user_id, sort_order);
 
 alter table public.food_meals enable row level security;
