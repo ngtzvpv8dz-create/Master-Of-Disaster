@@ -34,3 +34,57 @@
   .finance-recent-row-v553>b{font-size:11px}
   .finance-chart-live-v553{inset:10px 6px 22px;width:calc(100% - 12px);height:calc(100% - 32px)}
 }
+
+/* V554 · FINANZEN · aufklappbare Buchungen und Kategorien */
+.finance-recent-entry-v554,
+.finance-category-entry-v554{min-width:0;border-bottom:1px solid rgba(112,255,180,.10)}
+.finance-recent-entry-v554:last-child,
+.finance-category-entry-v554:last-child{border-bottom:0}
+.finance-recent-entry-v554 .finance-recent-row-v553,
+.finance-category-entry-v554 .finance-category-row-v553{border-bottom:0}
+.finance-toggle-v554,
+.finance-category-toggle-v554{appearance:none;-webkit-appearance:none;width:100%;margin:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.finance-toggle-v554:hover,
+.finance-category-toggle-v554:hover{background:rgba(112,255,180,.035)}
+.finance-toggle-v554:focus-visible,
+.finance-category-toggle-v554:focus-visible{outline:1px solid rgba(112,255,180,.65);outline-offset:-1px}
+.finance-recent-main-v554{min-width:0;display:grid!important;gap:3px}
+.finance-recent-amount-v554{display:flex!important;align-items:center;justify-content:flex-end;gap:9px;min-width:max-content!important}
+.finance-chevron-v554{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-style:normal;font-size:12px;line-height:1;color:rgba(112,255,180,.68)}
+.finance-transaction-detail-v554{background:rgba(3,10,7,.58);border-top:1px solid rgba(112,255,180,.08);box-shadow:inset 3px 0 0 rgba(112,255,180,.16)}
+.finance-detail-row-v554{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:10px 13px 10px 16px;border-bottom:1px solid rgba(112,255,180,.07)}
+.finance-detail-main-v554{min-width:0;display:grid;gap:3px}
+.finance-detail-main-v554 strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;color:rgba(239,255,245,.88)}
+.finance-detail-main-v554>span{font-size:8.5px;letter-spacing:.025em;color:rgba(214,255,228,.42)}
+.finance-detail-row-v554>b{font-size:10px;white-space:nowrap;color:#effff5}
+.finance-detail-tags-v554{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.finance-detail-tags-v554 small{display:inline-flex;padding:2px 5px;border:1px solid rgba(112,255,180,.12);font-size:8px;line-height:1.2;letter-spacing:.02em}
+.finance-detail-tags-v554 .is-discount{color:var(--fin-green);border-color:rgba(112,255,180,.2);background:rgba(112,255,180,.04)}
+.finance-detail-tags-v554 .is-deposit{color:var(--fin-amber);border-color:rgba(255,209,102,.2);background:rgba(255,209,102,.035)}
+.finance-detail-footer-v554{padding:8px 13px 9px 16px;font-size:8.5px;letter-spacing:.035em;color:rgba(214,255,228,.42)}
+
+.finance-category-value-v554{display:flex!important;align-items:center;justify-content:flex-end;gap:8px;min-width:max-content;overflow:visible!important}
+.finance-category-value-v554 b{white-space:nowrap}
+.finance-category-value-v554 b.is-positive,
+.finance-category-detail-row-v554>b.is-positive{color:var(--fin-green)}
+.finance-category-value-v554 b.is-negative,
+.finance-category-detail-row-v554>b.is-negative{color:var(--fin-amber)}
+.finance-category-bar-v554{display:block;height:3px;overflow:hidden;background:rgba(112,255,180,.08)}
+.finance-category-toggle-v554.kind-discount .finance-category-bar-v554>em,
+.finance-category-toggle-v554.kind-deposit-returned .finance-category-bar-v554>em{background:var(--fin-green)}
+.finance-category-toggle-v554.kind-deposit-paid .finance-category-bar-v554>em{background:var(--fin-amber);box-shadow:0 0 8px rgba(255,209,102,.24)}
+.finance-category-detail-v554{background:rgba(3,10,7,.52);border-top:1px solid rgba(112,255,180,.07);box-shadow:inset 3px 0 0 rgba(112,255,180,.13)}
+.finance-category-detail-row-v554{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:9px 13px 9px 16px;border-bottom:1px solid rgba(112,255,180,.06)}
+.finance-category-detail-row-v554:last-child{border-bottom:0}
+.finance-category-detail-row-v554>div{min-width:0;display:grid;gap:3px}
+.finance-category-detail-row-v554 strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10.5px;color:rgba(239,255,245,.86)}
+.finance-category-detail-row-v554 span{font-size:8.5px;line-height:1.3;color:rgba(214,255,228,.4)}
+.finance-category-detail-row-v554>b{font-size:10px;white-space:nowrap;color:#effff5}
+
+@media(max-width:700px){
+  .finance-detail-row-v554,
+  .finance-category-detail-row-v554{gap:8px;padding-left:13px}
+  .finance-detail-main-v554 strong,
+  .finance-category-detail-row-v554 strong{white-space:normal}
+  .finance-recent-amount-v554{gap:6px}
+}
