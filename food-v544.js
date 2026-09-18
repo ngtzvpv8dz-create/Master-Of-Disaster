@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V544';
+  const VERSION='V545';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -18,6 +18,23 @@
   let loadPromise=null;
   let renderSerial=0;
   let state=null;
+  const cardArcs=new Map();
+
+  function decorateCards(root){
+    root.querySelectorAll('.food-meal-card-v544,.food-stock-card-v544,.food-recipe-card-v544,.food-empty-card-v544,.food-shopping-list-v544>li').forEach((card,index)=>{
+      const key=activeTab+':'+(card.querySelector('h4,strong')?.textContent||index);
+      if(!cardArcs.has(key)){
+        const count=1+Math.floor(Math.random()*3);
+        const edges=['top:left','top:right','bottom:left','bottom:right'].sort(()=>Math.random()-.5);
+        cardArcs.set(key,Array.from({length:count},(_,i)=>{
+          const [vertical,horizontal]=edges[i].split(':');
+          const size=90+Math.floor(Math.random()*100);
+          return '<i aria-hidden="true" class="food-arc-v545" style="width:'+size+'px;height:'+Math.round(size*(.7+Math.random()*.5))+'px;'+vertical+':-'+Math.round(size*.6)+'px;'+horizontal+':-'+Math.round(size*.4)+'px;transform:rotate('+Math.floor(Math.random()*180)+'deg)"></i>';
+        }).join(''));
+      }
+      card.insertAdjacentHTML('afterbegin',cardArcs.get(key));
+    });
+  }
 
   const todayIso=()=>{
     try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(new Date());}
@@ -299,6 +316,31 @@
     });
   }
 
+  function storageModal(id){
+    const item=state?.inventory.find(row=>row.id===id);if(!item)return;
+    addModal('Aufbewahrung','<form><p class="food-modal-copy-v544">'+esc(item.name)+'</p><label>Zustand<select name="opened"><option value="false" '+(!item.opened?'selected':'')+'>Geschlossen</option><option value="true" '+(item.opened?'selected':'')+'>Geöffnet</option></select></label><label>Einplanen<select name="priority">'+['tomorrow','three_days','later'].map(value=>'<option value="'+value+'" '+(item.use_priority===value?'selected':'')+'>'+priorityLabel(value)+'</option>').join('')+'</select></label><button class="food-action-v544" type="submit">Speichern</button></form>',async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await supabase.from('food_inventory').update({opened:form.get('opened')==='true',use_priority:form.get('priority')}).eq('id',id).eq('is_active',true).select('id').single();
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
+  function consumeModal(id){
+    const item=state?.inventory.find(row=>row.id===id);if(!item)return;
+    if(num(item.quantity)===null){alert('Bitte zuerst die vorhandene Menge eintragen.');return;}
+    const bottle=item.name==='Pepsi Zero Cherry'&&item.unit==='l';
+    const amount=bottle?1.25:1;
+    addModal('Verbrauch eintragen','<form><p class="food-modal-copy-v544">'+esc(item.name)+' · vorhanden: '+esc(fmtQty(item.quantity,item.unit))+'</p>'+(bottle?'<p class="food-modal-copy-v544">1 Flasche = 1,25 l</p>':'')+'<label>Verbrauchte Menge ('+esc(item.unit)+')<input name="quantity" type="number" min="0.01" max="'+esc(item.quantity)+'" step="0.01" value="'+amount+'" required></label><button class="food-action-v544" type="submit">Vom Vorrat abziehen</button></form>',async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const quantity=Number(form.get('quantity'));
+      if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte eine positive Menge eingeben.');
+      const result=await supabase.rpc('consume_food_inventory',{p_inventory_id:id,p_quantity:quantity,p_unit:item.unit,p_expected_quantity:Number(item.quantity)});
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
   async function archiveInventory(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
     if(!confirm('Vorrat "'+item.name+'" entfernen? Du kannst ihn später neu anlegen.'))return;
@@ -326,6 +368,12 @@
   }
 
   function wire(root){
+    root.querySelectorAll('[data-food-adjust]').forEach(button=>{
+      const id=button.dataset.foodAdjust;
+      button.insertAdjacentHTML('afterend','<button type="button" data-food-consume="'+esc(id)+'">Verbraucht</button><button type="button" data-food-storage="'+esc(id)+'">Aufbewahrung</button>');
+    });
+    root.querySelectorAll('[data-food-consume]').forEach(button=>button.addEventListener('click',()=>consumeModal(button.dataset.foodConsume)));
+    root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',()=>scheduleModal(button.dataset.foodSchedule)));
@@ -341,12 +389,14 @@
     const serial=++renderSerial;
     const root=ensureRoot();if(!root)return false;
     root.innerHTML=shell();
-    wire(root);
     const data=await load();
     if(serial!==renderSerial)return false;
     state=data;
     const target=root.querySelector('.food-content-v544');
     if(target)target.innerHTML=content(data);
+    root.querySelectorAll('.food-section-head-v544>div>span').forEach(label=>label.remove());
+    if(activeTab==='plan')root.querySelector('.food-section-head-v544 small')?.remove();
+    decorateCards(root);
     wire(root);
     return true;
   }
@@ -368,6 +418,7 @@
   }
 
   function open(){
+    cardArcs.clear();
     window.__modAppHubV515?.hide?.();
     document.body.classList.remove('mod-backstage-v530');
     setSurface(true);
