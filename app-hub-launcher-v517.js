@@ -14,7 +14,7 @@
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V540';
+  const VERSION='V543';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
     todo:'./assets/icons/todo-v524-192.png?v=524-192',
@@ -28,7 +28,7 @@
     {id:'todo',label:'TO-DO',active:true},
     {id:'sport',label:'SPORT',active:true},
     {id:'kistology',label:'KISTOLOGY',active:false},
-    {id:'food',label:'FOOD',active:false},
+    {id:'food',label:'FOOD',active:true},
     {id:'progress',label:'PROGRESS',active:false},
     {id:'backstage',label:'BACKSTAGE',active:false}
   ];
@@ -162,13 +162,13 @@
 
   function iconMarkup(item){return `<img class="mod-hub-app-icon-v517" src="${SOURCES[item.id]}" alt="" draggable="false" decoding="async" width="192" height="192">`;}
   function labelMarkup(item){return `<span class="mod-hub-app-label-v517">${item.label}</span>`;}
-  function legacyOpenMarker(item){return item.id==='todo'||item.id==='sport'?` data-mod-hub-open="${item.id}"`:'';}
+  function legacyOpenMarker(item){return ['todo','sport','food'].includes(item.id)?` data-mod-hub-open="${item.id}"`:'';}
 
   function ariaLabel(item){
     if(item.id==='todo')return 'To-do öffnen';
     if(item.id==='sport')return 'Sport öffnen';
     if(item.id==='kistology')return 'Kistology Bereich vorbereitet';
-    if(item.id==='food')return 'Food Bereich vorbereitet';
+    if(item.id==='food')return 'Food öffnen';
     if(item.id==='progress')return 'Progress Bereich für übergreifenden Fortschritt vorbereitet';
     return 'Backstage Bereich vorbereitet';
   }
@@ -275,7 +275,7 @@
     todoDataUntouched:true,
     sportDataUntouched:true,
     kistologyPrepared:true,
-    foodPrepared:true,
+    foodPrepared:false,\n    foodActiveV543:true,
     progressCategoryPrepared:true,
     backstagePrepared:true,
     finalAssetsV520:true,
@@ -297,7 +297,7 @@
   window.__modHubLauncherV519=publicApi;
   window.__modHubLauncherV520=publicApi;
   window.__modHubLauncherV524=publicApi;
-  window.__modHubLauncherV540=publicApi;
+  window.__modHubLauncherV540=publicApi;\n  window.__modHubLauncherV543=publicApi;
 
   ensureSearchNoZoomV536();
   ensureSportSNoopV538();
