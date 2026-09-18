@@ -162,7 +162,6 @@
       const originalShow=hub.show?.bind(hub);
       hub.show=function(){close();return originalShow?.();};
       hub.__foodPatchedV543=true;
-      hub.foodReserved=false;
       hub.foodActiveV543=true;
     }
     const launcher=window.__modHubLauncherV517||window.__modHubLauncherV540;
