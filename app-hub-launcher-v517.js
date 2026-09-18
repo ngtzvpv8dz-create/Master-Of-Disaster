@@ -14,7 +14,7 @@
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V543';
+  const VERSION='V540';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
     todo:'./assets/icons/todo-v524-192.png?v=524-192',
