@@ -3,6 +3,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES ? process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES + '/playwright' : 'playwright');
 const root = path.resolve(__dirname, '..');
+const foodSource = fs.readFileSync(path.join(root,'food-v544.js'),'utf8');
+assert(foodSource.includes("const VERSION='V548'"));
+assert(foodSource.includes('saveInventoryStorage'));
+assert(foodSource.includes('food-cloud-warning-v548'));
+assert(foodSource.includes('getDataSources'));
 (async()=>{
   const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
   try {
@@ -13,6 +18,8 @@ const root = path.resolve(__dirname, '..');
       await page.addScriptTag({content:fs.readFileSync(path.join(root,'food-v544.js'),'utf8')});
       await page.evaluate(()=>window.__modFoodV544.open());
       await page.locator('.food-meal-card-v544').first().waitFor();
+      assert.equal(await page.locator('.food-cloud-warning-v548').count(),1);
+      assert.equal((await page.evaluate(()=>window.__modFoodV544.getDataSources().meals)),'fallback');
       assert.equal(await page.locator('#appFixedTopV475').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(238, 243, 232)');
       assert.equal(await page.locator('.food-section-head-v544>div>span').count(),0);
       const arcs=await page.locator('.food-meal-card-v544').evaluateAll(cards=>cards.map(c=>Array.from(c.querySelectorAll('.food-arc-v545'),a=>a.getAttribute('style'))));
