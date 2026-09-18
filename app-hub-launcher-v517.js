@@ -275,7 +275,8 @@
     todoDataUntouched:true,
     sportDataUntouched:true,
     kistologyPrepared:true,
-    foodPrepared:false,\n    foodActiveV543:true,
+    foodPrepared:false,
+    foodActiveV543:true,
     progressCategoryPrepared:true,
     backstagePrepared:true,
     finalAssetsV520:true,
@@ -297,7 +298,8 @@
   window.__modHubLauncherV519=publicApi;
   window.__modHubLauncherV520=publicApi;
   window.__modHubLauncherV524=publicApi;
-  window.__modHubLauncherV540=publicApi;\n  window.__modHubLauncherV543=publicApi;
+  window.__modHubLauncherV540=publicApi;
+  window.__modHubLauncherV543=publicApi;
 
   ensureSearchNoZoomV536();
   ensureSportSNoopV538();
