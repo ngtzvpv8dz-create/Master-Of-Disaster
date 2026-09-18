@@ -1,4 +1,4 @@
-/* V544 · FOOD light surface and compact controls */
+/* V545 · FOOD light surface and compact controls */
 :root{--food-bg:#eef3e8;--food-ink:#203126;--food-muted:#68766b;--food-green:#365d43;--food-line:rgba(61,92,62,.15);--food-card:rgba(255,255,255,.82)}
 html.mod-food-surface-v544{background:var(--food-bg)!important;color-scheme:light}
 body.mod-food-v544{min-height:100vh;background:var(--food-bg)!important;color:var(--food-ink);overflow-x:hidden}
@@ -68,3 +68,26 @@ body.mod-food-v544 #modFoodV544{display:block}
 .food-modal-v544{position:fixed;z-index:1000;inset:0;display:grid;align-items:end;padding:16px;background:rgba(20,35,23,.36)}.food-modal-card-v544{width:min(100%,560px);margin:0 auto;padding:18px;border-radius:24px 24px 14px;background:#f9fbf4;box-shadow:0 18px 54px rgba(22,45,26,.28)}.food-modal-head-v544{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.food-modal-head-v544 h3{margin:0;color:var(--food-ink);font-family:Georgia,serif;font-size:22px}.food-modal-head-v544>button{width:32px;height:32px;border:0;border-radius:50%;background:#e8f0df;color:var(--food-green);font-size:23px;cursor:pointer}.food-modal-card-v544 form{display:grid;gap:12px}.food-modal-card-v544 label{display:grid;gap:5px;color:#536556;font-size:10px;font-weight:850}.food-modal-card-v544 input,.food-modal-card-v544 select{box-sizing:border-box;width:100%;min-height:40px;padding:9px 10px;border:1px solid rgba(65,98,69,.2);border-radius:10px;background:#fff;color:var(--food-ink);font:inherit;font-size:13px}.food-modal-card-v544 label>input[type=checkbox]{width:auto;min-height:0}.food-form-grid-v544{display:grid;grid-template-columns:1fr 1fr;gap:10px}.food-modal-copy-v544{margin:0;color:#647166;font-size:12px}
 @media(max-width:430px){.mod-food-root-v544{padding-left:6px;padding-right:6px}.food-hero-v544{padding:21px 18px}.food-date-v544{flex-basis:54px;height:64px}.food-nav-v544 button{font-size:9px}.food-inventory-grid-v544,.food-recipe-grid-v544{grid-template-columns:1fr}.food-recipe-card-v544{min-height:145px}.food-meal-title-row-v544{gap:5px}.food-status-v544{padding:5px 6px;font-size:7px}}
 @media(prefers-reduced-motion:reduce){.food-nav-v544 button{transition:none}}
+
+/* The outer fixed shell and its safe-area cover belong to FOOD as well. */
+html body.mod-food-v544 #appFixedTopV475,
+html body.mod-food-v544 #appFixedTopV475::before{background:#eef3e8!important;background-image:none!important;box-shadow:none!important;border-color:transparent!important}
+html body.mod-food-v544 #appFixedTopV475 .mod-brand-title-v525,
+html body.mod-food-v544 #modFoodV544 h2,
+html body.mod-food-v544 #modFoodV544 h3{color:#263c2b!important;font-family:Georgia,"Times New Roman",serif!important;font-weight:600!important}
+/* Preserve the hero's original pseudo-element exactly. */
+.food-meal-card-v544::after,.food-stock-card-v544::after,.food-recipe-card-v544::after,.food-empty-card-v544::after{content:none}
+.food-shopping-list-v544>li{position:relative;overflow:hidden;isolation:isolate}
+.food-arc-v545{position:absolute;display:block;border:1px solid rgba(73,113,68,.18);border-radius:42% 58% 65% 35%/52% 38% 62% 48%;pointer-events:none;z-index:0}
+.food-meal-card-v544>div,.food-stock-card-v544>div,.food-shopping-list-v544>li>strong,.food-shopping-list-v544>li>span{position:relative;z-index:1}
+html body.mod-food-v544 .food-modal-v544,
+html body.mod-food-v544 .food-modal-card-v544{box-sizing:border-box;min-width:0;max-width:100%}
+html body.mod-food-v544 .food-modal-card-v544{max-height:calc(100dvh - 32px);overflow:auto;text-align:left}
+html body.mod-food-v544 .food-modal-card-v544 form,
+html body.mod-food-v544 .food-modal-card-v544 label{min-width:0;text-align:left}
+html body.mod-food-v544 .food-modal-card-v544 input,
+html body.mod-food-v544 .food-modal-card-v544 select{min-width:0;max-width:100%;font-size:16px;text-align:left}
+.food-modal-card-v544 input[type=date]{appearance:none;-webkit-appearance:none;display:block}
+.food-modal-card-v544 input[type=date]::-webkit-date-and-time-value{text-align:left}
+html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{justify-content:flex-start;text-align:left;width:100%}
+.food-form-grid-v544{grid-template-columns:repeat(2,minmax(0,1fr))}
