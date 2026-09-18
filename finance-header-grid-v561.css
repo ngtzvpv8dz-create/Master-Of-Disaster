@@ -1,0 +1,23 @@
+/* V561 · FINANCE HEADER GRID
+   Dezentes Börsenraster nur im Finance-Header.
+   Keine Layout- oder Navigationsänderungen.
+*/
+html body.mod-finance-v552 #appFixedTopV475,
+html body.mod-finance-v552 #appFixedTopV475::before{
+  background-color:#050908!important;
+  background-image:
+    linear-gradient(rgba(112,255,180,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(112,255,180,.024) 1px,transparent 1px),
+    radial-gradient(circle at 78% 16%,rgba(112,255,180,.045),transparent 34%)!important;
+  background-size:
+    22px 22px,
+    22px 22px,
+    auto!important;
+  background-position:
+    0 0,
+    0 0,
+    center!important;
+}
+html body.mod-finance-v552 #appFixedTopV475 .header{
+  background:transparent!important;
+}
