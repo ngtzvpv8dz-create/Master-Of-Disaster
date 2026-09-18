@@ -163,8 +163,8 @@ where not exists (
 create or replace view public.food_inventory_overview
 with (security_invoker=true)
 as
-select id,user_id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,
-       is_active,opened,use_priority
+select id,user_id,name,quantity_label,forecast_label,tone,note,sort_order,
+       quantity,unit,is_active,opened,use_priority
 from public.food_inventory
 where is_active=true;
 
