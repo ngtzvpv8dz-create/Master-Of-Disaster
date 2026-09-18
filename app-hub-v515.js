@@ -167,7 +167,7 @@
     healthEvent:HEALTH_EVENT,
     rootId:ROOT_ID,
     hubClass:HUB_CLASS,
-    foodReserved:false,
+    foodReserved:true,
     foodActiveV543:true,
     healthTransportConnected:false,
     finalLauncherCompatibilityV518:true
