@@ -50,6 +50,10 @@
 .finance-category-toggle-v554:focus-visible{outline:1px solid rgba(112,255,180,.65);outline-offset:-1px}
 .finance-recent-main-v554{min-width:0;display:grid!important;gap:3px}
 .finance-recent-amount-v554{display:flex!important;align-items:center;justify-content:flex-end;gap:9px;min-width:max-content!important}
+.finance-recent-amount-v554>b{font-size:12px;white-space:nowrap;color:#effff5}
+.finance-recent-amount-v554>b.is-positive{color:var(--fin-green)}
+.finance-recent-amount-v554>b.is-negative{color:var(--fin-red)}
+.finance-recent-amount-v554>b.is-neutral{color:var(--fin-amber)}
 .finance-chevron-v554{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-style:normal;font-size:12px;line-height:1;color:rgba(112,255,180,.68)}
 .finance-transaction-detail-v554{background:rgba(3,10,7,.58);border-top:1px solid rgba(112,255,180,.08);box-shadow:inset 3px 0 0 rgba(112,255,180,.16)}
 .finance-detail-row-v554{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px;padding:10px 13px 10px 16px;border-bottom:1px solid rgba(112,255,180,.07)}
