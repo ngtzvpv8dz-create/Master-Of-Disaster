@@ -3,15 +3,17 @@
 */
 (function(){
   'use strict';
-  if(window.__modFinanceDataV553)return;
+  if(window.__modFinanceDataV554)return;
 
-  const VERSION='V553';
+  const VERSION='V554';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=5000;
   let loadPromise=null;
   let rootObserver=null;
   let bodyObserver=null;
   let state={loaded:false,loading:false,error:null,userId:null,monthTransactions:[],recentTransactions:[]};
+  const expandedTransactions=new Set();
+  const expandedCategories=new Set();
 
   const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   const num=value=>Number.isFinite(Number(value))?Number(value):0;
@@ -79,18 +81,13 @@
   }
 
   function summarize(){
-    let income=0;
-    let expenses=0;
-    let discounts=0;
-    let deposits=0;
+    let income=0,expenses=0,expenseCount=0,incomeCount=0;
     (state.monthTransactions||[]).forEach(row=>{
       const amount=num(row.total_amount);
-      if(row.transaction_type==='income')income+=amount;
-      if(row.transaction_type==='expense')expenses+=amount;
-      discounts+=num(row.discount_total);
-      deposits+=num(row.deposit_total);
+      if(row.transaction_type==='income'){income+=amount;incomeCount+=1;}
+      if(row.transaction_type==='expense'){expenses+=amount;expenseCount+=1;}
     });
-    return {income,expenses,cashflow:income-expenses,discounts,deposits,count:(state.monthTransactions||[]).length};
+    return {income,expenses,cashflow:income-expenses,count:(state.monthTransactions||[]).length,expenseCount,incomeCount};
   }
 
   function chartModel(){
@@ -120,37 +117,85 @@
   }
 
   function categoryModel(){
-    const totals=new Map();
-    const add=(label,value)=>{
-      const amount=num(value);
-      if(amount<=0)return;
-      const key=String(label||'Sonstiges').trim()||'Sonstiges';
-      totals.set(key,(totals.get(key)||0)+amount);
+    const groups=new Map();
+    const ensure=(key,label,kind='spend')=>{
+      if(!groups.has(key))groups.set(key,{key,label,kind,amount:0,details:[]});
+      return groups.get(key);
     };
+    const add=(key,label,kind,amount,detail)=>{
+      const value=num(amount);
+      if(value<=0)return;
+      const group=ensure(key,label,kind);
+      group.amount+=value;
+      group.details.push({...detail,amount:value,kind});
+    };
+    const transactionMeta=row=>({
+      merchant:row.merchant||'Unbekannt',
+      date:row.transaction_date||null,
+      time:row.transaction_time||null,
+      currency:row.currency||'EUR',
+      transactionId:row.id
+    });
 
     (state.monthTransactions||[]).filter(row=>row.transaction_type==='expense').forEach(row=>{
       const items=Array.isArray(row.finance_items)?row.finance_items:[];
-      if(!items.length){
-        add(row.category||'Sonstiges',row.total_amount);
-        return;
+      const txMeta=transactionMeta(row);
+      let assigned=0,itemDiscounts=0,itemDeposits=0;
+
+      if(items.length){
+        items.forEach(item=>{
+          const itemAmount=num(item.total_price),deposit=num(item.deposit_amount),discount=num(item.discount_amount);
+          const label=String(item.category||row.category||'Sonstiges').trim()||'Sonstiges';
+          const detail={...txMeta,name:item.item_name||label,category:label,subcategory:item.subcategory||null,quantity:item.quantity,unit:item.unit,sortOrder:item.sort_order||0};
+          add('cat:'+label,label,'spend',itemAmount,detail);
+          if(deposit>0)add('special:deposit-paid','Pfand bezahlt','deposit-paid',deposit,detail);
+          if(discount>0)add('special:discounts','Rabatte erhalten','discount',discount,detail);
+          assigned+=itemAmount+deposit;
+          itemDiscounts+=discount;
+          itemDeposits+=deposit;
+        });
+      }else{
+        const deposit=num(row.deposit_total);
+        const baseAmount=Math.max(0,num(row.total_amount)-deposit);
+        const label=String(row.category||'Sonstiges').trim()||'Sonstiges';
+        const detail={...txMeta,name:row.merchant||label,category:label,subcategory:null,quantity:null,unit:null,sortOrder:0};
+        add('cat:'+label,label,'spend',baseAmount,detail);
+        if(deposit>0)add('special:deposit-paid','Pfand bezahlt','deposit-paid',deposit,detail);
+        assigned=baseAmount+deposit;
       }
-      let assigned=0;
-      items.forEach(item=>{
-        const itemAmount=num(item.total_price);
-        const deposit=num(item.deposit_amount);
-        add(item.category||'Sonstiges',itemAmount);
-        if(deposit>0)add('Pfand',deposit);
-        assigned+=itemAmount+deposit;
-      });
-      const remainder=num(row.total_amount)-assigned;
-      if(remainder>0.009)add('Nicht zugeordnet',remainder);
+
+      const depositRemainder=Math.max(0,num(row.deposit_total)-itemDeposits);
+      if(items.length&&depositRemainder>0.009){
+        add('special:deposit-paid','Pfand bezahlt','deposit-paid',depositRemainder,{...txMeta,name:'Weiteres Pfand',category:'Pfand',subcategory:null,quantity:null,unit:null,sortOrder:999});
+        assigned+=depositRemainder;
+      }
+      const discountRemainder=Math.max(0,num(row.discount_total)-itemDiscounts);
+      if(discountRemainder>0.009)add('special:discounts','Rabatte erhalten','discount',discountRemainder,{...txMeta,name:'Weiterer Rabatt',category:'Rabatt',subcategory:null,quantity:null,unit:null,sortOrder:999});
+
+      const unassigned=Math.max(0,num(row.total_amount)-assigned);
+      if(unassigned>0.009){
+        const label=String(row.category||'Nicht zugeordnet').trim()||'Nicht zugeordnet';
+        add('cat:'+label,label,'spend',unassigned,{...txMeta,name:row.merchant||label,category:label,subcategory:null,quantity:null,unit:null,sortOrder:999});
+      }
     });
 
-    const rows=Array.from(totals.entries())
-      .map(([label,amount])=>({label,amount}))
-      .sort((a,b)=>b.amount-a.amount);
-    const total=rows.reduce((sum,row)=>sum+row.amount,0);
-    return rows.slice(0,7).map(row=>({...row,share:total?row.amount/total*100:0}));
+    (state.monthTransactions||[]).filter(row=>row.transaction_type==='income').forEach(row=>{
+      const haystack=[row.category,row.merchant,row.receipt_source,row.notes].filter(Boolean).join(' ').toLowerCase();
+      if(!/pfand|leergut/.test(haystack)&&num(row.deposit_total)<=0)return;
+      const amount=num(row.deposit_total)>0?num(row.deposit_total):num(row.total_amount);
+      add('special:deposit-returned','Pfand zurückbekommen','deposit-returned',amount,{...transactionMeta(row),name:row.merchant||'Pfandrückgabe',category:row.category||'Pfand',subcategory:null,quantity:null,unit:null,sortOrder:0});
+    });
+
+    const rows=Array.from(groups.values()).filter(row=>row.amount>0);
+    const maxAmount=Math.max(1,...rows.map(row=>row.amount));
+    return rows.sort((a,b)=>{
+      const specialA=a.kind==='spend'?0:1,specialB=b.kind==='spend'?0:1;
+      return specialA-specialB||b.amount-a.amount||a.label.localeCompare(b.label,'de');
+    }).map(row=>({...row,share:row.amount/maxAmount*100,details:row.details.sort((a,b)=>{
+      const dateCompare=String(b.date||'').localeCompare(String(a.date||''));
+      if(dateCompare)return dateCompare;
+      return (a.sortOrder||0)-(b.sortOrder||0);
+    })}));
   }
 
   function chartHtml(){
@@ -170,34 +215,69 @@
     '</div>';
   }
 
+  function fmtQuantity(quantity,unit){
+    if(quantity===null||quantity===undefined||quantity==='')return '';
+    const value=Number(quantity);
+    if(!Number.isFinite(value))return '';
+    let formatted;
+    try{formatted=new Intl.NumberFormat('de-DE',{maximumFractionDigits:3}).format(value);}catch(_){formatted=String(value);}
+    return [formatted,unit].filter(Boolean).join(' ');
+  }
+
+  function transactionDetailHtml(row){
+    const items=Array.isArray(row.finance_items)?row.finance_items:[];
+    if(!items.length||!expandedTransactions.has(row.id))return '';
+    const detailRows=items.map(item=>{
+      const meta=[item.category,item.subcategory,fmtQuantity(item.quantity,item.unit)].filter(Boolean).join(' · ');
+      const discount=num(item.discount_amount),deposit=num(item.deposit_amount);
+      const extras=[
+        discount>0?'<small class="is-discount">Rabatt −'+fmtMoney(discount,row.currency)+'</small>':'',
+        deposit>0?'<small class="is-deposit">Pfand +'+fmtMoney(deposit,row.currency)+'</small>':''
+      ].filter(Boolean).join('');
+      return '<div class="finance-detail-row-v554"><div class="finance-detail-main-v554"><strong>'+esc(item.item_name||'Position')+'</strong><span>'+esc(meta)+'</span>'+(extras?'<div class="finance-detail-tags-v554">'+extras+'</div>':'')+'</div><b>'+fmtMoney(item.total_price,row.currency)+'</b></div>';
+    }).join('');
+    const footerBits=[
+      items.length+' '+(items.length===1?'Position':'Positionen'),
+      num(row.discount_total)>0?'Rabatt '+fmtMoney(row.discount_total,row.currency):'',
+      num(row.deposit_total)>0?'Pfand '+fmtMoney(row.deposit_total,row.currency):''
+    ].filter(Boolean).join(' · ');
+    return '<div class="finance-transaction-detail-v554" id="finance-tx-'+esc(row.id)+'">'+detailRows+'<div class="finance-detail-footer-v554">'+esc(footerBits)+'</div></div>';
+  }
+
   function recentHtml(){
     const rows=state.recentTransactions||[];
-    if(!rows.length){
-      return '<div class="finance-empty-row-v552"><span>Keine Buchungen vorhanden.</span><small>Der Bereich ist verbunden. Die erste echte Buchung erscheint hier nach dem Speichern.</small></div>';
-    }
+    if(!rows.length)return '<div class="finance-empty-row-v552"><span>Keine Buchungen vorhanden.</span><small>Der Bereich ist verbunden. Die erste echte Buchung erscheint hier nach dem Speichern.</small></div>';
     return '<div class="finance-recent-v553">'+rows.map(row=>{
       const type=row.transaction_type||'expense';
       const sign=type==='income'?'+':type==='expense'?'−':'↔';
       const amountClass=type==='income'?'is-positive':type==='expense'?'is-negative':'is-neutral';
       const meta=[fmtDate(row.transaction_date),fmtTime(row.transaction_time),row.payment_method].filter(Boolean).join(' · ');
-      return '<div class="finance-recent-row-v553">'+
-        '<div><strong>'+esc(row.merchant||'Unbekannt')+'</strong><span>'+esc(meta)+'</span></div>'+
-        '<b class="'+amountClass+'">'+sign+fmtMoney(row.total_amount,row.currency)+'</b>'+
-      '</div>';
+      const items=Array.isArray(row.finance_items)?row.finance_items:[];
+      const expandable=items.length>0,expanded=expandedTransactions.has(row.id);
+      const rowContent='<div class="finance-recent-main-v554"><strong>'+esc(row.merchant||'Unbekannt')+'</strong><span>'+esc(meta)+'</span></div><div class="finance-recent-amount-v554"><b class="'+amountClass+'">'+sign+fmtMoney(row.total_amount,row.currency)+'</b>'+(expandable?'<i class="finance-chevron-v554" aria-hidden="true">'+(expanded?'⌃':'⌄')+'</i>':'')+'</div>';
+      if(!expandable)return '<div class="finance-recent-entry-v554"><div class="finance-recent-row-v553 is-static">'+rowContent+'</div></div>';
+      return '<div class="finance-recent-entry-v554"><button type="button" class="finance-recent-row-v553 finance-toggle-v554" data-finance-transaction-toggle="'+esc(row.id)+'" aria-expanded="'+String(expanded)+'" aria-controls="finance-tx-'+esc(row.id)+'">'+rowContent+'</button>'+transactionDetailHtml(row)+'</div>';
+    }).join('')+'</div>';
+  }
+
+  function categoryDetailHtml(row){
+    if(!expandedCategories.has(row.key))return '';
+    return '<div class="finance-category-detail-v554" id="finance-cat-'+esc(row.key)+'">'+row.details.map(detail=>{
+      const meta=[detail.merchant,detail.date?fmtDate(detail.date):'',detail.subcategory,fmtQuantity(detail.quantity,detail.unit)].filter(Boolean).join(' · ');
+      const amountClass=detail.kind==='discount'||detail.kind==='deposit-returned'?'is-positive':detail.kind==='deposit-paid'?'is-negative':'';
+      const prefix=detail.kind==='discount'?'−':detail.kind==='deposit-returned'?'+':'';
+      return '<div class="finance-category-detail-row-v554"><div><strong>'+esc(detail.name||row.label)+'</strong><span>'+esc(meta)+'</span></div><b class="'+amountClass+'">'+prefix+fmtMoney(detail.amount,detail.currency)+'</b></div>';
     }).join('')+'</div>';
   }
 
   function categoriesHtml(){
     const rows=categoryModel();
-    if(!rows.length){
-      return '<div class="finance-empty-row-v552"><span>Noch keine Kategorien auswertbar.</span><small>Einzelartikel werden nach Kategorien ausgewertet, sobald Buchungen vorhanden sind.</small></div>';
-    }
-    return '<div class="finance-categories-v553">'+rows.map(row=>
-      '<div class="finance-category-row-v553">'+
-        '<div><span>'+esc(row.label)+'</span><b>'+fmtMoney(row.amount)+'</b></div>'+
-        '<i><em style="width:'+Math.max(2,row.share).toFixed(1)+'%"></em></i>'+
-      '</div>'
-    ).join('')+'</div>';
+    if(!rows.length)return '<div class="finance-empty-row-v552"><span>Noch keine Kategorien auswertbar.</span><small>Einzelartikel werden nach Kategorien ausgewertet, sobald Buchungen vorhanden sind.</small></div>';
+    return '<div class="finance-categories-v553">'+rows.map(row=>{
+      const expanded=expandedCategories.has(row.key);
+      const amountClass=row.kind==='discount'||row.kind==='deposit-returned'?'is-positive':row.kind==='deposit-paid'?'is-negative':'';
+      return '<div class="finance-category-entry-v554"><button type="button" class="finance-category-row-v553 finance-category-toggle-v554 kind-'+esc(row.kind)+'" data-finance-category-toggle="'+esc(row.key)+'" aria-expanded="'+String(expanded)+'" aria-controls="finance-cat-'+esc(row.key)+'"><div><span>'+esc(row.label)+'</span><span class="finance-category-value-v554"><b class="'+amountClass+'">'+fmtMoney(row.amount)+'</b><i class="finance-chevron-v554" aria-hidden="true">'+(expanded?'⌃':'⌄')+'</i></span></div><i class="finance-category-bar-v554"><em style="width:'+Math.max(2,row.share).toFixed(1)+'%"></em></i></button>'+categoryDetailHtml(row)+'</div>';
+    }).join('')+'</div>';
   }
 
   function shell(){
@@ -222,9 +302,9 @@
       '</div>'+
       '<div class="finance-grid-v552">'+
         '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>Monatsverlauf</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
-        '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Monat</h3></div><small>EUR</small></div><div class="finance-score-v552"><strong class="'+cashflowClass+'">'+(connected?fmtMoney(summary.cashflow,currency):'—')+'</strong><span>Saldo</span></div><div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Rabatte</span><b>'+(connected?fmtMoney(summary.discounts,currency):'—')+'</b></div><div><span>Pfand</span><b>'+(connected?fmtMoney(summary.deposits,currency):'—')+'</b></div></div></section>'+
+        '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Monat</h3></div><small>EUR</small></div><div class="finance-score-v552"><strong class="'+cashflowClass+'">'+(connected?fmtMoney(summary.cashflow,currency):'—')+'</strong><span>Saldo</span></div><div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>03 · BUCHUNGEN</span><h3>Letzte Bewegungen</h3></div><small>RECENT</small></div>'+recentHtml()+'</section>'+
-        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · KATEGORIEN</span><h3>Ausgabenstruktur</h3></div><small>SPLIT</small></div>'+categoriesHtml()+'</section>'+
+        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · KATEGORIEN</span><h3>Ausgaben & Vorteile</h3></div><small>DETAIL</small></div>'+categoriesHtml()+'</section>'+
       '</div>'+
       '<footer class="finance-footer-v552"><span><i></i> '+(connected?'Supabase verbunden':'Oberfläche bereit')+'</span><span>'+VERSION+' · LIVE DATA</span></footer>'+
     '</div>';
@@ -255,7 +335,7 @@
       .order('transaction_time',{ascending:false});
 
     const recentQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,merchant,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total')
+      .select('id,transaction_date,transaction_time,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,sort_order)')
       .order('transaction_date',{ascending:false})
       .order('transaction_time',{ascending:false})
       .limit(8);
@@ -270,7 +350,7 @@
     return {
       userId:user.id,
       monthTransactions:(monthResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))})),
-      recentTransactions:recentResult?.data||[]
+      recentTransactions:(recentResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))}))
     };
   }
 
@@ -303,7 +383,7 @@
 
   function patchBaseApi(){
     const base=window.__modFinanceV552;
-    if(!base||base.__dataPatchedV553)return;
+    if(!base||base.__dataPatchedV554)return;
     const baseOpen=base.open?.bind(base);
     base.open=function(){
       const result=baseOpen?.(...arguments);
@@ -315,14 +395,36 @@
     base.version=VERSION;
     base.storage='supabase';
     base.dataConnected=false;
-    base.__dataPatchedV553=true;
+    base.__dataPatchedV554=true;
+    window.__modFinanceV554=base;
     window.__modFinanceV553=base;
+  }
+
+  function toggleExpanded(set,key){
+    if(set.has(key))set.delete(key);
+    else set.add(key);
+    render();
+  }
+
+  function attachInteractions(root){
+    if(!root||root.dataset.financeInteractionsV554==='true')return;
+    root.dataset.financeInteractionsV554='true';
+    root.addEventListener('click',event=>{
+      const transactionButton=event.target?.closest?.('[data-finance-transaction-toggle]');
+      if(transactionButton&&root.contains(transactionButton)){
+        toggleExpanded(expandedTransactions,transactionButton.dataset.financeTransactionToggle);
+        return;
+      }
+      const categoryButton=event.target?.closest?.('[data-finance-category-toggle]');
+      if(categoryButton&&root.contains(categoryButton))toggleExpanded(expandedCategories,categoryButton.dataset.financeCategoryToggle);
+    });
   }
 
   function attachObservers(){
     patchBaseApi();
     const root=document.getElementById(ROOT_ID);
     if(!root)return false;
+    attachInteractions(root);
     rootObserver?.disconnect?.();
     bodyObserver?.disconnect?.();
     rootObserver=new MutationObserver(()=>{if(isOpen())setTimeout(activate,0);});
@@ -334,6 +436,7 @@
   }
 
   const api={version:VERSION,activate,load,render,getState:()=>structuredClone(state)};
+  window.__modFinanceDataV554=api;
   window.__modFinanceDataV553=api;
 
   function init(){
