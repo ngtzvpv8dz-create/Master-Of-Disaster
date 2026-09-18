@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V546';
+  const VERSION='V548';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -18,6 +18,10 @@
   let loadPromise=null;
   let renderSerial=0;
   let state=null;
+  const REQUEST_TIMEOUT_MS=3500;
+  const SOURCE_KEYS=['meals','inventory','recipes','shopping'];
+  let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
+  let cloudIssues=[];
   const cardArcs=new Map();
 
   function decorateCards(root){
@@ -87,8 +91,8 @@
     inventory:[
       {id:'cucumber',name:'Gurke',quantity:324,unit:'g',quantity_label:'324 g',forecast_label:null,tone:'fresh',note:'442 g gewogen · 118 g fürs Mittag',opened:false,use_priority:'three_days',is_active:true},
       {id:'tomatoes',name:'Tomaten · Fruchtig & Süß',quantity:394,unit:'g',quantity_label:'394 g',forecast_label:null,tone:'fresh',note:'500-g-Packung · 106 g separat zum Mittag',opened:false,use_priority:'three_days',is_active:true},
-      {id:'broccoli',name:'Brokkoli',quantity:500,unit:'g',quantity_label:'500 g',forecast_label:'200 g nach dem Abendessen',tone:'priority',note:'Offen · morgen zuerst verwenden',opened:true,use_priority:'tomorrow',is_active:true},
-      {id:'chicken',name:'Hähnchenbrustfilet',quantity:600,unit:'g',quantity_label:'600 g',forecast_label:'400 g nach dem Abendessen',tone:'priority',note:'Offen · morgen zuerst verwenden',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'broccoli',name:'Brokkoli',quantity:500,unit:'g',quantity_label:'500 g',forecast_label:'200 g nach dem Abendessen',tone:'priority',note:'Noch unangebrochen · morgen zuerst verwenden',opened:false,use_priority:'tomorrow',is_active:true},
+      {id:'chicken',name:'Hähnchenbrustfilet',quantity:600,unit:'g',quantity_label:'600 g',forecast_label:'400 g nach dem Abendessen',tone:'priority',note:'Noch unangebrochen · morgen zuerst verwenden',opened:false,use_priority:'tomorrow',is_active:true},
       {id:'potatoes',name:'Kartoffeln',quantity:2500,unit:'g',quantity_label:'2.500 g',forecast_label:'2.200 g nach dem Abendessen',tone:'stock',note:'300 g fürs Abendessen geplant',opened:false,use_priority:'later',is_active:true},
       {id:'skyr',name:'Skyr Natur',quantity:250,unit:'g',quantity_label:'250 g',forecast_label:null,tone:'priority',note:'Offen · morgen weiterverwenden',opened:true,use_priority:'tomorrow',is_active:true},
       {id:'cream',name:'Frischkäse Balance',quantity:270,unit:'g',quantity_label:'270 g',forecast_label:null,tone:'priority',note:'Offen · morgen mitverwenden',opened:true,use_priority:'tomorrow',is_active:true},
@@ -135,34 +139,102 @@
     }));
   }
 
+  const sourceIsReal=key=>sourceState[key]==='cloud'||sourceState[key]==='stale';
+
+  function withTimeout(promise,label,ms=REQUEST_TIMEOUT_MS){
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise).finally(()=>clearTimeout(timer)),
+      new Promise((_,reject)=>{
+        timer=setTimeout(()=>reject(new Error(label+' hat zu lange gebraucht.')),ms);
+      })
+    ]);
+  }
+
+  function keepOrFallback(key){
+    if(state&&Array.isArray(state[key])&&sourceIsReal(key)){
+      sourceState[key]='stale';
+      return state[key];
+    }
+    sourceState[key]='fallback';
+    return structuredClone(fallback[key]||[]);
+  }
+
+  function unavailableSnapshot(message){
+    cloudIssues=[message];
+    return Object.fromEntries(SOURCE_KEYS.map(key=>[key,keepOrFallback(key)]));
+  }
+
+  async function safeQuery(key,promise){
+    try{
+      const result=await withTimeout(promise,key);
+      if(result?.error)return {data:null,error:result.error};
+      return result||{data:[]};
+    }catch(error){
+      return {data:null,error};
+    }
+  }
+
   async function remoteData(){
     const supabase=client();
-    if(!supabase)return null;
-    const session=await supabase.auth.getSession();
+    if(!supabase)return unavailableSnapshot('Cloud-Verbindung fehlt.');
+    let session;
+    try{
+      session=await withTimeout(supabase.auth.getSession(),'Anmeldung',2500);
+    }catch(error){
+      console.warn('V548 FOOD Sitzung nicht rechtzeitig verfügbar.',error);
+      return unavailableSnapshot('Cloud-Sitzung antwortet gerade nicht.');
+    }
     const user=session?.data?.session?.user;
-    if(session?.error||!user?.id)return null;
+    if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
+
     const results=await Promise.all([
-      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,recipe_id,food_meal_ingredients(id,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order'),
-      supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order'),
-      supabase.from('food_recipes').select('id,title,meal_type,description,food_recipe_ingredients(id,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title'),
-      supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,recipe_id,food_meal_ingredients(id,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
+      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order')),
+      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,food_recipe_ingredients(id,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
+      safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at'))
     ]);
-    const failure=results.find(result=>result.error);
-    if(failure)throw failure.error;
-    return {meals:flattenMeals(results[0].data),inventory:results[1].data||[],recipes:results[2].data||[],shopping:results[3].data||[]};
+
+    cloudIssues=[];
+    function take(key,index,transform){
+      const result=results[index];
+      if(!result?.error){
+        sourceState[key]='cloud';
+        return transform(result.data||[]);
+      }
+      console.warn('V548 FOOD '+key+' nicht aktualisiert.',result.error);
+      cloudIssues.push(key+': '+(result.error?.message||'Cloud-Anfrage fehlgeschlagen'));
+      return keepOrFallback(key);
+    }
+
+    return {
+      meals:take('meals',0,flattenMeals),
+      inventory:take('inventory',1,rows=>rows),
+      recipes:take('recipes',2,rows=>rows),
+      shopping:take('shopping',3,rows=>rows)
+    };
   }
 
   async function load(){
     if(loadPromise)return loadPromise;
-    loadPromise=remoteData().then(data=>data||structuredClone(fallback)).catch(error=>{
-      console.warn('V544 FOOD Cloud-Daten nicht erreichbar; Startstand wird gezeigt.',error);
-      return structuredClone(fallback);
+    loadPromise=remoteData().catch(error=>{
+      console.warn('V548 FOOD Cloud-Daten nicht erreichbar.',error);
+      return unavailableSnapshot(error?.message||'Cloud-Daten konnten nicht geladen werden.');
     });
     state=await loadPromise;
     return state;
   }
 
-  function shell(){
+  function cloudNotice(){
+    if(!cloudIssues.length)return '';
+    const fallbackActive=SOURCE_KEYS.some(key=>sourceState[key]==='fallback');
+    const text=fallbackActive
+      ?'Mindestens ein Bereich zeigt gerade nur die Notfallansicht. Änderungen daran sind gesperrt, damit keine falschen IDs gespeichert werden.'
+      :'Die Cloud war langsam. Die zuletzt bestätigten Daten bleiben sichtbar und können erneut synchronisiert werden.';
+    return '<div class="food-cloud-warning-v548" role="status"><div><strong>Cloud hakt gerade</strong><span>'+esc(text)+'</span></div><button type="button" data-food-retry>Erneut laden</button></div>';
+  }
+
+  function shell(){  function shell(){
     return '<div class="food-hero-v544"><div><span class="food-kicker-v544">TAGESKÜCHE</span><h2>Was ist heute dran?</h2><p>Dein Plan, dein Vorrat und die nächsten Mahlzeiten – klar getrennt und direkt bedienbar.</p></div><div class="food-date-v544"><strong>'+new Date().getDate()+'</strong><span>'+new Intl.DateTimeFormat('de-DE',{month:'short',timeZone:'Europe/Berlin'}).format(new Date()).replace('.','').toUpperCase()+'</span></div></div>'+
       '<nav class="food-nav-v544" aria-label="FOOD Bereiche">'+TABS.map(tab=>'<button type="button" data-food-tab="'+tab+'" class="'+(tab===activeTab?'active':'')+'" aria-pressed="'+(tab===activeTab)+'">'+LABELS[tab]+'</button>').join('')+'</nav>'+
       '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
@@ -259,6 +331,46 @@
     return result;
   }
 
+  async function saveInventoryStorage(id,opened,usePriority){
+    const supabase=client();
+    if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    let firstError=null;
+    try{
+      const result=await withTimeout(
+        supabase.from('food_inventory')
+          .update({opened,use_priority:usePriority})
+          .eq('id',id)
+          .eq('is_active',true)
+          .select('id,opened,use_priority')
+          .maybeSingle(),
+        'Vorratsstatus speichern',
+        8000
+      );
+      if(!result?.error&&result?.data)return result.data;
+      firstError=result?.error||new Error('Die Cloud hat den Speichervorgang nicht bestätigt.');
+    }catch(error){
+      firstError=error;
+    }
+
+    await new Promise(resolve=>setTimeout(resolve,350));
+    try{
+      const check=await withTimeout(
+        supabase.from('food_inventory')
+          .select('id,opened,use_priority')
+          .eq('id',id)
+          .eq('is_active',true)
+          .maybeSingle(),
+        'Speicherstand prüfen',
+        3500
+      );
+      if(!check?.error&&check?.data&&check.data.opened===opened&&check.data.use_priority===usePriority)return check.data;
+      if(!firstError)firstError=check?.error;
+    }catch(error){
+      if(!firstError)firstError=error;
+    }
+    throw firstError||new Error('Der neue Vorratsstatus konnte nicht bestätigt werden.');
+  }
+
   async function completeMeal(id){
     const supabase=client();
     if(!supabase){
@@ -319,14 +431,34 @@
   function storageModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
     addModal('Zustand &amp; Verwendung','<form><p class="food-modal-copy-v544">'+esc(item.name)+'</p><label>Zustand<select name="opened"><option value="false" '+(!item.opened?'selected':'')+'>Unangebrochen</option><option value="true" '+(item.opened?'selected':'')+'>Angebrochen</option></select></label><label>Einplanen<select name="priority">'+['tomorrow','three_days','later'].map(value=>'<option value="'+value+'" '+(item.use_priority===value?'selected':'')+'>'+priorityLabel(value)+'</option>').join('')+'</select></label><button class="food-action-v544" type="submit">Speichern</button></form>',async form=>{
-      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
-      const result=await supabase.from('food_inventory').update({opened:form.get('opened')==='true',use_priority:form.get('priority')}).eq('id',id).eq('is_active',true).select('id').single();
-      if(result.error)throw result.error;
-      await mutate(()=>result.data);
+      if(!sourceIsReal('inventory'))throw new Error('Der Vorrat wird gerade nur aus Notfalldaten gezeigt. Bitte die Cloud-Verbindung erneut laden.');
+      const opened=form.get('opened')==='true';
+      const usePriority=String(form.get('priority')||'later');
+      const previous={opened:item.opened,use_priority:item.use_priority};
+
+      item.opened=opened;
+      item.use_priority=usePriority;
+      renderState();
+
+      try{
+        const saved=await saveInventoryStorage(id,opened,usePriority);
+        item.opened=saved.opened;
+        item.use_priority=saved.use_priority;
+        sourceState.inventory='cloud';
+        cloudIssues=cloudIssues.filter(issue=>!String(issue).startsWith('inventory:'));
+        renderState();
+        return saved;
+      }catch(error){
+        item.opened=previous.opened;
+        item.use_priority=previous.use_priority;
+        renderState();
+        const message=error?.message||'Unbekannter Cloud-Fehler';
+        throw new Error('Speichern konnte nicht bestätigt werden. Der vorige Zustand wurde wiederhergestellt. '+message);
+      }
     });
   }
 
-  function consumeModal(id){
+  function consumeModal(id){  function consumeModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
     if(num(item.quantity)===null){alert('Bitte zuerst die vorhandene Menge eintragen.');return;}
     const bottle=item.name==='Pepsi Zero Cherry'&&item.unit==='l';
@@ -383,6 +515,24 @@
     root.querySelector('[data-food-add-shopping]')?.addEventListener('click',shoppingModal);
     root.querySelectorAll('[data-shopping-check]').forEach(button=>button.addEventListener('click',()=>checkShopping(button.dataset.shoppingCheck).catch(error=>alert(error?.message||'Eintrag konnte nicht geändert werden.'))));
     root.querySelectorAll('[data-food-jump]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodJump;render();}));
+    root.querySelector('[data-food-retry]')?.addEventListener('click',()=>{loadPromise=null;render();});
+  }
+
+  function paint(root,data){
+    const target=root.querySelector('.food-content-v544');
+    if(target)target.innerHTML=cloudNotice()+content(data);
+    root.querySelectorAll('.food-section-head-v544>div>span').forEach(label=>label.remove());
+    if(activeTab==='plan')root.querySelector('.food-section-head-v544 small')?.remove();
+    decorateCards(root);
+    wire(root);
+    return true;
+  }
+
+  function renderState(){
+    ++renderSerial;
+    const root=ensureRoot();if(!root||!state)return false;
+    root.innerHTML=shell();
+    return paint(root,state);
   }
 
   async function render(){
@@ -392,16 +542,10 @@
     const data=await load();
     if(serial!==renderSerial)return false;
     state=data;
-    const target=root.querySelector('.food-content-v544');
-    if(target)target.innerHTML=content(data);
-    root.querySelectorAll('.food-section-head-v544>div>span').forEach(label=>label.remove());
-    if(activeTab==='plan')root.querySelector('.food-section-head-v544 small')?.remove();
-    decorateCards(root);
-    wire(root);
-    return true;
+    return paint(root,data);
   }
 
-  function setSurface(active){
+  function setSurface(active){  function setSurface(active){
     const html=document.documentElement;
     const meta=document.querySelector('meta[name="theme-color"]');
     if(active){
@@ -458,7 +602,7 @@
     open();
   },true);
 
-  const api={version:VERSION,open,close,render,reload(){loadPromise=null;return render();},fallbackData:fallback,planningDoesNotConsume:true,receiptExcluded:true};
+  const api={version:VERSION,open,close,render,reload(){loadPromise=null;return render();},fallbackData:fallback,planningDoesNotConsume:true,receiptExcluded:true,getDataSources(){return {...sourceState};},getCloudIssues(){return [...cloudIssues];}};
   window.__modFoodV544=api;
   window.__modFoodV543=api;
   const observer=new MutationObserver(patchHub);
