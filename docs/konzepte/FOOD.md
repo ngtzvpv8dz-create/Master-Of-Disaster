@@ -1,7 +1,7 @@
 # FOOD – Einkauf, Vorrat, Haltbarkeit und Essensplanung
 
 **Konzeptstand:** 18.09.2026  
-**Status:** BESCHLOSSENES KONZEPT, noch keine vollständige Implementierung
+**Status:** V543 STARTBEREICH IMPLEMENTIERT – Ausbau läuft
 
 ## Ziel
 
@@ -84,12 +84,12 @@ Die Bereiche sollen nicht als isolierte Listen gebaut werden, sondern dieselben 
 
 ## Stufenweiser Aufbau
 
-### Phase 1 – jetzt
+### Phase 1 – gestartet mit V543
 
-1. Einkäufe gemeinsam planen.
-2. Gekaufte Lebensmittel erfassen.
-3. Vorhandene Lebensmittel schrittweise ergänzen.
-4. Tatsächlichen Verbrauch nach und nach erfassen.
+1. Heutige Mahlzeiten mit bestätigten, vorbereiteten und geplanten Zuständen anzeigen.
+2. Gekaufte Lebensmittel und belastbare Restmengen erfassen.
+3. Prognosen nach geplanten Mahlzeiten getrennt vom bestätigten Bestand anzeigen.
+4. Tatsächlichen Verbrauch nach und nach bestätigen und erfassen.
 
 ### Phase 2 – Basis-FOOD in der App
 

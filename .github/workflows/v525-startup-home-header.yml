@@ -28,7 +28,7 @@ jobs:
           grep -q 'mod-app-hub-v515' fixed-app-header-v475.js
           grep -q 'script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"' index.html
           grep -q 'script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"' index.html
-          grep -Eq './sw\.js\?v=525-fast-start|./sw\.js\?v=530-backstage' index.html
+          grep -Eq './sw\.js\?v=525-fast-start|./sw\.js\?v=530-backstage|./sw\.js\?v=543-food' index.html
           grep -q 'const CACHE_NAME=' sw.js
           grep -q 'setTimeout(()=>resolve(hit),350)' sw.js
           grep -q '"background_color": "#0b0d0f"' manifest.webmanifest
