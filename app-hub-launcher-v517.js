@@ -1,4 +1,4 @@
-/* V540 · FUTURE PLACEHOLDER BECOMES PROGRESS
+/* V552 · FINANCE HUB EXPANSION
    - Replaces the former FUTURE placeholder with PROGRESS.
    - Adds the dedicated 192px Progress icon asset.
    - Keeps TO-DO and SPORT as the only native V520 modules; newer layers may activate prepared entries.
@@ -14,7 +14,7 @@
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V540';
+  const VERSION='V552';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
     todo:'./assets/icons/todo-v524-192.png?v=524-192',
@@ -22,6 +22,7 @@
     kistology:'./assets/icons/kistology-v524-192.png?v=524-192',
     food:'./assets/icons/food-v524-192.png?v=524-192',
     progress:'./assets/icons/progress-v540-192.png?v=540-progress',
+    finance:'./assets/icons/finance-v552-192.webp?v=552-finance',
     backstage:'./assets/icons/backstage-v524-192.png?v=524-192'
   };
   const MODULES=[
@@ -30,6 +31,7 @@
     {id:'kistology',label:'KISTOLOGY',active:false},
     {id:'food',label:'FOOD',active:true},
     {id:'progress',label:'PROGRESS',active:false},
+    {id:'finance',label:'FINANZEN',active:true},
     {id:'backstage',label:'BACKSTAGE',active:false}
   ];
 
@@ -170,6 +172,7 @@
     if(item.id==='kistology')return 'Kistology Bereich vorbereitet';
     if(item.id==='food')return 'Food öffnen';
     if(item.id==='progress')return 'Progress Bereich für übergreifenden Fortschritt vorbereitet';
+    if(item.id==='finance')return 'Finanzen öffnen';
     return 'Backstage Bereich vorbereitet';
   }
 
@@ -267,7 +270,8 @@
     modules:MODULES.map(item=>({...item})),
     homescreenStyle:true,
     compactGrid:true,
-    sixTileGrid:true,
+    sixTileGrid:false,
+    sevenTileGrid:true,
     iconOnlyPanel:true,
     wideCardsRemoved:true,
     v515OpenMarkersPreserved:true,
@@ -285,6 +289,8 @@
     optimizedIcons192V524:true,
     allLauncherIconsEagerV524:true,
     progressIconV540:true,
+    financeIconV552:true,
+    financeActiveV552:true,
     kistologyPreviewLoaderV535:true,
     searchNoZoomLoaderV536:true,
     kistologyLiveSnapshotLoaderV537:true,
@@ -300,6 +306,7 @@
   window.__modHubLauncherV524=publicApi;
   window.__modHubLauncherV540=publicApi;
   window.__modHubLauncherV543=publicApi;
+  window.__modHubLauncherV552=publicApi;
 
   ensureSearchNoZoomV536();
   ensureSportSNoopV538();
