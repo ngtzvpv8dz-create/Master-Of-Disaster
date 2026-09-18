@@ -23,9 +23,6 @@ alter table public.food_meal_ingredients
 
 alter table public.food_meals
   drop constraint if exists food_meals_status_check;
-alter table public.food_meals
-  add constraint food_meals_status_check check (status in ('planned','completed'));
-
 alter table public.food_inventory
   drop constraint if exists food_inventory_use_priority_check;
 alter table public.food_inventory
@@ -144,6 +141,9 @@ where meal_date='2026-09-18' and meal_type='snack';
 update public.food_meals
 set note=null
 where meal_date='2026-09-18' and meal_type='dinner';
+
+alter table public.food_meals
+  add constraint food_meals_status_check check (status in ('planned','completed'));
 
 insert into public.food_recipes(user_id,title,meal_type,description)
 select m.user_id,m.title,m.meal_type,'Aus dem heutigen Startplan übernommen.'
