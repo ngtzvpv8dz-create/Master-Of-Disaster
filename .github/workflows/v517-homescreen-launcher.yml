@@ -27,7 +27,7 @@ jobs:
           grep -q '__modHubLauncherV540' app-hub-launcher-v517.js
           grep -q 'progressIconV540:true' app-hub-launcher-v517.js
           grep -q '"./assets/icons/progress-v540-192.png"' sw.js
-          grep -q 'master-of-disaster-v540-progress-hub' sw.js
+          grep -Eq 'master-of-disaster-v540-progress-hub|master-of-disaster-v543-food' sw.js
       - name: Validate current launcher PNG assets
         run: |
           python3 -m pip install --disable-pip-version-check pillow >/dev/null 2>&1
