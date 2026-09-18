@@ -1,0 +1,182 @@
+/* V550 · TO-DO WARM ACCENT
+   Purely visual theme layer for the To-Do surface.
+   No layout dimensions, spacing, ordering or task structure are changed. */
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510){
+  --todo-accent-v550:#f29a4a;
+  --todo-accent-strong-v550:#ff9d45;
+  --todo-accent-soft-v550:rgba(242,154,74,.16);
+  --todo-accent-faint-v550:rgba(242,154,74,.07);
+  --todo-border-v550:rgba(242,154,74,.28);
+  background:
+    radial-gradient(120% 72% at 100% 0%,rgba(242,154,74,.095),transparent 42%),
+    radial-gradient(95% 58% at 0% 100%,rgba(242,154,74,.055),transparent 46%),
+    linear-gradient(180deg,#15191d 0%,#0b0d0f 45%,#070809 100%);
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #appFixedTopV475{
+  --mod-bg-top:#15191d;
+  background:
+    radial-gradient(105% 120% at 100% 0%,rgba(242,154,74,.11),transparent 56%),
+    linear-gradient(180deg,#171b1e 0%,#121518 100%)!important;
+  border-bottom-color:rgba(242,154,74,.22)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #appFixedTopV475::before{
+  background:
+    radial-gradient(105% 120% at 100% 0%,rgba(242,154,74,.11),transparent 56%),
+    linear-gradient(180deg,#171b1e 0%,#121518 100%)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .header .eyebrow{
+  color:#a98e79!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tabs-wrapper{
+  border-color:rgba(242,154,74,.26)!important;
+  border-radius:15px!important;
+  background:
+    radial-gradient(90% 130% at 0% 50%,rgba(242,154,74,.055),transparent 58%),
+    linear-gradient(180deg,rgba(18,22,25,.98),rgba(13,16,18,.98))!important;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.22),
+    inset 0 0 0 1px rgba(255,181,112,.025)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tab-button{
+  border-color:rgba(242,154,74,.13)!important;
+  background:linear-gradient(180deg,#14181b,#101315)!important;
+  color:#8e959a!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tab-button.active{
+  border-color:#f3a159!important;
+  background:linear-gradient(135deg,#ffad63 0%,#f28a37 100%)!important;
+  color:#17120d!important;
+  box-shadow:
+    0 0 0 1px rgba(255,190,128,.22) inset,
+    0 0 16px rgba(242,154,74,.16)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .input-panel{
+  border-color:rgba(242,154,74,.23)!important;
+  border-radius:17px!important;
+  background:
+    radial-gradient(95% 120% at 100% 0%,rgba(242,154,74,.055),transparent 52%),
+    linear-gradient(145deg,#191d20,#141719)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #taskInput{
+  border-color:rgba(242,154,74,.18)!important;
+  background:linear-gradient(180deg,#101315,#0c0f11)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #taskInput:focus,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .edit-input:focus,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .weight-input:focus{
+  border-color:#b8753e!important;
+  box-shadow:0 0 0 2px rgba(242,154,74,.07)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .option-label{
+  color:#88786c!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .option-button{
+  border-color:rgba(242,154,74,.13)!important;
+  background:#111416!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .option-button.selected{
+  border-color:rgba(242,154,74,.38)!important;
+  background:linear-gradient(180deg,#26201c,#1e1b19)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .add-button{
+  background:linear-gradient(135deg,#ffb46d,#f28d3c)!important;
+  color:#17120d!important;
+  box-shadow:inset 0 0 0 1px rgba(255,224,194,.18)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .section-title{
+  color:#aa8c73!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .counter{
+  border-color:rgba(242,154,74,.18)!important;
+  background:#171817!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-summary{
+  border-color:rgba(242,154,74,.28)!important;
+  border-radius:14px!important;
+  background:
+    radial-gradient(90% 140% at 100% 0%,rgba(242,154,74,.065),transparent 58%),
+    linear-gradient(145deg,#171b1d,#131719)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-percentage{
+  color:#d99a66!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-progress-bar{
+  background:#282725!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-progress-fill{
+  background:linear-gradient(90deg,#ef8835,#ffb064)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task{
+  border-color:rgba(242,154,74,.29)!important;
+  border-radius:14px!important;
+  background:
+    radial-gradient(95% 125% at 100% 0%,rgba(242,154,74,.065),transparent 52%),
+    linear-gradient(135deg,#1c2022 0%,#151819 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.012),
+    inset 0 0 24px rgba(242,154,74,.018)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.running{
+  border-color:#55775f!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.paused{
+  border-color:#776d36!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task-number,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .archive-number{
+  color:#a97751!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .icon-action{
+  border-color:rgba(242,154,74,.16)!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,#141719,#101315)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .icon-action:active{
+  background:#211a16!important;
+  border-color:rgba(242,154,74,.42)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .task-suggestions{
+  border-color:rgba(242,154,74,.24)!important;
+  background:rgba(16,17,17,.99)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .task-suggestion:hover,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .task-suggestion:focus{
+  background:#211a16!important;
+}
+
+/* Category and auxiliary To-Do cards: same warm edge treatment, unchanged geometry. */
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .category-toolbar-v412,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .category-page-v412{
+  border-color:rgba(242,154,74,.23)!important;
+  background:
+    radial-gradient(100% 120% at 100% 0%,rgba(242,154,74,.045),transparent 55%),
+    linear-gradient(135deg,#181c1e,#111416)!important;
+}
