@@ -1,4 +1,4 @@
-/* V545 · FOOD light surface and compact controls */
+/* V546 · FOOD light surface and compact controls */
 :root{--food-bg:#eef3e8;--food-ink:#203126;--food-muted:#68766b;--food-green:#365d43;--food-line:rgba(61,92,62,.15);--food-card:rgba(255,255,255,.82)}
 html.mod-food-surface-v544{background:var(--food-bg)!important;color-scheme:light}
 body.mod-food-v544{min-height:100vh;background:var(--food-bg)!important;color:var(--food-ink);overflow-x:hidden}
@@ -91,3 +91,24 @@ html body.mod-food-v544 .food-modal-card-v544 select{min-width:0;max-width:100%;
 .food-modal-card-v544 input[type=date]::-webkit-date-and-time-value{text-align:left}
 html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{justify-content:flex-start;text-align:left;width:100%}
 .food-form-grid-v544{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* V546: the FOOD title keeps its size, but uses the same visual side margins
+   as the homescreen title. The transform only compresses the wide serif glyphs. */
+html body.mod-food-v544 #appFixedTopV475 .header h1{transform:scaleX(.91);transform-origin:center}
+
+/* V546: very quiet, diagonal/radial depth on content cards. The hero gradient
+   above remains untouched. */
+.food-meal-card-v544{background:radial-gradient(circle at 8% 12%,rgba(209,229,190,.32),transparent 38%),linear-gradient(145deg,rgba(255,255,255,.9),rgba(235,243,228,.78))}
+.food-stock-card-v544{background:radial-gradient(circle at 88% 14%,rgba(220,231,201,.3),transparent 40%),linear-gradient(145deg,rgba(255,255,255,.88),rgba(237,244,231,.76))}
+.food-stock-card-v544.tone-priority{background:radial-gradient(circle at 90% 12%,rgba(237,211,145,.18),transparent 42%),linear-gradient(145deg,#f8f0df,#f3ead4)}
+.food-stock-card-v544.tone-empty{background:radial-gradient(circle at 12% 88%,rgba(186,177,161,.16),transparent 42%),linear-gradient(145deg,#f1eee8,#ebe7e0)}
+.food-recipe-card-v544{background:radial-gradient(circle at 10% 88%,rgba(209,229,190,.24),transparent 42%),linear-gradient(145deg,rgba(255,255,255,.9),rgba(237,244,230,.78))}
+.food-empty-card-v544{background:radial-gradient(circle at 86% 12%,rgba(205,228,187,.24),transparent 44%),linear-gradient(145deg,rgba(255,255,255,.9),rgba(239,245,233,.84))}
+.food-shopping-list-v544 li{background:radial-gradient(circle at 90% 15%,rgba(211,229,193,.22),transparent 44%),linear-gradient(145deg,rgba(255,255,255,.88),rgba(237,244,230,.76))}
+
+/* Native iPhone controls need a 16px floor to avoid Safari zoom. Their text
+   stays regular and slightly smaller/lighter than the primary action. */
+html body.mod-food-v544 .food-modal-card-v544 input:not([type=checkbox]),
+html body.mod-food-v544 .food-modal-card-v544 select{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:16px!important;font-weight:400!important;line-height:1.2;text-align:left}
+html body.mod-food-v544 .food-modal-card-v544 .food-plan-field-v546{font-weight:650}
+html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px!important;font-weight:800!important;line-height:1.1}
