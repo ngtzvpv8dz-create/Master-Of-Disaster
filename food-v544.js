@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V548';
+  const VERSION='V549';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -313,7 +313,7 @@
 
   function recipesView(data){
     const recipes=data.recipes.length?data.recipes:data.meals.map(meal=>({id:meal.id,title:meal.title,meal_type:meal.meal_type,ingredients:meal.ingredients}));
-    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Zum Einplanen</h3></div><small>'+recipes.length+' Rezepte</small></div><div class="food-recipe-grid-v544">'+recipes.map(recipeCard).join('')+'</div>';
+    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Zum Einplanen</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte</small><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div><div class="food-recipe-grid-v544">'+recipes.map(recipeCard).join('')+'</div>';
   }
 
   function content(data){
@@ -396,6 +396,7 @@
       if(submit)submit.disabled=true;
       try{await onSubmit(new FormData(event.currentTarget));modal.remove();}catch(error){console.error(error);alert(error?.message||'Das konnte nicht gespeichert werden.');if(submit)submit.disabled=false;}
     });
+    return modal;
   }
 
   function scheduleModal(recipeId){
@@ -404,6 +405,123 @@
       const result=await supabase.rpc('schedule_food_recipe',{p_recipe_id:recipeId,p_meal_date:form.get('date'),p_meal_type:form.get('type')});
       if(result.error)throw result.error;
       await mutate(()=>result.data);
+    });
+  }
+
+  function recipeIngredientRow(index){
+    const options=sourceIsReal('inventory')
+      ?(state?.inventory||[]).filter(item=>item.is_active!==false).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.name)+'</option>').join('')
+      :'';
+    return '<div class="food-recipe-ingredient-row-v549" data-food-recipe-row>'+
+      '<div class="food-recipe-row-head-v549"><strong>Zutat '+(index+1)+'</strong><button type="button" data-food-recipe-remove aria-label="Zutat entfernen">×</button></div>'+
+      '<label>Aus Vorrat wählen<select data-food-recipe-inventory><option value="">Eigene Zutat eingeben</option>'+options+'</select></label>'+
+      '<label>Name<input data-food-recipe-name placeholder="z. B. Paprika" required></label>'+
+      '<div class="food-form-grid-v544"><label>Menge<input data-food-recipe-quantity type="number" min="0.01" step="0.01" inputmode="decimal" required></label><label>Einheit<input data-food-recipe-unit value="g" placeholder="g, ml, Stück …" required></label></div>'+
+      '</div>';
+  }
+
+  function wireRecipeIngredientRow(row){
+    const select=row.querySelector('[data-food-recipe-inventory]');
+    const name=row.querySelector('[data-food-recipe-name]');
+    const unit=row.querySelector('[data-food-recipe-unit]');
+    const sync=()=>{
+      const item=(state?.inventory||[]).find(entry=>entry.id===select?.value);
+      if(item){
+        name.value=item.name;
+        name.readOnly=true;
+        if(item.unit)unit.value=item.unit;
+      }else{
+        name.readOnly=false;
+        if(select?.value==='')name.value='';
+      }
+    };
+    select?.addEventListener('change',sync);
+  }
+
+  function addRecipeModal(){
+    let modal;
+    const body='<form class="food-recipe-form-v549">'+
+      '<label>Rezeptname<input name="title" placeholder="z. B. Hähnchen-Brokkoli-Pfanne" required></label>'+
+      '<label>Mahlzeit<select name="meal_type"><option value="breakfast">Frühstück</option><option value="snack">Snack</option><option value="lunch">Mittag</option><option value="dinner" selected>Abendessen</option></select></label>'+
+      '<div class="food-recipe-builder-v549"><div class="food-recipe-builder-head-v549"><strong>Zutaten</strong><button type="button" data-food-recipe-add-ingredient>+ Zutat</button></div><div data-food-recipe-rows>'+recipeIngredientRow(0)+'</div></div>'+
+      '<button class="food-action-v544" type="submit">Rezept speichern</button>'+
+      '</form>';
+
+    modal=addModal('Rezept hinzufügen',body,async form=>{
+      if(!sourceIsReal('recipes'))throw new Error('Die Rezeptdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst „Erneut laden“ verwenden.');
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const session=await withTimeout(supabase.auth.getSession(),'Anmeldung',2500);
+      const user=session?.data?.session?.user;
+      if(session?.error||!user?.id)throw new Error('Nicht angemeldet.');
+
+      const title=String(form.get('title')||'').trim();
+      const mealType=String(form.get('meal_type')||'dinner');
+      if(!title)throw new Error('Bitte einen Rezeptnamen eingeben.');
+
+      const ingredientRows=Array.from(modal.querySelectorAll('[data-food-recipe-row]'));
+      if(!ingredientRows.length)throw new Error('Bitte mindestens eine Zutat hinzufügen.');
+      const ingredients=ingredientRows.map((row,index)=>{
+        const inventoryId=String(row.querySelector('[data-food-recipe-inventory]')?.value||'')||null;
+        const inventoryItem=inventoryId?(state?.inventory||[]).find(item=>item.id===inventoryId):null;
+        const name=String(row.querySelector('[data-food-recipe-name]')?.value||'').trim();
+        const quantity=Number(row.querySelector('[data-food-recipe-quantity]')?.value);
+        const unit=String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
+        if(!name)throw new Error('Bei Zutat '+(index+1)+' fehlt der Name.');
+        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
+        if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
+        if(inventoryId&&!inventoryItem)throw new Error('Die ausgewählte Vorratszutat ist nicht mehr verfügbar.');
+        return {user_id:user.id,inventory_id:inventoryId,label:fmtQty(quantity,unit)+' '+name,quantity,unit,sort_order:index+1};
+      });
+
+      let recipe=null;
+      const recipeResult=await withTimeout(
+        supabase.from('food_recipes').insert({user_id:user.id,title,meal_type:mealType,description:null,active:true}).select('id,title,meal_type,description,active,created_at').single(),
+        'Rezept speichern',
+        8000
+      );
+      if(recipeResult?.error){
+        if(recipeResult.error.code==='23505')throw new Error('Ein Rezept mit diesem Namen gibt es bereits.');
+        throw recipeResult.error;
+      }
+      recipe=recipeResult.data;
+
+      const ingredientPayload=ingredients.map(item=>({...item,recipe_id:recipe.id}));
+      const ingredientResult=await withTimeout(
+        supabase.from('food_recipe_ingredients').insert(ingredientPayload).select('id,recipe_id,inventory_id,label,quantity,unit,sort_order'),
+        'Rezeptzutaten speichern',
+        8000
+      );
+      if(ingredientResult?.error){
+        try{await supabase.from('food_recipes').delete().eq('id',recipe.id);}catch(_){}
+        throw ingredientResult.error;
+      }
+
+      const created={...recipe,food_recipe_ingredients:ingredientResult.data||[]};
+      state.recipes=[created,...(state?.recipes||[]).filter(item=>item.id!==recipe.id)];
+      sourceState.recipes='cloud';
+      renderState();
+      return created;
+    });
+
+    const rows=modal.querySelector('[data-food-recipe-rows]');
+    Array.from(rows.querySelectorAll('[data-food-recipe-row]')).forEach(wireRecipeIngredientRow);
+    modal.querySelector('[data-food-recipe-add-ingredient]')?.addEventListener('click',()=>{
+      const index=rows.querySelectorAll('[data-food-recipe-row]').length;
+      rows.insertAdjacentHTML('beforeend',recipeIngredientRow(index));
+      const row=rows.lastElementChild;
+      wireRecipeIngredientRow(row);
+      row.querySelector('[data-food-recipe-name]')?.focus();
+    });
+    rows.addEventListener('click',event=>{
+      const remove=event.target?.closest?.('[data-food-recipe-remove]');
+      if(!remove)return;
+      const all=rows.querySelectorAll('[data-food-recipe-row]');
+      if(all.length<=1){alert('Ein Rezept braucht mindestens eine Zutat.');return;}
+      remove.closest('[data-food-recipe-row]')?.remove();
+      rows.querySelectorAll('[data-food-recipe-row]').forEach((row,index)=>{
+        const strong=row.querySelector('.food-recipe-row-head-v549 strong');
+        if(strong)strong.textContent='Zutat '+(index+1);
+      });
     });
   }
 
@@ -513,6 +631,7 @@
     root.querySelectorAll('[data-food-archive]').forEach(button=>button.addEventListener('click',()=>archiveInventory(button.dataset.foodArchive).catch(error=>alert(error?.message||'Vorrat konnte nicht entfernt werden.'))));
     root.querySelector('[data-food-add-inventory]')?.addEventListener('click',addInventoryModal);
     root.querySelector('[data-food-add-shopping]')?.addEventListener('click',shoppingModal);
+    root.querySelector('[data-food-add-recipe]')?.addEventListener('click',addRecipeModal);
     root.querySelectorAll('[data-shopping-check]').forEach(button=>button.addEventListener('click',()=>checkShopping(button.dataset.shoppingCheck).catch(error=>alert(error?.message||'Eintrag konnte nicht geändert werden.'))));
     root.querySelectorAll('[data-food-jump]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodJump;render();}));
     root.querySelector('[data-food-retry]')?.addEventListener('click',()=>{loadPromise=null;render();});
