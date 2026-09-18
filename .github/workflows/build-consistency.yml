@@ -37,7 +37,7 @@ jobs:
             'task-title-library-v507.js?v=507-1345',
             'archive-weight-layout-v508.js?v=508-0709',
             'data-tab="titles"',
-            "serviceWorker.register('./sw.js?v=543-food'",
+            "serviceWorker.register('./sw.js?v=544-food'",
             'summary-weight-due-polish-v494.js?v=494-2103'
           ]
           for marker in required_index:
