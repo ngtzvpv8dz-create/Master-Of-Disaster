@@ -1,15 +1,30 @@
-/* V561 · FINANCE HEADER GRID
-   Dezentes Börsenraster nur im Finance-Header.
-   Keine Layout- oder Navigationsänderungen.
+/* V567 · FINANCE HEADER PANEL
+   Finance-Header optisch auf dieselbe Breite wie die Finanzzentrale begrenzen.
+   Header-Geometrie bleibt unverändert; nur die sichtbare Hintergrundfläche wird zentriert.
 */
-html body.mod-finance-v552 #appFixedTopV475,
+html body.mod-finance-v552 #appFixedTopV475{
+  background:transparent!important;
+  border-bottom:0!important;
+  box-shadow:none!important;
+}
+
 html body.mod-finance-v552 #appFixedTopV475::before{
+  content:""!important;
+  position:absolute!important;
+  top:0!important;
+  bottom:0!important;
+  left:50%!important;
+  right:auto!important;
+  width:min(calc(100% - 24px),1040px)!important;
+  max-width:1040px!important;
+  box-sizing:border-box!important;
+  transform:translateX(-50%)!important;
   background-color:#050908!important;
   background-image:
-    linear-gradient(rgba(112,255,180,.118) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(112,255,180,.098) 1px,transparent 1px),
-    radial-gradient(circle at 14% 88%,rgba(112,255,180,.180),transparent 38%),
-    linear-gradient(180deg,rgba(98,255,168,.034) 0 1px,transparent 1px 5px),
+    linear-gradient(rgba(112,255,180,.086) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(112,255,180,.072) 1px,transparent 1px),
+    radial-gradient(circle at 14% 88%,rgba(112,255,180,.135),transparent 38%),
+    linear-gradient(180deg,rgba(98,255,168,.024) 0 1px,transparent 1px 5px),
     linear-gradient(135deg,#031108 0%,#052114 48%,#020905 100%)!important;
   background-size:
     22px 22px,
@@ -23,7 +38,20 @@ html body.mod-finance-v552 #appFixedTopV475::before{
     center,
     0 0,
     center!important;
+  border:1px solid rgba(112,255,180,.16)!important;
+  box-shadow:
+    0 16px 38px rgba(0,0,0,.24),
+    inset 0 0 36px rgba(35,255,132,.020)!important;
+  pointer-events:none!important;
 }
+
 html body.mod-finance-v552 #appFixedTopV475 .header{
   background:transparent!important;
+}
+
+@media(max-width:700px){
+  html body.mod-finance-v552 #appFixedTopV475::before{
+    border-left:0!important;
+    border-right:0!important;
+  }
 }
