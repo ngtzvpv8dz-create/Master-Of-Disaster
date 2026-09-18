@@ -234,7 +234,7 @@
     return '<div class="food-cloud-warning-v548" role="status"><div><strong>Cloud hakt gerade</strong><span>'+esc(text)+'</span></div><button type="button" data-food-retry>Erneut laden</button></div>';
   }
 
-  function shell(){  function shell(){
+  function shell(){
     return '<div class="food-hero-v544"><div><span class="food-kicker-v544">TAGESKÜCHE</span><h2>Was ist heute dran?</h2><p>Dein Plan, dein Vorrat und die nächsten Mahlzeiten – klar getrennt und direkt bedienbar.</p></div><div class="food-date-v544"><strong>'+new Date().getDate()+'</strong><span>'+new Intl.DateTimeFormat('de-DE',{month:'short',timeZone:'Europe/Berlin'}).format(new Date()).replace('.','').toUpperCase()+'</span></div></div>'+
       '<nav class="food-nav-v544" aria-label="FOOD Bereiche">'+TABS.map(tab=>'<button type="button" data-food-tab="'+tab+'" class="'+(tab===activeTab?'active':'')+'" aria-pressed="'+(tab===activeTab)+'">'+LABELS[tab]+'</button>').join('')+'</nav>'+
       '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
@@ -458,7 +458,7 @@
     });
   }
 
-  function consumeModal(id){  function consumeModal(id){
+  function consumeModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
     if(num(item.quantity)===null){alert('Bitte zuerst die vorhandene Menge eintragen.');return;}
     const bottle=item.name==='Pepsi Zero Cherry'&&item.unit==='l';
@@ -545,7 +545,7 @@
     return paint(root,data);
   }
 
-  function setSurface(active){  function setSurface(active){
+  function setSurface(active){
     const html=document.documentElement;
     const meta=document.querySelector('meta[name="theme-color"]');
     if(active){
