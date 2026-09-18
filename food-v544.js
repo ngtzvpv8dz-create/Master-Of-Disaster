@@ -1,0 +1,416 @@
+/* V544 · FOOD
+   Bedienung: Geplant/Erledigt, belastbare Bestandsbuchung, 14-Tage-Plan,
+   editierbarer Vorrat, Einkaufslücken und einplanbare Rezepte.
+*/
+(function(){
+  'use strict';
+  if(window.__modFoodV544)return;
+
+  const VERSION='V544';
+  const ROOT_ID='modFoodV544';
+  const BODY_CLASS='mod-food-v544';
+  const SURFACE_CLASS='mod-food-surface-v544';
+  const TABS=['today','plan','inventory','shopping','recipes'];
+  const LABELS={today:'Heute',plan:'Plan',inventory:'Vorrat',shopping:'Einkauf',recipes:'Rezepte'};
+  const MEAL_LABELS={breakfast:'Frühstück',snack:'Snack',lunch:'Mittag',dinner:'Abendessen'};
+  const MEAL_ICONS={breakfast:'☀',snack:'●',lunch:'◒',dinner:'☾'};
+  let activeTab='today';
+  let loadPromise=null;
+  let renderSerial=0;
+  let state=null;
+
+  const todayIso=()=>{
+    try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(new Date());}
+    catch(_){return new Date().toISOString().slice(0,10);}
+  };
+  const plusDays=(iso,days)=>{
+    const date=new Date(iso+'T12:00:00');
+    date.setDate(date.getDate()+days);
+    return date.toISOString().slice(0,10);
+  };
+  const fmtDate=iso=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00'));
+  const fmtDay=iso=>new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'2-digit',month:'long',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00'));
+  const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+  const num=value=>value===null||value===undefined||value===''?null:Number(value);
+  const fmtQty=(value,unit)=>{
+    const n=num(value);
+    if(n===null||Number.isNaN(n))return 'Menge offen';
+    const text=new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
+    return unit?text+' '+unit:text;
+  };
+  const normalizedStatus=status=>status==='consumed'||status==='prepared'?'completed':status==='completed'?'completed':'planned';
+  const statusLabel=status=>normalizedStatus(status)==='completed'?'Erledigt':'Geplant';
+  const priorityLabel=value=>({tomorrow:'Morgen verwenden',three_days:'In den nächsten 3 Tagen',later:'Hält sich länger'}[value]||'Keine Priorität');
+
+  const fallback={
+    meals:[
+      {id:'breakfast',meal_date:todayIso(),meal_type:'breakfast',title:'Skyr-Bananen-Bowl',status:'completed',sort_order:1,recipe_id:null,ingredients:[
+        {label:'250 g Skyr Natur',quantity:250,unit:'g',inventory_id:null},
+        {label:'1 Banane',quantity:1,unit:'Stück',inventory_id:null},
+        {label:'3 EL zarte Haferflocken',quantity:3,unit:'EL',inventory_id:null}
+      ]},
+      {id:'snack',meal_date:todayIso(),meal_type:'snack',title:'Apfel & Mandeln',status:'planned',sort_order:2,recipe_id:null,ingredients:[
+        {label:'1 Apfel',quantity:1,unit:'Stück',inventory_id:null},
+        {label:'25 g Mandeln naturbelassen',quantity:25,unit:'g',inventory_id:null}
+      ]},
+      {id:'lunch',meal_date:todayIso(),meal_type:'lunch',title:'Roggenbrot mit Pute & Gurke',status:'completed',sort_order:3,recipe_id:null,ingredients:[
+        {label:'2 Scheiben Roggen-Vollkornbrot · 111 g',quantity:111,unit:'g',inventory_id:null},
+        {label:'100 g Putenbrust-Aufschnitt',quantity:100,unit:'g',inventory_id:null},
+        {label:'30 g Frischkäse Balance',quantity:30,unit:'g',inventory_id:null},
+        {label:'118 g Gurke auf dem Brot',quantity:118,unit:'g',inventory_id:null},
+        {label:'106 g Tomaten separat',quantity:106,unit:'g',inventory_id:null}
+      ]},
+      {id:'dinner',meal_date:todayIso(),meal_type:'dinner',title:'Hähnchen, Kartoffeln & Brokkoli',status:'planned',sort_order:4,recipe_id:null,ingredients:[
+        {label:'200 g Hähnchenbrust',quantity:200,unit:'g',inventory_id:null},
+        {label:'300 g Kartoffeln',quantity:300,unit:'g',inventory_id:null},
+        {label:'300 g Brokkoli',quantity:300,unit:'g',inventory_id:null},
+        {label:'2–3 EL Magerquark als Dip',quantity:null,unit:'EL',inventory_id:null}
+      ]}
+    ],
+    inventory:[
+      {id:'cucumber',name:'Gurke',quantity:324,unit:'g',quantity_label:'324 g',forecast_label:null,tone:'fresh',note:'442 g gewogen · 118 g fürs Mittag',opened:false,use_priority:'three_days',is_active:true},
+      {id:'tomatoes',name:'Tomaten · Fruchtig & Süß',quantity:394,unit:'g',quantity_label:'394 g',forecast_label:null,tone:'fresh',note:'500-g-Packung · 106 g separat zum Mittag',opened:false,use_priority:'three_days',is_active:true},
+      {id:'broccoli',name:'Brokkoli',quantity:500,unit:'g',quantity_label:'500 g',forecast_label:'200 g nach dem Abendessen',tone:'priority',note:'Offen · morgen zuerst verwenden',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'chicken',name:'Hähnchenbrustfilet',quantity:600,unit:'g',quantity_label:'600 g',forecast_label:'400 g nach dem Abendessen',tone:'priority',note:'Offen · morgen zuerst verwenden',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'potatoes',name:'Kartoffeln',quantity:2500,unit:'g',quantity_label:'2.500 g',forecast_label:'2.200 g nach dem Abendessen',tone:'stock',note:'300 g fürs Abendessen geplant',opened:false,use_priority:'later',is_active:true},
+      {id:'skyr',name:'Skyr Natur',quantity:250,unit:'g',quantity_label:'250 g',forecast_label:null,tone:'priority',note:'Offen · morgen weiterverwenden',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'cream',name:'Frischkäse Balance',quantity:270,unit:'g',quantity_label:'270 g',forecast_label:null,tone:'priority',note:'Offen · morgen mitverwenden',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'quark',name:'Magerquark',quantity:250,unit:'g',quantity_label:'250 g',forecast_label:null,tone:'stock',note:'Dip-Menge noch offen',opened:false,use_priority:'later',is_active:true},
+      {id:'bread',name:'Roggen-Vollkornbrot',quantity:389,unit:'g',quantity_label:'ca. 389 g · 7 Scheiben',forecast_label:null,tone:'priority',note:'Offen · in den nächsten Tagen einplanen',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'turkey',name:'Putenbrust-Aufschnitt',quantity:0,unit:'g',quantity_label:'0 g',forecast_label:null,tone:'empty',note:'100-g-Packung verwendet',opened:false,use_priority:'later',is_active:true},
+      {id:'bananas',name:'Bananen',quantity:4,unit:'Stück',quantity_label:'4 Stück',forecast_label:null,tone:'fresh',note:'5 gekauft · 1 verwendet',opened:false,use_priority:'later',is_active:true},
+      {id:'apples',name:'Granny Smith',quantity:8,unit:'Stück',quantity_label:'8 Stück',forecast_label:'7 nach dem Snack',tone:'stock',note:'1 Stück geplant',opened:false,use_priority:'later',is_active:true},
+      {id:'almonds',name:'Mandeln naturbelassen',quantity:200,unit:'g',quantity_label:'200 g',forecast_label:'175 g nach dem Snack',tone:'stock',note:'25 g geplant',opened:false,use_priority:'later',is_active:true},
+      {id:'oats',name:'Zarte Haferflocken',quantity:null,unit:'g',quantity_label:'Rest nicht grammgenau',forecast_label:null,tone:'stock',note:'500-g-Packung · Restmenge offen',opened:true,use_priority:'later',is_active:true},
+      {id:'mince',name:'Hackfleisch gemischt',quantity:800,unit:'g',quantity_label:'800 g',forecast_label:null,tone:'stock',note:'Noch keiner Mahlzeit zugeordnet',opened:false,use_priority:'later',is_active:true},
+      {id:'pepsi',name:'Pepsi Zero Cherry',quantity:7.5,unit:'l',quantity_label:'6 × 1,25 l',forecast_label:null,tone:'stock',note:'Getränkevorrat',opened:false,use_priority:'later',is_active:true}
+    ],
+    recipes:[],
+    shopping:[]
+  };
+
+  function ensureRoot(){
+    let root=document.getElementById(ROOT_ID);
+    if(root)return root;
+    const app=document.querySelector('main.app');
+    if(!app)return null;
+    root=document.createElement('section');
+    root.id=ROOT_ID;
+    root.className='mod-food-root-v544';
+    root.setAttribute('aria-label','FOOD');
+    app.appendChild(root);
+    return root;
+  }
+
+  function client(){
+    try{
+      if(typeof window.getSupabaseClient==='function')return window.getSupabaseClient();
+      if(typeof getSupabaseClient==='function')return getSupabaseClient();
+    }catch(_){}
+    return null;
+  }
+
+  function flattenMeals(rows){
+    return (rows||[]).map(row=>({
+      ...row,
+      status:normalizedStatus(row.status),
+      ingredients:(row.food_meal_ingredients||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+    }));
+  }
+
+  async function remoteData(){
+    const supabase=client();
+    if(!supabase)return null;
+    const session=await supabase.auth.getSession();
+    const user=session?.data?.session?.user;
+    if(session?.error||!user?.id)return null;
+    const results=await Promise.all([
+      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,recipe_id,food_meal_ingredients(id,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order'),
+      supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order'),
+      supabase.from('food_recipes').select('id,title,meal_type,description,food_recipe_ingredients(id,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title'),
+      supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')
+    ]);
+    const failure=results.find(result=>result.error);
+    if(failure)throw failure.error;
+    return {meals:flattenMeals(results[0].data),inventory:results[1].data||[],recipes:results[2].data||[],shopping:results[3].data||[]};
+  }
+
+  async function load(){
+    if(loadPromise)return loadPromise;
+    loadPromise=remoteData().then(data=>data||structuredClone(fallback)).catch(error=>{
+      console.warn('V544 FOOD Cloud-Daten nicht erreichbar; Startstand wird gezeigt.',error);
+      return structuredClone(fallback);
+    });
+    state=await loadPromise;
+    return state;
+  }
+
+  function shell(){
+    return '<div class="food-hero-v544"><div><span class="food-kicker-v544">TAGESKÜCHE</span><h2>Was ist heute dran?</h2><p>Dein Plan, dein Vorrat und die nächsten Mahlzeiten – klar getrennt und direkt bedienbar.</p></div><div class="food-date-v544"><strong>'+new Date().getDate()+'</strong><span>'+new Intl.DateTimeFormat('de-DE',{month:'short',timeZone:'Europe/Berlin'}).format(new Date()).replace('.','').toUpperCase()+'</span></div></div>'+
+      '<nav class="food-nav-v544" aria-label="FOOD Bereiche">'+TABS.map(tab=>'<button type="button" data-food-tab="'+tab+'" class="'+(tab===activeTab?'active':'')+'" aria-pressed="'+(tab===activeTab)+'">'+LABELS[tab]+'</button>').join('')+'</nav>'+
+      '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
+  }
+
+  function mealCard(meal){
+    const status=normalizedStatus(meal.status);
+    const ingredients=(meal.ingredients||[]).map(item=>'<li>'+esc(item.label||item)+'</li>').join('');
+    const action=status==='completed'?'':'<button type="button" class="food-action-v544" data-food-complete="'+esc(meal.id)+'">Als erledigt markieren</button>';
+    return '<article class="food-meal-card-v544 status-'+status+'"><div class="food-meal-icon-v544">'+(MEAL_ICONS[meal.meal_type]||'•')+'</div><div class="food-meal-copy-v544"><div class="food-meal-title-row-v544"><div><span class="food-meal-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</span><h4>'+esc(meal.title)+'</h4></div><span class="food-status-v544">'+statusLabel(status)+'</span></div><ul>'+ingredients+'</ul>'+action+'</div></article>';
+  }
+
+  function todayView(data){
+    const meals=data.meals.filter(meal=>meal.meal_date===todayIso()).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    return '<div class="food-section-head-v544"><div><span>HEUTE</span><h3>Dein Tagesplan</h3></div><small>'+meals.length+' Mahlzeiten</small></div>'+
+      (meals.length?'<div class="food-meal-list-v544">'+meals.map(mealCard).join('')+'</div>':'<div class="food-empty-card-v544"><h4>Heute ist noch nichts eingeplant.</h4><p>Ein Rezept kann direkt aus dem Rezeptgarten eingeplant werden.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezepte öffnen</button></div>');
+  }
+
+  function planView(data){
+    const future=data.meals.filter(meal=>meal.meal_date>todayIso()).sort((a,b)=>(a.meal_date+a.sort_order).localeCompare(b.meal_date+b.sort_order));
+    const groups=[];
+    future.forEach(meal=>{let group=groups.find(item=>item.date===meal.meal_date);if(!group){group={date:meal.meal_date,meals:[]};groups.push(group);}group.meals.push(meal);});
+    const priority=data.inventory.filter(item=>item.is_active!==false&&item.use_priority==='tomorrow');
+    return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Die nächsten 14 Tage</h3></div><small>Heute bleibt bei Heute</small></div>'+
+      '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
+      (groups.length?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></section>').join(''):'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
+  }
+
+  function inventoryCard(item){
+    const quantity=item.quantity_label||fmtQty(item.quantity,item.unit);
+    const forecast=item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
+    const priority=item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
+    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'offen':'geschlossen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+  }
+
+  function inventoryView(data){
+    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div><div class="food-inventory-grid-v544">'+(data.inventory.length?data.inventory.map(inventoryCard).join(''):'<div class="food-empty-card-v544"><h4>Der Vorrat ist leer.</h4></div>')+'</div>';
+  }
+
+  function deriveShopping(data){
+    const needs=new Map();
+    data.meals.filter(meal=>normalizedStatus(meal.status)==='planned').forEach(meal=>(meal.ingredients||[]).forEach(item=>{
+      const quantity=num(item.quantity);
+      if(quantity===null||!item.inventory_id)return;
+      const key=item.inventory_id+'|'+(item.unit||'');
+      const current=needs.get(key)||{inventory_id:item.inventory_id,label:item.label,unit:item.unit,quantity:0};
+      current.quantity+=quantity;
+      needs.set(key,current);
+    }));
+    const inventoryById=new Map(data.inventory.map(item=>[item.id,item]));
+    const gaps=[];
+    needs.forEach(need=>{
+      const stock=inventoryById.get(need.inventory_id);
+      const available=num(stock?.quantity);
+      if(available===null||available<need.quantity)gaps.push({...need,quantity:available===null?need.quantity:need.quantity-available,label:stock?.name||need.label});
+    });
+    data.meals.filter(meal=>normalizedStatus(meal.status)==='planned').forEach(meal=>(meal.ingredients||[]).forEach(item=>{
+      if(!item.inventory_id||num(item.quantity)===null)return;
+    }));
+    return gaps;
+  }
+
+  function shoppingView(data){
+    const gaps=deriveShopping(data);
+    const manual=(data.shopping||[]).filter(item=>!item.checked);
+    const all=gaps.map(item=>'<li><strong>'+esc(item.label)+'</strong><span>'+esc(fmtQty(item.quantity,item.unit))+'</span></li>').join('')+
+      manual.map(item=>'<li class="manual"><strong>'+esc(item.label)+'</strong><span>'+esc(fmtQty(item.quantity,item.unit))+' <button type="button" data-shopping-check="'+esc(item.id)+'">erledigt</button></span></li>').join('');
+    return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
+      (all?'<ul class="food-shopping-list-v544">'+all+'</ul>':'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Wenn du mehrere Tage einplanst, wird die Lücke hier automatisch aus Vorrat und Rezepten berechnet.</p></div>');
+  }
+
+  function recipeCard(recipe){
+    const items=recipe.food_recipe_ingredients||recipe.ingredients||[];
+    return '<article class="food-recipe-card-v544"><span class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</span><h4>'+esc(recipe.title)+'</h4><p>'+items.map(item=>esc(item.label||item)).join(' · ')+'</p><button type="button" class="food-action-v544" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></article>';
+  }
+
+  function recipesView(data){
+    const recipes=data.recipes.length?data.recipes:data.meals.map(meal=>({id:meal.id,title:meal.title,meal_type:meal.meal_type,ingredients:meal.ingredients}));
+    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Zum Einplanen</h3></div><small>'+recipes.length+' Rezepte</small></div><div class="food-recipe-grid-v544">'+recipes.map(recipeCard).join('')+'</div>';
+  }
+
+  function content(data){
+    if(activeTab==='today')return todayView(data);
+    if(activeTab==='plan')return planView(data);
+    if(activeTab==='inventory')return inventoryView(data);
+    if(activeTab==='shopping')return shoppingView(data);
+    return recipesView(data);
+  }
+
+  async function mutate(task){
+    const result=await task();
+    loadPromise=null;
+    await render();
+    return result;
+  }
+
+  async function completeMeal(id){
+    const supabase=client();
+    if(!supabase){
+      const meal=state?.meals.find(item=>item.id===id);
+      if(meal)meal.status='completed';
+      return render();
+    }
+    const result=await supabase.rpc('complete_food_meal',{p_meal_id:id});
+    if(result.error)throw result.error;
+    await mutate(()=>result.data);
+  }
+
+  function addModal(title,body,onSubmit){
+    const root=ensureRoot();
+    if(!root)return;
+    const old=root.querySelector('.food-modal-v544');if(old)old.remove();
+    root.insertAdjacentHTML('beforeend','<div class="food-modal-v544" role="dialog" aria-modal="true"><div class="food-modal-card-v544"><div class="food-modal-head-v544"><h3>'+title+'</h3><button type="button" data-food-modal-close aria-label="Schließen">×</button></div>'+body+'</div></div>');
+    const modal=root.querySelector('.food-modal-v544');
+    modal.querySelector('[data-food-modal-close]')?.addEventListener('click',()=>modal.remove());
+    modal.querySelector('form')?.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const submit=modal.querySelector('button[type="submit"]');
+      if(submit)submit.disabled=true;
+      try{await onSubmit(new FormData(event.currentTarget));modal.remove();}catch(error){console.error(error);alert(error?.message||'Das konnte nicht gespeichert werden.');if(submit)submit.disabled=false;}
+    });
+  }
+
+  function scheduleModal(recipeId){
+    addModal('Rezept einplanen','<form><label>Tag<input name="date" type="date" min="'+todayIso()+'" value="'+plusDays(todayIso(),1)+'" required></label><label>Mahlzeit<select name="type"><option value="breakfast">Frühstück</option><option value="snack">Snack</option><option value="lunch">Mittag</option><option value="dinner" selected>Abendessen</option></select></label><button class="food-action-v544" type="submit">In den Plan übernehmen</button></form>',async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await supabase.rpc('schedule_food_recipe',{p_recipe_id:recipeId,p_meal_date:form.get('date'),p_meal_type:form.get('type')});
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
+  function addInventoryModal(){
+    addModal('Vorrat ergänzen','<form><label>Bezeichnung<input name="name" placeholder="z. B. Zucchini" required></label><div class="food-form-grid-v544"><label>Menge<input name="quantity" type="number" min="0" step="0.01" required></label><label>Einheit<input name="unit" value="g" required></label></div><label><input name="opened" type="checkbox"> bereits geöffnet</label><label>Verwenden<select name="priority"><option value="tomorrow">morgen</option><option value="three_days">in den nächsten 3 Tagen</option><option value="later" selected>später</option></select></label><button class="food-action-v544" type="submit">Vorrat speichern</button></form>',async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const session=await supabase.auth.getSession();const user=session?.data?.session?.user;if(!user?.id)throw new Error('Nicht angemeldet.');
+      const quantity=Number(form.get('quantity'));const unit=String(form.get('unit')||'g');
+      const result=await supabase.from('food_inventory').insert({user_id:user.id,name:String(form.get('name')).trim(),quantity,unit,quantity_label:fmtQty(quantity,unit),forecast_label:null,tone:quantity>0?'stock':'empty',note:'Manuell ergänzt',sort_order:999,opened:form.get('opened')==='on',use_priority:String(form.get('priority')||'later')});
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
+  function adjustModal(id){
+    const item=state?.inventory.find(row=>row.id===id);if(!item)return;
+    addModal('Menge ändern','<form><p class="food-modal-copy-v544">'+esc(item.name)+'</p><label>Neue Menge<input name="quantity" type="number" min="0" step="0.01" value="'+esc(item.quantity??0)+'" required></label><label>Notiz (optional)<input name="note" placeholder="z. B. verschüttet"></label><button class="food-action-v544" type="submit">Menge speichern</button></form>',async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:id,p_new_quantity:Number(form.get('quantity')),p_reason:'Menge manuell geändert',p_note:String(form.get('note')||'')||null});
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
+  async function archiveInventory(id){
+    const item=state?.inventory.find(row=>row.id===id);if(!item)return;
+    if(!confirm('Vorrat "'+item.name+'" entfernen? Du kannst ihn später neu anlegen.'))return;
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await supabase.rpc('archive_food_inventory',{p_inventory_id:id,p_reason:'Manuell entfernt'});
+    if(result.error)throw result.error;
+    await mutate(()=>result.data);
+  }
+
+  function shoppingModal(){
+    addModal('Einkauf ergänzen','<form><label>Was fehlt?<input name="label" placeholder="z. B. Zucchini" required></label><div class="food-form-grid-v544"><label>Menge<input name="quantity" type="number" min="0" step="0.01"></label><label>Einheit<input name="unit" value="Stück"></label></div><button class="food-action-v544" type="submit">Zur Einkaufsliste</button></form>',async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const session=await supabase.auth.getSession();const user=session?.data?.session?.user;if(!user?.id)throw new Error('Nicht angemeldet.');
+      const result=await supabase.from('food_shopping_items').insert({user_id:user.id,label:String(form.get('label')).trim(),quantity:form.get('quantity')?Number(form.get('quantity')):null,unit:String(form.get('unit')||'')||null});
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
+  async function checkShopping(id){
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await supabase.from('food_shopping_items').update({checked:true}).eq('id',id);
+    if(result.error)throw result.error;
+    await mutate(()=>result.data);
+  }
+
+  function wire(root){
+    root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
+    root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
+    root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',()=>scheduleModal(button.dataset.foodSchedule)));
+    root.querySelectorAll('[data-food-adjust]').forEach(button=>button.addEventListener('click',()=>adjustModal(button.dataset.foodAdjust)));
+    root.querySelectorAll('[data-food-archive]').forEach(button=>button.addEventListener('click',()=>archiveInventory(button.dataset.foodArchive).catch(error=>alert(error?.message||'Vorrat konnte nicht entfernt werden.'))));
+    root.querySelector('[data-food-add-inventory]')?.addEventListener('click',addInventoryModal);
+    root.querySelector('[data-food-add-shopping]')?.addEventListener('click',shoppingModal);
+    root.querySelectorAll('[data-shopping-check]').forEach(button=>button.addEventListener('click',()=>checkShopping(button.dataset.shoppingCheck).catch(error=>alert(error?.message||'Eintrag konnte nicht geändert werden.'))));
+    root.querySelectorAll('[data-food-jump]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodJump;render();}));
+  }
+
+  async function render(){
+    const serial=++renderSerial;
+    const root=ensureRoot();if(!root)return false;
+    root.innerHTML=shell();
+    wire(root);
+    const data=await load();
+    if(serial!==renderSerial)return false;
+    state=data;
+    const target=root.querySelector('.food-content-v544');
+    if(target)target.innerHTML=content(data);
+    wire(root);
+    return true;
+  }
+
+  function setSurface(active){
+    const html=document.documentElement;
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(active){
+      document.body.classList.add(BODY_CLASS);
+      html.classList.add(SURFACE_CLASS);
+      document.body.dataset.modAppSurfaceV515='food';
+      if(meta)meta.setAttribute('content','#eef3e8');
+    }else{
+      document.body.classList.remove(BODY_CLASS);
+      html.classList.remove(SURFACE_CLASS);
+      if(document.body.dataset.modAppSurfaceV515==='food')delete document.body.dataset.modAppSurfaceV515;
+      if(meta)meta.setAttribute('content','#0b0d0f');
+    }
+  }
+
+  function open(){
+    window.__modAppHubV515?.hide?.();
+    document.body.classList.remove('mod-backstage-v530');
+    setSurface(true);
+    ensureRoot()?.setAttribute('aria-hidden','false');
+    loadPromise=null;
+    render();
+    window.scrollTo?.({top:0,left:0,behavior:'instant'});
+    return 'food';
+  }
+
+  function close(){
+    setSurface(false);
+    ensureRoot()?.setAttribute('aria-hidden','true');
+  }
+
+  function patchHub(){
+    const hub=window.__modAppHubV515;
+    if(hub&&!hub.__foodPatchedV544){
+      const originalShow=hub.show?.bind(hub);
+      hub.show=function(){close();return originalShow?.();};
+      hub.__foodPatchedV544=true;
+    }
+    const launcher=window.__modHubLauncherV517||window.__modHubLauncherV540;
+    const item=launcher?.modules?.find?.(entry=>entry.id==='food');
+    if(item)item.active=true;
+    document.querySelectorAll('[data-mod-hub-launch-v517="food"],[data-mod-hub-open="food"]').forEach(button=>{
+      button.removeAttribute('aria-disabled');
+      button.setAttribute('aria-label','Food öffnen');
+    });
+  }
+
+  document.addEventListener('click',event=>{
+    const button=event.target?.closest?.('[data-mod-hub-launch-v517="food"],[data-mod-hub-open="food"]');
+    if(!button)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    open();
+  },true);
+
+  const api={version:VERSION,open,close,render,reload(){loadPromise=null;return render();},fallbackData:fallback,planningDoesNotConsume:true,receiptExcluded:true};
+  window.__modFoodV544=api;
+  window.__modFoodV543=api;
+  const observer=new MutationObserver(patchHub);
+  function init(){ensureRoot()?.setAttribute('aria-hidden','true');patchHub();observer.observe(document.documentElement,{subtree:true,childList:true});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
