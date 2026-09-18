@@ -82,11 +82,11 @@
             <span class="mod-hub-card-text-v515"><strong>SPORT</strong><small>FitX · Training · Health</small></span>
             <span class="mod-hub-arrow-v515" aria-hidden="true">→</span>
           </button>
-          <button type="button" class="mod-hub-card-v515 mod-hub-card-food-v515" data-mod-hub-open="food" aria-label="Food, kommt später" aria-disabled="true">
+          <button type="button" class="mod-hub-card-v515 mod-hub-card-food-v515" data-mod-hub-open="food" aria-label="Food öffnen">
             <span class="mod-hub-card-shine-v515" aria-hidden="true"></span>
             <span class="mod-hub-icon-v515">${iconMarkup('food')}</span>
             <span class="mod-hub-card-text-v515"><strong>FOOD</strong><small>Rezepte · Ideen · Bilder</small></span>
-            <span class="mod-hub-badge-v515">SPÄTER</span>
+            <span class="mod-hub-arrow-v515" aria-hidden="true">→</span>
           </button>
         </div>
         <div class="mod-hub-footer-v515">Deine Bereiche. Eine Zentrale.</div>
@@ -94,13 +94,6 @@
 
     root.querySelectorAll('[data-mod-hub-open]').forEach(button=>button.addEventListener('click',()=>{
       const target=button.dataset.modHubOpen;
-      if(target==='food'){
-        button.classList.remove('mod-hub-nudge-v515');
-        void button.offsetWidth;
-        button.classList.add('mod-hub-nudge-v515');
-        setTimeout(()=>button.classList.remove('mod-hub-nudge-v515'),420);
-        return;
-      }
       open(target,{source:'hub'});
     }));
     return true;
@@ -174,7 +167,7 @@
     healthEvent:HEALTH_EVENT,
     rootId:ROOT_ID,
     hubClass:HUB_CLASS,
-    foodReserved:true,
+    foodReserved:false,\n    foodActiveV543:true,
     healthTransportConnected:false,
     finalLauncherCompatibilityV518:true
   };
