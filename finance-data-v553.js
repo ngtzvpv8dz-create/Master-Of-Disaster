@@ -297,7 +297,7 @@
   function activate(){
     if(!isOpen())return false;
     render();
-    load(true);
+    load(false);
     return true;
   }
 
