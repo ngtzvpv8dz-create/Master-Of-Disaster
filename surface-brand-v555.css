@@ -1,0 +1,163 @@
+/* V555 · STATIC SURFACE BRAND MARK + FINANCE DETAIL POLISH */
+
+/* The former sport switch is now purely decorative. */
+.sport-switch-v510.mod-surface-mark-v555{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-width:.72em!important;
+  margin:0 -.04em!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:#f3f3f3!important;
+  font:inherit!important;
+  font-weight:950!important;
+  line-height:1!important;
+  letter-spacing:inherit!important;
+  vertical-align:baseline!important;
+  cursor:default!important;
+  pointer-events:none!important;
+  text-shadow:none!important;
+  transform:none!important;
+  transition:color .18s ease,text-shadow .18s ease,filter .18s ease!important;
+}
+
+/* TO-DO / hub / backstage: plain white S */
+body:not(.mod-sport-mode-v510):not(.mod-food-v544):not(.mod-kistology-v535):not(.mod-finance-v552)
+.sport-switch-v510.mod-surface-mark-v555{
+  color:#f3f3f3!important;
+  text-shadow:none!important;
+}
+
+/* SPORT: keep the cyan energy, but without any click behavior. */
+body.mod-sport-mode-v510 .sport-switch-v510.mod-surface-mark-v555{
+  color:#6fe4ea!important;
+  text-shadow:0 0 8px rgba(111,228,234,.62),0 0 24px rgba(40,127,209,.38)!important;
+}
+
+/* FOOD: calm garden green. */
+body.mod-food-v544 .sport-switch-v510.mod-surface-mark-v555{
+  color:#5f8d55!important;
+  text-shadow:0 0 11px rgba(95,141,85,.24)!important;
+}
+
+/* KISTOLOGY: amber, squared-off crate/archive treatment. */
+body.mod-kistology-v535 .sport-switch-v510.mod-surface-mark-v555{
+  min-width:.78em!important;
+  height:.82em!important;
+  margin:0 -.01em!important;
+  color:#e2a64b!important;
+  border:1px solid rgba(226,166,75,.44)!important;
+  border-radius:.08em!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 0 12px rgba(226,166,75,.14)!important;
+  text-shadow:0 0 9px rgba(226,166,75,.35)!important;
+}
+
+/* FINANCE: MA$TER OF DISASTER. Naturally. */
+body.mod-finance-v552 .sport-switch-v510.mod-surface-mark-v555{
+  min-width:.72em!important;
+  color:#70ffb4!important;
+  text-shadow:0 0 7px rgba(112,255,180,.72),0 0 22px rgba(45,217,128,.35)!important;
+}
+
+/* Old switch guidance is obsolete now that the mark is decorative. */
+body.mod-sport-mode-v510 .sport-mode-hint-v510{display:none!important}
+
+/* FINANCE header: terminal / exchange-board typography without moving the layout. */
+html body.mod-finance-v552 #appFixedTopV475,
+html body.mod-finance-v552 #appFixedTopV475::before{
+  background:#050908!important;
+  background-image:
+    linear-gradient(90deg,rgba(112,255,180,.025) 1px,transparent 1px)!important;
+  background-size:22px 100%!important;
+  border-color:rgba(112,255,180,.15)!important;
+  box-shadow:none!important;
+}
+
+html body.mod-finance-v552 #appFixedTopV475 .header{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+
+html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+  color:#eafff3!important;
+  font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace!important;
+  font-weight:850!important;
+  letter-spacing:-.055em!important;
+  text-shadow:0 0 18px rgba(112,255,180,.12)!important;
+  transform:scaleX(.94)!important;
+  transform-origin:center!important;
+}
+
+html body.mod-finance-v552 #appFixedTopV475 .mod-home-button-v525{
+  color:#70ffb4!important;
+  filter:drop-shadow(0 0 7px rgba(112,255,180,.28))!important;
+}
+
+/* Expanded finance rows should read as nested detail panels, not hairline afterthoughts. */
+.finance-transaction-detail-v554,
+.finance-category-detail-v554{
+  position:relative!important;
+  margin:0 10px 11px 18px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(112,255,180,.17)!important;
+  border-left:3px solid rgba(112,255,180,.54)!important;
+  background:
+    linear-gradient(90deg,rgba(112,255,180,.055),rgba(112,255,180,.012) 42%,transparent 100%),
+    rgba(2,9,6,.76)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 8px 18px rgba(0,0,0,.16)!important;
+}
+
+.finance-category-detail-v554{
+  border-left-color:rgba(112,255,180,.42)!important;
+}
+
+.finance-detail-row-v554,
+.finance-category-detail-row-v554{
+  padding-top:12px!important;
+  padding-bottom:12px!important;
+}
+
+.finance-detail-row-v554:hover,
+.finance-category-detail-row-v554:hover{
+  background:rgba(112,255,180,.025)!important;
+}
+
+.finance-detail-main-v554 strong,
+.finance-category-detail-row-v554 strong{
+  font-size:11.5px!important;
+}
+
+.finance-detail-main-v554>span,
+.finance-category-detail-row-v554 span{
+  color:rgba(214,255,228,.52)!important;
+}
+
+.finance-detail-footer-v554{
+  padding:9px 13px 10px 16px!important;
+  background:rgba(112,255,180,.025)!important;
+  border-top:1px solid rgba(112,255,180,.08)!important;
+  color:rgba(214,255,228,.52)!important;
+}
+
+@media(max-width:700px){
+  html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+    transform:scaleX(.90)!important;
+    letter-spacing:-.065em!important;
+  }
+  .finance-transaction-detail-v554,
+  .finance-category-detail-v554{
+    margin:0 6px 9px 10px!important;
+    border-left-width:3px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .sport-switch-v510.mod-surface-mark-v555{transition:none!important}
+}
