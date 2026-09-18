@@ -6,16 +6,19 @@ html body.mod-finance-v552 #appFixedTopV475,
 html body.mod-finance-v552 #appFixedTopV475::before{
   background-color:#050908!important;
   background-image:
-    linear-gradient(rgba(112,255,180,.052) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(112,255,180,.044) 1px,transparent 1px),
-    radial-gradient(circle at 78% 16%,rgba(112,255,180,.070),transparent 34%)!important;
+    linear-gradient(rgba(112,255,180,.078) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(112,255,180,.068) 1px,transparent 1px),
+    radial-gradient(circle at 14% 88%,rgba(112,255,180,.115),transparent 38%),
+    linear-gradient(135deg,#050908 0%,#07100c 58%,#050908 100%)!important;
   background-size:
     22px 22px,
     22px 22px,
+    auto,
     auto!important;
   background-position:
     0 0,
     0 0,
+    center,
     center!important;
 }
 html body.mod-finance-v552 #appFixedTopV475 .header{
