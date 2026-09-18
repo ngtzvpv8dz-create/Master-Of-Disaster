@@ -1,0 +1,96 @@
+/* V559 · HEADER POLISH
+   Rein visuelle Korrektur der letzten Header-Abweichungen.
+   Keine Navigation, kein Runtime-JavaScript.
+*/
+
+/* HOME-BUTTON
+   Bereichsspezifische Akzentregeln dürfen das Häuschen nicht mehr einfärben. */
+html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525 .mod-home-button-v525{
+  color:#eafff3!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
+html body.mod-food-v544 #appFixedTopV475 .mod-brand-title-v525 .mod-home-button-v525{
+  color:#263c2b!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
+html body.mod-kistology-v535 #appFixedTopV475 .mod-brand-title-v525 .mod-home-button-v525,
+html body.mod-backstage-v530 #appFixedTopV475 .mod-brand-title-v525 .mod-home-button-v525,
+html body.mod-sport-mode-v510 #appFixedTopV475 .mod-brand-title-v525 .mod-home-button-v525{
+  color:inherit!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
+
+/* FINANZEN
+   Monospace bleibt. Nur die beiden Wortabstände werden enger, damit der
+   Schriftzug nicht mehr sichtbar auseinandergezogen wirkt. */
+html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+  word-spacing:-.24em!important;
+}
+
+/* KISTOLOGY
+   Kein Rahmen mehr um das S. Nur noch magenta S + kleiner Inventarstrich.
+   Beides bleibt innerhalb des normalen festen S-Slots. */
+body.mod-kistology-v535 .sport-switch-v510.mod-surface-mark-v556::before{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:.015em!important;
+  width:.42em!important;
+  height:1px!important;
+  border:0!important;
+  border-radius:999px!important;
+  background:linear-gradient(90deg,transparent,#ff4ca8,transparent)!important;
+  box-shadow:0 0 5px rgba(236,43,140,.42)!important;
+  transform:translateX(-50%)!important;
+  pointer-events:none!important;
+}
+body.mod-kistology-v535 .sport-switch-v510.mod-surface-mark-v556::after{
+  content:none!important;
+  display:none!important;
+}
+body.mod-kistology-v535 .mod-surface-mark-glyph-v556{
+  transform:none!important;
+  color:#ff4ca8!important;
+  text-shadow:0 0 8px rgba(236,43,140,.46)!important;
+}
+
+/* BACKSTAGE
+   Gelber Schraubenschlüssel in echter Buchstabengröße.
+   Absolut positioniert, daher null Einfluss auf die Headerbreite. */
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::before{
+  content:""!important;
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:.90em!important;
+  height:.90em!important;
+  min-width:0!important;
+  min-height:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:#ffd77a!important;
+  box-shadow:none!important;
+  transform:translate(-50%,-50%) rotate(-16deg)!important;
+  transform-origin:center!important;
+  filter:drop-shadow(0 0 4px rgba(255,215,122,.64)) drop-shadow(0 0 10px rgba(224,186,98,.24))!important;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M22.7 19.1 13.6 10a6 6 0 0 0-7.4-7.8l3.2 3.2-1.5 2.8-2.8 1.5-3.2-3.2A6 6 0 0 0 9.7 14l9.1 9.1a1 1 0 0 0 1.4 0l2.5-2.5a1 1 0 0 0 0-1.5Z'/%3E%3C/svg%3E")!important;
+  -webkit-mask-repeat:no-repeat!important;
+  -webkit-mask-position:center!important;
+  -webkit-mask-size:contain!important;
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M22.7 19.1 13.6 10a6 6 0 0 0-7.4-7.8l3.2 3.2-1.5 2.8-2.8 1.5-3.2-3.2A6 6 0 0 0 9.7 14l9.1 9.1a1 1 0 0 0 1.4 0l2.5-2.5a1 1 0 0 0 0-1.5Z'/%3E%3C/svg%3E")!important;
+  mask-repeat:no-repeat!important;
+  mask-position:center!important;
+  mask-size:contain!important;
+  pointer-events:none!important;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
+  content:none!important;
+  display:none!important;
+}
