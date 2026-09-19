@@ -74,6 +74,7 @@
     return fmtQty(q,item?.unit)+' '+ingredientName(item);
   };
   const recipeInstructions=recipe=>String(recipe?.instructions||'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  const mealTypeOptions=selected=>['breakfast','snack','lunch','dinner'].map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(MEAL_LABELS[type])+'</option>').join('');
   const statusLabel=status=>normalizedStatus(status)==='completed'?'Erledigt':'Geplant';
   const priorityLabel=value=>({tomorrow:'Morgen verwenden',three_days:'In den nächsten 3 Tagen',later:'Hält sich länger'}[value]||'Keine Priorität');
 
@@ -315,14 +316,17 @@
       needs.set(key,current);
     }));
     const inventoryById=new Map(data.inventory.map(item=>[item.id,item]));
+    const inventoryByName=new Map(data.inventory.filter(item=>item.is_active!==false).map(item=>[String(item.name||'').trim().toLocaleLowerCase('de-DE'),item]));
     const gaps=[];
     needs.forEach(need=>{
-      const stock=need.inventory_id?inventoryById.get(need.inventory_id):null;
+      const stock=need.inventory_id
+        ?inventoryById.get(need.inventory_id)
+        :inventoryByName.get(String(need.label||'').trim().toLocaleLowerCase('de-DE'));
       const sameUnit=!stock||String(stock.unit||'')===String(need.unit||'');
       const stockQty=sameUnit?num(stock?.quantity):0;
       const available=stockQty===null?0:Math.max(0,stockQty||0);
       const missing=Math.max(0,need.required-available);
-      if(missing>0)gaps.push({...need,available,missing,label:stock?.name||need.label,unitMismatch:!!stock&&!sameUnit});
+      if(missing>0)gaps.push({...need,inventory_id:need.inventory_id||stock?.id||null,available,missing,label:stock?.name||need.label,unitMismatch:!!stock&&!sameUnit});
     });
     return gaps;
   }
@@ -463,7 +467,7 @@
     if(!recipe){alert('Rezept nicht gefunden.');return;}
     const base=Math.max(1,Number(recipe.servings)||1);
     let modal;
-    const body='<form><div class="food-form-grid-v544"><label class="food-plan-field-v546">Tag<input name="date" type="date" min="'+todayIso()+'" value="'+plusDays(todayIso(),1)+'" required></label><label class="food-plan-field-v546">Mahlzeit<select name="type"><option value="breakfast">Frühstück</option><option value="snack">Snack</option><option value="lunch">Mittag</option><option value="dinner" '+(recipe.meal_type==='dinner'?'selected':'')+'>Abendessen</option></select></label></div><div class="food-form-grid-v544"><label>Portionen zubereiten<input name="prepared" type="number" min="0.5" max="99" step="0.5" inputmode="decimal" value="'+esc(base)+'" required></label><label>Davon an diesem Tag<input name="eaten" type="number" min="0.5" max="'+esc(base)+'" step="0.5" inputmode="decimal" value="'+esc(base)+'" required></label></div><div class="food-portion-hint-v572" data-food-portion-hint></div><div data-food-recipe-preview>'+recipeNeedPreview(recipe,base)+'</div><button class="food-action-v544" type="submit">In den Plan übernehmen</button></form>';
+    const body='<form><div class="food-form-grid-v544"><label class="food-plan-field-v546">Tag<input name="date" type="date" min="'+todayIso()+'" value="'+plusDays(todayIso(),1)+'" required></label><label class="food-plan-field-v546">Mahlzeit<select name="type">'+mealTypeOptions(recipe.meal_type||'dinner')+'</select></label></div><div class="food-form-grid-v544"><label>Portionen zubereiten<input name="prepared" type="number" min="0.5" max="99" step="0.5" inputmode="decimal" value="'+esc(base)+'" required></label><label>Davon an diesem Tag<input name="eaten" type="number" min="0.5" max="'+esc(base)+'" step="0.5" inputmode="decimal" value="'+esc(base)+'" required></label></div><div class="food-portion-hint-v572" data-food-portion-hint></div><div data-food-recipe-preview>'+recipeNeedPreview(recipe,base)+'</div><button class="food-action-v544" type="submit">In den Plan übernehmen</button></form>';
     modal=addModal('Rezept einplanen',body,async form=>{
       const prepared=Number(form.get('prepared'));
       const eaten=Number(form.get('eaten'));
@@ -497,7 +501,7 @@
     if(!leftover){alert('Restportion nicht gefunden.');return;}
     const max=Math.max(.5,Number(leftover.available_servings)||.5);
     const recipe=leftover.food_recipes||{};
-    addModal('Restportion einplanen','<form><p class="food-leftover-modal-copy-v572"><strong>'+esc(recipe.title||'Restportion')+'</strong><br>'+esc(portionLabel(max))+' verfügbar</p><div class="food-form-grid-v544"><label>Tag<input name="date" type="date" min="'+todayIso()+'" value="'+plusDays(todayIso(),1)+'" required></label><label>Mahlzeit<select name="type"><option value="breakfast">Frühstück</option><option value="snack">Snack</option><option value="lunch">Mittag</option><option value="dinner" '+(recipe.meal_type==='dinner'?'selected':'')+'>Abendessen</option></select></label></div><label>Portionen<input name="servings" type="number" min="0.5" max="'+esc(max)+'" step="0.5" value="'+esc(Math.min(1,max))+'" required></label><button class="food-action-v544" type="submit">Rest einplanen</button></form>',async form=>{
+    addModal('Restportion einplanen','<form><p class="food-leftover-modal-copy-v572"><strong>'+esc(recipe.title||'Restportion')+'</strong><br>'+esc(portionLabel(max))+' verfügbar</p><div class="food-form-grid-v544"><label>Tag<input name="date" type="date" min="'+todayIso()+'" value="'+plusDays(todayIso(),1)+'" required></label><label>Mahlzeit<select name="type">'+mealTypeOptions(recipe.meal_type||'dinner')+'</select></label></div><label>Portionen<input name="servings" type="number" min="0.5" max="'+esc(max)+'" step="0.5" value="'+esc(Math.min(1,max))+'" required></label><button class="food-action-v544" type="submit">Rest einplanen</button></form>',async form=>{
       const servings=Number(form.get('servings'));
       if(!Number.isFinite(servings)||servings<=0||servings>max)throw new Error('Ungültige Restportion.');
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
