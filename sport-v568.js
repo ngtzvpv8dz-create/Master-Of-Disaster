@@ -727,15 +727,135 @@
     return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="statistics" data-sport-panel-v568="statistics">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>STATISTIK ${statusBadge()}</div><p class="sport-date-v510">Sportzeit auf einen Blick</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" data-total-minutes="${s.allMinutes}">${esc(formatMinutes(s.allMinutes).replace(' h',''))}</div><div class="sport-duration-unit-v510">Sport gesamt</div></div></div><div class="sport-content-v510"><div class="sport-stat-grid-v568"><article class="sport-stat-card-v512"><span>Einheiten gesamt</span><strong>${s.allSessions}</strong></article><article class="sport-stat-card-v512"><span>FitX-Besuche</span><strong>${s.fitxSessions}</strong></article><article class="sport-stat-card-v512"><span>FitX-Zeit</span><strong>${esc(formatMinutes(s.fitxMinutes))}</strong></article><article class="sport-stat-card-v512"><span>Kurse</span><strong>${s.courseCount}</strong></article><article class="sport-stat-card-v512"><span>Kurszeit</span><strong>${esc(formatMinutes(s.courseTotal))}</strong></article><article class="sport-stat-card-v512"><span>Längstes FitX</span><strong>${esc(formatMinutes(s.longestFitx))}</strong></article></div><div class="sport-stats-columns-v568"><div><div class="sport-section-title-v568">Kurse</div>${courses}</div><div><div class="sport-section-title-v568">Mit dabei</div>${people}</div></div>${errorNote()}</div></section>`;
   }
 
-  function panel(rows){if(activeTab==='xtraining')return xTrainingPanel();if(activeTab==='activities')return activitiesPanel(rows);if(activeTab==='statistics')return statisticsPanel(rows);return fitxPanel(rows);}
+  function panel(rows){if(activeTab==='xtraining')return xTrainingPanel();if(activeTab==='catalog')return catalogPanel();if(activeTab==='activities')return activitiesPanel(rows);if(activeTab==='statistics')return statisticsPanel(rows);return fitxPanel(rows);}
 
   function render({animate=false}={}){
-    const serial=++renderSerial;const root=ensureRoot();if(!root)return false;
+    const serial=++renderSerial;
+    const root=ensureRoot();
+    if(!root)return false;
     root.dataset.sportTabV568=activeTab;
     root.innerHTML=`<div class="sport-stage-v510 sport-stage-v512 sport-stage-v568">${tabRail()}${panel(state.sessions)}</div>`;
+
+    const handle=async(button,task)=>{
+      if(button)button.disabled=true;
+      try{await task();}
+      catch(error){console.error(error);alert(error?.message||'Aktion fehlgeschlagen.');if(button)button.disabled=false;}
+    };
+
     root.querySelectorAll('[data-sport-tab-v568]').forEach(button=>button.addEventListener('click',()=>setTab(button.dataset.sportTabV568,{animate:true,persist:true})));
     root.querySelectorAll('[data-sport-retry-v568]').forEach(button=>button.addEventListener('click',()=>load(true)));
-    if(animate&&serial===renderSerial&&!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches){root.classList.remove('sport-tab-switch-v512');void root.offsetWidth;root.classList.add('sport-tab-switch-v512');setTimeout(()=>root.classList.remove('sport-tab-switch-v512'),520);}
+
+    root.querySelector('[data-sport-create-x]')?.addEventListener('click',event=>handle(event.currentTarget,createXSession));
+
+    root.querySelectorAll('[data-sport-timeline]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>markTimeline(target.dataset.sportTimeline,target.dataset.column));
+    }));
+
+    root.querySelectorAll('[data-sport-participant-form]').forEach(form=>form.addEventListener('submit',event=>{
+      event.preventDefault();
+      const submit=form.querySelector('button[type="submit"]');
+      const data=new FormData(form);
+      handle(submit,()=>addSessionParticipant(form.dataset.sportParticipantForm,data.get('participant')));
+    }));
+
+    root.querySelectorAll('[data-sport-remove-participant]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>removeSessionParticipant(target.dataset.sportRemoveParticipant));
+    }));
+
+    root.querySelector('[data-sport-open-catalog]')?.addEventListener('click',()=>setTab('catalog',{animate:true,persist:true}));
+
+    root.querySelectorAll('[data-sport-add-exercise]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>addExerciseToSession(target.dataset.sessionId,target.dataset.sportAddExercise));
+    }));
+
+    root.querySelectorAll('[data-sport-add-group]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>addExerciseGroup(target.dataset.sessionId,target.dataset.sportAddGroup));
+    }));
+
+    root.querySelectorAll('[data-sport-equipment-for]').forEach(select=>select.addEventListener('change',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>updateSessionExercise(target.dataset.sportEquipmentFor,{equipment_id:target.value||null}));
+    }));
+
+    root.querySelectorAll('[data-sport-exercise-status]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>setExerciseStatus(target.dataset.sportExerciseStatus,target.dataset.status));
+    }));
+
+    root.querySelectorAll('[data-sport-remove-exercise]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>removeSessionExercise(target.dataset.sportRemoveExercise));
+    }));
+
+    root.querySelectorAll('[data-sport-set-form]').forEach(form=>form.addEventListener('submit',event=>{
+      event.preventDefault();
+      const submit=form.querySelector('button[type="submit"]');
+      const data=new FormData(form);
+      handle(submit,()=>saveStrengthSet(
+        form.dataset.exerciseId,
+        Number(form.dataset.setNumber),
+        {
+          weight_kg:data.get('weight_kg'),
+          repetitions:data.get('repetitions'),
+          rir:data.get('rir')
+        }
+      ));
+    }));
+
+    root.querySelectorAll('[data-sport-add-set]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>addBlankSet(target.dataset.sportAddSet));
+    }));
+
+    root.querySelectorAll('[data-sport-cardio-form]').forEach(form=>form.addEventListener('submit',event=>{
+      event.preventDefault();
+      const submit=form.querySelector('button[type="submit"]');
+      const data=new FormData(form);
+      handle(submit,()=>saveCardioValues(form.dataset.sportCardioForm,{
+        duration_minutes:data.get('duration_minutes'),
+        distance_km:data.get('distance_km'),
+        resistance_level:data.get('resistance_level'),
+        speed_kmh:data.get('speed_kmh'),
+        incline_percent:data.get('incline_percent')
+      }));
+    }));
+
+    root.querySelector('[data-sport-add-exercise-form]')?.addEventListener('submit',event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const submit=form.querySelector('button[type="submit"]');
+      const data=new FormData(form);
+      handle(submit,()=>addCatalogExercise({
+        name:data.get('name'),
+        kind:data.get('kind'),
+        category:data.get('category'),
+        muscle_group:data.get('muscle_group')
+      }));
+    });
+
+    root.querySelector('[data-sport-add-equipment-form]')?.addEventListener('submit',event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const submit=form.querySelector('button[type="submit"]');
+      const data=new FormData(form);
+      handle(submit,()=>addEquipment({
+        name:data.get('name'),
+        equipment_number:data.get('equipment_number'),
+        category:data.get('category'),
+        settings_text:data.get('settings_text')
+      }));
+    });
+
+    if(animate&&serial===renderSerial&&!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches){
+      root.classList.remove('sport-tab-switch-v512');
+      void root.offsetWidth;
+      root.classList.add('sport-tab-switch-v512');
+      setTimeout(()=>root.classList.remove('sport-tab-switch-v512'),520);
+    }
     return true;
   }
 
