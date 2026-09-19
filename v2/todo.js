@@ -66,9 +66,7 @@
    document.querySelectorAll('[data-due]').forEach(b=>b.classList.toggle('selected',b.dataset.due===composerState.dueMode));
    const categoryInput=$('#newCategoryInput');
    if(categoryInput&&categoryInput.value!==composerState.category)categoryInput.value=composerState.category||'';
-   const categoryField=$('#newCategoryInput');
- if(categoryField)categoryField.addEventListener('input',()=>{composerState.category=categoryField.value.trim();});
- const optional=$('#optionalChoice');
+   const optional=$('#optionalChoice');
    if(optional){
      optional.classList.toggle('selected',composerState.optional);
      optional.textContent=composerState.optional?'🟣 JA':'🟣 NEIN';
@@ -251,7 +249,7 @@
      }else{
        const created=await window.MOD2Data.addTask({
          text:textValue,type:composerState.type,priority:composerState.priority,
-         optional:composerState.optional,dueMode:composerState.dueMode,
+         optional:composerState.optional,category:composerState.category||null,dueMode:composerState.dueMode,
          dueDate:composerState.dueMode==='none'?null:tomorrow
        });
        tasks.unshift(created);
@@ -393,6 +391,8 @@
  document.querySelectorAll('[data-due]').forEach(btn=>btn.addEventListener('click',()=>{
    composerState.dueMode=btn.dataset.due; updateComposerUI();
  }));
+ const categoryField=$('#newCategoryInput');
+ if(categoryField)categoryField.addEventListener('input',()=>{composerState.category=categoryField.value.trim();});
  const optional=$('#optionalChoice');
  if(optional)optional.addEventListener('click',()=>{composerState.optional=!composerState.optional;updateComposerUI();});
  const addButton=$('#newTaskButton');
