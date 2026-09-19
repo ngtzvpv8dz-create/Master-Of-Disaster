@@ -113,7 +113,7 @@
    const today=t.today_date===berlinDateKey();
    const runLabel=t.status==='running'?'PAUSE':t.status==='paused'?'FORTSETZEN':t.type==='selfrunner'?'SELBSTLÄUFER':'START';
    const runDisabled=t.type==='selfrunner'?' disabled':'';
-   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="edit" data-id="'+esc(t.id)+'">BEARBEITEN</button></div></article>';
+   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="edit" data-id="'+esc(t.id)+'">BEARBEITEN</button></div></article>';
  }
 
  function renderArchive(){
@@ -348,6 +348,19 @@
    }catch(error){showToast(error&&error.message?error.message:'Start/Pause konnte nicht gespeichert werden.');}
  }
 
+
+ async function completeAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   try{
+     if(!window.MOD2Data)throw new Error('2.0-Datenmodul wurde nicht geladen.');
+     if(t.legacy_task_id==null)throw new Error('Gemeinsame Aufgaben-ID fehlt.');
+     const updated=await window.MOD2Data.completeTask(t.legacy_task_id);
+     Object.assign(t,updated);render();showToast('Aufgabe erledigt.');
+   }catch(error){
+     showToast(error&&error.message?error.message:'Aufgabe konnte nicht erledigt werden.');
+   }
+ }
+
  document.querySelectorAll('.todo-tab').forEach(btn=>btn.addEventListener('click',()=>{
    document.querySelectorAll('.todo-tab').forEach(x=>x.classList.remove('active'));
    btn.classList.add('active');
@@ -381,6 +394,7 @@
    const btn=event.target.closest('[data-action][data-id]'); if(!btn)return;
    if(btn.dataset.action==='today')toggleToday(btn.dataset.id);
    if(btn.dataset.action==='run')runAction(btn.dataset.id);
+   if(btn.dataset.action==='complete')completeAction(btn.dataset.id);
    if(btn.dataset.action==='edit')startEdit(btn.dataset.id);
  });
  const undo=$('#todoUndo');

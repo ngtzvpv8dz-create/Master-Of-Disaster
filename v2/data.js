@@ -357,8 +357,82 @@ async function runTask(legacyId){
   return toView(task,cloud);
 }
 
+
+function sumSegments(segments,endIso){
+  return (Array.isArray(segments)?segments:[]).reduce((sum,s)=>{
+    if(!s||!s.startedAt)return sum;
+    const end=s.endedAt||endIso;
+    if(!end)return sum;
+    const a=new Date(s.startedAt).getTime(),b=new Date(end).getTime();
+    return sum+(Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,b-a):0);
+  },0);
+}
+
+function cookingDurations(task,endIso){
+  let active=0,passive=0;
+  (Array.isArray(task.cookingSegments)?task.cookingSegments:[]).forEach(s=>{
+    if(!s||!s.startedAt)return;
+    const end=s.endedAt||endIso;if(!end)return;
+    const a=new Date(s.startedAt).getTime(),b=new Date(end).getTime();
+    const ms=Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,b-a):0;
+    if(s.mode==='passive')passive+=ms;else active+=ms;
+  });
+  return {active,passive};
+}
+
+async function completeTask(legacyId){
+  const rows=legacyTasks();
+  const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
+  if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
+  const task=rows[index];
+  const now=new Date().toISOString();
+
+  const last=Array.isArray(task.activeSegments)&&task.activeSegments.length?task.activeSegments[task.activeSegments.length-1]:null;
+  if(last&&!last.endedAt)last.endedAt=now;
+  const lastCooking=Array.isArray(task.cookingSegments)&&task.cookingSegments.length?task.cookingSegments[task.cookingSegments.length-1]:null;
+  if(task.type==='cooking'&&lastCooking&&!lastCooking.endedAt)lastCooking.endedAt=now;
+
+  const historical=Math.max(0,Number(task.importedHistoricalProgressDurationMs)||0);
+  const total=historical+sumSegments(task.activeSegments,now);
+  if(task.type!=='selfrunner'&&total<=0){
+    throw new Error('Dauer fehlt. Starte die Aufgabe zuerst, bevor du sie erledigst.');
+  }
+
+  task.actualDurationMs=task.type==='selfrunner'?0:total;
+  if(task.type==='leisure'){
+    task.leisureDurationMs=total;
+    task.activeDurationMs=0;
+    task.passiveDurationMs=null;
+    task.cookingActiveDurationMs=null;
+    task.cookingPassiveDurationMs=null;
+  }else if(task.type==='cooking'){
+    const parts=cookingDurations(task,now);
+    task.cookingActiveDurationMs=parts.active;
+    task.cookingPassiveDurationMs=parts.passive;
+    task.activeDurationMs=parts.active;
+    task.passiveDurationMs=parts.passive;
+    task.leisureDurationMs=null;
+  }else{
+    task.activeDurationMs=task.type==='selfrunner'?0:total;
+    task.leisureDurationMs=null;
+    task.passiveDurationMs=null;
+    task.cookingActiveDurationMs=null;
+    task.cookingPassiveDurationMs=null;
+  }
+  task.status='completed';
+  task.completedAt=now;
+  task.pausedAt=null;
+
+  rows[index]=task;
+  if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
+  let cloud=null;
+  try{cloud=await mirror(task,{segments:true});}
+  catch(error){console.warn('V2 cloud mirror pending',error);}
+  return toView(task,cloud);
+}
+
 window.MOD2Data={
-  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,
+  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,
   legacyTasks,legacyArchive,findLegacy,version:'2.0.6'
 };
 })();
