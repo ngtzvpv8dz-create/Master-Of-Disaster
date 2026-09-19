@@ -126,23 +126,63 @@
     };
   }
 
+  function normalizeWorkoutExercise(row){
+    if(!row||typeof row!=='object'||!row.id)return null;
+    return {
+      id:String(row.id),
+      sessionId:String(row.session_id||row.sessionId||''),
+      exerciseId:String(row.exercise_id||row.exerciseId||''),
+      equipmentId:row.equipment_id||row.equipmentId||null,
+      name:String(row.name_snapshot||row.name||'Übung'),
+      kind:String(row.kind||'strength'),
+      status:String(row.status||'planned'),
+      sortOrder:Number(row.sort_order??row.sortOrder??999),
+      startedAt:row.started_at||row.startedAt||null,
+      endedAt:row.ended_at||row.endedAt||null,
+      durationMinutes:numberOrNull(row.duration_minutes??row.durationMinutes),
+      distanceKm:numberOrNull(row.distance_km??row.distanceKm),
+      resistanceLevel:row.resistance_level??row.resistanceLevel??'',
+      speedKmh:numberOrNull(row.speed_kmh??row.speedKmh),
+      inclinePercent:numberOrNull(row.incline_percent??row.inclinePercent),
+      sets:(row.sets||[]).map(set=>({
+        id:String(set.id||''),
+        setNumber:Number(set.set_number??set.setNumber??0),
+        weightKg:numberOrNull(set.weight_kg??set.weightKg),
+        repetitions:numberOrNull(set.repetitions),
+        rir:numberOrNull(set.rir)
+      })).sort((a,b)=>a.setNumber-b.setNumber)
+    };
+  }
+
   function normalizeSession(row){
     if(!row||typeof row!=='object'||!row.id)return null;
     const activities=(Array.isArray(row.activities)?row.activities:Array.isArray(row.sport_activities)?row.sport_activities:[]).map(normalizeActivity).filter(Boolean).sort((a,b)=>a.sortOrder-b.sortOrder||String(a.startedAt||'').localeCompare(String(b.startedAt||'')));
+    const workout=(row.workout||[]).map(normalizeWorkoutExercise).filter(Boolean).sort((a,b)=>a.sortOrder-b.sortOrder);
     const title=String(row.title||'Sport');
     const venue=row.venue||null;
+    const kind=String(row.session_kind||row.sessionKind||'legacy');
     return {
       id:String(row.id),
-      area:(title.toLowerCase()==='fitx'||String(venue||'').toLowerCase()==='fitx')?'fitx':'sport',
+      area:kind==='xtraining'?'xtraining':((title.toLowerCase()==='fitx'||String(venue||'').toLowerCase()==='fitx')?'fitx':'sport'),
+      kind,
+      status:String(row.session_status||row.sessionStatus||'completed'),
       date:row.session_date||row.date||'',
       title,
       venue,
       startedAt:row.started_at||row.startedAt||null,
       endedAt:row.ended_at||row.endedAt||null,
+      driveStartedAt:row.drive_started_at||row.driveStartedAt||null,
+      gymArrivedAt:row.gym_arrived_at||row.gymArrivedAt||null,
+      trainingStartedAt:row.training_started_at||row.trainingStartedAt||null,
+      trainingEndedAt:row.training_ended_at||row.trainingEndedAt||null,
+      gymLeftAt:row.gym_left_at||row.gymLeftAt||null,
+      homeArrivedAt:row.home_arrived_at||row.homeArrivedAt||null,
       durationMinutes:Number(row.duration_minutes??row.durationMinutes??diffMinutes(row.started_at||row.startedAt,row.ended_at||row.endedAt))||0,
       source:row.source||'manual',
       sourceKey:row.source_key||row.sourceKey||null,
       note:row.notes||row.note||'',
+      participants:normalizeParticipants(row.sessionParticipants||row.participants||[]),
+      workout,
       activities
     };
   }
