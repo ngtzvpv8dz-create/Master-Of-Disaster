@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V574';
+  const VERSION='V579';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -59,7 +59,10 @@
     const n=num(value);
     if(n===null||Number.isNaN(n))return 'Menge offen';
     const text=new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
-    return unit?text+' '+unit:text;
+    let displayUnit=unit||'';
+    if(unit==='Zehe')displayUnit=Math.abs(n-1)<.0001?'Zehe':'Zehen';
+    if(unit==='Knolle')displayUnit=Math.abs(n-1)<.0001?'Knolle':'Knollen';
+    return displayUnit?text+' '+displayUnit:text;
   };
   const normalizedStatus=status=>status==='consumed'||status==='prepared'?'completed':status==='completed'?'completed':'planned';
   const portionLabel=value=>{
@@ -314,11 +317,12 @@
   }
 
   function inventoryCard(item){
-    const quantity=item.quantity_label||fmtQty(item.quantity,item.unit);
+    const quantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
     const forecast=item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
     const priority=item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
     const tomorrowClass=item.use_priority==='tomorrow'&&Number(item.quantity)!==0?' priority-tomorrow-v574':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    const garlicOpen=String(item.name||'').trim().toLocaleLowerCase('de-DE')==='knoblauchknollen'&&Number(item.quantity)>0?'<button type="button" data-food-open-garlic="'+esc(item.id)+'">Knolle öffnen</button>':'';
+    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button>'+garlicOpen+'</div></article>';
   }
 
   function inventoryView(data){
@@ -341,9 +345,22 @@
     const inventoryByName=new Map(data.inventory.filter(item=>item.is_active!==false).map(item=>[String(item.name||'').trim().toLocaleLowerCase('de-DE'),item]));
     const gaps=[];
     needs.forEach(need=>{
+      const normalizedNeed=String(need.label||'').trim().toLocaleLowerCase('de-DE');
+      if(normalizedNeed==='knoblauchzehen'){
+        const cloveStock=inventoryByName.get('knoblauchzehen');
+        const bulbStock=inventoryByName.get('knoblauchknollen');
+        const cloveQty=String(cloveStock?.unit||'')==='Zehe'?num(cloveStock?.quantity):0;
+        const available=cloveQty===null?0:Math.max(0,cloveQty||0);
+        const missing=Math.max(0,need.required-available);
+        const bulbsAvailable=String(bulbStock?.unit||'')==='Knolle'?Math.max(0,num(bulbStock?.quantity)||0):0;
+        if(missing>0&&bulbsAvailable<=0){
+          gaps.push({...need,inventory_id:null,available,missing,label:'Knoblauchzehen',garlic:true,purchaseInventoryId:bulbStock?.id||null,purchaseName:'Knoblauchknollen',purchaseQuantity:1,purchaseUnit:'Knolle'});
+        }
+        return;
+      }
       const stock=need.inventory_id
         ?inventoryById.get(need.inventory_id)
-        :inventoryByName.get(String(need.label||'').trim().toLocaleLowerCase('de-DE'));
+        :inventoryByName.get(normalizedNeed);
       const sameUnit=!stock||String(stock.unit||'')===String(need.unit||'');
       const stockQty=sameUnit?num(stock?.quantity):0;
       const available=stockQty===null?0:Math.max(0,stockQty||0);
@@ -356,7 +373,14 @@
   function shoppingView(data){
     const gaps=deriveShopping(data);
     const manual=(data.shopping||[]).filter(item=>!item.checked);
-    const planned=gaps.map(item=>'<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>Kaufen '+esc(fmtQty(item.missing,item.unit))+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(item.missing)+'" data-food-stock-unit="'+esc(item.unit||'')+'" data-food-stock-id="'+esc(item.inventory_id||'')+'">Vorhanden / eingekauft</button></span></li>').join('');
+    const planned=gaps.map(item=>{
+      const buyText=item.garlic?'Kaufen '+fmtQty(item.purchaseQuantity,item.purchaseUnit):'Kaufen '+fmtQty(item.missing,item.unit);
+      const stockName=item.garlic?item.purchaseName:item.label;
+      const stockQty=item.garlic?item.purchaseQuantity:item.missing;
+      const stockUnit=item.garlic?item.purchaseUnit:item.unit;
+      const stockId=item.garlic?item.purchaseInventoryId:item.inventory_id;
+      return '<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>';
+    }).join('');
     const manualHtml=manual.map(item=>'<li class="manual"><strong>'+esc(item.label)+'</strong><span>'+esc(fmtQty(item.quantity,item.unit))+' <button type="button" data-shopping-check="'+esc(item.id)+'">erledigt</button></span></li>').join('');
     const all=planned+manualHtml;
     return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
@@ -398,6 +422,19 @@
         if(result.error)throw result.error;
       }
       await mutate(()=>true);
+    });
+  }
+
+  function openGarlicModal(id){
+    const item=(state?.inventory||[]).find(row=>String(row.id)===String(id));
+    if(!item)return;
+    addModal('Knoblauchknolle öffnen','<form><p class="food-modal-copy-v544">Wie viele Zehen sind in dieser Knolle? Die App zieht 1 Knolle ab und legt genau diese Anzahl als Knoblauchzehen an.</p><label>Zehen in dieser Knolle<input name="cloves" type="number" min="1" step="1" inputmode="numeric" required></label><button class="food-action-v544" type="submit">Knolle in Zehen umwandeln</button></form>',async form=>{
+      const cloves=Number(form.get('cloves'));
+      if(!Number.isInteger(cloves)||cloves<1)throw new Error('Bitte die tatsächliche Zahl der Zehen eintragen.');
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await supabase.rpc('open_food_garlic_bulb',{p_bulb_inventory_id:id,p_cloves:cloves});
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
     });
   }
 
@@ -798,6 +835,7 @@
     root.querySelectorAll('[data-food-consume]').forEach(button=>button.addEventListener('click',()=>consumeModal(button.dataset.foodConsume)));
     root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
     root.querySelectorAll('[data-food-stock-gap]').forEach(button=>button.addEventListener('click',()=>stockGapModal(button)));
+    root.querySelectorAll('[data-food-open-garlic]').forEach(button=>button.addEventListener('click',()=>openGarlicModal(button.dataset.foodOpenGarlic)));
     root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
