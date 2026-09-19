@@ -120,3 +120,18 @@
 
 .today-move{display:inline-flex;gap:4px;margin-right:auto}
 .task-action.move{width:31px;padding-left:0;padding-right:0;font-size:12px;color:#cdb58e}
+
+.admin-panel{display:grid;gap:12px}
+.admin-intro{display:grid;gap:5px;padding:14px 15px;border-radius:18px;background:#1b1c19;border:1px solid rgba(190,162,118,.1)}
+.admin-intro strong{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:20px;font-weight:500;color:#e4d9c9}
+.admin-intro span{color:#8f897f;font-size:10px;line-height:1.45}
+.admin-create{display:grid;grid-template-columns:1fr auto;gap:8px}
+.admin-create input{min-width:0;height:43px;border:1px solid rgba(190,162,118,.17);border-radius:13px;background:#171815;color:#ebe3d7;padding:0 12px;font:inherit}
+.admin-create button,.admin-row-actions button{border:1px solid rgba(190,162,118,.16);border-radius:12px;background:#20211e;color:#c9b99f;padding:9px 10px;font-size:8px;letter-spacing:.08em}
+.admin-list{display:grid;gap:8px}
+.admin-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 13px;border-radius:16px;background:linear-gradient(145deg,#24241f,#181917);border:1px solid rgba(255,255,255,.055)}
+.admin-row>div:first-child{display:grid;gap:3px;min-width:0}
+.admin-row strong{font-size:12px;color:#ded5c8;overflow-wrap:anywhere}
+.admin-row small{font-size:7px;letter-spacing:.12em;color:#817c74}
+.admin-row-actions{display:flex;gap:5px;flex-shrink:0}
+.admin-row-actions .danger{color:#df9797;border-color:rgba(216,78,78,.22)}

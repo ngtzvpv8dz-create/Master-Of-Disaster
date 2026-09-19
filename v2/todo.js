@@ -218,14 +218,18 @@
  }
 
  function renderCategories(){
-   const map=new Map();
-   [...tasks,...archives].forEach(a=>{
-     const name=String(a.category||'OHNE KATEGORIE').trim()||'OHNE KATEGORIE';
-     map.set(name,(map.get(name)||0)+1);
+   const usage=new Map();
+   [...tasks,...archives].forEach(row=>{
+     const name=String(row.category||'').trim();
+     if(name)usage.set(name,(usage.get(name)||0)+1);
    });
-   const rows=[...map.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],'de'));
-   count.textContent=String(rows.length);
-   list.innerHTML=rows.length?'<div class="simple-list">'+rows.map(([name,n])=>'<div class="simple-row"><span>'+esc(name)+'</span><strong>'+n+'</strong></div>').join('')+'</div>':'<div class="loading-card">Keine Kategorien vorhanden.</div>';
+   const names=window.MOD2Data?.categoryList?.()||[...usage.keys()].sort((a,b)=>a.localeCompare(b,'de'));
+   count.textContent=String(names.length);
+   list.innerHTML='<section class="admin-panel"><div class="admin-intro"><strong>Kategorien verwalten</strong><span>Beim Löschen bleiben Aufgaben und Archiv-Einträge erhalten und werden „Ohne Kategorie“.</span></div><div class="admin-create"><input id="categoryAdminNew" type="text" placeholder="Neue Kategorie"><button id="categoryAdminAdd" type="button">+ ANLEGEN</button></div>'+(names.length?'<div class="admin-list">'+names.map(name=>'<div class="admin-row"><div><strong>'+esc(name)+'</strong><small>'+String(usage.get(name)||0)+' ZUORDNUNGEN</small></div><div class="admin-row-actions"><button type="button" data-cat-rename="'+encodeURIComponent(name)+'">UMBENENNEN</button><button type="button" class="danger" data-cat-delete="'+encodeURIComponent(name)+'">LÖSCHEN</button></div></div>').join('')+'</div>':'<div class="loading-card">Noch keine Kategorien angelegt.</div>')+'</section>';
+   $('#categoryAdminAdd')?.addEventListener('click',addCategoryAdmin);
+   $('#categoryAdminNew')?.addEventListener('keydown',e=>{if(e.key==='Enter')addCategoryAdmin();});
+   list.querySelectorAll('[data-cat-rename]').forEach(btn=>btn.addEventListener('click',()=>openRenameCategory(decodeURIComponent(btn.dataset.catRename))));
+   list.querySelectorAll('[data-cat-delete]').forEach(btn=>btn.addEventListener('click',()=>confirmDeleteCategory(decodeURIComponent(btn.dataset.catDelete))));
  }
 
  function renderTitles(){
@@ -437,7 +441,7 @@
 
  function refreshCategorySuggestions(){
    const listEl=$('#categorySuggestions');if(!listEl)return;
-   const names=[...new Set([...tasks,...archives].map(x=>String(x&&x.category||'').trim()).filter(Boolean))]
+   const names=window.MOD2Data?.categoryList?.()||[...new Set([...tasks,...archives].map(x=>String(x&&x.category||'').trim()).filter(Boolean))]
      .sort((a,b)=>a.localeCompare(b,'de'));
    listEl.innerHTML=names.map(name=>'<option value="'+esc(name)+'"></option>').join('');
  }
@@ -567,6 +571,45 @@
      tasks=tasks.map(x=>byLegacy.has(Number(x.legacy_task_id))?{...x,...byLegacy.get(Number(x.legacy_task_id))}:x);
      render();showToast('Heute-Reihenfolge geändert.');
    }catch(error){showToast(error&&error.message?error.message:'Reihenfolge konnte nicht gespeichert werden.');}
+ }
+
+
+ async function addCategoryAdmin(){
+   const input=$('#categoryAdminNew');
+   const name=String(input?.value||'').trim();
+   if(!name){showToast('Kategorie braucht einen Namen.');return;}
+   try{
+     await window.MOD2Data.addCategory(name);
+     if(input)input.value='';
+     refreshCategorySuggestions();renderCategories();showToast('Kategorie angelegt.');
+   }catch(error){showToast(error&&error.message?error.message:'Kategorie konnte nicht angelegt werden.');}
+ }
+
+ function openRenameCategory(name){
+   const body='<label class="time-field"><span>NEUER NAME</span><input id="renameCategoryV2" type="text" value="'+esc(name)+'"></label>';
+   modalShell('Kategorie umbenennen',body,'<button type="button" data-close-modal>ABBRECHEN</button><button type="button" id="saveRenameCategoryV2" class="primary">SPEICHERN</button>');
+   $('#saveRenameCategoryV2')?.addEventListener('click',async()=>{
+     const next=String($('#renameCategoryV2')?.value||'').trim();
+     try{
+       await window.MOD2Data.renameCategory(name,next);
+       closeTodoModal();await load();filter='categories';
+       document.querySelectorAll('.todo-tab').forEach(x=>x.classList.toggle('active',x.dataset.filter==='categories'));
+       render();showToast('Kategorie umbenannt.');
+     }catch(error){showToast(error&&error.message?error.message:'Kategorie konnte nicht umbenannt werden.');}
+   });
+ }
+
+ function confirmDeleteCategory(name){
+   const body='<p class="todo-modal-task">'+esc(name)+'</p><p class="todo-modal-help">Aufgaben bleiben erhalten. Nur die Kategorie-Zuordnung wird entfernt. Das rote R kann diesen Schritt rückgängig machen.</p>';
+   modalShell('Kategorie löschen?',body,'<button type="button" data-close-modal>ABBRECHEN</button><button type="button" id="deleteCategoryV2" class="danger">LÖSCHEN</button>');
+   $('#deleteCategoryV2')?.addEventListener('click',async()=>{
+     try{
+       await window.MOD2Data.deleteCategory(name);
+       closeTodoModal();await load();filter='categories';
+       document.querySelectorAll('.todo-tab').forEach(x=>x.classList.toggle('active',x.dataset.filter==='categories'));
+       render();showToast('Kategorie gelöscht.');
+     }catch(error){showToast(error&&error.message?error.message:'Kategorie konnte nicht gelöscht werden.');}
+   });
  }
 
  document.querySelectorAll('.todo-tab').forEach(btn=>btn.addEventListener('click',()=>{

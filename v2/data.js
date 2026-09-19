@@ -5,6 +5,9 @@ const SUPABASE_URL='https://oktpzwhhndsbikkeelot.supabase.co';
 const SUPABASE_KEY='sb_publishable_EaxtFXKAGOLyI6HRWPU6DQ_f04wfWru';
 const TASK_KEY='masterOfDisasterTasks';
 const ARCHIVE_KEY='masterOfDisasterArchive';
+const CATEGORIES_KEY='masterOfDisasterCategoriesV405';
+const CATEGORY_MAP_KEY='masterOfDisasterCategoryNameMapV405';
+const TITLE_PREF_KEY='masterOfDisasterTaskTitlePrefsV507';
 
 let client=null;
 let session=null;
@@ -34,6 +37,30 @@ function legacyArchive(){
   const rows=readJson(ARCHIVE_KEY,[]);
   return Array.isArray(rows)?rows:[];
 }
+
+
+function cleanTextV2(value){return String(value??'').trim().replace(/\s+/g,' ');}
+function normTextV2(value){return cleanTextV2(value).toLocaleLowerCase('de-DE');}
+
+function categoryList(){
+  const seen=new Map();
+  (readJson(CATEGORIES_KEY,[])||[]).forEach(name=>{
+    const c=cleanTextV2(name);if(c)seen.set(normTextV2(c),c);
+  });
+  [...legacyTasks(),...legacyArchive()].forEach(row=>{
+    const c=cleanTextV2(row&&row.category);if(c&&!seen.has(normTextV2(c)))seen.set(normTextV2(c),c);
+  });
+  return [...seen.values()].sort((a,b)=>a.localeCompare(b,'de'));
+}
+
+function saveCategoryList(list){
+  const map=new Map();
+  (Array.isArray(list)?list:[]).forEach(name=>{
+    const c=cleanTextV2(name);if(c)map.set(normTextV2(c),c);
+  });
+  return writeJson(CATEGORIES_KEY,[...map.values()].sort((a,b)=>a.localeCompare(b,'de')));
+}
+
 
 function cleanNumber(v,fallback=null){
   const n=Number(v);
@@ -153,6 +180,18 @@ async function ensureClient(){
   if(!session)throw new Error('Für 2.0 ist dein bestehender Supabase-Login nötig.');
   return client;
 }
+
+
+async function mirrorArchiveLight(local){
+  if(!local||local.archiveNumber==null)return;
+  await ensureClient();
+  const result=await client.from('archive_entries')
+    .update({text:String(local.text||''),category:cleanTextV2(local.category)||null})
+    .eq('user_id',session.user.id)
+    .eq('archive_number',Number(local.archiveNumber));
+  if(result.error)throw result.error;
+}
+
 
 async function syncSegments(local,cloudId){
   if(!cloudId)return;
@@ -281,7 +320,15 @@ const UNDO_KEY='masterOfDisasterV2UndoV1';
 
 function rememberUndo(label){
   try{
-    const snapshot={label:String(label||'Änderung'),at:new Date().toISOString(),tasks:legacyTasks()};
+    const snapshot={
+      label:String(label||'Änderung'),
+      at:new Date().toISOString(),
+      tasks:legacyTasks(),
+      archive:legacyArchive(),
+      categories:readJson(CATEGORIES_KEY,[]),
+      categoryMap:readJson(CATEGORY_MAP_KEY,{}),
+      titlePrefs:readJson(TITLE_PREF_KEY,{})
+    };
     sessionStorage.setItem(UNDO_KEY,JSON.stringify(snapshot));
     return true;
   }catch(_){return false;}
@@ -303,6 +350,10 @@ async function undoLast(){
   const current=legacyTasks();
   const previous=snapshot.tasks;
   if(!writeJson(TASK_KEY,previous))throw new Error('Undo konnte lokal nicht gespeichert werden.');
+  if(Array.isArray(snapshot.archive))writeJson(ARCHIVE_KEY,snapshot.archive);
+  if(Array.isArray(snapshot.categories))writeJson(CATEGORIES_KEY,snapshot.categories);
+  if(snapshot.categoryMap&&typeof snapshot.categoryMap==='object')writeJson(CATEGORY_MAP_KEY,snapshot.categoryMap);
+  if(snapshot.titlePrefs&&typeof snapshot.titlePrefs==='object')writeJson(TITLE_PREF_KEY,snapshot.titlePrefs);
 
   const previousIds=new Set(previous.map(x=>Number(x&&x.id)).filter(Number.isFinite));
   const removed=current.map(x=>Number(x&&x.id)).filter(id=>Number.isFinite(id)&&!previousIds.has(id));
@@ -314,6 +365,12 @@ async function undoLast(){
   for(const task of previous){
     try{await mirror(task,{segments:true});}
     catch(error){console.warn('V2 undo cloud mirror pending',error);}
+  }
+  if(Array.isArray(snapshot.archive)){
+    for(const row of snapshot.archive){
+      try{await mirrorArchiveLight(row);}
+      catch(error){console.warn('V2 undo archive mirror pending',error);}
+    }
   }
   sessionStorage.removeItem(UNDO_KEY);
   return {label:snapshot.label,at:snapshot.at};
@@ -692,8 +749,82 @@ async function reorderToday(orderedLegacyIds,dateKey){
   return changed;
 }
 
+
+async function addCategory(name){
+  const clean=cleanTextV2(name);
+  if(!clean)throw new Error('Kategorie braucht einen Namen.');
+  rememberUndo('Kategorie anlegen');
+  saveCategoryList([...categoryList(),clean]);
+  return categoryList();
+}
+
+async function renameCategory(oldName,newName){
+  const oldC=cleanTextV2(oldName),newC=cleanTextV2(newName);
+  if(!oldC||!newC)throw new Error('Alter und neuer Kategoriename werden benötigt.');
+  if(normTextV2(oldC)===normTextV2(newC))return categoryList();
+  rememberUndo('Kategorie umbenennen');
+
+  const taskRows=legacyTasks(),archiveRows=legacyArchive();
+  taskRows.forEach(row=>{if(normTextV2(row&&row.category)===normTextV2(oldC))row.category=newC;});
+  archiveRows.forEach(row=>{if(normTextV2(row&&row.category)===normTextV2(oldC))row.category=newC;});
+  writeJson(TASK_KEY,taskRows);writeJson(ARCHIVE_KEY,archiveRows);
+
+  const learned=readJson(CATEGORY_MAP_KEY,{})||{};
+  Object.keys(learned).forEach(key=>{if(normTextV2(learned[key])===normTextV2(oldC))learned[key]=newC;});
+  writeJson(CATEGORY_MAP_KEY,learned);
+  saveCategoryList(categoryList().filter(x=>normTextV2(x)!==normTextV2(oldC)).concat(newC));
+
+  for(const row of archiveRows.filter(x=>normTextV2(x&&x.category)===normTextV2(newC))){
+    try{await mirrorArchiveLight(row);}catch(error){console.warn('V2 category archive mirror pending',error);}
+  }
+  return categoryList();
+}
+
+async function deleteCategory(name){
+  const clean=cleanTextV2(name);
+  if(!clean)throw new Error('Kategorie fehlt.');
+  rememberUndo('Kategorie löschen');
+
+  const taskRows=legacyTasks(),archiveRows=legacyArchive();
+  const changedArchive=[];
+  taskRows.forEach(row=>{if(normTextV2(row&&row.category)===normTextV2(clean))row.category=null;});
+  archiveRows.forEach(row=>{
+    if(normTextV2(row&&row.category)===normTextV2(clean)){row.category=null;changedArchive.push(row);}
+  });
+  writeJson(TASK_KEY,taskRows);writeJson(ARCHIVE_KEY,archiveRows);
+
+  const learned=readJson(CATEGORY_MAP_KEY,{})||{};
+  Object.keys(learned).forEach(key=>{if(normTextV2(learned[key])===normTextV2(clean))delete learned[key];});
+  writeJson(CATEGORY_MAP_KEY,learned);
+  saveCategoryList(categoryList().filter(x=>normTextV2(x)!==normTextV2(clean)));
+
+  for(const row of changedArchive){
+    try{await mirrorArchiveLight(row);}catch(error){console.warn('V2 category delete mirror pending',error);}
+  }
+  return categoryList();
+}
+
+async function setCategoryForTitle(title,category){
+  const key=normTextV2(title),cat=cleanTextV2(category)||null;
+  if(!key)throw new Error('Titel fehlt.');
+  rememberUndo('Kategorie für Titel ändern');
+  const taskRows=legacyTasks(),archiveRows=legacyArchive();
+  const changedArchive=[];
+  taskRows.forEach(row=>{if(normTextV2(row&&row.text)===key)row.category=cat;});
+  archiveRows.forEach(row=>{if(normTextV2(row&&row.text)===key){row.category=cat;changedArchive.push(row);}});
+  writeJson(TASK_KEY,taskRows);writeJson(ARCHIVE_KEY,archiveRows);
+  const learned=readJson(CATEGORY_MAP_KEY,{})||{};
+  if(cat)learned[key]=cat;else delete learned[key];
+  writeJson(CATEGORY_MAP_KEY,learned);
+  if(cat)saveCategoryList([...categoryList(),cat]);
+  for(const row of changedArchive){
+    try{await mirrorArchiveLight(row);}catch(error){console.warn('V2 title category mirror pending',error);}
+  }
+  return {changed:true,category:cat};
+}
+
 window.MOD2Data={
-  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,repeatTask,deleteTask,setManualTimes,switchCookingMode,abortTask,reorderToday,undoLast,undoInfo,
-  legacyTasks,legacyArchive,findLegacy,version:'2.0.12'
+  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,repeatTask,deleteTask,setManualTimes,switchCookingMode,abortTask,reorderToday,addCategory,renameCategory,deleteCategory,setCategoryForTitle,categoryList,undoLast,undoInfo,
+  legacyTasks,legacyArchive,findLegacy,version:'2.0.13'
 };
 })();
