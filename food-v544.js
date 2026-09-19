@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V572';
+  const VERSION='V573';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -24,6 +24,7 @@
   let cloudIssues=[];
   const cardArcs=new Map();
   const expandedRecipes=new Set();
+  const expandedMeals=new Set();
 
   function decorateCards(root){
     root.querySelectorAll('.food-meal-card-v544,.food-stock-card-v544,.food-recipe-card-v544,.food-empty-card-v544,.food-shopping-list-v544>li').forEach((card,index)=>{
@@ -73,7 +74,7 @@
     if(q===null||Number.isNaN(q))return ingredientName(item);
     return fmtQty(q,item?.unit)+' '+ingredientName(item);
   };
-  const recipeInstructions=recipe=>String(recipe?.instructions||'').split(/\n+/).map(line=>line.trim()).filter(Boolean);
+  const recipeInstructions=recipe=>String(recipe?.instructions||'').split(/\s*\|\s*|\n+/).map(line=>line.trim().replace(/^\s*(?:\d+[.)]|[-•])\s*/,'' )).filter(Boolean);
   const mealTypeOptions=selected=>['breakfast','snack','lunch','dinner'].map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(MEAL_LABELS[type])+'</option>').join('');
   const statusLabel=status=>normalizedStatus(status)==='completed'?'Erledigt':'Geplant';
   const priorityLabel=value=>({tomorrow:'Morgen verwenden',three_days:'In den nächsten 3 Tagen',later:'Hält sich länger'}[value]||'Keine Priorität');
@@ -104,21 +105,21 @@
       ]}
     ],
     inventory:[
-      {id:'cucumber',name:'Gurke',quantity:324,unit:'g',quantity_label:'324 g',forecast_label:null,tone:'fresh',note:'442 g gewogen · 118 g fürs Mittag',opened:false,use_priority:'three_days',is_active:true},
-      {id:'tomatoes',name:'Tomaten · Fruchtig & Süß',quantity:394,unit:'g',quantity_label:'394 g',forecast_label:null,tone:'fresh',note:'500-g-Packung · 106 g separat zum Mittag',opened:false,use_priority:'three_days',is_active:true},
+      {id:'cucumber',name:'Gurke',quantity:324,unit:'g',quantity_label:'324 g',forecast_label:null,tone:'fresh',note:'442 g gewogen',opened:false,use_priority:'three_days',is_active:true},
+      {id:'tomatoes',name:'Tomaten · Fruchtig & Süß',quantity:394,unit:'g',quantity_label:'394 g',forecast_label:null,tone:'fresh',note:'500-g-Packung',opened:false,use_priority:'three_days',is_active:true},
       {id:'broccoli',name:'Brokkoli',quantity:500,unit:'g',quantity_label:'500 g',forecast_label:'200 g nach dem Abendessen',tone:'priority',note:'Noch unangebrochen · morgen zuerst verwenden',opened:false,use_priority:'tomorrow',is_active:true},
       {id:'chicken',name:'Hähnchenbrustfilet',quantity:600,unit:'g',quantity_label:'600 g',forecast_label:'400 g nach dem Abendessen',tone:'priority',note:'Noch unangebrochen · morgen zuerst verwenden',opened:false,use_priority:'tomorrow',is_active:true},
-      {id:'potatoes',name:'Kartoffeln',quantity:2500,unit:'g',quantity_label:'2.500 g',forecast_label:'2.200 g nach dem Abendessen',tone:'stock',note:'300 g fürs Abendessen geplant',opened:false,use_priority:'later',is_active:true},
-      {id:'skyr',name:'Skyr Natur',quantity:250,unit:'g',quantity_label:'250 g',forecast_label:null,tone:'priority',note:'Offen · morgen weiterverwenden',opened:true,use_priority:'tomorrow',is_active:true},
-      {id:'cream',name:'Frischkäse Balance',quantity:270,unit:'g',quantity_label:'270 g',forecast_label:null,tone:'priority',note:'Offen · morgen mitverwenden',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'potatoes',name:'Kartoffeln',quantity:2500,unit:'g',quantity_label:'2.500 g',forecast_label:'2.200 g nach dem Abendessen',tone:'stock',note:'2.500 g Ausgangsbestand',opened:false,use_priority:'later',is_active:true},
+      {id:'skyr',name:'Skyr Natur',quantity:250,unit:'g',quantity_label:'250 g',forecast_label:null,tone:'priority',note:null,opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'cream',name:'Frischkäse Balance',quantity:270,unit:'g',quantity_label:'270 g',forecast_label:null,tone:'priority',note:null,opened:true,use_priority:'tomorrow',is_active:true},
       {id:'quark',name:'Magerquark',quantity:250,unit:'g',quantity_label:'250 g',forecast_label:null,tone:'stock',note:'Dip-Menge noch offen',opened:false,use_priority:'later',is_active:true},
-      {id:'bread',name:'Roggen-Vollkornbrot',quantity:389,unit:'g',quantity_label:'ca. 389 g · 7 Scheiben',forecast_label:null,tone:'priority',note:'Offen · in den nächsten Tagen einplanen',opened:true,use_priority:'tomorrow',is_active:true},
+      {id:'bread',name:'Roggen-Vollkornbrot',quantity:389,unit:'g',quantity_label:'ca. 389 g · 7 Scheiben',forecast_label:null,tone:'priority',note:'500 g / 9 Scheiben',opened:true,use_priority:'tomorrow',is_active:true},
       {id:'turkey',name:'Putenbrust-Aufschnitt',quantity:0,unit:'g',quantity_label:'0 g',forecast_label:null,tone:'empty',note:'100-g-Packung verwendet',opened:false,use_priority:'later',is_active:true},
-      {id:'bananas',name:'Bananen',quantity:4,unit:'Stück',quantity_label:'4 Stück',forecast_label:null,tone:'fresh',note:'5 gekauft · 1 verwendet',opened:false,use_priority:'later',is_active:true},
-      {id:'apples',name:'Granny Smith',quantity:8,unit:'Stück',quantity_label:'8 Stück',forecast_label:'7 nach dem Snack',tone:'stock',note:'1 Stück geplant',opened:false,use_priority:'later',is_active:true},
-      {id:'almonds',name:'Mandeln naturbelassen',quantity:200,unit:'g',quantity_label:'200 g',forecast_label:'175 g nach dem Snack',tone:'stock',note:'25 g geplant',opened:false,use_priority:'later',is_active:true},
-      {id:'oats',name:'Zarte Haferflocken',quantity:null,unit:'g',quantity_label:'Rest nicht grammgenau',forecast_label:null,tone:'stock',note:'500-g-Packung · Restmenge offen',opened:true,use_priority:'later',is_active:true},
-      {id:'mince',name:'Hackfleisch gemischt',quantity:800,unit:'g',quantity_label:'800 g',forecast_label:null,tone:'stock',note:'Noch keiner Mahlzeit zugeordnet',opened:false,use_priority:'later',is_active:true},
+      {id:'bananas',name:'Bananen',quantity:4,unit:'Stück',quantity_label:'4 Stück',forecast_label:null,tone:'fresh',note:'5 Stück Ausgangsbestand',opened:false,use_priority:'later',is_active:true},
+      {id:'apples',name:'Granny Smith',quantity:8,unit:'Stück',quantity_label:'8 Stück',forecast_label:'7 nach dem Snack',tone:'stock',note:null,opened:false,use_priority:'later',is_active:true},
+      {id:'almonds',name:'Mandeln naturbelassen',quantity:200,unit:'g',quantity_label:'200 g',forecast_label:'175 g nach dem Snack',tone:'stock',note:null,opened:false,use_priority:'later',is_active:true},
+      {id:'oats',name:'Zarte Haferflocken',quantity:null,unit:'g',quantity_label:'Rest nicht grammgenau',forecast_label:null,tone:'stock',note:'500-g-Packung',opened:true,use_priority:'later',is_active:true},
+      {id:'mince',name:'Hackfleisch gemischt',quantity:800,unit:'g',quantity_label:'800 g',forecast_label:null,tone:'stock',note:null,opened:false,use_priority:'later',is_active:true},
       {id:'pepsi',name:'Pepsi Zero Cherry',quantity:7.5,unit:'l',quantity_label:'6 × 1,25 l',forecast_label:null,tone:'stock',note:'Getränkevorrat',opened:false,use_priority:'later',is_active:true}
     ],
     recipes:[],
@@ -205,7 +206,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,recipe_id,prepared_servings,eaten_servings,leftover_id,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -260,15 +261,32 @@
 
   function mealCard(meal){
     const status=normalizedStatus(meal.status);
-    const ingredients=(meal.ingredients||[]).map(item=>'<li>'+esc(ingredientDisplay(item))+'</li>').join('');
+    const expanded=expandedMeals.has(String(meal.id));
+    const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
+    const items=meal.ingredients||[];
+    const instructions=recipeInstructions(recipe||{});
     const prepared=Math.max(.01,Number(meal.prepared_servings)||1);
     const eaten=Math.max(.01,Number(meal.eaten_servings)||prepared);
     const rest=Math.max(0,prepared-eaten);
-    const portions=meal.leftover_id
-      ?'<small class="food-meal-portions-v572">Aus Resten · '+esc(portionLabel(eaten))+'</small>'
-      :'<small class="food-meal-portions-v572">'+esc(portionLabel(prepared))+(rest>0?' zubereitet · '+esc(portionLabel(eaten))+' heute · '+esc(portionLabel(rest))+' Rest':'')+'</small>';
-    const action=status==='completed'?'':'<button type="button" class="food-action-v544" data-food-complete="'+esc(meal.id)+'">Als erledigt markieren</button>';
-    return '<article class="food-meal-card-v544 status-'+status+'"><div class="food-meal-icon-v544">'+(MEAL_ICONS[meal.meal_type]||'•')+'</div><div class="food-meal-copy-v544"><div class="food-meal-title-row-v544"><div><span class="food-meal-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</span><h4>'+esc(meal.title)+'</h4>'+portions+'</div><span class="food-status-v544">'+statusLabel(status)+'</span></div>'+(ingredients?'<ul>'+ingredients+'</ul>':'')+action+'</div></article>';
+    const portionMeta=meal.leftover_id
+      ?'Aus Resten · '+portionLabel(eaten)
+      :portionLabel(prepared)+(rest>0?' zubereitet · '+portionLabel(eaten)+' heute · '+portionLabel(rest)+' Rest':'');
+    const details=expanded
+      ?'<div class="food-recipe-details-v572">'
+        +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
+        +(instructions.length?'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong><ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol></div>':'')
+        +(meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'')
+        +(!items.length&&!instructions.length&&!meal.note?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
+        +'</div>'
+      :'';
+    const action=status==='completed'?'':'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">Als erledigt markieren</button>';
+    return '<article class="food-meal-card-v544 '+(expanded?'is-expanded-v573':'')+' status-'+status+'">'
+      +'<button type="button" class="food-meal-toggle-v573" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
+        +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta)+' · '+esc(statusLabel(status))+'</em></span>'
+        +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
+      +'</button>'
+      +details+action
+      +'</article>';
   }
 
   function todayView(data){
@@ -334,11 +352,49 @@
   function shoppingView(data){
     const gaps=deriveShopping(data);
     const manual=(data.shopping||[]).filter(item=>!item.checked);
-    const planned=gaps.map(item=>'<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>Kaufen '+esc(fmtQty(item.missing,item.unit))+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'</span></li>').join('');
+    const planned=gaps.map(item=>'<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>Kaufen '+esc(fmtQty(item.missing,item.unit))+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(item.missing)+'" data-food-stock-unit="'+esc(item.unit||'')+'" data-food-stock-id="'+esc(item.inventory_id||'')+'">Vorhanden / eingekauft</button></span></li>').join('');
     const manualHtml=manual.map(item=>'<li class="manual"><strong>'+esc(item.label)+'</strong><span>'+esc(fmtQty(item.quantity,item.unit))+' <button type="button" data-shopping-check="'+esc(item.id)+'">erledigt</button></span></li>').join('');
     const all=planned+manualHtml;
     return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
       (all?'<ul class="food-shopping-list-v544">'+all+'</ul>':'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Vorrat und geplante Rezeptmengen decken sich aktuell.</p></div>');
+  }
+
+  function stockGapModal(button){
+    const name=String(button?.dataset?.foodStockName||'').trim();
+    const suggested=Number(button?.dataset?.foodStockQuantity||0);
+    const unit=String(button?.dataset?.foodStockUnit||'').trim();
+    const inventoryId=String(button?.dataset?.foodStockId||'').trim()||null;
+    if(!name)return;
+    addModal('Vorrat übernehmen','<form><p class="food-modal-copy-v544"><strong>'+esc(name)+'</strong></p><div class="food-form-grid-v544"><label>Menge vorhanden / gekauft<input name="quantity" type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(suggested||1)+'" required></label><label>Einheit<input name="unit" value="'+esc(unit||'Stück')+'" required></label></div><button class="food-action-v544" type="submit">In Vorrat übernehmen</button></form>',async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const session=await withTimeout(supabase.auth.getSession(),'Anmeldung',2500);
+      const user=session?.data?.session?.user;
+      if(session?.error||!user?.id)throw new Error('Nicht angemeldet.');
+      const quantity=Number(form.get('quantity'));
+      const chosenUnit=String(form.get('unit')||'').trim();
+      if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte eine gültige Menge eingeben.');
+      if(!chosenUnit)throw new Error('Bitte eine Einheit eingeben.');
+
+      const existing=inventoryId
+        ?(state?.inventory||[]).find(item=>String(item.id)===String(inventoryId))
+        :(state?.inventory||[]).find(item=>String(item.name||'').trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE'));
+
+      if(existing){
+        if(String(existing.unit||'')!==chosenUnit)throw new Error('Die Einheit passt nicht zum vorhandenen Vorrat.');
+        const current=num(existing.quantity);
+        const newQuantity=(current===null?0:current)+quantity;
+        const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:existing.id,p_new_quantity:newQuantity,p_reason:'Vorrat vorhanden / eingekauft',p_note:null});
+        if(result.error)throw result.error;
+      }else{
+        const maxSort=(state?.inventory||[]).reduce((max,item)=>Math.max(max,Number(item.sort_order)||0),0);
+        const result=await supabase.from('food_inventory').insert({
+          user_id:user.id,name,quantity,unit:chosenUnit,quantity_label:fmtQty(quantity,chosenUnit),
+          forecast_label:null,tone:'stock',note:null,sort_order:maxSort+1,opened:false,use_priority:'later',is_active:true
+        });
+        if(result.error)throw result.error;
+      }
+      await mutate(()=>true);
+    });
   }
 
   function recipeCard(recipe){
@@ -736,6 +792,8 @@
       button.insertAdjacentHTML('afterend','<button type="button" data-food-consume="'+esc(id)+'">Verbraucht</button><button type="button" data-food-storage="'+esc(id)+'">Zustand &amp; Verwendung</button>');
     });
     root.querySelectorAll('[data-food-consume]').forEach(button=>button.addEventListener('click',()=>consumeModal(button.dataset.foodConsume)));
+    root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
+    root.querySelectorAll('[data-food-stock-gap]').forEach(button=>button.addEventListener('click',()=>stockGapModal(button)));
     root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
