@@ -600,3 +600,17 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   font-weight:900!important;
   -webkit-text-fill-color:#365d43!important;
 }
+
+
+/* V578 · Rezeptnamen in Heute/Plan exakt wie im Rezepte-Bereich */
+.food-meal-toggle-v573 h4{
+  position:relative;
+  z-index:1;
+  margin:0!important;
+  color:#263c2b!important;
+  -webkit-text-fill-color:#263c2b!important;
+  font-size:15px!important;
+  font-weight:700!important;
+  line-height:1.25!important;
+  opacity:1!important;
+}
