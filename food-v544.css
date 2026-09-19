@@ -183,3 +183,13 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   .food-section-head-v544{align-items:flex-start}
   .food-section-actions-v549{align-items:flex-end;flex-direction:column;gap:5px}
 }
+
+/* V569 · optionale kleine Rezeptnotiz direkt unter dem Titel */
+.food-recipe-note-v569{
+  display:block;
+  margin:3px 0 7px;
+  color:#6b786b;
+  font-size:.72rem;
+  font-weight:600;
+  line-height:1.25;
+}
