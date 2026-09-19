@@ -209,150 +209,19 @@
 
  async function load(){
    try{
-     await ensureClient();
-     const [taskResult,archiveResult]=await Promise.all([
-       client.from('tasks')
-        .select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,started_at,paused_at,pause_total_ms,cooking_mode,created_at,updated_at')
-        .order('today_order',{ascending:true})
-        .order('created_at',{ascending:false}),
-       client.from('archive_entries')
-        .select('id,archive_number,text,status,type,priority,optional,due_mode,due_date,completed_date,category,archived_at')
-        .order('archive_number',{ascending:false})
+     if(!window.MOD2Data)throw new Error('2.0-Datenmodul wurde nicht geladen.');
+     const [taskState,archiveRows]=await Promise.all([
+       window.MOD2Data.loadTasks(),
+       window.MOD2Data.loadArchive()
      ]);
-     if(taskResult.error)throw taskResult.error;
-     if(archiveResult.error)throw archiveResult.error;
-     tasks=taskResult.data||[];
-     archives=archiveResult.data||[];
+     tasks=taskState.tasks||[];
+     archives=archiveRows||[];
      render();
+     if(!taskState.sharedLocalMaster)showToast('Hinweis: 1.0-Datenbestand auf diesem Gerät noch nicht geladen. Schreibfunktionen bleiben geschützt.');
    }catch(error){
-     list.innerHTML='<div class="loading-card">'+esc(error&&error.message?error.message:'Supabase konnte gerade nicht geladen werden.')+'</div>';
+     list.innerHTML='<div class="loading-card">'+esc(error&&error.message?error.message:'Daten konnten gerade nicht geladen werden.')+'</div>';
      count.textContent='0';
    }
- }
-
- function titleGroups(){
-   const map=new Map();
-   const add=(row,source)=>{
-     const name=String(row&&row.text||'').trim(); if(!name)return;
-     const key=name.toLocaleLowerCase('de-DE');
-     const old=map.get(key)||{name,count:0,latest:null,source};
-     old.count+=1;
-     old.latest=row;
-     map.set(key,old);
-   };
-   tasks.forEach(x=>add(x,'AKTIV')); archives.forEach(x=>add(x,'VERLAUF'));
-   return [...map.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'de'));
- }
-
- function hideSuggestions(){const box=$('#titleSuggestions');if(box){box.hidden=true;box.innerHTML='';}}
- function renderSuggestions(query=''){
-   const box=$('#titleSuggestions'); if(!box)return;
-   const q=String(query||'').trim().toLocaleLowerCase('de-DE');
-   const rows=titleGroups().filter(x=>!q||x.name.toLocaleLowerCase('de-DE').includes(q)).slice(0,8);
-   if(!rows.length){hideSuggestions();return;}
-   box.innerHTML=rows.map((x,i)=>'<button type="button" class="title-suggestion" data-suggestion-index="'+i+'"><span>'+esc(x.name)+'</span><small>'+x.count+'×</small></button>').join('');
-   box.hidden=false;
-   box.querySelectorAll('[data-suggestion-index]').forEach((btn,i)=>btn.addEventListener('click',()=>{
-     const x=rows[i],input=$('#newTaskText'); if(input)input.value=x.name;
-     if(x.latest){
-       composerState.type=x.latest.type||'work';
-       composerState.priority=x.latest.priority||'normal';
-       composerState.optional=Boolean(x.latest.optional);
-     }
-     updateComposerUI(); hideSuggestions();
-   }));
- }
-
- function setAllTab(){
-   filter='all';
-   document.querySelectorAll('.todo-tab').forEach(x=>x.classList.toggle('active',x.dataset.filter==='all'));
- }
-
- function resetEditor(){
-   editingId=null;
-   const input=$('#newTaskText'); if(input)input.value='';
-   composerState={type:'work',priority:'normal',optional:false,dueMode:'none'};
-   const button=$('#newTaskButton'); if(button)button.textContent='+ AUFGABE HINZUFÜGEN';
-   const cancel=$('#cancelEditButton'); if(cancel)cancel.hidden=true;
-   updateComposerUI(); hideSuggestions();
- }
-
- function startEdit(id){
-   const t=tasks.find(x=>String(x.id)===String(id)); if(!t)return;
-   editingId=t.id; setAllTab();
-   const input=$('#newTaskText'); if(input)input.value=t.text||'';
-   composerState={type:t.type||'work',priority:t.priority||'normal',optional:Boolean(t.optional),dueMode:t.due_mode||'none'};
-   const button=$('#newTaskButton'); if(button)button.textContent='ÄNDERUNGEN SPEICHERN';
-   const cancel=$('#cancelEditButton'); if(cancel)cancel.hidden=false;
-   updateComposerUI(); render();
-   setTimeout(()=>{composer.hidden=false;composer.scrollIntoView({behavior:'smooth',block:'start'});input&&input.focus();},0);
- }
-
- async function openSegment(table,taskId,extra={}){
-   const now=new Date().toISOString();
-   const payload={user_id:session.user.id,task_id:taskId,started_at:now,...extra};
-   const result=await client.from(table).insert([payload]).select('id,started_at').single();
-   if(result.error)throw result.error;
-   return result.data;
- }
-
- async function closeOpenSegment(table,taskId){
-   const current=await client.from(table).select('id,started_at').eq('task_id',taskId).is('ended_at',null).order('started_at',{ascending:false}).limit(1);
-   if(current.error)throw current.error;
-   const row=current.data&&current.data[0]; if(!row)return;
-   const endedAt=new Date().toISOString();
-   const duration=Math.max(0,new Date(endedAt).getTime()-new Date(row.started_at).getTime());
-   const result=await client.from(table).update({ended_at:endedAt,duration_ms:duration}).eq('id',row.id);
-   if(result.error)throw result.error;
- }
-
- async function runAction(id){
-   const t=tasks.find(x=>String(x.id)===String(id)); if(!t)return;
-   if(t.type==='selfrunner'){showToast('Selbstläufer-Abschluss kommt mit der Abschluss-/Archivlogik.');return;}
-   try{
-     await ensureClient();
-     if(t.status==='running'){
-       const now=new Date().toISOString();
-       await closeOpenSegment('task_active_segments',t.id);
-       if(t.type==='cooking')await closeOpenSegment('task_cooking_segments',t.id);
-       const result=await client.from('tasks').update({status:'paused',paused_at:now}).eq('id',t.id).select('id,status,paused_at,pause_total_ms').single();
-       if(result.error)throw result.error;
-       Object.assign(t,result.data); render(); showToast('Aufgabe pausiert.'); return;
-     }
-     const other=tasks.find(x=>x.status==='running'&&String(x.id)!==String(t.id));
-     if(other){showToast('Es läuft bereits „'+other.text+'“.');return;}
-     const now=new Date().toISOString();
-     const patch={status:'running',paused_at:null};
-     if(!t.started_at)patch.started_at=now;
-     if(t.status==='paused'&&t.paused_at){
-       const delta=Math.max(0,Date.now()-new Date(t.paused_at).getTime());
-       patch.pause_total_ms=(Number(t.pause_total_ms)||0)+delta;
-     }
-     const wasPaused=t.status==='paused';
-     const result=await client.from('tasks').update(patch).eq('id',t.id).select('id,status,started_at,paused_at,pause_total_ms,cooking_mode').single();
-     if(result.error)throw result.error;
-     await openSegment('task_active_segments',t.id,{metadata:{}});
-     if(t.type==='cooking')await openSegment('task_cooking_segments',t.id,{mode:t.cooking_mode||'active'});
-     Object.assign(t,result.data); render(); showToast(wasPaused?'Aufgabe fortgesetzt.':'Aufgabe gestartet.');
-   }catch(error){showToast(error&&error.message?error.message:'Start/Pause konnte nicht gespeichert werden.');}
- }
-
- async function toggleToday(id){
-   const t=tasks.find(x=>String(x.id)===String(id)); if(!t)return;
-   try{
-     await ensureClient();
-     const today=berlinDateKey();
-     const selected=t.today_date===today;
-     let patch;
-     if(selected){patch={today_date:null,today_order:null};}
-     else{
-       const highest=tasks.filter(x=>x.today_date===today&&!['completed','aborted'].includes(x.status)).reduce((m,x)=>Math.max(m,Number(x.today_order)||0),0);
-       patch={today_date:today,today_order:highest+1};
-     }
-     const result=await client.from('tasks').update(patch).eq('id',t.id).select('id,today_date,today_order').single();
-     if(result.error)throw result.error;
-     Object.assign(t,result.data); render(); showToast(selected?'Aus Heute entfernt.':'Für Heute eingeplant.');
-   }catch(error){showToast(error&&error.message?error.message:'Heute-Zuordnung konnte nicht geändert werden.');}
  }
 
  async function addTask(){
@@ -362,34 +231,28 @@
    const button=$('#newTaskButton');
    if(button)button.disabled=true;
    try{
-     await ensureClient();
+     if(!window.MOD2Data)throw new Error('2.0-Datenmodul wurde nicht geladen.');
      const tomorrow=addCalendarDays(berlinDateKey(),1);
-     const payload={
-       user_id:session.user.id,
-       text:textValue,
-       status:'open',
-       type:composerState.type,
-       priority:composerState.priority,
-       optional:composerState.optional,
-       due_mode:composerState.dueMode,
-       due_date:composerState.dueMode==='none'?null:tomorrow
-     };
-     let result;
      if(editingId){
-       result=await client.from('tasks').update({
-         text:payload.text,type:payload.type,priority:payload.priority,optional:payload.optional,due_mode:payload.due_mode,due_date:payload.due_date
-       }).eq('id',editingId).select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,created_at,updated_at').single();
-       if(result.error)throw result.error;
-       const idx=tasks.findIndex(x=>String(x.id)===String(editingId)); if(idx>=0)tasks[idx]={...tasks[idx],...result.data};
-       resetEditor(); render(); showToast('Aufgabe geändert.');
+       const updated=await window.MOD2Data.patchTask(editingId,{
+         text:textValue,type:composerState.type,priority:composerState.priority,
+         optional:composerState.optional,dueMode:composerState.dueMode,
+         dueDate:composerState.dueMode==='none'?null:tomorrow
+       });
+       const idx=tasks.findIndex(x=>Number(x.legacy_task_id)===Number(editingId));
+       if(idx>=0)tasks[idx]={...tasks[idx],...updated};
+       resetEditor();render();showToast('Aufgabe geändert.');
      }else{
-       result=await client.from('tasks').insert([payload]).select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,created_at,updated_at').single();
-       if(result.error)throw result.error;
-       tasks.unshift(result.data);
-       resetEditor(); render(); showToast('Aufgabe angelegt.');
+       const created=await window.MOD2Data.addTask({
+         text:textValue,type:composerState.type,priority:composerState.priority,
+         optional:composerState.optional,dueMode:composerState.dueMode,
+         dueDate:composerState.dueMode==='none'?null:tomorrow
+       });
+       tasks.unshift(created);
+       resetEditor();render();showToast('Aufgabe angelegt.');
      }
    }catch(error){
-     showToast(error&&error.message?error.message:'Aufgabe konnte nicht angelegt werden.');
+     showToast(error&&error.message?error.message:'Aufgabe konnte nicht gespeichert werden.');
    }finally{
      if(button)button.disabled=false;
    }
@@ -435,7 +298,7 @@
 
  updateComposerUI();
  const wait=()=>{
-   if(window.supabase)load();
+   if(window.supabase&&window.MOD2Data)load();
    else setTimeout(wait,70);
  };
  wait();
