@@ -191,7 +191,7 @@
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,recipe_id,food_meal_ingredients(id,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order')),
-      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,display_note,food_recipe_ingredients(id,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
+      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,food_recipe_ingredients(id,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at'))
     ]);
 
@@ -308,7 +308,9 @@
 
   function recipeCard(recipe){
     const items=recipe.food_recipe_ingredients||recipe.ingredients||[];
-    const note=recipe.display_note?'<small class="food-recipe-note-v569">'+esc(recipe.display_note)+'</small>':'';
+    const servings=Math.max(1,Number(recipe.servings)||1);
+    const portionLabel=servings===1?'1 Portion':servings+' Portionen';
+    const note='<small class="food-recipe-portions-v571">'+esc(portionLabel)+'</small>';
     return '<article class="food-recipe-card-v544"><span class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</span><h4>'+esc(recipe.title)+'</h4>'+note+'<p>'+items.map(item=>esc(item.label||item)).join(' · ')+'</p><button type="button" class="food-action-v544" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></article>';
   }
 
@@ -443,7 +445,7 @@
     let modal;
     const body='<form class="food-recipe-form-v549">'+
       '<label>Rezeptname<input name="title" placeholder="z. B. Hähnchen-Brokkoli-Pfanne" required></label>'+
-      '<label>Mahlzeit<select name="meal_type"><option value="breakfast">Frühstück</option><option value="snack">Snack</option><option value="lunch">Mittag</option><option value="dinner" selected>Abendessen</option></select></label>'+
+      '<div class="food-form-grid-v544"><label>Mahlzeit<select name="meal_type"><option value="breakfast">Frühstück</option><option value="snack">Snack</option><option value="lunch">Mittag</option><option value="dinner" selected>Abendessen</option></select></label><label>Portionen<input name="servings" type="number" min="1" max="99" step="1" inputmode="numeric" value="1" required></label></div>'+
       '<div class="food-recipe-builder-v549"><div class="food-recipe-builder-head-v549"><strong>Zutaten</strong><button type="button" data-food-recipe-add-ingredient>+ Zutat</button></div><div data-food-recipe-rows>'+recipeIngredientRow(0)+'</div></div>'+
       '<button class="food-action-v544" type="submit">Rezept speichern</button>'+
       '</form>';
@@ -457,7 +459,9 @@
 
       const title=String(form.get('title')||'').trim();
       const mealType=String(form.get('meal_type')||'dinner');
+      const servings=Number(form.get('servings')||1);
       if(!title)throw new Error('Bitte einen Rezeptnamen eingeben.');
+      if(!Number.isInteger(servings)||servings<1||servings>99)throw new Error('Bitte eine gültige Portionszahl zwischen 1 und 99 eingeben.');
 
       const ingredientRows=Array.from(modal.querySelectorAll('[data-food-recipe-row]'));
       if(!ingredientRows.length)throw new Error('Bitte mindestens eine Zutat hinzufügen.');
@@ -476,7 +480,7 @@
 
       let recipe=null;
       const recipeResult=await withTimeout(
-        supabase.from('food_recipes').insert({user_id:user.id,title,meal_type:mealType,description:null,active:true}).select('id,title,meal_type,description,active,created_at').single(),
+        supabase.from('food_recipes').insert({user_id:user.id,title,meal_type:mealType,description:null,servings,active:true}).select('id,title,meal_type,description,servings,active,created_at').single(),
         'Rezept speichern',
         8000
       );
