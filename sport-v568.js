@@ -1,9 +1,9 @@
-/* V568 · SPORT · Supabase live data + participants + statistics */
+/* V573 · SPORT · X-Training + catalog + Supabase live data */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V568';
+  const VERSION='V573';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -14,6 +14,7 @@
   const TABS=[
     {id:'fitx',label:'FITX'},
     {id:'xtraining',label:'X-TRAINING'},
+    {id:'catalog',label:'KATALOG'},
     {id:'activities',label:'AKTIVITÄTEN'},
     {id:'statistics',label:'STATISTIK'}
   ];
@@ -55,7 +56,7 @@
   };
 
   let activeTab='fitx';
-  let state={loaded:false,loading:false,error:null,source:'cache',sessions:[]};
+  let state={loaded:false,loading:false,error:null,source:'cache',sessions:[],catalogExercises:[],equipment:[],sessionParticipants:[],sessionExercises:[],exerciseSets:[]};
   let loadPromise=null;
   let renderSerial=0;
 
