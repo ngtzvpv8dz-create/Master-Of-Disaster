@@ -565,3 +565,24 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   padding-left:3px;
   line-height:1.45;
 }
+
+
+/* V574 · Priorität konsistent + Mahlzeitentitel wieder eindeutig sichtbar */
+.food-stock-card-v544.priority-tomorrow-v574:not(.tone-empty){
+  background:radial-gradient(circle at 90% 12%,rgba(237,211,145,.18),transparent 42%),linear-gradient(145deg,#f8f0df,#f3ead4);
+}
+.food-meal-toggle-v573 h4{
+  position:relative;
+  z-index:1;
+  display:block;
+  margin:0!important;
+  color:#263c2b!important;
+  font-size:15px!important;
+  font-weight:800!important;
+  line-height:1.25!important;
+}
+.food-meal-toggle-v573>span{
+  display:block;
+  min-width:0;
+  flex:1 1 auto;
+}
