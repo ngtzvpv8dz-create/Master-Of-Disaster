@@ -546,7 +546,148 @@
     return candidates[0]||null;
   }
 
-  function xTrainingPanel(){return `<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v512="xtraining" data-sport-panel-v568="xtraining">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING ${statusBadge()}</div><p class="sport-date-v510">Eigene Trainingssessions außerhalb der normalen FitX-Dokumentation.</p><div class="sport-section-mark-v512">X</div></div><div class="sport-content-v510"><article class="sport-session-card-v510 sport-empty-card-v512"><div class="sport-empty-orbit-v512"><span></span><span></span><span></span></div><h2 class="sport-card-title-v510">Noch kein X-Training dokumentiert</h2><div class="sport-card-sub-v510">Übungen, Sätze, Wiederholungen und Gewichte bekommen hier später ihren eigenen Platz.</div></article></div></section>`;}
+  function equipmentOptions(selected){
+    return '<option value="">Kein Gerät gewählt</option>'+state.equipment.map(item=>{
+      const label=item.name+(item.equipment_number?' · '+item.equipment_number:'');
+      return '<option value="'+esc(item.id)+'" '+(String(selected||'')===String(item.id)?'selected':'')+'>'+esc(label)+'</option>';
+    }).join('');
+  }
+
+  function workoutHistory(current){
+    const previous=previousWorkoutValue(current);
+    if(!previous)return '<div class="sport-last-v573 is-empty">Noch keine früheren Werte.</div>';
+    const item=previous.item;
+    if(current.kind==='cardio'){
+      const bits=[
+        item.durationMinutes!==null?formatMinutes(item.durationMinutes):null,
+        item.distanceKm!==null?item.distanceKm+' km':null,
+        item.resistanceLevel?'Stufe '+item.resistanceLevel:null,
+        item.speedKmh!==null?item.speedKmh+' km/h':null,
+        item.inclinePercent!==null?item.inclinePercent+' % Steigung':null
+      ].filter(Boolean);
+      return '<div class="sport-last-v573"><span>Letztes Mal · '+esc(shortDate(previous.session.date))+'</span><b>'+esc(bits.join(' · ')||'keine Werte')+'</b></div>';
+    }
+    const sets=(item.sets||[]).filter(set=>set.weightKg!==null||set.repetitions!==null||set.rir!==null).slice(0,4);
+    const text=sets.map(set=>{
+      const parts=[set.weightKg!==null?set.weightKg+' kg':null,set.repetitions!==null?set.repetitions+' Wdh.':null,set.rir!==null?'RIR '+set.rir:null].filter(Boolean);
+      return 'S'+set.setNumber+' '+parts.join(' · ');
+    }).join(' | ');
+    return '<div class="sport-last-v573"><span>Letztes Mal · '+esc(shortDate(previous.session.date))+'</span><b>'+esc(text||'keine Satzwerte')+'</b></div>';
+  }
+
+  function strengthEditor(exercise){
+    const setMap=new Map((exercise.sets||[]).map(set=>[set.setNumber,set]));
+    const count=Math.max(3,...[...(exercise.sets||[])].map(set=>set.setNumber||0));
+    const rows=Array.from({length:count},(_,index)=>{
+      const no=index+1,set=setMap.get(no)||{};
+      return '<form class="sport-set-row-v573" data-sport-set-form data-exercise-id="'+esc(exercise.id)+'" data-set-number="'+no+'">'+
+        '<strong>S'+no+'</strong>'+
+        '<label><span>kg</span><input name="weight_kg" type="number" min="0" step="0.5" inputmode="decimal" value="'+esc(set.weightKg??'')+'"></label>'+
+        '<label><span>Wdh.</span><input name="repetitions" type="number" min="0" step="1" inputmode="numeric" value="'+esc(set.repetitions??'')+'"></label>'+
+        '<label><span>RIR</span><input name="rir" type="number" min="0" max="10" step="1" inputmode="numeric" value="'+esc(set.rir??'')+'"></label>'+
+        '<button type="submit">Speichern</button>'+
+      '</form>';
+    }).join('');
+    return '<div class="sport-strength-editor-v573">'+rows+'<button type="button" class="sport-ghost-button-v573" data-sport-add-set="'+esc(exercise.id)+'">+ Satz</button></div>';
+  }
+
+  function cardioEditor(exercise){
+    return '<form class="sport-cardio-form-v573" data-sport-cardio-form="'+esc(exercise.id)+'">'+
+      '<label><span>Dauer min</span><input name="duration_minutes" type="number" min="0" step="1" value="'+esc(exercise.durationMinutes??'')+'"></label>'+
+      '<label><span>Strecke km</span><input name="distance_km" type="number" min="0" step="0.01" value="'+esc(exercise.distanceKm??'')+'"></label>'+
+      '<label><span>Widerstand / Stufe</span><input name="resistance_level" value="'+esc(exercise.resistanceLevel||'')+'"></label>'+
+      '<label><span>km/h</span><input name="speed_kmh" type="number" min="0" step="0.1" value="'+esc(exercise.speedKmh??'')+'"></label>'+
+      '<label><span>Steigung %</span><input name="incline_percent" type="number" min="0" step="0.1" value="'+esc(exercise.inclinePercent??'')+'"></label>'+
+      '<button type="submit">Cardio speichern</button>'+
+    '</form>';
+  }
+
+  function workoutExerciseCard(exercise){
+    const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
+    const meta=exercise.kind==='cardio'?'Cardio':(catalog?.muscle_group||catalog?.category||'Kraft');
+    return '<article class="sport-workout-card-v573 status-'+esc(exercise.status)+'">'+
+      '<div class="sport-workout-head-v573"><div><span>'+esc(meta)+'</span><h3>'+esc(exercise.name)+'</h3></div><b>'+esc(workoutStatusLabel(exercise.status))+'</b></div>'+
+      '<label class="sport-equipment-select-v573"><span>Gerät</span><select data-sport-equipment-for="'+esc(exercise.id)+'">'+equipmentOptions(exercise.equipmentId)+'</select></label>'+
+      workoutHistory(exercise)+
+      (exercise.kind==='cardio'?cardioEditor(exercise):strengthEditor(exercise))+
+      '<div class="sport-workout-actions-v573">'+
+        (exercise.status!=='running'?'<button type="button" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="running">Start</button>':'')+
+        (exercise.status!=='completed'?'<button type="button" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="completed">Fertig</button>':'')+
+        (exercise.status!=='skipped'?'<button type="button" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="skipped">Überspringen</button>':'<button type="button" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="planned">Zurückholen</button>')+
+        '<button type="button" class="danger" data-sport-remove-exercise="'+esc(exercise.id)+'">Entfernen</button>'+
+      '</div>'+
+    '</article>';
+  }
+
+  function timelineBlock(session){
+    return '<div class="sport-timeline-v573">'+TIMELINE_STEPS.map(([prop,column,label],index)=>{
+      const value=session[prop];
+      return '<button type="button" class="'+(value?'is-done':'')+'" data-sport-timeline="'+esc(session.id)+'" data-column="'+column+'" '+(value?'disabled':'')+'>'+
+        '<i>'+(index+1)+'</i><span><strong>'+esc(label)+'</strong><small>'+(value?esc(clock(value)):'antippen = jetzt')+'</small></span>'+
+      '</button>';
+    }).join('')+'</div>';
+  }
+
+  function participantsBlock(session){
+    const rows=sessionParticipantRows(session.id);
+    return '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>TRAININGSPARTNER</span><strong>Auf Einheitsebene</strong></div><small>alphabetisch</small></div>'+
+      '<div class="sport-partner-list-v573">'+(rows.length?rows.map(row=>'<span>'+esc(row.participant_name)+'<button type="button" data-sport-remove-participant="'+esc(row.id)+'" aria-label="'+esc(row.participant_name)+' entfernen">×</button></span>').join(''):'<em>Noch niemand eingetragen.</em>')+'</div>'+
+      '<form class="sport-partner-form-v573" data-sport-participant-form="'+esc(session.id)+'"><input name="participant" placeholder="Name" autocomplete="off" required><button type="submit">+ Partner</button></form>'+
+    '</section>';
+  }
+
+  function xTrainingPanel(){
+    const current=activeXSession();
+    const past=state.sessions.filter(session=>session.kind==='xtraining'&&(!current||session.id!==current.id)).slice(0,5);
+    if(!current){
+      return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="xtraining">'+wave()+
+        '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING '+statusBadge()+'</div><p class="sport-date-v510">Training mit Übungen, Geräten, Sätzen und kompletter Tages-Zeitleiste.</p><div class="sport-section-mark-v512">X</div></div>'+
+        '<div class="sport-content-v510"><article class="sport-x-start-v573"><span>HEUTE</span><h2>Noch kein laufendes X-Training</h2><p>Die Einheit wird erst angelegt, wenn du sie startest. Keine automatische Progression, kein Maschinenorakel.</p><button type="button" data-sport-create-x>Neues X-Training anlegen</button></article>'+
+        (past.length?'<div class="sport-section-title-v568">Letzte X-Trainings</div><div class="sport-x-history-v573">'+past.map(session=>'<article><strong>'+esc(shortDate(session.date))+'</strong><span>'+esc(xSessionStatusLabel(session.status))+' · '+(session.workout?.length||0)+' Übungen</span><b>'+esc(formatMinutes(sessionMinutes(session)))+'</b></article>').join('')+'</div>':'')+
+        errorNote()+'</div></section>';
+    }
+
+    return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="xtraining">'+wave()+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING · '+esc(xSessionStatusLabel(current.status))+' '+statusBadge()+'</div><p class="sport-date-v510">'+esc(dateLabel(current.date))+'</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">'+(current.workout?.length||0)+'</div><div class="sport-duration-unit-v510">Übungen</div></div></div>'+
+      '<div class="sport-content-v510">'+
+        '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>TRAININGSTAG</span><strong>Zeitleiste</strong></div><small>6 Zeitpunkte</small></div>'+timelineBlock(current)+'</section>'+
+        participantsBlock(current)+
+        '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>HEUTIGES TRAINING</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog>Katalog öffnen</button></div>'+
+          ((current.workout||[]).length?'<div class="sport-workout-list-v573">'+current.workout.map(workoutExerciseCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine Übungen gewählt. Öffne den Katalog und füge einzelne Übungen oder ganze Gruppen hinzu.</div>')+
+        '</section>'+
+        errorNote()+
+      '</div></section>';
+  }
+
+  function catalogExerciseGroups(){
+    const groups=new Map();
+    state.catalogExercises.forEach(exercise=>{
+      const key=String(exercise.category||exercise.muscle_group||(exercise.kind==='cardio'?'Cardio':'Kraft'));
+      const list=groups.get(key)||[];
+      list.push(exercise);
+      groups.set(key,list);
+    });
+    return [...groups.entries()].sort((a,b)=>byName(a[0],b[0]));
+  }
+
+  function catalogPanel(){
+    const current=activeXSession();
+    const groups=catalogExerciseGroups();
+    const exerciseHtml=groups.length?groups.map(([group,list])=>'<section class="sport-catalog-group-v573"><div class="sport-catalog-group-head-v573"><div><span>GRUPPE</span><strong>'+esc(group)+'</strong></div>'+(current?'<button type="button" data-sport-add-group="'+esc(group)+'" data-session-id="'+esc(current.id)+'">Gruppe übernehmen</button>':'')+'</div><div class="sport-catalog-grid-v573">'+list.map(exercise=>'<article><div><span>'+(exercise.kind==='cardio'?'CARDIO':'KRAFT')+'</span><h3>'+esc(exercise.name)+'</h3><small>'+esc(exercise.muscle_group||exercise.category||'')+'</small></div>'+(current?'<button type="button" data-sport-add-exercise="'+esc(exercise.id)+'" data-session-id="'+esc(current.id)+'">Ins Training</button>':'')+'</article>').join('')+'</div></section>').join(''):'<div class="sport-empty-inline-v568">Noch keine Übungen im Katalog.</div>';
+
+    const devices=state.equipment.length?'<div class="sport-device-grid-v573">'+state.equipment.map(item=>'<article><div><span>'+esc(item.category||'Gerät')+'</span><h3>'+esc(item.name)+(item.equipment_number?' <b>'+esc(item.equipment_number)+'</b>':'')+'</h3>'+(item.settings_text?'<small>'+esc(item.settings_text)+'</small>':'<small>Keine Einstellungen hinterlegt</small>')+'</div></article>').join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine Geräte hinterlegt.</div>';
+
+    return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="catalog">'+wave()+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>KATALOG '+statusBadge()+'</div><p class="sport-date-v510">Übungen und Geräte bleiben getrennte Dinge. Wie überraschend vernünftig.</p><div class="sport-section-mark-v512">K</div></div>'+
+      '<div class="sport-content-v510">'+
+        (!current?'<div class="sport-catalog-note-v573">Für heute ist noch kein laufendes X-Training angelegt. Du kannst den Katalog trotzdem pflegen.</div>':'')+
+        '<div class="sport-section-title-v568">Übungen</div>'+exerciseHtml+
+        '<details class="sport-catalog-create-v573"><summary>+ Übung hinzufügen</summary><form data-sport-add-exercise-form><label>Name<input name="name" required></label><label>Art<select name="kind"><option value="strength">Kraft</option><option value="cardio">Cardio</option></select></label><label>Kategorie / Gruppe<input name="category" placeholder="z. B. Beine"></label><label>Muskelgruppe<input name="muscle_group" placeholder="z. B. Quadrizeps"></label><button type="submit">Übung speichern</button></form></details>'+
+        '<div class="sport-section-title-v568">Geräte</div>'+devices+
+        '<details class="sport-catalog-create-v573"><summary>+ Gerät hinzufügen</summary><form data-sport-add-equipment-form><label>Bezeichnung<input name="name" required></label><label>Nummer optional<input name="equipment_number"></label><label>Kategorie<input name="category" value="Kraft" required></label><label>Einstellungen<input name="settings_text" placeholder="z. B. Sitz 4 · Rücken 2"></label><button type="submit">Gerät speichern</button></form></details>'+
+        errorNote()+
+      '</div></section>';
+  }
 
   function flatActivities(rows){
     const flat=[];rows.forEach(session=>(session.activities||[]).forEach(activity=>flat.push({session,activity})));
