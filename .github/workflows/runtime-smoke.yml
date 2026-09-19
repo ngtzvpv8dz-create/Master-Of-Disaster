@@ -60,6 +60,16 @@ jobs:
                 !!document.querySelector('.undo-r') &&
                 !!document.querySelector('.icon-progress')
               ));
+              const todoPage=await browser.newPage({viewport:{width:390,height:844}});
+              await todoPage.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+              await todoPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/v2/todo.html?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              const todoReady=await todoPage.evaluate(()=>(
+                window.MOD2Data?.version==='2.0.6' &&
+                document.querySelectorAll('.todo-tab').length===9 &&
+                !!document.querySelector('#newTaskButton') &&
+                !!document.querySelector('#titleSuggestions')
+              ));
+              out.v2Home=out.v2Home&&todoReady;
               const page=await browser.newPage({viewport:{width:390,height:844}});
               await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
               let metrics=null;

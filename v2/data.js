@@ -43,7 +43,7 @@ function cleanNumber(v,fallback=null){
 function toView(local,cloud=null){
   const row=cloud||{};
   return {
-    id:row.id||null,
+    id:row.id||('legacy-'+String(local.id)),
     legacy_task_id:cleanNumber(local.id,row.legacy_task_id??null),
     text:String(local.text??row.text??''),
     status:String(local.status??row.status??'open'),
