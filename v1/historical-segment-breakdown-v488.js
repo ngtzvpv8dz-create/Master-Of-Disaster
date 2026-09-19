@@ -1,0 +1,228 @@
+/* V488 · HISTORISCHE + SEGMENTIERTE AKTIVZEIT TRANSPARENT DARSTELLEN */
+(function(){
+  'use strict';
+
+  const BUILD_VERSION='V488';
+  const baseRefreshSegmentTotal=window.refreshSegmentTotalV443;
+
+  const style=document.createElement('style');
+  style.textContent=`
+    .historical-segment-duration-v488{display:flex!important;flex-direction:column;gap:3px;align-items:flex-start}
+    .historical-segment-duration-v488 .v488-main,
+    .historical-segment-duration-v488 .v488-sub,
+    .historical-segment-duration-v488 .v488-pause{font-size:8.5px!important;line-height:1.15}
+    .historical-segment-duration-v488 .v488-main{font-weight:800}
+    .historical-segment-duration-v488 .v488-sub{opacity:.78;letter-spacing:.035em}
+    .historical-segment-duration-v488 .v488-pause{opacity:.62;letter-spacing:.03em}
+    .segment-total-v443.v488-breakdown{display:flex;flex-direction:column;gap:4px}
+    .segment-total-v443.v488-breakdown .v488-total{font-weight:900}
+    .segment-total-v443.v488-breakdown .v488-pause{opacity:.72;font-size:.82em}
+  `;
+  document.head.appendChild(style);
+
+  function historicalMs(task){
+    return Math.max(0,Number(task&&task.importedHistoricalProgressDurationMs)||0);
+  }
+
+  function validSegments(taskOrSegments){
+    const segments=Array.isArray(taskOrSegments)
+      ? taskOrSegments
+      : Array.isArray(taskOrSegments&&taskOrSegments.activeSegments)
+        ? taskOrSegments.activeSegments
+        : [];
+    return segments
+      .filter(segment=>segment&&segment.startedAt)
+      .map(segment=>({startedAt:segment.startedAt,endedAt:segment.endedAt||null}))
+      .sort((a,b)=>new Date(a.startedAt).getTime()-new Date(b.startedAt).getTime());
+  }
+
+  function storedKnownTotalMs(task){
+    if(!task)return null;
+    const candidates=[];
+    if(task.type==='leisure')candidates.push(task.leisureDurationMs);
+    if(task.type==='cooking')candidates.push(task.cookingActiveDurationMs);
+    candidates.push(task.activeDurationMs,task.actualDurationMs);
+    for(const value of candidates){
+      if(value===null||typeof value==='undefined'||value==='')continue;
+      const n=Number(value);
+      if(Number.isFinite(n)&&n>=0)return n;
+    }
+    return null;
+  }
+
+  function segmentMetrics(task,segmentsInput=null,nowMs=Date.now()){
+    const segments=validSegments(segmentsInput||task);
+    let activeMs=0;
+    let gapMs=0;
+    let previousEnd=null;
+
+    for(const segment of segments){
+      const start=new Date(segment.startedAt).getTime();
+      if(!Number.isFinite(start))continue;
+
+      if(previousEnd!==null&&start>previousEnd){
+        gapMs+=start-previousEnd;
+      }
+
+      let end=null;
+      if(segment.endedAt){
+        const parsed=new Date(segment.endedAt).getTime();
+        if(Number.isFinite(parsed))end=parsed;
+      }else if(task&&task.status==='running'){
+        end=nowMs;
+      }
+
+      if(end!==null&&end>=start){
+        activeMs+=end-start;
+        previousEnd=end;
+      }else{
+        previousEnd=null;
+      }
+    }
+
+    const history=historicalMs(task);
+
+    /*
+      V493: Bei Altaufgaben ohne moderne activeSegments ist nur die
+      gespeicherte bekannte Dauer belastbar. Keine Wandzeit aus alten
+      startedAt/pausedAt-Werten hochrechnen und keine fehlenden Daten erfinden.
+      Der gespeicherte Altwert ist die bekannte Gesamt-Aktivzeit; der
+      Vor-App-Anteil wird für die Anzeige davon abgezogen.
+    */
+    if(!segments.length&&history>0&&task){
+      const stored=storedKnownTotalMs(task);
+      const knownTotal=stored===null?history:Math.max(history,stored);
+      activeMs=Math.max(0,knownTotal-history);
+    }
+
+    return {
+      activeMs,
+      gapMs,
+      historicalMs:history,
+      totalActiveMs:activeMs+history,
+      segmentCount:segments.length
+    };
+  }
+
+  function breakdownHtml(metrics){
+    return `
+      <span class="v488-main">SEIT APP AKTIV · ${formatDuration(metrics.activeMs)}</span>
+      <span class="v488-sub">+ VOR APP AKTIV · ${formatDuration(metrics.historicalMs)}</span>
+      <span class="v488-sub">= GESAMT AKTIV · ${formatDuration(metrics.totalActiveMs)}</span>
+    `;
+  }
+
+  function preserveNestedWeightHtml(el){
+    const row=el?.querySelector?.('.v490-overall-weight,.v491-overall-weight');
+    return row?row.outerHTML:'';
+  }
+
+  function restoreNestedWeight(el,html){
+    if(!el||!html)return false;
+    const total=[...el.querySelectorAll('.v488-sub')].find(node=>/^=\s*GESAMT AKTIV/i.test(String(node.textContent||'').trim()));
+    if(!total)return false;
+    total.insertAdjacentHTML('afterend',html);
+    return true;
+  }
+
+  function patchVisibleCards(){
+    if(typeof getTask!=='function'||typeof formatDuration!=='function')return 0;
+    let patched=0;
+    document.querySelectorAll('.duration[data-task-id][data-live-kind="work"],.duration.historical-segment-duration-v488[data-task-id],.duration[data-task-id]').forEach(el=>{
+      const id=Number(el.dataset.taskId);
+      const task=getTask(id);
+      if(!task)return;
+      const history=historicalMs(task);
+      if(!(history>0))return;
+      const segments=validSegments(task);
+      const metrics=segmentMetrics(task,segments,Date.now());
+      el.classList.remove('live-duration');
+      el.classList.add('historical-segment-duration-v488');
+      el.removeAttribute('data-live-kind');
+      el.dataset.v488Breakdown='true';
+      el.dataset.v493ActiveSource='true';
+      const signature=`${Math.floor(metrics.activeMs/1000)}|${Math.floor(metrics.historicalMs/1000)}|${Math.floor(metrics.totalActiveMs/1000)}`;
+      if(el.dataset.v488Signature!==signature){
+        const nested=preserveNestedWeightHtml(el);
+        el.innerHTML=breakdownHtml(metrics);
+        restoreNestedWeight(el,nested);
+        el.dataset.v488Signature=signature;
+      }
+      patched+=1;
+    });
+    return patched;
+  }
+
+  function readEditorSegments(){
+    try{
+      if(typeof window.readSegmentsFromDomV443==='function'){
+        return window.readSegmentsFromDomV443(false)||[];
+      }
+    }catch(_){ }
+    return Array.isArray(window.__manualSegmentsV443&&window.__manualSegmentsV443.segments)
+      ? window.__manualSegmentsV443.segments
+      : [];
+  }
+
+  window.refreshSegmentTotalV443=function(){
+    const state=window.__manualSegmentsV443;
+    if(!state||state.isCookingV460){
+      return typeof baseRefreshSegmentTotal==='function'
+        ? baseRefreshSegmentTotal.apply(this,arguments)
+        : undefined;
+    }
+
+    const task=typeof getTask==='function'?getTask(state.taskId):null;
+    const history=historicalMs(task);
+    if(!(history>0)){
+      return typeof baseRefreshSegmentTotal==='function'
+        ? baseRefreshSegmentTotal.apply(this,arguments)
+        : undefined;
+    }
+
+    const segments=readEditorSegments();
+    const metrics=segmentMetrics(task,segments,Date.now());
+    const el=document.getElementById('segmentTotalV443');
+    if(!el)return;
+    el.classList.add('v488-breakdown');
+    el.innerHTML=`
+      <span>SEIT APP AKTIV · ${formatDuration(metrics.activeMs)}</span>
+      <span>VOR APP AKTIV · ${formatDuration(metrics.historicalMs)}</span>
+      <span class="v488-total">GESAMT AKTIV · ${formatDuration(metrics.totalActiveMs)}</span>
+      ${metrics.gapMs>0?`<span class="v488-pause">PAUSEN ZWISCHEN SEGMENTEN · ${formatDuration(metrics.gapMs)} · NICHT ENTHALTEN</span>`:''}
+    `;
+  };
+
+  const baseRender=window.render;
+  if(typeof baseRender==='function'){
+    window.render=function(){
+      const result=baseRender.apply(this,arguments);
+      patchVisibleCards();
+      return result;
+    };
+  }
+
+  window.addEventListener('load',()=>setTimeout(patchVisibleCards,0));
+  setInterval(patchVisibleCards,1000);
+  setTimeout(patchVisibleCards,0);
+
+  window.__modHistoricalSegmentBreakdownV488={
+    version:BUILD_VERSION,
+    historicalMs,
+    storedKnownTotalMs,
+    segmentMetrics,
+    patchVisibleCards,
+    pausesExcludedFromSegmentActive:true,
+    historicalProgressPreserved:true,
+    legacyLiveTickerDetached:true,
+    editorShowsBreakdown:true,
+    cardShowsBreakdown:true,
+    cardBreakdownFontPx:8.5,
+    cardPauseLineRemoved:true,
+    nestedWeightPreservedOnTicker:true,
+    unchangedCardsDoNotRewriteDom:true,
+    activeSourceLabelsV493:true,
+    historicalOnlyBreakdownV493:true,
+    historicalOnlyUsesStoredTotalV493:true
+  };
+})();

@@ -1,0 +1,42 @@
+name: V516 Hub Icon Buttons
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  hub-icon-buttons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: V516 compatibility baseline
+        run: |
+          node --check app-hub-icon-buttons-v516.js
+          node --check build-version-v516.js
+          node --check running-task-render-stability-v505.js
+          node --check sw.js
+          test -f apple-touch-icon.png
+          test -f sport-icon-v516.webp
+          grep -q "todo:'./apple-touch-icon.png?v=516-1155'" app-hub-icon-buttons-v516.js
+          grep -q "sport:'./sport-icon-v516.webp?v=516-1155'" app-hub-icon-buttons-v516.js
+          grep -q 'app-hub-icon-buttons-v516.css?v=516-1155' running-task-render-stability-v505.js
+          grep -q 'app-hub-icon-buttons-v516.js?v=516-1155' running-task-render-stability-v505.js
+          grep -q 'build-version-v516.js?v=516-1155' running-task-render-stability-v505.js
+          grep -q 'primaryAreaIconsBundled:true' running-task-render-stability-v505.js
+          grep -q 'apple-touch-icon.png' sw.js
+          grep -q 'sport-icon-v516.webp' sw.js
+      - name: Visual ownership
+        run: |
+          if [ -f app-hub-launcher-v517.js ]; then
+            echo 'V517 supersedes the V516 card DOM. Final launcher UI and navigation are covered by the V517 browser regression.'
+            grep -q 'window.__modHubIconButtonsV516' app-hub-icon-buttons-v516.js
+            grep -q 'sportHealthHookPreserved:true' app-hub-launcher-v517.js
+            exit 0
+          fi
+          echo 'V517 is absent; V516 visual ownership expected.'
+          grep -q 'master-of-disaster-v516-hub-icon-buttons' sw.js

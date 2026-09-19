@@ -1,0 +1,222 @@
+/* V556 · STATIC SURFACE BRAND MARK
+   Rein optischer Bereichsmarker im MASTER-Schriftzug.
+   Keine Klick-, Toggle- oder Navigationsfunktion.
+*/
+
+.sport-switch-v510.mod-surface-mark-v556{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  position:relative!important;
+  min-width:.72em!important;
+  margin:0 -.04em!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  color:inherit!important;
+  font:inherit!important;
+  font-weight:950!important;
+  line-height:1!important;
+  letter-spacing:inherit!important;
+  vertical-align:baseline!important;
+  cursor:default!important;
+  pointer-events:none!important;
+  text-shadow:none!important;
+  transform:none;
+}
+
+.mod-surface-mark-glyph-v556{
+  display:inline-block;
+  min-width:.62em;
+  text-align:center;
+}
+
+/* HOMESCREEN · prismatischer Zentralen-Look */
+body.mod-app-hub-v515 .mod-surface-mark-glyph-v556{
+  color:transparent!important;
+  background:linear-gradient(135deg,#ff9d45 5%,#ec4ba3 38%,#8d66ff 63%,#62e7ee 96%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  filter:
+    drop-shadow(0 0 5px rgba(236,75,163,.30))
+    drop-shadow(0 0 11px rgba(98,231,238,.18));
+}
+
+/* TO-DO · warmer Fokus passend zum orangefarbenen Theme */
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510):not(.mod-backstage-v530)
+.mod-surface-mark-glyph-v556{
+  color:#ffad63!important;
+  text-shadow:0 0 7px rgba(242,154,74,.45),0 0 18px rgba(242,154,74,.18)!important;
+}
+
+/* SPORT · cyanfarbener Neon-Impuls */
+body.mod-sport-mode-v510 .mod-surface-mark-glyph-v556{
+  color:#6fe4ea!important;
+  text-shadow:0 0 8px rgba(111,228,234,.68),0 0 23px rgba(40,127,209,.36)!important;
+}
+
+/* FOOD · ruhiges Blattgrün */
+body.mod-food-v544 .mod-surface-mark-glyph-v556{
+  color:#477b52!important;
+  text-shadow:0 0 8px rgba(71,123,82,.26)!important;
+}
+
+/* KISTOLOGY · Magenta-Inventarmarker mit kantigem Rahmen */
+body.mod-kistology-v535 .sport-switch-v510.mod-surface-mark-v556{
+  min-width:.79em!important;
+  height:.84em!important;
+  margin:0 -.01em!important;
+  border:1px solid rgba(255,76,168,.42)!important;
+  border-radius:.07em!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.025),
+    0 0 12px rgba(236,43,140,.13)!important;
+}
+body.mod-kistology-v535 .mod-surface-mark-glyph-v556{
+  color:#ff4ca8!important;
+  text-shadow:0 0 8px rgba(236,43,140,.46)!important;
+}
+
+/* BACKSTAGE · Maschinenraum-Gold mit technischer Klammer */
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556{
+  min-width:.84em!important;
+  margin:0 -.01em!important;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::before,
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
+  position:absolute;
+  top:50%;
+  color:rgba(224,186,98,.58);
+  font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  font-size:.46em;
+  line-height:1;
+  transform:translateY(-50%);
+  text-shadow:none;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::before{
+  content:"[";
+  left:-.08em;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
+  content:"]";
+  right:-.08em;
+}
+body.mod-backstage-v530 .mod-surface-mark-glyph-v556{
+  color:#ffd77a!important;
+  text-shadow:0 0 7px rgba(255,215,122,.45),0 0 17px rgba(224,186,98,.16)!important;
+}
+
+/* FINANZEN · aus MASTER wird MA$TER */
+body.mod-finance-v552 .mod-surface-mark-glyph-v556{
+  display:none!important;
+}
+body.mod-finance-v552 .sport-switch-v510.mod-surface-mark-v556::before{
+  content:"$";
+  display:inline-block;
+  min-width:.62em;
+  text-align:center;
+  color:#70ffb4;
+  font:inherit;
+  font-weight:950;
+  line-height:1;
+  text-shadow:0 0 7px rgba(112,255,180,.78),0 0 22px rgba(45,217,128,.36);
+}
+
+/* Die frühere Sport-Umschalt-Erklärung wäre jetzt sachlich falsch. */
+body.mod-sport-mode-v510 .sport-mode-hint-v510{
+  display:none!important;
+}
+
+/* FINANZEN · Header in derselben Börsen-/Terminalsprache wie MONEY DESK */
+html body.mod-finance-v552 #appFixedTopV475,
+html body.mod-finance-v552 #appFixedTopV475::before{
+  background:#050908!important;
+  background-image:
+    linear-gradient(90deg,rgba(112,255,180,.025) 1px,transparent 1px)!important;
+  background-size:22px 100%!important;
+  border-color:rgba(112,255,180,.15)!important;
+  box-shadow:none!important;
+}
+html body.mod-finance-v552 #appFixedTopV475 .header{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+  color:#eafff3!important;
+  font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace!important;
+  font-weight:850!important;
+  letter-spacing:-.055em!important;
+  text-shadow:0 0 18px rgba(112,255,180,.12)!important;
+  transform:scaleX(.94)!important;
+  transform-origin:center!important;
+}
+html body.mod-finance-v552 #appFixedTopV475 .mod-home-button-v525{
+  color:#70ffb4!important;
+  filter:drop-shadow(0 0 7px rgba(112,255,180,.28))!important;
+}
+
+/* FINANZEN · aufgeklappte Ebenen deutlicher als echte Unterebene */
+.finance-transaction-detail-v554,
+.finance-category-detail-v554{
+  position:relative!important;
+  margin:0 10px 12px 20px!important;
+  overflow:hidden!important;
+  border:1px solid rgba(112,255,180,.19)!important;
+  border-left:4px solid rgba(112,255,180,.58)!important;
+  border-radius:0 0 7px 7px!important;
+  background:
+    linear-gradient(90deg,rgba(112,255,180,.065),rgba(112,255,180,.015) 46%,transparent 100%),
+    rgba(2,9,6,.82)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 8px 19px rgba(0,0,0,.18)!important;
+}
+.finance-category-detail-v554{
+  border-left-color:rgba(112,255,180,.46)!important;
+}
+.finance-detail-row-v554,
+.finance-category-detail-row-v554{
+  padding-top:12px!important;
+  padding-bottom:12px!important;
+}
+.finance-detail-row-v554:hover,
+.finance-category-detail-row-v554:hover{
+  background:rgba(112,255,180,.025)!important;
+}
+.finance-detail-main-v554 strong,
+.finance-category-detail-row-v554 strong{
+  font-size:11.5px!important;
+}
+.finance-detail-main-v554>span,
+.finance-category-detail-row-v554 span{
+  color:rgba(214,255,228,.54)!important;
+}
+.finance-detail-footer-v554{
+  padding:9px 13px 10px 16px!important;
+  background:rgba(112,255,180,.025)!important;
+  border-top:1px solid rgba(112,255,180,.08)!important;
+  color:rgba(214,255,228,.52)!important;
+}
+
+@media(max-width:700px){
+  html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+    transform:scaleX(.90)!important;
+    letter-spacing:-.065em!important;
+  }
+  .finance-transaction-detail-v554,
+  .finance-category-detail-v554{
+    margin:0 6px 10px 11px!important;
+    border-left-width:3px!important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .sport-switch-v510.mod-surface-mark-v556,
+  .mod-surface-mark-glyph-v556{
+    transition:none!important;
+    animation:none!important;
+  }
+}

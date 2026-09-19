@@ -1,0 +1,65 @@
+name: V506.3 Backup Source Fallback
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  source-fallback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax and wiring
+        run: |
+          node --check backup-source-fallback-v506.js
+          grep -q "backup-source-fallback-v506.js?v=506-1244" index.html
+          grep -q "patchRevision:PATCH_VERSION" backup-source-fallback-v506.js
+          grep -q "codeloadBypassed:true" backup-source-fallback-v506.js
+          grep -q "rawGithubFileFallback:true" backup-source-fallback-v506.js
+          grep -q "sourceArchiveStoreZip:true" backup-source-fallback-v506.js
+      - name: Browser source fallback
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v5063-http.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            let codeloadNetworkHits=0;
+            await page.route('https://api.github.com/repos/ngtzvpv8dz-create/Master-Of-Disaster/git/trees/main?recursive=1',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sha:'fixture-tree',truncated:false,tree:[{type:'blob',path:'alpha.txt'},{type:'blob',path:'dir/beta.js'}]})}));
+            await page.route('https://raw.githubusercontent.com/ngtzvpv8dz-create/Master-Of-Disaster/main/alpha.txt',route=>route.fulfill({status:200,body:'ALPHA'}));
+            await page.route('https://raw.githubusercontent.com/ngtzvpv8dz-create/Master-Of-Disaster/main/dir/beta.js',route=>route.fulfill({status:200,body:'console.log("BETA")'}));
+            await page.route('https://codeload.github.com/ngtzvpv8dz-create/Master-Of-Disaster/zip/refs/heads/main',route=>{codeloadNetworkHits++;route.abort();});
+            await page.route('**/*.supabase.co/**',route=>route.abort());
+            await page.goto('http://127.0.0.1:8787/?reg=1&v5063='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',{timeout:30000});
+            const result=await page.evaluate(async()=>{
+              const mod=window.__modBackupSourceFallbackV506;
+              if(!mod.verify())throw new Error('V506.3 verify failed');
+              const res=await fetch('https://codeload.github.com/ngtzvpv8dz-create/Master-Of-Disaster/zip/refs/heads/main',{cache:'no-store'});
+              if(!res.ok)throw new Error('Fallback response not OK');
+              const zip=await JSZip.loadAsync(await res.blob());
+              return {
+                patch:mod.patchRevision,
+                header:res.headers.get('X-MOD-Source-Fallback'),
+                alpha:await zip.file('alpha.txt').async('text'),
+                beta:await zip.file('dir/beta.js').async('text'),
+                names:Object.keys(zip.files)
+              };
+            });
+            if(codeloadNetworkHits!==0)throw new Error('Native codeload request escaped fallback: '+codeloadNetworkHits);
+            if(result.patch!=='V506.3'||result.header!=='V506.3'||result.alpha!=='ALPHA'||!result.beta.includes('BETA')||!result.names.includes('dir/beta.js')){
+              throw new Error('V506.3 source fallback regression '+JSON.stringify(result));
+            }
+            console.log('V506.3 source fallback PASS',result);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE

@@ -1,0 +1,153 @@
+name: V507 Task Title Library
+on:
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  task-title-library:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax, wiring and backup isolation
+        run: |
+          node --check task-title-library-v507.js
+          grep -q 'task-title-library-v507.js?v=507-1345' index.html
+          grep -q 'data-tab="titles"' index.html
+          grep -q 'task-title-library-v507.js' sw.js
+          grep -q 'backup-source-fallback-v506.js' sw.js
+          grep -q 'emptyFocusShowsAllOpen:true' task-title-library-v507.js
+          grep -q 'knownOnlySuggestions:true' task-title-library-v507.js
+          grep -q 'knownCategoryAutoSelect:true' task-title-library-v507.js
+          grep -q 'manualHistoricalMerge:true' task-title-library-v507.js
+          grep -q 'archivedTitlesRenamedOnMerge:true' task-title-library-v507.js
+          changed="$(git diff --name-only origin/main...HEAD)"
+          printf '%s\n' "$changed"
+          if printf '%s\n' "$changed" | grep -Eq '^(backup-stability-v506\.js|backup-source-fallback-v506\.js|history-safety-net-v498\.js)$'; then
+            echo 'V507 must not modify the working backup modules'
+            exit 1
+          fi
+      - name: Browser task-title behavior
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v507-http.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?v507='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modTaskTitleLibraryV507&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',{timeout:30000});
+
+            await page.evaluate(()=>{
+              localStorage.removeItem('masterOfDisasterTaskTitlePrefsV507');
+              localStorage.setItem('masterOfDisasterCategoriesV405',JSON.stringify(['Haus','Putzen']));
+              localStorage.setItem('masterOfDisasterCategoryNameMapV405',JSON.stringify({
+                'arbeitsflächen abwischen':'Putzen',
+                'arbeitsflächen reinigen':'Putzen'
+              }));
+              tasks=[
+                {id:50701,text:'Zulu offen',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,category:'Haus'},
+                {id:50702,text:'Alpha offen',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,category:'Haus'},
+                {id:50703,text:'Arbeitsflächen abwischen',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,category:'Putzen'}
+              ];
+              archive=[
+                {archiveNumber:50701,archiveId:'A-50701',text:'Arbeitsflächen reinigen',type:'work',status:'completed',category:'Putzen',completedDate:'2026-08-29'},
+                {archiveNumber:50702,archiveId:'A-50702',text:'Arbeitsflächen abwischen',type:'work',status:'completed',category:'Putzen',completedDate:'2026-08-28'},
+                {archiveNumber:50703,archiveId:'A-50703',text:'Nur historisch',type:'work',status:'completed',category:'Haus',completedDate:'2026-08-27'}
+              ];
+              saveTasks();saveArchive();switchTab('all');render();
+            });
+            await page.waitForTimeout(300);
+
+            const empty=await page.evaluate(()=>{
+              const input=document.getElementById('taskInput');input.value='';window.renderTaskSuggestions();
+              return [...document.querySelectorAll('#taskSuggestions .v507-task-suggestion .task-suggestion-name')].map(node=>node.textContent.trim());
+            });
+            const expectedEmpty=['Alpha offen','Arbeitsflächen abwischen','Zulu offen'];
+            if(JSON.stringify(empty)!==JSON.stringify(expectedEmpty))throw new Error('V507 empty/open suggestion order regression '+JSON.stringify(empty));
+
+            const typed=await page.evaluate(()=>{
+              const input=document.getElementById('taskInput');input.value='Arbeits';window.renderTaskSuggestions();
+              return [...document.querySelectorAll('#taskSuggestions .v507-task-suggestion')].map(button=>({
+                name:button.querySelector('.task-suggestion-name')?.textContent.trim(),
+                meta:button.querySelector('.task-suggestion-meta')?.textContent.trim()
+              }));
+            });
+            if(typed.length!==2||typed[0].name!=='Arbeitsflächen abwischen'||typed[1].name!=='Arbeitsflächen reinigen'||!typed[0].meta.includes('2× BISHER')||!typed[1].meta.includes('1× BISHER'))throw new Error('V507 known-only typed suggestions regression '+JSON.stringify(typed));
+
+            const category=await page.evaluate(()=>{
+              window.selectTaskSuggestion(encodeURIComponent('Arbeitsflächen abwischen'));
+              return {value:document.getElementById('newCategoryV412')?.value,pending:window.__modPendingSuggestionCategory};
+            });
+            if(category.value!=='Putzen'||category.pending!=='Putzen')throw new Error('V507 category auto-select regression '+JSON.stringify(category));
+
+            const hidden=await page.evaluate(()=>{
+              const api=window.__modTaskTitleLibraryV507;
+              api.setHidden('Arbeitsflächen reinigen',true);
+              document.getElementById('taskInput').value='Arbeits';window.renderTaskSuggestions();
+              const names=[...document.querySelectorAll('#taskSuggestions .v507-task-suggestion .task-suggestion-name')].map(node=>node.textContent.trim());
+              return {hidden:api.isHidden('Arbeitsflächen reinigen'),names};
+            });
+            if(!hidden.hidden||hidden.names.includes('Arbeitsflächen reinigen'))throw new Error('V507 suggestion hide regression '+JSON.stringify(hidden));
+
+            const merged=await page.evaluate(()=>{
+              const api=window.__modTaskTitleLibraryV507;
+              const result=api.mergeTitles('Arbeitsflächen reinigen','Arbeitsflächen abwischen');
+              const group=api.collectTitleGroups().find(row=>row.name==='Arbeitsflächen abwischen');
+              const map=JSON.parse(localStorage.getItem('masterOfDisasterCategoryNameMapV405')||'{}');
+              return {
+                result,
+                groupCount:group?.count,
+                sourceStillInArchive:(archive||[]).some(row=>row.text==='Arbeitsflächen reinigen'),
+                targetArchiveCount:(archive||[]).filter(row=>row.text==='Arbeitsflächen abwischen').length,
+                sourceMap:Object.prototype.hasOwnProperty.call(map,'arbeitsflächen reinigen'),
+                targetMap:map['arbeitsflächen abwischen']
+              };
+            });
+            if(merged.result.total!==1||merged.groupCount!==3||merged.sourceStillInArchive||merged.targetArchiveCount!==2||merged.sourceMap||merged.targetMap!=='Putzen')throw new Error('V507 historical merge regression '+JSON.stringify(merged));
+
+            const manager=await page.evaluate(()=>{
+              switchTab('titles');render();
+              return {
+                tab:typeof currentTab==='string'?currentTab:null,
+                page:!!document.querySelector('.v507-title-page'),
+                rows:document.querySelectorAll('[data-v507-title-row]').length,
+                panel:document.getElementById('inputPanel')?.style.display,
+                text:document.getElementById('viewContainer')?.textContent||''
+              };
+            });
+            if(manager.tab!=='titles'||!manager.page||manager.rows<4||manager.panel!=='none'||!manager.text.includes('AUFGABENTITEL'))throw new Error('V507 title manager regression '+JSON.stringify(manager));
+
+            const categoryOrder=await page.evaluate(()=>{
+              currentTab='all';
+              const root=document.getElementById('viewContainer');
+              root.innerHTML='<select id="categoryFilterV412"><option value="all">ALLE</option><option value="">OHNE KATEGORIE</option><option value="Zoo">ZOO</option><option value="Alpha">ALPHA</option></select><div class="task-category-group-v473" data-v473-category="Zoo"></div><div class="task-category-group-v473" data-v473-category="OHNE KATEGORIE"></div><div class="task-category-group-v473" data-v473-category="Alpha"></div>';
+              window.__modTaskTitleLibraryV507.fixAllCategoryOrder();
+              return {
+                groups:[...root.children].filter(node=>node.classList?.contains('task-category-group-v473')).map(node=>node.dataset.v473Category),
+                options:[...document.getElementById('categoryFilterV412').options].map(option=>option.value)
+              };
+            });
+            if(JSON.stringify(categoryOrder.groups)!==JSON.stringify(['Alpha','Zoo','OHNE KATEGORIE'])||categoryOrder.options.at(-1)!=='')throw new Error('V507 uncategorized-last regression '+JSON.stringify(categoryOrder));
+
+            const preserved=await page.evaluate(()=>({
+              v507:window.__modTaskTitleLibraryV507.verify(),
+              backup:window.__modBackupStabilityV506?.verify?.()===true,
+              source:window.__modBackupSourceFallbackV506?.verify?.()===true,
+              sourcePatch:window.__modBackupSourceFallbackV506?.patchRevision
+            }));
+            if(!preserved.v507||!preserved.backup||!preserved.source||preserved.sourcePatch!=='V506.3')throw new Error('V507 backup preservation regression '+JSON.stringify(preserved));
+
+            console.log('V507 task-title library PASS',{empty,typed,category,hidden,merged,manager,categoryOrder,preserved});
+            await browser.close();
+          })().catch(error=>{console.error(error);process.exit(1)});
+          NODE

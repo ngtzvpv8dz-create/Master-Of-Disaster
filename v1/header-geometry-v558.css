@@ -1,0 +1,83 @@
+/* V558 · HEADER GEOMETRY CORRECTION
+   Korrigiert ausschließlich die sichtbare Header-Geometrie.
+   Keine Navigation, kein Runtime-JavaScript.
+*/
+
+/* HOME-Icon bleibt in allen Bereichen neutral und übernimmt nur die Headerfarbe. */
+html body .mod-brand-title-v525 .mod-home-button-v525{
+  color:inherit!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
+
+/* KISTOLOGY
+   Das S selbst bleibt in Normalbreite. Der Rahmen liegt kleiner innerhalb
+   desselben festen .72em-Slots und kann den Schriftzug nicht verbreitern. */
+body.mod-kistology-v535 .mod-surface-mark-glyph-v556{
+  transform:none!important;
+  transform-origin:center!important;
+}
+body.mod-kistology-v535 .sport-switch-v510.mod-surface-mark-v556::before{
+  inset:.06em .07em .03em .07em!important;
+  border-width:1px!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 0 7px rgba(236,43,140,.14)!important;
+}
+
+/* FINANZEN
+   Börsen-/Monospace-Schrift bleibt. Größe, Laufweite und Skalierung entsprechen
+   wieder exakt der normalen Header-Geometrie. */
+html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+  font-size:clamp(28px,8vw,42px)!important;
+  line-height:1!important;
+  letter-spacing:-1.5px!important;
+  transform:none!important;
+  transform-origin:center!important;
+}
+@media(max-width:700px){
+  html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+    font-size:clamp(28px,8vw,42px)!important;
+    letter-spacing:-1.5px!important;
+    transform:none!important;
+  }
+}
+
+/* BACKSTAGE
+   S wird rein optisch durch einen gelben Schraubenschlüssel ersetzt.
+   Das Werkzeug bleibt innerhalb desselben festen Zeichen-Slots. */
+body.mod-backstage-v530 .mod-surface-mark-glyph-v556{
+  display:none!important;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::before{
+  content:""!important;
+  position:relative!important;
+  display:inline-block!important;
+  left:auto!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:auto!important;
+  width:.60em!important;
+  height:.60em!important;
+  min-width:0!important;
+  min-height:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:#ffd77a!important;
+  box-shadow:none!important;
+  transform:none!important;
+  filter:drop-shadow(0 0 4px rgba(255,215,122,.58)) drop-shadow(0 0 9px rgba(224,186,98,.22))!important;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14.7 6.3a4 4 0 0 0-5 5L3.5 17.5a2.1 2.1 0 1 0 3 3l6.2-6.2a4 4 0 0 0 5-5l-2.5 2.5-3-1-1-3 2.5-2.5Z' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  -webkit-mask-repeat:no-repeat!important;
+  -webkit-mask-position:center!important;
+  -webkit-mask-size:contain!important;
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14.7 6.3a4 4 0 0 0-5 5L3.5 17.5a2.1 2.1 0 1 0 3 3l6.2-6.2a4 4 0 0 0 5-5l-2.5 2.5-3-1-1-3 2.5-2.5Z' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;
+  mask-repeat:no-repeat!important;
+  mask-position:center!important;
+  mask-size:contain!important;
+  pointer-events:none!important;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
+  content:none!important;
+  display:none!important;
+}

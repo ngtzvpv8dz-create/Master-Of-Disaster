@@ -1,0 +1,110 @@
+name: V512 Sport Tabs
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  sport-tabs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JavaScript syntax
+        run: |
+          node --check sport-tabs-v512.js
+          node --check build-version-v512.js
+          node --check running-task-render-stability-v505.js
+      - name: Browser tab and motion regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v512-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v512',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSportModeV510&&window.__modSportTabsV512&&window.__modSportHeaderCompatV511&&document.getElementById('sportSwitchV510'),null,{timeout:30000});
+            await page.waitForTimeout(900);
+
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-09';
+              tasks=[{id:51201,text:'V512 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              if(typeof render==='function')render();
+            });
+            await page.waitForTimeout(350);
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(750);
+            const ready=await page.evaluate(()=>({
+              mode:window.__modSportModeV510.currentMode(),
+              count:document.querySelectorAll('button[data-sport-tab-v512]').length,
+              html:document.getElementById('sportRootV510')?.innerHTML?.slice(0,700)||''
+            }));
+            if(ready.mode!=='sport'||ready.count!==4)throw new Error('V512 sport readiness '+JSON.stringify({ready,errors}));
+
+            const initial=await page.evaluate(()=>({
+              labels:[...document.querySelectorAll('button[data-sport-tab-v512]')].map(x=>x.textContent.trim()),
+              active:window.__modSportTabsV512.currentTab(),
+              panel:document.querySelector('[data-sport-panel-v512]')?.dataset.sportPanelV512,
+              duration:document.getElementById('sportDurationV510')?.textContent?.trim(),
+              hasR:!!document.querySelector('.mod-undo-r-v498'),
+              hasS:!!document.getElementById('sportSwitchV510'),
+              task:(tasks||[]).find(t=>t.id===51201)?.text,
+              build:window.__modBuildVersionV512?.version||window.__MOD_BUILD__?.version||null
+            }));
+            if(JSON.stringify(initial.labels)!==JSON.stringify(['FITX','X-TRAINING','AKTIVITÄTEN','STATISTIK'])||initial.active!=='fitx'||initial.panel!=='fitx'||initial.duration!=='2:33'||!initial.hasR||!initial.hasS||initial.task!=='V512 Bestandsschutz'||initial.build!=='V512')throw new Error('V512 initial '+JSON.stringify(initial));
+
+            async function clickTab(id){
+              await page.click(`button[data-sport-tab-v512="${id}"]`);
+              await page.waitForFunction(tab=>window.__modSportTabsV512.currentTab()===tab&&document.querySelector('[data-sport-panel-v512]')?.dataset.sportPanelV512===tab,id,{timeout:5000});
+              return page.evaluate(()=>({
+                active:window.__modSportTabsV512.currentTab(),
+                panel:document.querySelector('[data-sport-panel-v512]')?.dataset.sportPanelV512,
+                switchClass:document.getElementById('sportRootV510')?.classList.contains('sport-tab-switch-v512'),
+                panelAnimation:getComputedStyle(document.querySelector('[data-sport-panel-v512]')).animationName,
+                activeTransform:getComputedStyle(document.querySelector('button[data-sport-tab-v512].active')).transform,
+                task:(tasks||[]).find(t=>t.id===51201)?.text
+              }));
+            }
+
+            const x=await clickTab('xtraining');
+            const activities=await clickTab('activities');
+            const stats=await clickTab('statistics');
+            const fitx=await clickTab('fitx');
+            if(!x.switchClass||x.panelAnimation==='none'||x.task!=='V512 Bestandsschutz')throw new Error('V512 motion '+JSON.stringify(x));
+            for(const row of [activities,stats,fitx])if(row.task!=='V512 Bestandsschutz')throw new Error('V512 task mutation '+JSON.stringify(row));
+
+            await page.click('.mod-undo-r-v498');
+            await page.waitForSelector('#modSafetyNetModalV498',{state:'visible',timeout:10000});
+            await page.evaluate(()=>document.getElementById('modSafetyNetModalV498')?.remove());
+            await page.click('#sportSwitchV510');
+            await page.waitForTimeout(250);
+            const back=await page.evaluate(()=>({mode:window.__modSportModeV510.currentMode(),task:(tasks||[]).find(t=>t.id===51201)?.text}));
+            if(back.mode!=='todo'||back.task!=='V512 Bestandsschutz'||errors.length)throw new Error('V512 return '+JSON.stringify({back,errors}));
+            fs.writeFileSync('/tmp/v512-result.json',JSON.stringify({initial,x,activities,stats,fitx,back,errors},null,2));
+            console.log('V512 sport tabs PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v512-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v512-sport-tabs-diagnostics
+          path: |
+            /tmp/v512-result.json
+            /tmp/v512-error.txt
+            /tmp/mod-v512-http.log
+          if-no-files-found: ignore

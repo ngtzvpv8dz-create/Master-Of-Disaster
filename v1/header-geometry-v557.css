@@ -1,0 +1,120 @@
+/* V557 · HEADER GEOMETRY STABILITY
+   Stabilisiert den MASTER-OF-DISASTER-Schriftzug zwischen allen Oberflächen.
+   Rein visuell: keine Navigation und keine Bereichslogik.
+*/
+
+/* Ein Slot, eine Breite. Kein Bereich darf den S/$-Platz verbreitern. */
+.sport-switch-v510.mod-surface-mark-v556{
+  box-sizing:border-box!important;
+  flex:0 0 .72em!important;
+  width:.72em!important;
+  min-width:.72em!important;
+  max-width:.72em!important;
+  margin:0 -.04em!important;
+  padding:0!important;
+  border:0!important;
+  overflow:visible!important;
+  box-shadow:none!important;
+}
+
+/* Das Häuschen folgt nur der normalen Schriftfarbe. Keine Bereichsakzentfarbe. */
+html body .mod-brand-title-v525 .mod-home-button-v525{
+  color:inherit!important;
+  filter:none!important;
+  text-shadow:none!important;
+}
+
+/* KISTOLOGY: Rahmen liegt innerhalb des festen Slots und verändert keine Breite. */
+body.mod-kistology-v535 .sport-switch-v510.mod-surface-mark-v556{
+  height:auto!important;
+  margin:0 -.04em!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+body.mod-kistology-v535 .sport-switch-v510.mod-surface-mark-v556::before{
+  content:"";
+  position:absolute;
+  inset:.04em .01em .02em .01em;
+  box-sizing:border-box;
+  border:1px solid rgba(255,76,168,.46);
+  border-radius:.07em;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.025),
+    0 0 9px rgba(236,43,140,.15);
+  pointer-events:none;
+}
+body.mod-kistology-v535 .mod-surface-mark-glyph-v556{
+  transform:scaleX(.80);
+  transform-origin:center;
+}
+
+/* BACKSTAGE: keine Klammern mehr. Stattdessen ein kleiner technischer Signalstrich
+   und Statuspunkt, beide innerhalb desselben S-Slots. */
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556{
+  min-width:.72em!important;
+  width:.72em!important;
+  max-width:.72em!important;
+  margin:0 -.04em!important;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::before{
+  content:"";
+  position:absolute;
+  left:.09em;
+  right:.09em;
+  bottom:.02em;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,215,122,.88),transparent);
+  box-shadow:0 0 5px rgba(255,215,122,.30);
+  transform:none;
+  pointer-events:none;
+}
+body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
+  content:"";
+  position:absolute;
+  right:.05em;
+  top:.08em;
+  width:.075em;
+  height:.075em;
+  min-width:2px;
+  min-height:2px;
+  border-radius:50%;
+  background:#ffd77a;
+  box-shadow:0 0 6px rgba(255,215,122,.62);
+  transform:none;
+  pointer-events:none;
+}
+
+/* FINANZEN: gleiche sichtbare Größenordnung wie die übrigen Header.
+   Monospace bleibt, aber ohne die bisherige horizontale Schrumpfung. */
+html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+  font-size:clamp(30px,8.5vw,44px)!important;
+  line-height:1!important;
+  letter-spacing:.01em!important;
+  transform:scaleX(1.035)!important;
+  transform-origin:center!important;
+}
+
+/* Das Dollarzeichen belegt exakt denselben Slot wie das S. */
+body.mod-finance-v552 .sport-switch-v510.mod-surface-mark-v556::before{
+  width:.72em;
+  min-width:.72em;
+  max-width:.72em;
+  margin:0;
+  padding:0;
+  text-align:center;
+}
+
+/* FOOD behält nur das grüne S. Das Häuschen wurde oben neutralisiert. */
+body.mod-food-v544 .mod-surface-mark-glyph-v556{
+  color:#477b52!important;
+}
+
+/* Auf kleinen Geräten dieselbe Geometrie, keine zusätzliche Finance-Stauchung. */
+@media(max-width:700px){
+  html body.mod-finance-v552 #appFixedTopV475 .mod-brand-title-v525{
+    font-size:clamp(30px,8.5vw,44px)!important;
+    letter-spacing:.01em!important;
+    transform:scaleX(1.035)!important;
+  }
+}

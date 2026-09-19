@@ -1,0 +1,110 @@
+name: V534 Backstage Backup Consolidation
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  backstage-backup-consolidation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check backstage-v530.js
+          node --check backstage-backup-v534.js
+          node --check sw.js
+          test -f backstage-backup-v534.css
+          grep -q "backupConsolidation:'V534'" backstage-v530.js
+          grep -q 'backstage-backup-v534.css?v=534-backup-consolidation' backstage-v530.js
+          grep -q 'backstage-backup-v534.js?v=534-backup-consolidation' backstage-v530.js
+          grep -q '"./backstage-backup-v534.css"' sw.js
+          grep -q '"./backstage-backup-v534.js"' sw.js
+          grep -q "const VERSION='V534'" backstage-backup-v534.js
+          grep -q 'duplicateQuickFullBackupRemoved:true' backstage-backup-v534.js
+          grep -q 'fullBackupRemainsInBackupSector:true' backstage-backup-v534.js
+      - name: Browser Backstage consolidation regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v534-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?smoke=v534',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV531&&window.__modBackstageBackupV533&&window.__modBackstageBackupV534?.version==='V534',null,{timeout:30000});
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-11';
+              tasks=[{id:53401,text:'V534 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.__v534Calls={full:0};
+              const safety=window.__modRecoveryHistoryV498;
+              if(!safety)throw new Error('V498 safety API missing');
+              safety.createEnhancedFullBackup=async()=>{window.__v534Calls.full++;};
+              switchTab('all');
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modBackstageV531.patchLauncher();
+            });
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForTimeout(350);
+
+            const deck=await page.evaluate(()=>{
+              const root=document.getElementById('modBackstageV530');
+              const quick=root.querySelector('[data-backstage-action-v533="fullbackup"]');
+              const visible=[...root.querySelectorAll('.mod-backstage-tabs-v531 > button')].filter(b=>getComputedStyle(b).display!=='none');
+              return {
+                visibleCount:visible.length,
+                labels:visible.map(b=>b.querySelector('.mod-backstage-tab-label-v531')?.textContent.trim()),
+                indices:visible.map(b=>b.querySelector('.mod-backstage-tab-index-v531')?.textContent.trim()),
+                quickHidden:!!quick?.hidden,
+                quickDisplay:quick?getComputedStyle(quick).display:null,
+                task:(tasks||[]).find(t=>t.id===53401)?.text
+              };
+            });
+            if(deck.visibleCount!==5||JSON.stringify(deck.labels)!==JSON.stringify(['DEV','LOG','BACKUP','RESTORE','SYSTEM'])||JSON.stringify(deck.indices)!==JSON.stringify(['01','02','03','04','05'])||!deck.quickHidden||deck.quickDisplay!=='none'||deck.task!=='V534 Bestandsschutz')throw new Error('V534 deck '+JSON.stringify(deck));
+
+            await page.click('[data-backstage-section-v531="backup"]');
+            await page.waitForSelector('[data-backstage-backup-v533="true"]');
+            const backup=await page.evaluate(()=>({
+              fullCard:!!document.querySelector('[data-backup-card-v533="B01"]'),
+              fullAction:!!document.querySelector('[data-backup-action-v533="fullbackup"]'),
+              verify:window.__modBackstageBackupV534.verifyBackupSector(),
+              task:(tasks||[]).find(t=>t.id===53401)?.text
+            }));
+            if(!backup.fullCard||!backup.fullAction||!backup.verify||backup.task!=='V534 Bestandsschutz')throw new Error('V534 backup sector '+JSON.stringify(backup));
+            await page.click('[data-backup-action-v533="fullbackup"]');
+            await page.waitForTimeout(100);
+            const calls=await page.evaluate(()=>window.__v534Calls);
+            if(calls.full!==1)throw new Error('V534 fullbackup wiring '+JSON.stringify(calls));
+            if(errors.length)throw new Error('V534 page errors '+JSON.stringify(errors));
+
+            await page.screenshot({path:'/tmp/v534-backstage-backup.png',fullPage:true});
+            fs.writeFileSync('/tmp/v534-result.json',JSON.stringify({deck,backup,calls,errors},null,2));
+            console.log('V534 BACKSTAGE BACKUP CONSOLIDATION PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v534-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v534-backstage-backup-consolidation-diagnostics
+          path: |
+            /tmp/v534-backstage-backup.png
+            /tmp/v534-result.json
+            /tmp/v534-error.txt
+            /tmp/mod-v534-http.log
+          if-no-files-found: ignore

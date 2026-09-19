@@ -1,0 +1,163 @@
+name: Runtime Smoke
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax
+        run: |
+          node --check archive-weight-layout-v508.js
+          node --check task-title-library-v507.js
+          node --check backup-source-fallback-v506.js
+          node --check backup-stability-v506.js
+          node --check running-task-render-stability-v505.js
+          node --check build-freshness-v502.js
+          node --check today-action-order-v501.js
+          node --check meaningful-history-v500.js
+          node --check log-stability-v499.js
+          node --check history-safety-net-v498.js
+          node --check summary-weight-due-polish-v494.js
+          node --check backstage-v530.js
+          node --check app.js
+      - name: Resolve expected build
+        run: |
+          METRICS_OUTPUT=/tmp/runtime-expected.json node scripts/generate-development-metrics.mjs >/tmp/runtime-expected.log
+          EXPECTED_VERSION=$(node -e "const m=require('/tmp/runtime-expected.json');if(!/^V\d+$/.test(m.version||''))process.exit(1);process.stdout.write(m.version)")
+          echo "EXPECTED_VERSION=${EXPECTED_VERSION}" >> "$GITHUB_ENV"
+          echo "Testing ${EXPECTED_VERSION}"
+      - run: npm init -y >/dev/null 2>&1 && npm install playwright@1.48.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+      - name: Verify live current build
+        run: |
+          cat > smoke.js <<'JS'
+          const {chromium}=require('playwright'),fs=require('fs');
+          const expected=process.env.EXPECTED_VERSION;
+          const vn=v=>Number(String(v||'').match(/^V(\d+)$/i)?.[1]||0);
+          (async()=>{
+            const out={status:'FAIL',version:expected,live:false,metricsCurrent:false,bundle:false,devCurrent:false,actionOrder:false,todayMarkerBound:false,serviceWorker:false,preservedCore:false,backstage:false,errors:[]};
+            const browser=await chromium.launch({headless:true});
+            try{
+              const page=await browser.newPage({viewport:{width:390,height:844}});
+              await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+              let metrics=null;
+              for(let i=0;i<24;i++){
+                await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke=current-'+Date.now(),{waitUntil:'networkidle',timeout:60000});
+                const state=await page.evaluate(()=>({build:window.__MOD_BUILD__?.version||'',fresh:window.__modBuildFreshnessV502?.version||'',actions:window.__modTodayActionOrderV501?.version||''})).catch(()=>({}));
+                try{metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
+                if(vn(state.build)>=vn(expected)&&state.fresh==='V502'&&state.actions==='V501'&&vn(metrics?.version)>=vn(expected)){out.live=true;break;}
+                await page.waitForTimeout(10000);
+              }
+              if(!out.live)throw new Error(`Current build not deployed: expected ${expected}, metrics=${metrics?.version||'none'}`);
+              out.metricsCurrent=vn(metrics?.version)>=vn(expected)&&!!metrics?.sourceCommit&&metrics.sourceCommit!=='pending';
+
+              try{
+                await page.waitForFunction(()=>!!(
+                  window.__modBuildFreshnessV502&&
+                  window.__modTodayActionOrderV501&&
+                  window.__modMeaningfulHistoryV500&&
+                  window.__modLogStabilityV499&&
+                  window.__modRecoveryHistoryV498&&
+                  window.__modRunningTaskRenderStabilityV505&&
+                  window.__modBackupStabilityV506&&
+                  window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&
+                  window.__modTaskTitleLibraryV507&&
+                  window.__modArchiveWeightLayoutV508&&
+                  window.__modBackstageV530
+                ),undefined,{timeout:15000});
+              }catch(_){ }
+              const bundleState=await page.evaluate(()=>({
+                v502:!!window.__modBuildFreshnessV502,
+                v501:!!window.__modTodayActionOrderV501,
+                v500:!!window.__modMeaningfulHistoryV500,
+                v499:!!window.__modLogStabilityV499,
+                v498:!!window.__modRecoveryHistoryV498,
+                v505:!!window.__modRunningTaskRenderStabilityV505,
+                v505Verified:window.__modRunningTaskRenderStabilityV505?.verify?.()===true,
+                v506:!!window.__modBackupStabilityV506,
+                v506Verified:window.__modBackupStabilityV506?.verify?.()===true,
+                v506Source:window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',
+                v506SourceVerified:window.__modBackupSourceFallbackV506?.verify?.()===true,
+                v507:window.__modTaskTitleLibraryV507?.version==='V507',
+                v507Verified:window.__modTaskTitleLibraryV507?.verify?.()===true,
+                v508:window.__modArchiveWeightLayoutV508?.version==='V508',
+                v508Verified:window.__modArchiveWeightLayoutV508?.verify?.()===true,
+                backstage:(()=>{const v=String(window.__modBackstageV530?.version||'');return /^V\d+$/.test(v)&&Number(v.slice(1))>=530;})()
+              }));
+              console.log('Runtime bundle readiness',bundleState);
+              out.bundle=Object.values(bundleState).every(Boolean);
+              out.preservedCore=await page.evaluate(()=>!!(window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTaskCardRailPolishV492&&window.__modUiCardStabilityV491&&window.__modNestedTaskWeightLayoutV490&&window.__modTaskTimeWeightDetailsV489&&window.__modHistoricalSegmentBreakdownV488&&window.__modTodayWorkBlocksV474));
+
+              await page.evaluate(()=>window.__modBackstageV530.open({section:'dev'}));
+              await page.waitForTimeout(600);
+              out.backstage=await page.evaluate(()=>document.body.classList.contains('mod-backstage-v530')&&document.body.dataset.modAppSurfaceV515==='backstage'&&window.__modBackstageV530?.activeSection==='dev');
+              out.devCurrent=await page.evaluate(expected=>{
+                const card=document.querySelector('.dev-build-card');if(!card)return false;
+                const values={};card.querySelectorAll('.dev-build-item').forEach(item=>{const k=(item.querySelector('.dev-build-label')?.textContent||'').trim().toUpperCase();values[k]=(item.querySelector('.dev-build-value')?.textContent||'').trim();});
+                return values.VERSION===expected&&/^\d{2}\.\d{2}\.\d{4}\s·\s\d{2}:\d{2}\sUhr$/.test(values.BUILD||'')&&card.dataset.v502FreshBuild==='true';
+              },expected);
+
+              await page.evaluate(()=>{
+                window.__modBackstageV530.close({restoreTodo:true});
+                const day=getBerlinDateKey();
+                tasks=[
+                  {id:50201,text:'V502 Normal',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[],pauseTotalMs:0},
+                  {id:50202,text:'V502 Selbstläufer',type:'selfrunner',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,activeSegments:[],pauseTotalMs:0}
+                ];
+                archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('today');render();window.__modTodayActionOrderV501.enhanceAll();
+              });
+              await page.waitForTimeout(450);
+              const actionResult=await page.evaluate(()=>{
+                const cards=[...document.querySelectorAll('#viewContainer .task:not(.archive-task)')];
+                let allOrdered=cards.length>=2,marker=false;
+                for(const card of cards){
+                  const actions=card.querySelector('.icon-actions');if(!actions){allOrdered=false;continue;}
+                  const ranks=[...actions.children].filter(x=>x instanceof HTMLButtonElement).map(b=>Number(b.dataset.v501ActionOrder));
+                  if(actions.dataset.v501Ordered!=='true'||ranks.some(x=>!Number.isFinite(x))||ranks.some((x,i)=>i&&x<ranks[i-1]))allOrdered=false;
+                  const today=[...actions.querySelectorAll('button')].find(b=>b.classList.contains('v501-today-action'));
+                  if(today&&today.classList.contains('today-selected-v480')){
+                    const ps=getComputedStyle(today,'::after');
+                    marker=marker||(ps.content!=='none'&&ps.position==='absolute'&&parseFloat(ps.width)>=4&&parseFloat(ps.height)>=4&&getComputedStyle(today).position==='relative');
+                  }
+                }
+                return {allOrdered,marker,moduleBound:window.__modTodayActionOrderV501?.todayMarkerBoundToButton===true};
+              });
+              out.actionOrder=actionResult.allOrdered;
+              out.todayMarkerBound=actionResult.marker&&actionResult.moduleBound;
+
+              const swPage=await browser.newPage({viewport:{width:390,height:640}});
+              await swPage.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+              await swPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?runtime='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              out.serviceWorker=await swPage.evaluate(async()=>{
+                if(!('serviceWorker' in navigator))return false;
+                try{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))]);return !!reg&&/sw\.js/.test(reg.active?.scriptURL||reg.waiting?.scriptURL||reg.installing?.scriptURL||'');}catch(_){return false;}
+              });
+
+              out.status=Object.entries(out).filter(([k])=>!['status','version','errors'].includes(k)).every(([,v])=>v===true)?'PASS':'FAIL';
+            }catch(e){out.errors.push(String(e.stack||e));}
+            fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));
+            await browser.close();
+            if(out.status!=='PASS')process.exitCode=1;
+          })();
+          JS
+          node smoke.js
+      - name: Publish result
+        if: always()
+        run: |
+          git init /tmp/status && cd /tmp/status
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp "$GITHUB_WORKSPACE/runtime-status.txt" .
+          git add runtime-status.txt && git commit -m "Runtime smoke result"
+          git branch -M runtime-status
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin runtime-status
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

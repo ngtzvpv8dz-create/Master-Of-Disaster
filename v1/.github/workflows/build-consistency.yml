@@ -1,0 +1,90 @@
+name: Build Consistency Guard
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify current build wiring
+        shell: python
+        run: |
+          from pathlib import Path
+          import json,re
+          index=Path('index.html').read_text(encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
+          required_index=[
+            'paused-today-v447.js?v=502-1225',
+            'build-freshness-v502.js?v=502-1225',
+            'today-interaction-stability-v503.js?v=503-1803',
+            'category-create-stability-v504.js?v=504-1319',
+            'running-task-render-stability-v505.js?v=518-1920',
+            'backstage-v530.css?v=530-1425',
+            'backstage-v530.js?v=530-1425',
+            'backup-stability-v506.js?v=506-1131',
+            'backup-source-fallback-v506.js?v=506-1244',
+            'task-title-library-v507.js?v=507-1345',
+            'archive-weight-layout-v508.js?v=508-0709',
+            'data-tab="titles"',
+            "serviceWorker.register('./sw.js?v=546-food'",
+            'summary-weight-due-polish-v494.js?v=494-2103'
+          ]
+          for marker in required_index:
+              if marker not in index: raise SystemExit(f'Missing current index marker: {marker}')
+          for marker in ['build-freshness-v502.js','today-action-order-v501.js','today-interaction-stability-v503.js','category-create-stability-v504.js','running-task-render-stability-v505.js','backstage-v530.css','backstage-v530.js','backup-stability-v506.js','backup-source-fallback-v506.js','task-title-library-v507.js','archive-weight-layout-v508.js','paused-today-v447.js','summary-weight-due-polish-v494.js']:
+              if marker not in sw: raise SystemExit(f'Missing service-worker shell marker: {marker}')
+          for path,markers in {
+            'build-freshness-v502.js':["const BUILD_VERSION='V502'",'noStoreFetch:true','dynamicFromMetrics:true'],
+            'today-action-order-v501.js':["const BUILD_VERSION='V501'",'todayMarkerBoundToButton:true','dataSemanticsUntouched:true'],
+            'today-interaction-stability-v503.js':["const BUILD_VERSION='V503'",'editKeepsExactTodayPosition:true','todayRemovalDirect:true','firstPauseClickDirect:true','dataSemanticsUntouched:true'],
+            'category-create-stability-v504.js':["const BUILD_VERSION='V504'",'explicitNewCategoryWins:true','suggestionCategoryFallbackOnly:true','dataSemanticsUntouched:true'],
+            'running-task-render-stability-v505.js':["const BUILD_VERSION='V505'",'fullViewTickerRemoved:true','runningCardOnlyRefresh:true','unrelatedCardsKeepDom:true','terminalActionsStayStable:true','dataSemanticsUntouched:true'],
+            'backstage-v530.js':["const VERSION='V530'",'devAndLogMoved:true','existingRenderersReused:true','todoDataUntouched:true','sportHealthHookPreserved:true','homeNavigationPreserved:true'],
+            'backup-stability-v506.js':["const BUILD_VERSION='V506'",'indexedDbReconnect:true','iphoneZipUsesExplicitHandoff:true','safetyModuleRemainsV498:true','dataSemanticsUntouched:true'],
+            'backup-source-fallback-v506.js':["const PATCH_VERSION='V506.3'",'codeloadBypassed:true','rawGithubFileFallback:true','sourceArchiveStoreZip:true'],
+            'task-title-library-v507.js':["const BUILD_VERSION='V507'",'knownOnlySuggestions:true','emptyFocusShowsAllOpen:true','unlimitedScrollableSuggestions:true','alwaysShowsUsageCount:true','knownCategoryAutoSelect:true','manualSuggestionHide:true','manualHistoricalMerge:true','archivedTitlesRenamedOnMerge:true','uncategorizedLastInAll:true','backupModulesUntouched:true'],
+            'archive-weight-layout-v508.js':["const BUILD_VERSION='V508'",'archiveUsesTaskSegmentHierarchy:true','archivedExactWeightSummaryDeduplicated:true','mainSegmentDateYY:true','nestedWeightDateNotDuplicated:true','existingArchiveRenderOnly:true','iosTextAutosizeGuard:true','dataSemanticsUntouched:true','backupModulesUntouched:true'],
+            'history-safety-net-v498.js':['withDbReconnect','dbReconnectV506:true','iosBackupHandoffV506:true','ZIP TEILEN / IN DATEIEN SICHERN','DATENSICHERHEIT · MODUL V498'],
+            'task-time-weight-details-v489.js':['refreshRunningCards','periodicFullRenderRemovedV505:true','runningCardOnlyRefreshV505:true'],
+            'summary-weight-due-polish-v494.js':["const BUILD_VERSION='V494'",'totalActiveHighlighted:true','partialWeightFirstLineShowsKg:true','dataSemanticsUntouched:true'],
+            'ui-card-stability-v491.js':["const BUILD_VERSION='V491'",'actionsAlwaysBottom:true','stableCardLayout:true']
+          }.items():
+              text=Path(path).read_text(encoding='utf-8')
+              for marker in markers:
+                  if marker not in text: raise SystemExit(f'Missing preserved behavior {marker} in {path}')
+          v489=Path('task-time-weight-details-v489.js').read_text(encoding='utf-8')
+          ticker=re.search(r"setInterval\(\(\)=>\{(?P<body>.*?)\},1000\);",v489,re.S)
+          if not ticker: raise SystemExit('V489 running ticker missing')
+          body=ticker.group('body')
+          if "refreshRunningCards();" not in body: raise SystemExit('V489 ticker no longer targets running card only')
+          if "render();" in body: raise SystemExit('V489 ticker must not render the full view')
+          if metrics.get('automated') is not True:
+              raise SystemExit('Bundled metrics snapshot is not automated')
+          print('Current build wiring consistency OK')
+      - name: JavaScript syntax
+        run: |
+          for f in app.js backstage-v530.js archive-weight-layout-v508.js task-title-library-v507.js backup-source-fallback-v506.js backup-stability-v506.js running-task-render-stability-v505.js history-safety-net-v498.js category-create-stability-v504.js today-interaction-stability-v503.js summary-weight-due-polish-v494.js ui-alignment-v493.js task-card-rail-polish-v492.js ui-card-stability-v491.js nested-task-weight-layout-v490.js task-time-weight-details-v489.js historical-segment-breakdown-v488.js segment-active-duration-v487.js time-segment-scroll-v486.js terminal-delete-v485.js remote-task-reopen-v484.js today-create-render-v480.js render-stability-v479.js remote-archive-sequence-v478.js ux-cooking-editor-v460.js time-segments-v443.js live-log-v453.js paused-today-v447.js today-action-order-v501.js build-freshness-v502.js; do node --check "$f"; done
+      - name: Generator follows highest current module version
+        run: |
+          METRICS_OUTPUT=/tmp/development-metrics.json node scripts/generate-development-metrics.mjs >/tmp/metrics.log
+          cat /tmp/metrics.log
+          node - <<'NODE'
+          const fs=require('fs');
+          const m=require('/tmp/development-metrics.json');
+          const versions=fs.readdirSync('.').map(name=>{const x=name.match(/(?:^|-)v(\d+)\.js$/i);return x?Number(x[1]):0;});
+          const expected='V'+Math.max(...versions);
+          if(m.version!==expected||!m.automated)throw new Error(`Generated version wrong: ${m.version}, expected ${expected}`);
+          if(m.repository.currentFiles<40||m.repository.currentTextLines<10000||m.repository.currentBytes<500000)throw new Error('Generated repository metrics unexpectedly small');
+          console.log('Generated metrics sane',expected);
+          NODE

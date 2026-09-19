@@ -1,0 +1,109 @@
+name: V538.1 Sport Stability Hotfix
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  sport-stability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check sport-s-noop-v538.js
+          grep -q "PATCH_REVISION='V538.1'" sport-s-noop-v538.js
+          grep -q 'observerFeedbackLoopRemovedV5381:true' sport-s-noop-v538.js
+          grep -q 'bodyClassObserverOnlyV5381:true' sport-s-noop-v538.js
+          grep -q 'idempotentChromeSyncV5381:true' sport-s-noop-v538.js
+          ! grep -q "observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true" sport-s-noop-v538.js
+      - name: Browser Sport responsiveness regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v5381-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          const deadline=(promise,ms,label)=>Promise.race([
+            promise,
+            new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+' timed out after '+ms+' ms')),ms))
+          ]);
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v538',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modSportModeV510&&window.__modSportSNoopV538?.patchRevision==='V538.1',null,{timeout:30000});
+
+            const responsive=label=>deadline(page.evaluate(()=>new Promise(resolve=>setTimeout(()=>resolve({mode:window.__modSportModeV510.currentMode(),surface:document.body.dataset.modAppSurfaceV515}),180))),2500,label);
+
+            await page.evaluate(()=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-12';
+              tasks=[{id:538101,text:'V538.1 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+            });
+
+            await deadline(page.click('[data-mod-hub-launch-v517="sport"]'),2500,'Sport icon click');
+            await page.waitForFunction(()=>window.__modSportModeV510.currentMode()==='sport'&&!document.body.classList.contains('mod-app-hub-v515'),null,{timeout:2500});
+            const iconOpen=await responsive('Sport after icon open');
+            if(iconOpen.mode!=='sport')throw new Error('Sport icon did not open Sport '+JSON.stringify(iconOpen));
+
+            await deadline(page.click('#sportSwitchV510'),2500,'Second S click');
+            const secondS=await responsive('Sport after second S');
+            if(secondS.mode!=='sport')throw new Error('Second S must be no-op '+JSON.stringify(secondS));
+
+            const hint=await page.locator('.sport-mode-hint-v510').textContent();
+            if(!/Haus/.test(hint||''))throw new Error('Sport hint does not point to Home: '+hint);
+
+            await deadline(page.click('#modHomeButtonV525'),2500,'Home from Sport');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-app-hub-v515')&&document.body.dataset.modAppSurfaceV515==='hub',null,{timeout:2500});
+            await responsive('Home after Sport');
+
+            await deadline(page.click('#sportSwitchV510'),2500,'S from Home');
+            await page.waitForFunction(()=>window.__modSportModeV510.currentMode()==='sport',null,{timeout:2500});
+            const sOpen=await responsive('Sport after S from Home');
+            if(sOpen.mode!=='sport')throw new Error('S from Home did not open Sport '+JSON.stringify(sOpen));
+
+            await deadline(page.click('#modHomeButtonV525'),2500,'Second Home return');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-app-hub-v515'),null,{timeout:2500});
+            await deadline(page.click('[data-mod-hub-launch-v517="sport"]'),2500,'Second Sport icon click');
+            const reopened=await responsive('Sport after reopen');
+            if(reopened.mode!=='sport')throw new Error('Sport did not reopen '+JSON.stringify(reopened));
+
+            const final=await page.evaluate(()=>({
+              patch:window.__modSportSNoopV538?.patchRevision,
+              task:(tasks||[]).find(t=>t.id===538101)?.text,
+              mode:window.__modSportModeV510.currentMode(),
+              hint:document.querySelector('.sport-mode-hint-v510')?.textContent||''
+            }));
+            if(final.patch!=='V538.1'||final.task!=='V538.1 Bestandsschutz'||final.mode!=='sport'||!/Haus/.test(final.hint))throw new Error('V538.1 final '+JSON.stringify(final));
+            if(errors.length)throw new Error('V538.1 page errors '+JSON.stringify(errors));
+
+            fs.writeFileSync('/tmp/v5381-result.json',JSON.stringify({iconOpen,secondS,sOpen,reopened,final,errors},null,2));
+            await page.screenshot({path:'/tmp/v5381-sport.png',fullPage:true});
+            console.log('V538.1 SPORT STABILITY PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v5381-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v5381-sport-stability-diagnostics
+          path: |
+            /tmp/v5381-sport.png
+            /tmp/v5381-result.json
+            /tmp/v5381-error.txt
+            /tmp/mod-v5381-http.log
+          if-no-files-found: ignore

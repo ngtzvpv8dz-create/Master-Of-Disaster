@@ -1,0 +1,104 @@
+/* V521 · PREVIEW MATCH: FULL-PAGE AMBIENT BACKGROUND + FLOATING HEADER CARD */
+html body.mod-app-hub-v515{
+  position:relative;
+  min-height:100svh;
+  background:
+    radial-gradient(ellipse at 10% 12%,rgba(54,219,141,.045),transparent 43%),
+    radial-gradient(ellipse at 63% 10%,rgba(156,79,255,.038),transparent 39%),
+    radial-gradient(ellipse at 94% 24%,rgba(36,190,255,.037),transparent 42%),
+    radial-gradient(ellipse at 16% 45%,rgba(239,66,177,.030),transparent 43%),
+    radial-gradient(ellipse at 81% 47%,rgba(239,190,54,.031),transparent 42%),
+    radial-gradient(ellipse at 28% 72%,rgba(42,151,255,.034),transparent 45%),
+    radial-gradient(ellipse at 69% 79%,rgba(47,202,142,.028),transparent 46%),
+    radial-gradient(ellipse at 93% 91%,rgba(178,74,255,.026),transparent 42%),
+    linear-gradient(165deg,#090b0e 0%,#0d1014 48%,#080a0d 100%) !important;
+  background-attachment:fixed;
+}
+
+html body.mod-app-hub-v515 main.app{
+  position:relative;
+  background:transparent !important;
+}
+
+/* V475 moves the header into this sticky shell. In hub mode the shell itself
+   must disappear visually, leaving only the floating header card. */
+html body.mod-app-hub-v515 #appFixedTopV475{
+  margin:0 0 18px !important;
+  padding:calc(12px + env(safe-area-inset-top)) 0 0 !important;
+  background:transparent !important;
+  border-bottom:0 !important;
+  box-shadow:none !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475::before{
+  background:transparent !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475 .header,
+html body.mod-app-hub-v515 main.app > header.header{
+  position:relative;
+  z-index:5;
+  overflow:hidden;
+  margin:0 !important;
+  padding:22px 14px 20px !important;
+  border:1px solid rgba(255,255,255,.075) !important;
+  border-radius:14px !important;
+  background:
+    radial-gradient(ellipse at 14% 24%,rgba(45,213,255,.028),transparent 34%),
+    radial-gradient(ellipse at 88% 70%,rgba(177,75,255,.025),transparent 38%),
+    linear-gradient(160deg,rgba(17,21,25,.90) 0%,rgba(12,15,19,.94) 54%,rgba(9,11,14,.96) 100%) !important;
+  box-shadow:
+    0 13px 30px rgba(0,0,0,.34),
+    0 0 22px rgba(41,210,255,.025),
+    inset 0 1px 0 rgba(255,255,255,.055),
+    inset 0 -1px 0 rgba(0,0,0,.30) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(118%);
+  backdrop-filter:blur(18px) saturate(118%);
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475 .header::before,
+html body.mod-app-hub-v515 main.app > header.header::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.025),transparent 22%,transparent 78%,rgba(255,255,255,.018)),
+    radial-gradient(ellipse at 50% 0%,rgba(255,255,255,.028),transparent 42%);
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475 .header h1,
+html body.mod-app-hub-v515 main.app > header.header h1{
+  position:relative;
+  z-index:1;
+  margin:0 !important;
+  font-size:clamp(25px,7.2vw,38px) !important;
+  line-height:1 !important;
+  letter-spacing:-1.3px !important;
+  white-space:nowrap !important;
+}
+
+html body.mod-app-hub-v515 #appFixedTopV475 .header .eyebrow,
+html body.mod-app-hub-v515 main.app > header.header .eyebrow{
+  position:relative;
+  z-index:1;
+  display:none !important;
+}
+
+html body.mod-app-hub-v515 #modAppHubV515{
+  position:relative;
+  padding-top:12px;
+  background:transparent !important;
+}
+
+@media (max-width:390px){
+  html body.mod-app-hub-v515 #appFixedTopV475{
+    margin-bottom:16px !important;
+  }
+  html body.mod-app-hub-v515 #appFixedTopV475 .header,
+  html body.mod-app-hub-v515 main.app > header.header{
+    padding:20px 12px 18px !important;
+    border-radius:13px !important;
+  }
+}

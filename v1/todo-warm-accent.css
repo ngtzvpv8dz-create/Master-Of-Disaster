@@ -1,0 +1,308 @@
+/* V550 · TO-DO WARM ACCENT
+   Purely visual theme layer for the To-Do surface.
+   No layout dimensions, spacing, ordering or task structure are changed. */
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510){
+  --todo-accent-v550:#f29a4a;
+  --todo-accent-strong-v550:#ff9d45;
+  --todo-accent-soft-v550:rgba(242,154,74,.16);
+  --todo-accent-faint-v550:rgba(242,154,74,.07);
+  --todo-border-v550:rgba(242,154,74,.28);
+  background:
+    radial-gradient(120% 72% at 100% 0%,rgba(242,154,74,.095),transparent 42%),
+    radial-gradient(95% 58% at 0% 100%,rgba(242,154,74,.055),transparent 46%),
+    linear-gradient(180deg,#15191d 0%,#0b0d0f 45%,#070809 100%);
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #appFixedTopV475{
+  --mod-bg-top:#15191d;
+  background:
+    radial-gradient(105% 120% at 100% 0%,rgba(242,154,74,.11),transparent 56%),
+    linear-gradient(180deg,#171b1e 0%,#121518 100%)!important;
+  border-bottom-color:rgba(242,154,74,.22)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #appFixedTopV475::before{
+  background:
+    radial-gradient(105% 120% at 100% 0%,rgba(242,154,74,.11),transparent 56%),
+    linear-gradient(180deg,#171b1e 0%,#121518 100%)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .header .eyebrow{
+  color:#a98e79!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tabs-wrapper{
+  border-color:rgba(242,154,74,.26)!important;
+  border-radius:15px!important;
+  background:
+    radial-gradient(90% 130% at 0% 50%,rgba(242,154,74,.055),transparent 58%),
+    linear-gradient(180deg,rgba(18,22,25,.98),rgba(13,16,18,.98))!important;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.22),
+    inset 0 0 0 1px rgba(255,181,112,.025)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tab-button{
+  border-color:rgba(242,154,74,.13)!important;
+  background:linear-gradient(180deg,#14181b,#101315)!important;
+  color:#8e959a!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tab-button.active{
+  border-color:#f3a159!important;
+  background:linear-gradient(135deg,#ffad63 0%,#f28a37 100%)!important;
+  color:#17120d!important;
+  box-shadow:
+    0 0 0 1px rgba(255,190,128,.22) inset,
+    0 0 16px rgba(242,154,74,.16)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .input-panel{
+  border-color:rgba(242,154,74,.23)!important;
+  border-radius:17px!important;
+  background:
+    radial-gradient(95% 120% at 100% 0%,rgba(242,154,74,.055),transparent 52%),
+    linear-gradient(145deg,#191d20,#141719)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #taskInput{
+  border-color:rgba(242,154,74,.18)!important;
+  background:linear-gradient(180deg,#101315,#0c0f11)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #taskInput:focus,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .edit-input:focus,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .weight-input:focus{
+  border-color:#b8753e!important;
+  box-shadow:0 0 0 2px rgba(242,154,74,.07)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .option-label{
+  color:#88786c!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .option-button{
+  border-color:rgba(242,154,74,.13)!important;
+  background:#111416!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .option-button.selected{
+  border-color:rgba(242,154,74,.38)!important;
+  background:linear-gradient(180deg,#26201c,#1e1b19)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .add-button{
+  background:linear-gradient(135deg,#ffb46d,#f28d3c)!important;
+  color:#17120d!important;
+  box-shadow:inset 0 0 0 1px rgba(255,224,194,.18)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .section-title{
+  color:#aa8c73!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .counter{
+  border-color:rgba(242,154,74,.18)!important;
+  background:#171817!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-summary{
+  border-color:rgba(242,154,74,.28)!important;
+  border-radius:14px!important;
+  background:
+    radial-gradient(90% 140% at 100% 0%,rgba(242,154,74,.065),transparent 58%),
+    linear-gradient(145deg,#171b1d,#131719)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-percentage{
+  color:#d99a66!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-progress-bar{
+  background:#282725!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-progress-fill{
+  background:linear-gradient(90deg,#ef8835,#ffb064)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task{
+  border-color:rgba(242,154,74,.29)!important;
+  border-radius:14px!important;
+  background:
+    radial-gradient(95% 125% at 100% 0%,rgba(242,154,74,.065),transparent 52%),
+    linear-gradient(135deg,#1c2022 0%,#151819 100%)!important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.012),
+    inset 0 0 24px rgba(242,154,74,.018)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.running{
+  border-color:#55775f!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.paused{
+  border-color:#776d36!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task-number,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .archive-number{
+  color:#a97751!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .icon-action{
+  border-color:rgba(242,154,74,.16)!important;
+  border-radius:9px!important;
+  background:linear-gradient(180deg,#141719,#101315)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .icon-action:active{
+  background:#211a16!important;
+  border-color:rgba(242,154,74,.42)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .task-suggestions{
+  border-color:rgba(242,154,74,.24)!important;
+  background:rgba(16,17,17,.99)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .task-suggestion:hover,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .task-suggestion:focus{
+  background:#211a16!important;
+}
+
+/* Category and auxiliary To-Do cards: same warm edge treatment, unchanged geometry. */
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .category-toolbar-v412,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .category-page-v412{
+  border-color:rgba(242,154,74,.23)!important;
+  background:
+    radial-gradient(100% 120% at 100% 0%,rgba(242,154,74,.045),transparent 55%),
+    linear-gradient(135deg,#181c1e,#111416)!important;
+}
+
+/* TO-DO GLOW POLISH · concept-match pass
+   Visual-only. No dimensions, spacing, positioning or DOM order changes. */
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #appFixedTopV475{
+  border-bottom-color:rgba(255,143,47,.52)!important;
+  box-shadow:
+    0 10px 24px rgba(0,0,0,.24),
+    0 8px 22px rgba(255,126,28,.07)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tabs-wrapper{
+  border-color:rgba(255,146,51,.74)!important;
+  background:
+    radial-gradient(52% 150% at 0% 50%,rgba(255,132,31,.16),transparent 70%),
+    radial-gradient(52% 150% at 100% 50%,rgba(255,132,31,.12),transparent 70%),
+    linear-gradient(180deg,rgba(20,22,23,.99),rgba(11,13,14,.99))!important;
+  box-shadow:
+    0 0 0 1px rgba(255,166,82,.16),
+    0 0 10px rgba(255,126,28,.24),
+    0 0 26px rgba(255,126,28,.13),
+    inset 0 0 18px rgba(255,126,28,.055)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tab-button{
+  border-color:rgba(255,143,47,.36)!important;
+  background:
+    radial-gradient(80% 120% at 50% 0%,rgba(255,137,40,.045),transparent 72%),
+    linear-gradient(180deg,#16191b,#0e1113)!important;
+  color:#a7adb1!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,171,89,.025),
+    0 0 8px rgba(255,126,28,.025)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .tab-button.active{
+  border-color:#ffad64!important;
+  background:
+    radial-gradient(90% 120% at 18% 0%,rgba(255,226,190,.32),transparent 42%),
+    linear-gradient(135deg,#ffb365 0%,#ff8c31 58%,#ec7623 100%)!important;
+  color:#17110c!important;
+  text-shadow:0 1px 0 rgba(255,255,255,.15)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,231,204,.28),
+    inset 0 -5px 12px rgba(157,61,0,.12),
+    0 0 7px rgba(255,145,49,.70),
+    0 0 18px rgba(255,122,24,.42),
+    0 0 30px rgba(255,122,24,.20)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task{
+  border-color:rgba(255,148,53,.82)!important;
+  background:
+    radial-gradient(42% 34% at 0% 0%,rgba(255,137,36,.19),transparent 72%),
+    radial-gradient(38% 31% at 100% 0%,rgba(255,128,24,.11),transparent 75%),
+    radial-gradient(38% 31% at 0% 100%,rgba(255,128,24,.09),transparent 75%),
+    radial-gradient(44% 35% at 100% 100%,rgba(255,137,36,.18),transparent 72%),
+    linear-gradient(135deg,#1a1e20 0%,#111416 100%)!important;
+  box-shadow:
+    0 0 0 1px rgba(255,177,96,.14),
+    0 0 7px rgba(255,128,25,.31),
+    0 0 18px rgba(255,116,17,.16),
+    inset 0 0 22px rgba(255,128,25,.045)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.running,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.paused{
+  border-color:rgba(255,148,53,.82)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.running{
+  box-shadow:
+    0 0 0 1px rgba(255,177,96,.14),
+    0 0 7px rgba(255,128,25,.31),
+    0 0 18px rgba(255,116,17,.16),
+    inset 3px 0 10px rgba(70,148,97,.055),
+    inset 0 0 22px rgba(255,128,25,.045)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task.paused{
+  box-shadow:
+    0 0 0 1px rgba(255,177,96,.14),
+    0 0 7px rgba(255,128,25,.31),
+    0 0 18px rgba(255,116,17,.16),
+    inset 3px 0 10px rgba(180,157,62,.055),
+    inset 0 0 22px rgba(255,128,25,.045)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .task-number,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .archive-number{
+  color:#e29659!important;
+  text-shadow:0 0 10px rgba(255,128,25,.16)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .icon-action{
+  border-color:rgba(255,145,49,.30)!important;
+  background:
+    linear-gradient(180deg,#151719,#0e1112)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,179,101,.018),
+    0 0 8px rgba(255,122,24,.025)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) #viewContainer .icon-action:active{
+  border-color:rgba(255,153,61,.72)!important;
+  background:#21150f!important;
+  box-shadow:
+    inset 0 0 12px rgba(255,126,28,.10),
+    0 0 10px rgba(255,126,28,.20)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .today-summary,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .category-toolbar-v412,
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .category-page-v412{
+  border-color:rgba(255,146,51,.48)!important;
+  box-shadow:
+    0 0 0 1px rgba(255,175,94,.055),
+    0 0 13px rgba(255,126,28,.075),
+    inset 0 0 18px rgba(255,126,28,.025)!important;
+}
+
+body[data-mod-app-surface-v515="todo"]:not(.mod-sport-mode-v510) .counter{
+  border-color:rgba(255,146,51,.40)!important;
+  box-shadow:0 0 10px rgba(255,126,28,.06)!important;
+}
+

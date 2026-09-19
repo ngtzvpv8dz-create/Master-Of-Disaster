@@ -1,0 +1,8 @@
+/* V532 · BACKSTAGE PLACEHOLDER SIZE
+   Gleicht die vorbereiteten BACKUP-/RESTORE-/SYSTEM-Karten in der Höhe an.
+   Rein visuelle Änderung; keine Backstage-Funktion oder Nutzerdaten betroffen.
+*/
+body.mod-backstage-v531 #viewContainer .mod-backstage-placeholder-card-v531{
+  box-sizing:border-box;
+  min-height:190px;
+}

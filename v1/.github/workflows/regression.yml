@@ -1,0 +1,223 @@
+name: Regression
+on:
+  pull_request:
+    branches: [ main ]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax and wiring
+        run: |
+          node --check app.js
+          node --check today-paused-v446.js
+          node --check today-interaction-stability-v503.js
+          node --check category-create-stability-v504.js
+          node --check backup-stability-v506.js
+          node --check backup-source-fallback-v506.js
+          node --check task-title-library-v507.js
+          node --check archive-weight-layout-v508.js
+          node --check history-safety-net-v498.js
+          node --check running-task-render-stability-v505.js
+          node --check summary-weight-due-polish-v494.js
+          node --check ui-alignment-v493.js
+          node --check task-card-rail-polish-v492.js
+          node --check ui-card-stability-v491.js
+          node --check nested-task-weight-layout-v490.js
+          node --check task-time-weight-details-v489.js
+          node --check historical-segment-breakdown-v488.js
+          node --check paused-today-v447.js
+          node --check today-action-order-v501.js
+          node --check build-freshness-v502.js
+          node --check backstage-v530.js
+          node tests/v503-today-interaction.test.cjs
+          grep -q 'paused-today-v447.js?v=502-1225' index.html
+          grep -q 'build-freshness-v502.js?v=502-1225' index.html
+          grep -q 'today-interaction-stability-v503.js?v=503-1803' index.html
+          grep -q 'category-create-stability-v504.js?v=504-1319' index.html
+          grep -q 'running-task-render-stability-v505.js?v=' index.html
+          grep -q 'backup-stability-v506.js?v=506-1131' index.html
+          grep -q 'backup-source-fallback-v506.js?v=506-1244' index.html
+          grep -q 'task-title-library-v507.js?v=507-1345' index.html
+          grep -q 'archive-weight-layout-v508.js?v=508-0709' index.html
+          grep -q 'backstage-v530.js?v=' index.html
+          grep -q 'data-tab="titles"' index.html
+          grep -q "serviceWorker.register('./sw.js?v=" index.html
+          grep -q 'running-task-render-stability-v505.js' sw.js
+          grep -q 'backup-stability-v506.js' sw.js
+          grep -q 'backup-source-fallback-v506.js' sw.js
+          grep -q 'task-title-library-v507.js' sw.js
+          grep -q 'archive-weight-layout-v508.js' sw.js
+          grep -q 'backstage-v530.js' sw.js
+          grep -q 'dbReconnectV506:true' history-safety-net-v498.js
+          grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
+          grep -q 'ZIP TEILEN / IN DATEIEN SICHERN' history-safety-net-v498.js
+          grep -q 'codeloadBypassed:true' backup-source-fallback-v506.js
+          grep -q 'rawGithubFileFallback:true' backup-source-fallback-v506.js
+          grep -q 'todayMarkerBoundToButton:true' today-action-order-v501.js
+          grep -q 'pausedTodayManualHide:true' today-interaction-stability-v503.js
+          grep -q 'todayHiddenDate' today-paused-v446.js
+          grep -q 'explicitNewCategoryWins:true' category-create-stability-v504.js
+          grep -q 'suggestionCategoryFallbackOnly:true' category-create-stability-v504.js
+          grep -q 'periodicFullRenderRemovedV505:true' task-time-weight-details-v489.js
+          grep -q 'runningCardOnlyRefreshV505:true' task-time-weight-details-v489.js
+          grep -q 'fullViewTickerRemoved:true' running-task-render-stability-v505.js
+          grep -q 'terminalActionsStayStable:true' running-task-render-stability-v505.js
+          grep -q 'knownOnlySuggestions:true' task-title-library-v507.js
+          grep -q 'manualHistoricalMerge:true' task-title-library-v507.js
+          grep -q 'archiveUsesTaskSegmentHierarchy:true' archive-weight-layout-v508.js
+          grep -q 'nestedWeightDateNotDuplicated:true' archive-weight-layout-v508.js
+          grep -q 'dataSemanticsUntouched:true' archive-weight-layout-v508.js
+          grep -q 'noStoreFetch:true' build-freshness-v502.js
+      - name: Browser regression current build
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-http.log 2>&1 &
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modBuildFreshnessV502&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508&&window.__modBackstageV530,{timeout:30000});
+            const day=await page.evaluate(()=>getBerlinDateKey());
+            await page.evaluate(day=>{
+              localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
+              tasks=[
+                {id:50101,text:'V501 offene Aufgabe',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null},
+                {id:50102,text:'V501 El Porcador',type:'selfrunner',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null},
+                {id:50301,text:'V503 pausierte Aufgabe',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:3,todayWorkBlockId:null,startedAt:new Date().toISOString(),pausedAt:new Date().toISOString(),activeSegments:[{startedAt:new Date().toISOString(),endedAt:new Date().toISOString()}]}
+              ];
+              archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('today');render();
+            },day);
+            await page.waitForTimeout(800);
+            const result=await page.evaluate(()=>{
+              const cards=[...document.querySelectorAll('#viewContainer .task:not(.archive-task)')];
+              return cards.map(card=>{
+                const actions=card.querySelector('.icon-actions');
+                const buttons=[...actions?.querySelectorAll(':scope>button')||[]];
+                const ranks=buttons.map(b=>Number(b.dataset.v501ActionOrder||9999));
+                const today=buttons.find(b=>b.classList.contains('v501-today-action')||b.classList.contains('paused-today-v447'));
+                return {
+                  text:card.querySelector('.task-text')?.textContent||'',
+                  ordered:ranks.every((v,i)=>i===0||ranks[i-1]<=v),
+                  todayInside:!!today&&today.parentElement===actions,
+                  todayPosition:today?getComputedStyle(today).position:null,
+                  todaySelected:today?.classList.contains('today-selected-v480')||today?.classList.contains('selected')||false
+                };
+              });
+            });
+            if(result.length<3||result.some(x=>!x.ordered||!x.todayInside||x.todayPosition!=='relative'||!x.todaySelected))throw new Error('V501 action layout regression '+JSON.stringify(result));
+            const pausedBefore=await page.evaluate(()=>!![...document.querySelectorAll('#viewContainer .task:not(.archive-task)')].find(card=>(card.querySelector('.task-text')?.textContent||'').includes('V503 pausierte Aufgabe')));
+            if(!pausedBefore)throw new Error('V503 paused fixture missing before removal');
+            await page.evaluate(()=>window.__modTodayInteractionStabilityV503.removeFromToday(50301));
+            await page.waitForTimeout(350);
+            const pausedAfter=await page.evaluate(()=>({
+              visible:!![...document.querySelectorAll('#viewContainer .task:not(.archive-task)')].find(card=>(card.querySelector('.task-text')?.textContent||'').includes('V503 pausierte Aufgabe')),
+              task:(tasks||[]).find(t=>t.id===50301)
+            }));
+            if(pausedAfter.visible||pausedAfter.task?.todayDate!==null||pausedAfter.task?.todayHiddenDate!==day)throw new Error('V503 paused Today removal regression '+JSON.stringify(pausedAfter));
+
+            await page.evaluate(()=>{
+              localStorage.setItem('masterOfDisasterCategoriesV405',JSON.stringify(['Haushalt','Verlauf']));
+              tasks=[];archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('all');render();
+            });
+            await page.waitForTimeout(350);
+            const categoryCreate=await page.evaluate(()=>{
+              const input=document.getElementById('taskInput');
+              const select=document.getElementById('newCategoryV412');
+              if(!input||!select)throw new Error('V504 create controls missing');
+              input.value='V504 manuelle Kategorie';
+              select.value='Haushalt';
+              select.dispatchEvent(new Event('change',{bubbles:true}));
+              window.__modPendingSuggestionCategory=null;
+              addTask();
+              const manual=(tasks||[]).find(t=>t.text==='V504 manuelle Kategorie');
+              input.value='V504 Vorschlags-Fallback';
+              select.value='';
+              select.dispatchEvent(new Event('change',{bubbles:true}));
+              window.__modPendingSuggestionCategory='Verlauf';
+              addTask();
+              const fallback=(tasks||[]).find(t=>t.text==='V504 Vorschlags-Fallback');
+              return {manual:manual?.category??null,fallback:fallback?.category??null};
+            });
+            if(categoryCreate.manual!=='Haushalt'||categoryCreate.fallback!=='Verlauf')throw new Error('V504 category create regression '+JSON.stringify(categoryCreate));
+
+            await page.evaluate(day=>{
+              const now=Date.now();
+              tasks=[
+                {id:50501,text:'V505 Wäsche abnehmen',type:'work',status:'running',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,todayWorkBlockId:null,startedAt:new Date(now-5000).toISOString(),activeSegments:[{startedAt:new Date(now-5000).toISOString(),endedAt:null}]},
+                {id:50502,text:'V505 Wäsche waschen',type:'work',status:'completed',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:2,todayWorkBlockId:null,startedAt:new Date(now-12000).toISOString(),completedAt:new Date(now-7000).toISOString(),completedDate:day,activeDurationMs:5000,actualDurationMs:5000,activeSegments:[{startedAt:new Date(now-12000).toISOString(),endedAt:new Date(now-7000).toISOString()}]}
+              ];
+              archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('today');render();
+            },day);
+            await page.waitForTimeout(700);
+            const fixture=await page.evaluate(()=>{
+              const running=document.querySelector('#viewContainer .task[data-v490-task-id="50501"]');
+              const completed=document.querySelector('#viewContainer .task[data-v490-task-id="50502"]');
+              const del=completed?.querySelector('.terminal-delete-v485');
+              if(!running||!completed||!del)throw new Error('V505 video fixture incomplete');
+              window.__v505CompletedCard=completed;
+              window.__v505DeleteButton=del;
+              window.__v505RunningDetailBefore=running.querySelector('.task-detail-v490')?.textContent||'';
+              window.__v505BaseRender=window.render;
+              window.__v505RenderCalls=0;
+              window.render=function(){window.__v505RenderCalls+=1;return window.__v505BaseRender.apply(this,arguments);};
+              return {detail:window.__v505RunningDetailBefore,deleteText:del.textContent||''};
+            });
+            if(!fixture.detail)throw new Error('V505 running detail missing before ticker '+JSON.stringify(fixture));
+            await page.waitForTimeout(1350);
+            const ticker=await page.evaluate(()=>{
+              const running=document.querySelector('#viewContainer .task[data-v490-task-id="50501"]');
+              const completed=document.querySelector('#viewContainer .task[data-v490-task-id="50502"]');
+              const del=completed?.querySelector('.terminal-delete-v485');
+              const after=running?.querySelector('.task-detail-v490')?.textContent||'';
+              const result={renderCalls:window.__v505RenderCalls,completedCardSame:completed===window.__v505CompletedCard,deleteButtonSame:del===window.__v505DeleteButton,deleteStillVisible:!!del,runningDetailBefore:window.__v505RunningDetailBefore,runningDetailAfter:after,runningDetailChanged:after!==window.__v505RunningDetailBefore,verify:window.__modRunningTaskRenderStabilityV505.verify()};
+              window.render=window.__v505BaseRender;
+              delete window.__v505BaseRender;
+              return result;
+            });
+            if(ticker.renderCalls!==0||!ticker.completedCardSame||!ticker.deleteButtonSame||!ticker.deleteStillVisible||!ticker.runningDetailChanged||!ticker.verify)throw new Error('V505 running-task flicker regression '+JSON.stringify(ticker));
+
+            const v508=await page.evaluate(()=>({
+              version:window.__modArchiveWeightLayoutV508?.version,
+              verify:window.__modArchiveWeightLayoutV508?.verify?.(),
+              date:window.__modArchiveWeightLayoutV508?.shortDateYY?.('2026-08-15T12:00:00+02:00')
+            }));
+            if(v508.version!=='V508'||!v508.verify||v508.date!=='15.08.26')throw new Error('V508 module regression '+JSON.stringify(v508));
+
+            const backupReconnect=await page.evaluate(async()=>{
+              const api=window.__modRecoveryHistoryV498;
+              if(!api)throw new Error('V498 backup API missing');
+              const before=await api.exportPackage();
+              api.resetDbConnection();
+              const after=await api.exportPackage();
+              return {
+                beforeOk:before?.schema==='master-of-disaster-safety-net'&&Array.isArray(before.points)&&Array.isArray(before.logs),
+                afterOk:after?.schema==='master-of-disaster-safety-net'&&Array.isArray(after.points)&&Array.isArray(after.logs),
+                reconnect:api.dbReconnectV506===true,
+                iosHandoff:api.iosBackupHandoffV506===true,
+                verify:window.__modBackupStabilityV506?.verify?.()===true,
+                sourceFallback:window.__modBackupSourceFallbackV506?.verify?.()===true,
+                sourcePatch:window.__modBackupSourceFallbackV506?.patchRevision
+              };
+            });
+            if(!backupReconnect.beforeOk||!backupReconnect.afterOk||!backupReconnect.reconnect||!backupReconnect.iosHandoff||!backupReconnect.verify||!backupReconnect.sourceFallback||backupReconnect.sourcePatch!=='V506.3')throw new Error('V506 backup reconnect regression '+JSON.stringify(backupReconnect));
+
+            const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,dynamic:window.__MOD_BUILD__?.dynamic,loaded:window.__modBuildFreshnessV502?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version,v506source:window.__modBackupSourceFallbackV506?.patchRevision,v507:window.__modTaskTitleLibraryV507?.version,v508:window.__modArchiveWeightLayoutV508?.version,backstage:window.__modBackstageV530?.version}));
+            if(!/^V\d+$/.test(build.v||'')||Number(build.v.slice(1))<530||build.dynamic!==true||build.loaded!=='V502'||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507'||build.v508!=='V508'||!/^V\d+$/.test(build.backstage||'')||Number(build.backstage.slice(1))<530)throw new Error('Dynamic build metadata missing '+JSON.stringify(build));
+            console.log('Current browser regression OK',result,pausedAfter,categoryCreate,ticker,v508,backupReconnect,build);
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE

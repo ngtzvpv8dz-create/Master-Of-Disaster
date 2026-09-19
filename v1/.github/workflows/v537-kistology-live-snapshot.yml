@@ -1,0 +1,159 @@
+name: V537 Kistology Live Snapshot
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+permissions:
+  contents: read
+jobs:
+  kistology-live-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wiring checks
+        run: |
+          node --check app-hub-launcher-v517.js
+          node --check kistology-v537.js
+          node --check sw.js
+          test -f kistology-v535.css
+          grep -q "const VERSION='V537'" kistology-v537.js
+          grep -q "RPC_NAME='kistology_snapshot_v1'" kistology-v537.js
+          grep -q 'kistologyLiveSnapshotLoaderV537:true' app-hub-launcher-v517.js
+          grep -q 'kistology-v537.js?v=537-live-snapshot' app-hub-launcher-v517.js
+          grep -q '"./kistology-v537.js"' sw.js
+          grep -q 'readonlySnapshotV537:true' kistology-v537.js
+          grep -q 'sourceInventoryIdsHiddenV537:true' kistology-v537.js
+          grep -q 'noInventoryWritesV537:true' kistology-v537.js
+      - name: Browser Kistology live snapshot regression
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 8787 >/tmp/mod-v537-http.log 2>&1 &
+          node <<'NODE'
+          const fs=require('fs');
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
+            await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
+            await page.goto('http://127.0.0.1:8787/?reg=v537',{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modKistologyV537?.version==='V537',null,{timeout:30000});
+
+            const fixture={
+              schema_version:1,
+              mode:'readonly_snapshot',
+              containers:[
+                {code:'K1',name:'POWERBANKS · LADEN',container_type:'IKEA SAMLA Klein',dimensions:'39 × 28 × 14 cm',notes:'',updated_at:'2026-09-06T15:40:37Z'},
+                {code:'K2',name:'FOTO · ACTIONCAM · OPTIK',container_type:'IKEA SAMLA Klein',dimensions:'39 × 28 × 14 cm',notes:'',updated_at:'2026-09-06T16:03:09Z'}
+              ],
+              items:[
+                {source_id:'R1-P03',designation:'Graues Panzer-/Gewebeband',category:'Befestigung',container_code:'K1',section:'Hauptfach',status:'geprüft',details:{},verified_at:'2026-09-06T15:00:00Z',updated_at:'2026-09-06T15:00:00Z'},
+                {source_id:'R1-P06',designation:'USB-C-Ladegerät 65 W',category:'Laden',container_code:'K1',section:'NOJIG 10 × 20 cm',status:'geprüft',details:{},verified_at:'2026-09-06T15:00:00Z',updated_at:'2026-09-06T15:00:00Z'},
+                {source_id:'R5-P01',designation:'Wi-Fi-Endoskopkamera',category:'Foto',container_code:'K2',section:'Hauptfach',status:'geprüft',details:{},verified_at:'2026-09-06T16:00:00Z',updated_at:'2026-09-06T16:00:00Z'}
+              ]
+            };
+
+            await page.evaluate(fixture=>{
+              const day=typeof getBerlinDateKey==='function'?getBerlinDateKey():'2026-09-11';
+              tasks=[{id:53701,text:'V537 Bestandsschutz',type:'work',status:'open',priority:'normal',optional:false,dueMode:'none',dueDate:null,todayDate:day,todayOrder:1,activeSegments:[]}];
+              if(typeof saveTasks==='function')saveTasks();
+              window.getSupabaseClient=()=>({
+                auth:{getSession:async()=>({data:{session:{user:{id:'v537-test-user'}}},error:null})},
+                rpc:async(name)=>name==='kistology_snapshot_v1'?({data:fixture,error:null}):({data:null,error:{message:'unexpected rpc'}})
+              });
+              window.__modAppHubV515.show();
+              window.__modHubLauncherV524.render();
+              window.__modKistologyV537.patchLauncher();
+              window.__modBackstageV531?.patchLauncher?.();
+            },fixture);
+            await page.waitForTimeout(180);
+
+            const launcher=await page.evaluate(()=>{
+              const b=document.querySelector('[data-mod-hub-launch-v517="kistology"]');
+              return {disabled:b?.getAttribute('aria-disabled'),active:b?.dataset.modKistologyActiveV537,task:(tasks||[]).find(t=>t.id===53701)?.text};
+            });
+            if(launcher.disabled!==null||launcher.active!=='true'||launcher.task!=='V537 Bestandsschutz')throw new Error('V537 launcher '+JSON.stringify(launcher));
+
+            await page.click('[data-mod-hub-launch-v517="kistology"]');
+            await page.waitForSelector('[data-kistology-view-v537="regal"]',{timeout:10000});
+            const shelf=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              open:window.__modKistologyV537.isOpen(),
+              readonly:window.__modKistologyV537.readonlySnapshotV537,
+              boxes:document.querySelectorAll('[data-kistology-box-v537]').length,
+              text:document.getElementById('modKistologyV535')?.innerText||'',
+              meta:window.__modKistologyV537.getSnapshotMeta(),
+              task:(tasks||[]).find(t=>t.id===53701)?.text
+            }));
+            if(shelf.surface!=='kistology'||!shelf.open||!shelf.readonly||shelf.boxes!==2||shelf.meta.items!==3||shelf.task!=='V537 Bestandsschutz')throw new Error('V537 shelf '+JSON.stringify(shelf));
+            if(/R1-P03|R1-P06|R5-P01/.test(shelf.text))throw new Error('source inventory id leaked into shelf');
+
+            await page.click('[data-kistology-box-v537="K1"]');
+            await page.waitForSelector('[data-kistology-view-v537="box"]');
+            const opened=await page.evaluate(()=>({
+              pulled:!!document.querySelector('.mod-kistology-pulled-box-v535'),
+              items:document.querySelectorAll('[data-kistology-item-v537]').length,
+              title:document.querySelector('.mod-kistology-pulled-box-v535 strong')?.textContent.trim(),
+              text:document.querySelector('[data-kistology-view-v537="box"]')?.innerText||''
+            }));
+            if(!opened.pulled||opened.items!==2||opened.title!=='K1 · POWERBANKS · LADEN')throw new Error('V537 open box '+JSON.stringify(opened));
+            if(/R1-P03|R1-P06/.test(opened.text))throw new Error('source inventory id leaked into opened box');
+
+            const search=page.locator('[data-kistology-search-v537]');
+            await search.fill('Panzer');
+            await page.waitForSelector('[data-kistology-view-v537="search"]');
+            const results=await page.evaluate(()=>({
+              count:document.querySelectorAll('[data-kistology-result-open-v537]').length,
+              text:document.querySelector('.mod-kistology-result-main-v535 h4')?.textContent.trim(),
+              rootText:document.querySelector('[data-kistology-view-v537="search"]')?.innerText||''
+            }));
+            if(results.count!==1||results.text!=='Graues Panzer-/Gewebeband')throw new Error('V537 search '+JSON.stringify(results));
+            if(/R1-P03/.test(results.rootText))throw new Error('source inventory id leaked into search');
+
+            await page.click('[data-kistology-result-open-v537]');
+            await page.waitForSelector('[data-kistology-item-v537="R1-P03"].is-highlighted');
+            const jump=await page.evaluate(()=>({
+              view:document.querySelector('[data-kistology-view-v537]')?.dataset.kistologyViewV537,
+              highlighted:!!document.querySelector('[data-kistology-item-v537="R1-P03"].is-highlighted'),
+              visibleText:document.querySelector('[data-kistology-view-v537="box"]')?.innerText||'',
+              task:(tasks||[]).find(t=>t.id===53701)?.text,
+              kistologyKeys:Object.keys(localStorage).filter(k=>/kistology/i.test(k))
+            }));
+            if(jump.view!=='box'||!jump.highlighted||jump.task!=='V537 Bestandsschutz'||jump.kistologyKeys.length)throw new Error('V537 jump '+JSON.stringify(jump));
+            if(/R1-P03/.test(jump.visibleText))throw new Error('source inventory id visible after jump');
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForTimeout(180);
+            const home=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              kistology:document.body.classList.contains('mod-kistology-v535'),
+              surface:document.body.dataset.modAppSurfaceV515,
+              task:(tasks||[]).find(t=>t.id===53701)?.text
+            }));
+            if(!home.hub||home.kistology||home.surface!=='hub'||home.task!=='V537 Bestandsschutz')throw new Error('V537 home '+JSON.stringify(home));
+            if(errors.length)throw new Error('V537 page errors '+JSON.stringify(errors));
+
+            await page.screenshot({path:'/tmp/v537-kistology.png',fullPage:true});
+            fs.writeFileSync('/tmp/v537-result.json',JSON.stringify({launcher,shelf,opened,results,jump,home,errors},null,2));
+            console.log('V537 KISTOLOGY LIVE SNAPSHOT PASS');
+            await browser.close();
+          })().catch(error=>{fs.writeFileSync('/tmp/v537-error.txt',String(error&&error.stack||error));console.error(error);process.exit(1);});
+          NODE
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v537-kistology-live-snapshot-diagnostics
+          path: |
+            /tmp/v537-kistology.png
+            /tmp/v537-result.json
+            /tmp/v537-error.txt
+            /tmp/mod-v537-http.log
+          if-no-files-found: ignore

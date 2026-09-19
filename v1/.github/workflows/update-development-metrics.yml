@@ -1,0 +1,45 @@
+name: Update Development Metrics
+on:
+  push:
+    branches: [ main ]
+permissions:
+  contents: write
+  pull-requests: read
+jobs:
+  metrics:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Count pull requests
+        id: prs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          all=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=100" --jq '.[].number' | wc -l | tr -d ' ')
+          merged=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=closed&per_page=100" --jq '.[] | select(.merged_at != null) | .number' | wc -l | tr -d ' ')
+          echo "all=${all}" >> "$GITHUB_OUTPUT"
+          echo "merged=${merged}" >> "$GITHUB_OUTPUT"
+      - name: Generate current metrics
+        env:
+          METRICS_WILL_COMMIT: '1'
+          SOURCE_COMMIT: ${{ github.sha }}
+          PR_COUNT: ${{ steps.prs.outputs.all }}
+          MERGED_PR_COUNT: ${{ steps.prs.outputs.merged }}
+        run: node scripts/generate-development-metrics.mjs
+      - name: Commit metrics snapshot
+        run: |
+          if git diff --quiet -- development-metrics.json; then
+            echo "Metrics already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add development-metrics.json
+          git commit -m "Update development metrics [skip ci]"
+          git push

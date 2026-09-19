@@ -1,0 +1,7 @@
+.mini-home{grid-column:1;justify-self:start;color:#d7c4a3;text-decoration:none;font-size:26px;line-height:1;padding:8px}
+.placeholder-main{width:min(520px,100%);margin:auto;text-align:center;padding:54px 22px}
+.placeholder-icon{width:108px;height:108px;margin:auto;border-radius:28px;background:linear-gradient(145deg,#2d302f,#171819);border:1px solid rgba(201,163,109,.2);box-shadow:0 14px 34px rgba(0,0,0,.3)}
+.placeholder-main>p:first-of-type{margin:18px 0 8px;color:#c7a875;font-size:9px;letter-spacing:.3em}
+.placeholder-main h1{margin:0;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:34px;font-weight:500}
+.placeholder-main h1+p{color:#a8a29a;line-height:1.55}
+.placeholder-main>a{display:inline-block;margin-top:18px;padding:12px 18px;border-radius:14px;background:#222424;color:#e8e0d5;text-decoration:none;border:1px solid rgba(255,255,255,.08)}

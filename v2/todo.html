@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171613">
+<title>TO-DO · Master of Disaster 2.0</title>
+<link rel="stylesheet" href="./app.css?v=2000">
+<link rel="stylesheet" href="./todo.css?v=2000">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="todo-page">
+<header class="v2-header todo-header">
+  <div class="v2-header-inner">
+    <a class="mini-home" href="./" aria-label="Homescreen">⌂</a>
+    <div class="v2-brand-wrap">
+      <div class="v2-brand">MASTER OF DISASTE<button id="todoUndo" class="undo-r" type="button" aria-label="Rückgängig und Verlauf">R</button></div>
+      <div class="v2-subtitle">WEEK-AND-END-TO-DO-DINGSI</div>
+    </div>
+    <span class="v2-badge">2.0</span>
+  </div>
+</header>
+
+<main class="todo-main">
+  <section class="todo-title-row">
+    <div>
+      <p>TO-DO · 2.0</p>
+      <h1>Aufgaben</h1>
+    </div>
+    <span id="taskCount" class="task-count">…</span>
+  </section>
+
+  <nav class="todo-tabs" aria-label="Aufgaben filtern">
+    <button class="todo-tab active" data-filter="open">OFFEN</button>
+    <button class="todo-tab" data-filter="today">HEUTE</button>
+    <button class="todo-tab" data-filter="priority">PRIORITÄT</button>
+  </nav>
+
+  <section class="quick-add">
+    <input id="newTaskText" type="text" placeholder="Neue Aufgabe …" autocomplete="off">
+    <button id="newTaskButton" type="button">+</button>
+  </section>
+
+  <section id="taskList" class="task-list" aria-live="polite">
+    <div class="loading-card">Aufgaben werden aus Supabase geladen …</div>
+  </section>
+</main>
+<div id="todoToast" class="toast" aria-live="polite"></div>
+<script src="./todo.js?v=2000"></script>
+</body>
+</html>
