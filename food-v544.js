@@ -191,7 +191,7 @@
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,recipe_id,food_meal_ingredients(id,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order')),
-      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,food_recipe_ingredients(id,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
+      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,display_note,food_recipe_ingredients(id,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at'))
     ]);
 
@@ -308,7 +308,8 @@
 
   function recipeCard(recipe){
     const items=recipe.food_recipe_ingredients||recipe.ingredients||[];
-    return '<article class="food-recipe-card-v544"><span class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</span><h4>'+esc(recipe.title)+'</h4><p>'+items.map(item=>esc(item.label||item)).join(' · ')+'</p><button type="button" class="food-action-v544" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></article>';
+    const note=recipe.display_note?'<small class="food-recipe-note-v569">'+esc(recipe.display_note)+'</small>':'';
+    return '<article class="food-recipe-card-v544"><span class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</span><h4>'+esc(recipe.title)+'</h4>'+note+'<p>'+items.map(item=>esc(item.label||item)).join(' · ')+'</p><button type="button" class="food-action-v544" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></article>';
   }
 
   function recipesView(data){
