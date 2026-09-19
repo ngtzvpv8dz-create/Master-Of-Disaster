@@ -33,13 +33,16 @@
   <nav class="todo-tabs" aria-label="Aufgaben filtern">
     <button class="todo-tab active" data-filter="open">OFFEN</button>
     <button class="todo-tab" data-filter="today">HEUTE</button>
+    <button class="todo-tab" data-filter="paused">PAUSIERT</button>
     <button class="todo-tab" data-filter="priority">PRIORITÄT</button>
   </nav>
 
   <section class="quick-add">
     <input id="newTaskText" type="text" placeholder="Neue Aufgabe …" autocomplete="off">
-    <button id="newTaskButton" type="button">+</button>
+    <button id="newTaskButton" type="button" aria-label="Neue Aufgabe vorbereiten">+</button>
   </section>
+
+  <section class="todo-summary" aria-label="Aufgabenübersicht"><div><span>OFFEN</span><strong id="openSummary">–</strong></div><div><span>PAUSIERT</span><strong id="pausedSummary">–</strong></div><div><span>PRIORITÄT</span><strong id="prioritySummary">–</strong></div></section>
 
   <section id="taskList" class="task-list" aria-live="polite">
     <div class="loading-card">Aufgaben werden aus Supabase geladen …</div>

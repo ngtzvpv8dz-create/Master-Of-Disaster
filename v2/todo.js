@@ -15,18 +15,30 @@
  function filtered(){
    const today=new Date().toISOString().slice(0,10);
    if(filter==='today')return tasks.filter(t=>t.today_date===today);
-   if(filter==='priority')return tasks.filter(t=>['high','medium'].includes(t.priority));
+   if(filter==='paused')return tasks.filter(t=>t.status==='paused');
+   if(filter==='priority')return tasks.filter(t=>t.status==='open'&&['high','medium'].includes(t.priority));
    return tasks.filter(t=>t.status==='open');
  }
  function render(){
    const rows=filtered();
+   const openCount=tasks.filter(t=>t.status==='open').length;
+   const pausedCount=tasks.filter(t=>t.status==='paused').length;
+   const priorityCount=tasks.filter(t=>t.status==='open'&&['high','medium'].includes(t.priority)).length;
+   const openSummary=document.getElementById('openSummary');
+   const pausedSummary=document.getElementById('pausedSummary');
+   const prioritySummary=document.getElementById('prioritySummary');
+   if(openSummary)openSummary.textContent=String(openCount);
+   if(pausedSummary)pausedSummary.textContent=String(pausedCount);
+   if(prioritySummary)prioritySummary.textContent=String(priorityCount);
    count.textContent=String(rows.length);
    if(!rows.length){list.innerHTML='<div class="loading-card">Hier ist gerade angenehm wenig los.</div>';return;}
    list.innerHTML=rows.map(t=>{
      const p=t.priority&&t.priority!=='normal'?'<span class="meta-pill priority-'+esc(t.priority)+'">'+esc(t.priority.toUpperCase())+'</span>':'';
      const due=t.due_date?'<span class="meta-pill">BIS '+esc(new Date(t.due_date+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}))+'</span>':'';
      const type=t.type?'<span class="meta-pill">'+esc(t.type.toUpperCase())+'</span>':'';
-     return '<article class="task-card"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+'</div></div><div class="task-mark">○</div></article>';
+     const state=t.status==='paused'?'<div class="task-state">PAUSIERT</div>':'';
+     const cls='task-card'+(t.status==='paused'?' is-paused':'')+(t.priority==='high'?' is-high':t.priority==='medium'?' is-medium':'');
+     return '<article class="'+cls+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+'</div>'+state+'</div><div class="task-mark">○</div></article>';
    }).join('');
  }
  async function load(){
