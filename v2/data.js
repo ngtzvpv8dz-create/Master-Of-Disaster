@@ -273,10 +273,54 @@ function baseLegacyTask(props){
   };
 }
 
+
+const UNDO_KEY='masterOfDisasterV2UndoV1';
+
+function rememberUndo(label){
+  try{
+    const snapshot={label:String(label||'Änderung'),at:new Date().toISOString(),tasks:legacyTasks()};
+    sessionStorage.setItem(UNDO_KEY,JSON.stringify(snapshot));
+    return true;
+  }catch(_){return false;}
+}
+
+function undoInfo(){
+  try{
+    const raw=sessionStorage.getItem(UNDO_KEY);
+    if(!raw)return null;
+    const parsed=JSON.parse(raw);
+    return parsed&&Array.isArray(parsed.tasks)?parsed:null;
+  }catch(_){return null;}
+}
+
+async function undoLast(){
+  const snapshot=undoInfo();
+  if(!snapshot)throw new Error('Es gibt noch nichts rückgängig zu machen.');
+  await ensureClient();
+  const current=legacyTasks();
+  const previous=snapshot.tasks;
+  if(!writeJson(TASK_KEY,previous))throw new Error('Undo konnte lokal nicht gespeichert werden.');
+
+  const previousIds=new Set(previous.map(x=>Number(x&&x.id)).filter(Number.isFinite));
+  const removed=current.map(x=>Number(x&&x.id)).filter(id=>Number.isFinite(id)&&!previousIds.has(id));
+  if(removed.length){
+    const result=await client.from('tasks').delete().eq('user_id',session.user.id).in('legacy_task_id',removed);
+    if(result.error)console.warn('V2 undo cloud delete pending',result.error);
+  }
+
+  for(const task of previous){
+    try{await mirror(task,{segments:true});}
+    catch(error){console.warn('V2 undo cloud mirror pending',error);}
+  }
+  sessionStorage.removeItem(UNDO_KEY);
+  return {label:snapshot.label,at:snapshot.at};
+}
+
 async function addTask(props){
   const rows=legacyTasks();
   if(!rows.length)throw new Error('Der gemeinsame 1.0-Datenbestand ist auf diesem Gerät nicht geladen. Bitte 1.0 einmal öffnen.');
   const local=baseLegacyTask(props);
+  rememberUndo('Aufgabe anlegen');
   rows.push(local);
   if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
   let cloud=null;
@@ -290,6 +334,7 @@ async function patchTask(legacyId,patch,{segments=false}={}){
   const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
   if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
   const local=rows[index];
+  rememberUndo('Aufgabe bearbeiten');
   Object.assign(local,patch||{});
   rows[index]=local;
   if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
@@ -304,6 +349,7 @@ async function setToday(legacyId,selected){
   const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
   if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
   const local=rows[index];
+  rememberUndo(selected?'Aus Heute entfernen':'Für Heute einplanen');
   if(!selected){local.todayDate=null;local.todayOrder=null;}
   else{
     const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -324,6 +370,7 @@ async function runTask(legacyId){
   if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
   const task=rows[index];
   if(task.type==='selfrunner')throw new Error('Selbstläufer-Abschluss folgt mit der Abschlusslogik.');
+  rememberUndo(task.status==='running'?'Aufgabe pausieren':task.status==='paused'?'Aufgabe fortsetzen':'Aufgabe starten');
 
   const now=new Date().toISOString();
   if(task.status==='running'){
@@ -387,6 +434,7 @@ async function completeTask(legacyId){
   const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
   if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
   const task=rows[index];
+  rememberUndo('Aufgabe erledigen');
   const now=new Date().toISOString();
 
   const last=Array.isArray(task.activeSegments)&&task.activeSegments.length?task.activeSegments[task.activeSegments.length-1]:null;
@@ -434,7 +482,7 @@ async function completeTask(legacyId){
 }
 
 window.MOD2Data={
-  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,
+  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,undoLast,undoInfo,
   legacyTasks,legacyArchive,findLegacy,version:'2.0.6'
 };
 })();

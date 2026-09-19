@@ -413,7 +413,14 @@
    if(btn.dataset.action==='edit')startEdit(btn.dataset.id);
  });
  const undo=$('#todoUndo');
- if(undo)undo.addEventListener('click',()=>showToast('Undo/Verlauf ist als eigener 2.0-Schritt noch offen.'));
+ if(undo)undo.addEventListener('click',async()=>{
+   try{
+     if(!window.MOD2Data)throw new Error('2.0-Datenmodul wurde nicht geladen.');
+     const result=await window.MOD2Data.undoLast();
+     await load();
+     showToast('Rückgängig: '+result.label+'.');
+   }catch(error){showToast(error&&error.message?error.message:'Undo nicht möglich.');}
+ });
 
  updateComposerUI();
  const wait=()=>{

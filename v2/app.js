@@ -8,12 +8,18 @@
     ['pointerup','pointercancel','pointerleave'].forEach(e=>el.addEventListener(e,off));
   });
   const r=document.querySelector('.undo-r');
-  if(r) r.addEventListener('click',()=>{
+  if(r) r.addEventListener('click',async()=>{
     const toast=document.getElementById('v2Toast');
     if(!toast)return;
-    toast.textContent='Undo/Verlauf wird mit TO-DO 2.0 angebunden.';
+    try{
+      if(!window.MOD2Data)throw new Error('2.0-Datenmodul ist noch nicht bereit.');
+      const result=await window.MOD2Data.undoLast();
+      toast.textContent='Rückgängig: '+result.label+'.';
+    }catch(error){
+      toast.textContent=error&&error.message?error.message:'Undo nicht möglich.';
+    }
     toast.classList.add('show');
     clearTimeout(window.__toastTimer);
-    window.__toastTimer=setTimeout(()=>toast.classList.remove('show'),1800);
+    window.__toastTimer=setTimeout(()=>toast.classList.remove('show'),1900);
   });
 })();
