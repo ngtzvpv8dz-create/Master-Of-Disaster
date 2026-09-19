@@ -328,11 +328,12 @@
        const delta=Math.max(0,Date.now()-new Date(t.paused_at).getTime());
        patch.pause_total_ms=(Number(t.pause_total_ms)||0)+delta;
      }
+     const wasPaused=t.status==='paused';
      const result=await client.from('tasks').update(patch).eq('id',t.id).select('id,status,started_at,paused_at,pause_total_ms,cooking_mode').single();
      if(result.error)throw result.error;
      await openSegment('task_active_segments',t.id,{metadata:{}});
      if(t.type==='cooking')await openSegment('task_cooking_segments',t.id,{mode:t.cooking_mode||'active'});
-     Object.assign(t,result.data); render(); showToast(t.status==='paused'?'Aufgabe fortgesetzt.':'Aufgabe gestartet.');
+     Object.assign(t,result.data); render(); showToast(wasPaused?'Aufgabe fortgesetzt.':'Aufgabe gestartet.');
    }catch(error){showToast(error&&error.message?error.message:'Start/Pause konnte nicht gespeichert werden.');}
  }
 

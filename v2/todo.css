@@ -81,3 +81,5 @@
 .task-action:active{transform:scale(.95);filter:brightness(1.08)}
 .task-card.is-running{border-color:rgba(111,139,114,.3)}
 .task-state.running{color:#95b496}
+
+.task-action:disabled{opacity:.42;cursor:not-allowed;transform:none;filter:none}
