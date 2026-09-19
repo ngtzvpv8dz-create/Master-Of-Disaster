@@ -76,7 +76,7 @@
  function updateSummary(){
    const open=tasks.filter(t=>t.status==='open').length;
    const paused=tasks.filter(t=>t.status==='paused').length;
-   const priority=tasks.filter(t=>t.status==='open'&&['high','medium'].includes(t.priority)).length;
+   const priority=tasks.filter(t=>['open','running','paused'].includes(t.status)&&['high','medium'].includes(t.priority)).length;
    const openEl=$('#openSummary'),pausedEl=$('#pausedSummary'),priorityEl=$('#prioritySummary');
    if(openEl)openEl.textContent=String(open);
    if(pausedEl)pausedEl.textContent=String(paused);
@@ -91,14 +91,14 @@
      return rows.sort((a,b)=>(a.today_order||9999)-(b.today_order||9999));
    }
    if(filter==='priority'){
-     rows=tasks.filter(t=>t.status==='open'&&['high','medium'].includes(t.priority));
+     rows=tasks.filter(t=>['open','running','paused'].includes(t.status)&&['high','medium'].includes(t.priority));
      return rows.sort((a,b)=>{
        const rank={high:0,medium:1,normal:2};
        return (rank[a.priority]??9)-(rank[b.priority]??9);
      });
    }
    if(filter==='due'){
-     rows=tasks.filter(t=>['open','paused'].includes(t.status)&&t.due_date);
+     rows=tasks.filter(t=>['open','running','paused'].includes(t.status)&&t.due_date);
      return rows.sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date)));
    }
    if(filter==='paused')return tasks.filter(t=>t.status==='paused');
@@ -116,7 +116,7 @@
    const today=t.today_date===berlinDateKey();
    const runLabel=t.status==='running'?'PAUSE':t.status==='paused'?'FORTSETZEN':t.type==='selfrunner'?'SELBSTLÄUFER':'START';
    const runDisabled=t.type==='selfrunner'?' disabled':'';
-   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="more" data-id="'+esc(t.id)+'">MEHR</button></div></article>';
+   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+category+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="more" data-id="'+esc(t.id)+'">MEHR</button></div></article>';
  }
 
  function renderArchive(){
@@ -133,9 +133,9 @@
  function renderStatistics(){
    const open=tasks.filter(t=>t.status==='open').length;
    const paused=tasks.filter(t=>t.status==='paused').length;
-   const due=tasks.filter(t=>['open','paused'].includes(t.status)&&t.due_date).length;
-   const high=tasks.filter(t=>t.status==='open'&&t.priority==='high').length;
-   const medium=tasks.filter(t=>t.status==='open'&&t.priority==='medium').length;
+   const due=tasks.filter(t=>['open','running','paused'].includes(t.status)&&t.due_date).length;
+   const high=tasks.filter(t=>['open','running','paused'].includes(t.status)&&t.priority==='high').length;
+   const medium=tasks.filter(t=>['open','running','paused'].includes(t.status)&&t.priority==='medium').length;
    const archive=archives.length;
    count.textContent=String(open+paused);
    const cards=[
