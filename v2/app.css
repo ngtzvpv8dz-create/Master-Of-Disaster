@@ -29,8 +29,15 @@ a,button{-webkit-tap-highlight-color:transparent}
  transition:transform .13s ease,filter .13s ease,border-color .13s ease,box-shadow .13s ease}
 .area-card::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(145deg,rgba(255,255,255,.025),transparent 38%)}
 .area-card:active,.area-card.is-pressed{transform:scale(.965);filter:brightness(1.08);border-color:color-mix(in srgb,var(--accent) 72%,white 8%);box-shadow:0 8px 18px rgba(0,0,0,.27),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent)}
-.icon-frame{width:min(118px,35vw);aspect-ratio:1;border-radius:24%;overflow:hidden;display:block;box-shadow:0 11px 22px rgba(0,0,0,.25)}
-.icon-frame img{width:100%;height:100%;display:block;object-fit:cover}
+.icon-frame{width:min(118px,35vw);aspect-ratio:1;border-radius:24%;overflow:hidden;display:block;box-shadow:0 11px 22px rgba(0,0,0,.25);background-image:url('./assets/icon-sprite-preview.webp');background-size:400% 200%;background-repeat:no-repeat}
+.icon-todo{background-position:0% 0%}
+.icon-sport{background-position:33.3333% 0%}
+.icon-kistology{background-position:66.6667% 0%}
+.icon-food{background-position:100% 0%}
+.icon-shopping{background-position:0% 100%}
+.icon-finance{background-position:33.3333% 100%}
+.icon-progress{background-position:66.6667% 100%}
+.icon-backstage{background-position:100% 100%}
 .area-label{padding-top:11px;font-size:11px;letter-spacing:.17em;white-space:nowrap;color:#e7dfd4}
 .version-back{display:block;width:max-content;margin:28px auto 0;color:#918c85;text-decoration:none;font-size:10px;letter-spacing:.15em;border-bottom:1px solid transparent;padding:8px}
 .version-back:active{color:#e8dfd1;border-color:#8c7555}

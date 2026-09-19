@@ -1,16 +1,12 @@
 (() => {
  const map={
-  sport:['SPORT','#6f8b72'],kistology:['KISTOLOGY','#a9805e'],food:['FOOD','#789276'],
-  shopping:['EINKAUFSLISTE','#c49a68'],finance:['FINANZEN','#72919b'],progress:['PROGRESS','#8aa6a1'],backstage:['BACKSTAGE','#88848f']
+  sport:['SPORT','33.3333% 0%'],kistology:['KISTOLOGY','66.6667% 0%'],food:['FOOD','100% 0%'],
+  shopping:['EINKAUFSLISTE','0% 100%'],finance:['FINANZEN','33.3333% 100%'],progress:['PROGRESS','66.6667% 100%'],backstage:['BACKSTAGE','100% 100%']
  };
  const area=new URL(location.href).searchParams.get('area')||'bereich';
- const info=map[area]||['BEREICH','#c9a36d'];
+ const info=map[area]||['BEREICH','50% 50%'];
  document.getElementById('placeholderKicker').textContent=info[0];
  document.getElementById('placeholderTitle').textContent=info[0]+' 2.0';
  const icon=document.getElementById('placeholderIcon');
- if(map[area]){
-   icon.style.backgroundImage='url(./assets/icons/'+area+'.webp)';
-   icon.style.backgroundSize='cover';
-   icon.style.backgroundPosition='center';
- }
+ if(map[area]) icon.style.backgroundPosition=info[1];
 })();
