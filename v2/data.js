@@ -481,8 +481,136 @@ async function completeTask(legacyId){
   return toView(task,cloud);
 }
 
+
+async function repeatTask(legacyId){
+  const rows=legacyTasks();
+  const old=rows.find(row=>Number(row&&row.id)===Number(legacyId));
+  if(!old)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
+  rememberUndo('Aufgabe wiederholen');
+  const copy=JSON.parse(JSON.stringify(old));
+  copy.id=Date.now()+Math.floor(Math.random()*1000);
+  copy.status='open';
+  copy.todayDate=null;copy.todayOrder=null;
+  copy.startedAt=null;copy.pausedAt=null;copy.pauseTotalMs=0;
+  copy.completedAt=null;copy.abortedAt=null;
+  copy.activeDurationMs=null;copy.actualDurationMs=null;copy.leisureDurationMs=null;copy.passiveDurationMs=null;
+  copy.cookingActiveDurationMs=null;copy.cookingPassiveDurationMs=null;copy.abortedActiveDurationMs=null;
+  copy.activeSegments=[];copy.cookingSegments=[];copy.cookingMode='active';
+  copy.importedHistoricalProgressDurationMs=0;
+  copy.historicalAlreadyArchivedDurationMs=0;
+  copy.historicalUnallocatedAccountingMs=0;
+  copy.historicalAccountingByDate={};copy.historicalAccountingSegments=[];copy.historicalTimeParts=[];
+  copy.sourceNotes=[];
+  rows.push(copy);
+  if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
+  let cloud=null;
+  try{cloud=await mirror(copy,{segments:true});}
+  catch(error){console.warn('V2 repeat cloud mirror pending',error);}
+  return toView(copy,cloud);
+}
+
+async function deleteTask(legacyId){
+  const rows=legacyTasks();
+  const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
+  if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
+  rememberUndo('Aufgabe löschen');
+  const removed=rows[index];
+  rows.splice(index,1);
+  if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
+  try{
+    await ensureClient();
+    const found=await client.from('tasks').select('id').eq('user_id',session.user.id).eq('legacy_task_id',Number(legacyId)).limit(1);
+    if(found.error)throw found.error;
+    const cloudId=found.data&&found.data[0]?found.data[0].id:null;
+    if(cloudId){
+      let result=await client.from('task_active_segments').delete().eq('task_id',cloudId);
+      if(result.error)throw result.error;
+      result=await client.from('task_cooking_segments').delete().eq('task_id',cloudId);
+      if(result.error)throw result.error;
+      result=await client.from('tasks').delete().eq('id',cloudId);
+      if(result.error)throw result.error;
+    }
+  }catch(error){console.warn('V2 delete cloud mirror pending',error);}
+  return removed;
+}
+
+async function setManualTimes(legacyId,startIso,endIso=null){
+  const rows=legacyTasks();
+  const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
+  if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
+  const task=rows[index];
+  if(task.type==='selfrunner')throw new Error('Selbstläufer benötigen keine manuelle Zeitkorrektur.');
+  const startMs=new Date(startIso||'').getTime();
+  const endMs=endIso?new Date(endIso).getTime():null;
+  if(!Number.isFinite(startMs))throw new Error('Eine gültige Startzeit ist erforderlich.');
+  if(endMs!==null&&!Number.isFinite(endMs))throw new Error('Die Endzeit ist ungültig.');
+  if(endMs!==null&&endMs<startMs)throw new Error('Zeitreise abgelehnt: Ende darf nicht vor Start liegen.');
+  if(endMs!==null&&endMs===startMs)throw new Error('Die tatsächliche Dauer muss größer als 0 sein.');
+
+  rememberUndo('Zeiten korrigieren');
+  const oldStart=task.startedAt?new Date(task.startedAt).getTime():null;
+  const startChanged=oldStart===null||!Number.isFinite(oldStart)||Math.abs(oldStart-startMs)>1000;
+
+  if(startChanged){
+    task.startedAt=startIso;task.pauseTotalMs=0;task.pausedAt=null;
+    task.activeSegments=[{startedAt:startIso,endedAt:endIso||null}];
+    if(task.type==='cooking'){
+      task.cookingMode='active';
+      task.cookingSegments=[{mode:'active',startedAt:startIso,endedAt:endIso||null}];
+    }
+  }else{
+    task.startedAt=startIso;
+    if(endIso&&Array.isArray(task.activeSegments)&&task.activeSegments.length){
+      const last=task.activeSegments[task.activeSegments.length-1];
+      if(last&&!last.endedAt)last.endedAt=endIso;
+    }
+    if(endIso&&task.type==='cooking'&&Array.isArray(task.cookingSegments)&&task.cookingSegments.length){
+      const last=task.cookingSegments[task.cookingSegments.length-1];
+      if(last&&!last.endedAt)last.endedAt=endIso;
+    }
+  }
+
+  if(!endIso){
+    task.status='running';task.completedAt=null;task.abortedAt=null;
+    task.activeDurationMs=null;task.leisureDurationMs=null;task.actualDurationMs=null;task.passiveDurationMs=null;
+    task.cookingActiveDurationMs=null;task.cookingPassiveDurationMs=null;
+    if(!Array.isArray(task.activeSegments)||!task.activeSegments.length){
+      task.activeSegments=[{startedAt:startIso,endedAt:null}];
+    }else{
+      const last=task.activeSegments[task.activeSegments.length-1];
+      if(last&&last.endedAt)task.activeSegments.push({startedAt:startIso,endedAt:null});
+    }
+    if(task.type==='cooking'&&(!Array.isArray(task.cookingSegments)||!task.cookingSegments.length)){
+      task.cookingMode='active';
+      task.cookingSegments=[{mode:'active',startedAt:startIso,endedAt:null}];
+    }
+  }else{
+    const duration=sumSegments(task,endIso);
+    if(duration<=0)throw new Error('Die tatsächliche Dauer muss größer als 0 sein.');
+    task.completedAt=endIso;task.status='completed';task.pausedAt=null;task.abortedAt=null;task.actualDurationMs=duration;
+    if(task.type==='leisure'){
+      task.leisureDurationMs=duration;task.activeDurationMs=0;task.passiveDurationMs=null;
+      task.cookingActiveDurationMs=null;task.cookingPassiveDurationMs=null;
+    }else if(task.type==='cooking'){
+      const parts=cookingDurations(task,endIso);
+      task.cookingActiveDurationMs=parts.active;task.cookingPassiveDurationMs=parts.passive;
+      task.activeDurationMs=parts.active;task.passiveDurationMs=parts.passive;task.leisureDurationMs=null;
+    }else{
+      task.activeDurationMs=duration;task.leisureDurationMs=null;task.passiveDurationMs=null;
+      task.cookingActiveDurationMs=null;task.cookingPassiveDurationMs=null;
+    }
+  }
+
+  rows[index]=task;
+  if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
+  let cloud=null;
+  try{cloud=await mirror(task,{segments:true});}
+  catch(error){console.warn('V2 manual time cloud mirror pending',error);}
+  return toView(task,cloud);
+}
+
 window.MOD2Data={
-  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,undoLast,undoInfo,
-  legacyTasks,legacyArchive,findLegacy,version:'2.0.6'
+  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,repeatTask,deleteTask,setManualTimes,undoLast,undoInfo,
+  legacyTasks,legacyArchive,findLegacy,version:'2.0.10'
 };
 })();

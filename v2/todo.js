@@ -116,7 +116,7 @@
    const today=t.today_date===berlinDateKey();
    const runLabel=t.status==='running'?'PAUSE':t.status==='paused'?'FORTSETZEN':t.type==='selfrunner'?'SELBSTLÄUFER':'START';
    const runDisabled=t.type==='selfrunner'?' disabled':'';
-   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="edit" data-id="'+esc(t.id)+'">BEARBEITEN</button></div></article>';
+   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="more" data-id="'+esc(t.id)+'">MEHR</button></div></article>';
  }
 
  function renderArchive(){
@@ -374,6 +374,88 @@
  }
 
 
+
+ function closeTodoModal(){
+   const root=$('#todoModal');if(root)root.innerHTML='';
+ }
+
+ function isoToLocalInput(value){
+   if(!value)return '';
+   const d=new Date(value);if(Number.isNaN(d.getTime()))return '';
+   const pad=n=>String(n).padStart(2,'0');
+   return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+ }
+
+ function localInputToIso(value){
+   if(!value)return null;
+   const d=new Date(value);
+   return Number.isNaN(d.getTime())?null:d.toISOString();
+ }
+
+ function modalShell(title,body,actions=''){
+   const root=$('#todoModal');if(!root)return;
+   root.innerHTML='<div class="todo-modal-backdrop" data-modal-close="1"><section class="todo-modal-card" role="dialog" aria-modal="true"><h2>'+esc(title)+'</h2>'+body+'<div class="todo-modal-actions">'+actions+'</div></section></div>';
+   const backdrop=root.querySelector('[data-modal-close]');
+   if(backdrop)backdrop.addEventListener('click',e=>{if(e.target===backdrop)closeTodoModal();});
+   root.querySelectorAll('[data-close-modal]').forEach(b=>b.addEventListener('click',closeTodoModal));
+ }
+
+ function openMoreMenu(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   const body='<p class="todo-modal-task">'+esc(t.text)+'</p><div class="todo-more-grid"><button data-more="edit">BEARBEITEN</button><button data-more="time">ZEITEN KORRIGIEREN</button><button data-more="repeat">WIEDERHOLEN</button><button data-more="delete" class="danger">LÖSCHEN</button></div>';
+   modalShell('Aufgabe',body,'<button type="button" data-close-modal>ZURÜCK</button>');
+   const root=$('#todoModal');
+   root.querySelector('[data-more="edit"]')?.addEventListener('click',()=>{closeTodoModal();startEdit(id);});
+   root.querySelector('[data-more="time"]')?.addEventListener('click',()=>openTimeModal(id));
+   root.querySelector('[data-more="repeat"]')?.addEventListener('click',()=>repeatAction(id));
+   root.querySelector('[data-more="delete"]')?.addEventListener('click',()=>confirmDelete(id));
+ }
+
+ function openTimeModal(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   if(t.type==='selfrunner'){showToast('Selbstläufer benötigen keine manuelle Zeitkorrektur.');return;}
+   const start=isoToLocalInput(t.started_at);
+   const end=isoToLocalInput(t.completed_at);
+   const body='<p class="todo-modal-task">'+esc(t.text)+'</p><label class="time-field"><span>STARTZEIT</span><input id="manualStartV2" type="datetime-local" value="'+esc(start)+'"></label><label class="time-field"><span>ENDZEIT</span><input id="manualEndV2" type="datetime-local" value="'+esc(end)+'"></label><p class="todo-modal-help">Nur Startzeit: Aufgabe läuft. Start + Ende: Aufgabe wird mit dieser tatsächlichen Dauer abgeschlossen.</p>';
+   modalShell('Zeiten korrigieren',body,'<button type="button" data-close-modal>ABBRECHEN</button><button type="button" id="saveManualTimeV2" class="primary">SPEICHERN</button>');
+   $('#saveManualTimeV2')?.addEventListener('click',()=>saveManualTimeAction(id));
+ }
+
+ async function saveManualTimeAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   const start=localInputToIso($('#manualStartV2')?.value||'');
+   const end=localInputToIso($('#manualEndV2')?.value||'');
+   if(!start){showToast('Eine gültige Startzeit ist erforderlich.');return;}
+   try{
+     const updated=await window.MOD2Data.setManualTimes(t.legacy_task_id,start,end);
+     Object.assign(t,updated);closeTodoModal();render();showToast('Zeiten gespeichert.');
+   }catch(error){showToast(error&&error.message?error.message:'Zeiten konnten nicht gespeichert werden.');}
+ }
+
+ async function repeatAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   try{
+     const created=await window.MOD2Data.repeatTask(t.legacy_task_id);
+     tasks.push(created);closeTodoModal();render();showToast('Aufgabe wiederholt.');
+   }catch(error){showToast(error&&error.message?error.message:'Aufgabe konnte nicht wiederholt werden.');}
+ }
+
+ function confirmDelete(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   const body='<p class="todo-modal-task">'+esc(t.text)+'</p><p class="todo-modal-help">Die Aufgabe wird aus dem gemeinsamen Datenbestand gelöscht. Das rote R kann diesen Schritt direkt danach rückgängig machen.</p>';
+   modalShell('Aufgabe löschen?',body,'<button type="button" data-close-modal>ABBRECHEN</button><button type="button" id="confirmDeleteV2" class="danger">LÖSCHEN</button>');
+   $('#confirmDeleteV2')?.addEventListener('click',()=>deleteAction(id));
+ }
+
+ async function deleteAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   try{
+     await window.MOD2Data.deleteTask(t.legacy_task_id);
+     tasks=tasks.filter(x=>String(x.id)!==String(id));
+     closeTodoModal();render();showToast('Aufgabe gelöscht. R = Rückgängig.');
+   }catch(error){showToast(error&&error.message?error.message:'Aufgabe konnte nicht gelöscht werden.');}
+ }
+
  document.querySelectorAll('.todo-tab').forEach(btn=>btn.addEventListener('click',()=>{
    document.querySelectorAll('.todo-tab').forEach(x=>x.classList.remove('active'));
    btn.classList.add('active');
@@ -410,6 +492,7 @@
    if(btn.dataset.action==='today')toggleToday(btn.dataset.id);
    if(btn.dataset.action==='run')runAction(btn.dataset.id);
    if(btn.dataset.action==='complete')completeAction(btn.dataset.id);
+   if(btn.dataset.action==='more')openMoreMenu(btn.dataset.id);
    if(btn.dataset.action==='edit')startEdit(btn.dataset.id);
  });
  const undo=$('#todoUndo');

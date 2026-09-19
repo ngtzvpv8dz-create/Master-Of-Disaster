@@ -88,3 +88,19 @@
 .category-editor input{width:100%;min-height:38px;border-radius:12px;border:1px solid rgba(190,162,118,.18);background:#171815;color:#e9e2d8;padding:0 11px;font:inherit;font-size:11px;outline:none}
 .category-editor input:focus{border-color:rgba(190,162,118,.48);box-shadow:0 0 0 3px rgba(190,162,118,.07)}
 .meta-pill.category{color:#c8b18a;border-color:rgba(190,162,118,.2)}
+
+.todo-modal-root:empty{display:none}
+.todo-modal-backdrop{position:fixed;inset:0;z-index:80;background:rgba(5,6,6,.72);backdrop-filter:blur(8px);display:grid;place-items:end center;padding:20px 14px calc(20px + env(safe-area-inset-bottom))}
+.todo-modal-card{width:min(100%,520px);max-height:82svh;overflow:auto;border-radius:24px;padding:20px;background:linear-gradient(155deg,#292720,#171817);border:1px solid rgba(190,162,118,.24);box-shadow:0 26px 70px rgba(0,0,0,.48)}
+.todo-modal-card h2{margin:0 0 10px;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:27px;font-weight:500;color:#eee5d7}
+.todo-modal-task{margin:0 0 16px;color:#d7cbbb;font-size:14px;line-height:1.45}
+.todo-modal-help{color:#918a80;font-size:11px;line-height:1.5}
+.todo-modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap}
+.todo-modal-actions button,.todo-more-grid button{border:1px solid rgba(190,162,118,.16);border-radius:13px;background:#1b1c19;color:#bbb2a5;padding:10px 12px;font-size:9px;letter-spacing:.09em}
+.todo-modal-actions button:active,.todo-more-grid button:active{transform:scale(.96);filter:brightness(1.12)}
+.todo-modal-actions .primary{background:#c9b184;color:#211e19;border-color:#dfc9a4}
+.todo-modal-actions .danger,.todo-more-grid .danger{color:#e19b9b;border-color:rgba(216,78,78,.28)}
+.todo-more-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.time-field{display:block;margin-top:12px}
+.time-field span{display:block;margin-bottom:6px;color:#8f887e;font-size:8px;letter-spacing:.13em}
+.time-field input{width:100%;height:44px;border-radius:13px;border:1px solid rgba(190,162,118,.18);background:#151613;color:#eee6da;padding:0 11px;font:inherit}
