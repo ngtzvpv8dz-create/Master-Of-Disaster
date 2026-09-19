@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V580';
+  const VERSION='V581';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -262,33 +262,66 @@
       '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
   }
 
-  function mealCard(meal){
-    const status=normalizedStatus(meal.status);
-    const expanded=expandedMeals.has(String(meal.id));
-    const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
-    const items=meal.ingredients||[];
-    const instructions=recipeInstructions(recipe||{});
+  function recipePresentation(recipe,expanded){
+    const items=recipe.food_recipe_ingredients||recipe.ingredients||[];
+    const servings=Math.max(1,Number(recipe.servings)||1);
+    const instructions=recipeInstructions(recipe);
+    const nutrition=[
+      num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
+      num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
+    ].filter(Boolean).join(' · ');
+    const details=expanded
+      ?'<div class="food-recipe-details-v572"><div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div><div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
+      :'';
+    const meta=[portionLabel(servings),recipe.prep_minutes?recipe.prep_minutes+' Min.':null,nutrition||null].filter(Boolean).join(' · ');
+    return {details,meta};
+  }
+
+  function mealPlanMeta(meal){
     const prepared=Math.max(.01,Number(meal.prepared_servings)||1);
     const eaten=Math.max(.01,Number(meal.eaten_servings)||prepared);
     const rest=Math.max(0,prepared-eaten);
     const isToday=meal.meal_date===todayIso();
-    const portionMeta=meal.leftover_id
-      ?portionLabel(eaten)+' aus Resten geplant'
-      :(rest>0&&isToday
+    if(meal.leftover_id)return portionLabel(eaten)+' aus Resten geplant';
+    if(rest>0){
+      return isToday
         ?portionLabel(prepared)+' geplant · '+portionLabel(eaten)+' heute · '+portionLabel(rest)+' für morgen'
-        :portionLabel(eaten)+' geplant');
+        :portionLabel(prepared)+' geplant · '+portionLabel(eaten)+' an diesem Tag · '+portionLabel(rest)+' als Rest';
+    }
+    return portionLabel(eaten)+' geplant';
+  }
+
+  function mealCard(meal){
+    const status=normalizedStatus(meal.status);
+    const expanded=expandedMeals.has(String(meal.id));
+    const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
+    const action=status==='completed'?'':'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">Als erledigt markieren</button>';
+
+    if(recipe){
+      const view=recipePresentation(recipe,expanded);
+      return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
+        +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
+          +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
+          +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
+        +'</button>'
+        +view.details
+        +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusLabel(status))+'</p>'
+        +action
+        +'</article>';
+    }
+
+    const items=meal.ingredients||[];
+    const portionMeta=mealPlanMeta(meal);
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
         +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
-        +(instructions.length?'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong><ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol></div>':'')
         +(meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'')
-        +(!items.length&&!instructions.length&&!meal.note?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
+        +(!items.length&&!meal.note?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
         +'</div>'
       :'';
-    const action=status==='completed'?'':'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">Als erledigt markieren</button>';
-    return '<article class="food-meal-card-v544 '+(expanded?'is-expanded-v573':'')+' status-'+status+'">'
+    return '<article class="food-meal-card-v544 '+(expanded?'is-expanded-v573':'')+' status-'+status+'" data-food-meal-card="'+esc(meal.id)+'">'
       +'<button type="button" class="food-meal-toggle-v573" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-        +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta)+' · '+esc(statusLabel(status))+'</em></span>'
+        +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta+' · '+statusLabel(status))+'</em></span>'
         +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
       +'</button>'
       +details+action
@@ -459,19 +492,9 @@
   }
 
   function recipeCard(recipe){
-    const items=recipe.food_recipe_ingredients||recipe.ingredients||[];
-    const servings=Math.max(1,Number(recipe.servings)||1);
     const expanded=expandedRecipes.has(String(recipe.id));
-    const instructions=recipeInstructions(recipe);
-    const nutrition=[
-      num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
-      num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
-    ].filter(Boolean).join(' · ');
-    const details=expanded
-      ?'<div class="food-recipe-details-v572"><div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div><div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
-      :'';
-    const meta=[portionLabel(servings),recipe.prep_minutes?recipe.prep_minutes+' Min.':null,nutrition||null].filter(Boolean).join(' · ');
-    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+details+'<button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></article>';
+    const view=recipePresentation(recipe,expanded);
+    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+view.details+'<button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></article>';
   }
 
   function recipesView(data){
@@ -895,6 +918,12 @@
     });
     root.querySelectorAll('[data-food-consume]').forEach(button=>button.addEventListener('click',()=>consumeModal(button.dataset.foodConsume)));
     root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
+    root.querySelectorAll('[data-food-meal-card]').forEach(card=>card.addEventListener('click',event=>{
+      if(event.target?.closest?.('button,input,select,textarea,label'))return;
+      const id=String(card.dataset.foodMealCard);
+      if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);
+      renderState();
+    }));
     root.querySelectorAll('[data-food-stock-gap]').forEach(button=>button.addEventListener('click',()=>stockGapModal(button)));
     root.querySelectorAll('[data-food-open-garlic]').forEach(button=>button.addEventListener('click',()=>openGarlicModal(button.dataset.foodOpenGarlic)));
     root.querySelectorAll('[data-food-garlic-adjust]').forEach(button=>button.addEventListener('click',()=>garlicStockModal()));
