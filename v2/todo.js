@@ -111,7 +111,9 @@
    const state=t.status==='paused'?'<div class="task-state">PAUSIERT</div>':t.status==='running'?'<div class="task-state running">LÄUFT</div>':'';
    const cls='task-card'+(t.status==='paused'?' is-paused':'')+(t.status==='running'?' is-running':'')+(t.priority==='high'?' is-high':t.priority==='medium'?' is-medium':'');
    const today=t.today_date===berlinDateKey();
-   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="edit" data-id="'+esc(t.id)+'">BEARBEITEN</button></div></article>';
+   const runLabel=t.status==='running'?'PAUSE':t.status==='paused'?'FORTSETZEN':t.type==='selfrunner'?'SELBSTLÄUFER':'START';
+   const runDisabled=t.type==='selfrunner'?' disabled':'';
+   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="edit" data-id="'+esc(t.id)+'">BEARBEITEN</button></div></article>';
  }
 
  function renderArchive(){
@@ -210,7 +212,7 @@
      await ensureClient();
      const [taskResult,archiveResult]=await Promise.all([
        client.from('tasks')
-        .select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,created_at,updated_at')
+        .select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,started_at,paused_at,pause_total_ms,cooking_mode,created_at,updated_at')
         .order('today_order',{ascending:true})
         .order('created_at',{ascending:false}),
        client.from('archive_entries')
@@ -284,6 +286,54 @@
    const cancel=$('#cancelEditButton'); if(cancel)cancel.hidden=false;
    updateComposerUI(); render();
    setTimeout(()=>{composer.hidden=false;composer.scrollIntoView({behavior:'smooth',block:'start'});input&&input.focus();},0);
+ }
+
+ async function openSegment(table,taskId,extra={}){
+   const now=new Date().toISOString();
+   const payload={user_id:session.user.id,task_id:taskId,started_at:now,...extra};
+   const result=await client.from(table).insert([payload]).select('id,started_at').single();
+   if(result.error)throw result.error;
+   return result.data;
+ }
+
+ async function closeOpenSegment(table,taskId){
+   const current=await client.from(table).select('id,started_at').eq('task_id',taskId).is('ended_at',null).order('started_at',{ascending:false}).limit(1);
+   if(current.error)throw current.error;
+   const row=current.data&&current.data[0]; if(!row)return;
+   const endedAt=new Date().toISOString();
+   const duration=Math.max(0,new Date(endedAt).getTime()-new Date(row.started_at).getTime());
+   const result=await client.from(table).update({ended_at:endedAt,duration_ms:duration}).eq('id',row.id);
+   if(result.error)throw result.error;
+ }
+
+ async function runAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id)); if(!t)return;
+   if(t.type==='selfrunner'){showToast('Selbstläufer-Abschluss kommt mit der Abschluss-/Archivlogik.');return;}
+   try{
+     await ensureClient();
+     if(t.status==='running'){
+       const now=new Date().toISOString();
+       await closeOpenSegment('task_active_segments',t.id);
+       if(t.type==='cooking')await closeOpenSegment('task_cooking_segments',t.id);
+       const result=await client.from('tasks').update({status:'paused',paused_at:now}).eq('id',t.id).select('id,status,paused_at,pause_total_ms').single();
+       if(result.error)throw result.error;
+       Object.assign(t,result.data); render(); showToast('Aufgabe pausiert.'); return;
+     }
+     const other=tasks.find(x=>x.status==='running'&&String(x.id)!==String(t.id));
+     if(other){showToast('Es läuft bereits „'+other.text+'“.');return;}
+     const now=new Date().toISOString();
+     const patch={status:'running',paused_at:null};
+     if(!t.started_at)patch.started_at=now;
+     if(t.status==='paused'&&t.paused_at){
+       const delta=Math.max(0,Date.now()-new Date(t.paused_at).getTime());
+       patch.pause_total_ms=(Number(t.pause_total_ms)||0)+delta;
+     }
+     const result=await client.from('tasks').update(patch).eq('id',t.id).select('id,status,started_at,paused_at,pause_total_ms,cooking_mode').single();
+     if(result.error)throw result.error;
+     await openSegment('task_active_segments',t.id,{metadata:{}});
+     if(t.type==='cooking')await openSegment('task_cooking_segments',t.id,{mode:t.cooking_mode||'active'});
+     Object.assign(t,result.data); render(); showToast(t.status==='paused'?'Aufgabe fortgesetzt.':'Aufgabe gestartet.');
+   }catch(error){showToast(error&&error.message?error.message:'Start/Pause konnte nicht gespeichert werden.');}
  }
 
  async function toggleToday(id){
@@ -376,6 +426,7 @@
  if(list)list.addEventListener('click',event=>{
    const btn=event.target.closest('[data-action][data-id]'); if(!btn)return;
    if(btn.dataset.action==='today')toggleToday(btn.dataset.id);
+   if(btn.dataset.action==='run')runAction(btn.dataset.id);
    if(btn.dataset.action==='edit')startEdit(btn.dataset.id);
  });
  const undo=$('#todoUndo');
