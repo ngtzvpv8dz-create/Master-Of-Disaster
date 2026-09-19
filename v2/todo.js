@@ -258,6 +258,96 @@
    }
  }
 
+
+ function titleGroups(){
+   const map=new Map();
+   const add=row=>{
+     const name=String(row&&row.text||'').trim(); if(!name)return;
+     const key=name.toLocaleLowerCase('de-DE');
+     const old=map.get(key)||{name,count:0,latest:null};
+     old.count+=1; old.latest=row; map.set(key,old);
+   };
+   tasks.forEach(add);archives.forEach(add);
+   return [...map.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'de'));
+ }
+
+ function hideSuggestions(){
+   const box=$('#titleSuggestions');
+   if(box){box.hidden=true;box.innerHTML='';}
+ }
+
+ function renderSuggestions(query=''){
+   const box=$('#titleSuggestions'); if(!box)return;
+   const q=String(query||'').trim().toLocaleLowerCase('de-DE');
+   const rows=titleGroups().filter(x=>!q||x.name.toLocaleLowerCase('de-DE').includes(q)).slice(0,8);
+   if(!rows.length){hideSuggestions();return;}
+   box.innerHTML=rows.map((x,i)=>'<button type="button" class="title-suggestion" data-suggestion-index="'+i+'"><span>'+esc(x.name)+'</span><small>'+x.count+'×</small></button>').join('');
+   box.hidden=false;
+   box.querySelectorAll('[data-suggestion-index]').forEach((btn,i)=>btn.addEventListener('click',()=>{
+     const x=rows[i],input=$('#newTaskText');
+     if(input)input.value=x.name;
+     if(x.latest){
+       composerState.type=x.latest.type||'work';
+       composerState.priority=x.latest.priority||'normal';
+       composerState.optional=Boolean(x.latest.optional);
+     }
+     updateComposerUI();hideSuggestions();
+   }));
+ }
+
+ function setAllTab(){
+   filter='all';
+   document.querySelectorAll('.todo-tab').forEach(x=>x.classList.toggle('active',x.dataset.filter==='all'));
+ }
+
+ function resetEditor(){
+   editingId=null;
+   const input=$('#newTaskText');if(input)input.value='';
+   composerState={type:'work',priority:'normal',optional:false,dueMode:'none'};
+   const button=$('#newTaskButton');if(button)button.textContent='+ AUFGABE HINZUFÜGEN';
+   const cancel=$('#cancelEditButton');if(cancel)cancel.hidden=true;
+   updateComposerUI();hideSuggestions();
+ }
+
+ function startEdit(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   if(t.legacy_task_id==null){showToast('Diese Aufgabe hat noch keine gemeinsame 1.0-ID.');return;}
+   editingId=t.legacy_task_id;setAllTab();
+   const input=$('#newTaskText');if(input)input.value=t.text||'';
+   composerState={type:t.type||'work',priority:t.priority||'normal',optional:Boolean(t.optional),dueMode:t.due_mode||'none'};
+   const button=$('#newTaskButton');if(button)button.textContent='ÄNDERUNGEN SPEICHERN';
+   const cancel=$('#cancelEditButton');if(cancel)cancel.hidden=false;
+   updateComposerUI();render();
+   setTimeout(()=>{
+     if(composer){composer.hidden=false;composer.scrollIntoView({behavior:'smooth',block:'start'});}
+     if(input)input.focus();
+   },0);
+ }
+
+ async function toggleToday(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   try{
+     if(!window.MOD2Data)throw new Error('2.0-Datenmodul wurde nicht geladen.');
+     if(t.legacy_task_id==null)throw new Error('Gemeinsame Aufgaben-ID fehlt.');
+     const selected=t.today_date===berlinDateKey();
+     const updated=await window.MOD2Data.setToday(t.legacy_task_id,!selected);
+     Object.assign(t,updated);render();
+     showToast(selected?'Aus Heute entfernt.':'Für Heute eingeplant.');
+   }catch(error){showToast(error&&error.message?error.message:'Heute-Zuordnung konnte nicht geändert werden.');}
+ }
+
+ async function runAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   try{
+     if(!window.MOD2Data)throw new Error('2.0-Datenmodul wurde nicht geladen.');
+     if(t.legacy_task_id==null)throw new Error('Gemeinsame Aufgaben-ID fehlt.');
+     const before=t.status;
+     const updated=await window.MOD2Data.runTask(t.legacy_task_id);
+     Object.assign(t,updated);render();
+     showToast(before==='running'?'Aufgabe pausiert.':before==='paused'?'Aufgabe fortgesetzt.':'Aufgabe gestartet.');
+   }catch(error){showToast(error&&error.message?error.message:'Start/Pause konnte nicht gespeichert werden.');}
+ }
+
  document.querySelectorAll('.todo-tab').forEach(btn=>btn.addEventListener('click',()=>{
    document.querySelectorAll('.todo-tab').forEach(x=>x.classList.remove('active'));
    btn.classList.add('active');
