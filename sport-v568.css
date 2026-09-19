@@ -65,3 +65,271 @@ body:not(.mod-food-v544):not(.mod-kistology-v535):not(.mod-backstage-v530):not(.
   pointer-events:auto!important;
   cursor:pointer;
 }
+
+
+/* V573 · X-TRAINING */
+.sport-side-tab-v512[data-sport-tab-v512="catalog"] .sport-side-tab-label-v510{font-size:.57rem;letter-spacing:.105em}
+
+.sport-x-start-v573,
+.sport-x-block-v573,
+.sport-catalog-group-v573,
+.sport-catalog-create-v573,
+.sport-catalog-note-v573{
+  position:relative;
+  border:1px solid rgba(111,228,234,.14);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(6,28,32,.72),rgba(4,20,24,.54));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 12px 28px rgba(0,0,0,.12);
+}
+.sport-x-start-v573{padding:20px}
+.sport-x-start-v573>span,
+.sport-x-block-head-v573 span,
+.sport-catalog-group-head-v573 span{
+  display:block;
+  color:#74d6dc;
+  font-size:.55rem;
+  font-weight:950;
+  letter-spacing:.13em;
+}
+.sport-x-start-v573 h2{margin:5px 0 8px;color:#e9fbfc;font-size:1.05rem}
+.sport-x-start-v573 p{margin:0 0 15px;color:#89a6a9;font-size:.72rem;line-height:1.5}
+.sport-x-start-v573 button,
+.sport-x-block-head-v573 button,
+.sport-partner-form-v573 button,
+.sport-catalog-group-head-v573 button,
+.sport-catalog-grid-v573 article>button,
+.sport-catalog-create-v573 button,
+.sport-cardio-form-v573 button,
+.sport-set-row-v573 button,
+.sport-ghost-button-v573{
+  border:1px solid rgba(111,228,234,.25);
+  border-radius:10px;
+  background:linear-gradient(180deg,rgba(24,123,135,.7),rgba(12,74,84,.72));
+  color:#dffcff;
+  font:inherit;
+  font-size:.64rem;
+  font-weight:850;
+  cursor:pointer;
+}
+.sport-x-start-v573 button{padding:10px 13px}
+
+.sport-x-block-v573{margin-top:10px;padding:14px}
+.sport-x-block-head-v573,
+.sport-catalog-group-head-v573{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:11px;
+}
+.sport-x-block-head-v573 strong,
+.sport-catalog-group-head-v573 strong{
+  display:block;
+  margin-top:2px;
+  color:#e8f9fa;
+  font-size:.86rem;
+}
+.sport-x-block-head-v573 small{color:#6f8f93;font-size:.58rem}
+.sport-x-block-head-v573 button,
+.sport-catalog-group-head-v573 button{padding:7px 9px}
+
+.sport-timeline-v573{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.sport-timeline-v573 button{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  padding:9px;
+  border:1px solid rgba(111,228,234,.12);
+  border-radius:13px;
+  background:rgba(2,14,17,.48);
+  color:#a9c4c7;
+  text-align:left;
+  cursor:pointer;
+}
+.sport-timeline-v573 button.is-done{
+  border-color:rgba(93,224,166,.26);
+  background:rgba(30,106,80,.18);
+  color:#c9f4df;
+}
+.sport-timeline-v573 button i{
+  display:grid;
+  place-items:center;
+  flex:0 0 24px;
+  width:24px;height:24px;
+  border-radius:50%;
+  background:rgba(111,228,234,.1);
+  color:#78dce1;
+  font-size:.62rem;
+  font-style:normal;
+  font-weight:900;
+}
+.sport-timeline-v573 button.is-done i{background:rgba(93,224,166,.16);color:#78e5b3}
+.sport-timeline-v573 button span{min-width:0}
+.sport-timeline-v573 button strong{display:block;color:inherit;font-size:.65rem;line-height:1.2}
+.sport-timeline-v573 button small{display:block;margin-top:2px;color:#718d90;font-size:.54rem}
+
+.sport-partner-list-v573{display:flex;flex-wrap:wrap;gap:7px}
+.sport-partner-list-v573>span{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:6px 8px;
+  border:1px solid rgba(111,228,234,.15);
+  border-radius:999px;
+  background:rgba(8,40,45,.5);
+  color:#cdecef;
+  font-size:.64rem;
+}
+.sport-partner-list-v573>span button{
+  width:18px;height:18px;padding:0;
+  border:0;border-radius:50%;
+  background:rgba(255,255,255,.06);
+  color:#91b8bb;
+  font-size:.8rem;
+  cursor:pointer;
+}
+.sport-partner-list-v573 em{color:#6c8588;font-size:.64rem;font-style:normal}
+.sport-partner-form-v573{display:flex;gap:7px;margin-top:9px}
+.sport-partner-form-v573 input{
+  flex:1;min-width:0;
+  padding:8px 9px;
+  border:1px solid rgba(111,228,234,.15);
+  border-radius:10px;
+  background:rgba(0,10,13,.55);
+  color:#e7f8f9;
+  font:inherit;font-size:.7rem;
+}
+.sport-partner-form-v573 button{padding:8px 10px}
+
+.sport-workout-list-v573{display:grid;gap:10px}
+.sport-workout-card-v573{
+  padding:13px;
+  border:1px solid rgba(111,228,234,.14);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(5,27,31,.8),rgba(3,17,21,.68));
+}
+.sport-workout-card-v573.status-skipped{opacity:.63}
+.sport-workout-card-v573.status-running{border-color:rgba(111,228,234,.38);box-shadow:0 0 24px rgba(36,184,194,.09)}
+.sport-workout-card-v573.status-completed{border-color:rgba(92,218,159,.24)}
+.sport-workout-head-v573{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.sport-workout-head-v573 span{color:#6eaeb3;font-size:.54rem;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.sport-workout-head-v573 h3{margin:3px 0 0;color:#effcfd;font-size:.94rem}
+.sport-workout-head-v573>b{
+  padding:5px 7px;border-radius:999px;
+  background:rgba(111,228,234,.08);color:#84d8dd;
+  font-size:.54rem;white-space:nowrap;
+}
+.sport-equipment-select-v573{
+  display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:8px;
+  margin-top:10px;color:#69878a;font-size:.57rem;font-weight:800;
+}
+.sport-equipment-select-v573 select{
+  min-width:0;padding:7px 8px;
+  border:1px solid rgba(111,228,234,.12);border-radius:9px;
+  background:#07191c;color:#cfe7e9;font:inherit;font-size:.66rem;
+}
+.sport-last-v573{
+  display:grid;gap:2px;margin-top:8px;padding:7px 8px;
+  border-left:2px solid rgba(111,228,234,.24);
+  background:rgba(0,0,0,.12);
+}
+.sport-last-v573 span{color:#68898d;font-size:.53rem}
+.sport-last-v573 b{color:#b8d5d8;font-size:.59rem;font-weight:750;line-height:1.35}
+.sport-last-v573.is-empty{color:#5f797c;font-size:.58rem}
+
+.sport-strength-editor-v573{display:grid;gap:6px;margin-top:10px}
+.sport-set-row-v573{
+  display:grid;
+  grid-template-columns:30px repeat(3,minmax(0,1fr)) auto;
+  align-items:end;gap:6px;
+}
+.sport-set-row-v573>strong{align-self:center;color:#71cdd2;font-size:.62rem}
+.sport-set-row-v573 label,
+.sport-cardio-form-v573 label{display:grid;gap:3px;color:#6e888b;font-size:.53rem}
+.sport-set-row-v573 input,
+.sport-cardio-form-v573 input,
+.sport-catalog-create-v573 input,
+.sport-catalog-create-v573 select{
+  box-sizing:border-box;width:100%;min-width:0;
+  padding:7px 8px;border:1px solid rgba(111,228,234,.13);border-radius:9px;
+  background:rgba(0,10,13,.58);color:#e1f2f4;font:inherit;font-size:.68rem;
+}
+.sport-set-row-v573 button{padding:7px 8px}
+.sport-ghost-button-v573{justify-self:start;margin-top:2px;padding:7px 9px;background:rgba(14,69,76,.42)}
+
+.sport-cardio-form-v573{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:6px;margin-top:10px;
+}
+.sport-cardio-form-v573 button{grid-column:1/-1;justify-self:start;padding:8px 10px}
+.sport-workout-actions-v573{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.sport-workout-actions-v573 button{
+  padding:7px 9px;border:1px solid rgba(111,228,234,.15);border-radius:9px;
+  background:rgba(10,58,65,.48);color:#b9e4e7;font:inherit;font-size:.59rem;font-weight:800;cursor:pointer;
+}
+.sport-workout-actions-v573 button.danger{color:#dfa0a0;border-color:rgba(223,160,160,.17);background:rgba(98,35,35,.18)}
+
+.sport-x-history-v573{display:grid;gap:7px}
+.sport-x-history-v573 article{
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+  padding:10px 11px;border:1px solid rgba(111,228,234,.11);border-radius:12px;background:rgba(3,17,20,.45);
+}
+.sport-x-history-v573 strong{color:#cbe7e9;font-size:.68rem}
+.sport-x-history-v573 span{color:#718d90;font-size:.59rem}
+.sport-x-history-v573 b{color:#75cfd4;font-size:.62rem}
+
+.sport-catalog-note-v573{padding:10px 12px;color:#8ba6a9;font-size:.65rem;line-height:1.45}
+.sport-catalog-group-v573{margin-bottom:9px;padding:12px}
+.sport-catalog-grid-v573,
+.sport-device-grid-v573{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sport-catalog-grid-v573 article,
+.sport-device-grid-v573 article{
+  display:flex;align-items:center;justify-content:space-between;gap:9px;
+  padding:11px;border:1px solid rgba(111,228,234,.1);border-radius:13px;background:rgba(2,15,18,.48);
+}
+.sport-catalog-grid-v573 article>div,
+.sport-device-grid-v573 article>div{min-width:0}
+.sport-catalog-grid-v573 span,
+.sport-device-grid-v573 span{
+  display:block;color:#62bfc5;font-size:.49rem;font-weight:950;letter-spacing:.1em
+}
+.sport-catalog-grid-v573 h3,
+.sport-device-grid-v573 h3{
+  margin:3px 0 0;color:#edfafa;font-size:.77rem;line-height:1.2
+}
+.sport-device-grid-v573 h3 b{color:#68cbd0;font-size:.66rem;font-weight:850}
+.sport-catalog-grid-v573 small,
+.sport-device-grid-v573 small{display:block;margin-top:4px;color:#6e898c;font-size:.55rem;line-height:1.35}
+.sport-catalog-grid-v573 article>button{flex:none;padding:7px 8px}
+
+.sport-catalog-create-v573{margin:9px 0 14px;padding:0;overflow:hidden}
+.sport-catalog-create-v573 summary{
+  padding:11px 12px;color:#83dbe0;font-size:.67rem;font-weight:850;cursor:pointer;
+}
+.sport-catalog-create-v573 form{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 12px 12px;
+}
+.sport-catalog-create-v573 label{display:grid;gap:4px;color:#6c888b;font-size:.55rem}
+.sport-catalog-create-v573 button{grid-column:1/-1;justify-self:start;padding:8px 10px}
+
+@media(max-width:650px){
+  .sport-timeline-v573{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sport-cardio-form-v573{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sport-catalog-grid-v573,.sport-device-grid-v573{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .sport-side-tab-v512[data-sport-tab-v512="catalog"] .sport-side-tab-label-v510{font-size:.51rem}
+  .sport-timeline-v573{grid-template-columns:1fr}
+  .sport-set-row-v573{grid-template-columns:24px repeat(3,minmax(0,1fr));}
+  .sport-set-row-v573 button{grid-column:2/-1;justify-self:start}
+  .sport-cardio-form-v573{grid-template-columns:1fr 1fr}
+  .sport-catalog-create-v573 form{grid-template-columns:1fr}
+  .sport-catalog-create-v573 button{grid-column:1}
+  .sport-x-history-v573 article{grid-template-columns:1fr}
+}
