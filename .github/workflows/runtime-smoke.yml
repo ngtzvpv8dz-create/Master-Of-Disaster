@@ -116,7 +116,7 @@ jobs:
               out.devCurrent=await page.evaluate(expected=>{
                 const card=document.querySelector('.dev-build-card');if(!card)return false;
                 const values={};card.querySelectorAll('.dev-build-item').forEach(item=>{const k=(item.querySelector('.dev-build-label')?.textContent||'').trim().toUpperCase();values[k]=(item.querySelector('.dev-build-value')?.textContent||'').trim();});
-                return values.VERSION===expected&&/^\d{2}\.\d{2}\.\d{4}\s·\s\d{2}:\d{2}\sUhr$/.test(values.BUILD||'')&&card.dataset.v502FreshBuild==='true';
+                const own=String(window.__MOD_BUILD__?.version||'');return /^V\d+$/.test(own)&&values.VERSION===own&&/^\d{2}\.\d{2}\.\d{4}\s·\s\d{2}:\d{2}\sUhr$/.test(values.BUILD||'')&&card.dataset.v502FreshBuild==='true';
               },expected);
 
               await page.evaluate(()=>{
