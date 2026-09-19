@@ -31,7 +31,16 @@
  }
  async function load(){
    if(!window.supabase){setTimeout(load,80);return;}
-   if(!client)client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+   if(!client)client=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+     auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+   });
+   const {data:sessionData,error:sessionError}=await client.auth.getSession();
+   if(sessionError){list.innerHTML='<div class="loading-card">Supabase-Sitzung konnte nicht geprüft werden.</div>';return;}
+   if(!sessionData||!sessionData.session){
+     list.innerHTML='<div class="loading-card">Für die Aufgaben ist dein Supabase-Login nötig. Die 2.0 nutzt dieselbe sichere Sitzung wie 1.0.</div>';
+     count.textContent='0';
+     return;
+   }
    const {data,error}=await client.from('tasks').select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,created_at').order('today_order',{ascending:true}).order('created_at',{ascending:false});
    if(error){list.innerHTML='<div class="loading-card">Supabase konnte gerade nicht geladen werden.</div>';return;}
    tasks=data||[];render();
