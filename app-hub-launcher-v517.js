@@ -1,4 +1,4 @@
-/* V552 · FINANCE HUB EXPANSION
+/* V582 · SHOPPING LIST HUB EXPANSION
    - Replaces the former FUTURE placeholder with PROGRESS.
    - Adds the dedicated 192px Progress icon asset.
    - Keeps TO-DO and SPORT as the only native V520 modules; newer layers may activate prepared entries.
@@ -14,13 +14,14 @@
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V552';
+  const VERSION='V582';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
     todo:'./assets/icons/todo-v524-192.png?v=524-192',
     sport:'./assets/icons/sport-v524-192.png?v=524-192',
     kistology:'./assets/icons/kistology-v524-192.png?v=524-192',
     food:'./assets/icons/food-v524-192.png?v=524-192',
+    shopping:'./assets/icons/shopping-v582-192.png?v=582-shopping',
     progress:'./assets/icons/progress-v540-192.png?v=540-progress',
     finance:'./assets/icons/finance-v552-192.webp?v=552-finance',
     backstage:'./assets/icons/backstage-v524-192.png?v=524-192'
@@ -30,8 +31,9 @@
     {id:'sport',label:'SPORT',active:true},
     {id:'kistology',label:'KISTOLOGY',active:false},
     {id:'food',label:'FOOD',active:true},
-    {id:'progress',label:'PROGRESS',active:false},
+    {id:'shopping',label:'EINKAUFSLISTE',active:false},
     {id:'finance',label:'FINANZEN',active:true},
+    {id:'progress',label:'PROGRESS',active:false},
     {id:'backstage',label:'BACKSTAGE',active:false}
   ];
 
@@ -171,6 +173,7 @@
     if(item.id==='sport')return 'Sport öffnen';
     if(item.id==='kistology')return 'Kistology Bereich vorbereitet';
     if(item.id==='food')return 'Food öffnen';
+    if(item.id==='shopping')return 'Einkaufsliste Bereich vorbereitet';
     if(item.id==='progress')return 'Progress Bereich für übergreifenden Fortschritt vorbereitet';
     if(item.id==='finance')return 'Finanzen öffnen';
     return 'Backstage Bereich vorbereitet';
@@ -271,7 +274,8 @@
     homescreenStyle:true,
     compactGrid:true,
     sixTileGrid:false,
-    sevenTileGrid:true,
+    sevenTileGrid:false,
+    eightTileGrid:true,
     iconOnlyPanel:true,
     wideCardsRemoved:true,
     v515OpenMarkersPreserved:true,
@@ -281,6 +285,7 @@
     kistologyPrepared:true,
     foodPrepared:false,
     foodActiveV543:true,
+    shoppingListPrepared:true,
     progressCategoryPrepared:true,
     backstagePrepared:true,
     finalAssetsV520:true,
@@ -291,6 +296,7 @@
     progressIconV540:true,
     financeIconV552:true,
     financeActiveV552:true,
+    shoppingListIconV582:true,
     kistologyPreviewLoaderV535:true,
     searchNoZoomLoaderV536:true,
     kistologyLiveSnapshotLoaderV537:true,
@@ -307,6 +313,7 @@
   window.__modHubLauncherV540=publicApi;
   window.__modHubLauncherV543=publicApi;
   window.__modHubLauncherV552=publicApi;
+  window.__modHubLauncherV582=publicApi;
 
   ensureSearchNoZoomV536();
   ensureSportSNoopV538();
