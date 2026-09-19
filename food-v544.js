@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V579';
+  const VERSION='V580';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -321,12 +321,32 @@
     const forecast=item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
     const priority=item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
     const tomorrowClass=item.use_priority==='tomorrow'&&Number(item.quantity)!==0?' priority-tomorrow-v574':'';
-    const garlicOpen=String(item.name||'').trim().toLocaleLowerCase('de-DE')==='knoblauchknollen'&&Number(item.quantity)>0?'<button type="button" data-food-open-garlic="'+esc(item.id)+'">Knolle öffnen</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button>'+garlicOpen+'</div></article>';
+    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+  }
+
+  function garlicParts(data=state){
+    const rows=(data?.inventory||[]).filter(item=>item.is_active!==false);
+    const bulb=rows.find(item=>String(item.name||'').trim().toLocaleLowerCase('de-DE')==='knoblauchknollen'&&String(item.unit||'')==='Knolle')||null;
+    const clove=rows.find(item=>String(item.name||'').trim().toLocaleLowerCase('de-DE')==='knoblauchzehen'&&String(item.unit||'')==='Zehe')||null;
+    return {bulb,clove,bulbs:Math.max(0,num(bulb?.quantity)||0),cloves:Math.max(0,num(clove?.quantity)||0)};
+  }
+
+  function garlicCard(data){
+    const garlic=garlicParts(data);
+    if(!garlic.bulb&&!garlic.clove)return '';
+    const quantity=fmtQty(garlic.bulbs,'Knolle')+' · '+fmtQty(garlic.cloves,'Zehe');
+    const tone=garlic.bulbs>0||garlic.cloves>0?'stock':'empty';
+    const open=garlic.bulb&&garlic.bulbs>0?'<button type="button" data-food-open-garlic="'+esc(garlic.bulb.id)+'">Knolle öffnen</button>':'';
+    return '<article class="food-stock-card-v544 tone-'+tone+'"><div class="food-stock-top-v544"><div><h4>Knoblauch</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">kombiniert</span></div><p>Ganze Knollen und lose Zehen in einem Vorratseintrag.</p><div class="food-stock-actions-v544"><button type="button" data-food-garlic-adjust>Menge ändern</button>'+open+'</div></article>';
   }
 
   function inventoryView(data){
-    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div><div class="food-inventory-grid-v544">'+(data.inventory.length?data.inventory.map(inventoryCard).join(''):'<div class="food-empty-card-v544"><h4>Der Vorrat ist leer.</h4></div>')+'</div>';
+    const regular=data.inventory.filter(item=>{
+      const name=String(item.name||'').trim().toLocaleLowerCase('de-DE');
+      return name!=='knoblauchknollen'&&name!=='knoblauchzehen';
+    });
+    const cards=garlicCard(data)+regular.map(inventoryCard).join('');
+    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div><div class="food-inventory-grid-v544">'+(cards||'<div class="food-empty-card-v544"><h4>Der Vorrat ist leer.</h4></div>')+'</div>';
   }
 
   function deriveShopping(data){
@@ -735,15 +755,56 @@
     });
   }
 
-  function addInventoryModal(){
-    addModal('Vorrat ergänzen','<form><label>Bezeichnung<input name="name" placeholder="z. B. Zucchini" required></label><div class="food-form-grid-v544"><label>Menge<input name="quantity" type="number" min="0" step="0.01" required></label><label>Einheit<input name="unit" value="g" required></label></div><label><input name="opened" type="checkbox"> bereits geöffnet</label><label>Verwenden<select name="priority"><option value="tomorrow">morgen</option><option value="three_days">in den nächsten 3 Tagen</option><option value="later" selected>später</option></select></label><button class="food-action-v544" type="submit">Vorrat speichern</button></form>',async form=>{
+  function garlicStockModal(){
+    const garlic=garlicParts();
+    addModal('Knoblauchbestand','<form><p class="food-modal-copy-v544">Knoblauch wird als eine Zutat angezeigt. Ganze Knollen und lose Zehen bleiben intern getrennt.</p><div class="food-form-grid-v544"><label>Ganze Knollen<input name="bulbs" type="number" min="0" step="1" inputmode="numeric" value="'+esc(garlic.bulbs)+'" required></label><label>Lose Zehen<input name="cloves" type="number" min="0" step="1" inputmode="numeric" value="'+esc(garlic.cloves)+'" required></label></div><button class="food-action-v544" type="submit">Knoblauch speichern</button></form>',async form=>{
+      const bulbs=Number(form.get('bulbs'));
+      const cloves=Number(form.get('cloves'));
+      if(!Number.isInteger(bulbs)||bulbs<0||!Number.isInteger(cloves)||cloves<0)throw new Error('Knollen und Zehen bitte als ganze Zahlen eingeben.');
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
-      const session=await supabase.auth.getSession();const user=session?.data?.session?.user;if(!user?.id)throw new Error('Nicht angemeldet.');
-      const quantity=Number(form.get('quantity'));const unit=String(form.get('unit')||'g');
-      const result=await supabase.from('food_inventory').insert({user_id:user.id,name:String(form.get('name')).trim(),quantity,unit,quantity_label:fmtQty(quantity,unit),forecast_label:null,tone:quantity>0?'stock':'empty',note:'Manuell ergänzt',sort_order:999,opened:form.get('opened')==='on',use_priority:String(form.get('priority')||'later')});
+      const result=await supabase.rpc('set_food_garlic_stock',{p_bulbs:bulbs,p_cloves:cloves});
       if(result.error)throw result.error;
       await mutate(()=>result.data);
     });
+  }
+
+  function addInventoryModal(){
+    let modal;
+    const body='<form><label>Bezeichnung<input name="name" placeholder="z. B. Zucchini oder Knoblauch" required></label>'+
+      '<div data-food-generic-stock><div class="food-form-grid-v544"><label>Menge<input name="quantity" type="number" min="0" step="0.01" required></label><label>Einheit<input name="unit" value="g" required></label></div><label><input name="opened" type="checkbox"> bereits geöffnet</label><label>Verwenden<select name="priority"><option value="tomorrow">morgen</option><option value="three_days">in den nächsten 3 Tagen</option><option value="later" selected>später</option></select></label></div>'+
+      '<div data-food-garlic-stock hidden><p class="food-modal-copy-v544">Knoblauch ist ein Sonderfall: ganze Knollen und lose Zehen werden gemeinsam angezeigt.</p><div class="food-form-grid-v544"><label>Ganze Knollen<input name="garlic_bulbs" type="number" min="0" step="1" inputmode="numeric" value="0"></label><label>Lose Zehen<input name="garlic_cloves" type="number" min="0" step="1" inputmode="numeric" value="0"></label></div></div>'+
+      '<button class="food-action-v544" type="submit">Vorrat speichern</button></form>';
+    modal=addModal('Vorrat ergänzen',body,async form=>{
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const session=await supabase.auth.getSession();const user=session?.data?.session?.user;if(!user?.id)throw new Error('Nicht angemeldet.');
+      const name=String(form.get('name')||'').trim();
+      const normalized=name.toLocaleLowerCase('de-DE');
+      if(normalized.startsWith('knoblauch')){
+        const bulbs=Number(form.get('garlic_bulbs')||0);
+        const cloves=Number(form.get('garlic_cloves')||0);
+        if(!Number.isInteger(bulbs)||bulbs<0||!Number.isInteger(cloves)||cloves<0)throw new Error('Knollen und Zehen bitte als ganze Zahlen eingeben.');
+        const result=await supabase.rpc('set_food_garlic_stock',{p_bulbs:bulbs,p_cloves:cloves});
+        if(result.error)throw result.error;
+        await mutate(()=>result.data);
+        return;
+      }
+      const quantity=Number(form.get('quantity'));const unit=String(form.get('unit')||'g');
+      const result=await supabase.from('food_inventory').insert({user_id:user.id,name,quantity,unit,quantity_label:fmtQty(quantity,unit),forecast_label:null,tone:quantity>0?'stock':'empty',note:'Manuell ergänzt',sort_order:999,opened:form.get('opened')==='on',use_priority:String(form.get('priority')||'later')});
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+    const nameInput=modal?.querySelector('[name="name"]');
+    const generic=modal?.querySelector('[data-food-generic-stock]');
+    const garlic=modal?.querySelector('[data-food-garlic-stock]');
+    const genericRequired=Array.from(generic?.querySelectorAll('[required]')||[]);
+    const sync=()=>{
+      const special=String(nameInput?.value||'').trim().toLocaleLowerCase('de-DE').startsWith('knoblauch');
+      if(generic)generic.hidden=special;
+      if(garlic)garlic.hidden=!special;
+      genericRequired.forEach(input=>input.required=!special);
+    };
+    nameInput?.addEventListener('input',sync);
+    sync();
   }
 
   function adjustModal(id){
@@ -836,6 +897,7 @@
     root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
     root.querySelectorAll('[data-food-stock-gap]').forEach(button=>button.addEventListener('click',()=>stockGapModal(button)));
     root.querySelectorAll('[data-food-open-garlic]').forEach(button=>button.addEventListener('click',()=>openGarlicModal(button.dataset.foodOpenGarlic)));
+    root.querySelectorAll('[data-food-garlic-adjust]').forEach(button=>button.addEventListener('click',()=>garlicStockModal()));
     root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
