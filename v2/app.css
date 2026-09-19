@@ -24,7 +24,7 @@ a,button{-webkit-tap-highlight-color:transparent}
 .home-intro p{margin:0 0 8px;color:var(--gold);font-size:9px;letter-spacing:.31em}
 .home-intro h1{margin:0;font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:30px;font-weight:500}
 .area-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.area-card{position:relative;min-width:0;border-radius:23px;padding:13px 10px 12px;display:flex;flex-direction:column;align-items:center;text-decoration:none;color:inherit;overflow:hidden;background:
+.area-card{position:relative;min-width:0;border-radius:21px;padding:11px 9px 10px;display:flex;flex-direction:column;align-items:center;text-decoration:none;color:inherit;overflow:hidden;background:
  radial-gradient(circle at 50% 8%,color-mix(in srgb,var(--accent) 21%,transparent),transparent 47%),
  linear-gradient(155deg,color-mix(in srgb,var(--wash) 84%,#242527),#161719);
  border:1px solid color-mix(in srgb,var(--accent) 34%,rgba(255,255,255,.07));
@@ -32,7 +32,7 @@ a,button{-webkit-tap-highlight-color:transparent}
  transition:transform .13s ease,filter .13s ease,border-color .13s ease,box-shadow .13s ease}
 .area-card::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(145deg,rgba(255,255,255,.025),transparent 38%)}
 .area-card:active,.area-card.is-pressed{transform:scale(.965);filter:brightness(1.08);border-color:color-mix(in srgb,var(--accent) 72%,white 8%);box-shadow:0 8px 18px rgba(0,0,0,.27),inset 0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent)}
-.icon-frame{width:82px;aspect-ratio:1;border-radius:23%;overflow:hidden;display:block;box-shadow:0 8px 17px rgba(0,0,0,.22);background-image:url('./assets/icon-sprite-preview.webp');background-size:400% 200%;background-repeat:no-repeat}
+.icon-frame{width:62px;aspect-ratio:1;border-radius:23%;overflow:hidden;display:block;box-shadow:0 8px 17px rgba(0,0,0,.22);background-image:url('./assets/icon-sprite-preview.webp');background-size:400% 200%;background-repeat:no-repeat}
 .icon-todo{background-position:0% 0%}
 .icon-sport{background-position:33.3333% 0%}
 .icon-kistology{background-position:66.6667% 0%}
@@ -41,10 +41,22 @@ a,button{-webkit-tap-highlight-color:transparent}
 .icon-finance{background-position:33.3333% 100%}
 .icon-progress{background-position:66.6667% 100%}
 .icon-backstage{background-position:100% 100%}
-.area-label{padding-top:11px;font-size:11px;letter-spacing:.17em;white-space:nowrap;color:#e7dfd4}
+.area-label{padding-top:9px;font-size:10px;letter-spacing:.15em;white-space:nowrap;color:#e7dfd4}
 .version-back{display:block;width:max-content;margin:28px auto 0;color:#918c85;text-decoration:none;font-size:10px;letter-spacing:.15em;border-bottom:1px solid transparent;padding:8px}
 .version-back:active{color:#e8dfd1;border-color:#8c7555}
 .toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translate(-50%,18px);width:min(88vw,420px);padding:12px 16px;text-align:center;background:#242525;border:1px solid rgba(201,163,109,.25);border-radius:16px;font-size:12px;color:#ddd6cc;opacity:0;pointer-events:none;transition:.2s ease}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-width:430px){.v2-brand{font-size:24px}.v2-subtitle{font-size:8px;letter-spacing:.24em}.v2-badge{right:10px;padding:4px 7px}.mini-home{left:10px;width:34px;height:34px}.area-grid{gap:11px}.icon-frame{width:76px}.area-label{font-size:10px;letter-spacing:.13em}}
+@media(max-width:430px){.v2-brand{font-size:22px}.v2-subtitle{font-size:8px;letter-spacing:.24em}.v2-badge{right:10px;padding:4px 7px}.mini-home{left:10px;width:34px;height:34px}.area-grid{gap:10px}.icon-frame{width:58px}.area-label{font-size:9px;letter-spacing:.12em}}
 @media(min-width:700px){.area-grid{grid-template-columns:repeat(4,1fr)}.area-card{padding-top:16px}.icon-frame{width:92px}.home-main{padding-top:32px}}
+
+/* V2.0.3 – Header bleibt in allen Bereichen geometrisch identisch */
+.v2-header-inner{min-width:0}
+.v2-brand-wrap{pointer-events:none;width:max-content;max-width:calc(100% - 116px)}
+.v2-brand,.v2-subtitle{pointer-events:auto}
+@media(max-width:390px){
+  .v2-header-inner{padding-left:8px;padding-right:8px}
+  .mini-home{left:8px;width:32px;height:32px;border-radius:11px}
+  .v2-badge{right:8px;font-size:8px;padding:4px 6px}
+  .v2-brand{font-size:21px}
+  .v2-subtitle{font-size:7px;letter-spacing:.2em}
+}
