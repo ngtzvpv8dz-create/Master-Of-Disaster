@@ -1,4 +1,4 @@
-/* V582 · SHOPPING LIST HUB EXPANSION
+/* V584 · HOMESCREEN ICON REFRESH
    - Replaces the former FUTURE placeholder with PROGRESS.
    - Adds the dedicated 192px Progress icon asset.
    - Keeps TO-DO and SPORT as the only native V520 modules; newer layers may activate prepared entries.
@@ -14,16 +14,16 @@
   'use strict';
   if(window.__modHubLauncherV517)return;
 
-  const VERSION='V582';
+  const VERSION='V584';
   const ROOT_ID='modAppHubV515';
   const SOURCES={
     todo:'./assets/icons/todo-v524-192.png?v=524-192',
     sport:'./assets/icons/sport-v524-192.png?v=524-192',
     kistology:'./assets/icons/kistology-v524-192.png?v=524-192',
     food:'./assets/icons/food-v524-192.png?v=524-192',
-    shopping:'./assets/icons/shopping-v583-192.png?v=583-shopping',
+    shopping:'./assets/icons/shopping-v584-192.png?v=584-icons',
     progress:'./assets/icons/progress-v540-192.png?v=540-progress',
-    finance:'./assets/icons/finance-v552-192.webp?v=552-finance',
+    finance:'./assets/icons/finance-v584-192.png?v=584-icons',
     backstage:'./assets/icons/backstage-v524-192.png?v=524-192'
   };
   const MODULES=[
@@ -297,6 +297,8 @@
     financeIconV552:true,
     financeActiveV552:true,
     shoppingListIconV582:true,
+    shoppingListIconV584:true,
+    financeIconV584:true,
     kistologyPreviewLoaderV535:true,
     searchNoZoomLoaderV536:true,
     kistologyLiveSnapshotLoaderV537:true,
@@ -314,6 +316,7 @@
   window.__modHubLauncherV543=publicApi;
   window.__modHubLauncherV552=publicApi;
   window.__modHubLauncherV582=publicApi;
+  window.__modHubLauncherV584=publicApi;
 
   ensureSearchNoZoomV536();
   ensureSportSNoopV538();
