@@ -42,14 +42,29 @@ jobs:
           const expected=process.env.EXPECTED_VERSION;
           const vn=v=>Number(String(v||'').match(/^V(\d+)$/i)?.[1]||0);
           (async()=>{
-            const out={status:'FAIL',version:expected,live:false,metricsCurrent:false,bundle:false,devCurrent:false,actionOrder:false,todayMarkerBound:false,serviceWorker:false,preservedCore:false,backstage:false,errors:[]};
+            const out={status:'FAIL',version:expected,versionGate:false,v2Home:false,live:false,metricsCurrent:false,bundle:false,devCurrent:false,actionOrder:false,todayMarkerBound:false,serviceWorker:false,preservedCore:false,backstage:false,errors:[]};
             const browser=await chromium.launch({headless:true});
             try{
+              const gatePage=await browser.newPage({viewport:{width:390,height:844}});
+              await gatePage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?gate='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              out.versionGate=await gatePage.evaluate(()=>!!(
+                document.querySelector('a[href="./v1/"]') &&
+                document.querySelector('a[href="./v2/"]') &&
+                document.querySelector('.brand-r')
+              ));
+              const v2Page=await browser.newPage({viewport:{width:390,height:844}});
+              await v2Page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/v2/?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              out.v2Home=await v2Page.evaluate(()=>(
+                document.querySelectorAll('.area-card').length===8 &&
+                !!document.querySelector('.v2-header') &&
+                !!document.querySelector('.undo-r') &&
+                !!document.querySelector('.icon-progress')
+              ));
               const page=await browser.newPage({viewport:{width:390,height:844}});
               await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
               let metrics=null;
               for(let i=0;i<24;i++){
-                await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke=current-'+Date.now(),{waitUntil:'networkidle',timeout:60000});
+                await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/v1/?smoke=current-'+Date.now(),{waitUntil:'networkidle',timeout:60000});
                 const state=await page.evaluate(()=>({build:window.__MOD_BUILD__?.version||'',fresh:window.__modBuildFreshnessV502?.version||'',actions:window.__modTodayActionOrderV501?.version||''})).catch(()=>({}));
                 try{metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});}catch(_){}
                 if(vn(state.build)>=vn(expected)&&state.fresh==='V502'&&state.actions==='V501'&&vn(metrics?.version)>=vn(expected)){out.live=true;break;}
@@ -134,7 +149,7 @@ jobs:
 
               const swPage=await browser.newPage({viewport:{width:390,height:640}});
               await swPage.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
-              await swPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?runtime='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              await swPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/v1/?runtime='+Date.now(),{waitUntil:'networkidle',timeout:60000});
               out.serviceWorker=await swPage.evaluate(async()=>{
                 if(!('serviceWorker' in navigator))return false;
                 try{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))]);return !!reg&&/sw\.js/.test(reg.active?.scriptURL||reg.waiting?.scriptURL||reg.installing?.scriptURL||'');}catch(_){return false;}
