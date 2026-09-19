@@ -105,6 +105,71 @@
    return tasks.filter(t=>['open','running','paused'].includes(t.status));
  }
 
+
+ function segmentSumV2(segments,nowIso=new Date().toISOString()){
+   return (Array.isArray(segments)?segments:[]).reduce((sum,s)=>{
+     if(!s||!s.startedAt)return sum;
+     const end=s.endedAt||nowIso;
+     const a=new Date(s.startedAt).getTime(),b=new Date(end).getTime();
+     return sum+(Number.isFinite(a)&&Number.isFinite(b)?Math.max(0,b-a):0);
+   },0);
+ }
+
+ function formatDurationV2(ms){
+   const total=Math.max(0,Math.floor((Number(ms)||0)/1000));
+   const h=Math.floor(total/3600),m=Math.floor((total%3600)/60),s=total%60;
+   return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+ }
+
+ function durationMetaV2(t){
+   if(!['running','paused'].includes(t.status))return '';
+   if(t.type==='cooking'){
+     let active=0,passive=0;
+     (Array.isArray(t.cooking_segments)?t.cooking_segments:[]).forEach(seg=>{
+       const ms=segmentSumV2([seg]);
+       if(seg.mode==='passive')passive+=ms;else active+=ms;
+     });
+     return '<div class="live-meta">AKTIV <span data-live-cooking-active="'+esc(t.id)+'">'+formatDurationV2(active)+'</span> · WARTEN <span data-live-cooking-passive="'+esc(t.id)+'">'+formatDurationV2(passive)+'</span></div>';
+   }
+   const total=(Number(t.imported_historical_progress_duration_ms)||0)+segmentSumV2(t.active_segments);
+   const label=t.type==='leisure'?'FREIZEIT':'AKTIV';
+   return '<div class="live-meta">'+label+' <span data-live-task="'+esc(t.id)+'">'+formatDurationV2(total)+'</span></div>';
+ }
+
+ function todayOverviewV2(){
+   const day=berlinDateKey();
+   const all=tasks.filter(t=>t.today_date===day&&t.status!=='aborted');
+   const done=all.filter(t=>t.status==='completed');
+   const active=all.filter(t=>['open','running','paused'].includes(t.status)).sort((a,b)=>(a.today_order||9999)-(b.today_order||9999));
+   const percent=all.length?Math.round(done.length/all.length*100):0;
+   const next=active.find(t=>t.status==='running')||active[0]||null;
+   return '<section class="today-overview"><div class="today-overview-head"><span>HEUTE · '+done.length+'/'+all.length+' ERLEDIGT</span><strong>'+percent+' %</strong></div><div class="today-progress-track"><i style="width:'+percent+'%"></i></div>'+(next?'<div class="today-next"><small>'+(next.status==='running'?'LÄUFT GERADE':'NÄCHSTE AUFGABE')+'</small><span>'+esc(next.text)+'</span></div>':'<div class="today-next empty">Keine offene Aufgabe im Tagesblock.</div>')+'</section>';
+ }
+
+ function updateLiveDurationsV2(){
+   const now=new Date().toISOString();
+   tasks.forEach(t=>{
+     if(!['running','paused'].includes(t.status))return;
+     if(t.type==='cooking'){
+       let active=0,passive=0;
+       (Array.isArray(t.cooking_segments)?t.cooking_segments:[]).forEach(seg=>{
+         let ms=0;if(seg&&seg.startedAt){
+           const end=seg.endedAt||now,a=new Date(seg.startedAt).getTime(),b=new Date(end).getTime();
+           if(Number.isFinite(a)&&Number.isFinite(b))ms=Math.max(0,b-a);
+         }
+         if(seg.mode==='passive')passive+=ms;else active+=ms;
+       });
+       const ae=document.querySelector('[data-live-cooking-active="'+CSS.escape(String(t.id))+'"]');
+       const pe=document.querySelector('[data-live-cooking-passive="'+CSS.escape(String(t.id))+'"]');
+       if(ae)ae.textContent=formatDurationV2(active);if(pe)pe.textContent=formatDurationV2(passive);
+     }else{
+       const total=(Number(t.imported_historical_progress_duration_ms)||0)+segmentSumV2(t.active_segments,now);
+       const el=document.querySelector('[data-live-task="'+CSS.escape(String(t.id))+'"]');
+       if(el)el.textContent=formatDurationV2(total);
+     }
+   });
+ }
+
  function renderTaskCard(t){
    const p=t.priority&&t.priority!=='normal'?'<span class="meta-pill priority-'+esc(t.priority)+'">'+esc(priorityLabel(t.priority))+'</span>':'';
    const due=t.due_date?'<span class="meta-pill">'+(t.due_mode==='tomorrowOnly'?'MORGEN ':'BIS ')+esc(formatDate(t.due_date))+'</span>':'';
@@ -116,7 +181,9 @@
    const today=t.today_date===berlinDateKey();
    const runLabel=t.status==='running'?'PAUSE':t.status==='paused'?'FORTSETZEN':t.type==='selfrunner'?'SELBSTLÄUFER':'START';
    const runDisabled=t.type==='selfrunner'?' disabled':'';
-   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+category+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button><button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="more" data-id="'+esc(t.id)+'">MEHR</button></div></article>';
+   const liveMeta=durationMetaV2(t);
+   const cookingAction=t.type==='cooking'&&t.status==='running'?'<button type="button" class="task-action cooking-mode" data-action="cooking" data-id="'+esc(t.id)+'">'+(t.cooking_mode==='passive'?'AKTIV KOCHEN':'WARTEZEIT')+'</button>':'';
+   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+category+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button>'+cookingAction+'<button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="more" data-id="'+esc(t.id)+'">MEHR</button></div></article>';
  }
 
  function renderArchive(){
@@ -193,7 +260,8 @@
      list.innerHTML='<div class="loading-card">'+text+'</div>';
      return;
    }
-   list.innerHTML=rows.map(renderTaskCard).join('');
+   list.innerHTML=(filter==='today'?todayOverviewV2():'')+rows.map(renderTaskCard).join('');
+   updateLiveDurationsV2();
  }
 
  async function ensureClient(){
@@ -456,6 +524,17 @@
    }catch(error){showToast(error&&error.message?error.message:'Aufgabe konnte nicht gelöscht werden.');}
  }
 
+
+ async function cookingModeAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   try{
+     const next=t.cooking_mode==='passive'?'active':'passive';
+     const updated=await window.MOD2Data.switchCookingMode(t.legacy_task_id,next);
+     Object.assign(t,updated);render();
+     showToast(next==='passive'?'Warte-/Garzeit läuft.':'Aktives Kochen läuft.');
+   }catch(error){showToast(error&&error.message?error.message:'Kochmodus konnte nicht gewechselt werden.');}
+ }
+
  document.querySelectorAll('.todo-tab').forEach(btn=>btn.addEventListener('click',()=>{
    document.querySelectorAll('.todo-tab').forEach(x=>x.classList.remove('active'));
    btn.classList.add('active');
@@ -491,6 +570,7 @@
    const btn=event.target.closest('[data-action][data-id]'); if(!btn)return;
    if(btn.dataset.action==='today')toggleToday(btn.dataset.id);
    if(btn.dataset.action==='run')runAction(btn.dataset.id);
+   if(btn.dataset.action==='cooking')cookingModeAction(btn.dataset.id);
    if(btn.dataset.action==='complete')completeAction(btn.dataset.id);
    if(btn.dataset.action==='more')openMoreMenu(btn.dataset.id);
    if(btn.dataset.action==='edit')startEdit(btn.dataset.id);
@@ -511,4 +591,5 @@
    else setTimeout(wait,70);
  };
  wait();
+ window.__mod2LiveTimer=setInterval(updateLiveDurationsV2,1000);
 })();

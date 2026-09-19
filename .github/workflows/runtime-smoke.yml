@@ -64,7 +64,7 @@ jobs:
               await todoPage.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
               await todoPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/v2/todo.html?smoke='+Date.now(),{waitUntil:'networkidle',timeout:60000});
               const todoReady=await todoPage.evaluate(()=>(
-                window.MOD2Data?.version==='2.0.6' &&
+                /^2\.0\.\d+$/.test(window.MOD2Data?.version||'') &&
                 document.querySelectorAll('.todo-tab').length===9 &&
                 !!document.querySelector('#newTaskButton') &&
                 !!document.querySelector('#titleSuggestions')

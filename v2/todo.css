@@ -104,3 +104,16 @@
 .time-field{display:block;margin-top:12px}
 .time-field span{display:block;margin-bottom:6px;color:#8f887e;font-size:8px;letter-spacing:.13em}
 .time-field input{width:100%;height:44px;border-radius:13px;border:1px solid rgba(190,162,118,.18);background:#151613;color:#eee6da;padding:0 11px;font:inherit}
+
+.live-meta{margin-top:8px;color:#9c958a;font-size:9px;letter-spacing:.07em}
+.live-meta span{color:#d9c7a6;font-variant-numeric:tabular-nums}
+.task-action.cooking-mode{color:#9fc0a2;border-color:rgba(111,139,114,.25)}
+.today-overview{grid-column:1/-1;border-radius:19px;padding:14px 15px;background:linear-gradient(145deg,#292820,#1a1b18);border:1px solid rgba(190,162,118,.14);margin-bottom:2px}
+.today-overview-head{display:flex;justify-content:space-between;gap:12px;align-items:center;color:#a49d92;font-size:9px;letter-spacing:.1em}
+.today-overview-head strong{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:19px;font-weight:500;color:#d9c8aa}
+.today-progress-track{height:5px;margin-top:9px;border-radius:999px;background:#131411;overflow:hidden}
+.today-progress-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#7b9278,#cfb078)}
+.today-next{margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.05);display:grid;gap:4px}
+.today-next small{font-size:8px;letter-spacing:.14em;color:#8d877e}
+.today-next span{font-size:13px;color:#e2d9cc}
+.today-next.empty{color:#8f8a82;font-size:11px}

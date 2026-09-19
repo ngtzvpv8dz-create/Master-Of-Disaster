@@ -69,6 +69,9 @@ function toView(local,cloud=null){
     cooking_mode:local.cookingMode??row.cooking_mode??'active',
     notes:local.notes??row.notes??null,
     category:local.category??null,
+    active_segments:Array.isArray(local.activeSegments)?local.activeSegments:[],
+    cooking_segments:Array.isArray(local.cookingSegments)?local.cookingSegments:[],
+    imported_historical_progress_duration_ms:Math.max(0,Number(local.importedHistoricalProgressDurationMs)||0),
     _legacy:local
   };
 }
@@ -609,8 +612,32 @@ async function setManualTimes(legacyId,startIso,endIso=null){
   return toView(task,cloud);
 }
 
+
+async function switchCookingMode(legacyId,mode){
+  const rows=legacyTasks();
+  const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
+  if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
+  const task=rows[index];
+  if(task.type!=='cooking'||task.status!=='running')throw new Error('Kochmodus kann nur bei einer laufenden Kochaufgabe gewechselt werden.');
+  const next=mode==='passive'?'passive':'active';
+  if((task.cookingMode||'active')===next)return toView(task,null);
+  rememberUndo(next==='passive'?'Koch-Wartezeit starten':'Aktives Kochen fortsetzen');
+  const now=new Date().toISOString();
+  if(!Array.isArray(task.cookingSegments))task.cookingSegments=[];
+  const last=task.cookingSegments[task.cookingSegments.length-1];
+  if(last&&!last.endedAt)last.endedAt=now;
+  task.cookingMode=next;
+  task.cookingSegments.push({mode:next,startedAt:now,endedAt:null});
+  rows[index]=task;
+  if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
+  let cloud=null;
+  try{cloud=await mirror(task,{segments:true});}
+  catch(error){console.warn('V2 cooking mode cloud mirror pending',error);}
+  return toView(task,cloud);
+}
+
 window.MOD2Data={
-  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,repeatTask,deleteTask,setManualTimes,undoLast,undoInfo,
-  legacyTasks,legacyArchive,findLegacy,version:'2.0.10'
+  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,repeatTask,deleteTask,setManualTimes,switchCookingMode,undoLast,undoInfo,
+  legacyTasks,legacyArchive,findLegacy,version:'2.0.11'
 };
 })();
