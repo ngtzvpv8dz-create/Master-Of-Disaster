@@ -21,7 +21,7 @@
     sport:'./assets/icons/sport-v524-192.png?v=524-192',
     kistology:'./assets/icons/kistology-v524-192.png?v=524-192',
     food:'./assets/icons/food-v524-192.png?v=524-192',
-    shopping:'./assets/icons/shopping-v582-192.png?v=582-shopping',
+    shopping:'./assets/icons/shopping-v583-192.png?v=583-shopping',
     progress:'./assets/icons/progress-v540-192.png?v=540-progress',
     finance:'./assets/icons/finance-v552-192.webp?v=552-finance',
     backstage:'./assets/icons/backstage-v524-192.png?v=524-192'
