@@ -1,4 +1,4 @@
-/* V552 · SEVEN-TILE HOMESCREEN LAUNCHER */
+/* V582 · EIGHT-TILE HOMESCREEN LAUNCHER */
 body.mod-app-hub-v515 #modAppHubV515{
   position:relative;
   padding-top:12px;
@@ -125,10 +125,10 @@ body.mod-app-hub-v515 .header .eyebrow{
 .mod-hub-app-button-sport-v517{--mod-hub-glow:rgba(45,211,255,.24);}
 .mod-hub-app-button-kistology-v517{--mod-hub-glow:rgba(255,71,181,.25);}
 .mod-hub-app-button-food-v517{--mod-hub-glow:rgba(51,232,139,.24);}
+.mod-hub-app-button-shopping-v517{--mod-hub-glow:rgba(255,186,86,.25);}
 .mod-hub-app-button-progress-v517{--mod-hub-glow:rgba(255,255,255,.18);}
 .mod-hub-app-button-finance-v517{--mod-hub-glow:rgba(112,255,180,.27);}
 .mod-hub-app-button-backstage-v517{--mod-hub-glow:rgba(255,202,66,.25);}
-.mod-hub-app-slot-backstage-v517{grid-column:1/-1;}
 .mod-hub-app-icon-v517{
   display:block;
   width:100%;
