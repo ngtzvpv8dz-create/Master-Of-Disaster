@@ -8,7 +8,7 @@
  let tasks=[];
  let archives=[];
  let filter='all';
- let composerState={type:'work',priority:'normal',optional:false,dueMode:'none'};
+ let composerState={type:'work',priority:'normal',optional:false,dueMode:'none',category:''};
  let editingId=null;
 
  const $=s=>document.querySelector(s);
@@ -64,7 +64,11 @@
    document.querySelectorAll('[data-type]').forEach(b=>b.classList.toggle('selected',b.dataset.type===composerState.type));
    document.querySelectorAll('[data-priority]').forEach(b=>b.classList.toggle('selected',b.dataset.priority===composerState.priority));
    document.querySelectorAll('[data-due]').forEach(b=>b.classList.toggle('selected',b.dataset.due===composerState.dueMode));
-   const optional=$('#optionalChoice');
+   const categoryInput=$('#newCategoryInput');
+   if(categoryInput&&categoryInput.value!==composerState.category)categoryInput.value=composerState.category||'';
+   const categoryField=$('#newCategoryInput');
+ if(categoryField)categoryField.addEventListener('input',()=>{composerState.category=categoryField.value.trim();});
+ const optional=$('#optionalChoice');
    if(optional){
      optional.classList.toggle('selected',composerState.optional);
      optional.textContent=composerState.optional?'🟣 JA':'🟣 NEIN';
@@ -108,6 +112,7 @@
    const due=t.due_date?'<span class="meta-pill">'+(t.due_mode==='tomorrowOnly'?'MORGEN ':'BIS ')+esc(formatDate(t.due_date))+'</span>':'';
    const type=t.type?'<span class="meta-pill">'+esc(typeLabel(t.type))+'</span>':'';
    const optional=t.optional?'<span class="meta-pill optional">OPTIONAL</span>':'';
+   const category=t.category?'<span class="meta-pill category">'+esc(String(t.category).toUpperCase())+'</span>':'';
    const state=t.status==='paused'?'<div class="task-state">PAUSIERT</div>':t.status==='running'?'<div class="task-state running">LÄUFT</div>':'';
    const cls='task-card'+(t.status==='paused'?' is-paused':'')+(t.status==='running'?' is-running':'')+(t.priority==='high'?' is-high':t.priority==='medium'?' is-medium':'');
    const today=t.today_date===berlinDateKey();
@@ -148,7 +153,7 @@
 
  function renderCategories(){
    const map=new Map();
-   archives.forEach(a=>{
+   [...tasks,...archives].forEach(a=>{
      const name=String(a.category||'OHNE KATEGORIE').trim()||'OHNE KATEGORIE';
      map.set(name,(map.get(name)||0)+1);
    });
@@ -216,6 +221,7 @@
      ]);
      tasks=taskState.tasks||[];
      archives=archiveRows||[];
+     refreshCategorySuggestions();
      render();
      if(!taskState.sharedLocalMaster)showToast('Hinweis: 1.0-Datenbestand auf diesem Gerät noch nicht geladen. Schreibfunktionen bleiben geschützt.');
    }catch(error){
@@ -236,7 +242,7 @@
      if(editingId){
        const updated=await window.MOD2Data.patchTask(editingId,{
          text:textValue,type:composerState.type,priority:composerState.priority,
-         optional:composerState.optional,dueMode:composerState.dueMode,
+         optional:composerState.optional,category:composerState.category||null,dueMode:composerState.dueMode,
          dueDate:composerState.dueMode==='none'?null:tomorrow
        });
        const idx=tasks.findIndex(x=>Number(x.legacy_task_id)===Number(editingId));
@@ -290,6 +296,7 @@
        composerState.type=x.latest.type||'work';
        composerState.priority=x.latest.priority||'normal';
        composerState.optional=Boolean(x.latest.optional);
+       composerState.category=x.latest.category||'';
      }
      updateComposerUI();hideSuggestions();
    }));
@@ -303,7 +310,7 @@
  function resetEditor(){
    editingId=null;
    const input=$('#newTaskText');if(input)input.value='';
-   composerState={type:'work',priority:'normal',optional:false,dueMode:'none'};
+   composerState={type:'work',priority:'normal',optional:false,dueMode:'none',category:''};
    const button=$('#newTaskButton');if(button)button.textContent='+ AUFGABE HINZUFÜGEN';
    const cancel=$('#cancelEditButton');if(cancel)cancel.hidden=true;
    updateComposerUI();hideSuggestions();
@@ -314,7 +321,7 @@
    if(t.legacy_task_id==null){showToast('Diese Aufgabe hat noch keine gemeinsame 1.0-ID.');return;}
    editingId=t.legacy_task_id;setAllTab();
    const input=$('#newTaskText');if(input)input.value=t.text||'';
-   composerState={type:t.type||'work',priority:t.priority||'normal',optional:Boolean(t.optional),dueMode:t.due_mode||'none'};
+   composerState={type:t.type||'work',priority:t.priority||'normal',optional:Boolean(t.optional),dueMode:t.due_mode||'none',category:t.category||''};
    const button=$('#newTaskButton');if(button)button.textContent='ÄNDERUNGEN SPEICHERN';
    const cancel=$('#cancelEditButton');if(cancel)cancel.hidden=false;
    updateComposerUI();render();
@@ -360,6 +367,14 @@
      showToast(error&&error.message?error.message:'Aufgabe konnte nicht erledigt werden.');
    }
  }
+
+ function refreshCategorySuggestions(){
+   const listEl=$('#categorySuggestions');if(!listEl)return;
+   const names=[...new Set([...tasks,...archives].map(x=>String(x&&x.category||'').trim()).filter(Boolean))]
+     .sort((a,b)=>a.localeCompare(b,'de'));
+   listEl.innerHTML=names.map(name=>'<option value="'+esc(name)+'"></option>').join('');
+ }
+
 
  document.querySelectorAll('.todo-tab').forEach(btn=>btn.addEventListener('click',()=>{
    document.querySelectorAll('.todo-tab').forEach(x=>x.classList.remove('active'));

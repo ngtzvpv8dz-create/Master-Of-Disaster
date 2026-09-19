@@ -68,6 +68,7 @@ function toView(local,cloud=null){
     cooking_passive_duration_ms:local.cookingPassiveDurationMs??row.cooking_passive_duration_ms??null,
     cooking_mode:local.cookingMode??row.cooking_mode??'active',
     notes:local.notes??row.notes??null,
+    category:local.category??null,
     _legacy:local
   };
 }
@@ -267,7 +268,8 @@ function baseLegacyTask(props){
     historicalAccountingByDate:{},
     historicalAccountingSegments:[],
     historicalTimeParts:[],
-    sourceNotes:[]
+    sourceNotes:[],
+    category:props.category?String(props.category).trim():null
   };
 }
 

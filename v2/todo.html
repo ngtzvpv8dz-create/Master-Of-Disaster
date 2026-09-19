@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#171613">
 <title>TO-DO · Master of Disaster 2.0</title>
 <link rel="stylesheet" href="./app.css?v=2003">
-<link rel="stylesheet" href="./todo.css?v=2004">
+<link rel="stylesheet" href="./todo.css?v=2008">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="todo-page">
@@ -79,6 +79,14 @@
     </div>
 
     <div class="composer-row">
+      <span class="composer-label">KATEGORIE</span>
+      <div class="composer-options category-editor">
+        <input id="newCategoryInput" type="text" list="categorySuggestions" placeholder="Ohne Kategorie" autocomplete="off">
+        <datalist id="categorySuggestions"></datalist>
+      </div>
+    </div>
+
+    <div class="composer-row">
       <span class="composer-label">FÄLLIG</span>
       <div class="composer-options" data-option-group="due">
         <button type="button" class="choice selected" data-due="none">—</button>
@@ -104,6 +112,6 @@
   </section>
 </main>
 <div id="todoToast" class="toast" aria-live="polite"></div>
-<script src="./data.js?v=2006"></script>\n<script src="./todo.js?v=2006"></script>
+<script src="./data.js?v=2008"></script>\n<script src="./todo.js?v=2008"></script>
 </body>
 </html>

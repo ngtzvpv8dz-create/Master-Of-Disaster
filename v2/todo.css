@@ -83,3 +83,8 @@
 .task-state.running{color:#95b496}
 
 .task-action:disabled{opacity:.42;cursor:not-allowed;transform:none;filter:none}
+
+.category-editor{display:block;width:100%}
+.category-editor input{width:100%;min-height:38px;border-radius:12px;border:1px solid rgba(190,162,118,.18);background:#171815;color:#e9e2d8;padding:0 11px;font:inherit;font-size:11px;outline:none}
+.category-editor input:focus{border-color:rgba(190,162,118,.48);box-shadow:0 0 0 3px rgba(190,162,118,.07)}
+.meta-pill.category{color:#c8b18a;border-color:rgba(190,162,118,.2)}
