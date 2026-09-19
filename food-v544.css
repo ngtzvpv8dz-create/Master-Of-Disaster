@@ -600,3 +600,24 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   font-weight:900!important;
   -webkit-text-fill-color:#365d43!important;
 }
+
+
+/* V577 · einheitliches FOOD-Titelgrün */
+:root{
+  --food-title-green:#46734f;
+}
+html body.mod-food-v544 #appFixedTopV475 .mod-brand-title-v525,
+html body.mod-food-v544 #modFoodV544 .food-hero-v544 h2,
+html body.mod-food-v544 #modFoodV544 .food-section-head-v544 h3,
+html body.mod-food-v544 #modFoodV544 .food-day-label-v544 strong,
+html body.mod-food-v544 #modFoodV544 .food-meal-toggle-v573 h4,
+html body.mod-food-v544 #modFoodV544 .food-stock-card-v544 h4,
+html body.mod-food-v544 #modFoodV544 .food-recipe-card-v544 h4,
+html body.mod-food-v544 #modFoodV544 .food-recipe-toggle-v572 h4{
+  color:var(--food-title-green)!important;
+  -webkit-text-fill-color:var(--food-title-green)!important;
+  opacity:1!important;
+}
+html body.mod-food-v544 #modFoodV544 .food-date-v544{
+  color:var(--food-title-green)!important;
+}
