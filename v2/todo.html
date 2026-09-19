@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#171613">
 <title>TO-DO · Master of Disaster 2.0</title>
 <link rel="stylesheet" href="./app.css?v=2003">
-<link rel="stylesheet" href="./todo.css?v=2003">
+<link rel="stylesheet" href="./todo.css?v=2004">
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="todo-page">
@@ -49,6 +49,7 @@
   <section id="composer" class="composer">
     <div class="task-input-wrap">
       <input id="newTaskText" type="text" placeholder="Was steht an?" autocomplete="off">
+      <div id="titleSuggestions" class="title-suggestions" hidden></div>
     </div>
 
     <div class="composer-row">
@@ -86,7 +87,10 @@
       </div>
     </div>
 
-    <button id="newTaskButton" class="add-task" type="button">+ AUFGABE HINZUFÜGEN</button>
+    <div class="composer-actions">
+      <button id="newTaskButton" class="add-task" type="button">+ AUFGABE HINZUFÜGEN</button>
+      <button id="cancelEditButton" class="cancel-edit" type="button" hidden>ABBRECHEN</button>
+    </div>
   </section>
 
   <section id="todoSummary" class="todo-summary" aria-label="Aufgabenübersicht">
@@ -100,6 +104,6 @@
   </section>
 </main>
 <div id="todoToast" class="toast" aria-live="polite"></div>
-<script src="./todo.js?v=2003"></script>
+<script src="./todo.js?v=2004"></script>
 </body>
 </html>

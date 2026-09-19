@@ -67,3 +67,17 @@
  .choice{font-size:8px;padding:8px}
  .data-grid{grid-template-columns:1fr 1fr}
 }
+/* V2.0.4 – Interaktion und Editor */
+.title-suggestions{margin-top:7px;border:1px solid rgba(190,162,118,.14);border-radius:14px;overflow:hidden;background:#181916}
+.title-suggestion{width:100%;display:flex;justify-content:space-between;gap:10px;align-items:center;border:0;border-top:1px solid rgba(255,255,255,.045);background:transparent;color:#ddd5c8;padding:10px 12px;text-align:left}
+.title-suggestion:first-child{border-top:0}
+.title-suggestion:active{background:#282821}
+.title-suggestion small{color:#8d877d;font-size:8px;letter-spacing:.08em}
+.composer-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
+.cancel-edit{border:1px solid rgba(255,255,255,.08);border-radius:15px;background:#1a1b19;color:#9b958c;padding:0 13px;font-size:9px;letter-spacing:.1em}
+.task-actions{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;padding-top:2px}
+.task-action{border:1px solid rgba(190,162,118,.14);background:#1d1e1b;color:#aaa398;border-radius:11px;padding:7px 9px;font-size:8px;letter-spacing:.09em}
+.task-action.active{color:#201d18;background:#c7b18a;border-color:#d9c8aa}
+.task-action:active{transform:scale(.95);filter:brightness(1.08)}
+.task-card.is-running{border-color:rgba(111,139,114,.3)}
+.task-state.running{color:#95b496}

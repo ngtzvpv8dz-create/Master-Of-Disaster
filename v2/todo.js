@@ -9,6 +9,7 @@
  let archives=[];
  let filter='all';
  let composerState={type:'work',priority:'normal',optional:false,dueMode:'none'};
+ let editingId=null;
 
  const $=s=>document.querySelector(s);
  const list=$('#taskList');
@@ -99,7 +100,7 @@
      return rows.sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date)));
    }
    if(filter==='paused')return tasks.filter(t=>t.status==='paused');
-   return tasks.filter(t=>t.status==='open');
+   return tasks.filter(t=>['open','running','paused'].includes(t.status));
  }
 
  function renderTaskCard(t){
@@ -107,9 +108,10 @@
    const due=t.due_date?'<span class="meta-pill">'+(t.due_mode==='tomorrowOnly'?'MORGEN ':'BIS ')+esc(formatDate(t.due_date))+'</span>':'';
    const type=t.type?'<span class="meta-pill">'+esc(typeLabel(t.type))+'</span>':'';
    const optional=t.optional?'<span class="meta-pill optional">OPTIONAL</span>':'';
-   const state=t.status==='paused'?'<div class="task-state">PAUSIERT</div>':'';
-   const cls='task-card'+(t.status==='paused'?' is-paused':'')+(t.priority==='high'?' is-high':t.priority==='medium'?' is-medium':'');
-   return '<article class="'+cls+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div></article>';
+   const state=t.status==='paused'?'<div class="task-state">PAUSIERT</div>':t.status==='running'?'<div class="task-state running">LÄUFT</div>':'';
+   const cls='task-card'+(t.status==='paused'?' is-paused':'')+(t.status==='running'?' is-running':'')+(t.priority==='high'?' is-high':t.priority==='medium'?' is-medium':'');
+   const today=t.today_date===berlinDateKey();
+   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="edit" data-id="'+esc(t.id)+'">BEARBEITEN</button></div></article>';
  }
 
  function renderArchive(){
@@ -226,6 +228,82 @@
    }
  }
 
+ function titleGroups(){
+   const map=new Map();
+   const add=(row,source)=>{
+     const name=String(row&&row.text||'').trim(); if(!name)return;
+     const key=name.toLocaleLowerCase('de-DE');
+     const old=map.get(key)||{name,count:0,latest:null,source};
+     old.count+=1;
+     old.latest=row;
+     map.set(key,old);
+   };
+   tasks.forEach(x=>add(x,'AKTIV')); archives.forEach(x=>add(x,'VERLAUF'));
+   return [...map.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'de'));
+ }
+
+ function hideSuggestions(){const box=$('#titleSuggestions');if(box){box.hidden=true;box.innerHTML='';}}
+ function renderSuggestions(query=''){
+   const box=$('#titleSuggestions'); if(!box)return;
+   const q=String(query||'').trim().toLocaleLowerCase('de-DE');
+   const rows=titleGroups().filter(x=>!q||x.name.toLocaleLowerCase('de-DE').includes(q)).slice(0,8);
+   if(!rows.length){hideSuggestions();return;}
+   box.innerHTML=rows.map((x,i)=>'<button type="button" class="title-suggestion" data-suggestion-index="'+i+'"><span>'+esc(x.name)+'</span><small>'+x.count+'×</small></button>').join('');
+   box.hidden=false;
+   box.querySelectorAll('[data-suggestion-index]').forEach((btn,i)=>btn.addEventListener('click',()=>{
+     const x=rows[i],input=$('#newTaskText'); if(input)input.value=x.name;
+     if(x.latest){
+       composerState.type=x.latest.type||'work';
+       composerState.priority=x.latest.priority||'normal';
+       composerState.optional=Boolean(x.latest.optional);
+     }
+     updateComposerUI(); hideSuggestions();
+   }));
+ }
+
+ function setAllTab(){
+   filter='all';
+   document.querySelectorAll('.todo-tab').forEach(x=>x.classList.toggle('active',x.dataset.filter==='all'));
+ }
+
+ function resetEditor(){
+   editingId=null;
+   const input=$('#newTaskText'); if(input)input.value='';
+   composerState={type:'work',priority:'normal',optional:false,dueMode:'none'};
+   const button=$('#newTaskButton'); if(button)button.textContent='+ AUFGABE HINZUFÜGEN';
+   const cancel=$('#cancelEditButton'); if(cancel)cancel.hidden=true;
+   updateComposerUI(); hideSuggestions();
+ }
+
+ function startEdit(id){
+   const t=tasks.find(x=>String(x.id)===String(id)); if(!t)return;
+   editingId=t.id; setAllTab();
+   const input=$('#newTaskText'); if(input)input.value=t.text||'';
+   composerState={type:t.type||'work',priority:t.priority||'normal',optional:Boolean(t.optional),dueMode:t.due_mode||'none'};
+   const button=$('#newTaskButton'); if(button)button.textContent='ÄNDERUNGEN SPEICHERN';
+   const cancel=$('#cancelEditButton'); if(cancel)cancel.hidden=false;
+   updateComposerUI(); render();
+   setTimeout(()=>{composer.hidden=false;composer.scrollIntoView({behavior:'smooth',block:'start'});input&&input.focus();},0);
+ }
+
+ async function toggleToday(id){
+   const t=tasks.find(x=>String(x.id)===String(id)); if(!t)return;
+   try{
+     await ensureClient();
+     const today=berlinDateKey();
+     const selected=t.today_date===today;
+     let patch;
+     if(selected){patch={today_date:null,today_order:null};}
+     else{
+       const highest=tasks.filter(x=>x.today_date===today&&!['completed','aborted'].includes(x.status)).reduce((m,x)=>Math.max(m,Number(x.today_order)||0),0);
+       patch={today_date:today,today_order:highest+1};
+     }
+     const result=await client.from('tasks').update(patch).eq('id',t.id).select('id,today_date,today_order').single();
+     if(result.error)throw result.error;
+     Object.assign(t,result.data); render(); showToast(selected?'Aus Heute entfernt.':'Für Heute eingeplant.');
+   }catch(error){showToast(error&&error.message?error.message:'Heute-Zuordnung konnte nicht geändert werden.');}
+ }
+
  async function addTask(){
    const input=$('#newTaskText');
    const textValue=input?input.value.trim():'';
@@ -245,14 +323,20 @@
        due_mode:composerState.dueMode,
        due_date:composerState.dueMode==='none'?null:tomorrow
      };
-     const result=await client.from('tasks').insert([payload]).select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,created_at,updated_at').single();
-     if(result.error)throw result.error;
-     tasks.unshift(result.data);
-     if(input)input.value='';
-     composerState={type:'work',priority:'normal',optional:false,dueMode:'none'};
-     updateComposerUI();
-     render();
-     showToast('Aufgabe angelegt.');
+     let result;
+     if(editingId){
+       result=await client.from('tasks').update({
+         text:payload.text,type:payload.type,priority:payload.priority,optional:payload.optional,due_mode:payload.due_mode,due_date:payload.due_date
+       }).eq('id',editingId).select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,created_at,updated_at').single();
+       if(result.error)throw result.error;
+       const idx=tasks.findIndex(x=>String(x.id)===String(editingId)); if(idx>=0)tasks[idx]={...tasks[idx],...result.data};
+       resetEditor(); render(); showToast('Aufgabe geändert.');
+     }else{
+       result=await client.from('tasks').insert([payload]).select('id,text,status,type,priority,optional,due_mode,due_date,today_date,today_order,created_at,updated_at').single();
+       if(result.error)throw result.error;
+       tasks.unshift(result.data);
+       resetEditor(); render(); showToast('Aufgabe angelegt.');
+     }
    }catch(error){
      showToast(error&&error.message?error.message:'Aufgabe konnte nicht angelegt werden.');
    }finally{
@@ -281,8 +365,19 @@
  if(optional)optional.addEventListener('click',()=>{composerState.optional=!composerState.optional;updateComposerUI();});
  const addButton=$('#newTaskButton');
  if(addButton)addButton.addEventListener('click',addTask);
+ const cancelEdit=$('#cancelEditButton');
+ if(cancelEdit)cancelEdit.addEventListener('click',()=>{resetEditor();render();});
  const input=$('#newTaskText');
- if(input)input.addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
+ if(input){
+   input.addEventListener('keydown',e=>{if(e.key==='Enter')addTask();if(e.key==='Escape'){hideSuggestions();}});
+   input.addEventListener('input',()=>renderSuggestions(input.value));
+   input.addEventListener('focus',()=>renderSuggestions(input.value));
+ }
+ if(list)list.addEventListener('click',event=>{
+   const btn=event.target.closest('[data-action][data-id]'); if(!btn)return;
+   if(btn.dataset.action==='today')toggleToday(btn.dataset.id);
+   if(btn.dataset.action==='edit')startEdit(btn.dataset.id);
+ });
  const undo=$('#todoUndo');
  if(undo)undo.addEventListener('click',()=>showToast('Undo/Verlauf ist als eigener 2.0-Schritt noch offen.'));
 
