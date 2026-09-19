@@ -69,6 +69,18 @@
   const dateLabel=dateKey=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey||''));if(!m)return String(dateKey||'');const d=new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]),12));return new Intl.DateTimeFormat('de-DE',{timeZone:'UTC',weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);};
   const shortDate=dateKey=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey||''));return m?`${m[3]}.${m[2]}.${m[1]}`:String(dateKey||'');};
   const byName=(a,b)=>String(a).localeCompare(String(b),'de',{sensitivity:'base'});
+  const todayIso=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const numberOrNull=value=>value===null||value===undefined||value===''?null:Number(value);
+  const workoutStatusLabel=value=>({planned:'Geplant',running:'Läuft',completed:'Abgeschlossen',skipped:'Übersprungen'}[value]||'Geplant');
+  const xSessionStatusLabel=value=>({planned:'Geplant',running:'Läuft',completed:'Abgeschlossen',cancelled:'Abgebrochen'}[value]||'Geplant');
+  const TIMELINE_STEPS=[
+    ['driveStartedAt','drive_started_at','Fahrt gestartet'],
+    ['gymArrivedAt','gym_arrived_at','Fitness angekommen'],
+    ['trainingStartedAt','training_started_at','Training gestartet'],
+    ['trainingEndedAt','training_ended_at','Training beendet'],
+    ['gymLeftAt','gym_left_at','Fitness verlassen'],
+    ['homeArrivedAt','home_arrived_at','Zu Hause angekommen']
+  ];
 
   function client(){
     try{
