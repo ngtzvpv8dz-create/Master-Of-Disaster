@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V573';
+  const VERSION='V574';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -268,9 +268,12 @@
     const prepared=Math.max(.01,Number(meal.prepared_servings)||1);
     const eaten=Math.max(.01,Number(meal.eaten_servings)||prepared);
     const rest=Math.max(0,prepared-eaten);
+    const isToday=meal.meal_date===todayIso();
     const portionMeta=meal.leftover_id
-      ?'Aus Resten · '+portionLabel(eaten)
-      :portionLabel(prepared)+(rest>0?' zubereitet · '+portionLabel(eaten)+' heute · '+portionLabel(rest)+' Rest':'');
+      ?portionLabel(eaten)+' aus Resten geplant'
+      :(rest>0&&isToday
+        ?portionLabel(prepared)+' geplant · '+portionLabel(eaten)+' heute · '+portionLabel(rest)+' für morgen'
+        :portionLabel(eaten)+' geplant');
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
         +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
@@ -314,7 +317,8 @@
     const quantity=item.quantity_label||fmtQty(item.quantity,item.unit);
     const forecast=item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
     const priority=item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    const tomorrowClass=item.use_priority==='tomorrow'&&Number(item.quantity)!==0?' priority-tomorrow-v574':'';
+    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
   }
 
   function inventoryView(data){
