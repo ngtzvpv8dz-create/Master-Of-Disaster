@@ -183,7 +183,8 @@
    const runDisabled=t.type==='selfrunner'?' disabled':'';
    const liveMeta=durationMetaV2(t);
    const cookingAction=t.type==='cooking'&&t.status==='running'?'<button type="button" class="task-action cooking-mode" data-action="cooking" data-id="'+esc(t.id)+'">'+(t.cooking_mode==='passive'?'AKTIV KOCHEN':'WARTEZEIT')+'</button>':'';
-   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+category+'</div>'+state+'</div><div class="task-mark">○</div><div class="task-actions"><button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button>'+cookingAction+'<button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="more" data-id="'+esc(t.id)+'">MEHR</button></div></article>';
+   const moveActions=filter==='today'?'<span class="today-move"><button type="button" class="task-action move" data-action="up" data-id="'+esc(t.id)+'" aria-label="Nach oben">↑</button><button type="button" class="task-action move" data-action="down" data-id="'+esc(t.id)+'" aria-label="Nach unten">↓</button></span>':'';
+   return '<article class="'+cls+'" data-task-id="'+esc(t.id)+'"><div><div class="task-text">'+esc(t.text)+'</div><div class="task-meta">'+type+p+due+optional+category+'</div>'+state+liveMeta+'</div><div class="task-mark">○</div><div class="task-actions">'+moveActions+'<button type="button" class="task-action'+(today?' active':'')+'" data-action="today" data-id="'+esc(t.id)+'">'+(today?'✓ HEUTE':'HEUTE')+'</button><button type="button" class="task-action" data-action="run" data-id="'+esc(t.id)+'"'+runDisabled+'>'+runLabel+'</button>'+cookingAction+'<button type="button" class="task-action" data-action="complete" data-id="'+esc(t.id)+'">ERLEDIGT</button><button type="button" class="task-action" data-action="more" data-id="'+esc(t.id)+'">MEHR</button></div></article>';
  }
 
  function renderArchive(){
@@ -470,12 +471,13 @@
 
  function openMoreMenu(id){
    const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
-   const body='<p class="todo-modal-task">'+esc(t.text)+'</p><div class="todo-more-grid"><button data-more="edit">BEARBEITEN</button><button data-more="time">ZEITEN KORRIGIEREN</button><button data-more="repeat">WIEDERHOLEN</button><button data-more="delete" class="danger">LÖSCHEN</button></div>';
+   const body='<p class="todo-modal-task">'+esc(t.text)+'</p><div class="todo-more-grid"><button data-more="edit">BEARBEITEN</button><button data-more="time">ZEITEN KORRIGIEREN</button><button data-more="repeat">WIEDERHOLEN</button><button data-more="abort" class="danger">ABBRECHEN</button><button data-more="delete" class="danger">LÖSCHEN</button></div>';
    modalShell('Aufgabe',body,'<button type="button" data-close-modal>ZURÜCK</button>');
    const root=$('#todoModal');
    root.querySelector('[data-more="edit"]')?.addEventListener('click',()=>{closeTodoModal();startEdit(id);});
    root.querySelector('[data-more="time"]')?.addEventListener('click',()=>openTimeModal(id));
    root.querySelector('[data-more="repeat"]')?.addEventListener('click',()=>repeatAction(id));
+   root.querySelector('[data-more="abort"]')?.addEventListener('click',()=>confirmAbort(id));
    root.querySelector('[data-more="delete"]')?.addEventListener('click',()=>confirmDelete(id));
  }
 
@@ -535,6 +537,38 @@
    }catch(error){showToast(error&&error.message?error.message:'Kochmodus konnte nicht gewechselt werden.');}
  }
 
+
+ function confirmAbort(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   const body='<p class="todo-modal-task">'+esc(t.text)+'</p><p class="todo-modal-help">Die Aufgabe wird abgebrochen. Bereits erfasste Zeit bleibt erhalten.</p>';
+   modalShell('Aufgabe abbrechen?',body,'<button type="button" data-close-modal>ZURÜCK</button><button type="button" id="confirmAbortV2" class="danger">ABBRECHEN</button>');
+   $('#confirmAbortV2')?.addEventListener('click',()=>abortAction(id));
+ }
+
+ async function abortAction(id){
+   const t=tasks.find(x=>String(x.id)===String(id));if(!t)return;
+   try{
+     const updated=await window.MOD2Data.abortTask(t.legacy_task_id);
+     Object.assign(t,updated);closeTodoModal();render();showToast('Aufgabe abgebrochen.');
+   }catch(error){showToast(error&&error.message?error.message:'Aufgabe konnte nicht abgebrochen werden.');}
+ }
+
+ async function moveTodayAction(id,direction){
+   const rows=taskRows();
+   const index=rows.findIndex(x=>String(x.id)===String(id));
+   if(index<0)return;
+   const target=direction==='up'?index-1:index+1;
+   if(target<0||target>=rows.length)return;
+   const reordered=rows.slice();
+   [reordered[index],reordered[target]]=[reordered[target],reordered[index]];
+   try{
+     const updated=await window.MOD2Data.reorderToday(reordered.map(x=>x.legacy_task_id),berlinDateKey());
+     const byLegacy=new Map(updated.map(x=>[Number(x.legacy_task_id),x]));
+     tasks=tasks.map(x=>byLegacy.has(Number(x.legacy_task_id))?{...x,...byLegacy.get(Number(x.legacy_task_id))}:x);
+     render();showToast('Heute-Reihenfolge geändert.');
+   }catch(error){showToast(error&&error.message?error.message:'Reihenfolge konnte nicht gespeichert werden.');}
+ }
+
  document.querySelectorAll('.todo-tab').forEach(btn=>btn.addEventListener('click',()=>{
    document.querySelectorAll('.todo-tab').forEach(x=>x.classList.remove('active'));
    btn.classList.add('active');
@@ -573,6 +607,8 @@
    if(btn.dataset.action==='cooking')cookingModeAction(btn.dataset.id);
    if(btn.dataset.action==='complete')completeAction(btn.dataset.id);
    if(btn.dataset.action==='more')openMoreMenu(btn.dataset.id);
+   if(btn.dataset.action==='up')moveTodayAction(btn.dataset.id,'up');
+   if(btn.dataset.action==='down')moveTodayAction(btn.dataset.id,'down');
    if(btn.dataset.action==='edit')startEdit(btn.dataset.id);
  });
  const undo=$('#todoUndo');

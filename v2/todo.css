@@ -117,3 +117,6 @@
 .today-next small{font-size:8px;letter-spacing:.14em;color:#8d877e}
 .today-next span{font-size:13px;color:#e2d9cc}
 .today-next.empty{color:#8f8a82;font-size:11px}
+
+.today-move{display:inline-flex;gap:4px;margin-right:auto}
+.task-action.move{width:31px;padding-left:0;padding-right:0;font-size:12px;color:#cdb58e}

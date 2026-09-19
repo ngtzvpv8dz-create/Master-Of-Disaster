@@ -636,8 +636,64 @@ async function switchCookingMode(legacyId,mode){
   return toView(task,cloud);
 }
 
+
+async function abortTask(legacyId){
+  const rows=legacyTasks();
+  const index=rows.findIndex(row=>Number(row&&row.id)===Number(legacyId));
+  if(index<0)throw new Error('Aufgabe wurde im gemeinsamen Datenbestand nicht gefunden.');
+  const task=rows[index];
+  rememberUndo('Aufgabe abbrechen');
+  const now=new Date().toISOString();
+
+  if(task.status==='running'){
+    const last=Array.isArray(task.activeSegments)&&task.activeSegments.length?task.activeSegments[task.activeSegments.length-1]:null;
+    if(last&&!last.endedAt)last.endedAt=now;
+    const cooking=Array.isArray(task.cookingSegments)&&task.cookingSegments.length?task.cookingSegments[task.cookingSegments.length-1]:null;
+    if(task.type==='cooking'&&cooking&&!cooking.endedAt)cooking.endedAt=now;
+  }
+
+  const historical=Math.max(0,Number(task.importedHistoricalProgressDurationMs)||0);
+  const invested=historical+sumSegments(task.activeSegments,now);
+  task.status='aborted';task.abortedAt=now;task.completedAt=null;task.actualDurationMs=invested;
+  if(task.type==='leisure'){task.leisureDurationMs=invested;task.activeDurationMs=0;}
+  else if(task.type==='cooking'){
+    const parts=cookingDurations(task,now);
+    task.cookingActiveDurationMs=parts.active;task.cookingPassiveDurationMs=parts.passive;
+    task.activeDurationMs=parts.active;task.passiveDurationMs=parts.passive;
+  }else task.activeDurationMs=task.type==='selfrunner'?0:invested;
+  task.todayDate=null;task.todayOrder=null;task.pausedAt=null;
+
+  rows[index]=task;
+  if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Aufgaben konnten nicht gespeichert werden.');
+  let cloud=null;
+  try{cloud=await mirror(task,{segments:true});}
+  catch(error){console.warn('V2 abort cloud mirror pending',error);}
+  return toView(task,cloud);
+}
+
+async function reorderToday(orderedLegacyIds,dateKey){
+  const rows=legacyTasks();
+  const ids=(Array.isArray(orderedLegacyIds)?orderedLegacyIds:[]).map(Number).filter(Number.isFinite);
+  if(!ids.length)return [];
+  rememberUndo('Heute-Reihenfolge ändern');
+  const day=String(dateKey||'').trim();
+  ids.forEach((id,index)=>{
+    const task=rows.find(x=>Number(x&&x.id)===id);
+    if(task){task.todayDate=day;task.todayOrder=index+1;}
+  });
+  if(!writeJson(TASK_KEY,rows))throw new Error('Lokale Reihenfolge konnte nicht gespeichert werden.');
+  const changed=[];
+  for(const id of ids){
+    const task=rows.find(x=>Number(x&&x.id)===id);
+    if(!task)continue;
+    try{const cloud=await mirror(task);changed.push(toView(task,cloud));}
+    catch(error){console.warn('V2 today reorder cloud mirror pending',error);changed.push(toView(task,null));}
+  }
+  return changed;
+}
+
 window.MOD2Data={
-  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,repeatTask,deleteTask,setManualTimes,switchCookingMode,undoLast,undoInfo,
-  legacyTasks,legacyArchive,findLegacy,version:'2.0.11'
+  ensureClient,loadTasks,loadArchive,addTask,patchTask,setToday,runTask,completeTask,repeatTask,deleteTask,setManualTimes,switchCookingMode,abortTask,reorderToday,undoLast,undoInfo,
+  legacyTasks,legacyArchive,findLegacy,version:'2.0.12'
 };
 })();
