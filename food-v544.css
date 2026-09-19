@@ -194,3 +194,293 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   line-height:1.15;
   opacity:.72;
 }
+
+
+/* V572 · Rezepte, Portionsskalierung, Vorratsabgleich & Restportionen */
+.food-meal-portions-v572{
+  display:block;
+  margin-top:4px;
+  color:#708076;
+  font-size:9px;
+  font-weight:800;
+  line-height:1.35;
+}
+.food-shopping-gap-v572>span{
+  display:grid;
+  justify-items:end;
+  gap:3px;
+  text-align:right;
+}
+.food-shopping-gap-v572>span small{
+  color:#718076;
+  font-size:9px;
+  line-height:1.25;
+}
+.food-shopping-gap-v572>span b{
+  color:#315f3d;
+  font-size:10px;
+}
+.food-shopping-gap-v572>span em{
+  color:#a26b38;
+  font-size:8px;
+  font-style:normal;
+  font-weight:800;
+}
+
+.food-recipe-card-v544{
+  display:flex;
+  flex-direction:column;
+}
+.food-recipe-card-v544.is-expanded-v572{
+  grid-column:1/-1;
+  min-height:0;
+}
+.food-recipe-toggle-v572{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.food-recipe-toggle-v572>span{
+  min-width:0;
+}
+.food-recipe-toggle-v572 h4{
+  margin:0!important;
+}
+.food-recipe-toggle-v572 em{
+  display:block;
+  margin-top:6px;
+  color:#718076;
+  font-size:9px;
+  font-style:normal;
+  font-weight:750;
+  line-height:1.35;
+}
+.food-recipe-toggle-v572>b{
+  display:grid;
+  place-items:center;
+  flex:0 0 28px;
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#edf3e7;
+  color:#477b52;
+  font-size:18px;
+  line-height:1;
+}
+.food-recipe-details-v572{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:12px;
+  margin-top:14px;
+  padding-top:13px;
+  border-top:1px solid rgba(65,98,69,.12);
+}
+.food-recipe-detail-block-v572{
+  padding:12px;
+  border:1px solid rgba(65,98,69,.12);
+  border-radius:14px;
+  background:rgba(248,251,244,.82);
+}
+.food-recipe-detail-block-v572>strong{
+  display:block;
+  margin-bottom:8px;
+  color:#3f5944;
+  font-size:10px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.food-recipe-detail-block-v572 ul,
+.food-recipe-detail-block-v572 ol{
+  display:grid;
+  gap:6px;
+  margin:0;
+  padding:0;
+}
+.food-recipe-detail-block-v572 ul{list-style:none}
+.food-recipe-detail-block-v572 ol{padding-left:18px}
+.food-recipe-detail-block-v572 li{
+  color:#536158;
+  font-size:10px;
+  line-height:1.4;
+}
+.food-recipe-detail-block-v572 ul li{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.food-recipe-detail-block-v572 ul li b{
+  flex:none;
+  color:#34553c;
+  font-size:10px;
+}
+.food-recipe-detail-block-v572 p{
+  margin:0!important;
+}
+.food-recipe-note-v572{
+  grid-column:1/-1;
+  margin:0!important;
+  padding:10px 12px;
+  border-radius:12px;
+  background:#eef4e9;
+  color:#617067!important;
+}
+.food-recipe-plan-v572{
+  margin-top:14px!important;
+  align-self:flex-start;
+}
+
+.food-recipe-preview-v572{
+  display:grid;
+  gap:7px;
+  padding:10px;
+  border:1px solid rgba(65,98,69,.13);
+  border-radius:14px;
+  background:rgba(255,255,255,.6);
+}
+.food-recipe-preview-v572>div{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.food-recipe-preview-v572>div>span{
+  min-width:0;
+}
+.food-recipe-preview-v572 strong{
+  display:block;
+  color:#405845;
+  font-size:10px;
+}
+.food-recipe-preview-v572 small{
+  display:block;
+  margin-top:2px;
+  color:#78837a;
+  font-size:9px;
+  line-height:1.3;
+}
+.food-recipe-preview-v572 b{
+  flex:none;
+  font-size:9px;
+}
+.food-recipe-preview-v572 b.is-ok{color:#3f744b}
+.food-recipe-preview-v572 b.is-missing{color:#a5623d}
+.food-recipe-preview-empty-v572{
+  margin:0!important;
+  color:#78837a!important;
+}
+.food-portion-hint-v572{
+  padding:9px 10px;
+  border-radius:11px;
+  background:#edf3e7;
+  color:#4f6654;
+  font-size:10px;
+  font-weight:750;
+}
+.food-modal-card-v544 textarea{
+  box-sizing:border-box;
+  width:100%;
+  min-height:110px;
+  max-width:100%;
+  padding:10px;
+  resize:vertical;
+  border:1px solid rgba(65,98,69,.2);
+  border-radius:10px;
+  background:#fff;
+  color:var(--food-ink);
+  font:inherit;
+  font-size:16px;
+  line-height:1.4;
+}
+
+.food-leftovers-v572{
+  display:grid;
+  gap:8px;
+  margin:0 0 14px;
+}
+.food-leftovers-head-v572{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 2px;
+}
+.food-leftovers-head-v572 strong{
+  color:#405845;
+  font-size:11px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.food-leftovers-head-v572 span{
+  color:#7a877c;
+  font-size:9px;
+}
+.food-leftovers-grid-v572{
+  display:grid;
+  gap:8px;
+}
+.food-leftovers-grid-v572 article{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 13px;
+  border:1px solid rgba(65,98,69,.14);
+  border-radius:15px;
+  background:linear-gradient(145deg,#f8fbf4,#edf4e8);
+}
+.food-leftovers-grid-v572 article>div{
+  min-width:0;
+}
+.food-leftovers-grid-v572 small{
+  display:block;
+  margin-bottom:2px;
+  color:#7c916e;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.food-leftovers-grid-v572 strong{
+  display:block;
+  overflow:hidden;
+  color:#334b39;
+  font-size:12px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.food-leftovers-grid-v572 span{
+  display:block;
+  margin-top:3px;
+  color:#738077;
+  font-size:9px;
+}
+.food-leftover-modal-copy-v572{
+  margin:0;
+  padding:10px 11px;
+  border-radius:12px;
+  background:#edf3e7;
+  color:#516556;
+  font-size:11px;
+  line-height:1.4;
+}
+
+@media(max-width:560px){
+  .food-recipe-details-v572{grid-template-columns:1fr}
+  .food-shopping-gap-v572{align-items:flex-start!important;flex-direction:column}
+  .food-shopping-gap-v572>span{justify-items:start;text-align:left}
+  .food-recipe-preview-v572>div{align-items:flex-start;flex-direction:column}
+  .food-leftovers-grid-v572 article{align-items:flex-start;flex-direction:column}
+}
