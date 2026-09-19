@@ -329,6 +329,223 @@
     return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="fitx" data-sport-panel-v568="fitx">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>FITX · LETZTE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(session.date))}</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" id="sportDurationV510" data-total-minutes="${total}">${esc(formatMinutes(total).replace(' h',''))}</div><div class="sport-duration-unit-v510">Gesamtaufwand</div></div><div class="sport-time-window-v510">${esc(clock(session.startedAt))} <span>→</span> ${esc(clock(session.endedAt))}</div></div><div class="sport-content-v510"><div class="sport-meta-grid-v568"><div class="sport-meta-v510"><div class="sport-meta-label-v510">Kurse</div><div class="sport-meta-value-v510">${session.activities.length}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Kurszeit</div><div class="sport-meta-value-v510">${esc(formatMinutes(courses))}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Drumherum</div><div class="sport-meta-value-v510">${esc(formatMinutes(other))}</div></div></div><div class="sport-course-list-v568">${session.activities.map(courseCard).join('')||'<div class="sport-empty-inline-v568">Keine Kurse dokumentiert.</div>'}</div>${session.note?`<div class="sport-footnote-v510">${esc(session.note)}</div>`:''}${fitx.length>1?`<div class="sport-section-title-v568">Letzte FitX-Besuche</div><div class="sport-visit-list-v568">${fitx.slice(1,4).map(miniVisit).join('')}</div>`:''}${errorNote()}<div class="sport-mode-hint-v510">Über das Haus geht es zurück zum Home-Bildschirm.</div></div></section>`;
   }
 
+  async function sportUser(){
+    const supabase=client();
+    if(!supabase)throw new Error('Supabase-Client ist nicht verfügbar.');
+    const result=await withTimeout(supabase.auth.getSession(),'Anmeldung',3000);
+    if(result?.error)throw result.error;
+    const user=result?.data?.session?.user;
+    if(!user?.id)throw new Error('Nicht angemeldet.');
+    return {supabase,user};
+  }
+
+  async function createXSession(){
+    const {supabase,user}=await sportUser();
+    const existing=state.sessions.find(session=>session.kind==='xtraining'&&session.date===todayIso()&&session.status!=='completed'&&session.status!=='cancelled');
+    if(existing)return existing;
+    const result=await supabase.from('sport_sessions').insert({
+      user_id:user.id,
+      session_date:todayIso(),
+      title:'X-Training',
+      venue:'FitX',
+      session_kind:'xtraining',
+      session_status:'planned',
+      source:'manual'
+    }).select('id').single();
+    if(result.error)throw result.error;
+    await load(true);
+    return state.sessions.find(session=>session.id===result.data.id)||null;
+  }
+
+  async function markTimeline(sessionId,column){
+    const allowed=new Set(TIMELINE_STEPS.map(step=>step[1]));
+    if(!allowed.has(column))throw new Error('Unbekannter Zeitpunkt.');
+    const {supabase}=await sportUser();
+    const stamp=new Date().toISOString();
+    const patch={[column]:stamp};
+    if(column==='drive_started_at'){
+      patch.started_at=stamp;
+      patch.session_status='running';
+    }
+    if(column==='training_started_at')patch.session_status='running';
+    if(column==='home_arrived_at'){
+      patch.ended_at=stamp;
+      patch.session_status='completed';
+      const session=state.sessions.find(item=>item.id===sessionId);
+      const start=validDate(session?.driveStartedAt||session?.startedAt);
+      if(start)patch.duration_minutes=Math.max(0,Math.round((new Date(stamp)-start)/60000));
+    }
+    const result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId).select('id').single();
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function addSessionParticipant(sessionId,name){
+    const clean=String(name||'').trim();
+    if(!clean)throw new Error('Name fehlt.');
+    const {supabase,user}=await sportUser();
+    const result=await supabase.from('sport_session_participants').insert({user_id:user.id,session_id:sessionId,participant_name:clean});
+    if(result.error&&result.error.code!=='23505')throw result.error;
+    await load(true);
+  }
+
+  async function removeSessionParticipant(id){
+    const {supabase}=await sportUser();
+    const result=await supabase.from('sport_session_participants').delete().eq('id',id);
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function addCatalogExercise(payload){
+    const {supabase,user}=await sportUser();
+    const name=String(payload.name||'').trim();
+    const kind=payload.kind==='cardio'?'cardio':'strength';
+    if(!name)throw new Error('Übungsname fehlt.');
+    const result=await supabase.from('sport_exercise_catalog').insert({
+      user_id:user.id,
+      name,
+      kind,
+      category:String(payload.category||'').trim()||null,
+      muscle_group:String(payload.muscle_group||'').trim()||null,
+      active:true
+    });
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function addEquipment(payload){
+    const {supabase,user}=await sportUser();
+    const name=String(payload.name||'').trim();
+    if(!name)throw new Error('Gerätename fehlt.');
+    const result=await supabase.from('sport_equipment_catalog').insert({
+      user_id:user.id,
+      name,
+      equipment_number:String(payload.equipment_number||'').trim()||null,
+      category:String(payload.category||'').trim()||'Kraft',
+      settings_text:String(payload.settings_text||'').trim()||null,
+      active:true
+    });
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  function activeXSession(){
+    return state.sessions.find(session=>session.kind==='xtraining'&&session.date===todayIso()&&session.status!=='completed'&&session.status!=='cancelled')||null;
+  }
+
+  async function addExerciseToSession(sessionId,exerciseId){
+    const exercise=state.catalogExercises.find(item=>String(item.id)===String(exerciseId));
+    if(!exercise)throw new Error('Übung nicht gefunden.');
+    const session=state.sessions.find(item=>item.id===sessionId);
+    if(!session)throw new Error('Training nicht gefunden.');
+    if((session.workout||[]).some(item=>item.exerciseId===String(exerciseId)&&item.status!=='skipped'))return;
+    const {supabase,user}=await sportUser();
+    const maxSort=(session.workout||[]).reduce((max,item)=>Math.max(max,item.sortOrder||0),0);
+    const result=await supabase.from('sport_session_exercises').insert({
+      user_id:user.id,
+      session_id:sessionId,
+      exercise_id:exercise.id,
+      equipment_id:null,
+      name_snapshot:exercise.name,
+      kind:exercise.kind,
+      status:'planned',
+      sort_order:maxSort+1
+    });
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function addExerciseGroup(sessionId,groupKey){
+    const list=state.catalogExercises.filter(exercise=>(exercise.category||exercise.muscle_group||exercise.kind)===groupKey);
+    if(!list.length)return;
+    const session=state.sessions.find(item=>item.id===sessionId);
+    const existing=new Set((session?.workout||[]).map(item=>item.exerciseId));
+    const missing=list.filter(item=>!existing.has(String(item.id)));
+    if(!missing.length)return;
+    const {supabase,user}=await sportUser();
+    let sort=(session?.workout||[]).reduce((max,item)=>Math.max(max,item.sortOrder||0),0);
+    const rows=missing.map(exercise=>({
+      user_id:user.id,
+      session_id:sessionId,
+      exercise_id:exercise.id,
+      equipment_id:null,
+      name_snapshot:exercise.name,
+      kind:exercise.kind,
+      status:'planned',
+      sort_order:++sort
+    }));
+    const result=await supabase.from('sport_session_exercises').insert(rows);
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function updateSessionExercise(id,patch){
+    const {supabase}=await sportUser();
+    const result=await supabase.from('sport_session_exercises').update(patch).eq('id',id);
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function setExerciseStatus(id,status){
+    const patch={status};
+    const stamp=new Date().toISOString();
+    if(status==='running')patch.started_at=stamp;
+    if(status==='completed')patch.ended_at=stamp;
+    if(status==='planned'){patch.started_at=null;patch.ended_at=null;}
+    return updateSessionExercise(id,patch);
+  }
+
+  async function removeSessionExercise(id){
+    const {supabase}=await sportUser();
+    const result=await supabase.from('sport_session_exercises').delete().eq('id',id);
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function saveStrengthSet(sessionExerciseId,setNumber,values){
+    const {supabase,user}=await sportUser();
+    const payload={
+      user_id:user.id,
+      session_exercise_id:sessionExerciseId,
+      set_number:setNumber,
+      weight_kg:numberOrNull(values.weight_kg),
+      repetitions:numberOrNull(values.repetitions),
+      rir:numberOrNull(values.rir)
+    };
+    const result=await supabase.from('sport_exercise_sets').upsert(payload,{onConflict:'session_exercise_id,set_number'});
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function addBlankSet(sessionExerciseId){
+    const sessionExercise=state.sessions.flatMap(session=>session.workout||[]).find(item=>item.id===sessionExerciseId);
+    const next=Math.max(3,...(sessionExercise?.sets||[]).map(set=>set.setNumber||0))+1;
+    return saveStrengthSet(sessionExerciseId,next,{weight_kg:null,repetitions:null,rir:null});
+  }
+
+  async function saveCardioValues(id,values){
+    return updateSessionExercise(id,{
+      duration_minutes:numberOrNull(values.duration_minutes),
+      distance_km:numberOrNull(values.distance_km),
+      resistance_level:String(values.resistance_level||'').trim()||null,
+      speed_kmh:numberOrNull(values.speed_kmh),
+      incline_percent:numberOrNull(values.incline_percent)
+    });
+  }
+
+  function sessionParticipantRows(sessionId){
+    return state.sessionParticipants.filter(row=>String(row.session_id)===String(sessionId)).sort((a,b)=>byName(a.participant_name,b.participant_name));
+  }
+
+  function previousWorkoutValue(current){
+    const candidates=state.sessions
+      .filter(session=>session.id!==current.sessionId)
+      .flatMap(session=>(session.workout||[]).map(item=>({session,item})))
+      .filter(entry=>entry.item.exerciseId===current.exerciseId&&entry.item.status==='completed')
+      .sort((a,b)=>String(b.session.date).localeCompare(String(a.session.date)));
+    return candidates[0]||null;
+  }
+
   function xTrainingPanel(){return `<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v512="xtraining" data-sport-panel-v568="xtraining">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING ${statusBadge()}</div><p class="sport-date-v510">Eigene Trainingssessions außerhalb der normalen FitX-Dokumentation.</p><div class="sport-section-mark-v512">X</div></div><div class="sport-content-v510"><article class="sport-session-card-v510 sport-empty-card-v512"><div class="sport-empty-orbit-v512"><span></span><span></span><span></span></div><h2 class="sport-card-title-v510">Noch kein X-Training dokumentiert</h2><div class="sport-card-sub-v510">Übungen, Sätze, Wiederholungen und Gewichte bekommen hier später ihren eigenen Platz.</div></article></div></section>`;}
 
   function flatActivities(rows){
