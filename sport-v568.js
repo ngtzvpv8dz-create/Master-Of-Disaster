@@ -211,20 +211,26 @@
     const user=sessionResult?.data?.session?.user;
     if(!user?.id)throw new Error('Nicht angemeldet.');
 
-    const sessionQuery=supabase.from('sport_sessions').select('id,session_date,title,venue,started_at,ended_at,duration_minutes,source,source_key,notes').eq('user_id',user.id).order('session_date',{ascending:false}).limit(500);
-    const activityQuery=supabase.from('sport_activities').select('id,session_id,name,kind,started_at,ended_at,duration_minutes,sort_order,notes').eq('user_id',user.id).order('started_at',{ascending:false}).limit(2500);
-    const participantQuery=supabase.from('sport_activity_participants').select('activity_id,participant_name').eq('user_id',user.id).limit(5000);
-    const [sessionsResult,activitiesResult,participantsResult]=await Promise.all([
-      withTimeout(sessionQuery,'Sporttermine'),
-      withTimeout(activityQuery,'Sportaktivitäten'),
-      withTimeout(participantQuery,'Trainingspartner')
-    ]);
-    for(const result of [sessionsResult,activitiesResult,participantsResult])if(result?.error)throw result.error;
+    const queries=[
+      supabase.from('sport_sessions').select('id,session_date,title,venue,started_at,ended_at,duration_minutes,source,source_key,notes,session_kind,session_status,drive_started_at,gym_arrived_at,training_started_at,training_ended_at,gym_left_at,home_arrived_at').eq('user_id',user.id).order('session_date',{ascending:false}).limit(500),
+      supabase.from('sport_activities').select('id,session_id,name,kind,started_at,ended_at,duration_minutes,sort_order,notes').eq('user_id',user.id).order('started_at',{ascending:false}).limit(2500),
+      supabase.from('sport_activity_participants').select('activity_id,participant_name').eq('user_id',user.id).limit(5000),
+      supabase.from('sport_session_participants').select('id,session_id,participant_name').eq('user_id',user.id).limit(5000),
+      supabase.from('sport_exercise_catalog').select('id,name,kind,category,muscle_group,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
+      supabase.from('sport_equipment_catalog').select('id,name,equipment_number,category,settings_text,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
+      supabase.from('sport_session_exercises').select('id,session_id,exercise_id,equipment_id,name_snapshot,kind,status,sort_order,started_at,ended_at,duration_minutes,distance_km,resistance_level,speed_kmh,incline_percent,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5000),
+      supabase.from('sport_exercise_sets').select('id,session_exercise_id,set_number,weight_kg,repetitions,rir').eq('user_id',user.id).order('set_number').limit(15000)
+    ];
+    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Übungskatalog','Gerätekatalog','X-Training Übungen','Sätze'];
+    const results=await Promise.all(queries.map((query,index)=>withTimeout(query,labels[index],6500)));
+    for(const result of results)if(result?.error)throw result.error;
+    const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,catalogResult,equipmentResult,workoutResult,setsResult]=results;
 
     const peopleByActivity=new Map();
     (participantsResult.data||[]).forEach(row=>{
       const list=peopleByActivity.get(row.activity_id)||[];
-      list.push(row.participant_name);peopleByActivity.set(row.activity_id,list);
+      list.push(row.participant_name);
+      peopleByActivity.set(row.activity_id,list);
     });
     const activitiesBySession=new Map();
     (activitiesResult.data||[]).forEach(row=>{
@@ -232,7 +238,41 @@
       list.push({...row,participants:normalizeParticipants(peopleByActivity.get(row.id)||[])});
       activitiesBySession.set(row.session_id,list);
     });
-    return sortSessions((sessionsResult.data||[]).map(row=>({...row,activities:activitiesBySession.get(row.id)||[]})));
+
+    const peopleBySession=new Map();
+    (sessionPeopleResult.data||[]).forEach(row=>{
+      const list=peopleBySession.get(row.session_id)||[];
+      list.push(row.participant_name);
+      peopleBySession.set(row.session_id,list);
+    });
+
+    const setsByExercise=new Map();
+    (setsResult.data||[]).forEach(row=>{
+      const list=setsByExercise.get(row.session_exercise_id)||[];
+      list.push(row);
+      setsByExercise.set(row.session_exercise_id,list);
+    });
+    const workoutBySession=new Map();
+    (workoutResult.data||[]).forEach(row=>{
+      const list=workoutBySession.get(row.session_id)||[];
+      list.push({...row,sets:setsByExercise.get(row.id)||[]});
+      workoutBySession.set(row.session_id,list);
+    });
+
+    state={...state,
+      catalogExercises:(catalogResult.data||[]),
+      equipment:(equipmentResult.data||[]),
+      sessionParticipants:(sessionPeopleResult.data||[]),
+      sessionExercises:(workoutResult.data||[]),
+      exerciseSets:(setsResult.data||[])
+    };
+
+    return sortSessions((sessionsResult.data||[]).map(row=>({
+      ...row,
+      activities:activitiesBySession.get(row.id)||[],
+      sessionParticipants:peopleBySession.get(row.id)||[],
+      workout:workoutBySession.get(row.id)||[]
+    })));
   }
 
   async function load(force=false){
@@ -243,11 +283,11 @@
     if(loadPromise)return loadPromise;
     state={...state,loading:true,error:null};render();
     const task=remoteData().then(rows=>{
-      state={loaded:true,loading:false,error:null,source:'supabase',sessions:rows};
+      state={...state,loaded:true,loading:false,error:null,source:'supabase',sessions:rows};
       writeCache(rows);render();return rows;
     }).catch(error=>{
       const cache=state.sessions.length?state.sessions:readCache();
-      state={loaded:false,loading:false,error:error?.message||String(error),source:cache.length?'cache':'error',sessions:cache};
+      state={...state,loaded:false,loading:false,error:error?.message||String(error),source:cache.length?'cache':'error',sessions:cache};
       render();return cache;
     }).finally(()=>{if(loadPromise===task)loadPromise=null;});
     loadPromise=task;return task;
