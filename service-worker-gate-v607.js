@@ -1,13 +1,13 @@
-/* V606 · SERVICE-WORKER UPGRADE GATE
+/* V607 · SERVICE-WORKER UPGRADE GATE
    Verhindert, dass ein neuer App-Build unter einem alten Worker/Cache startet.
-   Bei Versionswechsel aktiviert die Seite nur den neuen Worker. Ein nötiger Reload wird ausschließlich vom Worker selbst ausgelöst.
+   Bei Versionswechsel aktiviert die Seite nur den neuen Worker. Es gibt keinerlei automatische Navigation oder Reload.
 */
 (function(){
   'use strict';
-  if(window.__modWorkerGateV606)return;
+  if(window.__modWorkerGateV607)return;
 
-  const VERSION='V606';
-  const SW_URL='./sw.js?v=606-worker-gate';
+  const VERSION='V607';
+  const SW_URL='./sw.js?v=607-worker-gate';
   const SCOPE='./';
     const LEGACY_CACHE_PREFIX='master-of-disaster-';
 
@@ -16,7 +16,7 @@
   function emit(extra={}){
     status={...status,...extra};
     try{
-      window.dispatchEvent(new CustomEvent('mod:worker-gate-v606-status',{detail:{...status,version:VERSION}}));
+      window.dispatchEvent(new CustomEvent('mod:worker-gate-v607-status',{detail:{...status,version:VERSION}}));
       window.dispatchEvent(new CustomEvent('mod:bootstrap-v603-progress',{detail:{
         loaded:0,total:1,percent:0,ready:false,error:status.error,
         label:status.label,version:VERSION,workerGate:true
@@ -61,7 +61,7 @@
     if(!('caches' in window))return;
     try{
       const keys=await caches.keys();
-      await Promise.all(keys.filter(key=>key.startsWith(LEGACY_CACHE_PREFIX)&&key!=='master-of-disaster-v606-static').map(key=>caches.delete(key)));
+      await Promise.all(keys.filter(key=>key.startsWith(LEGACY_CACHE_PREFIX)&&key!=='master-of-disaster-v607-static').map(key=>caches.delete(key)));
     }catch(_){}
   }
 
@@ -113,22 +113,22 @@
 
       const hadLegacyController=!!beforeController&&beforeVersion!==VERSION;
 
-      /* V606: Nur der Service Worker selbst darf bei einem echten Legacy-Cache
+      /* V607: Nur der Service Worker selbst darf bei einem echten Legacy-Cache
          eine Navigation auslösen. Das Seiten-Gate wartet ausschließlich auf den
          aktuellen Controller und startet niemals zusätzlich neu. */
       emit({state:'ready',label:'Bereiche werden geladen',controller:VERSION,reloaded:false});
-      return {version:VERSION,mode:hadLegacyController?'upgraded':'installed',reloaded:false,singleReloadAuthority:'service-worker'};
+      return {version:VERSION,mode:hadLegacyController?'upgraded':'installed',reloaded:false,singleReloadAuthority:'none'};
     }catch(error){
-      console.error('V606 Worker Gate:',error);
+      console.error('V607 Worker Gate:',error);
       emit({state:'error',label:'App-Update fehlgeschlagen · erneut öffnen',error:error?.message||String(error)});
       throw error;
     }
   })();
 
-  window.__modWorkerGateV606={
+  window.__modWorkerGateV607={
     version:VERSION,
     swUrl:SW_URL,
-    reloadAuthority:'service-worker',
+    reloadAuthority:'none',
     ready,
     controllerVersion,
     get status(){return {...status};}

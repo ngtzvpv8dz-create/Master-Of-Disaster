@@ -18,8 +18,8 @@ jobs:
           node --check app-hub-v515.js
           node --check app-hub-launcher-v603.js
           node --check surface-header-v603.js
-          node --check service-worker-gate-v606.js
-          node --check area-runtime-v606.js
+          node --check service-worker-gate-v607.js
+          node --check area-runtime-v607.js
           node --check kistology-v603.js
           node --check log-core-v603.js
           node --check backstage-v531.js
@@ -57,8 +57,8 @@ jobs:
                   build:window.__MOD_BUILD__?.version||'',
                   hub:!!window.__modAppHubV603,
                   launcher:!!window.__modHubLauncherV603,
-                  runtime:!!window.__modAreaRuntimeV606,
-                  gate:!!window.__modWorkerGateV606
+                  runtime:!!window.__modAreaRuntimeV607,
+                  gate:!!window.__modWorkerGateV607
                 })).catch(()=>({}));
                 try{
                   metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});
@@ -70,29 +70,29 @@ jobs:
               }
               if(!out.live)throw new Error('Current build not deployed: expected '+expected+', metrics='+(metrics?.version||'none'));
               await page.evaluate(()=>window.__modAppHubV603.show());
-              await page.waitForFunction(()=>!!window.__modAreaRuntimeV606,null,{timeout:30000});
-              const liveBoot=await page.evaluate(()=>window.__modAreaRuntimeV606.preloadAll());
-              if(liveBoot!==true)throw new Error('V606 live bootstrap returned false');
-              await page.waitForFunction(()=>window.__modAreaRuntimeV606?.ready===true,null,{timeout:30000});
-              out.bootstrap=await page.evaluate(()=>window.__modAreaRuntimeV606.ready===true&&window.__modAreaRuntimeV606.progress.percent===100);
-              out.preloadOnly=await page.evaluate(()=>window.__modAreaRuntimeV606?.preloadMode==='worker-gated-light-cache-warm'&&window.__modAreaRuntimeV606?.executedCount===0&&window.__modAreaRuntimeV606?.warmAssetCount>0&&typeof window.render!=='function'&&!window.__modKistologyV603&&!window.__modFoodV544&&!window.__modBackstageV531);
+              await page.waitForFunction(()=>!!window.__modAreaRuntimeV607,null,{timeout:30000});
+              const liveBoot=await page.evaluate(()=>window.__modAreaRuntimeV607.preloadAll());
+              if(liveBoot!==true)throw new Error('V607 live bootstrap returned false');
+              await page.waitForFunction(()=>window.__modAreaRuntimeV607?.ready===true,null,{timeout:30000});
+              out.bootstrap=await page.evaluate(()=>window.__modAreaRuntimeV607.ready===true&&window.__modAreaRuntimeV607.progress.percent===100);
+              out.preloadOnly=await page.evaluate(()=>window.__modAreaRuntimeV607?.preloadMode==='worker-gated-light-cache-warm'&&window.__modAreaRuntimeV607?.executedCount===0&&window.__modAreaRuntimeV607?.warmAssetCount>0&&typeof window.render!=='function'&&!window.__modKistologyV603&&!window.__modFoodV544&&!window.__modBackstageV531);
               out.home=await page.evaluate(()=>document.body.classList.contains('mod-app-hub-v515')&&document.querySelector('.mod-hub-preload-v603')?.textContent.includes('100'));
-              await page.evaluate(()=>window.__modAreaRuntimeV606.openArea('todo'));
+              await page.evaluate(()=>window.__modAreaRuntimeV607.openArea('todo'));
               await page.waitForFunction(()=>typeof window.render==='function'&&window.__modBackupModelV600&&window.__modIphoneBackupV600,null,{timeout:30000});
               out.todo=await page.evaluate(()=>window.__modBackupModelV600?.version==='V600'&&window.__modIphoneBackupV600?.version==='V600');
               await page.evaluate(()=>window.__modAppHubV603.show());
-              await page.evaluate(()=>window.__modAreaRuntimeV606.openArea('kistology'));
+              await page.evaluate(()=>window.__modAreaRuntimeV607.openArea('kistology'));
               await page.waitForFunction(()=>document.body.classList.contains('mod-kistology-v535')&&window.__modKistologyV603,null,{timeout:30000});
               out.kistology=await page.evaluate(()=>!!window.__modKistologyV603&&document.body.dataset.modAppSurfaceV515==='kistology');
               await page.evaluate(()=>window.__modAppHubV603.show());
-              await page.evaluate(()=>window.__modAreaRuntimeV606.openArea('backstage'));
+              await page.evaluate(()=>window.__modAreaRuntimeV607.openArea('backstage'));
               await page.waitForFunction(()=>window.__modBackstageV531&&document.body.classList.contains('mod-backstage-v530'),null,{timeout:30000});
               out.backstage=await page.evaluate(()=>document.body.dataset.modAppSurfaceV515==='backstage');
               await page.evaluate(()=>window.__modBackstageV531.setSection('log'));
               await page.waitForFunction(()=>!!document.querySelector('#viewContainer .mod-log-v498'),null,{timeout:30000});
               out.log=await page.evaluate(()=>!!document.querySelector('#viewContainer .mod-log-v498')&&!document.querySelector('#viewContainer .live-log-v453'));
               await page.evaluate(async()=>{
-                await window.__modAreaRuntimeV606.loadSection('backup');
+                await window.__modAreaRuntimeV607.loadSection('backup');
                 window.__modBackstageV531?.setSection?.('backup');
                 window.__modBackstageBackupV533?.renderBackupDashboard?.();
               });
@@ -118,11 +118,11 @@ jobs:
               const reentryPage=await browser.newPage({viewport:{width:390,height:844}});
               await reentryPage.route('**/*.supabase.co/**',route=>route.abort());
               await reentryPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?reentry='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
-              await reentryPage.waitForFunction(()=>window.__modAreaRuntimeV606?.ready===true,null,{timeout:30000});
+              await reentryPage.waitForFunction(()=>window.__modAreaRuntimeV607?.ready===true,null,{timeout:30000});
               out.reentry=await reentryPage.evaluate(async()=>{
-                const gate=window.__modWorkerGateV606;
+                const gate=window.__modWorkerGateV607;
                 const controllerVersion=await gate?.controllerVersion?.();
-                return gate?.version==='V606'&&controllerVersion==='V606'&&gate?.reloadAuthority==='service-worker'&&window.__modAreaRuntimeV606?.preloadMode==='worker-gated-light-cache-warm'&&window.__modAreaRuntimeV606?.progress?.percent===100&&window.__modAreaRuntimeV606?.executedCount===0&&document.body.classList.contains('mod-app-hub-v515');
+                return gate?.version==='V607'&&controllerVersion==='V607'&&gate?.reloadAuthority==='none'&&window.__modAreaRuntimeV607?.preloadMode==='worker-gated-light-cache-warm'&&window.__modAreaRuntimeV607?.progress?.percent===100&&window.__modAreaRuntimeV607?.executedCount===0&&document.body.classList.contains('mod-app-hub-v515');
               });
               await reentryPage.waitForTimeout(1200);
               await reentryPage.close();

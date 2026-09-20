@@ -1,14 +1,14 @@
-/* V606 · WORKER-GATED LIGHT BOOTSTRAP
+/* V607 · WORKER-GATED LIGHT BOOTSTRAP
    Der Homescreen wartet zuerst auf den aktuellen Service Worker.
    Danach werden nur die Kern-Dateien der Bereiche im Worker-Cache vorbereitet.
    Vollständige Bereichs-Runtimes werden erst beim Öffnen ausgeführt.
 */
 (function(){
   'use strict';
-  if(window.__modAreaRuntimeV606)return;
+  if(window.__modAreaRuntimeV607)return;
 
-  const VERSION='V606';
-  const CACHE_NAME='master-of-disaster-v606-static';
+  const VERSION='V607';
+  const CACHE_NAME='master-of-disaster-v607-static';
   const SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 
   const GROUPS={
@@ -158,7 +158,7 @@
     progressState={...progressState,...extra};
     progressState.percent=Math.max(0,Math.min(100,Math.round(progressState.loaded/progressState.total*100)));
     const detail={...progressState,version:VERSION};
-    emit('mod:bootstrap-v606-progress',detail);
+    emit('mod:bootstrap-v607-progress',detail);
     emit('mod:bootstrap-v604-progress',detail);
     emit('mod:bootstrap-v603-progress',detail);
   }
@@ -174,7 +174,7 @@
       const script=document.createElement('script');
       script.src=src;
       script.async=false;
-      script.dataset.modAreaRuntimeV606='true';
+      script.dataset.modAreaRuntimeV607='true';
       script.onload=()=>{executed.add(key);executing.delete(key);resolve(src);};
       script.onerror=()=>{executing.delete(key);reject(new Error('Ausführen fehlgeschlagen: '+src));};
       document.body.appendChild(script);
@@ -296,7 +296,7 @@
         }finally{clearTimeout(timer);}
       }catch(error){
         failures.push({url:entry.url,message:error?.message||String(error)});
-        console.warn('V606 optional warmup:',entry.url,error);
+        console.warn('V607 optional warmup:',entry.url,error);
       }
       done++;
       progressState.loaded=done;
@@ -311,7 +311,7 @@
   }
 
   async function ensureWorkerGate(){
-    const gate=window.__modWorkerGateV606;
+    const gate=window.__modWorkerGateV607;
     if(!gate?.ready)return {version:VERSION,mode:'no-gate'};
     notify({label:gate.status?.label||'App wird geprüft',loaded:0,total:1});
     return gate.ready;
@@ -336,7 +336,7 @@
           let warmed=false;
           if('serviceWorker' in navigator && navigator.serviceWorker.controller){
             warmed=await warmViaWorker(entries).catch(error=>{
-              console.warn('V606 Worker-Warmup fallback:',error);
+              console.warn('V607 Worker-Warmup fallback:',error);
               return false;
             });
           }
@@ -351,7 +351,7 @@
         document.documentElement.classList.add('mod-bootstrap-ready-v603');
 
         const detail={version:VERSION,preloadOnly:true,workerGated:true,warmAssets:entries.length};
-        emit('mod:bootstrap-v606-ready',detail);
+        emit('mod:bootstrap-v607-ready',detail);
         emit('mod:bootstrap-v604-ready',detail);
         emit('mod:bootstrap-v603-ready',detail);
 
@@ -360,7 +360,7 @@
         try{window.__modFixedAppHeaderV475?.updateHeight?.();}catch(_){}
         return true;
       }catch(error){
-        console.error('V606 Bootstrap:',error);
+        console.error('V607 Bootstrap:',error);
         notify({label:'Laden fehlgeschlagen · App erneut öffnen',ready:false,error:error?.message||String(error)});
         document.documentElement.classList.add('mod-bootstrap-error-v603');
         return false;
@@ -393,9 +393,9 @@
 
     if(id==='todo'){
       try{window.render();}catch(_){}
-      return window.__modAppHubV515?.open?.('todo',{source:'v606-ready'});
+      return window.__modAppHubV515?.open?.('todo',{source:'v607-ready'});
     }
-    if(id==='sport')return window.__modAppHubV515?.open?.('sport',{source:'v606-ready'});
+    if(id==='sport')return window.__modAppHubV515?.open?.('sport',{source:'v607-ready'});
     if(id==='food')return window.__modFoodV544?.open?.();
     if(id==='finance')return (window.__modFinanceV553||window.__modFinanceV552)?.open?.();
     if(id==='kistology')return window.__modKistologyV603?.open?.();
@@ -414,7 +414,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       if(!ready)return;
-      openArea(id).catch(error=>console.error('V606 Bereich:',id,error));
+      openArea(id).catch(error=>console.error('V607 Bereich:',id,error));
       return;
     }
 
@@ -426,7 +426,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       window.__modBackstageV531?.setSection?.('log');
-      Promise.resolve(window.__modRecoveryHistoryV498?.renderEnhancedLog?.()).catch(error=>console.error('V606 Log:',error));
+      Promise.resolve(window.__modRecoveryHistoryV498?.renderEnhancedLog?.()).catch(error=>console.error('V607 Log:',error));
       return;
     }
 
@@ -438,7 +438,7 @@
       if(section==='backup'&&window.__modBackstageBackupV533?.openBackup)window.__modBackstageBackupV533.openBackup();
       else window.__modBackstageV531?.setSection?.(section);
       if(section==='backup')window.__modBackstageBackupV533?.renderBackupDashboard?.();
-    }).catch(error=>console.error('V606 Backstage:',section,error))
+    }).catch(error=>console.error('V607 Backstage:',section,error))
       .finally(()=>sectionButton.removeAttribute('aria-busy'));
   },true);
 
@@ -458,6 +458,7 @@
     get warmAssetCount(){return warmEntries().length;}
   };
 
+  window.__modAreaRuntimeV607=api;
   window.__modAreaRuntimeV606=api;
   window.__modAreaRuntimeV605=api;
   window.__modAreaRuntimeV604=api;
