@@ -16,10 +16,9 @@ jobs:
           node-version: '20'
       - name: Wiring checks
         run: |
-          node --check backstage-v530.js
           node --check backstage-v531.js
           test -f backstage-content-v531.css
-          grep -q 'backstage-content-v531.css?v=531-content-machine-room' backstage-v530.js
+          grep -q 'backstage-content-v531.css?v=603' index.html
           grep -q '"./backstage-content-v531.css"' sw.js
           grep -q 'const CACHE_NAME=' sw.js
           grep -q 'placeholderParksLegacyLogV531:true' backstage-v531.js
@@ -42,7 +41,7 @@ jobs:
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg=v531-content',{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV531&&document.querySelector('link[data-mod-backstage-content-v531]'),null,{timeout:30000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV531&&document.querySelector('link[href*="backstage-content-v531.css"]'),null,{timeout:30000});
             await page.evaluate(()=>{
               window.__modAppHubV515.show();
               window.__modHubLauncherV524.render();
