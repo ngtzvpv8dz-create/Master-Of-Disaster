@@ -76,7 +76,10 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modAreaRuntimeV605?.ready===true,{timeout:90000});
+            await page.waitForFunction(()=>!!window.__modAreaRuntimeV605,null,{timeout:30000});
+            const bootResult=await page.evaluate(()=>window.__modAreaRuntimeV605.preloadAll());
+            const bootState=await page.evaluate(()=>({ready:window.__modAreaRuntimeV605?.ready,progress:window.__modAreaRuntimeV605?.progress,gate:window.__modWorkerGateV605?.status||null}));
+            if(bootResult!==true||bootState.ready!==true)throw new Error('V605 local bootstrap failed '+JSON.stringify({bootResult,bootState}));
             const preloadOnly=await page.evaluate(()=>({
               mode:window.__modAreaRuntimeV605?.preloadMode,
               executed:window.__modAreaRuntimeV605?.executedCount,
