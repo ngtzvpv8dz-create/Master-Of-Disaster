@@ -286,7 +286,13 @@
       event.stopImmediatePropagation();
       sectionButton.setAttribute('aria-busy','true');
       loadBackstageSection(section)
-        .then(()=>window.__modBackstageV531?.setSection?.(section))
+        .then(()=>{
+          if(section==='backup'&&window.__modBackstageBackupV533?.openBackup){
+            window.__modBackstageBackupV533.openBackup();
+            return;
+          }
+          window.__modBackstageV531?.setSection?.(section);
+        })
         .catch(error=>console.error('V594 Backstage-Sektor:',section,error))
         .finally(()=>sectionButton.removeAttribute('aria-busy'));
     },true);

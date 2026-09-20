@@ -135,18 +135,8 @@
   function installSportSwitchCapture(){
     if(switchCaptureInstalled)return;
     switchCaptureInstalled=true;
-    document.addEventListener('click',event=>{
-      const button=event.target?.closest?.('#sportSwitchV510');
-      if(!button)return;
-      if(document.body.classList.contains(HUB_CLASS)){
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        open('sport',{source:'switch'});
-        return;
-      }
-      const mode=sportApi()?.currentMode?.();
-      if(mode==='todo')dispatchHealthSync('sport-switch');
-    },true);
+    // V594: the S in MASTER is a visual surface marker only.
+    // Navigation is exclusively handled by the launcher and the home icon.
   }
 
   function init(){
