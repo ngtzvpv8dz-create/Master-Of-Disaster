@@ -266,8 +266,39 @@ jobs:
             await webkitEntry(1,true);
             await webkitEntry(2,false);
             await webkitEntry(3,false);
+
+            /* Simuliere einen echten Versionswechsel: alter V604-Cache existiert,
+               aber noch kein Worker. V605 muss den Cache entfernen und die Seite
+               kontrolliert unter dem neuen Worker neu starten. */
+            const seed=await context.newPage();
+            await seed.goto('http://127.0.0.1:8787/?reg=seed-'+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+            await seed.evaluate(async()=>{
+              const cache=await caches.open('master-of-disaster-v604-static');
+              await cache.put('./legacy-v604-marker',new Response('legacy',{headers:{'Content-Type':'text/plain'}}));
+            });
+            await seed.close();
+
+            const upgrade=await context.newPage();
+            await upgrade.goto('http://127.0.0.1:8787/?upgrade-v605='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+            await upgrade.waitForFunction(()=>window.__modAreaRuntimeV605?.ready===true,{timeout:90000});
+            const upgradeState=await upgrade.evaluate(async()=>{
+              const controllerVersion=await window.__modWorkerGateV605?.controllerVersion?.();
+              const keys=await caches.keys();
+              return {
+                controllerVersion,
+                gate:window.__modWorkerGateV605?.version||null,
+                mode:window.__modAreaRuntimeV605?.preloadMode||null,
+                percent:window.__modAreaRuntimeV605?.progress?.percent||0,
+                legacyCache:keys.includes('master-of-disaster-v604-static'),
+                currentCache:keys.includes('master-of-disaster-v605-static'),
+                executed:window.__modAreaRuntimeV605?.executedCount
+              };
+            });
+            if(upgradeState.controllerVersion!=='V605'||upgradeState.gate!=='V605'||upgradeState.mode!=='worker-gated-light-cache-warm'||upgradeState.percent!==100||upgradeState.legacyCache||!upgradeState.currentCache||upgradeState.executed!==0)throw new Error('V605 upgrade gate regression '+JSON.stringify(upgradeState));
+            await upgrade.close();
+
             await context.close();
             await webkitBrowser.close();
-            console.log('V605 WebKit re-entry regression OK');
+            console.log('V605 WebKit re-entry + upgrade-gate regression OK');
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
