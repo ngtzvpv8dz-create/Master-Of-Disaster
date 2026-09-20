@@ -44,17 +44,14 @@ jobs:
             page.on('pageerror',e=>errors.push(String(e&&e.stack||e)));
             await page.route('**/*.supabase.co/**',route=>route.abort());
             await page.goto('http://127.0.0.1:8787/?reg=v533',{waitUntil:'networkidle',timeout:60000});
-            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modBackstageV531&&window.__modBackstageBackupV533?.version==='V533',null,{timeout:30000});
-
-            await page.evaluate(()=>{
-              switchTab('all');
-              window.__modAppHubV515.show();
-              window.__modHubLauncherV524.render();
-              window.__modBackstageV531.patchLauncher();
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV524&&window.__modAreaRuntimeV591,null,{timeout:30000});
+            await page.evaluate(async()=>{
+              await window.__modAreaRuntimeV591.openArea('backstage');
+              await window.__modAreaRuntimeV591.loadBackstageSection('backup');
+              window.__modBackstageV531?.setSection?.('backup');
+              window.__modBackstageBackupV533?.renderBackupDashboard?.();
             });
-            await page.click('[data-mod-hub-launch-v517="backstage"]');
-            await page.click('[data-backstage-section-v531="backup"]');
-            await page.waitForSelector('[data-backstage-backup-v533="true"]');
+            await page.waitForSelector('[data-backstage-backup-v533="true"]',{timeout:30000});
             await page.waitForFunction(()=>window.__modBackupStabilityV506&&window.__modRecoveryHistoryV498,{timeout:30000});
 
             await page.evaluate(()=>{

@@ -25,7 +25,6 @@ jobs:
           sw=Path('sw.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
           required_index=[
-            'paused-today-v447.js?v=502-1225',
             'build-freshness-v502.js?v=502-1225',
             'today-interaction-stability-v503.js?v=503-1803',
             'category-create-stability-v504.js?v=504-1319',

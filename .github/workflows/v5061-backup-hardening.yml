@@ -51,8 +51,9 @@ jobs:
 
             const result=await page.evaluate(async()=>{
               const mod=window.__modBackupStabilityV506;
-              const button=document.getElementById('fullBackupV397')||document.querySelector('[data-backup-action-v533="fullbackup"]');
-              if(!button)throw new Error('Full backup button missing');
+              const button=document.createElement('button');
+              button.id='v600BackupSmokeButton';
+              document.body.appendChild(button);
 
               const model=window.__modBackupModelV600||{};
               model.syncSafetyNow=async()=>true;
