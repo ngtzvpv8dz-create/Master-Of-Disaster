@@ -22,6 +22,9 @@ jobs:
           node --check today-interaction-stability-v503.js
           node --check category-create-stability-v504.js
           node --check backup-stability-v506.js
+          node --check backup-model-v600.js
+          node --check iphone-backup-v400.js
+          node --check cloud-backup-restore-v394.js
           node --check backup-source-fallback-v506.js
           node --check task-title-library-v507.js
           node --check archive-weight-layout-v508.js
@@ -44,7 +47,9 @@ jobs:
           grep -q 'today-interaction-stability-v503.js?v=503-1803' index.html
           grep -q 'category-create-stability-v504.js?v=504-1319' index.html
           grep -q 'running-task-render-stability-v505.js?v=' index.html
-          grep -q 'backup-stability-v506.js?v=506-1131' index.html
+          grep -q 'backup-stability-v506.js?v=600-unified' index.html
+          grep -q 'backup-model-v600.js?v=600-unified' index.html
+          grep -q 'iphone-backup-v400.js?v=600-live-previous' index.html
           grep -q 'backup-source-fallback-v506.js?v=506-1244' index.html
           grep -q 'task-title-library-v507.js?v=507-1345' index.html
           grep -q 'archive-weight-layout-v508.js?v=508-0709' index.html
@@ -53,6 +58,8 @@ jobs:
           grep -q "serviceWorker.register('./sw.js?v=" index.html
           grep -q 'running-task-render-stability-v505.js' sw.js
           grep -q 'backup-stability-v506.js' sw.js
+          grep -q 'backup-model-v600.js' sw.js
+          grep -q 'iphone-backup-v400.js' sw.js
           grep -q 'backup-source-fallback-v506.js' sw.js
           grep -q 'task-title-library-v507.js' sw.js
           grep -q 'archive-weight-layout-v508.js' sw.js
