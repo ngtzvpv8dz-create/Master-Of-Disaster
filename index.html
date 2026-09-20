@@ -258,9 +258,8 @@
         try{window.render();}catch(_){}
         window.__modAppHubV515?.open?.('todo',{source:'v591'});
       }else if(id==='sport'){
-        const api=await waitFor(()=>window.__modSportV568||window.__modSportModeV510);
-        window.__modAppHubV515?.hide?.();
-        api.setMode?.('sport',{persist:true,animate:false});
+        await waitFor(()=>window.__modSportV568||window.__modSportModeV510);
+        window.__modAppHubV515?.open?.('sport',{source:'v594-area'});
       }else if(id==='food'){
         const api=await waitFor(()=>window.__modFoodV544);
         api.open?.();
