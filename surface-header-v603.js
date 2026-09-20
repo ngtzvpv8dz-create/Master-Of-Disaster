@@ -32,7 +32,7 @@
     const surface=String(body.dataset.modAppSurfaceV515||'').toLowerCase();
     if(TAGLINES[surface])return surface;
     if(body.classList.contains('mod-app-hub-v515')||surface==='hub')return 'hub';
-    return 'todo';
+    return 'hub';
   }
 
   function resetFit(eyebrow){
