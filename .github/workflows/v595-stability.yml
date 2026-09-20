@@ -31,8 +31,8 @@ jobs:
           grep -q "width:.56em!important" header-consolidated-v560.css
           grep -q "min-width:.72em!important" surface-brand-v556.css
           grep -q "v=595-backstage-loopfix" index.html
-          grep -q "v=595-header-stability" index.html
-          grep -q "master-of-disaster-v595-backstage-header-stability" sw.js
+          grep -q "v=595b-header-stability" index.html
+          grep -q "master-of-disaster-v595b-backstage-header-stability" sw.js
       - name: Browser regression
         run: |
           npm init -y >/dev/null 2>&1
