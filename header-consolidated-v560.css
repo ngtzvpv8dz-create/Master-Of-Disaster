@@ -3,6 +3,18 @@
    Keine Navigation, kein Runtime-JavaScript, keine DOM-Beobachter.
 */
 
+/* V595b: Der Titel selbst bleibt intrinsisch breit und wird zentriert.
+   So ändert das erstmalige Reparenting in #appFixedTopV475 nicht mehr die
+   sichtbare Textposition, obwohl der umgebende Header ein paar Pixel breiter ist. */
+html body #appFixedTopV475 .mod-brand-title-v525,
+html body main.app > header.header .mod-brand-title-v525{
+  width:max-content!important;
+  max-width:calc(100vw - 24px)!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+}
+
 /* Gemeinsamer Zeichenplatz: S, $, Ordner und Schraubenschlüssel nehmen im Layout
    exakt denselben Platz ein. Sondergrafiken liegen absolut darin. */
 html body .sport-switch-v510.mod-surface-mark-v556{
