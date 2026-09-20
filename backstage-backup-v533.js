@@ -114,13 +114,13 @@
     if(!view)return false;
     parkLegacyFullBackup();
     view.innerHTML=`<section class="mod-backstage-backup-v533" data-backstage-backup-v533="true">
-      <div class="mod-backstage-backup-head-v533"><div><div class="mod-backstage-backup-kicker-v533">SEKTOR 03 · DATENSICHERUNG</div><h3>BACKUP</h3><p>Alle vorhandenen Sicherungswege an einem Ort. Die bewährte Backup-Logik bleibt unverändert, nur die Bedienung zieht hierher um.</p></div><span class="mod-backstage-backup-ready-v533">READY</span></div>
+      <div class="mod-backstage-backup-head-v533"><div><div class="mod-backstage-backup-kicker-v533">SEKTOR 03 · DATENSICHERUNG</div><h3>BACKUP</h3><p>Zwei Ebenen, kein Backup-Friedhof: automatisch rollierend in Supabase und bei Bedarf eine einzige vollständige ZIP für iPhone/iCloud.</p></div><span class="mod-backstage-backup-ready-v533">READY</span></div>
       <div class="mod-backstage-backup-grid-v533">
-        ${backupCard({code:'B01',title:'VOLLBACKUP',text:'Aktueller Programmcode + kompletter App-Datenstand + 7-Tage-Log + Wiederherstellungspunkte als ZIP.',buttonLabel:'VOLLBACKUP ERSTELLEN',action:'fullbackup'})}
-        ${backupCard({code:'B02',title:'WOCHEN-CLOUD',text:'Datierter Cloud-Stand mit App-Daten und Sicherheitsverlauf. Es werden bis zu 12 Wochenstände behalten.',buttonLabel:'WOCHENBACKUP ERSTELLEN',action:'weekly-create'})}
-        ${backupCard({code:'B03',title:'WOCHENSTÄNDE',text:'Vorhandene datierte Cloud-Wochenbackups anzeigen und bei Bedarf wiederherstellen.',buttonLabel:'WOCHENBACKUPS ANZEIGEN',action:'weekly-list'})}
-        ${backupCard({code:'B04',title:'ZIP-IMPORT',text:'Ein zuvor erzeugtes vollständiges Backup-ZIP prüfen und für eine Wiederherstellung einlesen.',buttonLabel:'VOLLBACKUP-ZIP IMPORTIEREN',action:'zip-import'})}
-        ${backupCard({code:'B05',title:'LIVE-CLOUD-SNAPSHOT',text:'Der vollständige Live-Snapshot wird weiterhin automatisch nach einem erfolgreichen Cloud-Sync aktualisiert.',state:'AUTOMATISCH'})}
+        ${backupCard({code:'B01',title:'VOLLBACKUP',text:'Eine ZIP mit aktuellem GitHub-Code, lokalem App-Stand, Supabase-Daten, Schema/Migrationen, LIVE + PREVIOUS sowie 7-Tage-Zeitmaschine und Logs.',buttonLabel:'VOLLBACKUP ERSTELLEN',action:'fullbackup'})}
+        ${backupCard({code:'B02',title:'AUTOMATISCHE CLOUD-SICHERHEIT',text:'Supabase hält den aktuellen lokalen Kernstand als LIVE und genau den unmittelbar vorherigen Stand als PREVIOUS. Keine täglichen oder wöchentlichen Vollsnapshots mehr.',state:'LIVE + PREVIOUS'})}
+        ${backupCard({code:'B03',title:'7-TAGE-SICHERHEITSNETZ',text:'Wiederherstellungspunkte und Logs laufen rollierend über sieben Tage. Direkte Änderungen in Food, Finanzen, Sport und Kistologie werden zusätzlich als platzsparende Datenbank-Deltas protokolliert.',state:'ROLLIEREND'})}
+        ${backupCard({code:'B04',title:'ZIP-WIEDERHERSTELLUNG',text:'Eine zuvor erzeugte Vollbackup-ZIP prüfen und für eine Wiederherstellung einlesen.',buttonLabel:'VOLLBACKUP-ZIP IMPORTIEREN',action:'zip-import'})}
+        ${backupCard({code:'B05',title:'LANGZEIT-SICHERUNG',text:'Für größere Umbauten oder den wöchentlichen externen Stand genügt die eine Vollbackup-ZIP in Dateien/iCloud. Supabase sammelt keine alten Wochenarchive mehr.',state:'EINE DATEI'})}
       </div>
       <input type="file" accept=".zip,application/zip" data-backup-file-v533 hidden>
     </section>`;
@@ -131,8 +131,6 @@
         const action=button.dataset.backupActionV533;
         try{
           if(action==='fullbackup'){await runFullBackup();return;}
-          if(action==='weekly-create'){await requiredSafetyMethod('createWeeklyCloudBackup')();return;}
-          if(action==='weekly-list'){await requiredSafetyMethod('listWeeklyCloudBackups')();return;}
           if(action==='zip-import'){fileInput?.click();return;}
         }catch(error){
           console.error('V533 Backup-Aktion:',action,error);
@@ -212,7 +210,9 @@
     sixTileDeckV533:true,
     backupDashboardV533:true,
     existingBackupLogicReusedV533:true,
-    dataSemanticsUntouched:true
+    unifiedBackupModelV600:true,
+    weeklyCloudUiRemovedV600:true,
+    dataSemanticsUntouched:false
   };
   window.__modBackstageBackupV533=api;
 
