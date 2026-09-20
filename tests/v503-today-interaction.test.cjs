@@ -56,6 +56,8 @@ global.toggleToday=function(id){
   render();
 };
 
+global.addTask=()=>{};
+
 global.pauseTask=function(id){
   const row=tasks.find(x=>x.id===id);
   row.status='paused';
