@@ -116,8 +116,8 @@
     updateProgress,homescreenStyle:true,eightTileGrid:true,realBootstrapProgress:true,legacyLoadersRemoved:true
   };
   window.__modHubLauncherV603=api;
-  window.__modHubLauncherV517=api;
-  window.__modHubLauncherV584=api;
+  /* Namespace aliases keep existing feature modules/tests pointed at the one current launcher. */
+  for(const key of ['__modHubLauncherV517','__modHubLauncherV518','__modHubLauncherV519','__modHubLauncherV520','__modHubLauncherV524','__modHubLauncherV540','__modHubLauncherV543','__modHubLauncherV552','__modHubLauncherV582','__modHubLauncherV584'])window[key]=api;
 
   window.addEventListener('mod:bootstrap-v603-progress',event=>updateProgress(event.detail));
   window.addEventListener('mod:bootstrap-v603-ready',event=>{lastProgress={...lastProgress,percent:100,ready:true,error:null,label:'Alle Bereiche bereit'};render();});
