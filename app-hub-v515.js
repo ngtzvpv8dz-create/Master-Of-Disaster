@@ -44,7 +44,7 @@
   function render(){
     const root=ensureRoot();
     if(!root)return false;
-    root.innerHTML='<div class="mod-hub-backdrop-v515" aria-hidden="true"><span class="mod-hub-glow-v515 mod-hub-glow-todo-v515"></span><span class="mod-hub-glow-v515 mod-hub-glow-sport-v515"></span><span class="mod-hub-grid-v515"></span></div><div class="mod-hub-shell-v515"></div>';
+    root.innerHTML='<div class="mod-hub-backdrop-v515" aria-hidden="true"><span class="mod-hub-glow-v515 mod-hub-glow-todo-v515"></span><span class="mod-hub-glow-v515 mod-hub-glow-sport-v515"></span><span class="mod-hub-grid-v515"></span></div><div class="mod-hub-shell-v515"><div class="mod-hub-preload-v603" data-state="loading"><span>Bereiche werden geladen</span><strong>0 %</strong><span class="mod-hub-preload-track-v603" aria-hidden="true"><i style="--mod-bootstrap-percent-v603:0%"></i></span></div></div>';
     try{window.__modHubLauncherV603?.render?.();}catch(_){}
     return true;
   }
