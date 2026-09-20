@@ -22,7 +22,14 @@
   const EXCLUDED_HISTORY_KEYS=new Set([
     LIVE_LOG_KEY,
     'masterOfDisasterPreRestoreBackup',
-    'masterOfDisasterPreCloudRestoreBackup'
+    'masterOfDisasterPreCloudRestoreBackup',
+    'masterOfDisasterIphoneBackupPendingV400',
+    'masterOfDisasterIphoneBackupLastOkV400',
+    'masterOfDisasterIphoneBackupDailyDateV400',
+    'masterOfDisasterSafetyCloudLastSyncV600',
+    'masterOfDisasterSafetyCloudPendingV600',
+    'masterOfDisasterSafetyCloudLastErrorV600',
+    'masterOfDisasterSafetyCloudPendingReasonV600'
   ]);
 
   let dbPromise=null;
