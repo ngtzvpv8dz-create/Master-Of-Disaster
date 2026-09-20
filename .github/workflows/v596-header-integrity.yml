@@ -1,0 +1,279 @@
+name: V596 Header + Data Integrity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'app.js'
+      - 'header-consolidated-v560.css'
+      - 'sw.js'
+      - 'stability-v596.js'
+      - '.github/workflows/v596-header-integrity.yml'
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Static safety guards
+        run: |
+          node --check app.js
+          node --check stability-v596.js
+          python3 <<'PY'
+          from pathlib import Path
+          idx=Path('index.html').read_text(encoding='utf-8')
+          app=Path('app.js').read_text(encoding='utf-8')
+          css=Path('header-consolidated-v560.css').read_text(encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+
+          bad='</script>' + chr(92) + 'n'
+          if bad in idx:
+              raise SystemExit('Literal backslash-n remains in index.html')
+          for marker in [
+              './app.js?v=596-integrity',
+              './header-consolidated-v560.css?v=596-header-integrity',
+              './stability-v596.js?v=596-header-integrity',
+              "version:'V596'"
+          ]:
+              if marker not in idx:
+                  raise SystemExit(f'Missing V596 index marker: {marker}')
+          for marker in [
+              'hasStoredActiveDuration',
+              'task.status ===\n"completed"',
+              'task.type !==\n"leisure"',
+              'hasPositiveRecordedArchiveDuration',
+              'archiveLeisureDuration',
+              'rein lesende Semantik-Korrektur'
+          ]:
+              if marker not in app:
+                  raise SystemExit(f'Missing V596 integrity marker: {marker}')
+          if 'width:100vw!important' not in css or 'margin-left:calc(50% - 50vw)!important' not in css:
+              raise SystemExit('Viewport-centered header geometry missing')
+          if 'master-of-disaster-v596-header-integrity' not in sw:
+              raise SystemExit('V596 service-worker cache missing')
+          print('V596 static guards PASS')
+          PY
+
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+
+      - name: Start local server
+        run: |
+          python3 -m http.server 8787 >/tmp/v596-http.log 2>&1 &
+          echo $! >/tmp/v596-http.pid
+          sleep 2
+
+      - name: Local browser regression
+        run: |
+          timeout 180s node <<'NODE'
+          const {chromium}=require('playwright');
+
+          async function inspect(page,label){
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV517&&window.__modStabilityV596?.version==='V596',null,{timeout:20000});
+            await page.waitForFunction(()=>document.querySelector('[data-mod-hub-launch-v517="kistology"]')?.getAttribute('aria-disabled')===null&&document.querySelector('[data-mod-hub-launch-v517="backstage"]')?.getAttribute('aria-disabled')===null,null,{timeout:20000});
+
+            const home=await page.evaluate(()=>{
+              const title=document.querySelector('.mod-brand-title-v525');
+              const rects=[...title.children].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+              const left=Math.min(...rects.map(r=>r.left));
+              const right=Math.max(...rects.map(r=>r.right));
+              const directText=[...document.body.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.nodeValue||'');
+              return {left,right,visualCenter:(left+right)/2,viewportCenter:innerWidth/2,directText};
+            });
+            if(Math.abs(home.visualCenter-home.viewportCenter)>1.25)throw new Error(label+' Home brand not centered '+JSON.stringify(home));
+            if(home.directText.some(t=>t.includes('\\n')))throw new Error(label+' literal backslash-n is visible '+JSON.stringify(home.directText));
+
+            await page.click('[data-mod-hub-launch-v517="kistology"]');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-kistology-v535'),null,{timeout:30000});
+            await page.waitForTimeout(250);
+            const k=await page.evaluate(()=>{
+              const title=document.querySelector('.mod-brand-title-v525');
+              const rects=[...title.children].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+              const left=Math.min(...rects.map(r=>r.left));
+              const right=Math.max(...rects.map(r=>r.right));
+              const marker=document.querySelector('.sport-switch-v510.mod-surface-mark-v556');
+              return {left,right,visualCenter:(left+right)/2,viewportCenter:innerWidth/2,markerWidth:marker.getBoundingClientRect().width,folderWidth:parseFloat(getComputedStyle(marker,'::before').width)||0};
+            });
+            if(Math.abs(k.visualCenter-k.viewportCenter)>1.25)throw new Error(label+' Kistology brand not centered '+JSON.stringify(k));
+            if(!(k.folderWidth>0&&k.folderWidth<k.markerWidth*.9))throw new Error(label+' Kistology folder geometry '+JSON.stringify(k));
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='hub',null,{timeout:10000});
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-backstage-v530')&&typeof collectDataIntegrityReport==='function',null,{timeout:30000});
+
+            const integrity=await page.evaluate(()=>{
+              const fn=collectDataIntegrityReport.toString();
+              if(/saveTasks\s*\(|localStorage\.setItem|safeStorageSet\s*\(/.test(fn))return {readonly:false,why:'write call found'};
+
+              const originalTasks=tasks;
+              const originalArchive=archive;
+              const originalNext=nextArchiveNumber;
+              try{
+                tasks=[...tasks,{
+                  id:'v596-paused-test',
+                  text:'V596 pausierte Segmentprobe',
+                  status:'paused',
+                  type:'work',
+                  priority:'normal',
+                  optional:false,
+                  dueMode:'none',
+                  dueDate:null,
+                  startedAt:'2026-09-20T08:00:00.000Z',
+                  pausedAt:'2026-09-20T08:10:00.000Z',
+                  pauseTotalMs:0,
+                  completedAt:null,
+                  activeDurationMs:null,
+                  actualDurationMs:null,
+                  activeSegments:[{startedAt:'2026-09-20T08:00:00.000Z',endedAt:'2026-09-20T08:10:00.000Z'}]
+                }];
+
+                const pausedReport=collectDataIntegrityReport();
+                const pausedFalsePositive=pausedReport.errors.filter(e=>String(e).includes('V596 pausierte Segmentprobe'));
+
+                const n=Number(nextArchiveNumber);
+                archive=[...archive,{
+                  archiveNumber:n,
+                  archiveId:'A-'+n,
+                  text:'V596 Freizeitprobe',
+                  status:'completed',
+                  type:'leisure',
+                  activeDurationMs:0,
+                  actualDurationMs:600000,
+                  leisureDurationMs:600000,
+                  completedAt:'2026-09-20T08:20:00.000Z',
+                  completedDate:'2026-09-20',
+                  activeSegments:[]
+                }];
+                nextArchiveNumber=n+1;
+
+                const leisureReport=collectDataIntegrityReport();
+                const leisureFalsePositive=leisureReport.warnings.filter(w=>String(w).includes('A'+String(n).padStart(3,'0'))&&/keine positive .*Dauer/i.test(String(w)));
+
+                return {readonly:true,pausedFalsePositive,leisureFalsePositive};
+              }finally{
+                tasks=originalTasks;
+                archive=originalArchive;
+                nextArchiveNumber=originalNext;
+              }
+            });
+            if(!integrity.readonly||integrity.pausedFalsePositive.length||integrity.leisureFalsePositive.length)throw new Error(label+' integrity regression '+JSON.stringify(integrity));
+
+            await page.click('#modHomeButtonV525',{timeout:8000});
+            await page.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='hub'&&!document.body.classList.contains('mod-backstage-v530'),null,{timeout:8000});
+            const alive=await page.evaluate(()=>new Promise(resolve=>setTimeout(()=>resolve(true),80)));
+            if(!alive)throw new Error(label+' event loop not responsive after Backstage');
+
+            return {home,k,integrity};
+          }
+
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try{
+              const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+              await page.route('**/*',route=>/\.supabase\.co\//.test(route.request().url())?route.abort():route.continue());
+              await page.goto('http://127.0.0.1:8787/?v596='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              const result=await inspect(page,'LOCAL');
+              console.log('V596 LOCAL PASS',JSON.stringify(result));
+            }finally{await browser.close();}
+          })().catch(e=>{console.error(e);process.exit(1);});
+          NODE
+
+      - name: Live GitHub Pages regression
+        run: |
+          timeout 300s node <<'NODE'
+          const {chromium}=require('playwright');
+          const base='https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/';
+
+          async function run(page){
+            let published=false;
+            for(let i=0;i<20;i++){
+              await page.goto(base+'?v596live='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+              published=await page.evaluate(()=>window.__modStabilityV596?.version==='V596'&&
+                [...document.styleSheets].some(s=>String(s.href||'').includes('596-header-integrity'))).catch(()=>false);
+              if(published)break;
+              await page.waitForTimeout(10000);
+            }
+            if(!published)throw new Error('V596 is not published on GitHub Pages yet');
+
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV517,null,{timeout:20000});
+            await page.waitForFunction(()=>document.querySelector('[data-mod-hub-launch-v517="kistology"]')?.getAttribute('aria-disabled')===null&&document.querySelector('[data-mod-hub-launch-v517="backstage"]')?.getAttribute('aria-disabled')===null,null,{timeout:20000});
+
+            const home=await page.evaluate(()=>{
+              const title=document.querySelector('.mod-brand-title-v525');
+              const rects=[...title.children].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+              const left=Math.min(...rects.map(r=>r.left));
+              const right=Math.max(...rects.map(r=>r.right));
+              const directText=[...document.body.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.nodeValue||'');
+              return {left,right,visualCenter:(left+right)/2,viewportCenter:innerWidth/2,directText};
+            });
+            if(Math.abs(home.visualCenter-home.viewportCenter)>1.25)throw new Error('LIVE Home brand not centered '+JSON.stringify(home));
+            if(home.directText.some(t=>t.includes('\\n')))throw new Error('LIVE literal backslash-n is visible');
+
+            await page.click('[data-mod-hub-launch-v517="kistology"]');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-kistology-v535'),null,{timeout:30000});
+            const k=await page.evaluate(()=>{
+              const title=document.querySelector('.mod-brand-title-v525');
+              const rects=[...title.children].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+              const left=Math.min(...rects.map(r=>r.left));
+              const right=Math.max(...rects.map(r=>r.right));
+              return {visualCenter:(left+right)/2,viewportCenter:innerWidth/2};
+            });
+            if(Math.abs(k.visualCenter-k.viewportCenter)>1.25)throw new Error('LIVE Kistology brand not centered '+JSON.stringify(k));
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='hub',null,{timeout:10000});
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-backstage-v530')&&typeof collectDataIntegrityReport==='function',null,{timeout:30000});
+
+            const integrity=await page.evaluate(()=>{
+              const originalTasks=tasks;
+              try{
+                tasks=[...tasks,{
+                  id:'v596-live-paused-test',
+                  text:'V596 LIVE pausierte Segmentprobe',
+                  status:'paused',
+                  type:'work',
+                  priority:'normal',
+                  optional:false,
+                  dueMode:'none',
+                  dueDate:null,
+                  startedAt:'2026-09-20T08:00:00.000Z',
+                  pausedAt:'2026-09-20T08:10:00.000Z',
+                  pauseTotalMs:0,
+                  completedAt:null,
+                  activeDurationMs:null,
+                  actualDurationMs:null,
+                  activeSegments:[{startedAt:'2026-09-20T08:00:00.000Z',endedAt:'2026-09-20T08:10:00.000Z'}]
+                }];
+                const report=collectDataIntegrityReport();
+                return report.errors.filter(e=>String(e).includes('V596 LIVE pausierte Segmentprobe'));
+              }finally{tasks=originalTasks;}
+            });
+            if(integrity.length)throw new Error('LIVE paused-task false positive '+JSON.stringify(integrity));
+
+            await page.click('#modHomeButtonV525',{timeout:8000});
+            await page.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='hub'&&!document.body.classList.contains('mod-backstage-v530'),null,{timeout:8000});
+            console.log('V596 LIVE + PASS',JSON.stringify({home,k}));
+          }
+
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            try{
+              const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2});
+              await page.route('**/*',route=>/\.supabase\.co\//.test(route.request().url())?route.abort():route.continue());
+              await run(page);
+            }finally{await browser.close();}
+          })().catch(e=>{console.error(e);process.exit(1);});
+          NODE
