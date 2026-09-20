@@ -61,8 +61,9 @@ function fetchAndRefresh(request){
   });
 }
 
-function cached(request){
-  return caches.match(request,{ignoreSearch:false});
+async function cached(request){
+  const cache=await caches.open(CACHE_NAME);
+  return cache.match(request,{ignoreSearch:true});
 }
 
 function timeout(ms){
