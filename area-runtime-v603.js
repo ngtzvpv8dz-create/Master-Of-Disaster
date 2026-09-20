@@ -26,6 +26,7 @@
       './task-card-rail-polish-v492.js?v=492-1954',
       './ui-alignment-v493.js?v=493-2035',
       './summary-weight-due-polish-v494.js?v=494-2103',
+      './todo-stability-v603.js?v=603',
       './task-title-library-v507.js?v=507-1345',
       './archive-weight-layout-v508.js?v=508-0709',
       './log-core-v603.js?v=603',
@@ -196,7 +197,7 @@
     await waitFor(()=>window.__modKistologyV603);
     await waitFor(()=>window.__modFinanceV552||window.__modFinanceV553);
     await waitFor(()=>window.__modBackstageV531);
-    await waitFor(()=>window.__modLogCoreV603&&window.__modRecoveryHistoryV498);
+    await waitFor(()=>window.__modTodoStabilityV603&&window.__modLogCoreV603&&window.__modRecoveryHistoryV498);
     markComplete('Bereiche werden geprüft');
   }
 
