@@ -261,7 +261,9 @@
   }
 
   async function openArea(id){
-    if(!ready||!ACTIVE_AREAS.has(id))return false;
+    if(!ACTIVE_AREAS.has(id))return false;
+    if(!ready)await preloadAll();
+    if(!ready)return false;
     if(id==='todo'){
       try{window.render();}catch(_){}
       return window.__modAppHubV515?.open?.('todo',{source:'v603-ready'});
