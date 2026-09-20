@@ -18,7 +18,7 @@ jobs:
           node --check app-hub-v515.js
           node --check app-hub-launcher-v603.js
           node --check surface-header-v603.js
-          node --check area-runtime-v603.js
+          node --check area-runtime-v604.js
           node --check kistology-v603.js
           node --check log-core-v603.js
           node --check backstage-v531.js
@@ -43,7 +43,7 @@ jobs:
           const expected=process.env.EXPECTED_VERSION;
           const vn=v=>Number(String(v||'').match(/^V(\d+)$/i)?.[1]||0);
           (async()=>{
-            const out={status:'FAIL',version:expected,live:false,bootstrap:false,home:false,todo:false,kistology:false,backstage:false,log:false,backup:false,serviceWorker:false,errors:[]};
+            const out={status:'FAIL',version:expected,live:false,bootstrap:false,preloadOnly:false,reentry:false,home:false,todo:false,kistology:false,backstage:false,log:false,backup:false,serviceWorker:false,errors:[]};
             const browser=await chromium.launch({headless:true});
             try{
               const page=await browser.newPage({viewport:{width:390,height:844}});
@@ -55,7 +55,7 @@ jobs:
                   build:window.__MOD_BUILD__?.version||'',
                   hub:!!window.__modAppHubV603,
                   launcher:!!window.__modHubLauncherV603,
-                  runtime:!!window.__modAreaRuntimeV603
+                  runtime:!!window.__modAreaRuntimeV604
                 })).catch(()=>({}));
                 try{
                   metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});
@@ -67,25 +67,26 @@ jobs:
               }
               if(!out.live)throw new Error('Current build not deployed: expected '+expected+', metrics='+(metrics?.version||'none'));
               await page.evaluate(()=>window.__modAppHubV603.show());
-              await page.waitForFunction(()=>window.__modAreaRuntimeV603?.ready===true,{timeout:90000});
-              out.bootstrap=await page.evaluate(()=>window.__modAreaRuntimeV603.ready===true&&window.__modAreaRuntimeV603.progress.percent===100);
+              await page.waitForFunction(()=>window.__modAreaRuntimeV604?.ready===true,{timeout:90000});
+              out.bootstrap=await page.evaluate(()=>window.__modAreaRuntimeV604.ready===true&&window.__modAreaRuntimeV604.progress.percent===100);
+              out.preloadOnly=await page.evaluate(()=>window.__modAreaRuntimeV604?.preloadMode==='cache-only-no-execution'&&window.__modAreaRuntimeV604?.executedCount===0&&typeof window.render!=='function'&&!window.__modKistologyV603&&!window.__modFoodV544&&!window.__modBackstageV531);
               out.home=await page.evaluate(()=>document.body.classList.contains('mod-app-hub-v515')&&document.querySelector('.mod-hub-preload-v603')?.textContent.includes('100'));
-              await page.evaluate(()=>window.__modAreaRuntimeV603.openArea('todo'));
+              await page.evaluate(()=>window.__modAreaRuntimeV604.openArea('todo'));
               await page.waitForFunction(()=>typeof window.render==='function'&&window.__modBackupModelV600&&window.__modIphoneBackupV600,{timeout:30000});
               out.todo=await page.evaluate(()=>window.__modBackupModelV600?.version==='V600'&&window.__modIphoneBackupV600?.version==='V600');
               await page.evaluate(()=>window.__modAppHubV603.show());
-              await page.evaluate(()=>window.__modAreaRuntimeV603.openArea('kistology'));
+              await page.evaluate(()=>window.__modAreaRuntimeV604.openArea('kistology'));
               await page.waitForFunction(()=>document.body.classList.contains('mod-kistology-v535')&&window.__modKistologyV603,{timeout:30000});
               out.kistology=await page.evaluate(()=>!!window.__modKistologyV603&&document.body.dataset.modAppSurfaceV515==='kistology');
               await page.evaluate(()=>window.__modAppHubV603.show());
-              await page.evaluate(()=>window.__modAreaRuntimeV603.openArea('backstage'));
+              await page.evaluate(()=>window.__modAreaRuntimeV604.openArea('backstage'));
               await page.waitForFunction(()=>window.__modBackstageV531&&document.body.classList.contains('mod-backstage-v530'),{timeout:30000});
               out.backstage=await page.evaluate(()=>document.body.dataset.modAppSurfaceV515==='backstage');
               await page.evaluate(()=>window.__modBackstageV531.setSection('log'));
               await page.waitForFunction(()=>!!document.querySelector('#viewContainer .mod-log-v498'),{timeout:30000});
               out.log=await page.evaluate(()=>!!document.querySelector('#viewContainer .mod-log-v498')&&!document.querySelector('#viewContainer .live-log-v453'));
               await page.evaluate(async()=>{
-                await window.__modAreaRuntimeV603.loadSection('backup');
+                await window.__modAreaRuntimeV604.loadSection('backup');
                 window.__modBackstageV531?.setSection?.('backup');
                 window.__modBackstageBackupV533?.renderBackupDashboard?.();
               });
@@ -105,7 +106,17 @@ jobs:
                   return !!reg&&/sw\.js/.test(reg.active?.scriptURL||reg.waiting?.scriptURL||reg.installing?.scriptURL||'');
                 }catch(_){return false;}
               });
-              out.status=['live','bootstrap','home','todo','kistology','backstage','log','backup','serviceWorker'].every(k=>out[k]===true)?'PASS':'FAIL';
+              await swPage.close();
+
+              const reentryPage=await browser.newPage({viewport:{width:390,height:844}});
+              await reentryPage.route('**/*.supabase.co/**',route=>route.abort());
+              await reentryPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?reentry='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+              await reentryPage.waitForFunction(()=>window.__modAreaRuntimeV604?.ready===true,{timeout:90000});
+              out.reentry=await reentryPage.evaluate(()=>window.__modAreaRuntimeV604?.preloadMode==='cache-only-no-execution'&&window.__modAreaRuntimeV604?.progress?.percent===100&&window.__modAreaRuntimeV604?.executedCount===0&&document.body.classList.contains('mod-app-hub-v515'));
+              await reentryPage.waitForTimeout(1200);
+              await reentryPage.close();
+
+              out.status=['live','bootstrap','preloadOnly','reentry','home','todo','kistology','backstage','log','backup','serviceWorker'].every(k=>out[k]===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));
             await browser.close();
