@@ -621,8 +621,15 @@
   function scheduleOptionalHistory(){
     if(optionalHistoryScheduled)return;
     optionalHistoryScheduled=true;
-    const run=async()=>{
-      await tick(1800);
+
+    const runWhenSafe=async()=>{
+      /* Keine optionalen Logger parallel zu Backstage-Sektoren starten.
+         Sie warten, bis Backstage wieder verlassen wurde und kein Sektor lädt. */
+      if(document.body.classList.contains('mod-backstage-v530')||sectionLoadPromise||loadingSection){
+        setTimeout(runWhenSafe,3000);
+        return;
+      }
+      await tick(1200);
       for(const src of OPTIONAL_HISTORY_GROUP){
         try{
           const result=await loadScript(src);
@@ -633,11 +640,8 @@
         }
       }
     };
-    if(typeof requestIdleCallback==='function'){
-      requestIdleCallback(()=>run(),{timeout:5000});
-    }else{
-      setTimeout(run,2500);
-    }
+
+    setTimeout(runWhenSafe,5000);
   }
 
   async function loadSection(section){
