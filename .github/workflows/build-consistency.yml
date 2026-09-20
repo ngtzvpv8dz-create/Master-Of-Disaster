@@ -16,31 +16,38 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V603 current wiring
+      - name: Verify V604 current wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          runtime=Path('area-runtime-v603.js').read_text(encoding='utf-8')
+          runtime=Path('area-runtime-v604.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
           for marker in [
-            "version:'V603'",
+            "version:'V604'",
             'app-hub-launcher-v603.css?v=603-loader',
             'app-hub-launcher-v603.js?v=603-loader',
             'surface-header-v603.css?v=603-header',
             'surface-header-v603.js?v=603-header',
-            'area-runtime-v603.js?v=603-bootstrap',
+            'area-runtime-v604.js?v=604-cache-warm',
             'kistology-v603.css?v=603',
-            "serviceWorker.register('./sw.js?v=603-bootstrap-cleanup'"
+            "serviceWorker.register('./sw.js?v=604-ios-reentry'"
           ]:
-              if marker not in index: raise SystemExit(f'Missing V603 index marker: {marker}')
-          for marker in ['log-core-v603.js','todo-stability-v603.js','kistology-v603.js','backstage-v531.js','history-safety-net-v498.js','backup-model-v600.js']:
-              if marker not in runtime: raise SystemExit(f'Missing current runtime marker: {marker}')
-          for marker in ['app-hub-launcher-v603.js','surface-header-v603.js','area-runtime-v603.js','kistology-v603.js','log-core-v603.js']:
-              if marker not in sw: raise SystemExit(f'Missing current service-worker marker: {marker}')
+              if marker not in index: raise SystemExit(f'Missing V604 index marker: {marker}')
+          for marker in [
+            "preloadMode:'cache-only-no-execution'",
+            'log-core-v603.js','todo-stability-v603.js','kistology-v603.js',
+            'backstage-v531.js','history-safety-net-v498.js','backup-model-v600.js'
+          ]:
+              if marker not in runtime: raise SystemExit(f'Missing V604 runtime marker: {marker}')
+          for marker in ['app-hub-launcher-v603.js','surface-header-v603.js','area-runtime-v604.js']:
+              if marker not in sw: raise SystemExit(f'Missing V604 service-worker core marker: {marker}')
+          for marker in ['kistology-v603.js','log-core-v603.js','todo-stability-v603.js','backstage-v531.js','terminal-delete-v485.js']:
+              if marker in sw: raise SystemExit(f'Area runtime must not execute/cache in SW install shell: {marker}')
           forbidden=[
+            'area-runtime-v603.js',
             'app-hub-icon-buttons-v516.js','app-hub-launcher-v517.js','app-hub-simple-header-v523.css',
             'kistology-v537.js','kistology-v538.js','kistology-v539.js',
             'live-log-v453.js','log-stability-v499.js','stability-v595.js','stability-v596.js',
@@ -51,10 +58,10 @@ jobs:
                   raise SystemExit(f'Legacy runtime marker still active: {marker}')
           if metrics.get('automated') is not True:
               raise SystemExit('Bundled metrics snapshot is not automated')
-          print('V603 current wiring consistency OK')
+          print('V604 cache-warm wiring consistency OK')
       - name: JavaScript syntax
         run: |
-          for f in             app.js app-hub-v515.js app-hub-launcher-v603.js surface-header-v603.js area-runtime-v603.js             kistology-v603.js log-core-v603.js background-log-v454.js history-safety-net-v498.js meaningful-history-v500.js             sport-v568.js food-v544.js finance-v552.js finance-data-v553.js             backstage-v531.js backstage-size-v532.js backstage-backup-v533.js backstage-backup-v534.js             backup-source-fallback-v506.js backup-stability-v506.js backup-model-v600.js iphone-backup-v400.js             task-title-library-v507.js archive-weight-layout-v508.js summary-weight-due-polish-v494.js; do
+          for f in             app.js app-hub-v515.js app-hub-launcher-v603.js surface-header-v603.js area-runtime-v604.js             kistology-v603.js log-core-v603.js background-log-v454.js history-safety-net-v498.js meaningful-history-v500.js             sport-v568.js food-v544.js finance-v552.js finance-data-v553.js             backstage-v531.js backstage-size-v532.js backstage-backup-v533.js backstage-backup-v534.js             backup-source-fallback-v506.js backup-stability-v506.js backup-model-v600.js iphone-backup-v400.js             task-title-library-v507.js archive-weight-layout-v508.js summary-weight-due-polish-v494.js; do
             node --check "$f"
           done
           node --check sw.js
