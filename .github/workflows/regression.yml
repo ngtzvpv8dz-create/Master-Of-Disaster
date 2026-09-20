@@ -125,13 +125,13 @@ jobs:
               select.value='Haushalt';
               select.dispatchEvent(new Event('change',{bubbles:true}));
               window.__modPendingSuggestionCategory=null;
-              addTask();
+              window.addTask();
               const manual=(tasks||[]).find(t=>t.text==='V504 manuelle Kategorie');
               input.value='V504 Vorschlags-Fallback';
               select.value='';
               select.dispatchEvent(new Event('change',{bubbles:true}));
               window.__modPendingSuggestionCategory='Verlauf';
-              addTask();
+              window.addTask();
               const fallback=(tasks||[]).find(t=>t.text==='V504 Vorschlags-Fallback');
               return {manual:manual?.category??null,fallback:fallback?.category??null};
             });
