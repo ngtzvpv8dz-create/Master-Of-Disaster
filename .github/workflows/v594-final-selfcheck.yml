@@ -1,0 +1,105 @@
+name: V594 Final Selfcheck
+on:
+  push:
+    branches: [diagnostic/v594-final-selfcheck2-20260920-0924]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+      - name: Test deployed PWA
+        run: |
+          cat > check.js <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const ctx=await browser.newContext({viewport:{width:390,height:844}});
+            const p=await ctx.newPage();
+            const out={errors:[]};
+            p.on('pageerror',e=>out.errors.push('page:'+String(e.message||e)));
+            p.on('console',m=>{if(m.type()==='error')out.errors.push('console:'+m.text())});
+            const url='https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?v594final='+Date.now();
+
+            await p.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
+            await p.waitForSelector('[data-mod-hub-launch-v517="sport"]',{timeout:15000});
+            await p.waitForTimeout(10000);
+            out.home=await p.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              safe:document.documentElement.dataset.modV591==='home-safe',
+              appCore:typeof window.render==='function'
+            }));
+
+            await p.click('[data-mod-hub-launch-v517="sport"]');
+            await p.waitForFunction(()=>document.body.classList.contains('mod-sport-mode-v510'),{timeout:20000});
+            out.sport=await p.evaluate(()=>({
+              pointer:getComputedStyle(document.getElementById('sportSwitchV510')).pointerEvents,
+              role:document.getElementById('sportSwitchV510').getAttribute('role'),
+              tabindex:document.getElementById('sportSwitchV510').getAttribute('tabindex'),
+              hidden:document.getElementById('sportSwitchV510').getAttribute('aria-hidden'),
+              homePointer:getComputedStyle(document.getElementById('modHomeButtonV525')).pointerEvents,
+              surface:document.body.dataset.modAppSurfaceV515
+            }));
+
+            await p.click('#modHomeButtonV525');
+            await p.waitForFunction(()=>document.body.classList.contains('mod-app-hub-v515'),{timeout:6000});
+            out.homeAfterSport=await p.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              sport:document.body.classList.contains('mod-sport-mode-v510'),
+              surface:document.body.dataset.modAppSurfaceV515
+            }));
+
+            await p.click('[data-mod-hub-launch-v517="todo"]');
+            await p.waitForFunction(()=>!!window.__modUiCardStabilityV491&&!!window.__modTaskCardRailPolishV492&&!!window.__modNestedTaskWeightLayoutV490,{timeout:30000});
+            out.todo=await p.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              v490:!!window.__modNestedTaskWeightLayoutV490,
+              v491:!!window.__modUiCardStabilityV491,
+              v492:!!window.__modTaskCardRailPolishV492,
+              v493:!!window.__modUiAlignmentV493,
+              v494:!!window.__modSummaryWeightDuePolishV494
+            }));
+
+            await p.goto(url+'&backstage=1',{waitUntil:'domcontentloaded',timeout:60000});
+            await p.waitForSelector('[data-mod-hub-launch-v517="backstage"]',{timeout:15000});
+            const t0=Date.now();
+            await p.click('[data-mod-hub-launch-v517="backstage"]');
+            await p.waitForFunction(()=>document.body.classList.contains('mod-backstage-v530')&&!!window.__modBackstageV531,{timeout:20000});
+            out.backstage=await p.evaluate(()=>({
+              shell:!!document.getElementById('modBackstageV530'),
+              active:window.__modBackstageV531?.activeSection,
+              surface:document.body.dataset.modAppSurfaceV515,
+              tabs:document.querySelectorAll('[data-backstage-section-v531]').length,
+              backupHeavyBefore:!!window.__modBackupStabilityV506
+            }));
+            out.backstage.openMs=Date.now()-t0;
+
+            await p.click('[data-backstage-section-v531="backup"]');
+            await p.waitForFunction(()=>!!window.__modBackupStabilityV506&&!!window.__modBackupSourceFallbackV506&&!!document.querySelector('[data-backstage-backup-v533="true"]'),{timeout:30000});
+            out.backup=await p.evaluate(()=>({
+              stability:!!window.__modBackupStabilityV506,
+              fallback:!!window.__modBackupSourceFallbackV506,
+              dashboard:!!document.querySelector('[data-backstage-backup-v533="true"]')
+            }));
+
+            out.pass=
+              out.home.hub&&out.home.safe&&!out.home.appCore&&
+              out.sport.pointer==='none'&&out.sport.role===null&&out.sport.tabindex===null&&out.sport.hidden==='true'&&out.sport.homePointer!=='none'&&
+              out.homeAfterSport.hub&&!out.homeAfterSport.sport&&out.homeAfterSport.surface==='hub'&&
+              out.todo.surface==='todo'&&out.todo.v490&&out.todo.v491&&out.todo.v492&&out.todo.v493&&out.todo.v494&&
+              out.backstage.shell&&out.backstage.tabs>=5&&out.backstage.surface==='backstage'&&out.backstage.backupHeavyBefore===false&&out.backstage.openMs<12000&&
+              out.backup.stability&&out.backup.fallback&&out.backup.dashboard&&
+              out.errors.length===0;
+            console.log(JSON.stringify(out,null,2));
+            await browser.close();
+            if(!out.pass)process.exitCode=1;
+          })();
+          NODE
+          node check.js
