@@ -279,15 +279,15 @@
     document.documentElement.dataset.modAreaLoadingV608=id;
     emitProgress({
       loaded:0,total,percent:0,ready:false,error:null,
-      label:(LABELS[id]||id)+' wird geladen · Modul 0 von '+total,
+      label:(LABELS[id]||id)+' wird vorbereitet',
       version:VERSION,phase:'area',areaLoading:id
     });
   }
 
-  function stepAreaProgress(id,index,total,src){
+  function stepAreaProgress(id,current,total,src,loaded){
     emitProgress({
-      loaded:index,total,percent:Math.round(index/Math.max(1,total)*100),ready:false,error:null,
-      label:(LABELS[id]||id)+' wird geladen · Modul '+index+' von '+total,
+      loaded,total,percent:Math.round(loaded/Math.max(1,total)*100),ready:false,error:null,
+      label:(LABELS[id]||id)+' wird geladen · Modul '+current+' von '+total,
       module:moduleName(src),version:VERSION,phase:'area',areaLoading:id
     });
   }
@@ -322,10 +322,9 @@
 
     for(let i=0;i<list.length;i++){
       const src=list[i];
-      if(showProgress)stepAreaProgress(context,i,total,src);
+      if(showProgress)stepAreaProgress(context,i+1,total,src,i);
       await loadScript(src);
       await browserBreather(context,src);
-      if(showProgress)stepAreaProgress(context,i+1,total,src);
     }
 
     if(showProgress){
