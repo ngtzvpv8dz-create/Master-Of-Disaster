@@ -85,6 +85,12 @@
     fullBackupBusy=true;
     updateFullBackupBusyState();
     try{
+      const hardened=window.__modBackupStabilityV506;
+      if(typeof hardened?.createFullBackup==='function'){
+        const button=document.querySelector('[data-backup-action-v533="fullbackup"]');
+        await hardened.createFullBackup(button);
+        return true;
+      }
       const api=safetyApi();
       if(typeof api?.createEnhancedFullBackup==='function'){
         await api.createEnhancedFullBackup();
