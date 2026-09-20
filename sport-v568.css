@@ -60,10 +60,10 @@
   .sport-course-card-v568,.sport-activity-row-v568,.sport-sync-v568.is-loading i{animation:none!important}
 }
 
-/* V568: S is an actual Sport control on Home/To-do/Sport, but remains a passive surface mark inside other modules. */
-body:not(.mod-food-v544):not(.mod-kistology-v535):not(.mod-backstage-v530):not(.mod-finance-v552) .sport-switch-v510.mod-surface-mark-v556{
-  pointer-events:auto!important;
-  cursor:pointer;
+/* V594: S is a purely visual surface marker everywhere. Navigation belongs to the house icon / homescreen. */
+body .sport-switch-v510.mod-surface-mark-v556{
+  pointer-events:none!important;
+  cursor:default!important;
 }
 
 

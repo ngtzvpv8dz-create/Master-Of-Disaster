@@ -183,23 +183,38 @@
       ],
       backstage:[
         'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
         './supabase-config.js?v=525-0912',
         './app.js?v=446-1228',
-        './cloud-backup-restore-v394.js?v=446-1228',
-        './development-stats-v451.js?v=451-1431',
-        './project-history-v452.js?v=452-1501',
-        './live-log-v453.js?v=453-1641',
-        './background-log-v454.js?v=454-1703',
-        './full-backup-v397.js?v=446-1228',
-        './iphone-backup-v400.js?v=446-1228',
         './fixed-app-header-v475.js?v=475-1345',
         './development-stats-current-v476.js?v=476-1419',
         './build-freshness-v502.js?v=502-1225',
-        './backstage-v530.js?v=530-1425',
+        './backstage-v530.js?v=530-1425'
+      ]
+    };
+    const BACKSTAGE_SECTION_GROUPS={
+      dev:['./development-stats-v451.js?v=451-1431'],
+      log:[
+        './project-history-v452.js?v=452-1501',
+        './live-log-v453.js?v=453-1641',
+        './background-log-v454.js?v=454-1703'
+      ],
+      backup:[
+        'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+        './cloud-backup-restore-v394.js?v=446-1228',
+        './full-backup-v397.js?v=446-1228',
+        './iphone-backup-v400.js?v=446-1228',
         './backup-stability-v506.js?v=506-1131',
         './backup-source-fallback-v506.js?v=506-1244'
-      ]
+      ],
+      restore:[
+        'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+        './cloud-backup-restore-v394.js?v=446-1228',
+        './full-backup-v397.js?v=446-1228',
+        './iphone-backup-v400.js?v=446-1228',
+        './backup-stability-v506.js?v=506-1131',
+        './backup-source-fallback-v506.js?v=506-1244'
+      ],
+      system:[]
     };
     const loaded=new Set(), pending=new Map(), areaReady=new Set();
     const abs=s=>{try{return new URL(s,location.href).href}catch(_){return s}};
@@ -220,6 +235,11 @@
       if(areaReady.has(id))return true;
       for(const src of (GROUPS[id]||[])){await loadOne(src);await new Promise(r=>setTimeout(r,18));}
       areaReady.add(id); return true;
+    }
+    async function loadBackstageSection(section){
+      const list=BACKSTAGE_SECTION_GROUPS[section]||[];
+      for(const src of list){await loadOne(src);await new Promise(r=>setTimeout(r,24));}
+      return true;
     }
     function waitFor(test,timeout=5000){
       const start=Date.now();
@@ -258,6 +278,19 @@
       document.documentElement.dataset.modV591='open-'+id;
     }
     document.addEventListener('click',event=>{
+      const sectionButton=event.target?.closest?.('[data-backstage-section-v531]');
+      if(!sectionButton||!document.body.classList.contains('mod-backstage-v530'))return;
+      const section=sectionButton.dataset.backstageSectionV531;
+      if(!BACKSTAGE_SECTION_GROUPS[section]?.length)return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      sectionButton.setAttribute('aria-busy','true');
+      loadBackstageSection(section)
+        .then(()=>window.__modBackstageV531?.setSection?.(section))
+        .catch(error=>console.error('V594 Backstage-Sektor:',section,error))
+        .finally(()=>sectionButton.removeAttribute('aria-busy'));
+    },true);
+    document.addEventListener('click',event=>{
       const button=event.target?.closest?.('[data-mod-hub-launch-v517]');
       if(!button)return;
       const id=button.dataset.modHubLaunchV517;
@@ -287,7 +320,7 @@
     };
     watchLazyButtons();
     window.addEventListener('load',()=>setTimeout(watchLazyButtons,80));
-    window.__modAreaRuntimeV591={loadArea,openArea,groups:Object.fromEntries(Object.entries(GROUPS).map(([k,v])=>[k,[...v]]))};
+    window.__modAreaRuntimeV591={loadArea,openArea,loadBackstageSection,groups:Object.fromEntries(Object.entries(GROUPS).map(([k,v])=>[k,[...v]]))};
     document.documentElement.dataset.modV591='home-safe';
   })();
   </script>

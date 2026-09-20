@@ -34,6 +34,11 @@ html body main.app > header.header .mod-brand-title-v525 .mod-home-button-v525{
   color:inherit!important;
   filter:none!important;
   text-shadow:none!important;
+  pointer-events:auto!important;
+  cursor:pointer!important;
+  touch-action:manipulation;
+  position:relative!important;
+  z-index:4;
 }
 html body #appFixedTopV475 .mod-brand-title-v525 .mod-home-button-v525 svg,
 html body main.app > header.header .mod-brand-title-v525 .mod-home-button-v525 svg{

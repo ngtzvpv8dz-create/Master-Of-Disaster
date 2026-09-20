@@ -862,27 +862,19 @@
   function ensureChrome(){
     const sw=document.getElementById('sportSwitchV510');
     if(!sw)return false;
-    sw.setAttribute('aria-hidden','false');
-    sw.setAttribute('role','button');
-    sw.setAttribute('tabindex','0');
-    sw.setAttribute('aria-label','Zwischen To-do und Sport wechseln');
-    sw.setAttribute('aria-pressed',currentMode()==='sport'?'true':'false');
-    if(sw.dataset.sportV568Bound!=='true'){
-      sw.dataset.sportV568Bound='true';
-      sw.addEventListener('click',()=>toggleMode());
-      sw.addEventListener('keydown',event=>{
-        if(event.key!=='Enter'&&event.key!==' ')return;
-        event.preventDefault();
-        sw.click();
-      });
-    }
+    sw.setAttribute('aria-hidden','true');
+    sw.removeAttribute('role');
+    sw.removeAttribute('tabindex');
+    sw.removeAttribute('aria-label');
+    sw.removeAttribute('aria-pressed');
+    sw.dataset.sportV568Bound='passive';
     return true;
   }
 
   function setTab(id,{animate=true,persist=true}={}){activeTab=TABS.some(t=>t.id===id)?id:'fitx';if(persist)try{localStorage.setItem(TAB_KEY,activeTab);}catch(_){ }render({animate});return activeTab;}
   function currentMode(){return document.body.classList.contains('mod-sport-mode-v510')?'sport':'todo';}
   function setMode(mode,{persist=true,animate=true}={}){
-    mode=mode==='sport'?'sport':'todo';ensureRoot();ensureChrome();document.body.classList.toggle('mod-sport-mode-v510',mode==='sport');document.body.dataset.modAppModeV510=mode;document.getElementById('sportSwitchV510')?.setAttribute('aria-pressed',mode==='sport'?'true':'false');
+    mode=mode==='sport'?'sport':'todo';ensureRoot();ensureChrome();document.body.classList.toggle('mod-sport-mode-v510',mode==='sport');document.body.dataset.modAppModeV510=mode;document.getElementById('sportSwitchV510')?.removeAttribute('aria-pressed');
     if(persist)try{localStorage.setItem(MODE_KEY,mode);}catch(_){ }
     render({animate:animate&&mode==='sport'});
     if(mode==='sport'&&!historicalRegression)load(false);
