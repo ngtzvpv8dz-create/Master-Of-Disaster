@@ -16,12 +16,10 @@ jobs:
           node-version: '20'
       - name: Wiring checks
         run: |
-          node --check backstage-v530.js
           node --check backstage-backup-v534.js
           node --check backstage-backup-v533.js
           node --check sw.js
-          grep -q "backupConsolidation:'V534'" backstage-v530.js
-          grep -q 'backstage-backup-v534.js?v=534-backup-consolidation' backstage-v530.js
+          grep -q 'backstage-backup-v534.js?v=534-backup-consolidation' area-runtime-v603.js
           grep -q 'duplicateQuickFullBackupRemoved:true' backstage-backup-v534.js
           grep -q 'fullBackupRemainsInBackupSector:true' backstage-backup-v534.js
           grep -q 'unifiedBackupModelV600:true' backstage-backup-v533.js
