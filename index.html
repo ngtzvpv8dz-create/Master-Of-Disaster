@@ -157,31 +157,36 @@
       sport:[
         'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
         './supabase-config.js?v=525-0912',
+        './supabase-client-lite-v593.js?v=593',
         './fixed-app-header-v475.js?v=475-1345',
         './sport-v568.js?v=573-xtraining'
       ],
       food:[
         'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
         './supabase-config.js?v=525-0912',
+        './supabase-client-lite-v593.js?v=593',
         './fixed-app-header-v475.js?v=475-1345',
         './food-v544.js?v=581-recipe-parity'
       ],
       finance:[
         'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
         './supabase-config.js?v=525-0912',
+        './supabase-client-lite-v593.js?v=593',
         './fixed-app-header-v475.js?v=475-1345',
         './finance-v552.js?v=552-finance',
         './finance-data-v553.js?v=554-finance-interactions'
       ],
       kistology:[
         'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        './supabase-config.js?v=525-0912'
+        './supabase-config.js?v=525-0912',
+        './supabase-client-lite-v593.js?v=593'
       ],
       backstage:[
         'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
         'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
         './supabase-config.js?v=525-0912',
         './app.js?v=446-1228',
+        './cloud-backup-restore-v394.js?v=446-1228',
         './development-stats-v451.js?v=451-1431',
         './project-history-v452.js?v=452-1501',
         './live-log-v453.js?v=453-1641',
@@ -189,6 +194,8 @@
         './full-backup-v397.js?v=446-1228',
         './iphone-backup-v400.js?v=446-1228',
         './fixed-app-header-v475.js?v=475-1345',
+        './development-stats-current-v476.js?v=476-1419',
+        './build-freshness-v502.js?v=502-1225',
         './backstage-v530.js?v=530-1425',
         './backup-stability-v506.js?v=506-1131',
         './backup-source-fallback-v506.js?v=506-1244'
@@ -245,7 +252,7 @@
         try{await api.reload?.();}catch(_){}
         api.open?.();
       }else if(id==='backstage'){
-        const api=await waitFor(()=>window.__modBackstageV531||window.__modBackstageV530,7000);
+        const api=await waitFor(()=>window.__modBackstageV531,9000);
         api.open?.({section:'dev'});
       }
       document.documentElement.dataset.modV591='open-'+id;
@@ -260,6 +267,26 @@
       openArea(id).catch(e=>{console.error('V591 Bereich:',id,e);document.documentElement.dataset.modV591='error-'+id;})
         .finally(()=>button.removeAttribute('aria-busy'));
     },true);
+    function enableLazyHubButtons(){
+      for(const id of ['kistology','backstage']){
+        const button=document.querySelector('[data-mod-hub-launch-v517="'+id+'"]');
+        if(!button)continue;
+        button.removeAttribute('aria-disabled');
+        button.removeAttribute('disabled');
+        button.dataset.modLazyActiveV593='true';
+      }
+    }
+    const lazyButtonObserver=new MutationObserver(()=>queueMicrotask(enableLazyHubButtons));
+    const watchLazyButtons=()=>{
+      enableLazyHubButtons();
+      const root=document.getElementById('modAppHubV515');
+      if(root&&!root.dataset.modLazyObserverV593){
+        root.dataset.modLazyObserverV593='true';
+        lazyButtonObserver.observe(root,{childList:true,subtree:true});
+      }
+    };
+    watchLazyButtons();
+    window.addEventListener('load',()=>setTimeout(watchLazyButtons,80));
     window.__modAreaRuntimeV591={loadArea,openArea,groups:Object.fromEntries(Object.entries(GROUPS).map(([k,v])=>[k,[...v]]))};
     document.documentElement.dataset.modV591='home-safe';
   })();
