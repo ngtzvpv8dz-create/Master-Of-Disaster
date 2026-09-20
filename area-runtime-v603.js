@@ -313,14 +313,19 @@
       .finally(()=>sectionButton.removeAttribute('aria-busy'));
   },true);
 
-  window.__modAreaRuntimeV603={
+  const api={
     version:VERSION,
     groups:Object.fromEntries(Object.entries(GROUPS).map(([key,value])=>[key,[...value]])),
     preloadAll,retry,openArea,loadSection,
+    loadArea:async()=>preloadAll(),
+    loadBackstageSection:loadSection,
     get ready(){return ready;},
     get progress(){return {...progressState};},
     get readyAreas(){return [...readyAreas];}
   };
+  window.__modAreaRuntimeV603=api;
+  /* Namespace alias only: old callers reach the current runtime, not legacy code. */
+  window.__modAreaRuntimeV591=api;
 
   setTimeout(preloadAll,80);
 })();
