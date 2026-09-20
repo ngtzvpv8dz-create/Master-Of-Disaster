@@ -84,7 +84,7 @@
   <link rel="stylesheet" href="./sport-v568.css?v=573-xtraining">
   <link rel="stylesheet" href="./surface-brand-v556.css?v=596c-backstage-chrome">
   <link rel="stylesheet" href="./header-consolidated-v560.css?v=596c-backstage-chrome">
-  <link rel="stylesheet" href="./surface-taglines-v601.css?v=601-taglines">
+  <link rel="stylesheet" href="./surface-header-v602.css?v=602-header">
   <link rel="stylesheet" href="./todo-warm-accent.css?v=551-glow">
   <link rel="stylesheet" href="./finance-header-grid-v561.css?v=567-finance-header-panel">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -96,7 +96,7 @@
   <main class="app">
     <header class="header">
       <h1 class="mod-brand-title-v525" aria-label="MASTER OF DISASTER"><span>M</span><button id="modHomeButtonV525" class="mod-home-button-v525" type="button" aria-label="Zum Master-of-Disaster-Homescreen" title="Homescreen" onclick="window.__modAppHubV515?.show?.();window.scrollTo?.({top:0,left:0,behavior:'instant'});"><span class="mod-home-letter-v525" aria-hidden="true">A</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-4.75v-6h-5.5v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button><span id="sportSwitchV510" class="sport-switch-v510 mod-surface-mark-v556" aria-hidden="true"><span class="mod-surface-mark-glyph-v556">S</span></span><span>TER OF DISASTE</span><button class="mod-undo-r-v498" type="button" title="Rückgängig / Wiederherstellung" aria-label="Rückgängig und Wiederherstellung öffnen" onclick="window.__modRecoveryHistoryV498?.openQuickHistory?.();">R</button></h1>
-      <div class="eyebrow">WEEK-AND-END-TO-DO-DINGSI</div>
+      <div class="eyebrow">Zentrale des Wahnsinns</div>
     </header>
     <div class="tabs-wrapper"><nav class="tabs">
       <button class="tab-button active" data-tab="all" onclick="switchTab('all')">ALLE</button><button class="tab-button" data-tab="today" onclick="switchTab('today')">HEUTE</button><button class="tab-button" data-tab="priority" onclick="switchTab('priority')">PRIORITÄT</button><button class="tab-button" data-tab="due" onclick="switchTab('due')">FÄLLIG</button><button class="tab-button" data-tab="active" onclick="switchTab('active')">PAUSIERT</button><button class="tab-button" data-tab="archive" onclick="switchTab('archive')">ARCHIV</button><button class="tab-button" data-tab="statistics" onclick="switchTab('statistics')">STATISTIK</button><button class="tab-button" data-tab="categories" onclick="switchTab('categories')">KATEGORIEN</button><button class="tab-button" data-tab="titles" onclick="switchTab('titles')">TITEL</button><button class="tab-button" data-tab="theme" onclick="switchTab('theme')">THEME</button>
@@ -112,7 +112,7 @@
     <div id="weightContainer"></div><div id="viewContainer"></div>
   </main><div id="modalContainer"></div>
   
-  <script>(function(){const meta={version:'V601',date:'20.09.2026',time:'18:57',build:'20.09.2026 · 18:57 Uhr'};window.__MOD_BUILD__=meta;function patchBuild(){window.__modDevVersion={...meta,patch:patchBuild};if(typeof currentTab!=='undefined'&&currentTab!=='dev')return;const vals=document.querySelectorAll('.dev-build-value');if(vals[0])vals[0].textContent=meta.version;if(vals[1])vals[1].textContent=meta.build;}const prev=window.render;if(typeof prev==='function')window.render=function(){const r=prev.apply(this,arguments);setTimeout(patchBuild,0);return r;};window.addEventListener('load',()=>setTimeout(patchBuild,450));setTimeout(patchBuild,0);})();</script>
+  <script>(function(){const meta={version:'V602',date:'20.09.2026',time:'19:12',build:'20.09.2026 · 19:12 Uhr'};window.__MOD_BUILD__=meta;function patchBuild(){window.__modDevVersion={...meta,patch:patchBuild};if(typeof currentTab!=='undefined'&&currentTab!=='dev')return;const vals=document.querySelectorAll('.dev-build-value');if(vals[0])vals[0].textContent=meta.version;if(vals[1])vals[1].textContent=meta.build;}const prev=window.render;if(typeof prev==='function')window.render=function(){const r=prev.apply(this,arguments);setTimeout(patchBuild,0);return r;};window.addEventListener('load',()=>setTimeout(patchBuild,450));setTimeout(patchBuild,0);})();</script>
   
   
   
@@ -128,7 +128,7 @@
   <script src="./app-hub-launcher-v517.js?v=584-icons"></script>
   <script src="./stability-v595.js?v=595-stability"></script>
   <script src="./stability-v596.js?v=596b-brand-center"></script>
-  <script src="./surface-taglines-v601.js?v=601-taglines"></script>
+  <script src="./surface-header-v602.js?v=602-header"></script>
   
   
   
@@ -304,22 +304,43 @@
       const sectionButton=event.target?.closest?.('[data-backstage-section-v531]');
       if(!sectionButton||!document.body.classList.contains('mod-backstage-v530'))return;
       const section=sectionButton.dataset.backstageSectionV531;
-      if(!BACKSTAGE_SECTION_GROUPS[section]?.length)return;
+      const group=BACKSTAGE_SECTION_GROUPS[section]||[];
+      if(!group.length)return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      if(section==='backup'&&window.__modBackstageBackupV533?.openBackup){
-        window.__modBackstageBackupV533.openBackup();
-      }else{
-        window.__modBackstageV531?.setSection?.(section);
-      }
-      if(!BACKSTAGE_SECTION_GROUPS[section]?.length)return;
+
       sectionButton.setAttribute('aria-busy','true');
+      sectionButton.closest('.mod-backstage-tabs-v531')?.querySelectorAll('[data-backstage-section-v531]').forEach(button=>{
+        const selected=button===sectionButton;
+        button.setAttribute('aria-selected',selected?'true':'false');
+        button.tabIndex=selected?0:-1;
+      });
+
+      if(section==='log'){
+        const view=document.getElementById('viewContainer');
+        if(view)view.innerHTML='<section class="mod-backstage-placeholder-v531" data-backstage-loading-v602="log"><div class="mod-backstage-placeholder-card-v531"><div class="mod-backstage-placeholder-code-v531">SEKTOR 02</div><h3 class="mod-backstage-placeholder-title-v531">LOG WIRD GELADEN</h3><p class="mod-backstage-placeholder-text-v531">7-Tage-Protokoll und Wiederherstellungshistorie werden vorbereitet.</p><span class="mod-backstage-placeholder-state-v531">LADE MODULE · EIN MOMENT</span></div></section>';
+      }
+
       loadBackstageSection(section)
-        .then(()=>{
+        .then(async()=>{
+          if(section==='backup'&&window.__modBackstageBackupV533?.openBackup){
+            window.__modBackstageBackupV533.openBackup();
+          }else{
+            window.__modBackstageV531?.setSection?.(section);
+          }
           if(section==='backup')window.__modBackstageBackupV533?.renderBackupDashboard?.();
-          if(section==='log')window.__modLiveLogV453?.renderLog?.();
+          if(section==='log'){
+            const enhanced=window.__modRecoveryHistoryV498?.renderEnhancedLog;
+            if(typeof enhanced==='function')await enhanced();
+            else window.__modLiveLogV453?.renderLog?.();
+            window.__modLogStabilityV499?.repair?.();
+          }
         })
-        .catch(error=>console.error('V594 Backstage-Sektor:',section,error))
+        .catch(error=>{
+          console.error('V602 Backstage-Sektor:',section,error);
+          const view=document.getElementById('viewContainer');
+          if(view&&section==='log')view.innerHTML='<section class="mod-backstage-placeholder-v531"><div class="mod-backstage-placeholder-card-v531"><div class="mod-backstage-placeholder-code-v531">SEKTOR 02</div><h3 class="mod-backstage-placeholder-title-v531">LOG NICHT BEREIT</h3><p class="mod-backstage-placeholder-text-v531">Die Log-Module konnten nicht vollständig geladen werden. Backstage bleibt geöffnet.</p><span class="mod-backstage-placeholder-state-v531">KEIN WECHSEL ZUM HOMESCREEN</span></div></section>';
+        })
         .finally(()=>sectionButton.removeAttribute('aria-busy'));
     },true);
     document.addEventListener('click',event=>{
@@ -356,5 +377,5 @@
     document.documentElement.dataset.modV591='home-safe';
   })();
   </script>
-<script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=601-surface-taglines',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V530 Service-Worker-Registrierung:',e);}})();</script>
+<script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=602-header-log-stability',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V530 Service-Worker-Registrierung:',e);}})();</script>
 </body></html>
