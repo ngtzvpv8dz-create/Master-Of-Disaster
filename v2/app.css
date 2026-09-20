@@ -514,3 +514,19 @@ a,button{-webkit-tap-highlight-color:transparent}
   .home-page .icon-frame{width:112px}
   .home-page .area-label{font-size:12px}
 }
+
+/* V2.0.7 – crop generated sprite to the gold frame; no black matte */
+.home-page .icon-frame{
+  mix-blend-mode:normal;
+  background-size:512% 256% !important;
+  background-repeat:no-repeat;
+  background-color:transparent !important;
+}
+.home-page .icon-todo{background-position:3.4% 9% !important}
+.home-page .icon-sport{background-position:34.47% 9% !important}
+.home-page .icon-kistology{background-position:65.53% 9% !important}
+.home-page .icon-food{background-position:96.6% 9% !important}
+.home-page .icon-shopping{background-position:3.4% 91% !important}
+.home-page .icon-finance{background-position:34.47% 91% !important}
+.home-page .icon-progress{background-position:65.53% 91% !important}
+.home-page .icon-backstage{background-position:96.6% 91% !important}
