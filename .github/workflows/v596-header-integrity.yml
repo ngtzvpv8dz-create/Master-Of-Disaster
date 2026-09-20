@@ -39,8 +39,8 @@ jobs:
               raise SystemExit('Literal backslash-n remains in index.html')
           for marker in [
               './app.js?v=596-integrity',
-              './header-consolidated-v560.css?v=596-header-integrity',
-              './stability-v596.js?v=596-header-integrity',
+              './header-consolidated-v560.css?v=596b-brand-center',
+              './stability-v596.js?v=596b-brand-center',
               "version:'V596'"
           ]:
               if marker not in idx:
@@ -55,7 +55,7 @@ jobs:
           ]:
               if marker not in app:
                   raise SystemExit(f'Missing V596 integrity marker: {marker}')
-          if 'width:100vw!important' not in css or 'margin-left:calc(50% - 50vw)!important' not in css:
+          if 'width:100vw!important' not in css or 'margin-left:calc(50% - 50vw)!important' not in css or '--mod-brand-center-offset-v596' not in css:
               raise SystemExit('Viewport-centered header geometry missing')
           import re
           cache_match=re.search(r'const CACHE_NAME="([^"]+)"',sw)
@@ -95,7 +95,7 @@ jobs:
           const {chromium}=require('playwright');
 
           async function inspect(page,label){
-            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV517&&window.__modStabilityV596?.version==='V596',null,{timeout:20000});
+            await page.waitForFunction(()=>window.__modAppHubV515&&window.__modHubLauncherV517&&window.__modStabilityV596?.version==='V596'&&window.__modStabilityV596?.brandCenteringReady===true,null,{timeout:20000});
             await page.waitForFunction(()=>document.querySelector('[data-mod-hub-launch-v517="kistology"]')?.getAttribute('aria-disabled')===null&&document.querySelector('[data-mod-hub-launch-v517="backstage"]')?.getAttribute('aria-disabled')===null,null,{timeout:20000});
 
             const home=await page.evaluate(()=>{
@@ -215,7 +215,7 @@ jobs:
             let published=false;
             for(let i=0;i<20;i++){
               await page.goto(base+'?v596live='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-              published=await page.evaluate(()=>window.__modStabilityV596?.version==='V596'&&
+              published=await page.evaluate(()=>window.__modStabilityV596?.version==='V596'&&window.__modStabilityV596?.brandCenteringReady===true&&
                 [...document.styleSheets].some(s=>String(s.href||'').includes('596-header-integrity'))).catch(()=>false);
               if(published)break;
               await page.waitForTimeout(10000);

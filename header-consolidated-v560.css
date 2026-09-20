@@ -14,6 +14,8 @@ html body main.app > header.header .mod-brand-title-v525{
   margin-left:calc(50% - 50vw)!important;
   margin-right:calc(50% - 50vw)!important;
   justify-content:center!important;
+  position:relative!important;
+  left:var(--mod-brand-center-offset-v596,0px)!important;
 }
 
 /* Gemeinsamer Zeichenplatz: S, $, Ordner und Schraubenschlüssel nehmen im Layout
