@@ -414,11 +414,32 @@
 
     window.addTask=function(){
       const explicitCategory=selectedCategory();
+      const suggestionCategory=clean(window.__modPendingSuggestionCategory||'');
+      const inputText=clean(document.getElementById('taskInput')?.value||'');
+      const beforeRows=new Set(rows());
       const beforeIds=new Set(rows().map(task=>task&&task.id));
       const result=base.apply(this,arguments);
-      if(explicitCategory)enforceSelectedCategory(beforeIds,explicitCategory);
+
+      const desired=explicitCategory||suggestionCategory;
+      if(desired){
+        let fresh=rows().filter(task=>task&&!beforeRows.has(task)&&!beforeIds.has(task.id));
+        if(!fresh.length&&inputText){
+          const match=[...rows()].reverse().find(task=>norm(task?.text)===norm(inputText));
+          if(match)fresh=[match];
+        }
+        if(fresh.length){
+          fresh.forEach(task=>{
+            task.category=desired;
+            rememberCategory(task,desired);
+          });
+          persist();
+          rerender();
+        }
+      }
       return result;
     };
+    window.addTask.__v603CategoryStable=true;
+    window.addTask.__v603CategoryBase=base;
 
     addTaskWrapped=true;
     return true;
@@ -438,6 +459,8 @@
     enforceSelectedCategory,
     explicitNewCategoryWins:true,
     suggestionCategoryFallbackOnly:true,
+    pendingSuggestionCapturedBeforeBase:true,
+    freshTaskFallbackByText:true,
     dataSemanticsUntouched:true
   };
 })();
