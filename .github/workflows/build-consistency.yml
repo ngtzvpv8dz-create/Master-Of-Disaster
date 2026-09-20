@@ -32,8 +32,8 @@ jobs:
             'app-hub-launcher-v603.js?v=603-loader',
             'surface-header-v603.css?v=603-header',
             'surface-header-v603.js?v=603-header',
-            'service-worker-gate-v607.js?v=606-worker-gate',
-            'area-runtime-v607.js?v=606-light-warm',
+            'service-worker-gate-v607.js?v=607-worker-gate',
+            'area-runtime-v607.js?v=607-light-warm',
             'kistology-v603.css?v=603'
           ]:
               if marker not in index: raise SystemExit(f'Missing V607 index marker: {marker}')
