@@ -333,3 +333,70 @@ body .sport-switch-v510.mod-surface-mark-v556{
   .sport-catalog-create-v573 button{grid-column:1}
   .sport-x-history-v573 article{grid-template-columns:1fr}
 }
+
+
+/* V574 · unified training items */
+.sport-item-settings-v574{
+  display:block!important;
+  margin-top:4px!important;
+  color:#617b7f!important;
+  font-size:.50rem!important;
+  line-height:1.35!important;
+  font-weight:650!important;
+  letter-spacing:.01em!important;
+  text-transform:none!important;
+}
+.sport-assistance-v574{
+  display:inline-block!important;
+  margin-top:4px!important;
+  padding:2px 5px;
+  border:1px solid rgba(111,228,234,.12);
+  border-radius:999px;
+  color:#8dcfd4!important;
+  font-size:.48rem!important;
+  font-weight:800!important;
+  letter-spacing:.04em!important;
+}
+.sport-history-detail-v574{
+  overflow:hidden;
+  border:1px solid rgba(111,228,234,.11);
+  border-radius:12px;
+  background:rgba(3,17,20,.45);
+}
+.sport-history-detail-v574 summary{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:10px 11px;
+  cursor:pointer;
+  list-style:none;
+}
+.sport-history-detail-v574 summary::-webkit-details-marker{display:none}
+.sport-history-detail-v574 summary strong{color:#cbe7e9;font-size:.68rem}
+.sport-history-detail-v574 summary span{color:#718d90;font-size:.59rem}
+.sport-history-detail-v574 summary b{color:#75cfd4;font-size:.62rem}
+.sport-history-workout-v574{
+  display:grid;
+  gap:6px;
+  padding:0 9px 9px;
+}
+.sport-summary-card-v574{
+  display:grid;
+  gap:5px;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:10px;
+  background:rgba(1,11,13,.48);
+}
+.sport-summary-card-v574>div{display:grid;gap:2px}
+.sport-summary-card-v574 strong{color:#dff5f6;font-size:.66rem}
+.sport-summary-card-v574 small{color:#607a7d;font-size:.49rem;line-height:1.35}
+.sport-summary-card-v574>span{color:#839fa2;font-size:.56rem;line-height:1.45}
+.sport-catalog-grid-v573 article h3{white-space:normal}
+.sport-catalog-grid-v573 article>div>small+small{margin-top:3px}
+@media(max-width:480px){
+  .sport-history-detail-v574 summary{grid-template-columns:1fr auto}
+  .sport-history-detail-v574 summary span{grid-column:1/-1}
+  .sport-set-row-v573 label span{min-height:1.8em;display:flex;align-items:end}
+}

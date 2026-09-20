@@ -1,9 +1,9 @@
-/* V573 · SPORT · X-Training + catalog + Supabase live data */
+/* V574 · SPORT · unified training items + X-Training + Supabase live data */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V573';
+  const VERSION='V574';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -133,7 +133,7 @@
       sessionId:String(row.session_id||row.sessionId||''),
       exerciseId:String(row.exercise_id||row.exerciseId||''),
       equipmentId:row.equipment_id||row.equipmentId||null,
-      name:String(row.name_snapshot||row.name||'Übung'),
+      name:String(row.name_snapshot||row.name||'Trainingselement'),
       kind:String(row.kind||'strength'),
       status:String(row.status||'planned'),
       sortOrder:Number(row.sort_order??row.sortOrder??999),
@@ -144,12 +144,18 @@
       resistanceLevel:row.resistance_level??row.resistanceLevel??'',
       speedKmh:numberOrNull(row.speed_kmh??row.speedKmh),
       inclinePercent:numberOrNull(row.incline_percent??row.inclinePercent),
+      caloriesKcal:numberOrNull(row.calories_kcal??row.caloriesKcal),
+      equipmentNumber:row.equipment_number_snapshot??row.equipmentNumber??null,
+      settingsText:row.settings_snapshot??row.settingsText??null,
+      loadMode:row.load_mode_snapshot??row.loadMode??null,
+      metricValues:row.metric_values||row.metricValues||{},
       sets:(row.sets||[]).map(set=>({
         id:String(set.id||''),
         setNumber:Number(set.set_number??set.setNumber??0),
         weightKg:numberOrNull(set.weight_kg??set.weightKg),
         repetitions:numberOrNull(set.repetitions),
-        rir:numberOrNull(set.rir)
+        rir:numberOrNull(set.rir),
+        rirPlus:Boolean(set.rir_plus??set.rirPlus??false)
       })).sort((a,b)=>a.setNumber-b.setNumber)
     };
   }
@@ -216,10 +222,10 @@
       supabase.from('sport_activities').select('id,session_id,name,kind,started_at,ended_at,duration_minutes,sort_order,notes').eq('user_id',user.id).order('started_at',{ascending:false}).limit(2500),
       supabase.from('sport_activity_participants').select('activity_id,participant_name').eq('user_id',user.id).limit(5000),
       supabase.from('sport_session_participants').select('id,session_id,participant_name').eq('user_id',user.id).limit(5000),
-      supabase.from('sport_exercise_catalog').select('id,name,kind,category,muscle_group,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
+      supabase.from('sport_exercise_catalog').select('id,name,kind,item_type,equipment_number,category,muscle_group,settings_text,load_mode,metric_config,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_equipment_catalog').select('id,name,equipment_number,category,settings_text,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
-      supabase.from('sport_session_exercises').select('id,session_id,exercise_id,equipment_id,name_snapshot,kind,status,sort_order,started_at,ended_at,duration_minutes,distance_km,resistance_level,speed_kmh,incline_percent,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5000),
-      supabase.from('sport_exercise_sets').select('id,session_exercise_id,set_number,weight_kg,repetitions,rir').eq('user_id',user.id).order('set_number').limit(15000)
+      supabase.from('sport_session_exercises').select('id,session_id,exercise_id,equipment_id,name_snapshot,kind,status,sort_order,started_at,ended_at,duration_minutes,distance_km,resistance_level,speed_kmh,incline_percent,equipment_number_snapshot,settings_snapshot,load_mode_snapshot,calories_kcal,metric_values,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5000),
+      supabase.from('sport_exercise_sets').select('id,session_exercise_id,set_number,weight_kg,repetitions,rir,rir_plus').eq('user_id',user.id).order('set_number').limit(15000)
     ];
     const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Übungskatalog','Gerätekatalog','X-Training Übungen','Sätze'];
     const results=await Promise.all(queries.map((query,index)=>withTimeout(query,labels[index],6500)));
@@ -399,34 +405,45 @@
   async function addCatalogExercise(payload){
     const {supabase,user}=await sportUser();
     const name=String(payload.name||'').trim();
-    const kind=payload.kind==='cardio'?'cardio':'strength';
-    if(!name)throw new Error('Übungsname fehlt.');
+    if(!name)throw new Error('Bezeichnung fehlt.');
+    const itemType=['strength_machine','cardio_machine','free_exercise','outdoor_activity'].includes(payload.item_type)?payload.item_type:'free_exercise';
+    const kind=(itemType==='cardio_machine'||itemType==='outdoor_activity')?'cardio':'strength';
+    const equipmentNumber=String(payload.equipment_number||'').trim()||null;
+    const settingsText=String(payload.settings_text||'').trim()||null;
+    const category=String(payload.category||'').trim()||((kind==='cardio')?'Cardio':'Kraft');
+    const muscleGroup=String(payload.muscle_group||'').trim()||null;
+    const requestedLoad=String(payload.load_mode||'').trim();
+    const loadMode=itemType==='strength_machine'
+      ?(requestedLoad==='assistance'?'assistance':'weight')
+      :'none';
+    const lower=name.toLowerCase();
+    let metricConfig={};
+    if(itemType==='outdoor_activity'){
+      metricConfig={duration_minutes:true,distance_km:true,speed_kmh:true,calories_kcal:true};
+    }else if(itemType==='cardio_machine'){
+      if(lower.includes('laufband'))metricConfig={duration_minutes:true,distance_km:true,speed_kmh:true,incline_percent:true,calories_kcal:true};
+      else if(lower.includes('stepper')||lower.includes('stair'))metricConfig={duration_minutes:true,resistance_level:true,calories_kcal:true};
+      else metricConfig={duration_minutes:true,resistance_level:true,distance_km:true,calories_kcal:true};
+    }
+    const duplicate=state.catalogExercises.find(item=>
+      String(item.name||'').trim().toLowerCase()===name.toLowerCase() &&
+      String(item.equipment_number||'')===String(equipmentNumber||'')
+    );
+    if(duplicate)throw new Error('Dieses Trainingselement ist bereits im Katalog.');
     const result=await supabase.from('sport_exercise_catalog').insert({
-      user_id:user.id,
-      name,
-      kind,
-      category:String(payload.category||'').trim()||null,
-      muscle_group:String(payload.muscle_group||'').trim()||null,
-      active:true
+      user_id:user.id,name,kind,item_type:itemType,equipment_number:equipmentNumber,
+      category,muscle_group:muscleGroup,settings_text:settingsText,load_mode:loadMode,
+      metric_config:metricConfig,active:true
     });
     if(result.error)throw result.error;
     await load(true);
   }
 
   async function addEquipment(payload){
-    const {supabase,user}=await sportUser();
-    const name=String(payload.name||'').trim();
-    if(!name)throw new Error('Gerätename fehlt.');
-    const result=await supabase.from('sport_equipment_catalog').insert({
-      user_id:user.id,
-      name,
-      equipment_number:String(payload.equipment_number||'').trim()||null,
-      category:String(payload.category||'').trim()||'Kraft',
-      settings_text:String(payload.settings_text||'').trim()||null,
-      active:true
+    return addCatalogExercise({
+      ...payload,
+      item_type:String(payload.category||'').toLowerCase()==='cardio'?'cardio_machine':'strength_machine'
     });
-    if(result.error)throw result.error;
-    await load(true);
   }
 
   function activeXSession(){
@@ -449,7 +466,10 @@
       name_snapshot:exercise.name,
       kind:exercise.kind,
       status:'planned',
-      sort_order:maxSort+1
+      sort_order:maxSort+1,
+      equipment_number_snapshot:exercise.equipment_number||null,
+      settings_snapshot:exercise.settings_text||null,
+      load_mode_snapshot:exercise.load_mode||'none'
     });
     if(result.error)throw result.error;
     await load(true);
@@ -472,7 +492,10 @@
       name_snapshot:exercise.name,
       kind:exercise.kind,
       status:'planned',
-      sort_order:++sort
+      sort_order:++sort,
+      equipment_number_snapshot:exercise.equipment_number||null,
+      settings_snapshot:exercise.settings_text||null,
+      load_mode_snapshot:exercise.load_mode||'none'
     }));
     const result=await supabase.from('sport_session_exercises').insert(rows);
     if(result.error)throw result.error;
@@ -504,13 +527,18 @@
 
   async function saveStrengthSet(sessionExerciseId,setNumber,values){
     const {supabase,user}=await sportUser();
+    const rawRir=String(values.rir??'').trim();
+    const rirPlus=/\+$/.test(rawRir);
+    const rirValue=numberOrNull(rawRir.replace(/\+$/,''));
+    if(rirValue!==null&&(rirValue<0||rirValue>10))throw new Error('RIR muss zwischen 0 und 10 liegen.');
     const payload={
       user_id:user.id,
       session_exercise_id:sessionExerciseId,
       set_number:setNumber,
       weight_kg:numberOrNull(values.weight_kg),
       repetitions:numberOrNull(values.repetitions),
-      rir:numberOrNull(values.rir)
+      rir:rirValue,
+      rir_plus:rirPlus&&rirValue!==null
     };
     const result=await supabase.from('sport_exercise_sets').upsert(payload,{onConflict:'session_exercise_id,set_number'});
     if(result.error)throw result.error;
@@ -524,12 +552,19 @@
   }
 
   async function saveCardioValues(id,values){
+    const metricValues={};
+    for(const key of ['duration_minutes','distance_km','resistance_level','speed_kmh','incline_percent','calories_kcal']){
+      const raw=values[key];
+      if(raw!==null&&raw!==undefined&&String(raw).trim()!=='')metricValues[key]=key==='resistance_level'?String(raw).trim():numberOrNull(raw);
+    }
     return updateSessionExercise(id,{
       duration_minutes:numberOrNull(values.duration_minutes),
       distance_km:numberOrNull(values.distance_km),
       resistance_level:String(values.resistance_level||'').trim()||null,
       speed_kmh:numberOrNull(values.speed_kmh),
-      incline_percent:numberOrNull(values.incline_percent)
+      incline_percent:numberOrNull(values.incline_percent),
+      calories_kcal:numberOrNull(values.calories_kcal),
+      metric_values:metricValues
     });
   }
 
@@ -563,13 +598,15 @@
         item.distanceKm!==null?item.distanceKm+' km':null,
         item.resistanceLevel?'Stufe '+item.resistanceLevel:null,
         item.speedKmh!==null?item.speedKmh+' km/h':null,
-        item.inclinePercent!==null?item.inclinePercent+' % Steigung':null
+        item.inclinePercent!==null?item.inclinePercent+' % Steigung':null,
+        item.caloriesKcal!==null?item.caloriesKcal+' kcal':null
       ].filter(Boolean);
       return '<div class="sport-last-v573"><span>Letztes Mal · '+esc(shortDate(previous.session.date))+'</span><b>'+esc(bits.join(' · ')||'keine Werte')+'</b></div>';
     }
-    const sets=(item.sets||[]).filter(set=>set.weightKg!==null||set.repetitions!==null||set.rir!==null).slice(0,4);
+    const sets=(item.sets||[]).filter(set=>set.weightKg!==null||set.repetitions!==null||set.rir!==null).slice(0,6);
     const text=sets.map(set=>{
-      const parts=[set.weightKg!==null?set.weightKg+' kg':null,set.repetitions!==null?set.repetitions+' Wdh.':null,set.rir!==null?'RIR '+set.rir:null].filter(Boolean);
+      const weightLabel=item.loadMode==='assistance'?'Unterstützung ':'';
+      const parts=[set.weightKg!==null?weightLabel+set.weightKg+' kg':null,set.repetitions!==null?set.repetitions+' Wdh.':null,set.rir!==null?'RIR '+set.rir+(set.rirPlus?'+':''):null].filter(Boolean);
       return 'S'+set.setNumber+' '+parts.join(' · ');
     }).join(' | ');
     return '<div class="sport-last-v573"><span>Letztes Mal · '+esc(shortDate(previous.session.date))+'</span><b>'+esc(text||'keine Satzwerte')+'</b></div>';
@@ -578,13 +615,17 @@
   function strengthEditor(exercise){
     const setMap=new Map((exercise.sets||[]).map(set=>[set.setNumber,set]));
     const count=Math.max(3,...[...(exercise.sets||[])].map(set=>set.setNumber||0));
+    const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
+    const loadMode=exercise.loadMode||catalog?.load_mode||'weight';
+    const kgLabel=loadMode==='assistance'?'Unterstützung kg':'kg';
     const rows=Array.from({length:count},(_,index)=>{
       const no=index+1,set=setMap.get(no)||{};
+      const rirValue=set.rir===null||set.rir===undefined?'':String(set.rir)+(set.rirPlus?'+':'');
       return '<form class="sport-set-row-v573" data-sport-set-form data-exercise-id="'+esc(exercise.id)+'" data-set-number="'+no+'">'+
         '<strong>S'+no+'</strong>'+
-        '<label><span>kg</span><input name="weight_kg" type="number" min="0" step="0.5" inputmode="decimal" value="'+esc(set.weightKg??'')+'"></label>'+
+        '<label><span>'+esc(kgLabel)+'</span><input name="weight_kg" type="number" min="0" step="0.5" inputmode="decimal" value="'+esc(set.weightKg??'')+'"></label>'+
         '<label><span>Wdh.</span><input name="repetitions" type="number" min="0" step="1" inputmode="numeric" value="'+esc(set.repetitions??'')+'"></label>'+
-        '<label><span>RIR</span><input name="rir" type="number" min="0" max="10" step="1" inputmode="numeric" value="'+esc(set.rir??'')+'"></label>'+
+        '<label><span>RIR</span><input name="rir" type="text" inputmode="text" placeholder="2 / 5+" value="'+esc(rirValue)+'"></label>'+
         '<button type="submit">Speichern</button>'+
       '</form>';
     }).join('');
@@ -592,22 +633,33 @@
   }
 
   function cardioEditor(exercise){
+    const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
+    const config=(catalog?.metric_config&&typeof catalog.metric_config==='object')?catalog.metric_config:{duration_minutes:true,distance_km:true,resistance_level:true,calories_kcal:true};
+    const field=(key,label,input)=>config[key]?'<label><span>'+esc(label)+'</span>'+input+'</label>':'';
     return '<form class="sport-cardio-form-v573" data-sport-cardio-form="'+esc(exercise.id)+'">'+
-      '<label><span>Dauer min</span><input name="duration_minutes" type="number" min="0" step="1" value="'+esc(exercise.durationMinutes??'')+'"></label>'+
-      '<label><span>Strecke km</span><input name="distance_km" type="number" min="0" step="0.01" value="'+esc(exercise.distanceKm??'')+'"></label>'+
-      '<label><span>Widerstand / Stufe</span><input name="resistance_level" value="'+esc(exercise.resistanceLevel||'')+'"></label>'+
-      '<label><span>km/h</span><input name="speed_kmh" type="number" min="0" step="0.1" value="'+esc(exercise.speedKmh??'')+'"></label>'+
-      '<label><span>Steigung %</span><input name="incline_percent" type="number" min="0" step="0.1" value="'+esc(exercise.inclinePercent??'')+'"></label>'+
+      field('duration_minutes','Dauer min','<input name="duration_minutes" type="number" min="0" step="1" value="'+esc(exercise.durationMinutes??'')+'">')+
+      field('distance_km','Strecke km','<input name="distance_km" type="number" min="0" step="0.01" value="'+esc(exercise.distanceKm??'')+'">')+
+      field('resistance_level','Widerstand / Stufe','<input name="resistance_level" value="'+esc(exercise.resistanceLevel||'')+'">')+
+      field('speed_kmh','km/h','<input name="speed_kmh" type="number" min="0" step="0.1" value="'+esc(exercise.speedKmh??'')+'">')+
+      field('incline_percent','Steigung %','<input name="incline_percent" type="number" min="0" step="0.1" value="'+esc(exercise.inclinePercent??'')+'">')+
+      field('calories_kcal','kcal','<input name="calories_kcal" type="number" min="0" step="1" value="'+esc(exercise.caloriesKcal??'')+'">')+
       '<button type="submit">Cardio speichern</button>'+
     '</form>';
   }
 
+  function itemTypeLabel(type){
+    return ({strength_machine:'KRAFTGERÄT',cardio_machine:'CARDIOGERÄT',free_exercise:'FREIE ÜBUNG',outdoor_activity:'OUTDOOR'})[type]||'TRAINING';
+  }
+
   function workoutExerciseCard(exercise){
     const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
-    const meta=exercise.kind==='cardio'?'Cardio':(catalog?.muscle_group||catalog?.category||'Kraft');
+    const type=catalog?.item_type||(exercise.kind==='cardio'?'cardio_machine':'free_exercise');
+    const meta=catalog?.category||catalog?.muscle_group||(exercise.kind==='cardio'?'Cardio':'Kraft');
+    const number=exercise.equipmentNumber||catalog?.equipment_number||'';
+    const settings=exercise.settingsText||catalog?.settings_text||'';
+    const title=(number?number+' ':'')+exercise.name;
     return '<article class="sport-workout-card-v573 status-'+esc(exercise.status)+'">'+
-      '<div class="sport-workout-head-v573"><div><span>'+esc(meta)+'</span><h3>'+esc(exercise.name)+'</h3></div><b>'+esc(workoutStatusLabel(exercise.status))+'</b></div>'+
-      '<label class="sport-equipment-select-v573"><span>Gerät</span><select data-sport-equipment-for="'+esc(exercise.id)+'">'+equipmentOptions(exercise.equipmentId)+'</select></label>'+
+      '<div class="sport-workout-head-v573"><div><span>'+esc(itemTypeLabel(type))+' · '+esc(meta)+'</span><h3>'+esc(title)+'</h3>'+(settings?'<small class="sport-item-settings-v574">'+esc(settings)+'</small>':'')+'</div><b>'+esc(workoutStatusLabel(exercise.status))+'</b></div>'+
       workoutHistory(exercise)+
       (exercise.kind==='cardio'?cardioEditor(exercise):strengthEditor(exercise))+
       '<div class="sport-workout-actions-v573">'+
@@ -617,6 +669,30 @@
         '<button type="button" class="danger" data-sport-remove-exercise="'+esc(exercise.id)+'">Entfernen</button>'+
       '</div>'+
     '</article>';
+  }
+
+  function workoutSummaryCard(exercise){
+    const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
+    const number=exercise.equipmentNumber||catalog?.equipment_number||'';
+    const settings=exercise.settingsText||catalog?.settings_text||'';
+    const title=(number?number+' ':'')+exercise.name;
+    let detail='';
+    if(exercise.kind==='cardio'){
+      detail=[
+        exercise.durationMinutes!==null?exercise.durationMinutes+' Min.':null,
+        exercise.resistanceLevel?'Stufe '+exercise.resistanceLevel:null,
+        exercise.distanceKm!==null?exercise.distanceKm+' km':null,
+        exercise.speedKmh!==null?exercise.speedKmh+' km/h':null,
+        exercise.inclinePercent!==null?exercise.inclinePercent+' %':null,
+        exercise.caloriesKcal!==null?exercise.caloriesKcal+' kcal':null
+      ].filter(Boolean).join(' · ');
+    }else{
+      detail=(exercise.sets||[]).map(set=>{
+        const kg=exercise.loadMode==='assistance'?'Unterstützung '+set.weightKg+' kg':set.weightKg+' kg';
+        return 'S'+set.setNumber+' '+kg+' × '+set.repetitions+(set.rir!==null?' · RIR '+set.rir+(set.rirPlus?'+':''):'');
+      }).join(' | ');
+    }
+    return '<article class="sport-summary-card-v574"><div><strong>'+esc(title)+'</strong>'+(settings?'<small>'+esc(settings)+'</small>':'')+'</div><span>'+esc(detail||'keine Werte')+'</span></article>';
   }
 
   function timelineBlock(session){
@@ -641,19 +717,19 @@
     const past=state.sessions.filter(session=>session.kind==='xtraining'&&(!current||session.id!==current.id)).slice(0,5);
     if(!current){
       return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="xtraining">'+wave()+
-        '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING '+statusBadge()+'</div><p class="sport-date-v510">Training mit Übungen, Geräten, Sätzen und kompletter Tages-Zeitleiste.</p><div class="sport-section-mark-v512">X</div></div>'+
+        '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING '+statusBadge()+'</div><p class="sport-date-v510">Training mit Geräten, freien Übungen, Cardio und kompletter Tages-Zeitleiste.</p><div class="sport-section-mark-v512">X</div></div>'+
         '<div class="sport-content-v510"><article class="sport-x-start-v573"><span>HEUTE</span><h2>Noch kein laufendes X-Training</h2><p>Die Einheit wird erst angelegt, wenn du sie startest. Keine automatische Progression, kein Maschinenorakel.</p><button type="button" data-sport-create-x>Neues X-Training anlegen</button></article>'+
-        (past.length?'<div class="sport-section-title-v568">Letzte X-Trainings</div><div class="sport-x-history-v573">'+past.map(session=>'<article><strong>'+esc(shortDate(session.date))+'</strong><span>'+esc(xSessionStatusLabel(session.status))+' · '+(session.workout?.length||0)+' Übungen</span><b>'+esc(formatMinutes(sessionMinutes(session)))+'</b></article>').join('')+'</div>':'')+
+        (past.length?'<div class="sport-section-title-v568">Letzte X-Trainings</div><div class="sport-x-history-v573">'+past.map(session=>'<details class="sport-history-detail-v574"><summary><strong>'+esc(shortDate(session.date))+'</strong><span>'+esc(xSessionStatusLabel(session.status))+' · '+(session.workout?.length||0)+' Elemente</span><b>'+esc(formatMinutes(sessionMinutes(session)))+'</b></summary><div class="sport-history-workout-v574">'+(session.workout?.length?session.workout.map(workoutSummaryCard).join(''):'<em>Keine Trainingselemente gespeichert.</em>')+'</div></details>').join('')+'</div>':'')+
         errorNote()+'</div></section>';
     }
 
     return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="xtraining">'+wave()+
-      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING · '+esc(xSessionStatusLabel(current.status))+' '+statusBadge()+'</div><p class="sport-date-v510">'+esc(dateLabel(current.date))+'</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">'+(current.workout?.length||0)+'</div><div class="sport-duration-unit-v510">Übungen</div></div></div>'+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING · '+esc(xSessionStatusLabel(current.status))+' '+statusBadge()+'</div><p class="sport-date-v510">'+esc(dateLabel(current.date))+'</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">'+(current.workout?.length||0)+'</div><div class="sport-duration-unit-v510">Elemente</div></div></div>'+
       '<div class="sport-content-v510">'+
         '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>TRAININGSTAG</span><strong>Zeitleiste</strong></div><small>6 Zeitpunkte</small></div>'+timelineBlock(current)+'</section>'+
         participantsBlock(current)+
-        '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>HEUTIGES TRAINING</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog>Katalog öffnen</button></div>'+
-          ((current.workout||[]).length?'<div class="sport-workout-list-v573">'+current.workout.map(workoutExerciseCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine Übungen gewählt. Öffne den Katalog und füge einzelne Übungen oder ganze Gruppen hinzu.</div>')+
+        '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>HEUTIGES TRAINING</span><strong>Trainingselemente</strong></div><button type="button" data-sport-open-catalog>Katalog öffnen</button></div>'+
+          ((current.workout||[]).length?'<div class="sport-workout-list-v573">'+current.workout.map(workoutExerciseCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch nichts gewählt. Öffne den Katalog und füge einzelne Geräte, freie Übungen oder ganze Gruppen hinzu.</div>')+
         '</section>'+
         errorNote()+
       '</div></section>';
@@ -661,11 +737,17 @@
 
   function catalogExerciseGroups(){
     const groups=new Map();
-    state.catalogExercises.forEach(exercise=>{
-      const key=String(exercise.category||exercise.muscle_group||(exercise.kind==='cardio'?'Cardio':'Kraft'));
+    state.catalogExercises.forEach(item=>{
+      const key=String(item.category||item.muscle_group||(item.kind==='cardio'?'Cardio':'Kraft'));
       const list=groups.get(key)||[];
-      list.push(exercise);
+      list.push(item);
       groups.set(key,list);
+    });
+    for(const list of groups.values())list.sort((a,b)=>{
+      const an=Number.parseInt(a.equipment_number,10),bn=Number.parseInt(b.equipment_number,10);
+      if(Number.isFinite(an)&&Number.isFinite(bn)&&an!==bn)return an-bn;
+      if(Number.isFinite(an)!==Number.isFinite(bn))return Number.isFinite(an)?-1:1;
+      return byName(a.name,b.name);
     });
     return [...groups.entries()].sort((a,b)=>byName(a[0],b[0]));
   }
@@ -673,18 +755,39 @@
   function catalogPanel(){
     const current=activeXSession();
     const groups=catalogExerciseGroups();
-    const exerciseHtml=groups.length?groups.map(([group,list])=>'<section class="sport-catalog-group-v573"><div class="sport-catalog-group-head-v573"><div><span>GRUPPE</span><strong>'+esc(group)+'</strong></div>'+(current?'<button type="button" data-sport-add-group="'+esc(group)+'" data-session-id="'+esc(current.id)+'">Gruppe übernehmen</button>':'')+'</div><div class="sport-catalog-grid-v573">'+list.map(exercise=>'<article><div><span>'+(exercise.kind==='cardio'?'CARDIO':'KRAFT')+'</span><h3>'+esc(exercise.name)+'</h3><small>'+esc(exercise.muscle_group||exercise.category||'')+'</small></div>'+(current?'<button type="button" data-sport-add-exercise="'+esc(exercise.id)+'" data-session-id="'+esc(current.id)+'">Ins Training</button>':'')+'</article>').join('')+'</div></section>').join(''):'<div class="sport-empty-inline-v568">Noch keine Übungen im Katalog.</div>';
-
-    const devices=state.equipment.length?'<div class="sport-device-grid-v573">'+state.equipment.map(item=>'<article><div><span>'+esc(item.category||'Gerät')+'</span><h3>'+esc(item.name)+(item.equipment_number?' <b>'+esc(item.equipment_number)+'</b>':'')+'</h3>'+(item.settings_text?'<small>'+esc(item.settings_text)+'</small>':'<small>Keine Einstellungen hinterlegt</small>')+'</div></article>').join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine Geräte hinterlegt.</div>';
+    const itemsHtml=groups.length?groups.map(([group,list])=>
+      '<section class="sport-catalog-group-v573">'+
+        '<div class="sport-catalog-group-head-v573"><div><span>GRUPPE</span><strong>'+esc(group)+'</strong></div>'+
+          (current?'<button type="button" data-sport-add-group="'+esc(group)+'" data-session-id="'+esc(current.id)+'">Gruppe übernehmen</button>':'')+
+        '</div>'+
+        '<div class="sport-catalog-grid-v573">'+list.map(item=>{
+          const title=(item.equipment_number?item.equipment_number+' ':'')+item.name;
+          const settings=item.settings_text?'<small class="sport-item-settings-v574">'+esc(item.settings_text)+'</small>':'';
+          const load=item.load_mode==='assistance'?'<small class="sport-assistance-v574">Unterstützungsgewicht</small>':'';
+          return '<article><div><span>'+esc(itemTypeLabel(item.item_type))+'</span><h3>'+esc(title)+'</h3><small>'+esc(item.muscle_group||item.category||'')+'</small>'+settings+load+'</div>'+
+            (current?'<button type="button" data-sport-add-exercise="'+esc(item.id)+'" data-session-id="'+esc(current.id)+'">Ins Training</button>':'')+
+          '</article>';
+        }).join('')+'</div>'+
+      '</section>'
+    ).join(''):'<div class="sport-empty-inline-v568">Noch keine Trainingselemente im Katalog.</div>';
 
     return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="catalog">'+wave()+
-      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>KATALOG '+statusBadge()+'</div><p class="sport-date-v510">Übungen und Geräte bleiben getrennte Dinge. Wie überraschend vernünftig.</p><div class="sport-section-mark-v512">K</div></div>'+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>KATALOG '+statusBadge()+'</div><p class="sport-date-v510">Ein Katalog für Geräte, freie Übungen und Outdoor-Aktivitäten.</p><div class="sport-section-mark-v512">K</div></div>'+
       '<div class="sport-content-v510">'+
-        (!current?'<div class="sport-catalog-note-v573">Für heute ist noch kein laufendes X-Training angelegt. Du kannst den Katalog trotzdem pflegen.</div>':'')+
-        '<div class="sport-section-title-v568">Übungen</div>'+exerciseHtml+
-        '<details class="sport-catalog-create-v573"><summary>+ Übung hinzufügen</summary><form data-sport-add-exercise-form><label>Name<input name="name" required></label><label>Art<select name="kind"><option value="strength">Kraft</option><option value="cardio">Cardio</option></select></label><label>Kategorie / Gruppe<input name="category" placeholder="z. B. Beine"></label><label>Muskelgruppe<input name="muscle_group" placeholder="z. B. Quadrizeps"></label><button type="submit">Übung speichern</button></form></details>'+
-        '<div class="sport-section-title-v568">Geräte</div>'+devices+
-        '<details class="sport-catalog-create-v573"><summary>+ Gerät hinzufügen</summary><form data-sport-add-equipment-form><label>Bezeichnung<input name="name" required></label><label>Nummer optional<input name="equipment_number"></label><label>Kategorie<input name="category" value="Kraft" required></label><label>Einstellungen<input name="settings_text" placeholder="z. B. Sitz 4 · Rücken 2"></label><button type="submit">Gerät speichern</button></form></details>'+
+        (!current?'<div class="sport-catalog-note-v573">Für heute ist kein laufendes X-Training angelegt. Den Katalog kannst du trotzdem pflegen.</div>':'')+
+        '<div class="sport-section-title-v568">Trainingselemente</div>'+itemsHtml+
+        '<details class="sport-catalog-create-v573"><summary>+ Trainingselement hinzufügen</summary>'+
+          '<form data-sport-add-exercise-form>'+
+            '<label>Typ<select name="item_type"><option value="strength_machine">Kraftgerät</option><option value="cardio_machine">Cardiogerät</option><option value="free_exercise">Freie Übung</option><option value="outdoor_activity">Outdoor-Aktivität</option></select></label>'+
+            '<label>Bezeichnung<input name="name" required placeholder="z. B. Brustpresse oder Sit-Ups"></label>'+
+            '<label>Gerätenummer optional<input name="equipment_number" placeholder="z. B. 01"></label>'+
+            '<label>Kategorie / Gruppe<input name="category" placeholder="z. B. Brust, Beine, Cardio"></label>'+
+            '<label>Muskelgruppe optional<input name="muscle_group" placeholder="z. B. Quadrizeps"></label>'+
+            '<label>Geräteeinstellungen optional<input name="settings_text" placeholder="z. B. Sitzposition 4 · Fußrolle 3"></label>'+
+            '<label>Belastung<select name="load_mode"><option value="weight">Gewicht</option><option value="assistance">Unterstützungsgewicht</option><option value="none">Keine Gewichtsangabe</option></select></label>'+
+            '<button type="submit">Trainingselement speichern</button>'+
+          '</form>'+
+        '</details>'+
         errorNote()+
       '</div></section>';
   }
@@ -820,7 +923,8 @@
         distance_km:data.get('distance_km'),
         resistance_level:data.get('resistance_level'),
         speed_kmh:data.get('speed_kmh'),
-        incline_percent:data.get('incline_percent')
+        incline_percent:data.get('incline_percent'),
+        calories_kcal:data.get('calories_kcal')
       }));
     }));
 
@@ -831,9 +935,12 @@
       const data=new FormData(form);
       handle(submit,()=>addCatalogExercise({
         name:data.get('name'),
-        kind:data.get('kind'),
+        item_type:data.get('item_type'),
+        equipment_number:data.get('equipment_number'),
         category:data.get('category'),
-        muscle_group:data.get('muscle_group')
+        muscle_group:data.get('muscle_group'),
+        settings_text:data.get('settings_text'),
+        load_mode:data.get('load_mode')
       }));
     });
 
