@@ -35,8 +35,8 @@ jobs:
           node --check summary-weight-due-polish-v494.js
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
-          grep -q 'service-worker-gate-v607.js?v=606-worker-gate' index.html
-          grep -q 'area-runtime-v607.js?v=606-light-warm' index.html
+          grep -q 'service-worker-gate-v607.js?v=607-worker-gate' index.html
+          grep -q 'area-runtime-v607.js?v=607-light-warm' index.html
           grep -q 'app-hub-launcher-v603.js?v=603-loader' index.html
           grep -q 'surface-header-v603.js?v=603-header' index.html
           grep -q 'kistology-v603.css?v=603' index.html
