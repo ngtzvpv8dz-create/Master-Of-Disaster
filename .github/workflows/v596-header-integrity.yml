@@ -215,8 +215,9 @@ jobs:
             let published=false;
             for(let i=0;i<20;i++){
               await page.goto(base+'?v596live='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-              published=await page.evaluate(()=>window.__modStabilityV596?.version==='V596'&&window.__modStabilityV596?.brandCenteringReady===true&&
-                [...document.styleSheets].some(s=>String(s.href||'').includes('596-header-integrity'))).catch(()=>false);
+              published=await page.evaluate(()=>window.__modStabilityV596?.version==='V596'&&
+                window.__modStabilityV596?.brandCenteringReady===true&&
+                [...document.styleSheets].some(s=>String(s.href||'').includes('header-consolidated-v560.css'))).catch(()=>false);
               if(published)break;
               await page.waitForTimeout(10000);
             }
