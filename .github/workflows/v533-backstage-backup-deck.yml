@@ -16,12 +16,10 @@ jobs:
           node-version: '20'
       - name: Wiring checks
         run: |
-          node --check backstage-v530.js
           node --check backstage-backup-v533.js
           node --check backup-model-v600.js
           node --check sw.js
-          grep -q "backupDeck:'V533'" backstage-v530.js
-          grep -q 'backstage-backup-v533.js?v=600-unified' backstage-v530.js
+          grep -q 'backstage-backup-v533.js?v=600-unified' area-runtime-v603.js
           grep -q "unifiedBackupModelV600:true" backstage-backup-v533.js
           grep -q "AUTOMATISCHE CLOUD-SICHERHEIT" backstage-backup-v533.js
           grep -q "7-TAGE-SICHERHEITSNETZ" backstage-backup-v533.js
