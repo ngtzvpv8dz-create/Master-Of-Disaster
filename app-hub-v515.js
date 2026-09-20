@@ -1,28 +1,21 @@
-/* V515 · MODULAR APP HUB
-   - App starts on a dedicated module launcher.
-   - To-do and Sport remain existing independent surfaces.
-   - Sport entry exposes a Health-sync hook without implementing transport yet.
-   - Food is reserved as a visible future module.
-   V518 compatibility: when the final launcher layer is present, hub renders are
-   synchronously upgraded before the browser gets a chance to paint legacy cards.
+/* V603 · MODULAR APP HUB CORE
+   Nur noch der aktuelle Homescreen-Shell und die Navigation.
+   Die frühere V515→V516→V517 DOM-Umbaukette ist entfernt.
 */
 (function(){
   'use strict';
-  if(window.__modAppHubV515)return;
+  if(window.__modAppHubV603)return;
 
-  const VERSION='V515';
+  const VERSION='V603';
   const ROOT_ID='modAppHubV515';
   const HUB_CLASS='mod-app-hub-v515';
   const HEALTH_EVENT='mod:health-sync-request';
-  let switchCaptureInstalled=false;
 
-  function sportApi(){return window.__modSportModeV510||null;}
+  function sportApi(){return window.__modSportModeV510||window.__modSportV568||null;}
 
   function shouldAutoStartHub(){
     try{
       const params=new URL(location.href).searchParams;
-      const reg=params.get('reg');
-      if(reg==='v515')return true;
       if(params.has('reg')||params.has('smoke'))return false;
     }catch(_){}
     return true;
@@ -48,128 +41,55 @@
     return root;
   }
 
-  function iconMarkup(type){
-    if(type==='todo')return '<span class="mod-hub-icon-line mod-hub-icon-check">✓</span>';
-    if(type==='sport')return '<span class="mod-hub-icon-line mod-hub-icon-sport">S</span>';
-    return '<span class="mod-hub-icon-line mod-hub-icon-food">F</span>';
-  }
-
   function render(){
     const root=ensureRoot();
     if(!root)return false;
-    root.innerHTML=`
-      <div class="mod-hub-backdrop-v515" aria-hidden="true">
-        <span class="mod-hub-glow-v515 mod-hub-glow-todo-v515"></span>
-        <span class="mod-hub-glow-v515 mod-hub-glow-sport-v515"></span>
-        <span class="mod-hub-grid-v515"></span>
-      </div>
-      <div class="mod-hub-shell-v515">
-        <div class="mod-hub-intro-v515">
-          <div class="mod-hub-kicker-v515">MASTER OF DISASTER</div>
-          <h2 class="mod-hub-title-v515">Was steht heute an?</h2>
-          <p class="mod-hub-copy-v515">Wähle deinen Bereich.</p>
-        </div>
-        <div class="mod-hub-modules-v515">
-          <button type="button" class="mod-hub-card-v515 mod-hub-card-todo-v515" data-mod-hub-open="todo" aria-label="To-do öffnen">
-            <span class="mod-hub-card-shine-v515" aria-hidden="true"></span>
-            <span class="mod-hub-icon-v515">${iconMarkup('todo')}</span>
-            <span class="mod-hub-card-text-v515"><strong>TO-DO</strong><small>Planen · Erledigen · Überblick</small></span>
-            <span class="mod-hub-arrow-v515" aria-hidden="true">→</span>
-          </button>
-          <button type="button" class="mod-hub-card-v515 mod-hub-card-sport-v515" data-mod-hub-open="sport" aria-label="Sport öffnen">
-            <span class="mod-hub-card-shine-v515" aria-hidden="true"></span>
-            <span class="mod-hub-icon-v515">${iconMarkup('sport')}</span>
-            <span class="mod-hub-card-text-v515"><strong>SPORT</strong><small>FitX · Training · Health</small></span>
-            <span class="mod-hub-arrow-v515" aria-hidden="true">→</span>
-          </button>
-          <button type="button" class="mod-hub-card-v515 mod-hub-card-food-v515" data-mod-hub-open="food" aria-label="Food öffnen">
-            <span class="mod-hub-card-shine-v515" aria-hidden="true"></span>
-            <span class="mod-hub-icon-v515">${iconMarkup('food')}</span>
-            <span class="mod-hub-card-text-v515"><strong>FOOD</strong><small>Rezepte · Ideen · Bilder</small></span>
-            <span class="mod-hub-arrow-v515" aria-hidden="true">→</span>
-          </button>
-        </div>
-        <div class="mod-hub-footer-v515">Deine Bereiche. Eine Zentrale.</div>
-      </div>`;
-
-    root.querySelectorAll('[data-mod-hub-open]').forEach(button=>button.addEventListener('click',()=>{
-      const target=button.dataset.modHubOpen;
-      open(target,{source:'hub'});
-    }));
+    root.innerHTML='<div class="mod-hub-backdrop-v515" aria-hidden="true"><span class="mod-hub-glow-v515 mod-hub-glow-todo-v515"></span><span class="mod-hub-glow-v515 mod-hub-glow-sport-v515"></span><span class="mod-hub-grid-v515"></span></div><div class="mod-hub-shell-v515"><div class="mod-hub-preload-v603" data-state="loading"><span>Bereiche werden geladen</span><strong>0 %</strong><span class="mod-hub-preload-track-v603" aria-hidden="true"><i style="--mod-bootstrap-percent-v603:0%"></i></span></div></div>';
+    try{window.__modHubLauncherV603?.render?.();}catch(_){}
     return true;
   }
 
-  function renderCurrentHub(){
-    const rendered=render();
-    try{window.__modHubLauncherV517?.render?.();}catch(_){}
-    return rendered;
-  }
-
   function show(){
-    renderCurrentHub();
+    render();
     try{sportApi()?.setMode?.('todo',{persist:false,animate:false});}catch(_){}
-    try{localStorage.setItem(sportApi()?.modeKey||'masterOfDisasterAppModeV510','todo');}catch(_){}
     document.body.classList.add(HUB_CLASS);
     document.body.dataset.modAppSurfaceV515='hub';
     const root=document.getElementById(ROOT_ID);
     root?.setAttribute('aria-hidden','false');
+    try{window.__modSurfaceHeaderV603?.apply?.();}catch(_){}
+    try{window.__modFixedAppHeaderV475?.updateHeight?.();}catch(_){}
     return 'hub';
   }
 
   function hide(){
     document.body.classList.remove(HUB_CLASS);
-    const root=document.getElementById(ROOT_ID);
-    root?.setAttribute('aria-hidden','true');
+    document.getElementById(ROOT_ID)?.setAttribute('aria-hidden','true');
   }
 
   function open(target,{source='hub'}={}){
-    target=target==='sport'?'sport':'todo';
+    if(target!=='todo'&&target!=='sport')return false;
     hide();
     document.body.dataset.modAppSurfaceV515=target;
     if(target==='sport')dispatchHealthSync(source==='switch'?'sport-switch':'hub-sport');
-    try{sportApi()?.setMode?.(target,{persist:true,animate:true});}catch(_){}
+    try{sportApi()?.setMode?.(target,{persist:true,animate:false});}catch(_){}
+    try{window.__modSurfaceHeaderV603?.apply?.();}catch(_){}
     try{window.__modFixedAppHeaderV475?.updateHeight?.();}catch(_){}
     return target;
   }
 
-  function installSportSwitchCapture(){
-    if(switchCaptureInstalled)return;
-    switchCaptureInstalled=true;
-    // V594: the S in MASTER is a visual surface marker only.
-    // Navigation is exclusively handled by the launcher and the home icon.
-  }
-
   function init(){
+    ensureRoot();
     render();
-    installSportSwitchCapture();
     if(shouldAutoStartHub())show();
   }
 
-  window.__modAppHubV515={
-    version:VERSION,
-    show,
-    hide,
-    open,
-    render,
-    renderCurrentHub,
-    dispatchHealthSync,
-    shouldAutoStartHub,
-    healthEvent:HEALTH_EVENT,
-    rootId:ROOT_ID,
-    hubClass:HUB_CLASS,
-    foodReserved:true,
-    foodActiveV543:true,
-    healthTransportConnected:false,
-    finalLauncherCompatibilityV518:true
+  const api={
+    version:VERSION,show,hide,open,render,renderCurrentHub:render,dispatchHealthSync,shouldAutoStartHub,
+    healthEvent:HEALTH_EVENT,rootId:ROOT_ID,hubClass:HUB_CLASS,currentShellV603:true,legacyCardChainRemovedV603:true
   };
+  window.__modAppHubV603=api;
+  window.__modAppHubV515=api;
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
-  window.addEventListener('load',()=>{
-    if(!shouldAutoStartHub())return;
-    setTimeout(()=>{
-      if(window.__modHubLauncherV517&&document.body.classList.contains(HUB_CLASS))return;
-      show();
-    },220);
-  },{once:true});
 })();

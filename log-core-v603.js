@@ -1,14 +1,12 @@
-/* V453 · ROLLING 24H LIVE LOG
-   Relevante App-Ereignisse lokal protokollieren, ohne Polling-Spam.
-   Der Log ist ein rollierendes 24-Stunden-Fenster und wird nicht mit Supabase synchronisiert.
+/* V603 · LOG CORE
+   Ereignissammlung ohne eigene sichtbare Log-Oberfläche.
+   Die einzige sichtbare Log-Ansicht ist der 7-Tage-Renderer aus dem Safety-Net.
+   Der bestehende localStorage-Schlüssel bleibt absichtlich erhalten, damit keine Historie verloren geht.
 */
 (function(){
   const STORAGE_KEY='masterOfDisasterLiveLogV453';
   const WINDOW_MS=24*60*60*1000;
   const MAX_ENTRIES=5000;
-  const FILTERS=['ALL','TASK','EDIT','ARCHIVE','WEIGHT','SYNC','REMOTE','SYSTEM','WARN','ERROR'];
-  let activeFilter='ALL';
-  let liveFollow=true;
   let taskSnapshot=snapshotTasks();
   let archiveSnapshot=snapshotArchive();
   let weightSnapshot=snapshotWeight();
@@ -16,7 +14,6 @@
 
   function nowIso(){return new Date().toISOString();}
   function cleanText(value){return String(value??'').replace(/\s+/g,' ').trim();}
-  function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
   function safeParse(raw,fallback){try{const value=JSON.parse(raw);return value??fallback;}catch(_){return fallback;}}
   function readRaw(){try{return safeParse(localStorage.getItem(STORAGE_KEY),[]);}catch(_){return [];}}
   function writeRaw(entries){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(entries));return true;}catch(_){return false;}}
@@ -57,7 +54,7 @@
     if(meta&&typeof meta==='object'&&Object.keys(meta).length)entry.meta=meta;
     entries.push(entry);
     writeRaw(entries.slice(-MAX_ENTRIES));
-    if(isLogTab())renderLog();
+    try{window.dispatchEvent(new CustomEvent('mod:log-core-v603-entry',{detail:entry}));}catch(_){}
     return entry;
   }
   function isLogTab(){try{return typeof currentTab!=='undefined'&&currentTab==='log';}catch(_){return false;}}
@@ -129,25 +126,25 @@
     if(aOn&&bKg!==aKg&&aKg)append('WEIGHT','INFO',`Zusatzgewicht geändert · ${bKg?String(bKg).replace('.',',')+' kg → ':''}${String(aKg).replace('.',',')} kg`);
   }
   function patchCore(){
-    if(typeof window.saveTasks==='function'&&!window.saveTasks.__modLogV453){
+    if(typeof window.saveTasks==='function'&&!window.saveTasks.__modLogCoreV603){
       const base=window.saveTasks;
       const wrapped=function(){const before=taskSnapshot;const result=base.apply(this,arguments);const after=snapshotTasks();logTaskDiff(before,after);taskSnapshot=after;return result;};
-      wrapped.__modLogV453=true;window.saveTasks=wrapped;
+      wrapped.__modLogCoreV603=true;window.saveTasks=wrapped;
     }
-    if(typeof window.saveArchive==='function'&&!window.saveArchive.__modLogV453){
+    if(typeof window.saveArchive==='function'&&!window.saveArchive.__modLogCoreV603){
       const base=window.saveArchive;
       const wrapped=function(){const before=archiveSnapshot;const result=base.apply(this,arguments);const after=snapshotArchive();logArchiveDiff(before,after);archiveSnapshot=after;return result;};
-      wrapped.__modLogV453=true;window.saveArchive=wrapped;
+      wrapped.__modLogCoreV603=true;window.saveArchive=wrapped;
     }
-    if(typeof window.saveWeight==='function'&&!window.saveWeight.__modLogV453){
+    if(typeof window.saveWeight==='function'&&!window.saveWeight.__modLogCoreV603){
       const base=window.saveWeight;
       const wrapped=function(){const before=weightSnapshot;const result=base.apply(this,arguments);const after=snapshotWeight();logWeightDiff(before,after);weightSnapshot=after;return result;};
-      wrapped.__modLogV453=true;window.saveWeight=wrapped;
+      wrapped.__modLogCoreV603=true;window.saveWeight=wrapped;
     }
-    if(typeof window.deleteTask==='function'&&!window.deleteTask.__modLogV453){
+    if(typeof window.deleteTask==='function'&&!window.deleteTask.__modLogCoreV603){
       const base=window.deleteTask;
       const wrapped=function(id){let before=null;try{before=(typeof tasks!=='undefined'&&Array.isArray(tasks))?tasks.find(t=>String(t.id)===String(id)):null;}catch(_){}const result=base.apply(this,arguments);let exists=false;try{exists=(typeof tasks!=='undefined'&&Array.isArray(tasks))?tasks.some(t=>String(t.id)===String(id)):false;}catch(_){}if(before&&!exists)append('TASK','WARN',`Aufgabe gelöscht: ${taskLabel(before)}`,{taskId:before.id});taskSnapshot=snapshotTasks();return result;};
-      wrapped.__modLogV453=true;window.deleteTask=wrapped;
+      wrapped.__modLogCoreV603=true;window.deleteTask=wrapped;
     }
   }
   function classifyConsole(args,isError){
@@ -157,62 +154,28 @@
     append(area,isError?'ERROR':'WARN',message);
   }
   function patchConsole(){
-    if(typeof console==='undefined'||console.__modLogV453)return;
+    if(typeof console==='undefined'||console.__modLogCoreV603)return;
     const baseWarn=console.warn&&console.warn.bind(console),baseError=console.error&&console.error.bind(console);
     if(baseWarn)console.warn=function(){try{classifyConsole([...arguments],false);}catch(_){}return baseWarn(...arguments);};
     if(baseError)console.error=function(){try{classifyConsole([...arguments],true);}catch(_){}return baseError(...arguments);};
-    try{Object.defineProperty(console,'__modLogV453',{value:true,configurable:true});}catch(_){}
-  }
-  function injectStyle(){
-    if(typeof document==='undefined'||!document.head||document.getElementById('modLiveLogV453Style'))return;
-    const style=document.createElement('style');style.id='modLiveLogV453Style';
-    style.textContent=`
-      .live-log-v453{display:grid;gap:12px}.log-toolbar-v453{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.log-chip-v453{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:inherit;border-radius:999px;padding:7px 10px;font:inherit}.log-chip-v453.active{border-color:#d7a23a;background:rgba(215,162,58,.14)}.log-meta-v453{opacity:.72;font-size:.86rem}.log-list-v453{display:grid;gap:7px}.log-row-v453{display:grid;grid-template-columns:78px 72px 1fr;gap:8px;align-items:start;padding:9px 10px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.035)}.log-time-v453{font-variant-numeric:tabular-nums;opacity:.75}.log-area-v453{font-size:.78rem;font-weight:800;letter-spacing:.03em}.log-row-v453[data-level="ERROR"]{border-color:rgba(216,91,91,.55)}.log-row-v453[data-level="WARN"]{border-color:rgba(211,170,69,.45)}.log-row-v453[data-level="PASS"]{border-color:rgba(95,185,120,.4)}.log-empty-v453{padding:18px 4px;opacity:.7}@media(max-width:540px){.log-row-v453{grid-template-columns:70px 1fr}.log-area-v453{grid-column:2}.log-message-v453{grid-column:1/-1}}
-    `;
-    document.head.appendChild(style);
-  }
-  function filteredEntries(){
-    const entries=prune(readRaw());
-    if(activeFilter==='ALL')return entries;
-    if(activeFilter==='WARN')return entries.filter(e=>e.level==='WARN');
-    if(activeFilter==='ERROR')return entries.filter(e=>e.level==='ERROR');
-    return entries.filter(e=>e.area===activeFilter);
+    try{Object.defineProperty(console,'__modLogCoreV603',{value:true,configurable:true});}catch(_){}
   }
   function renderLog(){
-    if(typeof document==='undefined')return;
-    injectStyle();
-    const host=document.getElementById('viewContainer');if(!host)return;
-    const input=document.getElementById('inputPanel');if(input)input.style.display='none';
-    const all=prune(readRaw()),entries=filteredEntries();
-    const filters=FILTERS.map(filter=>`<button type="button" class="log-chip-v453${activeFilter===filter?' active':''}" data-log-filter-v453="${filter}">${filter==='ALL'?'ALLE':filter==='ARCHIVE'?'ARCHIV':filter==='WEIGHT'?'GEWICHT':filter}</button>`).join('');
-    const rows=entries.map(entry=>`<div class="log-row-v453" data-level="${escapeHtml(entry.level)}"><div class="log-time-v453">${escapeHtml(formatClock(entry.at))}</div><div class="log-area-v453">${escapeHtml(entry.level==='ERROR'?'ERROR':entry.level==='WARN'?'WARN':entry.area)}</div><div class="log-message-v453">${escapeHtml(entry.message)}</div></div>`).join('');
-    host.innerHTML=`<section class="live-log-v453" id="liveLogV453"><div><h2>LIVE-LOG · LETZTE 24 STUNDEN</h2><div class="log-meta-v453">Rollierendes 24-Stunden-Fenster · ${all.length} relevante Einträge · älteste Einträge werden automatisch entfernt</div></div><div class="log-toolbar-v453">${filters}<button type="button" class="log-chip-v453${liveFollow?' active':''}" data-log-follow-v453>LIVE FOLGEN ${liveFollow?'AN':'AUS'}</button></div><div class="log-list-v453" id="liveLogListV453">${rows||'<div class="log-empty-v453">Für diesen Filter gibt es in den letzten 24 Stunden noch keine Einträge.</div>'}</div></section>`;
-    host.querySelectorAll('[data-log-filter-v453]').forEach(btn=>btn.addEventListener('click',()=>{activeFilter=btn.dataset.logFilterV453||'ALL';renderLog();}));
-    const follow=host.querySelector('[data-log-follow-v453]');if(follow)follow.addEventListener('click',()=>{liveFollow=!liveFollow;renderLog();});
-    if(liveFollow){const list=document.getElementById('liveLogListV453');if(list&&typeof list.scrollIntoView==='function')setTimeout(()=>list.lastElementChild&&list.lastElementChild.scrollIntoView({block:'end'}),0);}
-  }
-  function patchRender(){
-    if(typeof window.render!=='function'||window.render.__modLogV453)return;
-    const base=window.render;
-    const wrapped=function(){if(isLogTab()){renderLog();return;}return base.apply(this,arguments);};
-    wrapped.__modLogV453=true;window.render=wrapped;
-  }
-  function patchSwitchTab(){
-    if(typeof window.switchTab!=='function'||window.switchTab.__modLogV453)return;
-    const base=window.switchTab;
-    const wrapped=function(tab){const result=base.apply(this,arguments);if(tab==='log')renderLog();return result;};
-    wrapped.__modLogV453=true;window.switchTab=wrapped;
+    const enhanced=window.__modRecoveryHistoryV498?.renderEnhancedLog;
+    return typeof enhanced==='function'?enhanced():false;
   }
   function clear(){writeRaw([]);if(isLogTab())renderLog();}
   function exportEntries(){return prune(readRaw()).map(entry=>({...entry}));}
   function logUndo(message){return append('EDIT','PASS',`Rückgängig: ${cleanText(message)||'letzte Änderung'}`);}
 
   prune();
-  patchCore();patchConsole();patchRender();patchSwitchTab();
+  patchCore();patchConsole();
   if(typeof window!=='undefined'){
     window.addEventListener&&window.addEventListener('error',event=>append('SYSTEM','ERROR',event&&event.message?event.message:'Unbekannter JavaScript-Fehler'));
     window.addEventListener&&window.addEventListener('unhandledrejection',event=>append('SYSTEM','ERROR',event&&event.reason?(event.reason.message||String(event.reason)):'Unbehandelte Promise-Ablehnung'));
   }
-  if(typeof setInterval==='function'&&typeof document!=='undefined')setInterval(()=>{prune();if(isLogTab())renderLog();},60000);
-  window.__modLiveLogV453={version:'V453',storageKey:STORAGE_KEY,windowMs:WINDOW_MS,append,read:exportEntries,prune,clear,renderLog,logUndo};
+  if(typeof setInterval==='function')setInterval(()=>prune(),60000);
+  window.__modLogCoreV603={version:'V603',storageKey:STORAGE_KEY,windowMs:WINDOW_MS,append,read:exportEntries,prune,clear,renderLog,logUndo,visibleRenderer:'V498-only'};
+  /* Compatibility alias: old callers get the new core, never the removed V453 UI. */
+  window.__modLiveLogV453=window.__modLogCoreV603;
 })();

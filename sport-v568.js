@@ -1001,10 +1001,9 @@
     }
     try{activeTab=TABS.some(t=>t.id===localStorage.getItem(TAB_KEY))?localStorage.getItem(TAB_KEY):'fitx';}catch(_){activeTab='fitx';}
     ensureRoot();render();
-    const stored=(()=>{try{return localStorage.getItem(MODE_KEY)==='sport'?'sport':'todo';}catch(_){return 'todo';}})();
     ensureChrome();
-    setMode(stored,{persist:false,animate:false});
-    if(!historicalRegression)load(false);
+    /* V603: Module preload must never switch the visible surface by itself. */
+    setMode('todo',{persist:false,animate:false});
   }
 
   const api={version:VERSION,load,refresh:()=>load(true),render,setMode,toggle:toggleMode,currentMode,loadSessions,saveSessions,modeKey:MODE_KEY,dataKey:CACHE_KEY,getState:()=>({loaded:state.loaded,loading:state.loading,error:state.error,source:state.source,sessions:state.sessions.length})};
@@ -1021,5 +1020,5 @@
   window.addEventListener('focus',()=>{if(currentMode()==='sport')load(true);});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentMode()==='sport')load(true);});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.addEventListener('load',()=>{if(!historicalRegression)setTimeout(()=>load(true),180);},{once:true});
+  window.addEventListener('load',()=>{if(!historicalRegression&&currentMode()==='sport')setTimeout(()=>load(true),180);},{once:true});
 })();

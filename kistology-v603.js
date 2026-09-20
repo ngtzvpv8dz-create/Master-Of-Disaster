@@ -1,4 +1,4 @@
-/* V539 · KISTOLOGY RUMMAGE CARDS
+/* V603 · KISTOLOGY CURRENT
    - Keeps the authenticated read-only V537/V538 Supabase snapshot.
    - Shelf cards prioritize real box names and a prominent single box-code badge.
    - Container type/dimensions stay hidden from normal UI.
@@ -9,9 +9,9 @@
 */
 (function(){
   'use strict';
-  if(window.__modKistologyV539)return;
+  if(window.__modKistologyV603)return;
 
-  const VERSION='V539';
+  const VERSION='V603';
   const BODY_CLASS='mod-kistology-v535';
   const ROOT_ID='modKistologyV535';
   const RPC_NAME='kistology_snapshot_v1';
@@ -358,7 +358,7 @@
     if(!button)return false;
     button.removeAttribute('aria-disabled');
     button.setAttribute('aria-label','Kistology öffnen');
-    button.dataset.modKistologyActiveV539='true';
+    button.dataset.modKistologyActiveV603='true';
     return true;
   }
 
@@ -393,7 +393,7 @@
     if(!originalHubShow||!originalHubOpen||!originalHubHide)return false;
     hub.show=function(){if(isOpen())close();return originalHubShow(...arguments);};
     hub.open=function(target,options){if(target==='kistology')return open();if(isOpen())close();return originalHubOpen(target,options);};
-    hub.kistologyActiveV539=true;hubPatched=true;return true;
+    hub.kistologyActiveV603=true;hubPatched=true;return true;
   }
 
   function installCapture(){
@@ -410,16 +410,21 @@
   function observeLauncher(){if(observer)return;observer=new MutationObserver(()=>patchLauncher());observer.observe(document.documentElement,{childList:true,subtree:true});}
   function init(){ensureRoot();patchHub();patchLauncher();installCapture();observeLauncher();return !!hubApi();}
 
-  window.__modKistologyV539={
+  const publicApi={
     version:VERSION,open,close,openBox,openDetail,toggleItem,patchHub,patchLauncher,render:renderShell,
     reload:()=>{loadState='idle';BOXES=[];return fetchSnapshot();},isOpen,
     getSnapshotMeta:()=>({...snapshotMeta}),getBoxes:()=>BOXES.map(box=>({...box,items:box.items.map(item=>({...item}))})),
-    readonlySnapshotV539:true,realSupabaseSnapshotV539:true,sourceInventoryIdsHiddenV539:true,noInventoryWritesV539:true,
-    exactAssignedCategoriesV539:true,frequencyCategoryRankingRemovedV539:true,boxCodeSingleBadgeV539:true,
-    containerTypeAndDimensionsHiddenV539:true,objectNameOnlySearchV539:true,inlineItemDetailsV539:true,
-    singleExpandedItemV539:true,searchJumpsToExpandedItemV539:true,permanentCardOffsetsRemovedV539:true,
+    readonlySnapshotV603:true,realSupabaseSnapshotV603:true,sourceInventoryIdsHiddenV603:true,noInventoryWritesV603:true,
+    exactAssignedCategoriesV603:true,frequencyCategoryRankingRemovedV603:true,boxCodeSingleBadgeV603:true,
+    containerTypeAndDimensionsHiddenV603:true,objectNameOnlySearchV603:true,inlineItemDetailsV603:true,
+    singleExpandedItemV603:true,searchJumpsToExpandedItemV603:true,permanentCardOffsetsRemovedV603:true,
     inventoryPersistenceUntouched:true,todoDataUntouched:true,sportHealthHookPreserved:true,homeNavigationPreserved:true
   };
+
+  window.__modKistologyV603=publicApi;
+  /* Temporary API alias for modules that only query availability, not a legacy implementation. */
+  window.__modKistologyV539=publicApi;
+  window.addEventListener('mod:bootstrap-v603-ready',()=>{try{patchLauncher();}catch(_){}},{once:true});
 
   let tries=0;const timer=setInterval(()=>{tries++;if(init()||tries>240)clearInterval(timer);},60);
   if(document.readyState!=='loading')setTimeout(init,0);else document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0),{once:true});

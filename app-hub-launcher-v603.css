@@ -1,4 +1,4 @@
-/* V582 · EIGHT-TILE HOMESCREEN LAUNCHER */
+/* V603 · HOMESCREEN LAUNCHER + REAL LOAD PROGRESS */
 body.mod-app-hub-v515 #modAppHubV515{
   position:relative;
   padding-top:12px;
@@ -13,10 +13,7 @@ body.mod-app-hub-v515 #modAppHubV515{
     radial-gradient(ellipse at 94% 92%,rgba(178,74,255,.022),transparent 34%),
     linear-gradient(165deg,#090b0e 0%,#0d1014 48%,#080a0d 100%);
 }
-body.mod-app-hub-v515 .header .eyebrow{
-  display:none !important;
-}
-#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
+#modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-shell-v515{
   position:relative;
   box-sizing:border-box;
   width:min(100%,350px);
@@ -53,7 +50,7 @@ body.mod-app-hub-v515 .header .eyebrow{
   -webkit-backdrop-filter:blur(16px) saturate(125%);
   backdrop-filter:blur(16px) saturate(125%);
 }
-#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515::before{
+#modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-shell-v515::before{
   content:"";
   position:absolute;
   inset:0;
@@ -185,13 +182,13 @@ body.mod-app-hub-v515 .header .eyebrow{
   0%,100%{transform:perspective(320px) rotateX(3deg) rotateY(-4deg) scale(1)}
   45%{transform:perspective(320px) rotateX(0deg) rotateY(0deg) scale(.9);filter:brightness(1.18)}
 }
-#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-backdrop-v515,
-#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-glow-v515,
-#modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-grid-v515{
+#modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-backdrop-v515,
+#modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-glow-v515,
+#modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-grid-v515{
   display:none;
 }
 @media (max-width:390px){
-  #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
+  #modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-shell-v515{
     width:min(100%,336px);
     padding:22px 16px 18px;
     border-radius:15px;
@@ -215,7 +212,7 @@ body.mod-app-hub-v515 .header .eyebrow{
   }
 }
 @media (max-height:720px){
-  #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
+  #modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-shell-v515{
     padding-top:18px;
     padding-bottom:16px;
   }
@@ -224,7 +221,7 @@ body.mod-app-hub-v515 .header .eyebrow{
   }
 }
 @media (min-width:700px){
-  #modAppHubV515[data-mod-hub-launcher-v517="ready"] .mod-hub-shell-v515{
+  #modAppHubV515[data-mod-hub-launcher-v603="ready"] .mod-hub-shell-v515{
     margin-top:18px;
   }
 }
@@ -236,4 +233,66 @@ body.mod-app-hub-v515 .header .eyebrow{
   .mod-hub-app-pulse-v517 .mod-hub-app-face-v517{
     animation:none;
   }
+}
+
+/* Real bootstrap status between brand header and area icons. */
+.mod-hub-preload-v603{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:7px 12px;
+  align-items:center;
+  width:min(100%,310px);
+  margin:0 auto 18px;
+  padding:0 1px;
+  color:rgba(255,255,255,.72);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.035em;
+}
+.mod-hub-preload-v603 strong{
+  color:#f2edf7;
+  font-variant-numeric:tabular-nums;
+  font-size:10px;
+}
+.mod-hub-preload-track-v603{
+  grid-column:1/-1;
+  position:relative;
+  height:3px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.08);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.35);
+}
+.mod-hub-preload-track-v603>i{
+  display:block;
+  width:var(--mod-bootstrap-percent-v603,0%);
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#a958ff,#37d9ff,#ffbc48);
+  box-shadow:0 0 12px rgba(98,215,255,.38);
+  transition:width .16s ease;
+}
+.mod-hub-preload-v603[data-state="ready"]{color:rgba(164,255,205,.82)}
+.mod-hub-preload-v603[data-state="ready"] strong{color:#a4ffcd}
+.mod-hub-preload-v603[data-state="error"]{cursor:pointer;color:#ffb2b9}
+.mod-hub-preload-v603[data-state="error"] strong{color:#ff7d8b}
+html.mod-bootstrap-pending-v603 .mod-hub-app-button-v517{
+  pointer-events:none!important;
+  opacity:.48;
+  filter:saturate(.68);
+}
+html.mod-bootstrap-ready-v603 .mod-hub-app-button-v517[aria-disabled="true"]{
+  opacity:.42;
+  filter:saturate(.55);
+}
+.mod-hub-app-button-v517[aria-disabled="true"]{
+  pointer-events:none;
+}
+@media(max-width:390px){
+  .mod-hub-preload-v603{width:min(100%,284px);margin-bottom:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mod-hub-preload-track-v603>i{transition:none}
 }

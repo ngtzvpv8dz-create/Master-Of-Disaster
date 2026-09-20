@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" class="mod-hub-boot-pending-v518">
+<html lang="de" class="mod-bootstrap-pending-v603">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,40 +26,6 @@
     .sport-switch-v510{min-width:.72em;margin:0 -.04em;color:#19a9b5;text-shadow:0 0 14px rgba(25,169,181,.25)}
     .mod-undo-r-v498{color:#e04b4b;text-shadow:0 0 14px rgba(224,75,75,.25)}
   </style>
-  <script>
-    (function(){
-      'use strict';
-      const root=document.documentElement;
-      const CLASS_NAME='mod-hub-boot-pending-v518';
-      try{
-        const params=new URL(location.href).searchParams;
-        if(params.has('reg')||params.has('smoke')){
-          root.classList.remove(CLASS_NAME);
-          window.__modHubBootPendingV518=false;
-          return;
-        }
-      }catch(_){}
-      window.__modHubBootPendingV518=true;
-      window.__modReleaseHubBootV518=function(reason){
-        if(!window.__modHubBootPendingV518)return false;
-        window.__modHubBootPendingV518=false;
-        root.dataset.modHubBootReleaseV518=String(reason||'ready');
-        root.classList.remove(CLASS_NAME);
-        return true;
-      };
-      setTimeout(()=>window.__modReleaseHubBootV518?.('failsafe'),8000);
-    })();
-  </script>
-  <style>
-    html.mod-hub-boot-pending-v518 .eyebrow,
-    html.mod-hub-boot-pending-v518 .tabs-wrapper,
-    html.mod-hub-boot-pending-v518 #inputPanel,
-    html.mod-hub-boot-pending-v518 #weightContainer,
-    html.mod-hub-boot-pending-v518 #viewContainer,
-    html.mod-hub-boot-pending-v518 #modAppHubV515{
-      visibility:hidden !important;
-    }
-  </style>
   <link rel="preload" as="image" type="image/png" href="./assets/icons/todo-v524-192.png?v=524-192">
   <link rel="preload" as="image" type="image/png" href="./assets/icons/sport-v524-192.png?v=524-192">
   <link rel="preload" as="image" type="image/png" href="./assets/icons/kistology-v524-192.png?v=524-192">
@@ -71,20 +37,23 @@
   <link rel="stylesheet" href="./app.css?v=446-1228">
   <link rel="stylesheet" href="./categories.css?v=446-1228">
   <link rel="stylesheet" href="./ui.css?v=446-1228">
-  <link rel="stylesheet" href="./backstage-v530.css?v=530-1425">
-  <link rel="stylesheet" href="./app-hub-v515.css?v=546-food">
-  <link rel="stylesheet" href="./app-hub-icon-buttons-v516.css?v=546-food">
-  <link rel="stylesheet" href="./app-hub-launcher-v517.css?v=584-icons">
-  <link rel="stylesheet" href="./app-hub-simple-header-v523.css?v=546-food">
+  <link rel="stylesheet" href="./backstage-v531.css?v=603">
+  <link rel="stylesheet" href="./backstage-content-v531.css?v=603">
+  <link rel="stylesheet" href="./backstage-size-v532.css?v=603">
+  <link rel="stylesheet" href="./backstage-backup-v533.css?v=603">
+  <link rel="stylesheet" href="./backstage-backup-v534.css?v=603">
+  <link rel="stylesheet" href="./app-hub-v515.css?v=603-hub">
+  <link rel="stylesheet" href="./app-hub-launcher-v603.css?v=603-loader">
   <link rel="stylesheet" href="./food-v544.css?v=582-recipe-edit-prepared">
   <link rel="stylesheet" href="./finance-v552.css?v=552-finance">
   <link rel="stylesheet" href="./finance-data-v553.css?v=554-finance-interactions">
   <link rel="stylesheet" href="./sport-mode-v510.css?v=568-sport">
   <link rel="stylesheet" href="./sport-tabs-v512.css?v=568-sport">
   <link rel="stylesheet" href="./sport-v568.css?v=573-xtraining">
+  <link rel="stylesheet" href="./kistology-v603.css?v=603">
   <link rel="stylesheet" href="./surface-brand-v556.css?v=596c-backstage-chrome">
-  <link rel="stylesheet" href="./header-consolidated-v560.css?v=596c-backstage-chrome">
-  <link rel="stylesheet" href="./surface-header-v602.css?v=602-header">
+  <link rel="stylesheet" href="./header-consolidated-v560.css?v=603-header">
+  <link rel="stylesheet" href="./surface-header-v603.css?v=603-header">
   <link rel="stylesheet" href="./todo-warm-accent.css?v=551-glow">
   <link rel="stylesheet" href="./finance-header-grid-v561.css?v=567-finance-header-panel">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -112,7 +81,7 @@
     <div id="weightContainer"></div><div id="viewContainer"></div>
   </main><div id="modalContainer"></div>
   
-  <script>(function(){const meta={version:'V602',date:'20.09.2026',time:'19:12',build:'20.09.2026 · 19:12 Uhr'};window.__MOD_BUILD__=meta;function patchBuild(){window.__modDevVersion={...meta,patch:patchBuild};if(typeof currentTab!=='undefined'&&currentTab!=='dev')return;const vals=document.querySelectorAll('.dev-build-value');if(vals[0])vals[0].textContent=meta.version;if(vals[1])vals[1].textContent=meta.build;}const prev=window.render;if(typeof prev==='function')window.render=function(){const r=prev.apply(this,arguments);setTimeout(patchBuild,0);return r;};window.addEventListener('load',()=>setTimeout(patchBuild,450));setTimeout(patchBuild,0);})();</script>
+  <script>(function(){const meta={version:'V603',date:'20.09.2026',time:'19:33',build:'20.09.2026 · 19:33 Uhr'};window.__MOD_BUILD__=meta;function patchBuild(){window.__modDevVersion={...meta,patch:patchBuild};if(typeof currentTab!=='undefined'&&currentTab!=='dev')return;const vals=document.querySelectorAll('.dev-build-value');if(vals[0])vals[0].textContent=meta.version;if(vals[1])vals[1].textContent=meta.build;}const prev=window.render;if(typeof prev==='function')window.render=function(){const r=prev.apply(this,arguments);setTimeout(patchBuild,0);return r;};window.addEventListener('load',()=>setTimeout(patchBuild,450));setTimeout(patchBuild,0);})();</script>
   
   
   
@@ -123,259 +92,15 @@
   
   
   
-  <script src="./app-hub-v515.js?v=546-food"></script>
-  <script src="./app-hub-icon-buttons-v516.js?v=546-food"></script>
-  <script src="./app-hub-launcher-v517.js?v=584-icons"></script>
-  <script src="./stability-v595.js?v=595-stability"></script>
-  <script src="./stability-v596.js?v=596b-brand-center"></script>
-  <script src="./surface-header-v602.js?v=602-header"></script>
+  <script src="./fixed-app-header-v475.js?v=603-core"></script>
+  <script src="./surface-header-v603.js?v=603-header"></script>
+  <script src="./app-hub-v515.js?v=603-hub"></script>
+  <script src="./app-hub-launcher-v603.js?v=603-loader"></script>
+  <script src="./search-no-zoom-v536.js?v=603-core"></script>
+  <script src="./area-runtime-v603.js?v=603-bootstrap"></script>
   
   
   
   
-  <script id="modAreaRuntimeV591">
-  (function(){
-    'use strict';
-    const GROUPS={
-      todo:[
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        './supabase-config.js?v=525-0912',
-        './app.js?v=596-integrity',
-        './segment-active-duration-v487.js?v=487-1528',
-        './segment-duration-v444.js?v=446-1228',
-        './time-segments-v443.js?v=446-1228',
-        './retroactive-complete-v445.js?v=446-1228',
-        './categories.js?v=446-1228',
-        './ui.js?v=446-1228',
-        './fixed-app-header-v475.js?v=475-1345',
-        './historical-segment-breakdown-v488.js?v=493-2035',
-        './task-time-weight-details-v489.js?v=489-1825',
-        './nested-task-weight-layout-v490.js?v=490-1853',
-        './ui-card-stability-v491.js?v=491-1926',
-        './task-card-rail-polish-v492.js?v=492-1954',
-        './ui-alignment-v493.js?v=493-2035',
-        './summary-weight-due-polish-v494.js?v=494-2103',
-        './task-title-library-v507.js?v=507-1345',
-        './archive-weight-layout-v508.js?v=508-0709',
-        './live-log-v453.js?v=453-1641',
-        './background-log-v454.js?v=454-1703',
-        './history-safety-net-v498.js?v=600-cloud-7day',
-        './iphone-backup-v400.js?v=600-live-previous',
-        './backup-model-v600.js?v=600-unified'
-      ],
-      sport:[
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        './supabase-config.js?v=525-0912',
-        './supabase-client-lite-v593.js?v=593',
-        './fixed-app-header-v475.js?v=475-1345',
-        './sport-v568.js?v=573-xtraining'
-      ],
-      food:[
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        './supabase-config.js?v=525-0912',
-        './supabase-client-lite-v593.js?v=593',
-        './fixed-app-header-v475.js?v=475-1345',
-        './food-v544.js?v=582-recipe-edit-prepared'
-      ],
-      finance:[
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        './supabase-config.js?v=525-0912',
-        './supabase-client-lite-v593.js?v=593',
-        './fixed-app-header-v475.js?v=475-1345',
-        './finance-v552.js?v=552-finance',
-        './finance-data-v553.js?v=554-finance-interactions'
-      ],
-      kistology:[
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        './supabase-config.js?v=525-0912',
-        './supabase-client-lite-v593.js?v=593'
-      ],
-      backstage:[
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        './supabase-config.js?v=525-0912',
-        './app.js?v=596-integrity',
-        './fixed-app-header-v475.js?v=475-1345',
-        './development-stats-current-v476.js?v=476-1419',
-        './build-freshness-v502.js?v=595-backstage-loopfix',
-        './backstage-v530.js?v=600-backup-model'
-      ]
-    };
-    const BACKSTAGE_SECTION_GROUPS={
-      dev:['./development-stats-v451.js?v=451-1431'],
-      log:[
-        './project-history-v452.js?v=452-1501',
-        './live-log-v453.js?v=453-1641',
-        './background-log-v454.js?v=454-1703',
-        './history-safety-net-v498.js?v=600-cloud-7day',
-        './log-stability-v499.js?v=499-log-stability',
-        './meaningful-history-v500.js?v=500-meaningful-history'
-      ],
-      backup:[
-        './live-log-v453.js?v=453-1641',
-        './background-log-v454.js?v=454-1703',
-        './history-safety-net-v498.js?v=600-cloud-7day',
-        './log-stability-v499.js?v=499-log-stability',
-        './meaningful-history-v500.js?v=500-meaningful-history',
-        'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
-        './cloud-backup-restore-v394.js?v=600-live-previous',
-        './full-backup-v397.js?v=446-1228',
-        './iphone-backup-v400.js?v=600-live-previous',
-        './backup-stability-v506.js?v=600-unified',
-        './backup-model-v600.js?v=600-unified',
-        './backup-source-fallback-v506.js?v=506-1244'
-      ],
-      restore:[
-        './live-log-v453.js?v=453-1641',
-        './background-log-v454.js?v=454-1703',
-        './history-safety-net-v498.js?v=600-cloud-7day',
-        './log-stability-v499.js?v=499-log-stability',
-        './meaningful-history-v500.js?v=500-meaningful-history',
-        'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
-        './cloud-backup-restore-v394.js?v=600-live-previous',
-        './full-backup-v397.js?v=446-1228',
-        './iphone-backup-v400.js?v=600-live-previous',
-        './backup-stability-v506.js?v=600-unified',
-        './backup-model-v600.js?v=600-unified',
-        './backup-source-fallback-v506.js?v=506-1244'
-      ],
-      system:[]
-    };
-    const loaded=new Set(), pending=new Map(), areaReady=new Set();
-    const abs=s=>{try{return new URL(s,location.href).href}catch(_){return s}};
-    function loadOne(src){
-      const key=abs(src);
-      if(loaded.has(key)||[...document.scripts].some(s=>s.src===key)){loaded.add(key);return Promise.resolve(src);}
-      if(pending.has(key))return pending.get(key);
-      const p=new Promise((resolve,reject)=>{
-        const s=document.createElement('script');
-        s.src=src;s.async=false;s.dataset.modAreaRuntimeV591='true';
-        s.onload=()=>{loaded.add(key);pending.delete(key);resolve(src);};
-        s.onerror=()=>{pending.delete(key);reject(new Error('Laden fehlgeschlagen: '+src));};
-        document.body.appendChild(s);
-      });
-      pending.set(key,p); return p;
-    }
-    async function loadArea(id){
-      if(areaReady.has(id))return true;
-      for(const src of (GROUPS[id]||[])){await loadOne(src);await new Promise(r=>setTimeout(r,18));}
-      areaReady.add(id); return true;
-    }
-    async function loadBackstageSection(section){
-      const list=BACKSTAGE_SECTION_GROUPS[section]||[];
-      for(const src of list){await loadOne(src);await new Promise(r=>setTimeout(r,24));}
-      return true;
-    }
-    function waitFor(test,timeout=5000){
-      const start=Date.now();
-      return new Promise((resolve,reject)=>{
-        const tick=()=>{try{const v=test();if(v)return resolve(v);}catch(_){}
-          if(Date.now()-start>timeout)return reject(new Error('Bereich wurde nicht rechtzeitig bereit.'));
-          setTimeout(tick,40);
-        }; tick();
-      });
-    }
-    async function openArea(id){
-      document.documentElement.dataset.modV591='loading-'+id;
-      await loadArea(id);
-      if(id==='todo'){
-        await waitFor(()=>typeof window.render==='function');
-        try{window.render();}catch(_){}
-        window.__modAppHubV515?.open?.('todo',{source:'v591'});
-      }else if(id==='sport'){
-        await waitFor(()=>window.__modSportV568||window.__modSportModeV510);
-        window.__modAppHubV515?.open?.('sport',{source:'v594-area'});
-      }else if(id==='food'){
-        const api=await waitFor(()=>window.__modFoodV544);
-        api.open?.();
-      }else if(id==='finance'){
-        const api=await waitFor(()=>window.__modFinanceV552||window.__modFinanceV553);
-        api.open?.();
-      }else if(id==='kistology'){
-        const api=await waitFor(()=>window.__modKistologyV539||window.__modKistologyV538||window.__modKistologyV537,6000);
-        try{await api.reload?.();}catch(_){}
-        api.open?.();
-      }else if(id==='backstage'){
-        const api=await waitFor(()=>window.__modBackstageV531,9000);
-        api.open?.({section:'dev'});
-      }
-      document.documentElement.dataset.modV591='open-'+id;
-    }
-    document.addEventListener('click',event=>{
-      const sectionButton=event.target?.closest?.('[data-backstage-section-v531]');
-      if(!sectionButton||!document.body.classList.contains('mod-backstage-v530'))return;
-      const section=sectionButton.dataset.backstageSectionV531;
-      const group=BACKSTAGE_SECTION_GROUPS[section]||[];
-      if(!group.length)return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      sectionButton.setAttribute('aria-busy','true');
-      sectionButton.closest('.mod-backstage-tabs-v531')?.querySelectorAll('[data-backstage-section-v531]').forEach(button=>{
-        const selected=button===sectionButton;
-        button.setAttribute('aria-selected',selected?'true':'false');
-        button.tabIndex=selected?0:-1;
-      });
-
-      if(section==='log'){
-        const view=document.getElementById('viewContainer');
-        if(view)view.innerHTML='<section class="mod-backstage-placeholder-v531" data-backstage-loading-v602="log"><div class="mod-backstage-placeholder-card-v531"><div class="mod-backstage-placeholder-code-v531">SEKTOR 02</div><h3 class="mod-backstage-placeholder-title-v531">LOG WIRD GELADEN</h3><p class="mod-backstage-placeholder-text-v531">7-Tage-Protokoll und Wiederherstellungshistorie werden vorbereitet.</p><span class="mod-backstage-placeholder-state-v531">LADE MODULE · EIN MOMENT</span></div></section>';
-      }
-
-      loadBackstageSection(section)
-        .then(async()=>{
-          if(section==='backup'&&window.__modBackstageBackupV533?.openBackup){
-            window.__modBackstageBackupV533.openBackup();
-          }else{
-            window.__modBackstageV531?.setSection?.(section);
-          }
-          if(section==='backup')window.__modBackstageBackupV533?.renderBackupDashboard?.();
-          if(section==='log'){
-            const enhanced=window.__modRecoveryHistoryV498?.renderEnhancedLog;
-            if(typeof enhanced==='function')await enhanced();
-            else window.__modLiveLogV453?.renderLog?.();
-            window.__modLogStabilityV499?.repair?.();
-          }
-        })
-        .catch(error=>{
-          console.error('V602 Backstage-Sektor:',section,error);
-          const view=document.getElementById('viewContainer');
-          if(view&&section==='log')view.innerHTML='<section class="mod-backstage-placeholder-v531"><div class="mod-backstage-placeholder-card-v531"><div class="mod-backstage-placeholder-code-v531">SEKTOR 02</div><h3 class="mod-backstage-placeholder-title-v531">LOG NICHT BEREIT</h3><p class="mod-backstage-placeholder-text-v531">Die Log-Module konnten nicht vollständig geladen werden. Backstage bleibt geöffnet.</p><span class="mod-backstage-placeholder-state-v531">KEIN WECHSEL ZUM HOMESCREEN</span></div></section>';
-        })
-        .finally(()=>sectionButton.removeAttribute('aria-busy'));
-    },true);
-    document.addEventListener('click',event=>{
-      const button=event.target?.closest?.('[data-mod-hub-launch-v517]');
-      if(!button)return;
-      const id=button.dataset.modHubLaunchV517;
-      if(!GROUPS[id])return;
-      event.preventDefault(); event.stopImmediatePropagation();
-      button.setAttribute('aria-busy','true');
-      openArea(id).catch(e=>{console.error('V591 Bereich:',id,e);document.documentElement.dataset.modV591='error-'+id;})
-        .finally(()=>button.removeAttribute('aria-busy'));
-    },true);
-    function enableLazyHubButtons(){
-      for(const id of ['kistology','backstage']){
-        const button=document.querySelector('[data-mod-hub-launch-v517="'+id+'"]');
-        if(!button)continue;
-        button.removeAttribute('aria-disabled');
-        button.removeAttribute('disabled');
-        button.dataset.modLazyActiveV593='true';
-      }
-    }
-    const lazyButtonObserver=new MutationObserver(()=>queueMicrotask(enableLazyHubButtons));
-    const watchLazyButtons=()=>{
-      enableLazyHubButtons();
-      const root=document.getElementById('modAppHubV515');
-      if(root&&!root.dataset.modLazyObserverV593){
-        root.dataset.modLazyObserverV593='true';
-        lazyButtonObserver.observe(root,{childList:true,subtree:true});
-      }
-    };
-    watchLazyButtons();
-    window.addEventListener('load',()=>setTimeout(watchLazyButtons,80));
-    window.__modAreaRuntimeV591={loadArea,openArea,loadBackstageSection,groups:Object.fromEntries(Object.entries(GROUPS).map(([k,v])=>[k,[...v]]))};
-    document.documentElement.dataset.modV591='home-safe';
-  })();
-  </script>
-<script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=602-header-log-stability',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V530 Service-Worker-Registrierung:',e);}})();</script>
+<script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=603-bootstrap-cleanup',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V530 Service-Worker-Registrierung:',e);}})();</script>
 </body></html>

@@ -135,7 +135,7 @@
         try{window.__modBuildFreshnessV502?.load?.(true);}catch(_){}
         setTimeout(()=>{try{window.__modBuildFreshnessV502?.patch?.();}catch(_){}},0);
       }else{
-        setTimeout(()=>{try{window.__modLiveLogV453?.renderLog?.();}catch(_){}},0);
+        setTimeout(()=>{try{window.__modRecoveryHistoryV498?.renderEnhancedLog?.();}catch(_){}},0);
       }
     }else{
       parkLegacyTabForPlaceholder();
@@ -288,7 +288,7 @@
     placeholdersDoNotInvokeLegacyTabsV531:true,
     placeholderParksLegacyLogV531:true,
     devAndLogMoved:true,
-    existingRenderersReused:true,
+    currentLogRendererV603:true,
     todoDataUntouched:true,
     sportHealthHookPreserved:true,
     homeNavigationPreserved:true

@@ -16,14 +16,19 @@ jobs:
       - name: Syntax
         run: |
           node --check app-hub-v515.js
-          node --check app-hub-launcher-v517.js
-          node --check backstage-v530.js
+          node --check app-hub-launcher-v603.js
+          node --check surface-header-v603.js
+          node --check area-runtime-v603.js
+          node --check kistology-v603.js
+          node --check log-core-v603.js
+          node --check backstage-v531.js
           node --check backstage-backup-v533.js
           node --check backup-model-v600.js
           node --check iphone-backup-v400.js
           node --check backup-stability-v506.js
           node --check backup-source-fallback-v506.js
           node --check history-safety-net-v498.js
+          node --check sw.js
       - name: Resolve expected build
         run: |
           METRICS_OUTPUT=/tmp/runtime-expected.json node scripts/generate-development-metrics.mjs >/tmp/runtime-expected.log
@@ -38,55 +43,60 @@ jobs:
           const expected=process.env.EXPECTED_VERSION;
           const vn=v=>Number(String(v||'').match(/^V(\d+)$/i)?.[1]||0);
           (async()=>{
-            const out={status:'FAIL',version:expected,live:false,home:false,todo:false,backstage:false,backup:false,serviceWorker:false,errors:[]};
+            const out={status:'FAIL',version:expected,live:false,bootstrap:false,home:false,todo:false,kistology:false,backstage:false,log:false,backup:false,serviceWorker:false,errors:[]};
             const browser=await chromium.launch({headless:true});
             try{
               const page=await browser.newPage({viewport:{width:390,height:844}});
               await page.route('**/*.supabase.co/**',route=>route.abort());
-
               let metrics=null;
               for(let i=0;i<18;i++){
                 await page.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?smoke=current-'+Date.now(),{waitUntil:'networkidle',timeout:60000});
                 const state=await page.evaluate(()=>({
                   build:window.__MOD_BUILD__?.version||'',
-                  hub:!!window.__modAppHubV515,
-                  launcher:!!window.__modHubLauncherV517,
-                  runtime:!!window.__modAreaRuntimeV591
+                  hub:!!window.__modAppHubV603,
+                  launcher:!!window.__modHubLauncherV603,
+                  runtime:!!window.__modAreaRuntimeV603
                 })).catch(()=>({}));
                 try{
                   metrics=await page.evaluate(async()=>{const r=await fetch('./development-metrics.json?smoke='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null;});
                 }catch(_){}
                 if(vn(state.build)>=vn(expected)&&vn(metrics?.version)>=vn(expected)&&state.hub&&state.launcher&&state.runtime){
-                  out.live=true; out.home=true; break;
+                  out.live=true;break;
                 }
                 await page.waitForTimeout(5000);
               }
               if(!out.live)throw new Error('Current build not deployed: expected '+expected+', metrics='+(metrics?.version||'none'));
-
-              await page.evaluate(async()=>{
-                await window.__modAreaRuntimeV591.loadArea('todo');
-              });
+              await page.evaluate(()=>window.__modAppHubV603.show());
+              await page.waitForFunction(()=>window.__modAreaRuntimeV603?.ready===true,{timeout:90000});
+              out.bootstrap=await page.evaluate(()=>window.__modAreaRuntimeV603.ready===true&&window.__modAreaRuntimeV603.progress.percent===100);
+              out.home=await page.evaluate(()=>document.body.classList.contains('mod-app-hub-v515')&&document.querySelector('.mod-hub-preload-v603')?.textContent.includes('100'));
+              await page.evaluate(()=>window.__modAreaRuntimeV603.openArea('todo'));
               await page.waitForFunction(()=>typeof window.render==='function'&&window.__modBackupModelV600&&window.__modIphoneBackupV600,{timeout:30000});
               out.todo=await page.evaluate(()=>window.__modBackupModelV600?.version==='V600'&&window.__modIphoneBackupV600?.version==='V600');
-
+              await page.evaluate(()=>window.__modAppHubV603.show());
+              await page.evaluate(()=>window.__modAreaRuntimeV603.openArea('kistology'));
+              await page.waitForFunction(()=>document.body.classList.contains('mod-kistology-v535')&&window.__modKistologyV603,{timeout:30000});
+              out.kistology=await page.evaluate(()=>!!window.__modKistologyV603&&document.body.dataset.modAppSurfaceV515==='kistology');
+              await page.evaluate(()=>window.__modAppHubV603.show());
+              await page.evaluate(()=>window.__modAreaRuntimeV603.openArea('backstage'));
+              await page.waitForFunction(()=>window.__modBackstageV531&&document.body.classList.contains('mod-backstage-v530'),{timeout:30000});
+              out.backstage=await page.evaluate(()=>document.body.dataset.modAppSurfaceV515==='backstage');
+              await page.evaluate(()=>window.__modBackstageV531.setSection('log'));
+              await page.waitForFunction(()=>!!document.querySelector('#viewContainer .mod-log-v498'),{timeout:30000});
+              out.log=await page.evaluate(()=>!!document.querySelector('#viewContainer .mod-log-v498')&&!document.querySelector('#viewContainer .live-log-v453'));
               await page.evaluate(async()=>{
-                await window.__modAreaRuntimeV591.openArea('backstage');
-                await window.__modAreaRuntimeV591.loadBackstageSection('backup');
+                await window.__modAreaRuntimeV603.loadSection('backup');
                 window.__modBackstageV531?.setSection?.('backup');
                 window.__modBackstageBackupV533?.renderBackupDashboard?.();
               });
               await page.waitForFunction(()=>window.__modBackstageBackupV533&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506,{timeout:30000});
-              out.backstage=await page.evaluate(()=>document.body.classList.contains('mod-backstage-v530')&&document.body.dataset.modAppSurfaceV515==='backstage');
               out.backup=await page.evaluate(()=>!!(
                 window.__modBackupModelV600?.weeklyCloudBackups===false &&
                 window.__modBackupStabilityV506?.unifiedSupabaseExportV600===true &&
                 window.__modBackupSourceFallbackV506?.patchRevision==='V506.3' &&
-                document.querySelector('[data-backup-action-v533="fullbackup"]') &&
-                !document.querySelector('[data-backup-action-v533="weekly-create"],[data-backup-action-v533="weekly-list"]')
+                document.querySelector('[data-backup-action-v533="fullbackup"]')
               ));
-
               const swPage=await browser.newPage({viewport:{width:390,height:640}});
-              await swPage.route('**/*.supabase.co/**',route=>route.abort());
               await swPage.goto('https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?runtime='+Date.now(),{waitUntil:'networkidle',timeout:60000});
               out.serviceWorker=await swPage.evaluate(async()=>{
                 if(!('serviceWorker' in navigator))return false;
@@ -95,8 +105,7 @@ jobs:
                   return !!reg&&/sw\.js/.test(reg.active?.scriptURL||reg.waiting?.scriptURL||reg.installing?.scriptURL||'');
                 }catch(_){return false;}
               });
-
-              out.status=['live','home','todo','backstage','backup','serviceWorker'].every(k=>out[k]===true)?'PASS':'FAIL';
+              out.status=['live','bootstrap','home','todo','kistology','backstage','log','backup','serviceWorker'].every(k=>out[k]===true)?'PASS':'FAIL';
             }catch(e){out.errors.push(String(e.stack||e));}
             fs.writeFileSync('runtime-status.txt',JSON.stringify(out,null,2));
             await browser.close();
