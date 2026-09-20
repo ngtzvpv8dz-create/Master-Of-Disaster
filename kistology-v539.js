@@ -87,12 +87,49 @@
     return mapped;
   }
 
+  function loadScriptV593(src,key){
+    if(key&&window[key])return Promise.resolve(true);
+    const abs=(()=>{try{return new URL(src,location.href).href}catch(_){return src}})();
+    const existing=[...document.scripts].find(script=>script.src===abs);
+    if(existing){
+      if(!key||window[key])return Promise.resolve(true);
+      return new Promise((resolve,reject)=>{
+        const done=()=>resolve(true),fail=()=>reject(new Error('Laden fehlgeschlagen: '+src));
+        existing.addEventListener('load',done,{once:true});
+        existing.addEventListener('error',fail,{once:true});
+        setTimeout(()=>{if(!key||window[key])resolve(true)},0);
+      });
+    }
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src=src;script.async=false;script.dataset.modKistologySupabaseV593='true';
+      script.onload=()=>resolve(true);
+      script.onerror=()=>reject(new Error('Laden fehlgeschlagen: '+src));
+      document.body.appendChild(script);
+    });
+  }
+
+  let supabaseStackPromiseV593=null;
+  async function ensureSupabaseStackV593(){
+    if(typeof window.getSupabaseClient==='function')return true;
+    if(supabaseStackPromiseV593)return supabaseStackPromiseV593;
+    supabaseStackPromiseV593=(async()=>{
+      if(!window.supabase?.createClient)await loadScriptV593('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2','supabase');
+      if(!window.SUPABASE_CONFIG)await loadScriptV593('./supabase-config.js?v=525-0912','SUPABASE_CONFIG');
+      if(typeof window.getSupabaseClient!=='function')await loadScriptV593('./supabase-client-lite-v593.js?v=593','getSupabaseClient');
+      if(typeof window.getSupabaseClient!=='function')throw new Error('Supabase-Client ist nicht verfügbar.');
+      return true;
+    })().finally(()=>{supabaseStackPromiseV593=null;});
+    return supabaseStackPromiseV593;
+  }
+
   async function fetchSnapshot(){
     if(loadPromise)return loadPromise;
     loadState='loading';
     loadError='';
     renderContent();
     loadPromise=(async()=>{
+      await ensureSupabaseStackV593();
       const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;
       if(!client)throw new Error('Supabase-Client ist nicht verfügbar.');
       const sessionResult=await client.auth.getSession();
