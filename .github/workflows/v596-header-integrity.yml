@@ -238,9 +238,13 @@ jobs:
             let published=false;
             for(let i=0;i<20;i++){
               await page.goto(base+'?v596live='+Date.now(),{waitUntil:'networkidle',timeout:60000});
-              published=await page.evaluate(()=>window.__modStabilityV596?.version==='V596'&&
-                window.__modStabilityV596?.brandCenteringReady===true&&
-                [...document.styleSheets].some(s=>String(s.href||'').includes('header-consolidated-v560.css'))).catch(()=>false);
+              published=await page.evaluate(()=>{
+                const hrefs=[...document.styleSheets].map(s=>String(s.href||''));
+                return window.__modStabilityV596?.version==='V596'&&
+                  window.__modStabilityV596?.brandCenteringReady===true&&
+                  hrefs.some(h=>h.includes('header-consolidated-v560.css?v=596c-backstage-chrome'))&&
+                  hrefs.some(h=>h.includes('surface-brand-v556.css?v=596c-backstage-chrome'));
+              }).catch(()=>false);
               if(published)break;
               await page.waitForTimeout(10000);
             }
@@ -255,7 +259,8 @@ jobs:
               const left=Math.min(...rects.map(r=>r.left));
               const right=Math.max(...rects.map(r=>r.right));
               const directText=[...document.body.childNodes].filter(n=>n.nodeType===Node.TEXT_NODE).map(n=>n.nodeValue||'');
-              return {left,right,visualCenter:(left+right)/2,viewportCenter:innerWidth/2,directText};
+              const marker=document.querySelector('.sport-switch-v510.mod-surface-mark-v556');
+              return {left,right,visualCenter:(left+right)/2,viewportCenter:innerWidth/2,directText,markerWidth:marker.getBoundingClientRect().width};
             });
             if(Math.abs(home.visualCenter-home.viewportCenter)>1.25)throw new Error('LIVE Home brand not centered '+JSON.stringify(home));
             if(home.directText.some(t=>t.includes('\\n')))throw new Error('LIVE literal backslash-n is visible');
@@ -267,7 +272,8 @@ jobs:
               const rects=[...title.children].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
               const left=Math.min(...rects.map(r=>r.left));
               const right=Math.max(...rects.map(r=>r.right));
-              return {visualCenter:(left+right)/2,viewportCenter:innerWidth/2};
+              const marker=document.querySelector('.sport-switch-v510.mod-surface-mark-v556');
+              return {visualCenter:(left+right)/2,viewportCenter:innerWidth/2,markerWidth:marker.getBoundingClientRect().width};
             });
             if(Math.abs(k.visualCenter-k.viewportCenter)>1.25)throw new Error('LIVE Kistology brand not centered '+JSON.stringify(k));
 
@@ -289,6 +295,7 @@ jobs:
               return {visualCenter:(left+right)/2,viewportCenter:innerWidth/2,markerWidth,wrenchWidth};
             });
             if(Math.abs(backstageGeometry.visualCenter-backstageGeometry.viewportCenter)>1.25)throw new Error('LIVE Backstage brand not centered '+JSON.stringify(backstageGeometry));
+            if(Math.abs(backstageGeometry.markerWidth-home.markerWidth)>.25||Math.abs(backstageGeometry.markerWidth-k.markerWidth)>.25)throw new Error('LIVE Backstage slot differs from Home/Kistology '+JSON.stringify({home,k,backstageGeometry}));
             if(!(backstageGeometry.markerWidth>0&&backstageGeometry.wrenchWidth>0&&backstageGeometry.wrenchWidth<backstageGeometry.markerWidth))throw new Error('LIVE Backstage wrench geometry invalid '+JSON.stringify(backstageGeometry));
 
             const integrity=await page.evaluate(()=>{
