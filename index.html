@@ -283,14 +283,17 @@
       if(!BACKSTAGE_SECTION_GROUPS[section]?.length)return;
       event.preventDefault();
       event.stopImmediatePropagation();
+      if(section==='backup'&&window.__modBackstageBackupV533?.openBackup){
+        window.__modBackstageBackupV533.openBackup();
+      }else{
+        window.__modBackstageV531?.setSection?.(section);
+      }
+      if(!BACKSTAGE_SECTION_GROUPS[section]?.length)return;
       sectionButton.setAttribute('aria-busy','true');
       loadBackstageSection(section)
         .then(()=>{
-          if(section==='backup'&&window.__modBackstageBackupV533?.openBackup){
-            window.__modBackstageBackupV533.openBackup();
-            return;
-          }
-          window.__modBackstageV531?.setSection?.(section);
+          if(section==='backup')window.__modBackstageBackupV533?.renderBackupDashboard?.();
+          if(section==='log')window.__modLiveLogV453?.renderLog?.();
         })
         .catch(error=>console.error('V594 Backstage-Sektor:',section,error))
         .finally(()=>sectionButton.removeAttribute('aria-busy'));
