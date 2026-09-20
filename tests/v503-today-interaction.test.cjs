@@ -17,9 +17,15 @@ global.getBerlinDateKey=()=> '2026-08-28';
 global.getBerlinDateKeyFromISO=(value)=>String(value||'').slice(0,10);
 global.saveTasks=()=>{saves++;};
 global.render=()=>{renders++;};
+global.HTMLButtonElement=function(){};
+global.MutationObserver=class{observe(){}};
+global.requestAnimationFrame=fn=>{fn();return 1;};
 global.document={
+  head:{appendChild(){}},
+  createElement(){return {id:'',textContent:'',style:{}};},
   addEventListener(){},
   querySelector(){return null;},
+  querySelectorAll(){return [];},
   getElementById(id){
     if(id==='editWorkBlockV474')return {value:selectedBlock};
     if(id==='viewContainer')return {contains(){return true;}};
@@ -55,7 +61,7 @@ global.pauseTask=function(id){
   row.status='paused';
 };
 
-require('../today-interaction-stability-v503.js');
+require('../todo-stability-v603.js');
 
 saveEdit(2);
 assert.deepStrictEqual(tasks.map(x=>[x.id,x.todayOrder,x.todayWorkBlockId]),[
