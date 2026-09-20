@@ -21,6 +21,7 @@ const CORE_SHELL=[
   "./kistology-v603.js",
   "./log-core-v603.js",
   "./todo-stability-v603.js",
+  "./terminal-delete-v485.js",
   "./backstage-v531.css",
   "./backstage-content-v531.css",
   "./backstage-size-v532.css",
