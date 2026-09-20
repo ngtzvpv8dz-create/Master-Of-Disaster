@@ -128,6 +128,7 @@
   window.__modWorkerGateV606={
     version:VERSION,
     swUrl:SW_URL,
+    reloadAuthority:'service-worker',
     ready,
     controllerVersion,
     get status(){return {...status};}
