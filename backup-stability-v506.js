@@ -341,6 +341,14 @@
       await writer.add('DATA/complete-data-backup.json',emit=>emit(JSON.stringify(complete)));
       await writer.add('DATA/localstorage-master-of-disaster.json',emit=>emit(JSON.stringify(local)));
 
+      markFullStage('SUPABASE-KOMPLETTEXPORT');
+      setButtonState(button,'⏳ SUPABASE WIRD GESICHERT…',true);
+      const backupModel=window.__modBackupModelV600;
+      if(!backupModel?.requestSupabaseExport)throw new Error('Das neue Supabase-Backupmodul V600 ist noch nicht bereit.');
+      try{await backupModel.syncSafetyNow?.({force:true});}catch(_){}
+      const supabaseExport=await backupModel.requestSupabaseExport();
+      await writer.add('SUPABASE/complete-export.json',emit=>emit(JSON.stringify(supabaseExport)));
+
       markFullStage('7-TAGE-HISTORIE / WIEDERHERSTELLUNGSPUNKTE');
       setButtonState(button,'⏳ HISTORIE WIRD GESTREAMT…',true);
       try{await api.mirrorLiveLogs?.(true);}catch(_){}
@@ -355,9 +363,10 @@
         `Erstellt: ${stamp.dateLabel} ${stamp.clock} Europe/Berlin`,
         `Git-Stand: ${source.sha}`,
         'APP/source-main.zip = kompletter aktueller GitHub-Quellcode von main',
-        'DATA/complete-data-backup.json = kompletter aktueller App-Datenstand',
+        'DATA/complete-data-backup.json = kompletter aktueller lokaler App-Datenstand',
         'DATA/localstorage-master-of-disaster.json = lokale Master-of-Disaster-Werte',
-        'DATA/recovery-history-v498.json = 7-Tage-Wiederherstellungspunkte + Log',
+        'SUPABASE/complete-export.json = aktueller Supabase-Datenstand + LIVE/PREVIOUS + 7-Tage-Sicherheitsdaten + Schema/Migrationen/Storage',
+        'DATA/recovery-history-v498.json = lokale 7-Tage-Wiederherstellungspunkte + Log',
         'DATA/live-log-7-days.json = 7-Tage-Log',
         `Wiederherstellungspunkte: ${counts.pointCount}`,
         `7-Tage-Logeinträge: ${counts.logCount}`,
@@ -366,7 +375,7 @@
       ].join('\n')));
       const blob=writer.finish();
       const filename=`Master-of-Disaster_${currentBuild()}_Vollbackup_${stamp.file}.zip`;
-      const summary=`Code + App-Daten + ${counts.pointCount} Wiederherstellungspunkte + ${counts.logCount} Logeinträge wurden speicherschonend in die ZIP geschrieben.`;
+      const summary=`Code + lokale App-Daten + Supabase-Komplettexport + ${counts.pointCount} Wiederherstellungspunkte + ${counts.logCount} Logeinträge wurden in eine ZIP geschrieben.`;
       clearFullStage();
       presentFullBackup(blob,filename,summary);
       setButtonState(button,'✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
@@ -515,6 +524,7 @@
       noAutomaticBlobNavigation:true,
       fullBackupCaptureInterception:true,
       weeklyCloudPayloadLightweight:true,
+      unifiedSupabaseExportV600:true,
       weeklyHistoryStaysLocal:true,
       legacyWeeklyRestoreSupported:true,
       memorySafeFullBackupV5062:true,
