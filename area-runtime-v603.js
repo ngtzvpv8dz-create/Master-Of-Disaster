@@ -152,9 +152,16 @@
     if(loaded.has(key))return Promise.resolve(src);
     return new Promise((resolve,reject)=>{
       const img=new Image();
-      const done=()=>{loaded.add(key);markComplete('Bereichssymbole');resolve(src);};
+      let finished=false;
+      const done=()=>{
+        if(finished)return;
+        finished=true;
+        loaded.add(key);
+        markComplete('Bereichssymbole');
+        resolve(src);
+      };
       img.onload=()=>{if(typeof img.decode==='function')img.decode().catch(()=>{}).finally(done);else done();};
-      img.onerror=()=>reject(new Error('Icon konnte nicht geladen werden: '+src));
+      img.onerror=()=>{if(finished)return;finished=true;reject(new Error('Icon konnte nicht geladen werden: '+src));};
       img.src=src;
       if(img.complete&&img.naturalWidth>0)done();
     });
