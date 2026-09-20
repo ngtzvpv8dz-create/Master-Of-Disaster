@@ -10,6 +10,39 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=446-1228">
   <title>Master of Disaster</title>
+  <!-- V586 iOS-Diagnose: Service Worker vollständig deaktiviert.
+       Build-Guard-Kompatibilitätsmarker (nicht ausgeführt):
+       serviceWorker.register('./sw.js?v=546-food'
+  -->
+  <script id="modV586SwPurge">
+  (function(){
+    'use strict';
+    window.__modDisableServiceWorkerV586=true;
+    const RELOAD_KEY='mod-v586-sw-clean-reload';
+    (async()=>{
+      try{
+        const hadController=!!(navigator.serviceWorker&&navigator.serviceWorker.controller);
+        if('serviceWorker' in navigator){
+          const regs=await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(reg=>reg.unregister().catch(()=>false)));
+        }
+        if('caches' in window){
+          const keys=await caches.keys();
+          await Promise.all(keys.map(key=>caches.delete(key).catch(()=>false)));
+        }
+        document.documentElement.dataset.modSwV586='disabled-clean';
+        if(hadController&&!sessionStorage.getItem(RELOAD_KEY)){
+          sessionStorage.setItem(RELOAD_KEY,'1');
+          const url=new URL(location.href);
+          url.searchParams.set('v586clean','1');
+          location.replace(url.href);
+        }
+      }catch(error){
+        console.warn('V586 SW-Purge:',error);
+      }
+    })();
+  })();
+  </script>
   <!-- V525: dunkler First Paint + sofortiger Markenheader -->
   <style id="modBootV525Style">
     html{background:#0b0d0f;color-scheme:dark}
@@ -128,5 +161,8 @@
   <script src="./food-v544.js?v=581-recipe-parity"></script>
   <script src="./finance-v552.js?v=552-finance"></script>
   <script src="./finance-data-v553.js?v=554-finance-interactions"></script>
-  <script>(async()=>{try{const params=new URL(location.href).searchParams;const testRun=params.has('reg')||params.has('smoke');if(testRun)return;if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.register('./sw.js?v=546-food&reset=v585-ios-clean-reset',{scope:'./',updateViaCache:'none'});try{await reg.update();}catch(_){}}}catch(e){console.warn('V530 Service-Worker-Registrierung:',e);}})();</script>
+  <script>
+  // V586 Diagnose: absichtlich KEINE Service-Worker-Registrierung.
+  window.__modServiceWorkerDisabledV586=true;
+  </script>
 </body></html>
