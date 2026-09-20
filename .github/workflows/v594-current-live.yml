@@ -1,0 +1,135 @@
+name: V594 Current Live Diagnostic
+on:
+  push:
+    branches: [diagnostic/v594-current-live-20260920-0956]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+      - name: Test live
+        run: |
+          cat > check.js <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const out={errors:[]};
+            const base='https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/?liveDiag='+Date.now();
+            async function page(){
+              const ctx=await browser.newContext({viewport:{width:390,height:844}});
+              const p=await ctx.newPage();
+              p.on('pageerror',e=>out.errors.push('page:'+String(e.message||e)));
+              p.on('console',m=>{if(m.type()==='error')out.errors.push('console:'+m.text())});
+              await p.goto(base,{waitUntil:'domcontentloaded',timeout:60000});
+              await p.waitForSelector('[data-mod-hub-launch-v517="todo"]',{timeout:15000});
+              return {ctx,p};
+            }
+
+            try{
+              const {ctx,p}=await page();
+              await p.waitForTimeout(12000);
+              out.home=await p.evaluate(()=>({
+                hub:document.body.classList.contains('mod-app-hub-v515'),
+                safe:document.documentElement.dataset.modV591==='home-safe',
+                render:typeof window.render
+              }));
+
+              await p.click('[data-mod-hub-launch-v517="sport"]');
+              await p.waitForFunction(()=>document.body.classList.contains('mod-sport-mode-v510'),{timeout:20000});
+              out.sport=await p.evaluate(()=>({
+                surface:document.body.dataset.modAppSurfaceV515,
+                sPointer:getComputedStyle(document.getElementById('sportSwitchV510')).pointerEvents,
+                sRole:document.getElementById('sportSwitchV510').getAttribute('role'),
+                sTab:document.getElementById('sportSwitchV510').getAttribute('tabindex'),
+                homePointer:getComputedStyle(document.getElementById('modHomeButtonV525')).pointerEvents
+              }));
+
+              await p.locator('#sportSwitchV510').click({force:true});
+              await p.waitForTimeout(500);
+              out.afterS=await p.evaluate(()=>({
+                surface:document.body.dataset.modAppSurfaceV515,
+                sport:document.body.classList.contains('mod-sport-mode-v510'),
+                hub:document.body.classList.contains('mod-app-hub-v515')
+              }));
+
+              await p.click('#modHomeButtonV525');
+              await p.waitForFunction(()=>document.body.classList.contains('mod-app-hub-v515'),{timeout:6000});
+              out.afterHouse=await p.evaluate(()=>({
+                surface:document.body.dataset.modAppSurfaceV515,
+                sport:document.body.classList.contains('mod-sport-mode-v510'),
+                hub:document.body.classList.contains('mod-app-hub-v515')
+              }));
+
+              await p.click('[data-mod-hub-launch-v517="todo"]');
+              await p.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='todo' && typeof window.render==='function',{timeout:30000});
+              await p.waitForTimeout(1200);
+              out.todo=await p.evaluate(()=>({
+                surface:document.body.dataset.modAppSurfaceV515,
+                v490:!!window.__modNestedTaskWeightLayoutV490,
+                v491:!!window.__modUiCardStabilityV491,
+                v492:!!window.__modTaskCardRailPolishV492,
+                v493:!!window.__modUiAlignmentV493,
+                v494:!!window.__modSummaryWeightDuePolishV494
+              }));
+              await ctx.close();
+            }catch(e){out.navFatal=String(e.stack||e);}
+
+            try{
+              const {ctx,p}=await page();
+              const t0=Date.now();
+              await p.click('[data-mod-hub-launch-v517="backstage"]');
+              await p.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='backstage' && !!window.__modBackstageV531,{timeout:20000});
+              await p.waitForTimeout(1500);
+              out.backstage=await p.evaluate(()=>({
+                surface:document.body.dataset.modAppSurfaceV515,
+                active:window.__modBackstageV531?.activeSection,
+                shell:!!document.getElementById('modBackstageV530'),
+                tabs:document.querySelectorAll('[data-backstage-section-v531]').length,
+                loading:document.documentElement.dataset.modV591,
+                heavyBackup:!!window.__modBackupStabilityV506
+              }));
+              out.backstage.openMs=Date.now()-t0;
+
+              const bb=p.locator('[data-backstage-section-v531="backup"]');
+              await bb.click();
+              await p.waitForTimeout(300);
+              out.backupImmediate=await p.evaluate(()=>({
+                active:window.__modBackstageV531?.activeSection,
+                loading:document.documentElement.dataset.modV591,
+                busy:document.querySelector('[data-backstage-section-v531="backup"]')?.getAttribute('aria-busy')
+              }));
+              await p.waitForFunction(()=>!!window.__modBackupStabilityV506&&!!window.__modBackupSourceFallbackV506,{timeout:30000});
+              await p.waitForTimeout(300);
+              out.backupLoaded=await p.evaluate(()=>({
+                active:window.__modBackstageV531?.activeSection,
+                stability:!!window.__modBackupStabilityV506,
+                fallback:!!window.__modBackupSourceFallbackV506,
+                dashboard:!!document.querySelector('[data-backstage-backup-v533="true"]')
+              }));
+              await ctx.close();
+            }catch(e){out.backstageFatal=String(e.stack||e);}
+
+            out.pass=
+              !out.navFatal&&!out.backstageFatal&&
+              out.home?.hub&&out.home?.safe&&out.home?.render==='undefined'&&
+              out.sport?.surface==='sport'&&out.sport?.sPointer==='none'&&out.sport?.sRole===null&&out.sport?.sTab===null&&out.sport?.homePointer!=='none'&&
+              out.afterS?.sport&&out.afterS?.surface==='sport'&&!out.afterS?.hub&&
+              out.afterHouse?.hub&&!out.afterHouse?.sport&&out.afterHouse?.surface==='hub'&&
+              out.todo?.surface==='todo'&&out.todo?.v490&&out.todo?.v491&&out.todo?.v492&&out.todo?.v493&&out.todo?.v494&&
+              out.backstage?.surface==='backstage'&&out.backstage?.shell&&out.backstage?.tabs>=5&&out.backstage?.openMs<15000&&
+              out.backupImmediate?.active==='backup'&&out.backupLoaded?.stability&&out.backupLoaded?.fallback&&out.backupLoaded?.dashboard&&
+              out.errors.length===0;
+            console.log(JSON.stringify(out,null,2));
+            await browser.close();
+            if(!out.pass)process.exitCode=1;
+          })();
+          NODE
+          node check.js
