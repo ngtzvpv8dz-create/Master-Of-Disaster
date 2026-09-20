@@ -81,33 +81,31 @@ body.mod-kistology-v535 .mod-surface-mark-glyph-v556{
   text-shadow:0 0 8px rgba(236,43,140,.46)!important;
 }
 
-/* BACKSTAGE · Maschinenraum-Gold mit technischer Klammer */
+/* BACKSTAGE · exakt derselbe feste Zeichen-Slot wie das normale S.
+   Die sichtbare Werkzeugform wird in header-consolidated-v560.css rein optisch
+   innerhalb dieses Slots gezeichnet und darf die Headerbreite nie verändern. */
 body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556{
-  min-width:.84em!important;
-  margin:0 -.01em!important;
+  box-sizing:border-box!important;
+  flex:0 0 .72em!important;
+  width:.72em!important;
+  min-width:.72em!important;
+  max-width:.72em!important;
+  height:1em!important;
+  margin:0 -.04em!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
 }
 body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::before,
 body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
-  position:absolute;
-  top:50%;
-  color:rgba(224,186,98,.58);
-  font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
-  font-size:.46em;
-  line-height:1;
-  transform:translateY(-50%);
-  text-shadow:none;
-}
-body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::before{
-  content:"[";
-  left:-.08em;
-}
-body.mod-backstage-v530 .sport-switch-v510.mod-surface-mark-v556::after{
-  content:"]";
-  right:-.08em;
+  content:none!important;
+  display:none!important;
 }
 body.mod-backstage-v530 .mod-surface-mark-glyph-v556{
-  color:#ffd77a!important;
-  text-shadow:0 0 7px rgba(255,215,122,.45),0 0 17px rgba(224,186,98,.16)!important;
+  display:none!important;
 }
 
 /* FINANZEN · aus MASTER wird MA$TER */

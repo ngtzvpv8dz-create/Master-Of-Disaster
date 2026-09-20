@@ -7,6 +7,7 @@ on:
       - 'index.html'
       - 'app.js'
       - 'header-consolidated-v560.css'
+      - 'surface-brand-v556.css'
       - 'sw.js'
       - 'stability-v596.js'
       - '.github/workflows/v596-header-integrity.yml'
@@ -32,6 +33,7 @@ jobs:
           idx=Path('index.html').read_text(encoding='utf-8')
           app=Path('app.js').read_text(encoding='utf-8')
           css=Path('header-consolidated-v560.css').read_text(encoding='utf-8')
+          surface=Path('surface-brand-v556.css').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
 
           bad='</script>' + chr(92) + 'n'
@@ -39,7 +41,8 @@ jobs:
               raise SystemExit('Literal backslash-n remains in index.html')
           for marker in [
               './app.js?v=596-integrity',
-              './header-consolidated-v560.css?v=596b-brand-center',
+              './header-consolidated-v560.css?v=596c-backstage-chrome',
+              './surface-brand-v556.css?v=596c-backstage-chrome',
               './stability-v596.js?v=596b-brand-center',
               "version:'V596'"
           ]:
@@ -57,6 +60,10 @@ jobs:
                   raise SystemExit(f'Missing V596 integrity marker: {marker}')
           if 'width:100vw!important' not in css or 'margin-left:calc(50% - 50vw)!important' not in css or '--mod-brand-center-offset-v596' not in css:
               raise SystemExit('Viewport-centered header geometry missing')
+          if 'width:.58em!important' not in css or 'background:linear-gradient(' not in css:
+              raise SystemExit('Backstage chrome wrench geometry missing')
+          if 'min-width:.84em!important' in surface:
+              raise SystemExit('Legacy Backstage .84em widening still present')
           import re
           cache_match=re.search(r'const CACHE_NAME="([^"]+)"',sw)
           if not cache_match or not cache_match.group(1).startswith('master-of-disaster-'):
@@ -127,6 +134,22 @@ jobs:
             await page.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='hub',null,{timeout:10000});
             await page.click('[data-mod-hub-launch-v517="backstage"]');
             await page.waitForFunction(()=>document.body.classList.contains('mod-backstage-v530')&&typeof collectDataIntegrityReport==='function',null,{timeout:30000});
+            await page.waitForTimeout(250);
+
+            const backstageGeometry=await page.evaluate(()=>{
+              window.__modStabilityV596?.recenterBrand?.();
+              const title=document.querySelector('.mod-brand-title-v525');
+              const marker=document.querySelector('.sport-switch-v510.mod-surface-mark-v556');
+              const rects=[...title.children].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+              const left=Math.min(...rects.map(r=>r.left));
+              const right=Math.max(...rects.map(r=>r.right));
+              const markerWidth=marker.getBoundingClientRect().width;
+              const wrenchWidth=parseFloat(getComputedStyle(marker,'::before').width)||0;
+              return {visualCenter:(left+right)/2,viewportCenter:innerWidth/2,markerWidth,wrenchWidth};
+            });
+            if(Math.abs(backstageGeometry.visualCenter-backstageGeometry.viewportCenter)>1.25)throw new Error(label+' Backstage brand not centered '+JSON.stringify(backstageGeometry));
+            if(Math.abs(backstageGeometry.markerWidth-k.markerWidth)>.25)throw new Error(label+' Backstage slot differs from Kistology '+JSON.stringify({backstageGeometry,k}));
+            if(!(backstageGeometry.wrenchWidth>0&&backstageGeometry.wrenchWidth<backstageGeometry.markerWidth))throw new Error(label+' Backstage wrench does not stay inside fixed slot '+JSON.stringify(backstageGeometry));
 
             const integrity=await page.evaluate(()=>{
               const fn=collectDataIntegrityReport.toString();
@@ -190,7 +213,7 @@ jobs:
             const alive=await page.evaluate(()=>new Promise(resolve=>setTimeout(()=>resolve(true),80)));
             if(!alive)throw new Error(label+' event loop not responsive after Backstage');
 
-            return {home,k,integrity};
+            return {home,k,backstageGeometry,integrity};
           }
 
           (async()=>{
@@ -252,6 +275,21 @@ jobs:
             await page.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='hub',null,{timeout:10000});
             await page.click('[data-mod-hub-launch-v517="backstage"]');
             await page.waitForFunction(()=>document.body.classList.contains('mod-backstage-v530')&&typeof collectDataIntegrityReport==='function',null,{timeout:30000});
+            await page.waitForTimeout(250);
+
+            const backstageGeometry=await page.evaluate(()=>{
+              window.__modStabilityV596?.recenterBrand?.();
+              const title=document.querySelector('.mod-brand-title-v525');
+              const marker=document.querySelector('.sport-switch-v510.mod-surface-mark-v556');
+              const rects=[...title.children].map(el=>el.getBoundingClientRect()).filter(r=>r.width>0&&r.height>0);
+              const left=Math.min(...rects.map(r=>r.left));
+              const right=Math.max(...rects.map(r=>r.right));
+              const markerWidth=marker.getBoundingClientRect().width;
+              const wrenchWidth=parseFloat(getComputedStyle(marker,'::before').width)||0;
+              return {visualCenter:(left+right)/2,viewportCenter:innerWidth/2,markerWidth,wrenchWidth};
+            });
+            if(Math.abs(backstageGeometry.visualCenter-backstageGeometry.viewportCenter)>1.25)throw new Error('LIVE Backstage brand not centered '+JSON.stringify(backstageGeometry));
+            if(!(backstageGeometry.markerWidth>0&&backstageGeometry.wrenchWidth>0&&backstageGeometry.wrenchWidth<backstageGeometry.markerWidth))throw new Error('LIVE Backstage wrench geometry invalid '+JSON.stringify(backstageGeometry));
 
             const integrity=await page.evaluate(()=>{
               const originalTasks=tasks;
@@ -281,7 +319,7 @@ jobs:
 
             await page.click('#modHomeButtonV525',{timeout:8000});
             await page.waitForFunction(()=>document.body.dataset.modAppSurfaceV515==='hub'&&!document.body.classList.contains('mod-backstage-v530'),null,{timeout:8000});
-            console.log('V596 LIVE + PASS',JSON.stringify({home,k}));
+            console.log('V596 LIVE + PASS',JSON.stringify({home,k,backstageGeometry}));
           }
 
           (async()=>{
