@@ -36,7 +36,7 @@ jobs:
             "serviceWorker.register('./sw.js?v=603-bootstrap-cleanup'"
           ]:
               if marker not in index: raise SystemExit(f'Missing V603 index marker: {marker}')
-          for marker in ['log-core-v603.js','kistology-v603.js','backstage-v531.js','history-safety-net-v498.js','backup-model-v600.js']:
+          for marker in ['log-core-v603.js','todo-stability-v603.js','kistology-v603.js','backstage-v531.js','history-safety-net-v498.js','backup-model-v600.js']:
               if marker not in runtime: raise SystemExit(f'Missing current runtime marker: {marker}')
           for marker in ['app-hub-launcher-v603.js','surface-header-v603.js','area-runtime-v603.js','kistology-v603.js','log-core-v603.js']:
               if marker not in sw: raise SystemExit(f'Missing current service-worker marker: {marker}')
