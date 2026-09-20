@@ -1,0 +1,143 @@
+name: V594 Comprehensive Live Selfcheck
+on:
+  push:
+    branches: [diagnostic/v594-comprehensive-20260920-0931]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium webkit >/dev/null 2>&1
+      - name: Test deployed PWA
+        run: |
+          cat > check.js <<'NODE'
+          const {chromium,webkit}=require('playwright');
+          const base='https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/';
+          async function run(browserType,name){
+            const browser=await browserType.launch({headless:true});
+            const ctx=await browser.newContext({viewport:{width:390,height:844}});
+            const page=await ctx.newPage();
+            const out={browser:name,errors:[]};
+            page.on('pageerror',e=>out.errors.push('page:'+String(e.message||e)));
+            page.on('console',m=>{if(m.type()==='error')out.errors.push('console:'+m.text())});
+            const url=base+'?v594comprehensive='+name+'-'+Date.now();
+
+            await page.goto(url,{waitUntil:'domcontentloaded',timeout:60000});
+            await page.waitForSelector('[data-mod-hub-launch-v517="sport"]',{timeout:15000});
+            await page.waitForTimeout(12000);
+            out.home=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              safe:document.documentElement.dataset.modV591==='home-safe',
+              appCore:typeof window.render==='function',
+              todoRuntime:!!window.__modTaskTimeWeightDetailsV489
+            }));
+
+            await page.click('[data-mod-hub-launch-v517="sport"]');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-sport-mode-v510')&&document.body.dataset.modAppSurfaceV515==='sport',{timeout:20000});
+            out.sport=await page.evaluate(()=>({
+              pointer:getComputedStyle(document.getElementById('sportSwitchV510')).pointerEvents,
+              role:document.getElementById('sportSwitchV510').getAttribute('role'),
+              tabindex:document.getElementById('sportSwitchV510').getAttribute('tabindex'),
+              hidden:document.getElementById('sportSwitchV510').getAttribute('aria-hidden'),
+              homePointer:getComputedStyle(document.getElementById('modHomeButtonV525')).pointerEvents,
+              surface:document.body.dataset.modAppSurfaceV515
+            }));
+
+            await page.evaluate(()=>{
+              const s=document.getElementById('sportSwitchV510');
+              s.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
+            });
+            await page.waitForTimeout(500);
+            out.afterSyntheticS=await page.evaluate(()=>({
+              sport:document.body.classList.contains('mod-sport-mode-v510'),
+              surface:document.body.dataset.modAppSurfaceV515
+            }));
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-app-hub-v515')&&document.body.dataset.modAppSurfaceV515==='hub',{timeout:6000});
+            out.homeAfterSport=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              sport:document.body.classList.contains('mod-sport-mode-v510'),
+              surface:document.body.dataset.modAppSurfaceV515
+            }));
+
+            await page.click('[data-mod-hub-launch-v517="todo"]');
+            await page.waitForFunction(()=>!!window.__modTaskTimeWeightDetailsV489&&!!window.__modNestedTaskWeightLayoutV490&&!!window.__modUiCardStabilityV491&&!!window.__modTaskCardRailPolishV492&&!!window.__modUiAlignmentV493&&!!window.__modSummaryWeightDuePolishV494,{timeout:30000});
+            out.todo=await page.evaluate(()=>({
+              surface:document.body.dataset.modAppSurfaceV515,
+              v489:!!window.__modTaskTimeWeightDetailsV489,
+              v490:!!window.__modNestedTaskWeightLayoutV490,
+              v491:!!window.__modUiCardStabilityV491,
+              v492:!!window.__modTaskCardRailPolishV492,
+              v493:!!window.__modUiAlignmentV493,
+              v494:!!window.__modSummaryWeightDuePolishV494
+            }));
+
+            await page.goto(url+'&fresh=backstage',{waitUntil:'domcontentloaded',timeout:60000});
+            await page.waitForSelector('[data-mod-hub-launch-v517="backstage"]',{timeout:15000});
+            const t0=Date.now();
+            await page.click('[data-mod-hub-launch-v517="backstage"]');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-backstage-v530')&&!!window.__modBackstageV531,{timeout:20000});
+            out.backstage=await page.evaluate(()=>({
+              shell:!!document.getElementById('modBackstageV530'),
+              active:window.__modBackstageV531?.activeSection,
+              surface:document.body.dataset.modAppSurfaceV515,
+              tabs:document.querySelectorAll('[data-backstage-section-v531]').length,
+              heavyBefore:!!window.__modBackupStabilityV506
+            }));
+            out.backstage.openMs=Date.now()-t0;
+
+            const backupButton=page.locator('[data-backstage-section-v531="backup"]');
+            await backupButton.click();
+            await page.waitForFunction(()=>!!document.querySelector('[data-backstage-backup-v533="true"]'),{timeout:5000});
+            out.backupImmediate=await page.evaluate(()=>({
+              dashboard:!!document.querySelector('[data-backstage-backup-v533="true"]'),
+              active:window.__modBackstageV531?.activeSection
+            }));
+            await page.waitForFunction(()=>!!window.__modRecoveryHistoryV498&&!!window.__modBackupStabilityV506&&!!window.__modBackupSourceFallbackV506,{timeout:30000});
+            out.backupHydrated=await page.evaluate(()=>({
+              history:!!window.__modRecoveryHistoryV498,
+              stability:!!window.__modBackupStabilityV506,
+              fallback:!!window.__modBackupSourceFallbackV506,
+              v533:!!window.__modBackstageBackupV533,
+              dashboard:!!document.querySelector('[data-backstage-backup-v533="true"]')
+            }));
+
+            await page.click('#modHomeButtonV525');
+            await page.waitForFunction(()=>document.body.classList.contains('mod-app-hub-v515')&&document.body.dataset.modAppSurfaceV515==='hub',{timeout:6000});
+            out.homeAfterBackstage=await page.evaluate(()=>({
+              hub:document.body.classList.contains('mod-app-hub-v515'),
+              backstage:document.body.classList.contains('mod-backstage-v530'),
+              surface:document.body.dataset.modAppSurfaceV515
+            }));
+
+            out.pass=
+              out.home.hub&&out.home.safe&&!out.home.appCore&&!out.home.todoRuntime&&
+              out.sport.pointer==='none'&&out.sport.role===null&&out.sport.tabindex===null&&out.sport.hidden==='true'&&out.sport.homePointer!=='none'&&out.sport.surface==='sport'&&
+              out.afterSyntheticS.sport&&out.afterSyntheticS.surface==='sport'&&
+              out.homeAfterSport.hub&&!out.homeAfterSport.sport&&out.homeAfterSport.surface==='hub'&&
+              Object.values(out.todo).every(Boolean)&&
+              out.backstage.shell&&out.backstage.tabs>=5&&out.backstage.surface==='backstage'&&out.backstage.heavyBefore===false&&out.backstage.openMs<12000&&
+              out.backupImmediate.dashboard&&out.backupImmediate.active==='backup'&&
+              Object.values(out.backupHydrated).every(Boolean)&&
+              out.homeAfterBackstage.hub&&!out.homeAfterBackstage.backstage&&out.homeAfterBackstage.surface==='hub'&&
+              out.errors.length===0;
+            await browser.close();
+            return out;
+          }
+          (async()=>{
+            const results=[];
+            results.push(await run(chromium,'chromium'));
+            results.push(await run(webkit,'webkit'));
+            console.log(JSON.stringify(results,null,2));
+            if(!results.every(x=>x.pass))process.exitCode=1;
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE
+          node check.js
