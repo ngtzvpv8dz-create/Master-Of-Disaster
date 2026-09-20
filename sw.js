@@ -45,12 +45,26 @@ self.addEventListener("install",event=>{
 self.addEventListener("activate",event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    for(const key of keys){
-      if(key!==CACHE_NAME&&key.startsWith("master-of-disaster-")){
-        try{await caches.delete(key);}catch(_){}
-      }
+    const legacyKeys=keys.filter(key=>key!==CACHE_NAME&&key.startsWith("master-of-disaster-"));
+    const hadLegacy=legacyKeys.length>0;
+    for(const key of legacyKeys){
+      try{await caches.delete(key);}catch(_){}
     }
     await self.clients.claim();
+
+    /* Falls noch eine alte V603/V604-Seite offen ist, kennt sie den V605-Gate-Code nicht.
+       Ein einmaliger Worker-gesteuerter Reload bringt auch diesen Alt-Client sauber auf V605. */
+    if(hadLegacy){
+      try{
+        const windows=await self.clients.matchAll({type:"window",includeUncontrolled:true});
+        for(const client of windows){
+          try{
+            const url=new URL(client.url);
+            if(url.origin===self.location.origin)await client.navigate(client.url);
+          }catch(_){}
+        }
+      }catch(_){}
+    }
   })());
 });
 
