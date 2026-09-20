@@ -109,6 +109,8 @@
       if(result.error)throw result.error;
       result=await client.from(LOG_TABLE).delete().eq('user_id',userId).lt('occurred_at',cutoff);
       if(result.error)throw result.error;
+      result=await client.from('backup_db_changes').delete().eq('user_id',userId).lt('occurred_at',cutoff);
+      if(result.error)throw result.error;
 
       safeSet(LAST_SYNC_KEY,syncedAt);
       safeSet(PENDING_KEY,'0');
