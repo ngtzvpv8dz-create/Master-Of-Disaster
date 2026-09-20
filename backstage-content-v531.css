@@ -129,16 +129,13 @@ body.mod-backstage-v531 #viewContainer input:focus-visible{
 }
 
 /* LIVE-LOG und 7-Tage-Log: dieselbe Sprache, aber keine gelbe Wand */
-body.mod-backstage-v531 #viewContainer .live-log-v453,
 body.mod-backstage-v531 #viewContainer .mod-log-v498{
   color:var(--bs-content-text);
 }
-body.mod-backstage-v531 #viewContainer .live-log-v453 h2,
 body.mod-backstage-v531 #viewContainer .mod-log-v498 h2{
   color:#e5ca84;
   letter-spacing:.06em;
 }
-body.mod-backstage-v531 #viewContainer .log-chip-v453,
 body.mod-backstage-v531 #viewContainer .mod-log-chip-v498{
   border-radius:0!important;
   border-color:rgba(224,186,98,.15)!important;
@@ -146,7 +143,6 @@ body.mod-backstage-v531 #viewContainer .mod-log-chip-v498{
   color:#a9a59b!important;
   clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);
 }
-body.mod-backstage-v531 #viewContainer .log-chip-v453.active,
 body.mod-backstage-v531 #viewContainer .mod-log-chip-v498.active{
   border-color:rgba(224,186,98,.38)!important;
   background:rgba(224,186,98,.105)!important;
@@ -159,7 +155,6 @@ body.mod-backstage-v531 #viewContainer .mod-log-search-v498{
   color:var(--bs-content-text)!important;
   clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
 }
-body.mod-backstage-v531 #viewContainer .log-row-v453,
 body.mod-backstage-v531 #viewContainer .mod-log-day-v498,
 body.mod-backstage-v531 #viewContainer .mod-log-row-v498,
 body.mod-backstage-v531 #viewContainer .mod-point-v498{
@@ -167,7 +162,6 @@ body.mod-backstage-v531 #viewContainer .mod-point-v498{
   background:rgba(255,255,255,.018)!important;
   clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
 }
-body.mod-backstage-v531 #viewContainer .log-row-v453:not([data-level="ERROR"]):not([data-level="WARN"]):not([data-level="PASS"]),
 body.mod-backstage-v531 #viewContainer .mod-log-day-v498,
 body.mod-backstage-v531 #viewContainer .mod-log-row-v498:not([data-level="ERROR"]):not([data-level="WARN"]),
 body.mod-backstage-v531 #viewContainer .mod-point-v498{
