@@ -1,5 +1,5 @@
-// V603 · Current app shell + network-first code delivery.
-const CACHE_NAME="master-of-disaster-v603-bootstrap-cleanup";
+// V604 · Minimal current app shell + cache-first versioned code assets.
+const CACHE_NAME="master-of-disaster-v604-static";
 const CORE_SHELL=[
   "./",
   "./index.html",
@@ -15,18 +15,8 @@ const CORE_SHELL=[
   "./header-consolidated-v560.css",
   "./surface-header-v603.css",
   "./surface-header-v603.js",
-  "./area-runtime-v603.js",
+  "./area-runtime-v604.js",
   "./fixed-app-header-v475.js",
-  "./kistology-v603.css",
-  "./kistology-v603.js",
-  "./log-core-v603.js",
-  "./todo-stability-v603.js",
-  "./terminal-delete-v485.js",
-  "./backstage-v531.css",
-  "./backstage-content-v531.css",
-  "./backstage-size-v532.css",
-  "./backstage-v531.js",
-  "./backstage-size-v532.js",
   "./assets/icons/todo-v524-192.png",
   "./assets/icons/sport-v524-192.png",
   "./assets/icons/kistology-v524-192.png",
@@ -41,21 +31,25 @@ self.addEventListener("install",event=>{
   self.skipWaiting();
   event.waitUntil((async()=>{
     const cache=await caches.open(CACHE_NAME);
-    await Promise.all(CORE_SHELL.map(async path=>{
+    for(const path of CORE_SHELL){
       try{
         const response=await fetch(path,{cache:"no-store"});
         if(response&&response.ok)await cache.put(path,response.clone());
       }catch(_){}
-    }));
+    }
   })());
 });
 
 self.addEventListener("activate",event=>{
-  event.waitUntil(
-    caches.keys()
-      .then(keys=>Promise.all(keys.filter(key=>key!==CACHE_NAME).map(key=>caches.delete(key))))
-      .then(()=>self.clients.claim())
-  );
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    for(const key of keys){
+      if(key!==CACHE_NAME){
+        try{await caches.delete(key);}catch(_){}
+      }
+    }
+    await self.clients.claim();
+  })());
 });
 
 function fetchAndRefresh(request){
@@ -86,6 +80,12 @@ async function networkFirst(request,{fallback=null,timeoutMs=2600}={}){
   return (await network)||Response.error();
 }
 
+async function cacheFirstCurrent(request){
+  const hit=await cached(request);
+  if(hit)return hit;
+  return (await fetchAndRefresh(request).catch(()=>null))||Response.error();
+}
+
 self.addEventListener("fetch",event=>{
   if(event.request.method!=="GET")return;
   const url=new URL(event.request.url);
@@ -104,11 +104,11 @@ self.addEventListener("fetch",event=>{
   const codeAsset=sameOrigin&&(
     event.request.destination==="script"||
     event.request.destination==="style"||
-    /\.(?:js|css|json|webmanifest)$/i.test(url.pathname)
+    /.(?:js|css|json|webmanifest)$/i.test(url.pathname)
   );
 
   if(codeAsset){
-    event.respondWith(networkFirst(event.request,{timeoutMs:2200}));
+    event.respondWith(cacheFirstCurrent(event.request));
     return;
   }
 
