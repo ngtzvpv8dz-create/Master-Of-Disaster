@@ -20,7 +20,7 @@ jobs:
           node --check sw.js
           test -f backstage-v530.css
           grep -q 'backstage-v530.css?v=530-1425' index.html
-          grep -q 'backstage-v530.js?v=530-1425' index.html
+          grep -q 'backstage-v530.js?v=600-backup-model' index.html
           grep -q 'const CACHE_NAME=' sw.js
           grep -q '"./backstage-v530.css"' sw.js
           grep -q '"./backstage-v530.js"' sw.js
