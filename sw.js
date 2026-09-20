@@ -87,6 +87,7 @@ self.addEventListener("message",event=>{
     const job=(async()=>{
       const cache=await caches.open(CACHE_NAME);
       let done=0;
+      const failures=[];
       for(const entry of entries){
         const url=String(entry?.url||"");
         if(!url)continue;
@@ -99,14 +100,13 @@ self.addEventListener("message",event=>{
             if(!response||!response.ok)throw new Error("HTTP "+(response?.status||0));
             await cache.put(request,response.clone());
           }
-          done++;
-          try{port?.postMessage({type:"MOD_WARM_PROGRESS",done,total:entries.length,label,url});}catch(_){}
         }catch(error){
-          try{port?.postMessage({type:"MOD_WARM_ERROR",done,total:entries.length,label,url,message:error?.message||String(error)});}catch(_){}
-          throw error;
+          failures.push({url,label,message:error?.message||String(error)});
         }
+        done++;
+        try{port?.postMessage({type:"MOD_WARM_PROGRESS",done,total:entries.length,label,url,failed:failures.some(item=>item.url===url)});}catch(_){}
       }
-      try{port?.postMessage({type:"MOD_WARM_DONE",done,total:entries.length,version:SW_VERSION});}catch(_){}
+      try{port?.postMessage({type:"MOD_WARM_DONE",done,total:entries.length,version:SW_VERSION,failures});}catch(_){}
     })();
     event.waitUntil(job);
   }
