@@ -77,7 +77,7 @@
     }
     if(!window.__modBackstageBackupV533&&!document.querySelector('script[data-mod-backstage-backup-v533]')){
       const backupDeck=document.createElement('script');
-      backupDeck.src='./backstage-backup-v533.js?v=533-backup-deck';
+      backupDeck.src='./backstage-backup-v533.js?v=600-unified';
       backupDeck.async=false;
       backupDeck.dataset.modBackstageBackupV533='true';
       document.head.appendChild(backupDeck);
