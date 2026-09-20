@@ -1,0 +1,44 @@
+name: Temporary encrypted backup transport
+
+on:
+  push:
+    paths:
+      - ".github/workflows/__temp_hyper_backup_transport.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  transport:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download encrypted Supabase backup blob
+        env:
+          SUPABASE_URL: https://oktpzwhhndsbikkeelot.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_EaxtFXKAGOLyI6HRWPU6DQ_f04wfWru
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/__mod_backup_blob_9dba85ae3c59?select=payload_base64&id=eq.1" \
+            -o response.json
+          python3 - <<'PY'
+          import json, base64, pathlib
+          rows = json.load(open("response.json", "r", encoding="utf-8"))
+          if len(rows) != 1 or not rows[0].get("payload_base64"):
+              raise SystemExit("Encrypted backup row missing")
+          data = base64.b64decode("".join(rows[0]["payload_base64"].split()))
+          pathlib.Path("supabase-full-export.pgp").write_bytes(data)
+          print("bytes", len(data))
+          PY
+          sha256sum supabase-full-export.pgp > supabase-full-export.sha256
+
+      - name: Upload encrypted transport artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod-hyper-backup-transport
+          path: |
+            supabase-full-export.pgp
+            supabase-full-export.sha256
+          if-no-files-found: error
+          retention-days: 1
