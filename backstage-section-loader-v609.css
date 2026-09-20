@@ -1,0 +1,105 @@
+/* V609 · BACKSTAGE SECTION LOADER
+   Sichtbarer, ruhiger Loader für LOG/BACKUP/RESTORE/HISTORY.
+*/
+.mod-backstage-section-loader-v609{
+  position:relative;
+  margin:0;
+  padding:18px 16px 16px;
+  border:1px solid rgba(224,186,98,.22);
+  background:
+    linear-gradient(135deg,rgba(224,186,98,.055),transparent 44%),
+    rgba(12,13,14,.96);
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);
+  color:#ece7dc;
+}
+.mod-backstage-section-loader-v609::before{
+  content:'';
+  position:absolute;
+  left:0;
+  top:14px;
+  bottom:14px;
+  width:2px;
+  background:linear-gradient(180deg,rgba(255,215,122,.72),rgba(224,186,98,.10));
+}
+.mod-backstage-section-loader-kicker-v609{
+  color:#9f9067;
+  font-size:.64rem;
+  font-weight:950;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.mod-backstage-section-loader-v609 h3{
+  margin:7px 0 7px;
+  color:#ead08b;
+  font-size:1rem;
+  letter-spacing:.06em;
+}
+.mod-backstage-section-loader-step-v609{
+  margin:0 0 14px;
+  color:#c6bfae;
+  font-size:.82rem;
+}
+.mod-backstage-section-loader-track-v609{
+  position:relative;
+  height:5px;
+  overflow:hidden;
+  border-radius:999px;
+  background:rgba(255,255,255,.075);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.45);
+}
+.mod-backstage-section-loader-track-v609>i{
+  display:block;
+  height:100%;
+  border-radius:inherit;
+  background:linear-gradient(90deg,#a77a35,#ffd77a);
+  box-shadow:0 0 14px rgba(255,215,122,.34);
+  transition:width .18s ease;
+}
+.mod-backstage-section-loader-meta-v609{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:8px;
+  color:#8d8778;
+  font-size:.66rem;
+  font-weight:800;
+  letter-spacing:.06em;
+}
+.mod-backstage-section-loader-meta-v609 span:last-child{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  text-align:right;
+}
+.mod-backstage-section-loader-v609[data-state="error"]{
+  border-color:rgba(255,116,123,.38);
+}
+.mod-backstage-section-loader-v609[data-state="error"] h3,
+.mod-backstage-section-loader-v609[data-state="error"] .mod-backstage-section-loader-step-v609{
+  color:#ffb3b8;
+}
+.mod-backstage-section-loader-v609 button{
+  margin-top:14px;
+  width:100%;
+  min-height:38px;
+  border:1px solid rgba(255,215,122,.28);
+  border-radius:0;
+  background:rgba(255,215,122,.06);
+  color:#f0d58d;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+}
+html.mod-backstage-section-loading-v609 body.mod-backstage-v531 .mod-backstage-tab-v531{
+  pointer-events:none!important;
+  opacity:.55;
+}
+@media(max-width:430px){
+  .mod-backstage-section-loader-v609{padding:15px 13px 13px}
+  .mod-backstage-section-loader-meta-v609{font-size:.62rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .mod-backstage-section-loader-track-v609>i{transition:none}
+}
