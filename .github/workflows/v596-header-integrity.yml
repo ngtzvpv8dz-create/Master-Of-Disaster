@@ -57,9 +57,24 @@ jobs:
                   raise SystemExit(f'Missing V596 integrity marker: {marker}')
           if 'width:100vw!important' not in css or 'margin-left:calc(50% - 50vw)!important' not in css:
               raise SystemExit('Viewport-centered header geometry missing')
-          if 'master-of-disaster-v596-header-integrity' not in sw:
-              raise SystemExit('V596 service-worker cache missing')
-          print('V596 static guards PASS')
+          import re
+          cache_match=re.search(r'const CACHE_NAME="([^"]+)"',sw)
+          if not cache_match or not cache_match.group(1).startswith('master-of-disaster-'):
+              raise SystemExit('Service-worker cache name missing or invalid')
+          if '"./stability-v596.js"' not in sw:
+              raise SystemExit('V596 stability marker missing from service-worker app shell')
+
+          reg_match=re.search(r"register\('\./sw\.js\?v=([^']+)'",idx)
+          if not reg_match:
+              raise SystemExit('Service-worker registration cache-buster missing')
+          expected_suffix='v'+reg_match.group(1)
+          if not cache_match.group(1).endswith(expected_suffix):
+              raise SystemExit(
+                  f'Service-worker cache mismatch: index asks for {reg_match.group(1)}, '
+                  f'but sw.js uses {cache_match.group(1)}'
+              )
+
+          print('V596 static guards PASS · active SW cache:',cache_match.group(1))
           PY
 
       - name: Install Playwright
