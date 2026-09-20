@@ -1,5 +1,6 @@
-// V604 · Minimal current app shell + cache-first versioned code assets.
-const CACHE_NAME="master-of-disaster-v604-static";
+// V605 · Version-gated service worker + light area cache warming.
+const SW_VERSION="V605";
+const CACHE_NAME="master-of-disaster-v605-static";
 const CORE_SHELL=[
   "./",
   "./index.html",
@@ -15,7 +16,8 @@ const CORE_SHELL=[
   "./header-consolidated-v560.css",
   "./surface-header-v603.css",
   "./surface-header-v603.js",
-  "./area-runtime-v604.js",
+  "./service-worker-gate-v605.js",
+  "./area-runtime-v605.js",
   "./fixed-app-header-v475.js",
   "./assets/icons/todo-v524-192.png",
   "./assets/icons/sport-v524-192.png",
@@ -43,13 +45,71 @@ self.addEventListener("install",event=>{
 self.addEventListener("activate",event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
-    for(const key of keys){
-      if(key!==CACHE_NAME){
-        try{await caches.delete(key);}catch(_){}
-      }
+    const legacyKeys=keys.filter(key=>key!==CACHE_NAME&&key.startsWith("master-of-disaster-"));
+    const hadLegacy=legacyKeys.length>0;
+    for(const key of legacyKeys){
+      try{await caches.delete(key);}catch(_){}
     }
     await self.clients.claim();
+
+    /* Falls noch eine alte V603/V604-Seite offen ist, kennt sie den V605-Gate-Code nicht.
+       Ein einmaliger Worker-gesteuerter Reload bringt auch diesen Alt-Client sauber auf V605. */
+    if(hadLegacy){
+      try{
+        const windows=await self.clients.matchAll({type:"window",includeUncontrolled:true});
+        for(const client of windows){
+          try{
+            const url=new URL(client.url);
+            if(url.origin===self.location.origin)await client.navigate(client.url);
+          }catch(_){}
+        }
+      }catch(_){}
+    }
   })());
+});
+
+self.addEventListener("message",event=>{
+  const data=event.data||{};
+  const port=event.ports?.[0]||null;
+
+  if(data.type==="MOD_GET_SW_VERSION"){
+    try{port?.postMessage({type:"MOD_SW_VERSION",version:SW_VERSION,cacheName:CACHE_NAME});}catch(_){}
+    return;
+  }
+
+  if(data.type==="MOD_SKIP_WAITING"){
+    self.skipWaiting();
+    return;
+  }
+
+  if(data.type==="MOD_WARM_URLS"){
+    const entries=Array.isArray(data.entries)?data.entries:[];
+    const job=(async()=>{
+      const cache=await caches.open(CACHE_NAME);
+      let done=0;
+      const failures=[];
+      for(const entry of entries){
+        const url=String(entry?.url||"");
+        if(!url)continue;
+        const label=String(entry?.label||"Bereiche werden geladen");
+        try{
+          const request=new Request(url,{cache:"no-store",credentials:"same-origin"});
+          const hit=await cache.match(request,{ignoreSearch:true});
+          if(!hit){
+            const response=await fetch(request);
+            if(!response||!response.ok)throw new Error("HTTP "+(response?.status||0));
+            await cache.put(request,response.clone());
+          }
+        }catch(error){
+          failures.push({url,label,message:error?.message||String(error)});
+        }
+        done++;
+        try{port?.postMessage({type:"MOD_WARM_PROGRESS",done,total:entries.length,label,url,failed:failures.some(item=>item.url===url)});}catch(_){}
+      }
+      try{port?.postMessage({type:"MOD_WARM_DONE",done,total:entries.length,version:SW_VERSION,failures});}catch(_){}
+    })();
+    event.waitUntil(job);
+  }
 });
 
 function fetchAndRefresh(request){
@@ -104,7 +164,7 @@ self.addEventListener("fetch",event=>{
   const codeAsset=sameOrigin&&(
     event.request.destination==="script"||
     event.request.destination==="style"||
-    /.(?:js|css|json|webmanifest)$/i.test(url.pathname)
+    /\.(?:js|css|json|webmanifest)$/i.test(url.pathname)
   );
 
   if(codeAsset){

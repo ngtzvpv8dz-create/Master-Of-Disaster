@@ -1,26 +1,26 @@
-/* V604 · CACHE-WARM BOOTSTRAP + EXECUTION GATE
-   Auf dem Homescreen werden Bereichsdateien nur heruntergeladen/gecached.
-   Bereichs-JavaScript wird erst beim tatsächlichen Öffnen des Bereichs ausgeführt.
-   Das verhindert iOS/WebKit-Reentry-Abstürze durch gleichzeitige Initialisierung aller Module.
+/* V605 · WORKER-GATED LIGHT BOOTSTRAP
+   Der Homescreen wartet zuerst auf den aktuellen Service Worker.
+   Danach werden nur die Kern-Dateien der Bereiche im Worker-Cache vorbereitet.
+   Vollständige Bereichs-Runtimes werden erst beim Öffnen ausgeführt.
 */
 (function(){
   'use strict';
-  if(window.__modAreaRuntimeV604)return;
+  if(window.__modAreaRuntimeV605)return;
 
-  const VERSION='V604';
-  const CACHE_NAME='master-of-disaster-v604-static';
+  const VERSION='V605';
+  const CACHE_NAME='master-of-disaster-v605-static';
   const SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 
   const GROUPS={
     todo:[
       SUPABASE,
-      './supabase-config.js?v=604',
-      './app.js?v=604',
+      './supabase-config.js?v=605',
+      './app.js?v=605',
       './segment-active-duration-v487.js?v=487-1528',
       './segment-duration-v444.js?v=446-1228',
       './time-segments-v443.js?v=446-1228',
       './retroactive-complete-v445.js?v=446-1228',
-      './categories.js?v=604-category-refresh',
+      './categories.js?v=605-category-refresh',
       './ui.js?v=446-1228',
       './historical-segment-breakdown-v488.js?v=493-2035',
       './task-time-weight-details-v489.js?v=489-1825',
@@ -29,60 +29,60 @@
       './task-card-rail-polish-v492.js?v=492-1954',
       './ui-alignment-v493.js?v=493-2035',
       './summary-weight-due-polish-v494.js?v=494-2103',
-      './today-paused-v446.js?v=604-current',
-      './render-stability-v479.js?v=604-current',
-      './today-create-render-v480.js?v=604-current',
-      './terminal-delete-v485.js?v=604-current',
-      './time-segment-scroll-v486.js?v=604-current',
+      './today-paused-v446.js?v=605-current',
+      './render-stability-v479.js?v=605-current',
+      './today-create-render-v480.js?v=605-current',
+      './terminal-delete-v485.js?v=605-current',
+      './time-segment-scroll-v486.js?v=605-current',
       './task-title-library-v507.js?v=507-1345',
       './archive-weight-layout-v508.js?v=508-0709',
-      './log-core-v603.js?v=604-current',
-      './background-log-v454.js?v=604-current',
-      './history-safety-net-v498.js?v=604-current',
-      './meaningful-history-v500.js?v=604-current',
+      './log-core-v603.js?v=605-current',
+      './background-log-v454.js?v=605-current',
+      './history-safety-net-v498.js?v=605-current',
+      './meaningful-history-v500.js?v=605-current',
       './iphone-backup-v400.js?v=600-live-previous',
       './backup-model-v600.js?v=600-unified',
-      './todo-stability-v603.js?v=604-current'
+      './todo-stability-v603.js?v=605-current'
     ],
     sport:[
       SUPABASE,
-      './supabase-config.js?v=604',
+      './supabase-config.js?v=605',
       './supabase-client-lite-v593.js?v=593',
       './sport-v568.js?v=573-xtraining'
     ],
     food:[
       SUPABASE,
-      './supabase-config.js?v=604',
+      './supabase-config.js?v=605',
       './supabase-client-lite-v593.js?v=593',
       './food-v544.js?v=582-recipe-edit-prepared'
     ],
     kistology:[
       SUPABASE,
-      './supabase-config.js?v=604',
+      './supabase-config.js?v=605',
       './supabase-client-lite-v593.js?v=593',
-      './kistology-v603.js?v=604-current'
+      './kistology-v603.js?v=605-current'
     ],
     finance:[
       SUPABASE,
-      './supabase-config.js?v=604',
+      './supabase-config.js?v=605',
       './supabase-client-lite-v593.js?v=593',
       './finance-v552.js?v=552-finance',
       './finance-data-v553.js?v=554-finance-interactions'
     ],
     backstage:[
       SUPABASE,
-      './supabase-config.js?v=604',
-      './app.js?v=604',
+      './supabase-config.js?v=605',
+      './app.js?v=605',
       './development-stats-current-v476.js?v=476-1419',
       './development-stats-v451.js?v=451-1431',
-      './build-freshness-v502.js?v=604',
+      './build-freshness-v502.js?v=605',
       './project-history-v452.js?v=452-1501',
-      './backstage-v531.js?v=604',
+      './backstage-v531.js?v=605',
       './backstage-size-v532.js?v=532-system-size',
-      './log-core-v603.js?v=604-current',
-      './background-log-v454.js?v=604-current',
-      './history-safety-net-v498.js?v=604-current',
-      './meaningful-history-v500.js?v=604-current'
+      './log-core-v603.js?v=605-current',
+      './background-log-v454.js?v=605-current',
+      './history-safety-net-v498.js?v=605-current',
+      './meaningful-history-v500.js?v=605-current'
     ]
   };
 
@@ -109,6 +109,27 @@
     ]
   };
 
+  const WARM_GROUPS={
+    todo:[
+      './app.js?v=605',
+      './categories.js?v=605-category-refresh',
+      './ui.js?v=605',
+      './todo-stability-v603.js?v=605-current'
+    ],
+    sport:['./sport-v568.js?v=605-current'],
+    food:['./food-v544.js?v=605-current'],
+    kistology:['./kistology-v603.js?v=605-current'],
+    finance:[
+      './finance-v552.js?v=605-current',
+      './finance-data-v553.js?v=605-current'
+    ],
+    backstage:[
+      './backstage-v531.js?v=605-current',
+      './log-core-v603.js?v=605-current',
+      './history-safety-net-v498.js?v=605-current'
+    ]
+  };
+
   const LABELS={
     todo:'To Do',
     sport:'Sport',
@@ -119,19 +140,15 @@
   };
 
   const ACTIVE_AREAS=new Set(['todo','sport','food','kistology','finance','backstage']);
-  const warmed=new Set();
-  const warming=new Map();
   const executed=new Set();
   const executing=new Map();
   const readyAreas=new Set();
-
   let ready=false;
   let running=null;
-  let progressState={loaded:0,total:1,percent:0,label:'Grundsystem',ready:false,error:null};
+  let progressState={loaded:0,total:1,percent:0,label:'App wird geprüft',ready:false,error:null};
 
   const abs=src=>{try{return new URL(src,location.href).href}catch(_){return src}};
-  const sameOrigin=src=>{try{return new URL(src,location.href).origin===location.origin}catch(_){return false}};
-  const tick=(ms=12)=>new Promise(resolve=>setTimeout(resolve,ms));
+  const tick=(ms=10)=>new Promise(resolve=>setTimeout(resolve,ms));
 
   function emit(name,detail){
     try{window.dispatchEvent(new CustomEvent(name,{detail}));}catch(_){}
@@ -141,94 +158,27 @@
     progressState={...progressState,...extra};
     progressState.percent=Math.max(0,Math.min(100,Math.round(progressState.loaded/progressState.total*100)));
     const detail={...progressState,version:VERSION};
+    emit('mod:bootstrap-v605-progress',detail);
     emit('mod:bootstrap-v604-progress',detail);
     emit('mod:bootstrap-v603-progress',detail);
-  }
-
-  function markWarm(label){
-    progressState.loaded=Math.min(progressState.total,progressState.loaded+1);
-    notify({label});
-  }
-
-  async function currentCache(){
-    if(!('caches' in window))return null;
-    try{return await caches.open(CACHE_NAME);}catch(_){return null;}
-  }
-
-  async function warmStatic(src,label){
-    const key=abs(src);
-    if(warmed.has(key))return true;
-    if(warming.has(key))return warming.get(key);
-
-    const promise=(async()=>{
-      try{
-        if(sameOrigin(src)){
-          const cache=await currentCache();
-          if(cache){
-            const hit=await cache.match(src,{ignoreSearch:true});
-            if(hit){warmed.add(key);markWarm(label);return true;}
-          }
-          const response=await fetch(src,{cache:'no-store',credentials:'same-origin'});
-          if(!response||!response.ok)throw new Error('HTTP '+(response?.status||0));
-          if(cache){
-            try{await cache.put(src,response.clone());}catch(_){}
-          }else{
-            try{await response.arrayBuffer();}catch(_){}
-          }
-        }else{
-          const response=await fetch(key,{cache:'force-cache',mode:'cors'});
-          if(!response||!response.ok)throw new Error('HTTP '+(response?.status||0));
-          try{await response.arrayBuffer();}catch(_){}
-        }
-        warmed.add(key);
-        markWarm(label);
-        return true;
-      }finally{
-        warming.delete(key);
-      }
-    })().catch(error=>{throw new Error('Vorabladen fehlgeschlagen: '+src+' · '+(error?.message||error));});
-
-    warming.set(key,promise);
-    return promise;
-  }
-
-  async function warmImage(src){
-    const key='image:'+abs(src);
-    if(warmed.has(key))return true;
-    await warmStatic(src,'Bereichssymbole');
-    warmed.add(key);
-    return true;
   }
 
   function loadScript(src){
     const key=abs(src);
     if(executed.has(key))return Promise.resolve(src);
-
     const existing=[...document.scripts].find(script=>script.src===key);
-    if(existing){
-      executed.add(key);
-      return Promise.resolve(src);
-    }
-
+    if(existing){executed.add(key);return Promise.resolve(src);}
     if(executing.has(key))return executing.get(key);
 
     const promise=new Promise((resolve,reject)=>{
       const script=document.createElement('script');
       script.src=src;
       script.async=false;
-      script.dataset.modAreaRuntimeV604='true';
-      script.onload=()=>{
-        executed.add(key);
-        executing.delete(key);
-        resolve(src);
-      };
-      script.onerror=()=>{
-        executing.delete(key);
-        reject(new Error('Ausführen fehlgeschlagen: '+src));
-      };
+      script.dataset.modAreaRuntimeV605='true';
+      script.onload=()=>{executed.add(key);executing.delete(key);resolve(src);};
+      script.onerror=()=>{executing.delete(key);reject(new Error('Ausführen fehlgeschlagen: '+src));};
       document.body.appendChild(script);
     });
-
     executing.set(key,promise);
     return promise;
   }
@@ -268,7 +218,7 @@
     notify({label:(LABELS[id]||id)+' wird geöffnet',ready:true});
     for(const src of GROUPS[id]||[]){
       await loadScript(src);
-      await tick(8);
+      await tick(7);
     }
     await verifyArea(id);
     readyAreas.add(id);
@@ -276,27 +226,95 @@
     return true;
   }
 
-  function iconSources(){
-    const launcher=window.__modHubLauncherV603||window.__modHubLauncherV517;
-    const sources=launcher?.sources?Object.values(launcher.sources):[];
-    return [...new Set(sources)];
-  }
-
-  function uniqueWarmSources(){
-    const map=new Map();
+  function warmEntries(){
+    const seen=new Set();
+    const entries=[];
     for(const id of ['todo','sport','food','kistology','finance','backstage']){
-      for(const src of GROUPS[id]||[]){
-        const key=abs(src);
-        if(!map.has(key))map.set(key,{src,label:LABELS[id]||id});
+      for(const src of WARM_GROUPS[id]||[]){
+        const url=abs(src);
+        if(seen.has(url))continue;
+        seen.add(url);
+        entries.push({url,label:LABELS[id]||id});
       }
     }
-    return [...map.values()];
+    return entries;
   }
 
-  function countTasks(){
-    const resources=uniqueWarmSources().filter(entry=>!warmed.has(abs(entry.src))).length;
-    const images=iconSources().filter(src=>!warmed.has('image:'+abs(src))).length;
-    return Math.max(1,resources+images+1);
+  function warmViaWorker(entries){
+    const controller=navigator.serviceWorker?.controller;
+    if(!controller||!entries.length)return Promise.resolve(false);
+    return new Promise((resolve,reject)=>{
+      const channel=new MessageChannel();
+      let settled=false;
+      const timer=setTimeout(()=>{
+        if(settled)return;
+        settled=true;
+        reject(new Error('Worker-Vorabladen hat zu lange gedauert.'));
+      },30000);
+
+      channel.port1.onmessage=event=>{
+        const data=event.data||{};
+        if(data.type==='MOD_WARM_PROGRESS'){
+          progressState.loaded=Math.min(progressState.total,Number(data.done)||0);
+          notify({label:data.label||'Bereiche werden geladen'});
+        }else if(data.type==='MOD_WARM_DONE'){
+          if(settled)return;
+          settled=true;
+          clearTimeout(timer);
+          resolve(true);
+        }else if(data.type==='MOD_WARM_ERROR'){
+          if(settled)return;
+          settled=true;
+          clearTimeout(timer);
+          reject(new Error(data.message||'Worker-Vorabladen fehlgeschlagen.'));
+        }
+      };
+
+      try{
+        controller.postMessage({
+          type:'MOD_WARM_URLS',
+          entries:entries.map((entry,index)=>({url:entry.url,label:entry.label,index}))
+        },[channel.port2]);
+      }catch(error){
+        clearTimeout(timer);
+        reject(error);
+      }
+    });
+  }
+
+  async function warmFallback(entries){
+    let done=0;
+    const failures=[];
+    for(const entry of entries){
+      try{
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),5000);
+        try{
+          const response=await fetch(entry.url,{cache:'force-cache',signal:controller.signal});
+          if(!response||!response.ok)throw new Error('HTTP '+(response?.status||0));
+          try{await response.body?.cancel?.();}catch(_){}
+        }finally{clearTimeout(timer);}
+      }catch(error){
+        failures.push({url:entry.url,message:error?.message||String(error)});
+        console.warn('V605 optional warmup:',entry.url,error);
+      }
+      done++;
+      progressState.loaded=done;
+      notify({label:entry.label});
+      await tick(8);
+    }
+    return {ok:true,failures};
+  }
+
+  function regressionMode(){
+    try{return new URL(location.href).searchParams.has('reg');}catch(_){return false;}
+  }
+
+  async function ensureWorkerGate(){
+    const gate=window.__modWorkerGateV605;
+    if(!gate?.ready)return {version:VERSION,mode:'no-gate'};
+    notify({label:gate.status?.label||'App wird geprüft',loaded:0,total:1});
+    return gate.ready;
   }
 
   async function preloadAll(){
@@ -305,21 +323,25 @@
 
     running=(async()=>{
       try{
-        progressState={loaded:0,total:countTasks(),percent:0,label:'Grundsystem',ready:false,error:null};
+        const gateState=regressionMode()?{version:VERSION,mode:'test-bypass'}:await ensureWorkerGate();
+
+        const entries=warmEntries();
+        progressState={loaded:0,total:Math.max(1,entries.length),percent:0,label:'Bereiche werden geladen',ready:false,error:null};
         notify();
 
-        for(const src of iconSources()){
-          await warmImage(src);
-          await tick();
+        if(gateState?.mode==='test-bypass'){
+          progressState.loaded=progressState.total;
+          notify({label:'Test-Bootstrap bereit'});
+        }else{
+          let warmed=false;
+          if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+            warmed=await warmViaWorker(entries).catch(error=>{
+              console.warn('V605 Worker-Warmup fallback:',error);
+              return false;
+            });
+          }
+          if(!warmed)await warmFallback(entries);
         }
-
-        for(const entry of uniqueWarmSources()){
-          if(warmed.has(abs(entry.src)))continue;
-          await warmStatic(entry.src,entry.label);
-          await tick();
-        }
-
-        markWarm('Bereiche werden geprüft');
 
         ready=true;
         progressState.loaded=progressState.total;
@@ -328,7 +350,8 @@
         document.documentElement.classList.remove('mod-bootstrap-pending-v603','mod-bootstrap-error-v603');
         document.documentElement.classList.add('mod-bootstrap-ready-v603');
 
-        const detail={version:VERSION,preloadOnly:true};
+        const detail={version:VERSION,preloadOnly:true,workerGated:true,warmAssets:entries.length};
+        emit('mod:bootstrap-v605-ready',detail);
         emit('mod:bootstrap-v604-ready',detail);
         emit('mod:bootstrap-v603-ready',detail);
 
@@ -337,8 +360,8 @@
         try{window.__modFixedAppHeaderV475?.updateHeight?.();}catch(_){}
         return true;
       }catch(error){
-        console.error('V604 Bootstrap:',error);
-        notify({label:'Laden fehlgeschlagen · Tippen zum Wiederholen',ready:false,error:error?.message||String(error)});
+        console.error('V605 Bootstrap:',error);
+        notify({label:'Laden fehlgeschlagen · App erneut öffnen',ready:false,error:error?.message||String(error)});
         document.documentElement.classList.add('mod-bootstrap-error-v603');
         return false;
       }finally{
@@ -357,10 +380,7 @@
 
   async function loadSection(section){
     const list=SECTION_GROUPS[section]||[];
-    for(const src of list){
-      await loadScript(src);
-      await tick(8);
-    }
+    for(const src of list){await loadScript(src);await tick(7);}
     return true;
   }
 
@@ -373,9 +393,9 @@
 
     if(id==='todo'){
       try{window.render();}catch(_){}
-      return window.__modAppHubV515?.open?.('todo',{source:'v604-ready'});
+      return window.__modAppHubV515?.open?.('todo',{source:'v605-ready'});
     }
-    if(id==='sport')return window.__modAppHubV515?.open?.('sport',{source:'v604-ready'});
+    if(id==='sport')return window.__modAppHubV515?.open?.('sport',{source:'v605-ready'});
     if(id==='food')return window.__modFoodV544?.open?.();
     if(id==='finance')return (window.__modFinanceV553||window.__modFinanceV552)?.open?.();
     if(id==='kistology')return window.__modKistologyV603?.open?.();
@@ -394,7 +414,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       if(!ready)return;
-      openArea(id).catch(error=>console.error('V604 Bereich:',id,error));
+      openArea(id).catch(error=>console.error('V605 Bereich:',id,error));
       return;
     }
 
@@ -406,7 +426,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       window.__modBackstageV531?.setSection?.('log');
-      Promise.resolve(window.__modRecoveryHistoryV498?.renderEnhancedLog?.()).catch(error=>console.error('V604 Log:',error));
+      Promise.resolve(window.__modRecoveryHistoryV498?.renderEnhancedLog?.()).catch(error=>console.error('V605 Log:',error));
       return;
     }
 
@@ -418,29 +438,30 @@
       if(section==='backup'&&window.__modBackstageBackupV533?.openBackup)window.__modBackstageBackupV533.openBackup();
       else window.__modBackstageV531?.setSection?.(section);
       if(section==='backup')window.__modBackstageBackupV533?.renderBackupDashboard?.();
-    }).catch(error=>console.error('V604 Backstage:',section,error))
+    }).catch(error=>console.error('V605 Backstage:',section,error))
       .finally(()=>sectionButton.removeAttribute('aria-busy'));
   },true);
 
   const api={
     version:VERSION,
     cacheName:CACHE_NAME,
-    preloadMode:'cache-only-no-execution',
+    preloadMode:'worker-gated-light-cache-warm',
     groups:Object.fromEntries(Object.entries(GROUPS).map(([key,value])=>[key,[...value]])),
+    warmGroups:Object.fromEntries(Object.entries(WARM_GROUPS).map(([key,value])=>[key,[...value]])),
     preloadAll,retry,openArea,loadSection,loadGroup,
     loadArea:async id=>id?loadGroup(id):preloadAll(),
     loadBackstageSection:loadSection,
     get ready(){return ready;},
     get progress(){return {...progressState};},
     get readyAreas(){return [...readyAreas];},
-    get warmedCount(){return warmed.size;},
-    get executedCount(){return executed.size;}
+    get executedCount(){return executed.size;},
+    get warmAssetCount(){return warmEntries().length;}
   };
 
+  window.__modAreaRuntimeV605=api;
   window.__modAreaRuntimeV604=api;
-  /* API aliases only. There is exactly one active runtime implementation. */
   window.__modAreaRuntimeV603=api;
   window.__modAreaRuntimeV591=api;
 
-  setTimeout(preloadAll,120);
+  setTimeout(preloadAll,140);
 })();
