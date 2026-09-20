@@ -1,20 +1,19 @@
-/* V401 · IPHONE-FIRST OFFLINE BACKUP
-   Ziel: Ein Gerät, localStorage ist Master. Supabase ist ausschließlich Sicherung.
-   - Keine Multi-Device-Synchronisation.
-   - Kein automatisches Cloud→Local.
+/* V600 · IPHONE-FIRST BACKUP · LIVE + PREVIOUS
+   Ziel: Ein Gerät, localStorage ist Master. Supabase ist Sicherheitsnetz.
    - Jede lokale Änderung wird lokal sofort gespeichert.
-   - Cloud-Backup erfolgt gebündelt 10 Sekunden nach der LETZTEN lokalen Änderung, nicht als Endlosschleife.
-   - Offline-Änderungen bleiben pending und werden beim Wieder-online-Gehen automatisch gesichert.
-   - Nach jedem Upload wird der Cloud-Snapshot zurückgelesen und vollständig verifiziert.
-   - Zusätzlich wird pro Kalendertag ein Tages-Backup in Supabase geführt und am selben Tag auf den letzten sicheren Stand aktualisiert.
+   - Cloud-Backup erfolgt gebündelt 10 Sekunden nach der LETZTEN lokalen Änderung.
+   - Supabase hält genau zwei vollständige lokale Kernstände: LIVE + PREVIOUS.
+   - Keine täglichen oder wöchentlichen Vollsnapshots mehr.
+   - Offline-Änderungen bleiben pending und werden beim Wieder-online-Gehen gesichert.
+   - Nach jedem Upload wird LIVE zurückgelesen und vollständig verifiziert.
 */
 (function(){
+  if(window.__modIphoneBackupV600)return;
+
   const LIVE_KEY="live_complete_backup_v1";
-  const DAILY_PREFIX="daily_complete_backup_v400_";
-  /* V400-Schlüssel bleiben absichtlich bestehen, damit bestehender Pending-/Last-OK-Status nicht verloren geht. */
+  const PREVIOUS_KEY="previous_complete_backup_v1";
   const PENDING_KEY="masterOfDisasterIphoneBackupPendingV400";
   const LAST_OK_KEY="masterOfDisasterIphoneBackupLastOkV400";
-  const LAST_DAILY_KEY="masterOfDisasterIphoneBackupDailyDateV400";
   const AUTO_BACKUP_DELAY_MS=10000;
   let busy=false;
   let timer=null;
@@ -31,9 +30,9 @@
   function payload(){
     const p=createCompleteBackupPayload();
     if(!p||!p.state) throw new Error("Lokaler Komplett-Snapshot konnte nicht erstellt werden.");
-    p.masterVersion="V401";
-    p.backupMode="iphone-local-master";
-    p.cloudSnapshotVersion=401;
+    p.masterVersion=String(window.__MOD_BUILD__?.version||"V600");
+    p.backupMode="iphone-local-master-live-previous";
+    p.cloudSnapshotVersion=600;
     p.cloudSnapshotSavedAt=new Date().toISOString();
     return p;
   }
@@ -77,6 +76,17 @@
     return {client,userId:user.id};
   }
 
+  async function readSnapshot(client,userId,key){
+    const {data,error}=await client
+      .from("legacy_metadata")
+      .select("payload,created_at")
+      .eq("user_id",userId)
+      .eq("key",key)
+      .limit(1);
+    if(error) throw error;
+    return Array.isArray(data)&&data.length?data[0]:null;
+  }
+
   async function replaceSnapshot(client,userId,key,p){
     let r=await client.from("legacy_metadata").delete().eq("user_id",userId).eq("key",key);
     if(r.error) throw r.error;
@@ -84,11 +94,28 @@
     if(r.error) throw r.error;
   }
 
+  async function rotateLiveSnapshot(client,userId,newPayload){
+    const existing=await readSnapshot(client,userId,LIVE_KEY);
+    if(existing?.payload?.state){
+      const [oldHash,newHash]=await Promise.all([
+        hashState(existing.payload.state),
+        hashState(newPayload.state)
+      ]);
+      if(oldHash!==newHash){
+        const previousPayload={
+          ...existing.payload,
+          previousCapturedAt:existing.created_at||existing.payload.cloudSnapshotSavedAt||null,
+          promotedToPreviousAt:new Date().toISOString()
+        };
+        await replaceSnapshot(client,userId,PREVIOUS_KEY,previousPayload);
+      }
+    }
+    await replaceSnapshot(client,userId,LIVE_KEY,newPayload);
+  }
+
   async function verifyLive(client,userId,localPayload){
-    const {data,error}=await client.from("legacy_metadata").select("payload").eq("user_id",userId).eq("key",LIVE_KEY).limit(1);
-    if(error) throw error;
-    const row=Array.isArray(data)&&data.length?data[0]:null;
-    if(!row||!row.payload||!row.payload.state) throw new Error("Cloud-Verifikation: Live-Backup fehlt.");
+    const row=await readSnapshot(client,userId,LIVE_KEY);
+    if(!row?.payload?.state) throw new Error("Cloud-Verifikation: Live-Backup fehlt.");
     const [a,b]=await Promise.all([hashState(localPayload.state),hashState(row.payload.state)]);
     if(a!==b) throw new Error("Cloud-Verifikation fehlgeschlagen: gesicherter Stand weicht lokal ab.");
   }
@@ -103,7 +130,7 @@
     if(timer){ clearTimeout(timer); timer=null; }
     if(!navigator.onLine){
       setPending(true);
-      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderungen sind lokal gespeichert. Das Cloud-Backup wird automatisch nachgeholt, sobald das iPhone wieder online ist.","v401-offline");
+      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderungen sind lokal gespeichert. Das Cloud-Backup wird automatisch nachgeholt, sobald das iPhone wieder online ist.","v600-offline");
       addStatus();
       return;
     }
@@ -112,27 +139,26 @@
       const s=await session();
       if(!s){
         setPending(true);
-        setUi("warn","CLOUD-BACKUP WARTET","Supabase-Login fehlt. Lokal ist alles gespeichert.","v401-no-session");
+        setUi("warn","CLOUD-BACKUP WARTET","Supabase-Login fehlt. Lokal ist alles gespeichert.","v600-no-session");
         return;
       }
+
       const p=payload();
       const integrity=typeof collectDataIntegrityReport==="function"?collectDataIntegrityReport():{ok:true};
       if(integrity&&integrity.ok===false) throw new Error("Lokale Datenprüfung meldet Fehler. Cloud-Backup wurde vorsichtshalber nicht überschrieben.");
 
-      await replaceSnapshot(s.client,s.userId,LIVE_KEY,p);
+      await rotateLiveSnapshot(s.client,s.userId,p);
       await verifyLive(s.client,s.userId,p);
 
-      const day=berlinDateKey();
-      await replaceSnapshot(s.client,s.userId,DAILY_PREFIX+day,p);
-      safeStorageSet(LAST_DAILY_KEY,day);
       safeStorageSet(LAST_OK_KEY,new Date().toISOString());
       setPending(false);
-      setUi("ok","IPHONE-BACKUP SICHER ✅","Lokaler iPhone-Stand wurde vollständig in Supabase gesichert und zurückgelesen verifiziert. Keine Multi-Device-Synchronisation aktiv.",manual?"v401-manual-backup":"v401-auto-backup");
+      setUi("ok","CLOUD-SICHERUNG OK ✅","Supabase hält den aktuellen lokalen Stand als LIVE und bei Änderungen zusätzlich genau einen PREVIOUS-Stand.",manual?"v600-manual-backup":"v600-auto-backup");
+      try{window.__modBackupModelV600?.syncSafetyNow?.({force:false});}catch(_){}
     }catch(error){
       setPending(true);
       const text=error&&error.message?error.message:String(error||"Unbekannter Backup-Fehler");
-      setUi("warn","CLOUD-BACKUP AUSSTEHEND · LOKAL SICHER 📱",text,"v401-backup-error");
-      console.warn("V401 iPhone backup:",error);
+      setUi("warn","CLOUD-BACKUP AUSSTEHEND · LOKAL SICHER 📱",text,"v600-backup-error");
+      console.warn("V600 iPhone backup:",error);
     }finally{
       busy=false;
       addStatus();
@@ -142,8 +168,9 @@
   function schedule(reason="local-save"){
     setPending(true);
     if(reason){ try{supabaseLiveSyncReasons.add(String(reason));}catch(_){} }
+    try{window.__modBackupModelV600?.markSafetyPending?.(reason);}catch(_){}
     if(!navigator.onLine){
-      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderung lokal gespeichert. Cloud-Backup wartet auf Internet.","v401-offline-pending");
+      setUi("warn","OFFLINE · LOKAL SICHER 📱","Änderung lokal gespeichert. Cloud-Backup wartet auf Internet.","v600-offline-pending");
       addStatus();
       return;
     }
@@ -162,21 +189,22 @@
 
   function addStatus(){
     if(currentTab!=="dev") return;
-    ["offlineSyncStatusV396","syncStatusV399","iphoneBackupStatusV400","iphoneBackupStatusV401"].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+    ["offlineSyncStatusV396","syncStatusV399","iphoneBackupStatusV400","iphoneBackupStatusV401","iphoneBackupStatusV600"].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
     const button=Array.from(document.querySelectorAll("button")).find(btn=>/JETZT SYNCHRONISIEREN|JETZT SICHERN/i.test(btn.textContent||""));
     if(!button||!button.parentElement) return;
     button.textContent="☁️ JETZT SICHERN · SOFORT";
     const box=document.createElement("div");
-    box.id="iphoneBackupStatusV401";
+    box.id="iphoneBackupStatusV600";
     box.style.cssText="margin-top:10px;padding:10px;border:1px solid #30383e;border-radius:10px;background:#0f1315;font-size:10px;line-height:1.55;";
     const last=safeStorageGet(LAST_OK_KEY);
     const shown=last&&typeof formatSupabaseSyncTimestamp==="function"?formatSupabaseSyncTimestamp(last):(last||"NOCH KEINS");
-    box.innerHTML=`<strong>📱 IPHONE · LOCAL MASTER · V401</strong><br>`+
+    box.innerHTML=`<strong>📱 IPHONE · LOCAL MASTER · LIVE + PREVIOUS</strong><br>`+
       `NETZ · ${navigator.onLine?"ONLINE ✅":"OFFLINE ⚠️"}<br>`+
       `CLOUD-BACKUP AUSSTEHEND · ${isPending()?"JA ⚠️":"NEIN ✅"}<br>`+
       `AUTO-BACKUP · 10 SEK. NACH LETZTER ÄNDERUNG ✅<br>`+
+      `CLOUD-STÄNDE · LIVE + PREVIOUS ✅<br>`+
       `LETZTES SICHERES CLOUD-BACKUP · ${escapeHtml(String(shown))}<br>`+
-      `<span style="opacity:.72">Supabase ist Sicherung. Kein automatisches Cloud→Local und keine Geräte-Synchronisation.</span>`;
+      `<span style="opacity:.72">Keine Tages- oder Wochen-Vollsnapshots mehr. Die 7-Tage-Historie läuft separat rollierend.</span>`;
     button.insertAdjacentElement("afterend",box);
   }
 
@@ -193,5 +221,17 @@
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&isPending()&&navigator.onLine)setTimeout(()=>backupNow(false),350);});
   window.addEventListener("load",()=>setTimeout(()=>{addStatus();if(isPending()&&navigator.onLine)backupNow(false);},500));
 
-  window.__modIphoneBackupV401={backupNow,isPending,berlinDateKey,autoBackupDelayMs:AUTO_BACKUP_DELAY_MS};
+  window.__modIphoneBackupV600={
+    version:"V600",
+    backupNow,
+    isPending,
+    berlinDateKey,
+    autoBackupDelayMs:AUTO_BACKUP_DELAY_MS,
+    liveKey:LIVE_KEY,
+    previousKey:PREVIOUS_KEY,
+    rollingTwoSnapshots:true,
+    dailySnapshotsDisabled:true,
+    weeklySnapshotsDisabled:true
+  };
+  window.__modIphoneBackupV401=window.__modIphoneBackupV600;
 })();
