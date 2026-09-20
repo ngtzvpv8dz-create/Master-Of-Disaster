@@ -1,0 +1,123 @@
+/* V603 · UNIFIED APP HEADER
+   Eine Geometrie vom ersten Paint bis in jeden Bereich.
+   Historische Home-Header-Layer V521/V522/V523 werden nicht mehr benötigt.
+*/
+:root{
+  --mod-brand-header-height-v603:64px;
+  --mod-fixed-shell-x-v603:12px;
+}
+
+/* Fixed shell exists globally before the hub starts. Same outer geometry everywhere. */
+html body #appFixedTopV475{
+  box-sizing:border-box!important;
+  width:calc(100% + 24px)!important;
+  max-width:none!important;
+  margin:0 -12px 18px!important;
+  padding:calc(12px + env(safe-area-inset-top)) 12px 10px!important;
+  border:0!important;
+  border-bottom:1px solid color-mix(in srgb,var(--mod-border,#30363b) 72%,transparent)!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+html body #appFixedTopV475::before{
+  border-radius:0!important;
+}
+
+/* Before fixed-app-header has reparented the DOM, reserve exactly the same space. */
+html.mod-bootstrap-pending-v603 body main.app > header.header{
+  box-sizing:border-box!important;
+  width:calc(100% + 24px)!important;
+  max-width:none!important;
+  margin:0 -12px 18px!important;
+  padding:calc(15px + env(safe-area-inset-top)) 12px 10px!important;
+  border:0!important;
+  border-bottom:1px solid color-mix(in srgb,var(--mod-border,#30363b) 72%,transparent)!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+
+/* Same brand block height everywhere. Tabs are outside this height. */
+html body #appFixedTopV475 .header,
+html body main.app > header.header{
+  box-sizing:border-box!important;
+  height:var(--mod-brand-header-height-v603)!important;
+  min-height:var(--mod-brand-header-height-v603)!important;
+  max-height:var(--mod-brand-header-height-v603)!important;
+  margin:0!important;
+  padding:3px 0 0!important;
+  overflow:visible!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transform:none!important;
+}
+
+html body #appFixedTopV475 .header h1,
+html body main.app > header.header h1{
+  margin:0!important;
+  font-size:clamp(28px,8vw,42px)!important;
+  line-height:1!important;
+  letter-spacing:-1.5px!important;
+  white-space:nowrap!important;
+}
+
+/* One permanent one-line tagline slot on Home and every surface. */
+html body .header .eyebrow.mod-surface-tagline-v603{
+  display:block!important;
+  visibility:visible!important;
+  box-sizing:border-box!important;
+  width:calc(100vw - 24px)!important;
+  max-width:560px!important;
+  height:12px!important;
+  min-height:12px!important;
+  max-height:12px!important;
+  margin:7px auto 0!important;
+  padding:0 2px!important;
+  overflow:visible!important;
+  white-space:nowrap!important;
+  text-overflow:clip!important;
+  color:var(--mod-tagline-color-v603,#8c969f)!important;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;
+  font-size:var(--mod-tagline-size-v603,11px)!important;
+  font-weight:800!important;
+  line-height:12px!important;
+  letter-spacing:var(--mod-tagline-letter-v603,1.35px)!important;
+  text-align:center!important;
+  transform:scaleX(var(--mod-tagline-scale-v603,1));
+  transform-origin:center top;
+}
+
+/* First paint gets the same tagline slot before runtime enhancement. */
+html.mod-bootstrap-pending-v603 body .header .eyebrow:not(.mod-surface-tagline-v603){
+  display:block!important;
+  visibility:visible!important;
+  width:calc(100vw - 24px)!important;
+  max-width:560px!important;
+  height:12px!important;
+  min-height:12px!important;
+  margin:7px auto 0!important;
+  padding:0 2px!important;
+  overflow:hidden!important;
+  white-space:nowrap!important;
+  color:#b7abc7!important;
+  font-size:11px!important;
+  font-weight:800!important;
+  line-height:12px!important;
+  letter-spacing:1.35px!important;
+  text-align:center!important;
+}
+
+body[data-mod-app-surface-v515="todo"] .header .eyebrow.mod-surface-tagline-v603{color:#ffad63!important;text-shadow:0 0 12px rgba(255,173,99,.17)}
+body.mod-sport-mode-v510 .header .eyebrow.mod-surface-tagline-v603{color:#6fe4ea!important;text-shadow:0 0 12px rgba(111,228,234,.18)}
+body.mod-finance-v552 .header .eyebrow.mod-surface-tagline-v603{color:#70ffb4!important;text-shadow:0 0 12px rgba(112,255,180,.18)}
+body.mod-kistology-v535 .header .eyebrow.mod-surface-tagline-v603{color:#ff4ca8!important;text-shadow:0 0 12px rgba(255,76,168,.18)}
+body.mod-food-v544 .header .eyebrow.mod-surface-tagline-v603{color:#477b52!important;text-shadow:none}
+body.mod-backstage-v530 .header .eyebrow.mod-surface-tagline-v603{color:#ffd77a!important;text-shadow:0 0 12px rgba(255,215,122,.16)}
+body.mod-app-hub-v515 .header .eyebrow.mod-surface-tagline-v603{color:#b7abc7!important;text-shadow:0 0 12px rgba(183,171,199,.16)}
+
+@media(max-width:390px){
+  :root{--mod-brand-header-height-v603:62px}
+  html body .header .eyebrow.mod-surface-tagline-v603{width:calc(100vw - 18px)!important}
+}
