@@ -22,6 +22,10 @@
 
   async function writeLiveSnapshot(client, userId) {
     if (suppressSnapshotWrite) return null;
+    if (window.__modIphoneBackupV600?.backupNow) {
+      await window.__modIphoneBackupV600.backupNow(false);
+      return null;
+    }
     const payload = createCompleteBackupPayload();
     if (!payload || !payload.state) throw new Error("Lokaler Komplett-Snapshot konnte nicht erstellt werden.");
     payload.masterVersion = "V395";
