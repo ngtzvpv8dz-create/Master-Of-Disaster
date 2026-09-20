@@ -48,11 +48,11 @@ jobs:
           grep -q 'app-hub-launcher-v603.js' sw.js
           grep -q 'surface-header-v603.js' sw.js
           grep -q 'service-worker-gate-v607.js' sw.js
-          grep -q 'area-runtime-v608.js' sw.js
+          grep -q 'area-runtime-v607.js' sw.js
           grep -q 'MOD_GET_SW_VERSION' sw.js
           grep -q 'MOD_WARM_URLS' sw.js
           grep -q "preloadMode:'worker-warm-staged-heavy-execution'" area-runtime-v608.js
-          grep -q "new Set(\['todo','backstage'\])" area-runtime-v608.js
+          grep -Fq "new Set(['todo','backstage'])" area-runtime-v608.js
           grep -q 'browserBreather' area-runtime-v608.js
           grep -q 'recoveryDeferred:true' area-runtime-v608.js
           grep -q 'backstageLogDeferred:true' area-runtime-v608.js
