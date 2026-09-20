@@ -166,75 +166,146 @@
   window.__modServiceWorkerDisabledV586=true;
   </script>
 
-  <script id="modV587LazyRescue">
+  <script id="modV588AreaLoader">
   (function(){
     'use strict';
-    const DELAYED=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2","https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js","./supabase-config.js?v=525-0912","./app.js?v=446-1228","./segment-active-duration-v487.js?v=487-1528","./segment-duration-v444.js?v=446-1228","./time-segments-v443.js?v=446-1228","./retroactive-complete-v445.js?v=446-1228","./integrity-v439.js?v=446-1228","./weight-integrity-v393.js?v=446-1228","./cloud-backup-restore-v394.js?v=446-1228","./full-backup-v397.js?v=446-1228","./stats-and-rules-v403.js?v=446-1228","./categories.js?v=446-1228","./archive-category-v413.js?v=446-1228","./ui.js?v=446-1228","./task-search.js?v=446-1228","./iphone-backup-v400.js?v=446-1228","./remote-commands.js?v=450-1350","./remote-archive-maintenance-v472.js?v=472-1030","./remote-archive-sequence-v478.js?v=478-0732","./remote-task-reopen-v484.js?v=484-0936","./remote-task-segment-repair-v497.js?v=509-2225","./remote-historical-archive-import-v541.js?v=541-1318","./remote-historical-archive-edit-v542.js?v=542-1332","./today-paused-v446.js?v=446-1228","./paused-today-v447.js?v=502-1225","./completed-category-v449.js?v=449-1338","./development-stats-v451.js?v=451-1431","./project-history-v452.js?v=452-1501","./live-log-v453.js?v=453-1641","./background-log-v454.js?v=454-1703","./goals-milestones-v455.js?v=455-1725","./task-notes-v456.js?v=456-1725","./safe-undo-v457.js?v=457-1725","./theme-layout-editor-v458.js?v=458-2240","./theme-preview-fix-v459.js?v=459-2249","./ux-cooking-editor-v460.js?v=460-2320","./theme-editor-stability-v461.js?v=461-2328","./theme-ui-guard-v462.js?v=462-2335","./theme-editor-comfort-v463.js?v=463-2351","./theme-state-design-v464.js?v=464-0003","./theme-state-sync-v465.js?v=465-0010","./theme-package-actions-v466.js?v=466-0025","./theme-package-stability-v467.js?v=467-0031","./theme-editor-polish-v468.js?v=468-0941","./theme-editor-help-v469.js?v=469-0957","./theme-editor-help-stability-v470.js?v=470-1005","./category-group-drag-v473.js?v=473-1215","./today-work-blocks-v474.js?v=474-1305","./remote-work-blocks-v495.js?v=495-0922","./fixed-app-header-v475.js?v=475-1345","./development-stats-current-v476.js?v=476-1419","./statistics-alignment-v477.js?v=477-1440","./render-stability-v479.js?v=479-0746","./today-create-render-v480.js?v=480-0801","./terminal-delete-v485.js?v=485-0954","./time-segment-scroll-v486.js?v=486-1511","./historical-segment-breakdown-v488.js?v=493-2035","./task-time-weight-details-v489.js?v=489-1825","./nested-task-weight-layout-v490.js?v=490-1853","./ui-card-stability-v491.js?v=491-1926","./task-card-rail-polish-v492.js?v=492-1954","./ui-alignment-v493.js?v=493-2035","./summary-weight-due-polish-v494.js?v=494-2103","./build-freshness-v502.js?v=502-1225","./today-interaction-stability-v503.js?v=503-1803","./category-create-stability-v504.js?v=504-1319","./running-task-render-stability-v505.js?v=518-1920","./backstage-v530.js?v=530-1425","./backup-stability-v506.js?v=506-1131","./backup-source-fallback-v506.js?v=506-1244","./task-title-library-v507.js?v=507-1345","./archive-weight-layout-v508.js?v=508-0709","./sport-v568.js?v=573-xtraining","./food-v544.js?v=581-recipe-parity","./finance-v552.js?v=552-finance","./finance-data-v553.js?v=554-finance-interactions"];
-    let loadPromise=null;
-    let loaded=false;
+
+    const GROUPS={
+      todo:[
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+        './supabase-config.js?v=525-0912',
+        './app.js?v=446-1228'
+      ],
+      sport:[
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+        './supabase-config.js?v=525-0912',
+        './sport-v568.js?v=573-xtraining'
+      ],
+      food:[
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+        './supabase-config.js?v=525-0912',
+        './food-v544.js?v=581-recipe-parity'
+      ],
+      finance:[
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+        './supabase-config.js?v=525-0912',
+        './finance-v552.js?v=552-finance',
+        './finance-data-v553.js?v=554-finance-interactions'
+      ],
+      kistology:[
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+        './supabase-config.js?v=525-0912',
+        './kistology-v539.js?v=539-rummage'
+      ],
+      backstage:[
+        'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+        './backstage-v530.js?v=530-1425'
+      ]
+    };
+
+    const loaded=new Set();
+    const loading=new Map();
+
+    function absolute(src){
+      try{return new URL(src,location.href).href;}catch(_){return src;}
+    }
+
+    function alreadyPresent(src){
+      const target=absolute(src);
+      return [...document.scripts].some(s=>s.src===target);
+    }
 
     function loadOne(src){
-      return new Promise((resolve,reject)=>{
+      const key=absolute(src);
+      if(loaded.has(key))return Promise.resolve(src);
+      if(loading.has(key))return loading.get(key);
+      if(alreadyPresent(src)){
+        loaded.add(key);
+        return Promise.resolve(src);
+      }
+      const promise=new Promise((resolve,reject)=>{
         const s=document.createElement('script');
         s.src=src;
         s.async=false;
-        s.onload=()=>resolve(src);
-        s.onerror=()=>reject(new Error('Laden fehlgeschlagen: '+src));
+        s.dataset.modV588='true';
+        s.onload=()=>{loaded.add(key);loading.delete(key);resolve(src);};
+        s.onerror=()=>{loading.delete(key);reject(new Error('Laden fehlgeschlagen: '+src));};
         document.body.appendChild(s);
       });
+      loading.set(key,promise);
+      return promise;
     }
 
-    async function loadLegacy(){
-      if(loaded)return true;
-      if(loadPromise)return loadPromise;
-      document.documentElement.dataset.modV587='loading';
-      loadPromise=(async()=>{
-        for(const src of DELAYED) await loadOne(src);
-        loaded=true;
-        document.documentElement.dataset.modV587='ready';
-        return true;
-      })().catch(error=>{
-        document.documentElement.dataset.modV587='error';
-        console.error('V587 Lazy Rescue:',error);
-        loadPromise=null;
-        throw error;
+    async function loadGroup(id){
+      const list=GROUPS[id]||[];
+      for(const src of list) await loadOne(src);
+      return true;
+    }
+
+    function waitFor(test,timeout=4500){
+      const start=Date.now();
+      return new Promise((resolve,reject)=>{
+        const tick=()=>{
+          try{const value=test();if(value)return resolve(value);}catch(_){}
+          if(Date.now()-start>=timeout)return reject(new Error('Bereich wurde nicht rechtzeitig bereit.'));
+          setTimeout(tick,40);
+        };
+        tick();
       });
-      return loadPromise;
     }
 
-    async function openAfterLoad(id){
-      await loadLegacy();
-      if(id==='todo')return window.__modAppHubV515?.open?.('todo',{source:'v587-lazy'});
-      if(id==='sport')return window.__modAppHubV515?.open?.('sport',{source:'v587-lazy'});
-      if(id==='food')return window.__modFoodV544?.open?.();
-      if(id==='finance')return window.__modFinanceV552?.open?.();
-      if(id==='kistology')return window.__modKistologyV539?.open?.()||window.__modKistologyV538?.open?.()||window.__modKistologyV537?.open?.();
-      if(id==='backstage')return window.__modBackstageV531?.open?.()||window.__modBackstageV530?.open?.();
-      return false;
+    async function openArea(id){
+      document.documentElement.dataset.modV588='loading-'+id;
+      await loadGroup(id);
+
+      if(id==='todo'){
+        await waitFor(()=>typeof window.render==='function'&&Array.isArray(window.tasks||[]));
+        window.__modAppHubV515?.open?.('todo',{source:'v588-area'});
+      }else if(id==='sport'){
+        const api=await waitFor(()=>window.__modSportV568||window.__modSportModeV510);
+        window.__modAppHubV515?.hide?.();
+        api.setMode?.('sport',{persist:true,animate:false});
+      }else if(id==='food'){
+        const api=await waitFor(()=>window.__modFoodV544);
+        api.open?.();
+      }else if(id==='finance'){
+        const api=await waitFor(()=>window.__modFinanceV552||window.__modFinanceV553);
+        api.open?.();
+      }else if(id==='kistology'){
+        const api=await waitFor(()=>window.__modKistologyV539||window.__modKistologyV538||window.__modKistologyV537);
+        try{await api.reload?.();}catch(_){}
+        api.open?.();
+      }else if(id==='backstage'){
+        const api=await waitFor(()=>window.__modBackstageV531||window.__modBackstageV530,6000);
+        api.open?.({section:'system'});
+      }
+      document.documentElement.dataset.modV588='open-'+id;
+      return true;
     }
 
     document.addEventListener('click',event=>{
-      if(loaded)return;
       const button=event.target?.closest?.('[data-mod-hub-launch-v517]');
       if(!button)return;
       const id=button.dataset.modHubLaunchV517;
-      if(!['todo','sport','food','finance','kistology','backstage'].includes(id))return;
+      if(!GROUPS[id])return;
       event.preventDefault();
       event.stopImmediatePropagation();
       button.setAttribute('aria-busy','true');
-      openAfterLoad(id).catch(error=>{
-        console.error(error);
-        button.removeAttribute('aria-busy');
-      });
+      openArea(id).catch(error=>{
+        console.error('V588 Bereichsstart:',id,error);
+        document.documentElement.dataset.modV588='error-'+id;
+      }).finally(()=>button.removeAttribute('aria-busy'));
     },true);
 
-    window.__modLazyRescueV587={
-      load:loadLegacy,
-      isLoaded:()=>loaded,
-      delayedCount:DELAYED.length,
-      homeLoadsOnlyHub:true
+    window.__modAreaLoaderV588={
+      version:'V588',
+      open:openArea,
+      loadGroup,
+      groups:Object.fromEntries(Object.entries(GROUPS).map(([k,v])=>[k,[...v]])),
+      perAreaIsolation:true,
+      homeRuntimeMinimal:true
     };
-    document.documentElement.dataset.modV587='home-safe';
+    document.documentElement.dataset.modV588='home-safe';
   })();
   </script>
 
