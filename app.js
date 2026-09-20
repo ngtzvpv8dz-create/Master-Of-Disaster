@@ -9706,6 +9706,8 @@ block
 
 
 
+/* V596 · DATENPRÜFUNG: rein lesende Semantik-Korrektur.
+   Keine Migration, kein saveTasks(), kein localStorage-Schreibzugriff. */
 function collectDataIntegrityReport() {
 
 const errors = [];
@@ -10258,16 +10260,22 @@ label +
 }
 
 
+const hasStoredActiveDuration =
+task.activeDurationMs !== null &&
+typeof task.activeDurationMs !==
+"undefined";
+
+
 const activeDuration =
-Number(
+hasStoredActiveDuration
+? Number(
 task.activeDurationMs
-);
+)
+: null;
 
 
 if (
-task.activeDurationMs !== null &&
-typeof task.activeDurationMs !==
-"undefined" &&
+hasStoredActiveDuration &&
 (
 !Number.isFinite(
 activeDuration
@@ -10473,6 +10481,19 @@ label +
 if (
 task.activeSegments.length > 0 &&
 openSegments === 0 &&
+hasStoredActiveDuration &&
+(
+task.status ===
+"completed" ||
+task.status ===
+"aborted"
+) &&
+task.type !==
+"leisure" &&
+task.type !==
+"cooking" &&
+task.type !==
+"selfrunner" &&
 Number.isFinite(
 activeDuration
 ) &&
@@ -10738,21 +10759,74 @@ item.activeDurationMs
 );
 
 
+const archiveActualDuration =
+Number(
+item.actualDurationMs
+);
+
+
+const archiveLeisureDuration =
+Number(
+item.leisureDurationMs
+);
+
+
+const archiveCookingActive =
+Number(
+item.cookingActiveDurationMs
+);
+
+
+const archiveCookingPassive =
+Number(
+item.cookingPassiveDurationMs
+);
+
+
+const hasPositiveRecordedArchiveDuration =
+item.type ===
+"selfrunner"
+? true
+: item.type ===
+"leisure"
+? (
+Number.isFinite(archiveLeisureDuration) &&
+archiveLeisureDuration > 0
+) || (
+Number.isFinite(archiveActualDuration) &&
+archiveActualDuration > 0
+)
+: item.type ===
+"cooking"
+? (
+Number.isFinite(archiveActualDuration) &&
+archiveActualDuration > 0
+) || (
+Number.isFinite(archiveCookingActive) &&
+archiveCookingActive > 0
+) || (
+Number.isFinite(archiveCookingPassive) &&
+archiveCookingPassive > 0
+)
+: (
+Number.isFinite(archiveDuration) &&
+archiveDuration > 0
+) || (
+Number.isFinite(archiveActualDuration) &&
+archiveActualDuration > 0
+);
+
+
 /*
   Historischer Altbestand A001–A236 ist als geprüft/freigegeben
-  festgeschrieben. Die neue Pflichtzeit-Regel gilt erst ab A237.
+  festgeschrieben. Ab A237 wird die zum jeweiligen Aufgabentyp passende
+  dokumentierte Dauer geprüft. Freizeit darf activeDurationMs=0 haben,
+  Selbstläufer ebenfalls. Diese Prüfung ist rein lesend.
 */
 if (
 archiveNumber >=
 237 &&
-item.type !==
-"selfrunner" &&
-(
-!Number.isFinite(
-archiveDuration
-) ||
-archiveDuration <= 0
-)
+!hasPositiveRecordedArchiveDuration
 ) {
 
 warnings.push(
@@ -10763,7 +10837,7 @@ archiveNumber
 3,
 "0"
 ) +
-" besitzt keine positive aktive Dauer."
+" besitzt keine positive dokumentierte Dauer."
 );
 
 }
