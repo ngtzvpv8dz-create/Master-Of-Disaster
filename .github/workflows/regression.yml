@@ -22,7 +22,7 @@ jobs:
           node --check app-hub-launcher-v603.js
           node --check surface-header-v603.js
           node --check service-worker-gate-v607.js
-          node --check area-runtime-v607.js
+          node --check area-runtime-v608.js
           node --check kistology-v603.js
           node --check log-core-v603.js
           node --check todo-stability-v603.js
@@ -36,22 +36,27 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v607.js?v=607-worker-gate' index.html
-          grep -q 'area-runtime-v607.js?v=607-light-warm' index.html
+          grep -q 'area-runtime-v608.js?v=608-staged-heavy' index.html
+          grep -q 'area-loader-v608.css?v=608-staged' index.html
           grep -q 'app-hub-launcher-v603.js?v=603-loader' index.html
           grep -q 'surface-header-v603.js?v=603-header' index.html
           grep -q 'kistology-v603.css?v=603' index.html
           ! grep -q "serviceWorker.register('./sw.js" index.html
-          grep -q 'log-core-v603.js' area-runtime-v607.js
-          grep -q 'history-safety-net-v498.js' area-runtime-v607.js
-          grep -q 'backup-model-v600.js' area-runtime-v607.js
+          grep -q 'log-core-v603.js' area-runtime-v608.js
+          grep -q 'history-safety-net-v498.js' area-runtime-v608.js
+          grep -q 'backup-model-v600.js' area-runtime-v608.js
           grep -q 'app-hub-launcher-v603.js' sw.js
           grep -q 'surface-header-v603.js' sw.js
           grep -q 'service-worker-gate-v607.js' sw.js
           grep -q 'area-runtime-v607.js' sw.js
           grep -q 'MOD_GET_SW_VERSION' sw.js
           grep -q 'MOD_WARM_URLS' sw.js
-          grep -q "preloadMode:'worker-gated-light-cache-warm'" area-runtime-v607.js
-          grep -q 'await ensureWorkerGate()' area-runtime-v607.js
+          grep -q "preloadMode:'worker-warm-staged-heavy-execution'" area-runtime-v608.js
+          grep -Fq "new Set(['todo','backstage'])" area-runtime-v608.js
+          grep -q 'browserBreather' area-runtime-v608.js
+          grep -q 'recoveryDeferred:true' area-runtime-v608.js
+          grep -q 'backstageLogDeferred:true' area-runtime-v608.js
+          grep -q 'await ensureWorkerGate()' area-runtime-v608.js
           grep -q 'dbReconnectV506:true' history-safety-net-v498.js
           grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
           grep -q 'codeloadBypassed:true' backup-source-fallback-v506.js
@@ -76,33 +81,48 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             page.on('pageerror',error=>console.error('PAGEERROR',error.message));
             page.on('requestfailed',request=>console.error('REQUESTFAILED',request.url(),request.failure()?.errorText));
-            page.on('response',response=>{if(/v607|area-runtime|worker-gate/.test(response.url()))console.log('V607 RESPONSE',response.status(),response.url());});
+            page.on('response',response=>{if(/v608|area-runtime|worker-gate/.test(response.url()))console.log('V608 RESPONSE',response.status(),response.url());});
             await page.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await page.goto('http://127.0.0.1:8787/?reg='+Date.now(),{waitUntil:'networkidle',timeout:60000});
             await page.waitForTimeout(1000);
             const early=await page.evaluate(()=>({
-              runtime:!!window.__modAreaRuntimeV607,
+              runtime:!!window.__modAreaRuntimeV608,
               gate:!!window.__modWorkerGateV607,
               scripts:[...document.scripts].map(script=>script.src).filter(Boolean),
               resources:performance.getEntriesByType('resource').map(entry=>entry.name).filter(name=>/v607|area-runtime|worker-gate/.test(name))
             }));
-            if(!early.runtime)throw new Error('V607 runtime script missing '+JSON.stringify(early));
-            const bootResult=await page.evaluate(()=>window.__modAreaRuntimeV607.preloadAll());
-            const bootState=await page.evaluate(()=>({ready:window.__modAreaRuntimeV607?.ready,progress:window.__modAreaRuntimeV607?.progress,gate:window.__modWorkerGateV607?.status||null}));
-            if(bootResult!==true||bootState.ready!==true)throw new Error('V607 local bootstrap failed '+JSON.stringify({bootResult,bootState}));
+            if(!early.runtime)throw new Error('V608 runtime script missing '+JSON.stringify(early));
+            const bootResult=await page.evaluate(()=>window.__modAreaRuntimeV608.preloadAll());
+            const bootState=await page.evaluate(()=>({ready:window.__modAreaRuntimeV608?.ready,progress:window.__modAreaRuntimeV608?.progress,gate:window.__modWorkerGateV607?.status||null}));
+            if(bootResult!==true||bootState.ready!==true)throw new Error('V608 local bootstrap failed '+JSON.stringify({bootResult,bootState}));
             const preloadOnly=await page.evaluate(()=>({
-              mode:window.__modAreaRuntimeV607?.preloadMode,
-              executed:window.__modAreaRuntimeV607?.executedCount,
+              mode:window.__modAreaRuntimeV608?.preloadMode,
+              executed:window.__modAreaRuntimeV608?.executedCount,
               renderType:typeof window.render,
               kistology:!!window.__modKistologyV603,
               food:!!window.__modFoodV544,
               backstage:!!window.__modBackstageV531
             }));
-            if(preloadOnly.mode!=='worker-gated-light-cache-warm'||preloadOnly.executed!==0||preloadOnly.renderType==='function'||preloadOnly.kistology||preloadOnly.food||preloadOnly.backstage)throw new Error('V607 preload executed area modules '+JSON.stringify(preloadOnly));
-            await page.evaluate(()=>window.__modAreaRuntimeV607.openArea('todo'));
-            await page.waitForFunction(()=>window.__modTodoStabilityV603&&window.__modRecoveryHistoryV498&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:30000});
-            await page.evaluate(()=>window.__modAreaRuntimeV607.loadSection('backup'));
-            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:30000});
+            if(preloadOnly.mode!=='worker-warm-staged-heavy-execution'||preloadOnly.executed!==0||preloadOnly.renderType==='function'||preloadOnly.kistology||preloadOnly.food||preloadOnly.backstage)throw new Error('V608 preload executed area modules '+JSON.stringify(preloadOnly));
+            await page.evaluate(()=>{
+              window.__v608Progress=[];
+              window.addEventListener('mod:bootstrap-v608-progress',event=>window.__v608Progress.push(event.detail));
+            });
+            const todoStarted=Date.now();
+            await page.evaluate(()=>window.__modAreaRuntimeV608.openArea('todo'));
+            const todoElapsed=Date.now()-todoStarted;
+            await page.waitForFunction(()=>window.__modTodoStabilityV603&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:45000});
+            const todoStage=await page.evaluate(()=>({
+              progress:(window.__v608Progress||[]).filter(x=>x?.phase==='area'&&x?.areaLoading==='todo'),
+              historyLoaded:!!window.__modRecoveryHistoryV498,
+              backupLoaded:!!window.__modBackupModelV600,
+              staged:window.__modAreaRuntimeV608?.stagedHeavyAreas||[],
+              recoveryDeferred:window.__modAreaRuntimeV608?.recoveryDeferred,
+              backstageLogDeferred:window.__modAreaRuntimeV608?.backstageLogDeferred
+            }));
+            if(todoElapsed<2500||todoStage.progress.length<10||!todoStage.progress.some(x=>/Modul \d+ von \d+/.test(x.label||''))||todoStage.historyLoaded||todoStage.backupLoaded||!todoStage.staged.includes('todo')||!todoStage.staged.includes('backstage')||!todoStage.recoveryDeferred||!todoStage.backstageLogDeferred)throw new Error('V608 staged To Do regression '+JSON.stringify({todoElapsed,todoStage}));
+            await page.evaluate(()=>window.__modAreaRuntimeV608.loadSection('backup'));
+            await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:45000});
             const day=await page.evaluate(()=>getBerlinDateKey());
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
@@ -243,8 +263,8 @@ jobs:
             if(!backupReconnect.beforeOk||!backupReconnect.afterOk||!backupReconnect.reconnect||!backupReconnect.iosHandoff||!backupReconnect.verify||!backupReconnect.sourceFallback||backupReconnect.sourcePatch!=='V506.3')throw new Error('V506 backup reconnect regression '+JSON.stringify(backupReconnect));
 
             const build=await page.evaluate(()=>({v:window.__MOD_BUILD__?.version,v503:window.__modTodayInteractionStabilityV503?.version,v504:window.__modCategoryCreateStabilityV504?.version,v505:window.__modRunningTaskRenderStabilityV505?.version,v506:window.__modBackupStabilityV506?.version,v506source:window.__modBackupSourceFallbackV506?.patchRevision,v507:window.__modTaskTitleLibraryV507?.version,v508:window.__modArchiveWeightLayoutV508?.version}));
-            if(!/^V\d+$/.test(build.v||'')||Number(build.v.slice(1))<607||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507'||build.v508!=='V508')throw new Error('V607 build metadata missing '+JSON.stringify(build));
-            console.log('V607 Chromium regression OK',result,pausedAfter,categoryCreate,ticker,v508,backupReconnect,build);
+            if(!/^V\d+$/.test(build.v||'')||Number(build.v.slice(1))<608||build.v503!=='V503'||build.v504!=='V504'||build.v505!=='V505'||build.v506!=='V506'||build.v506source!=='V506.3'||build.v507!=='V507'||build.v508!=='V508')throw new Error('V608 build metadata missing '+JSON.stringify(build));
+            console.log('V608 Chromium regression OK',result,pausedAfter,categoryCreate,ticker,v508,backupReconnect,build);
             await browser.close();
 
             const webkitBrowser=await webkit.launch({headless:true});
@@ -253,23 +273,26 @@ jobs:
               const p=await context.newPage();
               await p.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
               await p.goto('http://127.0.0.1:8787/?webkit-reentry='+iteration+'-'+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
-              await p.waitForFunction(()=>window.__modAreaRuntimeV607?.ready===true,{timeout:90000});
+              await p.waitForFunction(()=>window.__modAreaRuntimeV608?.ready===true,{timeout:90000});
               const state=await p.evaluate(()=>({
-                mode:window.__modAreaRuntimeV607?.preloadMode,
-                percent:window.__modAreaRuntimeV607?.progress?.percent,
-                executed:window.__modAreaRuntimeV607?.executedCount,
+                mode:window.__modAreaRuntimeV608?.preloadMode,
+                percent:window.__modAreaRuntimeV608?.progress?.percent,
+                executed:window.__modAreaRuntimeV608?.executedCount,
                 home:document.body.classList.contains('mod-app-hub-v515')
               }));
-              if(state.mode!=='worker-gated-light-cache-warm'||state.percent!==100||state.executed!==0||!state.home)throw new Error('V607 WebKit re-entry preload invalid '+JSON.stringify({iteration,state}));
+              if(state.mode!=='worker-warm-staged-heavy-execution'||state.percent!==100||state.executed!==0||!state.home)throw new Error('V608 WebKit re-entry preload invalid '+JSON.stringify({iteration,state}));
               if(exercise){
-                await p.evaluate(()=>window.__modAreaRuntimeV607.openArea('todo'));
+                await p.evaluate(()=>window.__modAreaRuntimeV608.openArea('todo'));
                 await p.waitForFunction(()=>typeof window.render==='function'&&window.__modTodoStabilityV603,{timeout:30000});
                 await p.evaluate(()=>window.__modAppHubV603.show());
-                await p.evaluate(()=>window.__modAreaRuntimeV607.openArea('kistology'));
+                await p.evaluate(()=>window.__modAreaRuntimeV608.openArea('kistology'));
                 await p.waitForFunction(()=>window.__modKistologyV603&&document.body.classList.contains('mod-kistology-v535'),{timeout:30000});
                 await p.evaluate(()=>window.__modAppHubV603.show());
-                await p.evaluate(()=>window.__modAreaRuntimeV607.openArea('backstage'));
-                await p.waitForFunction(()=>window.__modBackstageV531&&window.__modRecoveryHistoryV498&&window.__modLogCoreV603,{timeout:30000});
+                await p.evaluate(()=>window.__modAreaRuntimeV608.openArea('backstage'));
+                await p.waitForFunction(()=>window.__modBackstageV531,{timeout:30000});
+                const backstageDeferred=await p.evaluate(()=>!window.__modRecoveryHistoryV498&&!window.__modLogCoreV603);
+                if(!backstageDeferred)throw new Error('V608 Backstage loaded Log too early');
+                await p.evaluate(()=>window.__modAreaRuntimeV608.loadSection('log'));
                 await p.evaluate(()=>window.__modBackstageV531.setSection('log'));
                 await p.waitForFunction(()=>!!document.querySelector('#viewContainer .mod-log-v498'),{timeout:30000});
               }
@@ -286,17 +309,17 @@ jobs:
             soak.on('crash',()=>{soakCrashed=true;});
             await soak.route('**/*',route=>/supabase\.co/.test(route.request().url())?route.abort():route.continue());
             await soak.goto('http://127.0.0.1:8787/?webkit-soak='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
-            await soak.waitForFunction(()=>window.__modAreaRuntimeV607?.ready===true,{timeout:90000});
+            await soak.waitForFunction(()=>window.__modAreaRuntimeV608?.ready===true,{timeout:90000});
             for(let cycle=0;cycle<3;cycle++){
               for(const area of ['todo','sport','kistology','finance','food','backstage']){
-                await soak.evaluate(area=>window.__modAreaRuntimeV607.openArea(area),area);
+                await soak.evaluate(area=>window.__modAreaRuntimeV608.openArea(area),area);
                 await soak.waitForTimeout(220);
                 await soak.evaluate(()=>window.__modAppHubV603.show());
                 await soak.waitForTimeout(160);
               }
             }
             await soak.waitForTimeout(1200);
-            if(soakCrashed||soakNavigations!==1)throw new Error('V607 WebKit soak instability '+JSON.stringify({soakCrashed,soakNavigations}));
+            if(soakCrashed||soakNavigations!==1)throw new Error('V608 WebKit soak instability '+JSON.stringify({soakCrashed,soakNavigations}));
             await soak.close();
 
             await context.close();
@@ -316,8 +339,8 @@ jobs:
             const upgrade=await upgradeContext.newPage();
             let topNavigations=0;
             upgrade.on('framenavigated',frame=>{if(frame===upgrade.mainFrame())topNavigations+=1;});
-            await upgrade.goto('http://127.0.0.1:8787/?upgrade-v607='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
-            await upgrade.waitForFunction(()=>window.__modAreaRuntimeV607?.ready===true,{timeout:90000});
+            await upgrade.goto('http://127.0.0.1:8787/?upgrade-v608='+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+            await upgrade.waitForFunction(()=>window.__modAreaRuntimeV608?.ready===true,{timeout:90000});
             await upgrade.waitForTimeout(900);
             const upgradeState=await upgrade.evaluate(async()=>{
               const controllerVersion=await window.__modWorkerGateV607?.controllerVersion?.();
@@ -325,19 +348,19 @@ jobs:
               return {
                 controllerVersion,
                 gate:window.__modWorkerGateV607?.version||null,
-                mode:window.__modAreaRuntimeV607?.preloadMode||null,
-                percent:window.__modAreaRuntimeV607?.progress?.percent||0,
+                mode:window.__modAreaRuntimeV608?.preloadMode||null,
+                percent:window.__modAreaRuntimeV608?.progress?.percent||0,
                 legacyCache:keys.includes('master-of-disaster-v606-static'),
                 currentCache:keys.includes('master-of-disaster-v607-static'),
-                executed:window.__modAreaRuntimeV607?.executedCount,
+                executed:window.__modAreaRuntimeV608?.executedCount,
                 reloadAuthority:window.__modWorkerGateV607?.reloadAuthority||null
               };
             });
-            if(topNavigations!==1||upgradeState.controllerVersion!=='V607'||upgradeState.gate!=='V607'||upgradeState.mode!=='worker-gated-light-cache-warm'||upgradeState.percent!==100||upgradeState.legacyCache||!upgradeState.currentCache||upgradeState.executed!==0||upgradeState.reloadAuthority!=='none')throw new Error('V607 no-navigation upgrade regression '+JSON.stringify({topNavigations,upgradeState}));
+            if(topNavigations!==1||upgradeState.controllerVersion!=='V607'||upgradeState.gate!=='V607'||upgradeState.mode!=='worker-warm-staged-heavy-execution'||upgradeState.percent!==100||upgradeState.legacyCache||!upgradeState.currentCache||upgradeState.executed!==0||upgradeState.reloadAuthority!=='none')throw new Error('V608 staged-runtime upgrade regression '+JSON.stringify({topNavigations,upgradeState}));
             await upgrade.close();
             await upgradeContext.close();
 
             await webkitBrowser.close();
-            console.log('V607 WebKit re-entry + no-navigation upgrade regression OK');
+            console.log('V608 WebKit staged-area + stable-worker regression OK');
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE

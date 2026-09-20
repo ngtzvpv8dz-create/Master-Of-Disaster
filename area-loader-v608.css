@@ -1,0 +1,26 @@
+/* V608 · STAGED AREA LOADER
+   Während To Do oder Backstage schrittweise initialisiert werden, bleibt Home sichtbar
+   und weitere Bereichsstarts sind gesperrt.
+*/
+html.mod-area-loading-v608 .mod-hub-app-button-v517{
+  pointer-events:none!important;
+  opacity:.48;
+  filter:saturate(.62) brightness(.86);
+}
+html.mod-area-loading-v608 .mod-hub-preload-v603{
+  color:rgba(255,255,255,.9);
+}
+html.mod-area-loading-v608 .mod-hub-preload-v603 strong{
+  color:#fff;
+}
+html.mod-area-loading-v608 .mod-hub-preload-track-v603{
+  height:4px;
+  background:rgba(255,255,255,.11);
+}
+html.mod-area-loading-v608 .mod-hub-preload-track-v603>i{
+  transition:width .22s ease;
+  box-shadow:0 0 16px rgba(98,215,255,.5);
+}
+html.mod-area-loading-v608 #modAppHubV515{
+  cursor:progress;
+}
