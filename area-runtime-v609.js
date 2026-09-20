@@ -614,6 +614,29 @@
     return preloadAll();
   }
 
+  let optionalHistoryScheduled=false;
+  function scheduleOptionalHistory(){
+    if(optionalHistoryScheduled)return;
+    optionalHistoryScheduled=true;
+    const run=async()=>{
+      await tick(1800);
+      for(const src of OPTIONAL_HISTORY_GROUP){
+        try{
+          const result=await loadScript(src);
+          if(!result?.already)await browserBreather('history',src);
+          else await tick(90);
+        }catch(error){
+          console.warn('V609 optional history module:',src,error);
+        }
+      }
+    };
+    if(typeof requestIdleCallback==='function'){
+      requestIdleCallback(()=>run(),{timeout:5000});
+    }else{
+      setTimeout(run,2500);
+    }
+  }
+
   async function loadSection(section){
     if(readySections.has(section))return true;
     if(sectionLoadPromise&&loadingSection===section)return sectionLoadPromise;
@@ -624,6 +647,7 @@
       try{
         await loadSectionSequential(section,list);
         readySections.add(section);
+        if(section==='log'||section==='history'||section==='backup'||section==='restore')scheduleOptionalHistory();
         return true;
       }finally{
         sectionLoadPromise=null;
@@ -733,6 +757,7 @@
     preloadMode:'worker-warm-staged-heavy-execution',
     groups:Object.fromEntries(Object.entries(GROUPS).map(([key,value])=>[key,[...value]])),
     sectionGroups:Object.fromEntries(Object.entries(SECTION_GROUPS).map(([key,value])=>[key,[...value]])),
+    optionalHistoryGroup:[...OPTIONAL_HISTORY_GROUP],
     warmGroups:Object.fromEntries(Object.entries(WARM_GROUPS).map(([key,value])=>[key,[...value]])),
     preloadAll,retry,openArea,loadSection,loadGroup,
     loadArea:async id=>id?loadGroup(id):preloadAll(),
@@ -750,7 +775,8 @@
     recoveryDeferred:true,
     backstageLogDeferred:true,
     stagedBackstageSections:['log','history','backup','restore'],
-    sectionProgressUi:true
+    sectionProgressUi:true,
+    optionalHistoryDeferred:true
   };
 
   window.__modAreaRuntimeV609=api;
