@@ -1,26 +1,26 @@
-/* V605 · WORKER-GATED LIGHT BOOTSTRAP
+/* V606 · WORKER-GATED LIGHT BOOTSTRAP
    Der Homescreen wartet zuerst auf den aktuellen Service Worker.
    Danach werden nur die Kern-Dateien der Bereiche im Worker-Cache vorbereitet.
    Vollständige Bereichs-Runtimes werden erst beim Öffnen ausgeführt.
 */
 (function(){
   'use strict';
-  if(window.__modAreaRuntimeV605)return;
+  if(window.__modAreaRuntimeV606)return;
 
-  const VERSION='V605';
-  const CACHE_NAME='master-of-disaster-v605-static';
+  const VERSION='V606';
+  const CACHE_NAME='master-of-disaster-v606-static';
   const SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 
   const GROUPS={
     todo:[
       SUPABASE,
-      './supabase-config.js?v=605',
-      './app.js?v=605',
+      './supabase-config.js?v=606',
+      './app.js?v=606',
       './segment-active-duration-v487.js?v=487-1528',
       './segment-duration-v444.js?v=446-1228',
       './time-segments-v443.js?v=446-1228',
       './retroactive-complete-v445.js?v=446-1228',
-      './categories.js?v=605-category-refresh',
+      './categories.js?v=606-category-refresh',
       './ui.js?v=446-1228',
       './historical-segment-breakdown-v488.js?v=493-2035',
       './task-time-weight-details-v489.js?v=489-1825',
@@ -29,60 +29,60 @@
       './task-card-rail-polish-v492.js?v=492-1954',
       './ui-alignment-v493.js?v=493-2035',
       './summary-weight-due-polish-v494.js?v=494-2103',
-      './today-paused-v446.js?v=605-current',
-      './render-stability-v479.js?v=605-current',
-      './today-create-render-v480.js?v=605-current',
-      './terminal-delete-v485.js?v=605-current',
-      './time-segment-scroll-v486.js?v=605-current',
+      './today-paused-v446.js?v=606-current',
+      './render-stability-v479.js?v=606-current',
+      './today-create-render-v480.js?v=606-current',
+      './terminal-delete-v485.js?v=606-current',
+      './time-segment-scroll-v486.js?v=606-current',
       './task-title-library-v507.js?v=507-1345',
       './archive-weight-layout-v508.js?v=508-0709',
-      './log-core-v603.js?v=605-current',
-      './background-log-v454.js?v=605-current',
-      './history-safety-net-v498.js?v=605-current',
-      './meaningful-history-v500.js?v=605-current',
+      './log-core-v603.js?v=606-current',
+      './background-log-v454.js?v=606-current',
+      './history-safety-net-v498.js?v=606-current',
+      './meaningful-history-v500.js?v=606-current',
       './iphone-backup-v400.js?v=600-live-previous',
       './backup-model-v600.js?v=600-unified',
-      './todo-stability-v603.js?v=605-current'
+      './todo-stability-v603.js?v=606-current'
     ],
     sport:[
       SUPABASE,
-      './supabase-config.js?v=605',
+      './supabase-config.js?v=606',
       './supabase-client-lite-v593.js?v=593',
       './sport-v568.js?v=573-xtraining'
     ],
     food:[
       SUPABASE,
-      './supabase-config.js?v=605',
+      './supabase-config.js?v=606',
       './supabase-client-lite-v593.js?v=593',
       './food-v544.js?v=582-recipe-edit-prepared'
     ],
     kistology:[
       SUPABASE,
-      './supabase-config.js?v=605',
+      './supabase-config.js?v=606',
       './supabase-client-lite-v593.js?v=593',
-      './kistology-v603.js?v=605-current'
+      './kistology-v603.js?v=606-current'
     ],
     finance:[
       SUPABASE,
-      './supabase-config.js?v=605',
+      './supabase-config.js?v=606',
       './supabase-client-lite-v593.js?v=593',
       './finance-v552.js?v=552-finance',
       './finance-data-v553.js?v=554-finance-interactions'
     ],
     backstage:[
       SUPABASE,
-      './supabase-config.js?v=605',
-      './app.js?v=605',
+      './supabase-config.js?v=606',
+      './app.js?v=606',
       './development-stats-current-v476.js?v=476-1419',
       './development-stats-v451.js?v=451-1431',
-      './build-freshness-v502.js?v=605',
+      './build-freshness-v502.js?v=606',
       './project-history-v452.js?v=452-1501',
-      './backstage-v531.js?v=605',
+      './backstage-v531.js?v=606',
       './backstage-size-v532.js?v=532-system-size',
-      './log-core-v603.js?v=605-current',
-      './background-log-v454.js?v=605-current',
-      './history-safety-net-v498.js?v=605-current',
-      './meaningful-history-v500.js?v=605-current'
+      './log-core-v603.js?v=606-current',
+      './background-log-v454.js?v=606-current',
+      './history-safety-net-v498.js?v=606-current',
+      './meaningful-history-v500.js?v=606-current'
     ]
   };
 
@@ -111,22 +111,22 @@
 
   const WARM_GROUPS={
     todo:[
-      './app.js?v=605',
-      './categories.js?v=605-category-refresh',
-      './ui.js?v=605',
-      './todo-stability-v603.js?v=605-current'
+      './app.js?v=606',
+      './categories.js?v=606-category-refresh',
+      './ui.js?v=606',
+      './todo-stability-v603.js?v=606-current'
     ],
-    sport:['./sport-v568.js?v=605-current'],
-    food:['./food-v544.js?v=605-current'],
-    kistology:['./kistology-v603.js?v=605-current'],
+    sport:['./sport-v568.js?v=606-current'],
+    food:['./food-v544.js?v=606-current'],
+    kistology:['./kistology-v603.js?v=606-current'],
     finance:[
-      './finance-v552.js?v=605-current',
-      './finance-data-v553.js?v=605-current'
+      './finance-v552.js?v=606-current',
+      './finance-data-v553.js?v=606-current'
     ],
     backstage:[
-      './backstage-v531.js?v=605-current',
-      './log-core-v603.js?v=605-current',
-      './history-safety-net-v498.js?v=605-current'
+      './backstage-v531.js?v=606-current',
+      './log-core-v603.js?v=606-current',
+      './history-safety-net-v498.js?v=606-current'
     ]
   };
 
@@ -158,7 +158,7 @@
     progressState={...progressState,...extra};
     progressState.percent=Math.max(0,Math.min(100,Math.round(progressState.loaded/progressState.total*100)));
     const detail={...progressState,version:VERSION};
-    emit('mod:bootstrap-v605-progress',detail);
+    emit('mod:bootstrap-v606-progress',detail);
     emit('mod:bootstrap-v604-progress',detail);
     emit('mod:bootstrap-v603-progress',detail);
   }
@@ -174,7 +174,7 @@
       const script=document.createElement('script');
       script.src=src;
       script.async=false;
-      script.dataset.modAreaRuntimeV605='true';
+      script.dataset.modAreaRuntimeV606='true';
       script.onload=()=>{executed.add(key);executing.delete(key);resolve(src);};
       script.onerror=()=>{executing.delete(key);reject(new Error('Ausführen fehlgeschlagen: '+src));};
       document.body.appendChild(script);
@@ -296,7 +296,7 @@
         }finally{clearTimeout(timer);}
       }catch(error){
         failures.push({url:entry.url,message:error?.message||String(error)});
-        console.warn('V605 optional warmup:',entry.url,error);
+        console.warn('V606 optional warmup:',entry.url,error);
       }
       done++;
       progressState.loaded=done;
@@ -311,7 +311,7 @@
   }
 
   async function ensureWorkerGate(){
-    const gate=window.__modWorkerGateV605;
+    const gate=window.__modWorkerGateV606;
     if(!gate?.ready)return {version:VERSION,mode:'no-gate'};
     notify({label:gate.status?.label||'App wird geprüft',loaded:0,total:1});
     return gate.ready;
@@ -336,7 +336,7 @@
           let warmed=false;
           if('serviceWorker' in navigator && navigator.serviceWorker.controller){
             warmed=await warmViaWorker(entries).catch(error=>{
-              console.warn('V605 Worker-Warmup fallback:',error);
+              console.warn('V606 Worker-Warmup fallback:',error);
               return false;
             });
           }
@@ -351,7 +351,7 @@
         document.documentElement.classList.add('mod-bootstrap-ready-v603');
 
         const detail={version:VERSION,preloadOnly:true,workerGated:true,warmAssets:entries.length};
-        emit('mod:bootstrap-v605-ready',detail);
+        emit('mod:bootstrap-v606-ready',detail);
         emit('mod:bootstrap-v604-ready',detail);
         emit('mod:bootstrap-v603-ready',detail);
 
@@ -360,7 +360,7 @@
         try{window.__modFixedAppHeaderV475?.updateHeight?.();}catch(_){}
         return true;
       }catch(error){
-        console.error('V605 Bootstrap:',error);
+        console.error('V606 Bootstrap:',error);
         notify({label:'Laden fehlgeschlagen · App erneut öffnen',ready:false,error:error?.message||String(error)});
         document.documentElement.classList.add('mod-bootstrap-error-v603');
         return false;
@@ -393,9 +393,9 @@
 
     if(id==='todo'){
       try{window.render();}catch(_){}
-      return window.__modAppHubV515?.open?.('todo',{source:'v605-ready'});
+      return window.__modAppHubV515?.open?.('todo',{source:'v606-ready'});
     }
-    if(id==='sport')return window.__modAppHubV515?.open?.('sport',{source:'v605-ready'});
+    if(id==='sport')return window.__modAppHubV515?.open?.('sport',{source:'v606-ready'});
     if(id==='food')return window.__modFoodV544?.open?.();
     if(id==='finance')return (window.__modFinanceV553||window.__modFinanceV552)?.open?.();
     if(id==='kistology')return window.__modKistologyV603?.open?.();
@@ -414,7 +414,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       if(!ready)return;
-      openArea(id).catch(error=>console.error('V605 Bereich:',id,error));
+      openArea(id).catch(error=>console.error('V606 Bereich:',id,error));
       return;
     }
 
@@ -426,7 +426,7 @@
       event.preventDefault();
       event.stopImmediatePropagation();
       window.__modBackstageV531?.setSection?.('log');
-      Promise.resolve(window.__modRecoveryHistoryV498?.renderEnhancedLog?.()).catch(error=>console.error('V605 Log:',error));
+      Promise.resolve(window.__modRecoveryHistoryV498?.renderEnhancedLog?.()).catch(error=>console.error('V606 Log:',error));
       return;
     }
 
@@ -438,7 +438,7 @@
       if(section==='backup'&&window.__modBackstageBackupV533?.openBackup)window.__modBackstageBackupV533.openBackup();
       else window.__modBackstageV531?.setSection?.(section);
       if(section==='backup')window.__modBackstageBackupV533?.renderBackupDashboard?.();
-    }).catch(error=>console.error('V605 Backstage:',section,error))
+    }).catch(error=>console.error('V606 Backstage:',section,error))
       .finally(()=>sectionButton.removeAttribute('aria-busy'));
   },true);
 
@@ -458,6 +458,7 @@
     get warmAssetCount(){return warmEntries().length;}
   };
 
+  window.__modAreaRuntimeV606=api;
   window.__modAreaRuntimeV605=api;
   window.__modAreaRuntimeV604=api;
   window.__modAreaRuntimeV603=api;
