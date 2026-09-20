@@ -120,20 +120,32 @@ jobs:
             const categoryCreate=await page.evaluate(()=>{
               const input=document.getElementById('taskInput');
               const select=document.getElementById('newCategoryV412');
-              if(!input||!select)throw new Error('V504 create controls missing');
+              const addButton=document.querySelector('#inputPanel .add-button');
+              if(!input||!select||!addButton)throw new Error('V504 create controls missing');
+              const diagnostics={
+                v504:window.__modCategoryCreateStabilityV504?.version||null,
+                v507:window.__modTaskTitleLibraryV507?.version||null,
+                todoCore:window.__modTodoStabilityV603?.version||null,
+                addTaskType:typeof window.addTask
+              };
               input.value='V504 manuelle Kategorie';
               select.value='Haushalt';
               select.dispatchEvent(new Event('change',{bubbles:true}));
               window.__modPendingSuggestionCategory=null;
-              window.addTask();
+              addButton.click();
               const manual=(tasks||[]).find(t=>t.text==='V504 manuelle Kategorie');
               input.value='V504 Vorschlags-Fallback';
               select.value='';
               select.dispatchEvent(new Event('change',{bubbles:true}));
               window.__modPendingSuggestionCategory='Verlauf';
-              window.addTask();
+              addButton.click();
               const fallback=(tasks||[]).find(t=>t.text==='V504 Vorschlags-Fallback');
-              return {manual:manual?.category??null,fallback:fallback?.category??null};
+              return {
+                manual:manual?.category??null,
+                fallback:fallback?.category??null,
+                rows:(tasks||[]).map(t=>({text:t.text,category:t.category??null})),
+                diagnostics
+              };
             });
             if(categoryCreate.manual!=='Haushalt'||categoryCreate.fallback!=='Verlauf')throw new Error('V504 category create regression '+JSON.stringify(categoryCreate));
 
