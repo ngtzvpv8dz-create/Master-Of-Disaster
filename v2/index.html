@@ -3,59 +3,102 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111315">
+<meta name="theme-color" content="#0b121c">
 <title>Master of Disaster 2.0</title>
-<link rel="stylesheet" href="./app.css?v=2008">
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n</head>
+<link rel="stylesheet" href="./app.css?v=2011">
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
 <body>
 <div class="v2-app">
+  <div class="ambient-mountains" aria-hidden="true">
+    <svg viewBox="0 0 1200 760" preserveAspectRatio="xMidYMax slice">
+      <defs>
+        <linearGradient id="mountainFade" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stop-color="#253143" stop-opacity=".12"/>
+          <stop offset=".52" stop-color="#141d29" stop-opacity=".58"/>
+          <stop offset="1" stop-color="#070d14" stop-opacity=".98"/>
+        </linearGradient>
+        <linearGradient id="ridgeGlow" x1="0" x2="1">
+          <stop offset="0" stop-color="#d2a55f" stop-opacity="0"/>
+          <stop offset=".5" stop-color="#d2a55f" stop-opacity=".55"/>
+          <stop offset="1" stop-color="#d2a55f" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M0 585 128 430 220 520 332 335 448 505 560 385 650 475 778 286 906 486 1009 370 1200 570 1200 760 0 760Z" fill="url(#mountainFade)"/>
+      <path d="M0 655 170 528 287 615 430 470 575 635 727 493 855 602 1010 505 1200 640 1200 760 0 760Z" fill="#0b1119" opacity=".92"/>
+      <path d="M566 760c48-62 61-112 41-145-12-19-8-38 12-56 27-25 31-47 10-66" fill="none" stroke="url(#ridgeGlow)" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+  </div>
+
   <header class="v2-header">
-    <div class="v2-header-inner">
-      <div class="v2-brand-wrap">
-        <div class="v2-brand">MASTER OF DISASTE<button class="undo-r" type="button" aria-label="Rückgängig und Verlauf">R</button></div>
-        <div class="v2-subtitle">WEEK-AND-END-TO-DO-DINGSI</div>
-      </div>
-      <span class="v2-badge">2.0</span>
+    <a class="settings-link" href="./placeholder.html?area=backstage" aria-label="Backstage öffnen">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 8.3a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4Z"/>
+        <path d="M19 13.1c.06-.36.1-.72.1-1.1s-.04-.74-.1-1.1l2-1.55-1.9-3.28-2.47 1a8 8 0 0 0-1.9-1.1L14.35 3h-3.8l-.38 2.97a8 8 0 0 0-1.9 1.1l-2.47-1L3.9 9.35l2 1.55c-.06.36-.1.72-.1 1.1s.04.74.1 1.1l-2 1.55 1.9 3.28 2.47-1a8 8 0 0 0 1.9 1.1l.38 2.97h3.8l.38-2.97a8 8 0 0 0 1.9-1.1l2.47 1 1.9-3.28-2-1.55Z"/>
+      </svg>
+    </a>
+
+    <div class="mountain-mark" aria-hidden="true">
+      <svg viewBox="0 0 150 54">
+        <path d="M4 48 39 17l10 11L72 3l27 30 15-15 32 30-36-20-10 12L74 17 54 38 39 30Z"/>
+      </svg>
     </div>
+
+    <div class="v2-brand">Master of Disaste<button class="undo-r" type="button" aria-label="Rückgängig und Verlauf">r</button></div>
+    <div class="v2-version" aria-label="Version 2.0">
+      <span></span><strong>Version 2.0</strong><span></span>
+    </div>
+    <div class="v2-subtitle">WEEK-AND-END-TO-DO-DINGSI</div>
   </header>
 
   <main class="home-main">
-    <section class="home-intro">
-      <p>DEINE BEREICHE</p>
-      <h1>Was steht heute an?</h1>
+    <section class="area-grid" aria-label="Bereiche">
+      <a class="area-card todo" href="./todo.html" style="--accent:#d8b16c">
+        <span class="icon-frame icon-todo" aria-hidden="true"></span>
+        <span class="area-label">TO-DO</span>
+      </a>
+      <a class="area-card sport" href="./placeholder.html?area=sport" style="--accent:#5f9271">
+        <span class="icon-frame icon-sport" aria-hidden="true"></span>
+        <span class="area-label">SPORT</span>
+      </a>
+      <a class="area-card kistology" href="./placeholder.html?area=kistology" style="--accent:#aa7753">
+        <span class="icon-frame icon-kistology" aria-hidden="true"></span>
+        <span class="area-label">KISTOLOGY</span>
+      </a>
+      <a class="area-card food" href="./placeholder.html?area=food" style="--accent:#5f9271">
+        <span class="icon-frame icon-food" aria-hidden="true"></span>
+        <span class="area-label">FOOD</span>
+      </a>
+      <a class="area-card shopping" href="./placeholder.html?area=shopping" style="--accent:#d29b55">
+        <span class="icon-frame icon-shopping" aria-hidden="true"></span>
+        <span class="area-label">EINKAUFSLISTE</span>
+      </a>
+      <a class="area-card finance" href="./placeholder.html?area=finance" style="--accent:#4c83ad">
+        <span class="icon-frame icon-finance" aria-hidden="true"></span>
+        <span class="area-label">FINANZEN</span>
+      </a>
+      <a class="area-card progress" href="./placeholder.html?area=progress" style="--accent:#6ba9c8">
+        <span class="icon-frame icon-progress" aria-hidden="true"></span>
+        <span class="area-label">PROGRESS</span>
+      </a>
+      <a class="area-card backstage" href="./placeholder.html?area=backstage" style="--accent:#7d7b89">
+        <span class="icon-frame icon-backstage" aria-hidden="true"></span>
+        <span class="area-label">BACKSTAGE</span>
+      </a>
     </section>
 
-    <section class="area-grid" aria-label="Bereiche">
-      <a class="area-card todo" href="./todo.html" style="--accent:#b9a078;--wash:#2c2923">
-        <span class="icon-frame icon-todo" aria-hidden="true"></span><span class="area-label">TO-DO</span>
-      </a>
-      <a class="area-card sport" href="./placeholder.html?area=sport" style="--accent:#6f8b72;--wash:#1d2b22">
-        <span class="icon-frame icon-sport" aria-hidden="true"></span><span class="area-label">SPORT</span>
-      </a>
-      <a class="area-card kistology" href="./placeholder.html?area=kistology" style="--accent:#a9805e;--wash:#2b211c">
-        <span class="icon-frame icon-kistology" aria-hidden="true"></span><span class="area-label">KISTOLOGY</span>
-      </a>
-      <a class="area-card food" href="./placeholder.html?area=food" style="--accent:#789276;--wash:#1f2b22">
-        <span class="icon-frame icon-food" aria-hidden="true"></span><span class="area-label">FOOD</span>
-      </a>
-      <a class="area-card shopping" href="./placeholder.html?area=shopping" style="--accent:#c49a68;--wash:#312316">
-        <span class="icon-frame icon-shopping" aria-hidden="true"></span><span class="area-label">EINKAUFSLISTE</span>
-      </a>
-      <a class="area-card finance" href="./placeholder.html?area=finance" style="--accent:#72919b;--wash:#18272d">
-        <span class="icon-frame icon-finance" aria-hidden="true"></span><span class="area-label">FINANZEN</span>
-      </a>
-      <a class="area-card progress" href="./placeholder.html?area=progress" style="--accent:#8aa6a1;--wash:#1c2928">
-        <span class="icon-frame icon-progress" aria-hidden="true"></span><span class="area-label">PROGRESS</span>
-      </a>
-      <a class="area-card backstage" href="./placeholder.html?area=backstage" style="--accent:#88848f;--wash:#242229">
-        <span class="icon-frame icon-backstage" aria-hidden="true"></span><span class="area-label">BACKSTAGE</span>
-      </a>
+    <section class="home-motto" aria-label="Motto">
+      <span></span>
+      <p>SMALL STEPS<br><strong>BIG RESULTS</strong></p>
+      <span></span>
     </section>
 
     <a class="version-back" href="../">Version wechseln</a>
   </main>
+
   <div id="v2Toast" class="toast" aria-live="polite"></div>
 </div>
-<script src="./data.js?v=2009"></script>\n<script src="./app.js?v=2010"></script>
+<script src="./data.js?v=2009"></script>
+<script src="./app.js?v=2010"></script>
 </body>
 </html>
