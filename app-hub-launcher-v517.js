@@ -34,7 +34,7 @@
     {id:'shopping',label:'EINKAUFSLISTE',active:false},
     {id:'finance',label:'FINANZEN',active:true},
     {id:'progress',label:'PROGRESS',active:false},
-    {id:'backstage',label:'BACKSTAGE',active:false}
+    {id:'backstage',label:'BACKSTAGE',active:true}
   ];
 
   let observer=null;
