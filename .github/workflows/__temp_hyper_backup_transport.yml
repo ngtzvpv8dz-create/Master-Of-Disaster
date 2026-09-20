@@ -1,4 +1,4 @@
-name: Temporary encrypted backup transport
+name: Temporary source backup packager
 
 on:
   push:
@@ -9,36 +9,25 @@ permissions:
   contents: read
 
 jobs:
-  transport:
+  package-source:
     runs-on: ubuntu-latest
     steps:
-      - name: Download encrypted Supabase backup blob
-        env:
-          SUPABASE_URL: https://oktpzwhhndsbikkeelot.supabase.co
-          SUPABASE_PUBLISHABLE_KEY: sb_publishable_EaxtFXKAGOLyI6HRWPU6DQ_f04wfWru
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error \
-            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
-            "${SUPABASE_URL}/rest/v1/__mod_backup_blob_9dba85ae3c59?select=payload_base64&id=eq.1" \
-            -o response.json
-          python3 - <<'PY'
-          import json, base64, pathlib
-          rows = json.load(open("response.json", "r", encoding="utf-8"))
-          if len(rows) != 1 or not rows[0].get("payload_base64"):
-              raise SystemExit("Encrypted backup row missing")
-          data = base64.b64decode("".join(rows[0]["payload_base64"].split()))
-          pathlib.Path("supabase-full-export.pgp").write_bytes(data)
-          print("bytes", len(data))
-          PY
-          sha256sum supabase-full-export.pgp > supabase-full-export.sha256
+      - name: Checkout exact clean backup commit
+        uses: actions/checkout@v4
+        with:
+          ref: 0dfd1f7c3670fb18d3b064b853a57334a1df6e39
+          path: source
 
-      - name: Upload encrypted transport artifact
+      - name: Write backup metadata
+        run: |
+          printf '%s\n' 'repository=ngtzvpv8dz-create/Master-Of-Disaster' > source/BACKUP_SOURCE_COMMIT.txt
+          printf '%s\n' 'commit=0dfd1f7c3670fb18d3b064b853a57334a1df6e39' >> source/BACKUP_SOURCE_COMMIT.txt
+
+      - name: Upload exact source tree
         uses: actions/upload-artifact@v4
         with:
-          name: mod-hyper-backup-transport
-          path: |
-            supabase-full-export.pgp
-            supabase-full-export.sha256
+          name: mod-source-0dfd1f7c
+          path: source/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
