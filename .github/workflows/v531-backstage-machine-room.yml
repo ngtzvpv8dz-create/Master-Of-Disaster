@@ -16,15 +16,14 @@ jobs:
           node-version: '20'
       - name: Wiring checks
         run: |
-          node --check backstage-v530.js
           node --check backstage-v531.js
           node --check sw.js
           test -f backstage-v531.css
           grep -q "const VERSION='V531'" backstage-v531.js
           grep -q 'fiveSectionShellV531:true' backstage-v531.js
           grep -q 'machineRoomStyleV531:true' backstage-v531.js
-          grep -q 'backstage-v531.css?v=531-machine-room' backstage-v530.js
-          grep -q 'backstage-v531.js?v=531-machine-room' backstage-v530.js
+          grep -q 'backstage-v531.css?v=603' index.html
+          grep -q 'backstage-v531.js?v=603' area-runtime-v603.js
           grep -q '"./backstage-v531.css"' sw.js
           grep -q '"./backstage-v531.js"' sw.js
           grep -q -- '--backstage-v531-accent:#e0ba62' backstage-v531.css
