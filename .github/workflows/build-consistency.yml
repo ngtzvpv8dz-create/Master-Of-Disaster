@@ -16,27 +16,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V605 current wiring
+      - name: Verify V606 current wiring
         shell: python
         run: |
           from pathlib import Path
           import json
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
-          gate=Path('service-worker-gate-v605.js').read_text(encoding='utf-8')
-          runtime=Path('area-runtime-v605.js').read_text(encoding='utf-8')
+          gate=Path('service-worker-gate-v606.js').read_text(encoding='utf-8')
+          runtime=Path('area-runtime-v606.js').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
           for marker in [
-            "version:'V605'",
+            "version:'V606'",
             'app-hub-launcher-v603.css?v=603-loader',
             'app-hub-launcher-v603.js?v=603-loader',
             'surface-header-v603.css?v=603-header',
             'surface-header-v603.js?v=603-header',
-            'service-worker-gate-v605.js?v=605-worker-gate',
-            'area-runtime-v605.js?v=605-light-warm',
+            'service-worker-gate-v606.js?v=605-worker-gate',
+            'area-runtime-v606.js?v=605-light-warm',
             'kistology-v603.css?v=603'
           ]:
-              if marker not in index: raise SystemExit(f'Missing V605 index marker: {marker}')
+              if marker not in index: raise SystemExit(f'Missing V606 index marker: {marker}')
           for marker in [
             "preloadMode:'worker-gated-light-cache-warm'",
             'await ensureWorkerGate()',
@@ -44,13 +44,15 @@ jobs:
             'log-core-v603.js','todo-stability-v603.js','kistology-v603.js',
             'backstage-v531.js','history-safety-net-v498.js','backup-model-v600.js'
           ]:
-              if marker not in runtime: raise SystemExit(f'Missing V605 runtime marker: {marker}')
-          for marker in ['MOD_GET_SW_VERSION','RELOAD_KEY','clearLegacyCaches','location.reload()']:
-              if marker not in gate: raise SystemExit(f'Missing V605 worker-gate marker: {marker}')
-          for marker in ['SW_VERSION="V605"','MOD_GET_SW_VERSION','MOD_WARM_URLS','area-runtime-v605.js','service-worker-gate-v605.js']:
-              if marker not in sw: raise SystemExit(f'Missing V605 service-worker marker: {marker}')
+              if marker not in runtime: raise SystemExit(f'Missing V606 runtime marker: {marker}')
+          for marker in ['MOD_GET_SW_VERSION','clearLegacyCaches',"singleReloadAuthority:'service-worker'"]:
+              if marker not in gate: raise SystemExit(f'Missing V606 worker-gate marker: {marker}')
+          for marker in ['location.reload()','RELOAD_KEY']:
+              if marker in gate: raise SystemExit(f'V606 page gate must not trigger reloads: {marker}')
+          for marker in ['SW_VERSION="V606"','MOD_GET_SW_VERSION','MOD_WARM_URLS','area-runtime-v606.js','service-worker-gate-v606.js']:
+              if marker not in sw: raise SystemExit(f'Missing V606 service-worker marker: {marker}')
           forbidden=[
-            'area-runtime-v604.js',
+            'service-worker-gate-v605.js','area-runtime-v605.js','area-runtime-v604.js',
             'area-runtime-v603.js',
             'app-hub-icon-buttons-v516.js','app-hub-launcher-v517.js','app-hub-simple-header-v523.css',
             'kistology-v537.js','kistology-v538.js','kistology-v539.js',
@@ -62,10 +64,10 @@ jobs:
                   raise SystemExit(f'Legacy runtime marker still active: {marker}')
           if metrics.get('automated') is not True:
               raise SystemExit('Bundled metrics snapshot is not automated')
-          print('V605 worker-gated bootstrap wiring OK')
+          print('V606 worker-gated bootstrap wiring OK')
       - name: JavaScript syntax
         run: |
-          for f in             app.js app-hub-v515.js app-hub-launcher-v603.js surface-header-v603.js service-worker-gate-v605.js area-runtime-v605.js             kistology-v603.js log-core-v603.js background-log-v454.js history-safety-net-v498.js meaningful-history-v500.js             sport-v568.js food-v544.js finance-v552.js finance-data-v553.js             backstage-v531.js backstage-size-v532.js backstage-backup-v533.js backstage-backup-v534.js             backup-source-fallback-v506.js backup-stability-v506.js backup-model-v600.js iphone-backup-v400.js             task-title-library-v507.js archive-weight-layout-v508.js summary-weight-due-polish-v494.js; do
+          for f in             app.js app-hub-v515.js app-hub-launcher-v603.js surface-header-v603.js service-worker-gate-v606.js area-runtime-v606.js             kistology-v603.js log-core-v603.js background-log-v454.js history-safety-net-v498.js meaningful-history-v500.js             sport-v568.js food-v544.js finance-v552.js finance-data-v553.js             backstage-v531.js backstage-size-v532.js backstage-backup-v533.js backstage-backup-v534.js             backup-source-fallback-v506.js backup-stability-v506.js backup-model-v600.js iphone-backup-v400.js             task-title-library-v507.js archive-weight-layout-v508.js summary-weight-due-polish-v494.js; do
             node --check "$f"
           done
           node --check sw.js
