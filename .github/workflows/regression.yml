@@ -31,9 +31,7 @@ jobs:
           node --check backup-source-fallback-v506.js
           node --check task-title-library-v507.js
           node --check archive-weight-layout-v508.js
-          node --check running-task-render-stability-v505.js
           node --check summary-weight-due-polish-v494.js
-          node --check today-action-order-v501.js
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'area-runtime-v603.js?v=603-bootstrap' index.html
