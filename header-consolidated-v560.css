@@ -3,16 +3,17 @@
    Keine Navigation, kein Runtime-JavaScript, keine DOM-Beobachter.
 */
 
-/* V595b: Der Titel selbst bleibt intrinsisch breit und wird zentriert.
-   So ändert das erstmalige Reparenting in #appFixedTopV475 nicht mehr die
-   sichtbare Textposition, obwohl der umgebende Header ein paar Pixel breiter ist. */
+/* V596: Den Markeninhalt am Viewport statt am wechselnden Header-Wrapper
+   zentrieren. Dadurch bleibt MASTER OF DISASTER auf Home und in Unterbereichen
+   exakt mittig, auch wenn #appFixedTopV475 umgehängt wird. */
 html body #appFixedTopV475 .mod-brand-title-v525,
 html body main.app > header.header .mod-brand-title-v525{
-  width:max-content!important;
-  max-width:calc(100vw - 24px)!important;
-  margin-left:auto!important;
-  margin-right:auto!important;
   box-sizing:border-box!important;
+  width:100vw!important;
+  max-width:none!important;
+  margin-left:calc(50% - 50vw)!important;
+  margin-right:calc(50% - 50vw)!important;
+  justify-content:center!important;
 }
 
 /* Gemeinsamer Zeichenplatz: S, $, Ordner und Schraubenschlüssel nehmen im Layout
