@@ -389,33 +389,40 @@
 
   async function loadSectionSequential(section,list){
     const total=list.length;
+    const showUi=document.body.classList.contains('mod-backstage-v530');
     loadingSection=section;
     lastFailedSection=null;
-    document.documentElement.classList.add('mod-backstage-section-loading-v609');
-    document.documentElement.dataset.modBackstageSectionLoadingV609=section;
-    renderSectionLoader(section,0,total,null,0);
+    if(showUi){
+      document.documentElement.classList.add('mod-backstage-section-loading-v609');
+      document.documentElement.dataset.modBackstageSectionLoadingV609=section;
+      renderSectionLoader(section,0,total,null,0);
+    }
 
     try{
       for(let i=0;i<list.length;i++){
         const src=list[i];
-        renderSectionLoader(section,i+1,total,src,i);
+        if(showUi)renderSectionLoader(section,i+1,total,src,i);
         const result=await loadScript(src);
         if(result?.already)await tick(90);
         else await browserBreather(section,src);
-        renderSectionLoader(section,i+1,total,src,i+1);
+        if(showUi)renderSectionLoader(section,i+1,total,src,i+1);
         if(!result?.already)await tick(120);
       }
-      renderSectionLoader(section,total,total,null,total);
-      await tick(380);
+      if(showUi){
+        renderSectionLoader(section,total,total,null,total);
+        await tick(380);
+      }
       return true;
     }catch(error){
       lastFailedSection=section;
-      renderSectionLoader(section,0,total,null,0,error?.message||String(error));
+      if(showUi)renderSectionLoader(section,0,total,null,0,error?.message||String(error));
       throw error;
     }finally{
       loadingSection=null;
-      document.documentElement.classList.remove('mod-backstage-section-loading-v609');
-      delete document.documentElement.dataset.modBackstageSectionLoadingV609;
+      if(showUi){
+        document.documentElement.classList.remove('mod-backstage-section-loading-v609');
+        delete document.documentElement.dataset.modBackstageSectionLoadingV609;
+      }
     }
   }
 
