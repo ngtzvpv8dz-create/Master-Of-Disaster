@@ -629,3 +629,17 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   font-weight:750;
   line-height:1.35;
 }
+
+
+/* V582 · Rezept bearbeiten + Zubereitungszeitstempel */
+.food-recipe-actions-v582{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:14px;
+}
+.food-recipe-actions-v582 .food-action-v544{
+  margin-top:0!important;
+}
