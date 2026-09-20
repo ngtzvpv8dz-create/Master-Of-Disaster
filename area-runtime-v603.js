@@ -26,7 +26,6 @@
       './task-card-rail-polish-v492.js?v=492-1954',
       './ui-alignment-v493.js?v=493-2035',
       './summary-weight-due-polish-v494.js?v=494-2103',
-      './todo-stability-v603.js?v=603',
       './task-title-library-v507.js?v=507-1345',
       './archive-weight-layout-v508.js?v=508-0709',
       './log-core-v603.js?v=603',
@@ -34,7 +33,8 @@
       './history-safety-net-v498.js?v=603-log',
       './meaningful-history-v500.js?v=603-log',
       './iphone-backup-v400.js?v=600-live-previous',
-      './backup-model-v600.js?v=600-unified'
+      './backup-model-v600.js?v=600-unified',
+      './todo-stability-v603.js?v=603'
     ],
     sport:[
       SUPABASE,
