@@ -128,6 +128,9 @@ jobs:
                 todoCore:window.__modTodoStabilityV603?.version||null,
                 addTaskType:typeof window.addTask
               };
+              if(![...select.options].some(option=>option.value==='Haushalt')){
+                select.add(new Option('Haushalt','Haushalt'));
+              }
               input.value='V504 manuelle Kategorie';
               select.value='Haushalt';
               select.dispatchEvent(new Event('change',{bubbles:true}));
