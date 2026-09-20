@@ -1,6 +1,6 @@
-// V605 · Version-gated service worker + light area cache warming.
-const SW_VERSION="V605";
-const CACHE_NAME="master-of-disaster-v605-static";
+// V606 · Version-gated service worker + light area cache warming.
+const SW_VERSION="V606";
+const CACHE_NAME="master-of-disaster-v606-static";
 const CORE_SHELL=[
   "./",
   "./index.html",
@@ -16,8 +16,8 @@ const CORE_SHELL=[
   "./header-consolidated-v560.css",
   "./surface-header-v603.css",
   "./surface-header-v603.js",
-  "./service-worker-gate-v605.js",
-  "./area-runtime-v605.js",
+  "./service-worker-gate-v606.js",
+  "./area-runtime-v606.js",
   "./fixed-app-header-v475.js",
   "./assets/icons/todo-v524-192.png",
   "./assets/icons/sport-v524-192.png",
@@ -52,8 +52,8 @@ self.addEventListener("activate",event=>{
     }
     await self.clients.claim();
 
-    /* Falls noch eine alte V603/V604-Seite offen ist, kennt sie den V605-Gate-Code nicht.
-       Ein einmaliger Worker-gesteuerter Reload bringt auch diesen Alt-Client sauber auf V605. */
+    /* Ein Versionswechsel hat genau eine Reload-Autorität: diesen Worker.
+       Das Seiten-Gate navigiert niemals selbst. */
     if(hadLegacy){
       try{
         const windows=await self.clients.matchAll({type:"window",includeUncontrolled:true});
