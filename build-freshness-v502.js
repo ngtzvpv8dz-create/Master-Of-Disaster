@@ -97,8 +97,13 @@
       const label=String(item.querySelector('.dev-build-label')?.textContent||'').trim().toUpperCase();
       const value=item.querySelector('.dev-build-value');
       if(!value)return;
-      if(label==='VERSION')value.textContent=current.version;
-      if(label==='BUILD')value.textContent=current.build;
+      let next=null;
+      if(label==='VERSION')next=current.version;
+      if(label==='BUILD')next=current.build;
+      // V595: Nur wirklich geänderte Werte schreiben. Ein blindes textContent-
+      // Setzen erzeugt selbst wieder eine childList-Mutation und kann zusammen
+      // mit dem Observer darunter eine endlose Microtask-Schleife auslösen.
+      if(next!==null&&value.textContent!==next)value.textContent=next;
     });
     card.dataset.v502FreshBuild='true';
     return true;
