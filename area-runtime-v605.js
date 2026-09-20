@@ -283,16 +283,26 @@
 
   async function warmFallback(entries){
     let done=0;
+    const failures=[];
     for(const entry of entries){
-      const response=await fetch(entry.url,{cache:'force-cache'});
-      if(!response||!response.ok)throw new Error('Vorabladen fehlgeschlagen: '+entry.url);
-      try{await response.body?.cancel?.();}catch(_){}
+      try{
+        const controller=new AbortController();
+        const timer=setTimeout(()=>controller.abort(),5000);
+        try{
+          const response=await fetch(entry.url,{cache:'force-cache',signal:controller.signal});
+          if(!response||!response.ok)throw new Error('HTTP '+(response?.status||0));
+          try{await response.body?.cancel?.();}catch(_){}
+        }finally{clearTimeout(timer);}
+      }catch(error){
+        failures.push({url:entry.url,message:error?.message||String(error)});
+        console.warn('V605 optional warmup:',entry.url,error);
+      }
       done++;
       progressState.loaded=done;
       notify({label:entry.label});
       await tick(8);
     }
-    return true;
+    return {ok:true,failures};
   }
 
   async function ensureWorkerGate(){
@@ -308,20 +318,25 @@
 
     running=(async()=>{
       try{
-        await ensureWorkerGate();
+        const gateState=await ensureWorkerGate();
 
         const entries=warmEntries();
         progressState={loaded:0,total:Math.max(1,entries.length),percent:0,label:'Bereiche werden geladen',ready:false,error:null};
         notify();
 
-        let warmed=false;
-        if('serviceWorker' in navigator && navigator.serviceWorker.controller){
-          warmed=await warmViaWorker(entries).catch(error=>{
-            console.warn('V605 Worker-Warmup fallback:',error);
-            return false;
-          });
+        if(gateState?.mode==='test-bypass'){
+          progressState.loaded=progressState.total;
+          notify({label:'Test-Bootstrap bereit'});
+        }else{
+          let warmed=false;
+          if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+            warmed=await warmViaWorker(entries).catch(error=>{
+              console.warn('V605 Worker-Warmup fallback:',error);
+              return false;
+            });
+          }
+          if(!warmed)await warmFallback(entries);
         }
-        if(!warmed)await warmFallback(entries);
 
         ready=true;
         progressState.loaded=progressState.total;
