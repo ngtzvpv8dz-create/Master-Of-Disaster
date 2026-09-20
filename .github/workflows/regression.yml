@@ -24,6 +24,7 @@ jobs:
           node --check area-runtime-v603.js
           node --check kistology-v603.js
           node --check log-core-v603.js
+          node --check todo-stability-v603.js
           node --check history-safety-net-v498.js
           node --check backup-stability-v506.js
           node --check backup-model-v600.js
@@ -52,9 +53,10 @@ jobs:
           grep -q 'iosBackupHandoffV506:true' history-safety-net-v498.js
           grep -q 'codeloadBypassed:true' backup-source-fallback-v506.js
           grep -q 'rawGithubFileFallback:true' backup-source-fallback-v506.js
-          grep -q 'todayMarkerBoundToButton:true' today-action-order-v501.js
-          grep -q 'explicitNewCategoryWins:true' category-create-stability-v504.js
-          grep -q 'fullViewTickerRemoved:true' running-task-render-stability-v505.js
+          grep -q 'todayMarkerBoundToButton:true' todo-stability-v603.js
+          grep -q 'explicitNewCategoryWins:true' todo-stability-v603.js
+          grep -q 'fullViewTickerRemoved:true' todo-stability-v603.js
+          grep -q 'legacySportHubBootstrapRemoved:true' todo-stability-v603.js
           grep -q 'knownOnlySuggestions:true' task-title-library-v507.js
           grep -q 'archiveUsesTaskSegmentHierarchy:true' archive-weight-layout-v508.js
           grep -q 'noStoreFetch:true' build-freshness-v502.js
