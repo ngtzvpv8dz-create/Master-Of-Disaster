@@ -14,13 +14,13 @@
   const GROUPS={
     todo:[
       SUPABASE,
-      './supabase-config.js?v=608',
-      './app.js?v=608',
+      './supabase-config.js?v=609',
+      './app.js?v=609',
       './segment-active-duration-v487.js?v=487-1528',
       './segment-duration-v444.js?v=446-1228',
       './time-segments-v443.js?v=446-1228',
       './retroactive-complete-v445.js?v=446-1228',
-      './categories.js?v=608-category-refresh',
+      './categories.js?v=609-category-refresh',
       './ui.js?v=446-1228',
       './historical-segment-breakdown-v488.js?v=493-2035',
       './task-time-weight-details-v489.js?v=489-1825',
@@ -29,58 +29,61 @@
       './task-card-rail-polish-v492.js?v=492-1954',
       './ui-alignment-v493.js?v=493-2035',
       './summary-weight-due-polish-v494.js?v=494-2103',
-      './today-paused-v446.js?v=608-current',
-      './render-stability-v479.js?v=608-current',
-      './today-create-render-v480.js?v=608-current',
-      './terminal-delete-v485.js?v=608-current',
-      './time-segment-scroll-v486.js?v=608-current',
+      './today-paused-v446.js?v=609-current',
+      './render-stability-v479.js?v=609-current',
+      './today-create-render-v480.js?v=609-current',
+      './terminal-delete-v485.js?v=609-current',
+      './time-segment-scroll-v486.js?v=609-current',
       './task-title-library-v507.js?v=507-1345',
       './archive-weight-layout-v508.js?v=508-0709',
-      './todo-stability-v603.js?v=608-current'
+      './todo-stability-v603.js?v=609-current'
     ],
     sport:[
       SUPABASE,
-      './supabase-config.js?v=608',
+      './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './sport-v568.js?v=573-xtraining'
     ],
     food:[
       SUPABASE,
-      './supabase-config.js?v=608',
+      './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-v544.js?v=582-recipe-edit-prepared'
     ],
     kistology:[
       SUPABASE,
-      './supabase-config.js?v=608',
+      './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './kistology-v603.js?v=608-current'
+      './kistology-v603.js?v=609-current'
     ],
     finance:[
       SUPABASE,
-      './supabase-config.js?v=608',
+      './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './finance-v552.js?v=552-finance',
       './finance-data-v553.js?v=554-finance-interactions'
     ],
     backstage:[
       SUPABASE,
-      './supabase-config.js?v=608',
-      './app.js?v=608',
+      './supabase-config.js?v=609',
+      './app.js?v=609',
       './development-stats-current-v476.js?v=476-1419',
       './development-stats-v451.js?v=451-1431',
-      './build-freshness-v502.js?v=608',
+      './build-freshness-v502.js?v=609',
       './project-history-v452.js?v=452-1501',
-      './backstage-v531.js?v=608',
+      './backstage-v531.js?v=609',
       './backstage-size-v532.js?v=532-system-size'
     ]
   };
 
   const HISTORY_GROUP=[
-    './log-core-v603.js?v=608-current',
-    './background-log-v454.js?v=608-current',
-    './history-safety-net-v498.js?v=608-current',
-    './meaningful-history-v500.js?v=608-current'
+    './log-core-v603.js?v=609-current',
+    './history-safety-net-v498.js?v=609-current'
+  ];
+
+  const OPTIONAL_HISTORY_GROUP=[
+    './background-log-v454.js?v=609-current',
+    './meaningful-history-v500.js?v=609-current'
   ];
 
   const SECTION_GROUPS={
@@ -112,16 +115,16 @@
 
   const WARM_GROUPS={
     todo:[
-      './app.js?v=608',
-      './categories.js?v=608-category-refresh',
-      './ui.js?v=608',
-      './todo-stability-v603.js?v=608-current'
+      './app.js?v=609',
+      './categories.js?v=609-category-refresh',
+      './ui.js?v=609',
+      './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v568.js?v=608-current'],
-    food:['./food-v544.js?v=608-current'],
-    kistology:['./kistology-v603.js?v=608-current'],
-    finance:['./finance-v552.js?v=608-current','./finance-data-v553.js?v=608-current'],
-    backstage:['./backstage-v531.js?v=608','./project-history-v452.js?v=452-1501']
+    sport:['./sport-v568.js?v=609-current'],
+    food:['./food-v544.js?v=609-current'],
+    kistology:['./kistology-v603.js?v=609-current'],
+    finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=609-current'],
+    backstage:['./backstage-v531.js?v=609','./project-history-v452.js?v=452-1501']
   };
 
   const LABELS={
