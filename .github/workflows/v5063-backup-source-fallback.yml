@@ -40,6 +40,11 @@ jobs:
             await page.route('https://codeload.github.com/ngtzvpv8dz-create/Master-Of-Disaster/zip/refs/heads/main',route=>{codeloadNetworkHits++;route.abort();});
             await page.route('**/*.supabase.co/**',route=>route.abort());
             await page.goto('http://127.0.0.1:8787/?reg=1&v5063='+Date.now(),{waitUntil:'networkidle',timeout:60000});
+            await page.waitForFunction(()=>window.__modAreaRuntimeV591,{timeout:30000});
+            await page.evaluate(async()=>{
+              await window.__modAreaRuntimeV591.loadArea('backstage');
+              await window.__modAreaRuntimeV591.loadBackstageSection('backup');
+            });
             await page.waitForFunction(()=>window.__modBackupSourceFallbackV506?.patchRevision==='V506.3',{timeout:30000});
             const result=await page.evaluate(async()=>{
               const mod=window.__modBackupSourceFallbackV506;
