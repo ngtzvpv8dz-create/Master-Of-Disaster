@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V581';
+  const VERSION='V582';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -53,6 +53,12 @@
   };
   const fmtDate=iso=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00'));
   const fmtDay=iso=>new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'2-digit',month:'long',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00'));
+  const fmtPreparedAt=value=>{
+    if(!value)return 'Zubereitet';
+    const date=new Date(value);
+    if(Number.isNaN(date.getTime()))return 'Zubereitet';
+    return 'Zubereitet am '+new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(date);
+  };
   const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   const num=value=>value===null||value===undefined||value===''?null:Number(value);
   const fmtQty=(value,unit)=>{
@@ -209,7 +215,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -295,7 +301,8 @@
     const status=normalizedStatus(meal.status);
     const expanded=expandedMeals.has(String(meal.id));
     const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
-    const action=status==='completed'?'':'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">Als erledigt markieren</button>';
+    const action=status==='completed'?'':'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">Als zubereitet markieren</button>';
+    const statusMeta=status==='completed'?fmtPreparedAt(meal.prepared_at):'Geplant';
 
     if(recipe){
       const view=recipePresentation(recipe,expanded);
@@ -305,7 +312,7 @@
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +view.details
-        +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusLabel(status))+'</p>'
+        +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +action
         +'</article>';
     }
@@ -321,7 +328,7 @@
       :'';
     return '<article class="food-meal-card-v544 '+(expanded?'is-expanded-v573':'')+' status-'+status+'" data-food-meal-card="'+esc(meal.id)+'">'
       +'<button type="button" class="food-meal-toggle-v573" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-        +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta+' · '+statusLabel(status))+'</em></span>'
+        +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta+' · '+statusMeta)+'</em></span>'
         +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
       +'</button>'
       +details+action
@@ -494,7 +501,7 @@
   function recipeCard(recipe){
     const expanded=expandedRecipes.has(String(recipe.id));
     const view=recipePresentation(recipe,expanded);
-    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+view.details+'<button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></article>';
+    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
   }
 
   function recipesView(data){
@@ -561,7 +568,7 @@
     const supabase=client();
     if(!supabase){
       const meal=state?.meals.find(item=>item.id===id);
-      if(meal)meal.status='completed';
+      if(meal){meal.status='completed';meal.prepared_at=new Date().toISOString();}
       return render();
     }
     const result=await supabase.rpc('complete_food_meal',{p_meal_id:id});
@@ -778,6 +785,104 @@
     });
   }
 
+  function editRecipeModal(recipeId){
+    const recipe=(state?.recipes||[]).find(item=>String(item.id)===String(recipeId));
+    if(!recipe){alert('Rezept nicht gefunden.');return;}
+    const items=recipe.food_recipe_ingredients||recipe.ingredients||[];
+    let modal;
+    const rowsHtml=(items.length?items:[{}]).map((_,index)=>recipeIngredientRow(index)).join('');
+    const body='<form class="food-recipe-form-v549">'+
+      '<label>Rezeptname<input name="title" value="'+esc(recipe.title||'')+'" required></label>'+
+      '<div class="food-form-grid-v544"><label>Mahlzeit<select name="meal_type">'+mealTypeOptions(recipe.meal_type||'dinner')+'</select></label><label>Basis-Portionen<input name="servings" type="number" min="1" max="99" step="1" inputmode="numeric" value="'+esc(recipe.servings||1)+'" required></label></div>'+
+      '<div class="food-form-grid-v544"><label>Vorbereitung / Kochen in Min.<input name="prep_minutes" type="number" min="0" max="1440" step="1" inputmode="numeric" value="'+esc(recipe.prep_minutes??'')+'"></label><label>Kurzinfo<input name="description" value="'+esc(recipe.description||'')+'"></label></div>'+
+      '<label>Zubereitung<textarea name="instructions" rows="5">'+esc(recipeInstructions(recipe).join('\n'))+'</textarea></label>'+
+      '<div class="food-recipe-builder-v549"><div class="food-recipe-builder-head-v549"><strong>Zutaten</strong><button type="button" data-food-recipe-add-ingredient>+ Zutat</button></div><div data-food-recipe-rows>'+rowsHtml+'</div></div>'+
+      '<button class="food-action-v544" type="submit">Änderungen speichern</button>'+
+      '</form>';
+
+    modal=addModal('Rezept bearbeiten',body,async form=>{
+      if(!sourceIsReal('recipes'))throw new Error('Die Rezeptdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst „Erneut laden“ verwenden.');
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+
+      const title=String(form.get('title')||'').trim();
+      const mealType=String(form.get('meal_type')||'dinner');
+      const servings=Number(form.get('servings')||1);
+      const prepMinutes=form.get('prep_minutes')?Number(form.get('prep_minutes')):null;
+      const description=String(form.get('description')||'').trim()||null;
+      const instructions=String(form.get('instructions')||'').trim()||null;
+      if(!title)throw new Error('Bitte einen Rezeptnamen eingeben.');
+      if(!Number.isInteger(servings)||servings<1||servings>99)throw new Error('Bitte eine gültige Portionszahl zwischen 1 und 99 eingeben.');
+      if(prepMinutes!==null&&(!Number.isFinite(prepMinutes)||prepMinutes<0||prepMinutes>1440))throw new Error('Die Zeitangabe ist ungültig.');
+
+      const ingredientRows=Array.from(modal.querySelectorAll('[data-food-recipe-row]'));
+      if(!ingredientRows.length)throw new Error('Bitte mindestens eine Zutat hinzufügen.');
+      const ingredients=ingredientRows.map((row,index)=>{
+        const inventoryId=String(row.querySelector('[data-food-recipe-inventory]')?.value||'')||null;
+        const inventoryItem=inventoryId?(state?.inventory||[]).find(item=>item.id===inventoryId):null;
+        const name=String(row.querySelector('[data-food-recipe-name]')?.value||'').trim();
+        const quantity=Number(row.querySelector('[data-food-recipe-quantity]')?.value);
+        const unit=String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
+        if(!name)throw new Error('Bei Zutat '+(index+1)+' fehlt der Name.');
+        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
+        if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
+        if(inventoryId&&!inventoryItem)throw new Error('Die ausgewählte Vorratszutat ist nicht mehr verfügbar.');
+        return {inventory_id:inventoryId,name,label:fmtQty(quantity,unit)+' '+name,quantity,unit};
+      });
+
+      const result=await withTimeout(
+        supabase.rpc('update_food_recipe',{
+          p_recipe_id:recipeId,
+          p_title:title,
+          p_meal_type:mealType,
+          p_servings:servings,
+          p_prep_minutes:prepMinutes,
+          p_description:description,
+          p_instructions:instructions,
+          p_ingredients:ingredients
+        }),
+        'Rezept aktualisieren',
+        10000
+      );
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+
+    const rows=modal.querySelector('[data-food-recipe-rows]');
+    Array.from(rows.querySelectorAll('[data-food-recipe-row]')).forEach((row,index)=>{
+      const item=items[index];
+      const select=row.querySelector('[data-food-recipe-inventory]');
+      const name=row.querySelector('[data-food-recipe-name]');
+      const quantity=row.querySelector('[data-food-recipe-quantity]');
+      const unit=row.querySelector('[data-food-recipe-unit]');
+      if(item){
+        if(select&&item.inventory_id)select.value=String(item.inventory_id);
+        if(name)name.value=String(item.name||'');
+        if(quantity)quantity.value=String(item.quantity??'');
+        if(unit)unit.value=String(item.unit||'g');
+        if(item.inventory_id){if(name)name.readOnly=true;if(unit)unit.readOnly=true;}
+      }
+      wireRecipeIngredientRow(row);
+    });
+    modal.querySelector('[data-food-recipe-add-ingredient]')?.addEventListener('click',()=>{
+      const index=rows.querySelectorAll('[data-food-recipe-row]').length;
+      rows.insertAdjacentHTML('beforeend',recipeIngredientRow(index));
+      const row=rows.lastElementChild;
+      wireRecipeIngredientRow(row);
+      row.querySelector('[data-food-recipe-name]')?.focus();
+    });
+    rows.addEventListener('click',event=>{
+      const remove=event.target?.closest?.('[data-food-recipe-remove]');
+      if(!remove)return;
+      const all=rows.querySelectorAll('[data-food-recipe-row]');
+      if(all.length<=1){alert('Ein Rezept braucht mindestens eine Zutat.');return;}
+      remove.closest('[data-food-recipe-row]')?.remove();
+      rows.querySelectorAll('[data-food-recipe-row]').forEach((row,index)=>{
+        const strong=row.querySelector('.food-recipe-row-head-v549 strong');
+        if(strong)strong.textContent='Zutat '+(index+1);
+      });
+    });
+  }
+
   function garlicStockModal(){
     const garlic=garlicParts();
     addModal('Knoblauchbestand','<form><p class="food-modal-copy-v544">Knoblauch wird als eine Zutat angezeigt. Ganze Knollen und lose Zehen bleiben intern getrennt.</p><div class="food-form-grid-v544"><label>Ganze Knollen<input name="bulbs" type="number" min="0" step="1" inputmode="numeric" value="'+esc(garlic.bulbs)+'" required></label><label>Lose Zehen<input name="cloves" type="number" min="0" step="1" inputmode="numeric" value="'+esc(garlic.cloves)+'" required></label></div><button class="food-action-v544" type="submit">Knoblauch speichern</button></form>',async form=>{
@@ -930,6 +1035,7 @@
     root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
+    root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));
     root.querySelectorAll('[data-food-schedule-leftover]').forEach(button=>button.addEventListener('click',()=>scheduleLeftoverModal(button.dataset.foodScheduleLeftover)));
     root.querySelectorAll('[data-food-recipe-toggle]').forEach(button=>button.addEventListener('click',event=>{
