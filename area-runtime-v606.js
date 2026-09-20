@@ -459,6 +459,7 @@
   };
 
   window.__modAreaRuntimeV606=api;
+  window.__modAreaRuntimeV605=api;
   window.__modAreaRuntimeV604=api;
   window.__modAreaRuntimeV603=api;
   window.__modAreaRuntimeV591=api;
