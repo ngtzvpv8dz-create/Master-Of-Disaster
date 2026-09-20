@@ -16,13 +16,11 @@ jobs:
           node-version: '20'
       - name: Wiring checks
         run: |
-          node --check backstage-v530.js
           node --check backstage-size-v532.js
           node --check sw.js
           test -f backstage-size-v532.css
-          grep -q "sizePatch:'V532'" backstage-v530.js
-          grep -q 'backstage-size-v532.css?v=532-system-size' backstage-v530.js
-          grep -q 'backstage-size-v532.js?v=532-system-size' backstage-v530.js
+          grep -q 'backstage-size-v532.css?v=603' index.html
+          grep -q 'backstage-size-v532.js?v=532-system-size' area-runtime-v603.js
           grep -q '"./backstage-size-v532.css"' sw.js
           grep -q '"./backstage-size-v532.js"' sw.js
           grep -q 'min-height:190px' backstage-size-v532.css
