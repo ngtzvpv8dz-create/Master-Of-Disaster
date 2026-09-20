@@ -10,6 +10,7 @@
   const VERSION='V605';
   const CACHE_NAME='master-of-disaster-v605-static';
   const SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  const SUPABASE='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
 
   const GROUPS={
     todo:[
