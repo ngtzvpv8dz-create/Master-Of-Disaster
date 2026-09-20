@@ -1,0 +1,165 @@
+name: V593 Selfcheck
+
+on:
+  push:
+    branches:
+      - diagnostic/v593-selfcheck2-20260920-0856
+
+jobs:
+  selfcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Playwright
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+      - name: Run V593 live checks
+        run: |
+          cat > v593-check.js <<'NODE'
+          const {chromium}=require('playwright');
+          const fs=require('fs');
+          const base='https://ngtzvpv8dz-create.github.io/Master-Of-Disaster/';
+          const out={home:null,todo:null,sport:null,food:null,finance:null,kistology:null,backstage:null};
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            async function fresh(name){
+              const ctx=await browser.newContext({viewport:{width:390,height:844}});
+              const page=await ctx.newPage();
+              const pageErrors=[];
+              const consoleErrors=[];
+              page.on('pageerror',e=>pageErrors.push(String(e.message||e)));
+              page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
+              await page.goto(base+'?v593diag='+name+'-'+Date.now(),{waitUntil:'domcontentloaded',timeout:60000});
+              return {ctx,page,pageErrors,consoleErrors};
+            }
+            try{
+              {
+                const {ctx,page,pageErrors}=await fresh('home');
+                await page.waitForSelector('[data-mod-hub-launch-v517="todo"]',{timeout:15000});
+                await sleep(20000);
+                out.home=await page.evaluate(()=>({
+                  hub:!!document.querySelector('#modAppHubV515'),
+                  homeSafe:document.documentElement.dataset.modV591==='home-safe',
+                  todoRuntime:!!window.__modTaskTimeWeightDetailsV489,
+                  appCore:typeof window.render==='function',
+                  backstageEnabled:document.querySelector('[data-mod-hub-launch-v517="backstage"]')?.getAttribute('aria-disabled')!=='true'
+                }));
+                out.home.pageErrors=pageErrors;
+                out.home.pass=out.home.hub&&out.home.homeSafe&&!out.home.todoRuntime&&!out.home.appCore&&out.home.backstageEnabled&&pageErrors.length===0;
+                await ctx.close();
+              }
+              {
+                const {ctx,page,pageErrors}=await fresh('todo');
+                await page.click('[data-mod-hub-launch-v517="todo"]');
+                await page.waitForFunction(()=>!!window.__modTaskTimeWeightDetailsV489&&!!window.__modHistoricalSegmentBreakdownV488&&!!window.__modNestedTaskWeightLayoutV490&&typeof window.render==='function',{timeout:30000});
+                const result=await page.evaluate(()=>{
+                  const now=new Date();
+                  const d=new Date(now.getTime()-3*3600000);
+                  const iso=(offsetMin)=>new Date(d.getTime()+offsetMin*60000).toISOString();
+                  const day=(typeof getBerlinDateKey==='function')?getBerlinDateKey():new Date().toISOString().slice(0,10);
+                  tasks=[{
+                    id:993001,text:'V593 Segment-Diagnose',type:'work',status:'paused',priority:'normal',optional:false,dueMode:'none',
+                    dueDate:null,todayDate:day,todayOrder:1,pauseTotalMs:0,
+                    activeSegments:[
+                      {startedAt:iso(0),endedAt:iso(20)},
+                      {startedAt:iso(35),endedAt:iso(65)},
+                      {startedAt:iso(90),endedAt:iso(115)}
+                    ]
+                  }];
+                  archive=[];
+                  try{currentTab='all'}catch(_){}
+                  render();
+                  window.__modNestedTaskWeightLayoutV490?.enhanceVisibleCards?.();
+                  window.__modHistoricalSegmentBreakdownV488?.refresh?.();
+                  const card=[...document.querySelectorAll('#viewContainer .task')].find(x=>x.textContent.includes('V593 Segment-Diagnose'));
+                  const segs=card?[...card.querySelectorAll('.v490-segment')].map(x=>x.textContent.trim()):[];
+                  return {
+                    modules:{
+                      v443:typeof window.readSegmentsFromDomV443==='function',
+                      v487:!!window.__modSegmentActiveDurationV487,
+                      v488:!!window.__modHistoricalSegmentBreakdownV488,
+                      v489:!!window.__modTaskTimeWeightDetailsV489,
+                      v490:!!window.__modNestedTaskWeightLayoutV490
+                    },
+                    card:!!card,segmentCount:segs.length,segments:segs
+                  };
+                });
+                result.pageErrors=pageErrors;
+                result.pass=result.card&&result.segmentCount>=3&&Object.values(result.modules).every(Boolean)&&pageErrors.length===0;
+                out.todo=result;
+                await ctx.close();
+              }
+              for(const name of ['sport','food','finance','kistology']){
+                const {ctx,page,pageErrors,consoleErrors}=await fresh(name);
+                await page.click('[data-mod-hub-launch-v517="'+name+'"]');
+                await page.waitForFunction(n=>{
+                  if(n==='sport')return !!window.__modSportV568||!!window.__modSportModeV510;
+                  if(n==='food')return !!window.__modFoodV544;
+                  if(n==='finance')return !!window.__modFinanceV552||!!window.__modFinanceV553;
+                  if(n==='kistology')return !!window.__modKistologyV539||!!window.__modKistologyV538||!!window.__modKistologyV537;
+                },name,{timeout:30000});
+                await sleep(1500);
+                const state=await page.evaluate(()=>({
+                  surface:document.body.dataset.modAppSurfaceV515||'',
+                  bodyClass:document.body.className,
+                  loading:document.documentElement.dataset.modV591||'',
+                  text:(document.body.innerText||'').slice(0,4000),
+                  supabaseLite:!!window.__modSupabaseClientLiteV593,
+                  supabaseClient:typeof window.getSupabaseClient==='function'
+                }));
+                state.pageErrors=pageErrors;
+                state.consoleErrors=consoleErrors;
+                state.clientMissing=/Supabase-Client ist nicht verfügbar|Supabase-Bibliothek wurde nicht geladen/.test(state.text);
+                state.pass=state.supabaseLite&&state.supabaseClient&&!state.clientMissing&&!/^error-/.test(state.loading)&&pageErrors.length===0;
+                out[name]=state;
+                await ctx.close();
+              }
+              {
+                const {ctx,page,pageErrors,consoleErrors}=await fresh('backstage');
+                const button=page.locator('[data-mod-hub-launch-v517="backstage"]');
+                await button.waitFor({state:'visible',timeout:15000});
+                const enabled=await button.evaluate(el=>el.getAttribute('aria-disabled')!=='true'&&!el.disabled);
+                if(!enabled)throw new Error('Backstage launcher is still disabled');
+                await button.click();
+                await page.waitForFunction(()=>!!window.__modBackstageV531,{timeout:30000});
+                await page.waitForFunction(()=>!!window.__modBackstageBackupV533&&!!window.__modBackstageBackupV534&&!!window.__modBackstageSizeV532,{timeout:15000});
+                await sleep(800);
+                const state=await page.evaluate(()=>({
+                  bodyClass:document.body.className,
+                  loading:document.documentElement.dataset.modV591||'',
+                  active:window.__modBackstageV531?.activeSection||'',
+                  shell:!!document.getElementById('modBackstageV530'),
+                  tabs:document.querySelectorAll('[data-backstage-section-v531]').length,
+                  backup533:!!window.__modBackstageBackupV533,
+                  backup534:!!window.__modBackstageBackupV534,
+                  size532:!!window.__modBackstageSizeV532,
+                  text:(document.body.innerText||'').slice(0,3000)
+                }));
+                state.pageErrors=pageErrors;
+                state.consoleErrors=consoleErrors;
+                state.pass=state.shell&&state.tabs>=4&&state.backup533&&state.backup534&&state.size532&&!/^error-/.test(state.loading)&&pageErrors.length===0;
+                out.backstage=state;
+                await ctx.close();
+              }
+            }catch(e){out.fatal=String(e.stack||e);}
+            await browser.close();
+            fs.writeFileSync('v593-selfcheck.json',JSON.stringify(out,null,2));
+            console.log(JSON.stringify(out,null,2));
+            const checks=Object.values(out).filter(v=>v&&typeof v==='object');
+            if(out.fatal||checks.length!==7||!checks.every(x=>x.pass===true))process.exitCode=1;
+          })();
+          NODE
+          node v593-check.js
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v593-selfcheck
+          path: v593-selfcheck.json
