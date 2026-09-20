@@ -7,7 +7,7 @@
   if(window.__modWorkerGateV606)return;
 
   const VERSION='V606';
-  const SW_URL='./sw.js?v=605-worker-gate';
+  const SW_URL='./sw.js?v=606-worker-gate';
   const SCOPE='./';
     const LEGACY_CACHE_PREFIX='master-of-disaster-';
 
