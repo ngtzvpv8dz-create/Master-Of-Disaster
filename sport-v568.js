@@ -1,9 +1,9 @@
-/* V574 · SPORT · unified training items + X-Training + Supabase live data */
+/* V610 · SPORT · unified overview + sessions + catalog + statistics */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V574';
+  const VERSION='V610';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -12,10 +12,9 @@
   const HEALTH_EVENT='mod:health-sync-request';
   const REQUEST_TIMEOUT_MS=4500;
   const TABS=[
-    {id:'fitx',label:'FITX'},
-    {id:'xtraining',label:'X-TRAINING'},
+    {id:'overview',label:'ÜBERSICHT'},
+    {id:'sessions',label:'EINHEITEN'},
     {id:'catalog',label:'KATALOG'},
-    {id:'activities',label:'AKTIVITÄTEN'},
     {id:'statistics',label:'STATISTIK'}
   ];
   const COURSE_NAMES=new Map([
@@ -55,7 +54,7 @@
     }]
   };
 
-  let activeTab='fitx';
+  let activeTab='overview';
   let state={loaded:false,loading:false,error:null,source:'cache',sessions:[],catalogExercises:[],equipment:[],sessionParticipants:[],sessionExercises:[],exerciseSets:[]};
   let loadPromise=null;
   let renderSerial=0;
@@ -227,7 +226,7 @@
       supabase.from('sport_session_exercises').select('id,session_id,exercise_id,equipment_id,name_snapshot,kind,status,sort_order,started_at,ended_at,duration_minutes,distance_km,resistance_level,speed_kmh,incline_percent,equipment_number_snapshot,settings_snapshot,load_mode_snapshot,calories_kcal,metric_values,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5000),
       supabase.from('sport_exercise_sets').select('id,session_exercise_id,set_number,weight_kg,repetitions,rir,rir_plus').eq('user_id',user.id).order('set_number').limit(15000)
     ];
-    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Übungskatalog','Gerätekatalog','X-Training Übungen','Sätze'];
+    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Übungskatalog','Gerätekatalog','Trainingselemente','Sätze'];
     const results=await Promise.all(queries.map((query,index)=>withTimeout(query,labels[index],6500)));
     for(const result of results)if(result?.error)throw result.error;
     const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,catalogResult,equipmentResult,workoutResult,setsResult]=results;
@@ -317,23 +316,78 @@
   function tabRail(){return `<aside class="sport-side-rail-v510 sport-side-rail-v512" aria-label="Sportbereiche">${TABS.map((tab,index)=>`<button type="button" class="sport-side-tab-v510 sport-side-tab-v512 ${activeTab===tab.id?'active':''}" data-sport-tab-v510="${tab.id}" data-sport-tab-v512="${tab.id}" data-sport-tab-v568="${tab.id}" style="--sport-tab-index-v512:${index}" ${activeTab===tab.id?'aria-current="page"':''} aria-label="${esc(tab.label)} öffnen"><span class="sport-side-tab-label-v510">${esc(tab.label)}</span></button>`).join('')}</aside>`;}
   function participantsLine(activity){return activity.participants?.length?`<div class="sport-people-v568"><span>mit</span> ${activity.participants.map(esc).join(' · ')}</div>`:'<div class="sport-people-v568 is-empty">ohne Teilnehmerangabe</div>';}
 
-  function courseCard(activity,index=0){
-    return `<article class="sport-course-card-v568" style="--sport-course-index-v568:${index}"><div class="sport-course-top-v568"><div><h3>${esc(activity.name)}</h3><div class="sport-card-sub-v510">${esc(clock(activity.startedAt))}–${esc(clock(activity.endedAt))}</div></div><span class="sport-chip-v510">${esc(formatMinutes(activityMinutes(activity)))}</span></div>${participantsLine(activity)}</article>`;
+  function groupSessions(rows){
+    const groups=new Map();
+    (Array.isArray(rows)?rows:[]).forEach(session=>{
+      const venue=String(session.venue||((isFitx(session))?'FitX':session.title||'Sport')).trim()||'Sport';
+      const key=String(session.date||'')+'|'+venue.toLowerCase();
+      if(!groups.has(key))groups.set(key,{date:session.date,venue,sessions:[]});
+      groups.get(key).sessions.push(session);
+    });
+    return [...groups.values()];
+  }
+  function groupActivities(group){return (group?.sessions||[]).flatMap(session=>session.activities||[]);}
+  function groupWorkout(group){return (group?.sessions||[]).flatMap(session=>session.workout||[]).filter(item=>item.status!=='skipped');}
+  function groupParticipants(group){
+    const names=new Set();
+    (group?.sessions||[]).forEach(session=>{
+      (session.participants||[]).forEach(name=>names.add(String(name)));
+      (session.activities||[]).forEach(activity=>(activity.participants||[]).forEach(name=>names.add(String(name))));
+    });
+    return [...names].filter(Boolean).sort(byName);
+  }
+  function groupDuration(group){
+    const sessions=group?.sessions||[];
+    const starts=sessions.map(session=>validDate(session.startedAt)).filter(Boolean).sort((a,b)=>a-b);
+    const ends=sessions.map(session=>validDate(session.endedAt)).filter(Boolean).sort((a,b)=>a-b);
+    if(starts.length&&ends.length&&ends[ends.length-1]>=starts[0])return Math.max(0,Math.round((ends[ends.length-1]-starts[0])/60000));
+    return sessions.reduce((best,session)=>Math.max(best,sessionMinutes(session)),0);
+  }
+  function groupTimeWindow(group){
+    const sessions=group?.sessions||[];
+    const starts=sessions.map(session=>validDate(session.startedAt)).filter(Boolean).sort((a,b)=>a-b);
+    const ends=sessions.map(session=>validDate(session.endedAt)).filter(Boolean).sort((a,b)=>a-b);
+    return starts.length&&ends.length?clock(starts[0])+'–'+clock(ends[ends.length-1]):'Zeit nicht vollständig dokumentiert';
+  }
+  function groupSummary(group){
+    const activities=groupActivities(group),workout=groupWorkout(group);
+    const cardio=workout.filter(item=>item.kind==='cardio').length;
+    const parts=[];
+    if(activities.length)parts.push(activities.length+' '+(activities.length===1?'Kurs':'Kurse'));
+    if(workout.length)parts.push(workout.length+' Trainingselement'+(workout.length===1?'':'e'));
+    if(cardio)parts.push(cardio+' Cardio');
+    return parts.join(' · ')||'Einheit ohne Detailangaben';
   }
 
-  function miniVisit(session){
-    const names=(session.activities||[]).map(a=>a.name);
-    return `<article class="sport-visit-v568"><div><strong>${esc(shortDate(session.date))}</strong><span>${session.startedAt?`${esc(clock(session.startedAt))}–${esc(clock(session.endedAt))}`:'Zeit nicht dokumentiert'}</span></div><div class="sport-visit-meta-v568"><b>${esc(formatMinutes(sessionMinutes(session)))}</b><small>${esc(names.join(' · ')||'keine Kurse dokumentiert')}</small></div></article>`;
+  function courseCard(activity,index=0){
+    return `<article class="sport-course-card-v568 sport-course-card-compact-v610" style="--sport-course-index-v568:${index}"><div class="sport-course-top-v568"><div><h3>${esc(activity.name)}</h3><div class="sport-card-sub-v510">${esc(clock(activity.startedAt))}–${esc(clock(activity.endedAt))}</div></div><span class="sport-chip-v510">${esc(formatMinutes(activityMinutes(activity)))}</span></div>${participantsLine(activity)}</article>`;
+  }
+
+  function unitCard(group,index=0){
+    const courses=groupActivities(group),workout=groupWorkout(group),people=groupParticipants(group);
+    return '<details class="sport-history-detail-v574 sport-unit-detail-v610" style="--sport-row-index-v568:'+index+'">'+
+      '<summary><strong>'+esc(shortDate(group.date))+'</strong><span>'+esc(group.venue)+' · '+esc(groupSummary(group))+'</span><b>'+esc(formatMinutes(groupDuration(group)))+'</b></summary>'+
+      '<div class="sport-unit-body-v610">'+
+        (people.length?'<div class="sport-unit-people-v610"><span>MIT DABEI</span><b>'+people.map(esc).join(' · ')+'</b></div>':'')+
+        (courses.length?'<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">'+courses.map(courseCard).join('')+'</div>':'')+
+        (workout.length?'<div class="sport-section-title-v568">Freies Training</div><div class="sport-history-workout-v574">'+workout.map(workoutSummaryCard).join('')+'</div>':'')+
+      '</div></details>';
+  }
+  function unitHistory(rows){
+    const groups=groupSessions(rows);
+    return groups.length?'<div class="sport-unit-list-v610">'+groups.map(unitCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine Trainingseinheiten dokumentiert.</div>';
   }
 
   function fitxPanel(rows){
-    const fitx=rows.filter(isFitx);const session=fitx[0]||null;
-    if(!session){
-      return `<section class="sport-panel-v510 sport-panel-v512">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>FITX ${statusBadge()}</div><p class="sport-date-v510">${state.loading?'Sportdaten werden geladen …':'Noch keine FitX-Einheit gespeichert.'}</p></div>${errorNote()}<div class="sport-content-v510"><div class="sport-mode-hint-v510">Über das Haus geht es zurück zum Home-Bildschirm.</div></div></section>`;
+    const groups=groupSessions(rows),latest=groups[0]||null;
+    if(!latest){
+      return `<section class="sport-panel-v510 sport-panel-v512">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>ÜBERSICHT ${statusBadge()}</div><p class="sport-date-v510">${state.loading?'Sportdaten werden geladen …':'Noch keine Trainingseinheit gespeichert.'}</p></div>${errorNote()}<div class="sport-content-v510"><div class="sport-mode-hint-v510">Über das Haus geht es zurück zum Home-Bildschirm.</div></div></section>`;
     }
-    const total=sessionMinutes(session),courses=courseMinutes(session),other=Math.max(0,total-courses);
-    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="fitx" data-sport-panel-v568="fitx">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>FITX · LETZTE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(session.date))}</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" id="sportDurationV510" data-total-minutes="${total}">${esc(formatMinutes(total).replace(' h',''))}</div><div class="sport-duration-unit-v510">Gesamtaufwand</div></div><div class="sport-time-window-v510">${esc(clock(session.startedAt))} <span>→</span> ${esc(clock(session.endedAt))}</div></div><div class="sport-content-v510"><div class="sport-meta-grid-v568"><div class="sport-meta-v510"><div class="sport-meta-label-v510">Kurse</div><div class="sport-meta-value-v510">${session.activities.length}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Kurszeit</div><div class="sport-meta-value-v510">${esc(formatMinutes(courses))}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Drumherum</div><div class="sport-meta-value-v510">${esc(formatMinutes(other))}</div></div></div><div class="sport-course-list-v568">${session.activities.map(courseCard).join('')||'<div class="sport-empty-inline-v568">Keine Kurse dokumentiert.</div>'}</div>${session.note?`<div class="sport-footnote-v510">${esc(session.note)}</div>`:''}${fitx.length>1?`<div class="sport-section-title-v568">Letzte FitX-Besuche</div><div class="sport-visit-list-v568">${fitx.slice(1,4).map(miniVisit).join('')}</div>`:''}${errorNote()}<div class="sport-mode-hint-v510">Über das Haus geht es zurück zum Home-Bildschirm.</div></div></section>`;
+    const courses=groupActivities(latest),workout=groupWorkout(latest),cardio=workout.filter(item=>item.kind==='cardio');
+    const people=groupParticipants(latest);
+    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>ÜBERSICHT · LETZTE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(latest.date))} · ${esc(latest.venue)}</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" data-total-minutes="${groupDuration(latest)}">${esc(formatMinutes(groupDuration(latest)).replace(' h',''))}</div><div class="sport-duration-unit-v510">Gesamtaufwand</div></div><div class="sport-time-window-v510">${esc(groupTimeWindow(latest))}</div></div><div class="sport-content-v510"><div class="sport-meta-grid-v568"><div class="sport-meta-v510"><div class="sport-meta-label-v510">Kurse</div><div class="sport-meta-value-v510">${courses.length}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Freies Training</div><div class="sport-meta-value-v510">${workout.length?'Ja':'–'}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Trainingselemente</div><div class="sport-meta-value-v510">${workout.length}</div></div></div>${people.length?`<div class="sport-unit-people-v610"><span>MIT DABEI</span><b>${people.map(esc).join(' · ')}</b></div>`:''}${courses.length?`<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">${courses.map(courseCard).join('')}</div>`:''}${workout.length?`<div class="sport-section-title-v568">Freies Training${cardio.length?' · inkl. '+cardio.length+' Cardio':''}</div><div class="sport-history-workout-v574">${workout.map(workoutSummaryCard).join('')}</div>`:''}${errorNote()}<div class="sport-mode-hint-v510">Alle Trainingstage findest du unter „Einheiten“.</div></div></section>`;
   }
+
 
   async function sportUser(){
     const supabase=client();
@@ -352,7 +406,7 @@
     const result=await supabase.from('sport_sessions').insert({
       user_id:user.id,
       session_date:todayIso(),
-      title:'X-Training',
+      title:'Freies Training',
       venue:'FitX',
       session_kind:'xtraining',
       session_status:'planned',
@@ -676,9 +730,9 @@
     const number=exercise.equipmentNumber||catalog?.equipment_number||'';
     const settings=exercise.settingsText||catalog?.settings_text||'';
     const title=(number?number+' ':'')+exercise.name;
-    let detail='';
+    let detailHtml='';
     if(exercise.kind==='cardio'){
-      detail=[
+      const detail=[
         exercise.durationMinutes!==null?exercise.durationMinutes+' Min.':null,
         exercise.resistanceLevel?'Stufe '+exercise.resistanceLevel:null,
         exercise.distanceKm!==null?exercise.distanceKm+' km':null,
@@ -686,14 +740,20 @@
         exercise.inclinePercent!==null?exercise.inclinePercent+' %':null,
         exercise.caloriesKcal!==null?exercise.caloriesKcal+' kcal':null
       ].filter(Boolean).join(' · ');
+      detailHtml='<span>'+esc(detail||'keine Werte')+'</span>';
     }else{
-      detail=(exercise.sets||[]).map(set=>{
-        const kg=exercise.loadMode==='assistance'?'Unterstützung '+set.weightKg+' kg':set.weightKg+' kg';
-        return 'S'+set.setNumber+' '+kg+' × '+set.repetitions+(set.rir!==null?' · RIR '+set.rir+(set.rirPlus?'+':''):'');
-      }).join(' | ');
+      const sets=(exercise.sets||[]).filter(set=>set.weightKg!==null||set.repetitions!==null||set.rir!==null);
+      detailHtml=sets.length?'<span class="sport-summary-sets-v610">'+sets.map(set=>{
+        const parts=[];
+        if(set.weightKg!==null)parts.push((exercise.loadMode==='assistance'?'Unterstützung ':'')+set.weightKg+' kg');
+        if(set.repetitions!==null)parts.push(set.repetitions+' Wdh.');
+        if(set.rir!==null)parts.push('RIR '+set.rir+(set.rirPlus?'+':''));
+        return '<i><b>Set '+set.setNumber+'</b><em>'+esc(parts.join(' · ')||'keine Werte')+'</em></i>';
+      }).join('')+'</span>':'<span>keine Satzwerte</span>';
     }
-    return '<article class="sport-summary-card-v574"><div><strong>'+esc(title)+'</strong>'+(settings?'<small>'+esc(settings)+'</small>':'')+'</div><span>'+esc(detail||'keine Werte')+'</span></article>';
+    return '<article class="sport-summary-card-v574"><div><strong>'+esc(title)+'</strong>'+(settings?'<small>'+esc(settings)+'</small>':'')+'</div>'+detailHtml+'</article>';
   }
+
 
   function timelineBlock(session){
     return '<div class="sport-timeline-v573">'+TIMELINE_STEPS.map(([prop,column,label],index)=>{
@@ -714,26 +774,28 @@
 
   function xTrainingPanel(){
     const current=activeXSession();
-    const past=state.sessions.filter(session=>session.kind==='xtraining'&&(!current||session.id!==current.id)).slice(0,5);
+    const historyRows=state.sessions.filter(session=>!current||session.id!==current.id);
     if(!current){
-      return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="xtraining">'+wave()+
-        '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING '+statusBadge()+'</div><p class="sport-date-v510">Training mit Geräten, freien Übungen, Cardio und kompletter Tages-Zeitleiste.</p><div class="sport-section-mark-v512">X</div></div>'+
-        '<div class="sport-content-v510"><article class="sport-x-start-v573"><span>HEUTE</span><h2>Noch kein laufendes X-Training</h2><p>Die Einheit wird erst angelegt, wenn du sie startest. Keine automatische Progression, kein Maschinenorakel.</p><button type="button" data-sport-create-x>Neues X-Training anlegen</button></article>'+
-        (past.length?'<div class="sport-section-title-v568">Letzte X-Trainings</div><div class="sport-x-history-v573">'+past.map(session=>'<details class="sport-history-detail-v574"><summary><strong>'+esc(shortDate(session.date))+'</strong><span>'+esc(xSessionStatusLabel(session.status))+' · '+(session.workout?.length||0)+' Elemente</span><b>'+esc(formatMinutes(sessionMinutes(session)))+'</b></summary><div class="sport-history-workout-v574">'+(session.workout?.length?session.workout.map(workoutSummaryCard).join(''):'<em>Keine Trainingselemente gespeichert.</em>')+'</div></details>').join('')+'</div>':'')+
+      return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="sessions">'+wave()+
+        '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>EINHEITEN '+statusBadge()+'</div><p class="sport-date-v510">FitX, Zuhause, draußen, Kurse und freies Training in einer gemeinsamen Chronik.</p><div class="sport-section-mark-v512">E</div></div>'+
+        '<div class="sport-content-v510"><article class="sport-x-start-v573"><span>FREIES TRAINING</span><h2>Neue Einheit starten</h2><p>Eine Einheit kann Geräte, freie Übungen und Cardio enthalten. Kurse desselben Trainingstags erscheinen in derselben Chronik.</p><button type="button" data-sport-create-x>Freies Training anlegen</button></article>'+
+        '<div class="sport-section-title-v568">Bisherige Einheiten</div>'+unitHistory(historyRows)+
         errorNote()+'</div></section>';
     }
 
-    return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="xtraining">'+wave()+
-      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>X-TRAINING · '+esc(xSessionStatusLabel(current.status))+' '+statusBadge()+'</div><p class="sport-date-v510">'+esc(dateLabel(current.date))+'</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">'+(current.workout?.length||0)+'</div><div class="sport-duration-unit-v510">Elemente</div></div></div>'+
+    return '<section class="sport-panel-v510 sport-panel-v512 sport-panel-xtraining-v512" data-sport-panel-v568="sessions">'+wave()+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>FREIES TRAINING · '+esc(xSessionStatusLabel(current.status))+' '+statusBadge()+'</div><p class="sport-date-v510">'+esc(dateLabel(current.date))+' · '+esc(current.venue||'Sport')+'</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">'+(current.workout?.length||0)+'</div><div class="sport-duration-unit-v510">Elemente</div></div></div>'+
       '<div class="sport-content-v510">'+
         '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>TRAININGSTAG</span><strong>Zeitleiste</strong></div><small>6 Zeitpunkte</small></div>'+timelineBlock(current)+'</section>'+
         participantsBlock(current)+
-        '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>HEUTIGES TRAINING</span><strong>Trainingselemente</strong></div><button type="button" data-sport-open-catalog>Katalog öffnen</button></div>'+
+        '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>FREIES TRAINING</span><strong>Trainingselemente</strong></div><button type="button" data-sport-open-catalog>Katalog öffnen</button></div>'+
           ((current.workout||[]).length?'<div class="sport-workout-list-v573">'+current.workout.map(workoutExerciseCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch nichts gewählt. Öffne den Katalog und füge einzelne Geräte, freie Übungen oder ganze Gruppen hinzu.</div>')+
         '</section>'+
+        '<div class="sport-section-title-v568">Bisherige Einheiten</div>'+unitHistory(historyRows)+
         errorNote()+
       '</div></section>';
   }
+
 
   function catalogExerciseGroups(){
     const groups=new Map();
@@ -774,7 +836,7 @@
     return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="catalog">'+wave()+
       '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>KATALOG '+statusBadge()+'</div><p class="sport-date-v510">Ein Katalog für Geräte, freie Übungen und Outdoor-Aktivitäten.</p><div class="sport-section-mark-v512">K</div></div>'+
       '<div class="sport-content-v510">'+
-        (!current?'<div class="sport-catalog-note-v573">Für heute ist kein laufendes X-Training angelegt. Den Katalog kannst du trotzdem pflegen.</div>':'')+
+        (!current?'<div class="sport-catalog-note-v573">Für heute ist kein laufendes freies Training angelegt. Den Katalog kannst du trotzdem pflegen.</div>':'')+
         '<div class="sport-section-title-v568">Trainingselemente</div>'+itemsHtml+
         '<details class="sport-catalog-create-v573"><summary>+ Trainingselement hinzufügen</summary>'+
           '<form data-sport-add-exercise-form>'+
@@ -803,22 +865,30 @@
   }
 
   function aggregate(rows){
-    const fitx=rows.filter(isFitx),activities=flatActivities(rows);
+    const groups=groupSessions(rows),activities=flatActivities(rows);
+    const fitxGroups=groups.filter(group=>(group.sessions||[]).some(isFitx));
     const courseCounts=new Map(),partnerCounts=new Map();
     let courseTotal=0;
     activities.forEach(({activity})=>{
       const minutes=activityMinutes(activity);courseTotal+=minutes;
       const c=courseCounts.get(activity.name)||{count:0,minutes:0};c.count++;c.minutes+=minutes;courseCounts.set(activity.name,c);
-      (activity.participants||[]).forEach(name=>partnerCounts.set(name,(partnerCounts.get(name)||0)+1));
     });
+    groups.forEach(group=>groupParticipants(group).forEach(name=>partnerCounts.set(name,(partnerCounts.get(name)||0)+1)));
+    const workoutItems=groups.flatMap(group=>groupWorkout(group));
+    const freeTrainingCount=groups.filter(group=>groupWorkout(group).length>0).length;
+    const mixedCount=groups.filter(group=>groupWorkout(group).length>0&&groupActivities(group).length>0).length;
     return {
-      allSessions:rows.length,
-      allMinutes:rows.reduce((sum,s)=>sum+sessionMinutes(s),0),
-      fitxSessions:fitx.length,
-      fitxMinutes:fitx.reduce((sum,s)=>sum+sessionMinutes(s),0),
+      allSessions:groups.length,
+      allMinutes:groups.reduce((sum,group)=>sum+groupDuration(group),0),
+      fitxSessions:fitxGroups.length,
+      fitxMinutes:fitxGroups.reduce((sum,group)=>sum+groupDuration(group),0),
+      freeTrainingCount,
+      workoutItemCount:workoutItems.length,
+      cardioCount:workoutItems.filter(item=>item.kind==='cardio').length,
+      mixedCount,
       courseCount:activities.length,
       courseTotal,
-      longestFitx:fitx.reduce((best,s)=>Math.max(best,sessionMinutes(s)),0),
+      longestFitx:fitxGroups.reduce((best,group)=>Math.max(best,groupDuration(group)),0),
       courseCounts:[...courseCounts.entries()].sort((a,b)=>b[1].count-a[1].count||b[1].minutes-a[1].minutes||byName(a[0],b[0])),
       partnerCounts:[...partnerCounts.entries()].sort((a,b)=>b[1]-a[1]||byName(a[0],b[0]))
     };
@@ -826,11 +896,12 @@
   function statisticsPanel(rows){
     const s=aggregate(rows);
     const courses=s.courseCounts.length?`<div class="sport-rank-v568">${s.courseCounts.map(([name,val])=>`<div><span>${esc(name)}</span><b>${val.count}× · ${esc(formatMinutes(val.minutes))}</b></div>`).join('')}</div>`:'<div class="sport-empty-inline-v568">Noch keine Kurse für eine Auswertung.</div>';
-    const people=s.partnerCounts.length?`<div class="sport-rank-v568">${s.partnerCounts.map(([name,count])=>`<div><span>${esc(name)}</span><b>${count} gemeinsame${count===1?'r Kurs':' Kurse'}</b></div>`).join('')}</div>`:'<div class="sport-empty-inline-v568">Noch keine Trainingspartner dokumentiert.</div>';
-    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="statistics" data-sport-panel-v568="statistics">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>STATISTIK ${statusBadge()}</div><p class="sport-date-v510">Sportzeit auf einen Blick</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" data-total-minutes="${s.allMinutes}">${esc(formatMinutes(s.allMinutes).replace(' h',''))}</div><div class="sport-duration-unit-v510">Sport gesamt</div></div></div><div class="sport-content-v510"><div class="sport-stat-grid-v568"><article class="sport-stat-card-v512"><span>Einheiten gesamt</span><strong>${s.allSessions}</strong></article><article class="sport-stat-card-v512"><span>FitX-Besuche</span><strong>${s.fitxSessions}</strong></article><article class="sport-stat-card-v512"><span>FitX-Zeit</span><strong>${esc(formatMinutes(s.fitxMinutes))}</strong></article><article class="sport-stat-card-v512"><span>Kurse</span><strong>${s.courseCount}</strong></article><article class="sport-stat-card-v512"><span>Kurszeit</span><strong>${esc(formatMinutes(s.courseTotal))}</strong></article><article class="sport-stat-card-v512"><span>Längstes FitX</span><strong>${esc(formatMinutes(s.longestFitx))}</strong></article></div><div class="sport-stats-columns-v568"><div><div class="sport-section-title-v568">Kurse</div>${courses}</div><div><div class="sport-section-title-v568">Mit dabei</div>${people}</div></div>${errorNote()}</div></section>`;
+    const people=s.partnerCounts.length?`<div class="sport-rank-v568">${s.partnerCounts.map(([name,count])=>`<div><span>${esc(name)}</span><b>${count} gemeinsame${count===1?' Einheit':' Einheiten'}</b></div>`).join('')}</div>`:'<div class="sport-empty-inline-v568">Noch keine Trainingspartner dokumentiert.</div>';
+    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="statistics" data-sport-panel-v568="statistics">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>STATISTIK ${statusBadge()}</div><p class="sport-date-v510">Alle Sportarten und Trainingsformen gemeinsam</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" data-total-minutes="${s.allMinutes}">${esc(formatMinutes(s.allMinutes).replace(' h',''))}</div><div class="sport-duration-unit-v510">Trainingszeit gesamt</div></div></div><div class="sport-content-v510"><div class="sport-stat-grid-v568"><article class="sport-stat-card-v512"><span>Trainingstage</span><strong>${s.allSessions}</strong></article><article class="sport-stat-card-v512"><span>FitX-Besuche</span><strong>${s.fitxSessions}</strong></article><article class="sport-stat-card-v512"><span>Freies Training</span><strong>${s.freeTrainingCount}</strong></article><article class="sport-stat-card-v512"><span>Kurse</span><strong>${s.courseCount}</strong></article><article class="sport-stat-card-v512"><span>Trainingselemente</span><strong>${s.workoutItemCount}</strong></article><article class="sport-stat-card-v512"><span>Gemischte Tage</span><strong>${s.mixedCount}</strong></article></div><div class="sport-stat-foot-v610">FitX-Zeit: <b>${esc(formatMinutes(s.fitxMinutes))}</b> · Kurszeit: <b>${esc(formatMinutes(s.courseTotal))}</b> · Cardio-Einträge: <b>${s.cardioCount}</b></div><div class="sport-stats-columns-v568"><div><div class="sport-section-title-v568">Kurse</div>${courses}</div><div><div class="sport-section-title-v568">Mit dabei</div>${people}</div></div>${errorNote()}</div></section>`;
   }
 
-  function panel(rows){if(activeTab==='xtraining')return xTrainingPanel();if(activeTab==='catalog')return catalogPanel();if(activeTab==='activities')return activitiesPanel(rows);if(activeTab==='statistics')return statisticsPanel(rows);return fitxPanel(rows);}
+
+  function panel(rows){if(activeTab==='sessions')return xTrainingPanel();if(activeTab==='catalog')return catalogPanel();if(activeTab==='statistics')return statisticsPanel(rows);return fitxPanel(rows);}
 
   function render({animate=false}={}){
     const serial=++renderSerial;
@@ -978,7 +1049,7 @@
     return true;
   }
 
-  function setTab(id,{animate=true,persist=true}={}){activeTab=TABS.some(t=>t.id===id)?id:'fitx';if(persist)try{localStorage.setItem(TAB_KEY,activeTab);}catch(_){ }render({animate});return activeTab;}
+  function setTab(id,{animate=true,persist=true}={}){const migrated={fitx:'overview',xtraining:'sessions',activities:'sessions'}[id]||id;activeTab=TABS.some(t=>t.id===migrated)?migrated:'overview';if(persist)try{localStorage.setItem(TAB_KEY,activeTab);}catch(_){ }render({animate});return activeTab;}
   function currentMode(){return document.body.classList.contains('mod-sport-mode-v510')?'sport':'todo';}
   function setMode(mode,{persist=true,animate=true}={}){
     mode=mode==='sport'?'sport':'todo';ensureRoot();ensureChrome();document.body.classList.toggle('mod-sport-mode-v510',mode==='sport');document.body.dataset.modAppModeV510=mode;document.getElementById('sportSwitchV510')?.removeAttribute('aria-pressed');
@@ -999,7 +1070,7 @@
     }else{
       state={...state,sessions:readCache()};
     }
-    try{activeTab=TABS.some(t=>t.id===localStorage.getItem(TAB_KEY))?localStorage.getItem(TAB_KEY):'fitx';}catch(_){activeTab='fitx';}
+    try{const stored=localStorage.getItem(TAB_KEY);const migrated={fitx:'overview',xtraining:'sessions',activities:'sessions'}[stored]||stored;activeTab=TABS.some(t=>t.id===migrated)?migrated:'overview';}catch(_){activeTab='overview';}
     ensureRoot();render();
     ensureChrome();
     /* V603: Module preload must never switch the visible surface by itself. */
