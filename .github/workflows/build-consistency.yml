@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Verify V611 worker cache and V609 staged Backstage wiring
+      - name: Verify V612 sport planning and V611 worker cache
         shell: python
         run: |
           from pathlib import Path
@@ -28,7 +28,7 @@ jobs:
           css=Path('backstage-section-loader-v609.css').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
           for marker in [
-            "version:'V611'",
+            "version:'V612'",
             'service-worker-gate-v611.js?v=611-worker-gate',
             'area-runtime-v609.js?v=609-staged-sections',
             'area-loader-v608.css?v=608-staged',
@@ -62,7 +62,7 @@ jobs:
           print('V611 worker cache + V609 staged Backstage wiring OK')
       - name: JavaScript syntax
         run: |
-          for f in             app.js app-hub-v515.js app-hub-launcher-v603.js surface-header-v603.js service-worker-gate-v611.js area-runtime-v609.js             kistology-v603.js log-core-v603.js background-log-v454.js history-safety-net-v498.js meaningful-history-v500.js             sport-v568.js food-v544.js finance-v552.js finance-data-v553.js             backstage-v531.js backstage-size-v532.js backstage-backup-v533.js backstage-backup-v534.js             backup-source-fallback-v506.js backup-stability-v506.js backup-model-v600.js iphone-backup-v400.js             task-title-library-v507.js archive-weight-layout-v508.js summary-weight-due-polish-v494.js; do
+          for f in             app.js app-hub-v515.js app-hub-launcher-v603.js surface-header-v603.js service-worker-gate-v611.js area-runtime-v609.js             kistology-v603.js log-core-v603.js background-log-v454.js history-safety-net-v498.js meaningful-history-v500.js             sport-v612.js food-v544.js finance-v552.js finance-data-v553.js             backstage-v531.js backstage-size-v532.js backstage-backup-v533.js backstage-backup-v534.js             backup-source-fallback-v506.js backup-stability-v506.js backup-model-v600.js iphone-backup-v400.js             task-title-library-v507.js archive-weight-layout-v508.js summary-weight-due-polish-v494.js; do
             node --check "$f"
           done
           node --check sw.js
