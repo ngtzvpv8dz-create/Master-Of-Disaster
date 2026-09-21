@@ -400,3 +400,59 @@ body .sport-switch-v510.mod-surface-mark-v556{
   .sport-history-detail-v574 summary span{grid-column:1/-1}
   .sport-set-row-v573 label span{min-height:1.8em;display:flex;align-items:end}
 }
+
+
+/* V610 · sport structure */
+.sport-course-card-compact-v610{
+  padding:9px 10px;
+  border-radius:11px;
+}
+.sport-course-card-compact-v610::after{left:10px;right:10px}
+.sport-course-card-compact-v610 .sport-course-top-v568 h3{font-size:.79rem}
+.sport-course-card-compact-v610 .sport-card-sub-v510{font-size:.58rem}
+.sport-course-card-compact-v610 .sport-people-v568{margin-top:5px;font-size:.61rem}
+.sport-course-card-compact-v610 .sport-people-v568 span{font-size:.51rem}
+
+.sport-unit-list-v610{display:grid;gap:8px}
+.sport-unit-detail-v610{animation:sportActivityV568 .28s cubic-bezier(.2,.8,.24,1) both;animation-delay:calc(var(--sport-row-index-v568) * 35ms)}
+.sport-unit-body-v610{display:grid;gap:7px;padding:0 9px 10px}
+.sport-unit-body-v610 .sport-section-title-v568{margin:7px 2px 2px}
+.sport-unit-people-v610{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:7px 9px;
+  border:1px solid rgba(111,228,234,.08);
+  border-radius:10px;
+  background:rgba(2,15,18,.38);
+}
+.sport-unit-people-v610 span{flex:none;color:#5f9ea3;font-size:.49rem;font-weight:950;letter-spacing:.11em}
+.sport-unit-people-v610 b{min-width:0;color:#bcd8da;font-size:.61rem;line-height:1.35}
+
+.sport-summary-sets-v610{display:grid!important;gap:4px!important}
+.sport-summary-sets-v610 i{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr);
+  gap:7px;
+  align-items:baseline;
+  font-style:normal;
+}
+.sport-summary-sets-v610 i b{color:#73ccd2;font-size:.53rem}
+.sport-summary-sets-v610 i em{color:#839fa2;font-size:.56rem;font-style:normal;line-height:1.35}
+
+.sport-stat-foot-v610{
+  margin-top:9px;
+  padding:8px 10px;
+  border:1px solid rgba(111,228,234,.08);
+  border-radius:11px;
+  background:rgba(2,15,18,.4);
+  color:#6f8c90;
+  font-size:.58rem;
+  line-height:1.45;
+}
+.sport-stat-foot-v610 b{color:#9acdd1}
+
+@media(max-width:480px){
+  .sport-unit-people-v610{display:grid;gap:3px}
+  .sport-summary-sets-v610 i{grid-template-columns:42px minmax(0,1fr)}
+}
