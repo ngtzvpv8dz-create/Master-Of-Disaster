@@ -36,7 +36,7 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
-          grep -q 'area-runtime-v609.js?v=609-staged-sections' index.html
+          grep -q 'area-runtime-v609.js?v=612-sport-planning-runtime' index.html
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
           grep -q 'area-loader-v608.css?v=608-staged' index.html
           grep -q 'app-hub-launcher-v603.js?v=603-loader' index.html
