@@ -21,7 +21,7 @@ jobs:
           node --check app-hub-v515.js
           node --check app-hub-launcher-v603.js
           node --check surface-header-v603.js
-          node --check service-worker-gate-v607.js
+          node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
           node --check kistology-v603.js
           node --check log-core-v603.js
@@ -35,7 +35,7 @@ jobs:
           node --check summary-weight-due-polish-v494.js
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
-          grep -q 'service-worker-gate-v607.js?v=607-worker-gate' index.html
+          grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
           grep -q 'area-runtime-v609.js?v=609-staged-sections' index.html
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
           grep -q 'area-loader-v608.css?v=608-staged' index.html
@@ -48,7 +48,7 @@ jobs:
           grep -q 'backup-model-v600.js' area-runtime-v609.js
           grep -q 'app-hub-launcher-v603.js' sw.js
           grep -q 'surface-header-v603.js' sw.js
-          grep -q 'service-worker-gate-v607.js' sw.js
+          grep -q 'service-worker-gate-v611.js' sw.js
           grep -q 'area-runtime-v609.js' sw.js
           grep -q 'backstage-section-loader-v609.css' sw.js
           grep -q 'MOD_GET_SW_VERSION' sw.js
@@ -89,13 +89,13 @@ jobs:
             await page.waitForTimeout(1000);
             const early=await page.evaluate(()=>({
               runtime:!!window.__modAreaRuntimeV609,
-              gate:!!window.__modWorkerGateV607,
+              gate:!!window.__modWorkerGateV611,
               scripts:[...document.scripts].map(script=>script.src).filter(Boolean),
-              resources:performance.getEntriesByType('resource').map(entry=>entry.name).filter(name=>/v607|area-runtime|worker-gate/.test(name))
+              resources:performance.getEntriesByType('resource').map(entry=>entry.name).filter(name=>/v611|area-runtime|worker-gate/.test(name))
             }));
             if(!early.runtime)throw new Error('V609 runtime script missing '+JSON.stringify(early));
             const bootResult=await page.evaluate(()=>window.__modAreaRuntimeV609.preloadAll());
-            const bootState=await page.evaluate(()=>({ready:window.__modAreaRuntimeV609?.ready,progress:window.__modAreaRuntimeV609?.progress,gate:window.__modWorkerGateV607?.status||null}));
+            const bootState=await page.evaluate(()=>({ready:window.__modAreaRuntimeV609?.ready,progress:window.__modAreaRuntimeV609?.progress,gate:window.__modWorkerGateV611?.status||null}));
             if(bootResult!==true||bootState.ready!==true)throw new Error('V609 local bootstrap failed '+JSON.stringify({bootResult,bootState}));
             const preloadOnly=await page.evaluate(()=>({
               mode:window.__modAreaRuntimeV609?.preloadMode,
@@ -352,20 +352,20 @@ jobs:
             await upgrade.waitForFunction(()=>window.__modAreaRuntimeV609?.ready===true,{timeout:90000});
             await upgrade.waitForTimeout(900);
             const upgradeState=await upgrade.evaluate(async()=>{
-              const controllerVersion=await window.__modWorkerGateV607?.controllerVersion?.();
+              const controllerVersion=await window.__modWorkerGateV611?.controllerVersion?.();
               const keys=await caches.keys();
               return {
                 controllerVersion,
-                gate:window.__modWorkerGateV607?.version||null,
+                gate:window.__modWorkerGateV611?.version||null,
                 mode:window.__modAreaRuntimeV609?.preloadMode||null,
                 percent:window.__modAreaRuntimeV609?.progress?.percent||0,
                 legacyCache:keys.includes('master-of-disaster-v606-static'),
-                currentCache:keys.includes('master-of-disaster-v607-static'),
+                currentCache:keys.includes('master-of-disaster-v611-static'),
                 executed:window.__modAreaRuntimeV609?.executedCount,
-                reloadAuthority:window.__modWorkerGateV607?.reloadAuthority||null
+                reloadAuthority:window.__modWorkerGateV611?.reloadAuthority||null
               };
             });
-            if(topNavigations!==1||upgradeState.controllerVersion!=='V607'||upgradeState.gate!=='V607'||upgradeState.mode!=='worker-warm-staged-heavy-execution'||upgradeState.percent!==100||upgradeState.legacyCache||!upgradeState.currentCache||upgradeState.executed!==0||upgradeState.reloadAuthority!=='none')throw new Error('V609 staged-runtime upgrade regression '+JSON.stringify({topNavigations,upgradeState}));
+            if(topNavigations!==1||upgradeState.controllerVersion!=='V611'||upgradeState.gate!=='V611'||upgradeState.mode!=='worker-warm-staged-heavy-execution'||upgradeState.percent!==100||upgradeState.legacyCache||!upgradeState.currentCache||upgradeState.executed!==0||upgradeState.reloadAuthority!=='none')throw new Error('V609 staged-runtime upgrade regression '+JSON.stringify({topNavigations,upgradeState}));
             await upgrade.close();
             await upgradeContext.close();
 
