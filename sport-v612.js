@@ -486,7 +486,13 @@
   }
 
   async function startPlanSession(sessionId){
-    return updateSportSession(sessionId,{session_status:'running'});
+    const session=state.sessions.find(item=>item.id===sessionId);
+    const patch={session_status:'running'};
+    if(session?.legacyAutoFitx){
+      patch.title='Training';
+      patch.venue=null;
+    }
+    return updateSportSession(sessionId,patch);
   }
 
   async function markTimeline(sessionId,column){
