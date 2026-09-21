@@ -30,7 +30,7 @@ jobs:
           for marker in [
             "version:'V612'",
             'service-worker-gate-v611.js?v=611-worker-gate',
-            'area-runtime-v609.js?v=609-staged-sections',
+            'area-runtime-v609.js?v=612-sport-planning-runtime',
             'area-loader-v608.css?v=608-staged',
             'backstage-section-loader-v609.css?v=609-sections'
           ]:
