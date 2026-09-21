@@ -42,7 +42,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v612.js?v=612-sport-planning'
+      './sport-v613.js?v=613-cardio-phases'
     ],
     food:[
       SUPABASE,
@@ -120,7 +120,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v612.js?v=612-sport-planning'],
+    sport:['./sport-v613.js?v=613-cardio-phases'],
     food:['./food-v544.js?v=609-current'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=609-current'],
