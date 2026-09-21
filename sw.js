@@ -1,6 +1,6 @@
-// V607 · Version-gated service worker + light area cache warming.
-const SW_VERSION="V607";
-const CACHE_NAME="master-of-disaster-v607-static";
+// V611 · Version-gated service worker + query-aware app cache warming.
+const SW_VERSION="V611";
+const CACHE_NAME="master-of-disaster-v611-static";
 const CORE_SHELL=[
   "./",
   "./index.html",
@@ -16,7 +16,7 @@ const CORE_SHELL=[
   "./header-consolidated-v560.css",
   "./surface-header-v603.css",
   "./surface-header-v603.js",
-  "./service-worker-gate-v607.js",
+  "./service-worker-gate-v611.js",
   "./area-runtime-v609.js",
   "./area-loader-v608.css",
   "./backstage-section-loader-v609.css",
@@ -54,7 +54,7 @@ self.addEventListener("activate",event=>{
     }
     await self.clients.claim();
 
-    /* V607: Kein automatisches Navigieren mehr.
+    /* V611: Kein automatisches Navigieren mehr.
        Der neue Worker übernimmt mit clients.claim(); die laufende Seite bleibt unangetastet. */
   })());
 });
@@ -85,11 +85,16 @@ self.addEventListener("message",event=>{
         const label=String(entry?.label||"Bereiche werden geladen");
         try{
           const request=new Request(url,{cache:"no-store",credentials:"same-origin"});
-          const hit=await cache.match(request,{ignoreSearch:true});
+          const hit=await cache.match(request);
           if(!hit){
-            const response=await fetch(request);
-            if(!response||!response.ok)throw new Error("HTTP "+(response?.status||0));
-            await cache.put(request,response.clone());
+            try{
+              const response=await fetch(request);
+              if(!response||!response.ok)throw new Error("HTTP "+(response?.status||0));
+              await cache.put(request,response.clone());
+            }catch(error){
+              const fallback=await cache.match(request,{ignoreSearch:true});
+              if(!fallback)throw error;
+            }
           }
         }catch(error){
           failures.push({url,label,message:error?.message||String(error)});
@@ -113,9 +118,9 @@ function fetchAndRefresh(request){
   });
 }
 
-async function cached(request){
+async function cached(request,{ignoreSearch=false}={}){
   const cache=await caches.open(CACHE_NAME);
-  return cache.match(request,{ignoreSearch:true});
+  return cache.match(request,{ignoreSearch});
 }
 
 function timeout(ms){
@@ -132,9 +137,11 @@ async function networkFirst(request,{fallback=null,timeoutMs=2600}={}){
 }
 
 async function cacheFirstCurrent(request){
-  const hit=await cached(request);
-  if(hit)return hit;
-  return (await fetchAndRefresh(request).catch(()=>null))||Response.error();
+  const exact=await cached(request);
+  if(exact)return exact;
+  const fresh=await fetchAndRefresh(request).catch(()=>null);
+  if(fresh)return fresh;
+  return (await cached(request,{ignoreSearch:true}))||Response.error();
 }
 
 self.addEventListener("fetch",event=>{
@@ -168,6 +175,8 @@ self.addEventListener("fetch",event=>{
   event.respondWith((async()=>{
     const hit=await cached(event.request);
     if(hit)return hit;
+    const fallback=await cached(event.request,{ignoreSearch:true});
+    if(fallback)return fallback;
     return (await networkPromise)||Response.error();
   })());
 });

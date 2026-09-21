@@ -542,8 +542,8 @@
   }
 
   async function ensureWorkerGate(){
-    const gate=window.__modWorkerGateV607;
-    if(!gate?.ready)return {version:'V607',mode:'no-gate'};
+    const gate=window.__modWorkerGateV611||window.__modWorkerGateV607;
+    if(!gate?.ready)return {version:'V611',mode:'no-gate'};
     notify({label:gate.status?.label||'App wird geprüft',loaded:0,total:1});
     return gate.ready;
   }
