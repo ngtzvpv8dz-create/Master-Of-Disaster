@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V582';
+  const VERSION='V618';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -319,11 +319,15 @@
 
     const items=meal.ingredients||[];
     const portionMeta=mealPlanMeta(meal);
+    const editAction=status==='completed'
+      ?''
+      :'<button type="button" class="food-action-v544 compact" data-food-edit-free-meal="'+esc(meal.id)+'">Zutaten bearbeiten</button>';
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
         +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
         +(meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'')
         +(!items.length&&!meal.note?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
+        +(expanded&&editAction?'<div class="food-meal-edit-actions-v618">'+editAction+'</div>':'')
         +'</div>'
       :'';
     return '<article class="food-meal-card-v544 '+(expanded?'is-expanded-v573':'')+' status-'+status+'" data-food-meal-card="'+esc(meal.id)+'">'
@@ -655,6 +659,103 @@
       const result=await supabase.rpc('schedule_food_leftover',{p_leftover_id:leftoverId,p_meal_date:form.get('date'),p_meal_type:form.get('type'),p_servings:servings});
       if(result.error)throw result.error;
       await mutate(()=>result.data);
+    });
+  }
+
+  function freeMealIngredientRow(index,item={}){
+    const activeInventory=(state?.inventory||[]).filter(entry=>entry.is_active!==false);
+    const options=activeInventory.map(entry=>'<option value="'+esc(entry.id)+'" '+(String(item.inventory_id||'')===String(entry.id)?'selected':'')+'>'+esc(entry.name)+'</option>').join('');
+    const displayName=String(item.name||'').trim()||ingredientName(item);
+    return '<div class="food-recipe-ingredient-row-v549" data-food-free-meal-row>'
+      +'<div class="food-recipe-row-head-v549"><strong>Zutat '+(index+1)+'</strong><button type="button" data-food-free-meal-remove aria-label="Zutat entfernen">×</button></div>'
+      +'<label>Aus Vorrat wählen<select data-food-free-meal-inventory><option value="">Eigene Zutat eingeben</option>'+options+'</select></label>'
+      +'<label>Name<input data-food-free-meal-name value="'+esc(displayName)+'" placeholder="z. B. Roggen-Vollkornbrot" required></label>'
+      +'<div class="food-form-grid-v544"><label>Menge<input data-food-free-meal-quantity type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(item.quantity??'')+'" placeholder="offen"></label><label>Einheit<input data-food-free-meal-unit value="'+esc(item.unit||'')+'" placeholder="g, ml, Stück …"></label></div>'
+      +'</div>';
+  }
+
+  function wireFreeMealIngredientRow(row){
+    const select=row.querySelector('[data-food-free-meal-inventory]');
+    const name=row.querySelector('[data-food-free-meal-name]');
+    const unit=row.querySelector('[data-food-free-meal-unit]');
+    const sync=()=>{
+      const item=(state?.inventory||[]).find(entry=>String(entry.id)===String(select?.value||''));
+      if(item){
+        if(name){name.value=item.name;name.readOnly=true;}
+        if(unit){unit.value=item.unit||'';unit.readOnly=true;}
+      }else{
+        if(name)name.readOnly=false;
+        if(unit)unit.readOnly=false;
+      }
+    };
+    select?.addEventListener('change',sync);
+    sync();
+  }
+
+  function renumberFreeMealRows(rows){
+    rows.querySelectorAll('[data-food-free-meal-row]').forEach((row,index)=>{
+      const strong=row.querySelector('.food-recipe-row-head-v549 strong');
+      if(strong)strong.textContent='Zutat '+(index+1);
+    });
+  }
+
+  function editFreeMealModal(mealId){
+    const meal=(state?.meals||[]).find(item=>String(item.id)===String(mealId));
+    if(!meal){alert('Mahlzeit nicht gefunden.');return;}
+    if(meal.recipe_id){alert('Diese Mahlzeit stammt aus einem Rezept. Bitte das Rezept bearbeiten.');return;}
+    if(normalizedStatus(meal.status)==='completed'){alert('Bereits gebuchte Mahlzeiten werden nicht nachträglich verändert.');return;}
+
+    const items=meal.ingredients||[];
+    let modal;
+    const rowsHtml=items.map((item,index)=>freeMealIngredientRow(index,item)).join('');
+    const body='<form class="food-recipe-form-v549">'
+      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Zutaten und Mengen für genau diese geplante Mahlzeit ändern.</p>'
+      +'<div class="food-recipe-builder-v549"><div class="food-recipe-builder-head-v549"><strong>Zutaten</strong><button type="button" data-food-free-meal-add>+ Zutat</button></div><div data-food-free-meal-rows>'+rowsHtml+'</div></div>'
+      +'<button class="food-action-v544" type="submit">Änderungen speichern</button>'
+      +'</form>';
+
+    modal=addModal('Mahlzeit bearbeiten',body,async()=>{
+      if(!sourceIsReal('meals'))throw new Error('Die Mahlzeitdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst neu laden.');
+      const rows=[...modal.querySelectorAll('[data-food-free-meal-row]')];
+      const ingredients=rows.map((row,index)=>{
+        const inventoryId=String(row.querySelector('[data-food-free-meal-inventory]')?.value||'')||null;
+        const inventoryItem=inventoryId?(state?.inventory||[]).find(item=>String(item.id)===inventoryId):null;
+        const name=String(row.querySelector('[data-food-free-meal-name]')?.value||'').trim();
+        const quantityRaw=String(row.querySelector('[data-food-free-meal-quantity]')?.value||'').trim();
+        const quantity=quantityRaw===''?null:Number(quantityRaw);
+        const unit=String(row.querySelector('[data-food-free-meal-unit]')?.value||'').trim()||null;
+        if(!name)throw new Error('Bei Zutat '+(index+1)+' fehlt der Name.');
+        if(quantity!==null&&(!Number.isFinite(quantity)||quantity<=0))throw new Error('Bei Zutat '+(index+1)+' ist die Menge ungültig.');
+        if(quantity!==null&&!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
+        if(inventoryId&&!inventoryItem)throw new Error('Die ausgewählte Vorratszutat ist nicht mehr verfügbar.');
+        return {inventory_id:inventoryId,name,quantity,unit,quantity_confirmed:quantity!==null};
+      });
+
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await withTimeout(
+        supabase.rpc('update_food_free_meal_ingredients',{p_meal_id:meal.id,p_ingredients:ingredients}),
+        'Mahlzeit aktualisieren',
+        10000
+      );
+      if(result.error)throw result.error;
+      expandedMeals.add(String(meal.id));
+      await mutate(()=>result.data);
+    });
+
+    const rows=modal.querySelector('[data-food-free-meal-rows]');
+    rows.querySelectorAll('[data-food-free-meal-row]').forEach(wireFreeMealIngredientRow);
+    modal.querySelector('[data-food-free-meal-add]')?.addEventListener('click',()=>{
+      const index=rows.querySelectorAll('[data-food-free-meal-row]').length;
+      rows.insertAdjacentHTML('beforeend',freeMealIngredientRow(index,{}));
+      const row=rows.lastElementChild;
+      wireFreeMealIngredientRow(row);
+      row.querySelector('[data-food-free-meal-name]')?.focus();
+    });
+    rows.addEventListener('click',event=>{
+      const remove=event.target?.closest?.('[data-food-free-meal-remove]');
+      if(!remove)return;
+      remove.closest('[data-food-free-meal-row]')?.remove();
+      renumberFreeMealRows(rows);
     });
   }
 
@@ -1035,6 +1136,7 @@
     root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
+    root.querySelectorAll('[data-food-edit-free-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editFreeMealModal(button.dataset.foodEditFreeMeal);}));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));
     root.querySelectorAll('[data-food-schedule-leftover]').forEach(button=>button.addEventListener('click',()=>scheduleLeftoverModal(button.dataset.foodScheduleLeftover)));
