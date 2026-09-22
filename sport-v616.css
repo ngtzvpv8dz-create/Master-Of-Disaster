@@ -795,3 +795,29 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   user-select:none;
   -webkit-touch-callout:none;
 }
+
+
+/* V618 · Kursteilnahme ohne Live-Timer */
+.sport-course-attendance-v618{margin:18px 0 22px}
+.sport-course-attendance-note-v618{margin:0 0 12px;opacity:.72;font-size:.88rem}
+.sport-course-attendance-list-v618{display:grid;gap:10px}
+.sport-course-attendance-card-v618{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,.65fr) auto;gap:12px;align-items:end;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.035)}
+.sport-course-attendance-card-v618>div{display:grid;gap:3px}
+.sport-course-attendance-card-v618>div>span{font-size:.68rem;letter-spacing:.13em;opacity:.6}
+.sport-course-attendance-card-v618>div>strong{font-size:1rem;text-transform:none}
+.sport-course-attendance-card-v618>div>small{opacity:.72}
+.sport-course-attendance-card-v618 label{display:grid;gap:5px;font-size:.74rem;opacity:.9}
+.sport-course-attendance-card-v618 input{width:100%;min-height:42px}
+.sport-course-attendance-card-v618 button{min-height:42px}
+.sport-course-attendance-card-v618.is-done{grid-template-columns:minmax(0,1fr) auto}
+.sport-course-attendance-card-v618.is-done button{opacity:.72}
+.sport-course-settings-v618{margin-top:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.09);border-radius:14px}
+.sport-course-settings-v618>summary{cursor:pointer;font-weight:700}
+.sport-course-settings-v618 form{display:grid;grid-template-columns:minmax(120px,1fr) repeat(2,minmax(100px,.5fr)) auto;gap:10px;align-items:end;padding-top:10px}
+.sport-course-settings-v618 form label{display:grid;gap:4px;font-size:.74rem}
+@media (max-width:720px){
+  .sport-course-attendance-card-v618{grid-template-columns:1fr}
+  .sport-course-attendance-card-v618.is-done{grid-template-columns:1fr}
+  .sport-course-settings-v618 form{grid-template-columns:1fr 1fr}
+  .sport-course-settings-v618 form>strong,.sport-course-settings-v618 form>button{grid-column:1/-1}
+}
