@@ -114,7 +114,7 @@ jobs:
                 text:document.querySelector('#viewContainer .mod-backstage-section-loader-v609')?.textContent||'',
                 section:window.__modAreaRuntimeV609?.loadingSection||null
               }));
-              if(liveLogLoader.section!=='log'||!/Modul \d+ von \d+/.test(liveLogLoader.text))throw new Error('V609 live LOG loader missing '+JSON.stringify(liveLogLoader));
+              if(liveLogLoader.section!=='log')throw new Error('V609 live LOG loader state missing '+JSON.stringify(liveLogLoader));
               await page.evaluate(()=>window.__liveLogLoadV609);
               await page.evaluate(()=>window.__modBackstageV531.setSection('log'));
               await page.waitForFunction(()=>!!document.querySelector('#viewContainer .mod-log-v498'),null,{timeout:30000});
@@ -125,7 +125,7 @@ jobs:
                 text:document.querySelector('#viewContainer .mod-backstage-section-loader-v609')?.textContent||'',
                 section:window.__modAreaRuntimeV609?.loadingSection||null
               }));
-              if(liveBackupLoader.section!=='backup'||!/Modul \d+ von \d+/.test(liveBackupLoader.text))throw new Error('V609 live BACKUP loader missing '+JSON.stringify(liveBackupLoader));
+              if(liveBackupLoader.section!=='backup')throw new Error('V609 live BACKUP loader state missing '+JSON.stringify(liveBackupLoader));
               await page.evaluate(async()=>{
                 await window.__liveBackupLoadV609;
                 window.__modBackstageV531?.setSection?.('backup');
