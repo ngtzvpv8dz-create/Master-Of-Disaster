@@ -42,13 +42,13 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v616.js?v=616-ios-rapid-tap'
+      './sport-v616.js?v=618-course-attendance'
     ],
     food:[
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=582-recipe-edit-prepared'
+      './food-v544.js?v=618-free-meal-edit'
     ],
     kistology:[
       SUPABASE,
@@ -120,8 +120,8 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v616.js?v=616-ios-rapid-tap'],
-    food:['./food-v544.js?v=609-current'],
+    sport:['./sport-v616.js?v=618-course-attendance'],
+    food:['./food-v544.js?v=618-free-meal-edit'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=617-finance-balance'],
     backstage:['./backstage-v531.js?v=609','./project-history-v452.js?v=452-1501']
