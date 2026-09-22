@@ -3,7 +3,7 @@
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V618';
+  const VERSION='V619';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -58,11 +58,12 @@
 
   let activeTab='overview';
   let planDate='';
-  let state={loaded:false,loading:false,error:null,source:'cache',sessions:[],courseCatalog:[],catalogExercises:[],equipment:[],sessionParticipants:[],sessionExercises:[],exerciseSets:[]};
+  let state={loaded:false,loading:false,error:null,source:'cache',sessions:[],courseCatalog:[],coursePlans:[],catalogExercises:[],equipment:[],sessionParticipants:[],sessionExercises:[],exerciseSets:[]};
   let loadPromise=null;
   let renderSerial=0;
   let catalogTargetSessionId=null;
   let editingSessionId=null;
+  let coursePickerDate=null;
   const expandedExercises=new Set();
   const collapsedPlanDates=new Set();
 
@@ -347,15 +348,16 @@
       supabase.from('sport_activity_participants').select('activity_id,participant_name').eq('user_id',user.id).limit(5000),
       supabase.from('sport_session_participants').select('id,session_id,participant_name').eq('user_id',user.id).limit(5000),
       supabase.from('sport_course_catalog').select('id,name,venue,start_time,end_time,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
+      supabase.from('sport_course_plans').select('id,course_id,plan_date,created_at').eq('user_id',user.id).order('plan_date',{ascending:false}).limit(1000),
       supabase.from('sport_exercise_catalog').select('id,name,kind,item_type,equipment_number,category,muscle_group,settings_text,load_mode,metric_config,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_equipment_catalog').select('id,name,equipment_number,category,settings_text,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_session_exercises').select('id,session_id,exercise_id,equipment_id,name_snapshot,kind,status,sort_order,started_at,ended_at,duration_minutes,distance_km,resistance_level,speed_kmh,incline_percent,equipment_number_snapshot,settings_snapshot,load_mode_snapshot,calories_kcal,metric_values,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5000),
       supabase.from('sport_exercise_sets').select('id,session_exercise_id,set_number,weight_kg,repetitions,rir,rir_plus').eq('user_id',user.id).order('set_number').limit(15000)
     ];
-    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Kurskatalog','Übungskatalog','Gerätekatalog','Trainingselemente','Sätze'];
+    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Kurskatalog','Kursplan','Übungskatalog','Gerätekatalog','Trainingselemente','Sätze'];
     const results=await Promise.all(queries.map((query,index)=>withTimeout(query,labels[index],6500)));
     for(const result of results)if(result?.error)throw result.error;
-    const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,courseResult,catalogResult,equipmentResult,workoutResult,setsResult]=results;
+    const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,courseResult,coursePlansResult,catalogResult,equipmentResult,workoutResult,setsResult]=results;
 
     const peopleByActivity=new Map();
     (participantsResult.data||[]).forEach(row=>{
@@ -392,6 +394,7 @@
 
     state={...state,
       courseCatalog:(courseResult.data||[]),
+      coursePlans:(coursePlansResult.data||[]),
       catalogExercises:(catalogResult.data||[]),
       equipment:(equipmentResult.data||[]),
       sessionParticipants:(sessionPeopleResult.data||[]),
@@ -661,6 +664,24 @@
   async function removeSessionParticipant(id){
     const {supabase}=await sportUser();
     const result=await supabase.from('sport_session_participants').delete().eq('id',id);
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function addCoursePlan(courseId,dateKey){
+    const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(courseId));
+    if(!course)throw new Error('Kurs nicht gefunden.');
+    const cleanDate=/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey||''))?String(dateKey):todayIso();
+    const {supabase}=await sportUser();
+    const result=await supabase.rpc('add_sport_course_plan',{p_course_id:course.id,p_plan_date:cleanDate});
+    if(result.error)throw result.error;
+    coursePickerDate=null;
+    await load(true);
+  }
+
+  async function removeCoursePlan(planId){
+    const {supabase}=await sportUser();
+    const result=await supabase.rpc('remove_sport_course_plan',{p_plan_id:planId});
     if(result.error)throw result.error;
     await load(true);
   }
@@ -1142,29 +1163,58 @@
     return {session,activity};
   }
 
+  function coursePlanFor(courseId,dateKey){
+    return (state.coursePlans||[]).find(plan=>String(plan.course_id)===String(courseId)&&String(plan.plan_date)===String(dateKey))||null;
+  }
+
   function courseAttendanceBlock(dateKey){
     const courses=(state.courseCatalog||[]).filter(course=>course.active!==false);
-    if(!courses.length)return '<section class="sport-course-attendance-v618"><div class="sport-section-title-v568">Kurse</div><div class="sport-empty-inline-v568">Noch keine festen Kurse hinterlegt.</div></section>';
+    const plans=(state.coursePlans||[]).filter(plan=>String(plan.plan_date)===String(dateKey));
+    const courseById=new Map(courses.map(course=>[String(course.id),course]));
+    const plannedCourses=plans.map(plan=>({plan,course:courseById.get(String(plan.course_id))})).filter(item=>item.course);
+    const completed=courses.map(course=>({course,attendance:attendanceForCourse(course,dateKey)})).filter(item=>item.attendance);
+    const shownIds=new Set(completed.map(item=>String(item.course.id)));
+    plannedCourses.forEach(item=>shownIds.add(String(item.course.id)));
+
     const people=knownSportParticipants();
-    const listId='sport-course-people-v618';
+    const listId='sport-course-people-v619';
     const datalist=people.length?'<datalist id="'+listId+'">'+people.map(name=>'<option value="'+esc(name)+'"></option>').join('')+'</datalist>':'';
-    const cards=courses.map(course=>{
-      const attendance=attendanceForCourse(course,dateKey);
-      const activity=attendance?.activity;
-      const participantText=activity?.participants?.length?' · mit '+activity.participants.map(esc).join(', '):'';
-      if(attendance){
-        return '<article class="sport-course-attendance-card-v618 is-done"><div><span>KURS</span><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+' · '+esc(course.venue||'FitX')+participantText+'</small></div><button type="button" disabled>✓ Teilgenommen</button></article>';
-      }
-      return '<form class="sport-course-attendance-card-v618" data-sport-course-attendance="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'">'
-        +'<div><span>KURS</span><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+' · '+esc(course.venue||'FitX')+'</small></div>'
-        +'<label>Mit wem?<input name="participants" list="'+listId+'" placeholder="z. B. Nalan, Erik"></label>'
-        +'<button type="submit">Teilgenommen</button>'
-        +'</form>';
-    }).join('');
-    const settings='<details class="sport-course-settings-v618"><summary>Kurszeiten ändern</summary>'
-      +(state.courseCatalog||[]).filter(course=>course.active!==false).map(course=>'<form data-sport-course-time="'+esc(course.id)+'"><strong>'+esc(course.name)+'</strong><label>Start<input type="time" name="start" value="'+esc(courseClock(course.start_time))+'" required></label><label>Ende<input type="time" name="end" value="'+esc(courseClock(course.end_time))+'" required></label><button type="submit">Speichern</button></form>').join('')
-      +'</details>';
-    return '<section class="sport-course-attendance-v618"><div class="sport-section-title-v568">Kurse · '+esc(shortDate(dateKey))+'</div><p class="sport-course-attendance-note-v618">Kein Start/Stop nötig. Teilnahme bestätigen, Standardzeit wird übernommen.</p>'+datalist+'<div class="sport-course-attendance-list-v618">'+cards+'</div>'+settings+'</section>';
+
+    const rows=[
+      ...completed.map(({course,attendance})=>{
+        const activity=attendance.activity;
+        const participantText=activity?.participants?.length?' · mit '+activity.participants.map(esc).join(', '):'';
+        return '<div class="sport-course-plan-row-v619 is-done"><div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+participantText+'</small></div><span>✓ Teilgenommen</span></div>';
+      }),
+      ...plannedCourses.filter(({course})=>!attendanceForCourse(course,dateKey)).map(({plan,course})=>
+        '<form class="sport-course-plan-row-v619" data-sport-course-attendance="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'">'
+          +'<div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+'</small></div>'
+          +'<input name="participants" list="'+listId+'" placeholder="Mit wem?">'
+          +'<button type="submit">Teilgenommen</button>'
+          +'<button type="button" class="sport-course-remove-v619" data-sport-remove-course-plan="'+esc(plan.id)+'" aria-label="Kurs aus Plan entfernen">×</button>'
+        +'</form>'
+      )
+    ].join('');
+
+    const pickerOpen=String(coursePickerDate||'')===String(dateKey);
+    const available=courses.filter(course=>!shownIds.has(String(course.id)));
+    const picker=pickerOpen
+      ?'<div class="sport-course-picker-v619">'
+        +(available.length
+          ?available.map(course=>'<button type="button" data-sport-add-course-plan="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'"><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+'</small></button>').join('')
+          :'<span>Alle Kurse für diesen Tag sind schon im Plan.</span>')
+        +'<details class="sport-course-settings-v619"><summary>Kurszeiten ändern</summary>'
+          +courses.map(course=>'<form data-sport-course-time="'+esc(course.id)+'"><strong>'+esc(course.name)+'</strong><label>Start<input type="time" name="start" value="'+esc(courseClock(course.start_time))+'" required></label><label>Ende<input type="time" name="end" value="'+esc(courseClock(course.end_time))+'" required></label><button type="submit">Speichern</button></form>').join('')
+        +'</details>'
+      +'</div>'
+      :'';
+
+    return '<section class="sport-course-plan-v619">'
+      +'<div class="sport-course-plan-head-v619"><strong>Kurse</strong><button type="button" data-sport-toggle-course-picker="'+esc(dateKey)+'">'+(pickerOpen?'Schließen':'+ Kurs hinzufügen')+'</button></div>'
+      +datalist
+      +(rows?'<div class="sport-course-plan-list-v619">'+rows+'</div>':'')
+      +picker
+      +'</section>';
   }
 
   function planningPanel(){
@@ -1406,6 +1456,22 @@
     root.querySelectorAll('[data-sport-start-plan]').forEach(button=>button.addEventListener('click',event=>{
       const target=event.currentTarget;
       handle(target,async()=>{await startPlanSession(target.dataset.sportStartPlan);setTab('overview',{animate:true,persist:true});});
+    }));
+
+    root.querySelectorAll('[data-sport-toggle-course-picker]').forEach(button=>button.addEventListener('click',event=>{
+      const date=event.currentTarget.dataset.sportToggleCoursePicker;
+      coursePickerDate=String(coursePickerDate||'')===String(date)?null:date;
+      render({animate:false});
+    }));
+
+    root.querySelectorAll('[data-sport-add-course-plan]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>addCoursePlan(target.dataset.sportAddCoursePlan,target.dataset.courseDate));
+    }));
+
+    root.querySelectorAll('[data-sport-remove-course-plan]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>removeCoursePlan(target.dataset.sportRemoveCoursePlan));
     }));
 
     root.querySelectorAll('[data-sport-course-attendance]').forEach(form=>form.addEventListener('submit',event=>{
