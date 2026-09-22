@@ -6,13 +6,14 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V618';
+  const VERSION='V620';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
   const TABS=['today','plan','inventory','shopping','recipes'];
   const LABELS={today:'Heute',plan:'Plan',inventory:'Vorrat',shopping:'Einkauf',recipes:'Rezepte'};
   const MEAL_LABELS={breakfast:'Frühstück',snack:'Snack',lunch:'Mittag',dinner:'Abendessen'};
+  const RECIPE_GROUP_LABELS={breakfast:'Frühstück',snack:'Snacks',lunch:'Mittag / Arbeit',dinner:'Abendessen'};
   const MEAL_ICONS={breakfast:'☀',snack:'●',lunch:'◒',dinner:'☾'};
   let activeTab='today';
   let loadPromise=null;
@@ -510,7 +511,22 @@
 
   function recipesView(data){
     const recipes=data.recipes.length?data.recipes:data.meals.map(meal=>({id:meal.id,title:meal.title,meal_type:meal.meal_type,ingredients:meal.ingredients}));
-    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Zum Einplanen</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte</small><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div><div class="food-recipe-grid-v544">'+recipes.map(recipeCard).join('')+'</div>';
+    const order=['breakfast','snack','lunch','dinner'];
+    const groups=order.map(type=>({
+      type,
+      label:RECIPE_GROUP_LABELS[type]||MEAL_LABELS[type]||type,
+      recipes:recipes.filter(recipe=>recipe.meal_type===type)
+    })).filter(group=>group.recipes.length);
+    const uncategorized=recipes.filter(recipe=>!order.includes(recipe.meal_type));
+    if(uncategorized.length)groups.push({type:'other',label:'Weitere Rezepte',recipes:uncategorized});
+    const sections=groups.map(group=>
+      '<section class="food-day-group-v544" data-food-recipe-group="'+esc(group.type)+'">'
+        +'<div class="food-day-label-v544"><strong>'+esc(group.label)+'</strong><span>'+group.recipes.length+' '+(group.recipes.length===1?'Rezept':'Rezepte')+'</span></div>'
+        +'<div class="food-recipe-grid-v544">'+group.recipes.map(recipeCard).join('')+'</div>'
+      +'</section>'
+    ).join('');
+    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Nach Mahlzeit sortiert</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte</small><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div>'
+      +(sections||'<div class="food-empty-card-v544"><h4>Noch keine Rezepte gespeichert.</h4><p>Lege dein erstes Rezept an und ordne es direkt einer Mahlzeit zu.</p></div>');
   }
 
   function content(data){
