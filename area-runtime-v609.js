@@ -61,7 +61,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './finance-v552.js?v=552-finance',
-      './finance-data-v553.js?v=554-finance-interactions'
+      './finance-data-v553.js?v=617-finance-balance'
     ],
     backstage:[
       SUPABASE,
@@ -123,7 +123,7 @@
     sport:['./sport-v616.js?v=616-ios-rapid-tap'],
     food:['./food-v544.js?v=609-current'],
     kistology:['./kistology-v603.js?v=609-current'],
-    finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=609-current'],
+    finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=617-finance-balance'],
     backstage:['./backstage-v531.js?v=609','./project-history-v452.js?v=452-1501']
   };
 
