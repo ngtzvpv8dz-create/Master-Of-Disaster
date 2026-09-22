@@ -3,15 +3,15 @@
 */
 (function(){
   'use strict';
-  if(window.__modFinanceDataV554)return;
+  if(window.__modFinanceDataV555)return;
 
-  const VERSION='V554';
+  const VERSION='V555';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=5000;
   let loadPromise=null;
   let rootObserver=null;
   let bodyObserver=null;
-  let state={loaded:false,loading:false,error:null,userId:null,monthTransactions:[],recentTransactions:[]};
+  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,monthTransactions:[],recentTransactions:[]};
   const expandedTransactions=new Set();
   const expandedCategories=new Set();
 
@@ -87,7 +87,7 @@
       if(row.transaction_type==='income'){income+=amount;incomeCount+=1;}
       if(row.transaction_type==='expense'){expenses+=amount;expenseCount+=1;}
     });
-    return {income,expenses,cashflow:income-expenses,count:(state.monthTransactions||[]).length,expenseCount,incomeCount};
+    return {income,expenses,cashflow:income-expenses,balance:num(state.currentBalance),count:(state.monthTransactions||[]).length,expenseCount,incomeCount};
   }
 
   function chartModel(){
@@ -288,6 +288,7 @@
     const statusClass=state.error?'is-error':connected?'is-connected':'';
     const errorHtml=state.error?'<div class="finance-alert-v553"><strong>DATENFEHLER</strong><span>'+esc(state.error)+'</span></div>':'';
     const cashflowClass=summary.cashflow>0?'is-positive':summary.cashflow<0?'is-negative':'';
+    const balanceClass=summary.balance>0?'is-positive':summary.balance<0?'is-negative':'';
 
     return '<div class="finance-terminal-v552">'+
       '<div class="finance-topline-v552" aria-hidden="true"><span>MOD FINANCE</span><span class="finance-live-v552"><i></i> '+(state.loading?'SYNC':'BEREIT')+'</span><span>'+todayLabel()+'</span></div>'+
@@ -302,7 +303,7 @@
       '</div>'+
       '<div class="finance-grid-v552">'+
         '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>Monatsverlauf</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
-        '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Monat</h3></div><small>EUR</small></div><div class="finance-score-v552"><strong class="'+cashflowClass+'">'+(connected?fmtMoney(summary.cashflow,currency):'—')+'</strong><span>Saldo</span></div><div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
+        '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Konto</h3></div><small>AKTUELL</small></div><div class="finance-score-v552"><strong class="'+balanceClass+'">'+(connected?fmtMoney(summary.balance,currency):'—')+'</strong><span>Saldo</span></div><div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>03 · BUCHUNGEN</span><h3>Letzte Bewegungen</h3></div><small>RECENT</small></div>'+recentHtml()+'</section>'+
         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · KATEGORIEN</span><h3>Ausgaben & Vorteile</h3></div><small>DETAIL</small></div>'+categoriesHtml()+'</section>'+
       '</div>'+
@@ -334,21 +335,26 @@
       .order('transaction_date',{ascending:false})
       .order('transaction_time',{ascending:false});
 
+    const balanceQuery=supabase.rpc('finance_current_balance');
+
     const recentQuery=supabase.from('finance_transactions')
       .select('id,transaction_date,transaction_time,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,sort_order)')
       .order('transaction_date',{ascending:false})
       .order('transaction_time',{ascending:false})
       .limit(8);
 
-    const [monthResult,recentResult]=await Promise.all([
+    const [monthResult,recentResult,balanceResult]=await Promise.all([
       withTimeout(monthQuery,'Monatsdaten'),
-      withTimeout(recentQuery,'Letzte Buchungen')
+      withTimeout(recentQuery,'Letzte Buchungen'),
+      withTimeout(balanceQuery,'Kontostand')
     ]);
     if(monthResult?.error)throw monthResult.error;
     if(recentResult?.error)throw recentResult.error;
+    if(balanceResult?.error)throw balanceResult.error;
 
     return {
       userId:user.id,
+      currentBalance:num(balanceResult?.data),
       monthTransactions:(monthResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))})),
       recentTransactions:(recentResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))}))
     };
@@ -383,7 +389,7 @@
 
   function patchBaseApi(){
     const base=window.__modFinanceV552;
-    if(!base||base.__dataPatchedV554)return;
+    if(!base||base.__dataPatchedV555)return;
     const baseOpen=base.open?.bind(base);
     base.open=function(){
       const result=baseOpen?.(...arguments);
@@ -395,7 +401,8 @@
     base.version=VERSION;
     base.storage='supabase';
     base.dataConnected=false;
-    base.__dataPatchedV554=true;
+    base.__dataPatchedV555=true;
+    window.__modFinanceV555=base;
     window.__modFinanceV554=base;
     window.__modFinanceV553=base;
   }
@@ -436,6 +443,7 @@
   }
 
   const api={version:VERSION,activate,load,render,getState:()=>structuredClone(state)};
+  window.__modFinanceDataV555=api;
   window.__modFinanceDataV554=api;
   window.__modFinanceDataV553=api;
 
