@@ -28,7 +28,7 @@ jobs:
           css=Path('backstage-section-loader-v609.css').read_text(encoding='utf-8')
           metrics=json.loads(Path('development-metrics.json').read_text(encoding='utf-8'))
 
-          build=re.search(r"version:'(V\\d+)'",index)
+          build=re.search(r"version:'(V\d+)'",index)
           if not build:
               raise SystemExit('Current build version missing from index')
           build=build.group(1)
