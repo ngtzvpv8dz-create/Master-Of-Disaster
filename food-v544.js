@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V629';
+  const VERSION='V630';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -281,9 +281,9 @@
       '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
   }
 
-  function recipePresentation(recipe,expanded){
-    const items=recipe.food_recipe_ingredients||recipe.ingredients||[];
-    const servings=Math.max(1,Number(recipe.servings)||1);
+  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null){
+    const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
+    const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
     const instructions=recipeInstructions(recipe);
     const nutrition=[
       num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
@@ -318,7 +318,10 @@
     const statusMeta=status==='completed'?fmtPreparedAt(meal.prepared_at):'Geplant';
 
     if(recipe){
-      const view=recipePresentation(recipe,expanded);
+      const view=recipePresentation(recipe,expanded,meal.ingredients||[],meal.prepared_servings);
+      const quantityAction=status==='completed'
+        ?''
+        :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Mengen ändern</button>';
       return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
@@ -326,7 +329,7 @@
         +'</button>'
         +view.details
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
-        +action
+        +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
         +'</article>';
     }
 
@@ -953,6 +956,52 @@
     });
   }
 
+  function editPlannedMealQuantitiesModal(mealId){
+    const meal=(state?.meals||[]).find(item=>String(item.id)===String(mealId));
+    if(!meal){alert('Mahlzeit nicht gefunden.');return;}
+    if(!meal.recipe_id){alert('Diese Mahlzeit stammt nicht aus einem Rezept.');return;}
+    if(normalizedStatus(meal.status)==='completed'){alert('Bereits gebuchte Mahlzeiten werden nicht nachträglich verändert.');return;}
+
+    const items=(meal.ingredients||[]).filter(item=>num(item.quantity)!==null);
+    if(!items.length){alert('Für diese Mahlzeit sind keine änderbaren Mengen hinterlegt.');return;}
+
+    let modal;
+    const rows=items.map((item,index)=>
+      '<label class="food-planned-qty-row-v630" data-food-planned-qty-row data-ingredient-id="'+esc(item.id)+'">'
+        +'<span><strong>'+esc(ingredientName(item))+'</strong><small>Nur diese Einplanung</small></span>'
+        +'<span><input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(item.quantity)+'" required><b>'+esc(item.unit||'')+'</b></span>'
+      +'</label>'
+    ).join('');
+
+    const body='<form class="food-recipe-form-v549">'
+      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Hier änderst du nur die Mengen dieser geplanten Mahlzeit. Das Grundrezept bleibt unverändert.</p>'
+      +'<div class="food-planned-qty-list-v630">'+rows+'</div>'
+      +'<button class="food-action-v544" type="submit">Mengen speichern</button>'
+      +'</form>';
+
+    modal=addModal('Mengen dieser Mahlzeit ändern',body,async()=>{
+      if(!sourceIsReal('meals'))throw new Error('Die Mahlzeitdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst neu laden.');
+      const quantities=[...modal.querySelectorAll('[data-food-planned-qty-row]')].map((row,index)=>{
+        const id=String(row.dataset.ingredientId||'');
+        const input=row.querySelector('input');
+        const quantity=Number(input?.value);
+        if(!id)throw new Error('Zutat '+(index+1)+' konnte nicht zugeordnet werden.');
+        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' ist die Menge ungültig.');
+        return {id,quantity};
+      });
+
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await withTimeout(
+        supabase.rpc('update_food_planned_meal_quantities',{p_meal_id:meal.id,p_quantities:quantities}),
+        'Mengen aktualisieren',
+        10000
+      );
+      if(result.error)throw result.error;
+      expandedMeals.add(String(meal.id));
+      await mutate(()=>result.data);
+    });
+  }
+
   function recipeIngredientRow(index){
     const options=sourceIsReal('inventory')
       ?(state?.inventory||[]).filter(item=>item.is_active!==false).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.name)+'</option>').join('')
@@ -1396,6 +1445,7 @@
     }));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
     root.querySelectorAll('[data-food-edit-free-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editFreeMealModal(button.dataset.foodEditFreeMeal);}));
+    root.querySelectorAll('[data-food-edit-planned-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editPlannedMealQuantitiesModal(button.dataset.foodEditPlannedMeal);}));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));
     root.querySelectorAll('[data-food-schedule-leftover]').forEach(button=>button.addEventListener('click',()=>scheduleLeftoverModal(button.dataset.foodScheduleLeftover)));
