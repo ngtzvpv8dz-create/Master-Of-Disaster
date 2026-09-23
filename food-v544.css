@@ -692,3 +692,37 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
     text-align:left;
   }
 }
+
+
+/* V625 · Eingekaufte lose Ware kann später exakt abgewogen werden */
+.food-weigh-later-v625{
+  display:flex!important;
+  grid-template-columns:auto 1fr;
+  align-items:center;
+  justify-content:flex-start;
+  gap:9px!important;
+  padding:10px 11px;
+  border:1px solid rgba(65,98,69,.14);
+  border-radius:12px;
+  background:#eef4e9;
+  color:#3f5944!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+.food-weigh-later-v625 input{
+  width:18px!important;
+  min-height:18px!important;
+  margin:0;
+}
+.food-weigh-pending-v625{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  margin-top:8px;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#f4ead2;
+  color:#7a5b20;
+  font-size:9px;
+  font-weight:900;
+}
