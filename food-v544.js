@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V623';
+  const VERSION='V624';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -493,18 +493,58 @@
       if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte eine gültige Menge eingeben.');
       if(!chosenUnit)throw new Error('Bitte eine Einheit eingeben.');
 
-      const existing=inventoryId
+      let existing=inventoryId
         ?(state?.inventory||[]).find(item=>String(item.id)===String(inventoryId))
         :(state?.inventory||[]).find(item=>String(item.name||'').trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE'));
 
+      // Archived rows are not part of the active inventory state, but the DB
+      // still keeps them and enforces a unique (user_id, name) constraint.
+      // Reuse/reactivate such a row instead of trying to insert a duplicate.
+      if(!existing){
+        const archivedLookup=await supabase
+          .from('food_inventory')
+          .select('id,name,quantity,unit,is_active,sort_order')
+          .eq('user_id',user.id)
+          .eq('name',name)
+          .limit(1)
+          .maybeSingle();
+        if(archivedLookup.error)throw archivedLookup.error;
+        if(archivedLookup.data)existing=archivedLookup.data;
+      }
+
       let quantityAfter=quantity;
       if(existing){
-        if(String(existing.unit||'')!==chosenUnit)throw new Error('Die Einheit passt nicht zum vorhandenen Vorrat.');
         const current=num(existing.quantity);
-        const newQuantity=(current===null?0:current)+quantity;
-        const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:existing.id,p_new_quantity:newQuantity,p_reason:'Vorrat vorhanden / eingekauft',p_note:null});
-        if(result.error)throw result.error;
-        quantityAfter=newQuantity;
+        const isInactive=existing.is_active===false;
+        const unitMatches=String(existing.unit||'')===chosenUnit;
+
+        if(!unitMatches&&!isInactive){
+          throw new Error('Die Einheit passt nicht zum vorhandenen Vorrat.');
+        }
+        if(!unitMatches&&!((current===null?0:current)<=0)){
+          throw new Error('Der alte Vorrat hat noch eine Menge in einer anderen Einheit.');
+        }
+
+        if(isInactive){
+          const newQuantity=(current===null?0:current)+quantity;
+          const revive=await supabase.from('food_inventory').update({
+            quantity:newQuantity,
+            unit:chosenUnit,
+            quantity_label:fmtQty(newQuantity,chosenUnit),
+            is_active:true,
+            opened:false,
+            tone:'stock',
+            forecast_label:null,
+            use_priority:'later'
+          }).eq('id',existing.id);
+          if(revive.error)throw revive.error;
+          quantityAfter=newQuantity;
+        }else{
+          const newQuantity=(current===null?0:current)+quantity;
+          const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:existing.id,p_new_quantity:newQuantity,p_reason:'Vorrat vorhanden / eingekauft',p_note:null});
+          if(result.error)throw result.error;
+          quantityAfter=newQuantity;
+        }
       }else{
         const maxSort=(state?.inventory||[]).reduce((max,item)=>Math.max(max,Number(item.sort_order)||0),0);
         const result=await supabase.from('food_inventory').insert({
