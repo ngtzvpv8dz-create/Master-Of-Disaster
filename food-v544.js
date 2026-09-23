@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V624';
+  const VERSION='V625';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -225,7 +225,7 @@
 
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
-      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority').order('sort_order')),
+      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing').order('sort_order')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false}))
@@ -370,11 +370,18 @@
   }
 
   function inventoryCard(item){
-    const quantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
+    const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
+    const pending=item.pending_weighing===true;
+    const known=num(item.quantity);
+    const quantity=pending
+      ?((known!==null&&known>0)?baseQuantity+' + Einkauf noch abwiegen':'Einkauf noch abwiegen')
+      :baseQuantity;
     const forecast=item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
     const priority=item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
+    const weighing=pending?'<span class="food-weigh-pending-v625">⚖ Menge noch offen</span>':'';
     const tomorrowClass=item.use_priority==='tomorrow'&&Number(item.quantity)!==0?' priority-tomorrow-v574':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button><button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    const weighAction=pending?'<button type="button" data-food-weigh="'+esc(item.id)+'">Jetzt abwiegen</button>':'';
+    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+weighing+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
   }
 
   function garlicParts(data=state){
@@ -435,6 +442,7 @@
         ?inventoryById.get(need.inventory_id)
         :inventoryByName.get(normalizedNeed);
       const sameUnit=!stock||String(stock.unit||'')===String(need.unit||'');
+      if(stock?.pending_weighing===true&&sameUnit)return;
       const stockQty=sameUnit?num(stock?.quantity):0;
       const available=stockQty===null?0:Math.max(0,stockQty||0);
       const missing=Math.max(0,need.required-available);
@@ -464,6 +472,7 @@
       const normalized=String(item.label||'').trim().toLocaleLowerCase('de-DE');
       const stock=inventoryByName.get(normalized);
       const sameUnit=!stock||String(stock.unit||'')===unit;
+      if(stock?.pending_weighing===true&&sameUnit)return '';
       const stockQty=sameUnit?num(stock?.quantity):0;
       const available=stockQty===null?0:Math.max(0,stockQty||0);
       const missing=Math.max(0,required-available);
@@ -483,33 +492,75 @@
     const shoppingId=String(button?.dataset?.shoppingId||'').trim()||null;
     const shoppingRequired=Number(button?.dataset?.shoppingRequired||0);
     if(!name)return;
-    addModal('Vorrat übernehmen','<form><p class="food-modal-copy-v544"><strong>'+esc(name)+'</strong></p><div class="food-form-grid-v544"><label>Menge vorhanden / gekauft<input name="quantity" type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(suggested||1)+'" required></label><label>Einheit<input name="unit" value="'+esc(unit||'Stück')+'" required></label></div><button class="food-action-v544" type="submit">In Vorrat übernehmen</button></form>',async form=>{
+
+    let modal;
+    modal=addModal('Vorrat übernehmen','<form><p class="food-modal-copy-v544"><strong>'+esc(name)+'</strong></p><div class="food-form-grid-v544"><label>Menge vorhanden / gekauft<input name="quantity" type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(suggested||1)+'" required></label><label>Einheit<input name="unit" value="'+esc(unit||'Stück')+'" required></label></div><label class="food-weigh-later-v625"><input name="weigh_later" type="checkbox"> Menge später abwiegen</label><p class="food-modal-copy-v544">Ideal für lose Ware wie Zucchini, Paprika oder Obst. Der Einkauf gilt dann als erledigt, das echte Gewicht trägst du zuhause nach.</p><button class="food-action-v544" type="submit">In Vorrat übernehmen</button></form>',async form=>{
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
       const session=await withTimeout(supabase.auth.getSession(),'Anmeldung',2500);
       const user=session?.data?.session?.user;
       if(session?.error||!user?.id)throw new Error('Nicht angemeldet.');
+
+      const weighLater=form.get('weigh_later')==='on';
       const quantity=Number(form.get('quantity'));
       const chosenUnit=String(form.get('unit')||'').trim();
-      if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte eine gültige Menge eingeben.');
+      if(!weighLater&&(!Number.isFinite(quantity)||quantity<=0))throw new Error('Bitte eine gültige Menge eingeben.');
       if(!chosenUnit)throw new Error('Bitte eine Einheit eingeben.');
 
       let existing=inventoryId
         ?(state?.inventory||[]).find(item=>String(item.id)===String(inventoryId))
         :(state?.inventory||[]).find(item=>String(item.name||'').trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE'));
 
-      // Archived rows are not part of the active inventory state, but the DB
-      // still keeps them and enforces a unique (user_id, name) constraint.
-      // Reuse/reactivate such a row instead of trying to insert a duplicate.
       if(!existing){
         const archivedLookup=await supabase
           .from('food_inventory')
-          .select('id,name,quantity,unit,is_active,sort_order')
+          .select('id,name,quantity,unit,is_active,sort_order,pending_weighing')
           .eq('user_id',user.id)
           .eq('name',name)
           .limit(1)
           .maybeSingle();
         if(archivedLookup.error)throw archivedLookup.error;
         if(archivedLookup.data)existing=archivedLookup.data;
+      }
+
+      if(weighLater){
+        const current=Math.max(0,num(existing?.quantity)||0);
+        const hasKnownStock=current>0;
+        if(existing&&hasKnownStock&&String(existing.unit||'')!==chosenUnit){
+          throw new Error('Der bekannte Vorrat hat eine andere Einheit. Bitte erst die Einheit angleichen.');
+        }
+
+        if(existing){
+          const pendingUpdate=await supabase.from('food_inventory').update({
+            quantity:current,
+            unit:hasKnownStock?existing.unit:chosenUnit,
+            quantity_label:hasKnownStock?fmtQty(current,existing.unit):'Menge noch offen · abwiegen',
+            is_active:true,
+            opened:false,
+            pending_weighing:true,
+            note:'Eingekauft · Menge noch abwiegen',
+            tone:hasKnownStock?'stock':'stock',
+            forecast_label:null,
+            use_priority:'three_days',
+            archived_at:null,
+            archived_reason:null
+          }).eq('id',existing.id);
+          if(pendingUpdate.error)throw pendingUpdate.error;
+        }else{
+          const maxSort=(state?.inventory||[]).reduce((max,item)=>Math.max(max,Number(item.sort_order)||0),0);
+          const pendingInsert=await supabase.from('food_inventory').insert({
+            user_id:user.id,name,quantity:0,unit:chosenUnit,quantity_label:'Menge noch offen · abwiegen',
+            forecast_label:null,tone:'stock',note:'Eingekauft · Menge noch abwiegen',sort_order:maxSort+1,
+            opened:false,use_priority:'three_days',is_active:true,pending_weighing:true
+          });
+          if(pendingInsert.error)throw pendingInsert.error;
+        }
+
+        if(shoppingId){
+          const check=await supabase.from('food_shopping_items').update({checked:true}).eq('id',shoppingId);
+          if(check.error)throw check.error;
+        }
+        await mutate(()=>true);
+        return;
       }
 
       let quantityAfter=quantity;
@@ -535,7 +586,11 @@
             opened:false,
             tone:'stock',
             forecast_label:null,
-            use_priority:'later'
+            use_priority:'later',
+            pending_weighing:false,
+            note:null,
+            archived_at:null,
+            archived_reason:null
           }).eq('id',existing.id);
           if(revive.error)throw revive.error;
           quantityAfter=newQuantity;
@@ -543,13 +598,15 @@
           const newQuantity=(current===null?0:current)+quantity;
           const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:existing.id,p_new_quantity:newQuantity,p_reason:'Vorrat vorhanden / eingekauft',p_note:null});
           if(result.error)throw result.error;
+          const clearPending=await supabase.from('food_inventory').update({pending_weighing:false,note:null}).eq('id',existing.id);
+          if(clearPending.error)throw clearPending.error;
           quantityAfter=newQuantity;
         }
       }else{
         const maxSort=(state?.inventory||[]).reduce((max,item)=>Math.max(max,Number(item.sort_order)||0),0);
         const result=await supabase.from('food_inventory').insert({
           user_id:user.id,name,quantity,unit:chosenUnit,quantity_label:fmtQty(quantity,chosenUnit),
-          forecast_label:null,tone:'stock',note:null,sort_order:maxSort+1,opened:false,use_priority:'later',is_active:true
+          forecast_label:null,tone:'stock',note:null,sort_order:maxSort+1,opened:false,use_priority:'later',is_active:true,pending_weighing:false
         });
         if(result.error)throw result.error;
       }
@@ -559,6 +616,18 @@
       }
       await mutate(()=>true);
     });
+
+    const weighBox=modal?.querySelector('[name="weigh_later"]');
+    const quantityInput=modal?.querySelector('[name="quantity"]');
+    const syncWeighLater=()=>{
+      const pending=weighBox?.checked===true;
+      if(quantityInput){
+        quantityInput.disabled=pending;
+        quantityInput.required=!pending;
+      }
+    };
+    weighBox?.addEventListener('change',syncWeighLater);
+    syncWeighLater();
   }
 
   function openGarlicModal(id){
@@ -1129,6 +1198,31 @@
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
       const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:id,p_new_quantity:Number(form.get('quantity')),p_reason:'Menge manuell geändert',p_note:String(form.get('note')||'')||null});
       if(result.error)throw result.error;
+      if(item.pending_weighing===true){
+        const clearPending=await supabase.from('food_inventory').update({pending_weighing:false}).eq('id',id);
+        if(clearPending.error)throw clearPending.error;
+      }
+      await mutate(()=>result.data);
+    });
+  }
+
+
+  function weighPendingModal(id){
+    const item=state?.inventory.find(row=>row.id===id);if(!item||item.pending_weighing!==true)return;
+    const known=Math.max(0,num(item.quantity)||0);
+    addModal('Einkauf abwiegen','<form><p class="food-modal-copy-v544"><strong>'+esc(item.name)+'</strong><br>'+(known>0?'Schon sicher im Vorrat: '+esc(fmtQty(known,item.unit))+'. ':'')+'Wiege nur die neu eingekaufte Menge.</p><label>Gewogene Einkaufsmenge ('+esc(item.unit||'g')+')<input name="quantity" type="number" min="0.01" step="0.01" inputmode="decimal" required autofocus></label><button class="food-action-v544" type="submit">Gewicht übernehmen</button></form>',async form=>{
+      const measured=Number(form.get('quantity'));
+      if(!Number.isFinite(measured)||measured<=0)throw new Error('Bitte eine gültige gewogene Menge eintragen.');
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const newQuantity=known+measured;
+      const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:id,p_new_quantity:newQuantity,p_reason:'Einkauf nachträglich abgewogen',p_note:null});
+      if(result.error)throw result.error;
+      const clearPending=await supabase.from('food_inventory').update({
+        pending_weighing:false,
+        quantity_label:fmtQty(newQuantity,item.unit),
+        note:null
+      }).eq('id',id);
+      if(clearPending.error)throw clearPending.error;
       await mutate(()=>result.data);
     });
   }
@@ -1210,6 +1304,7 @@
       button.insertAdjacentHTML('afterend','<button type="button" data-food-consume="'+esc(id)+'">Verbraucht</button><button type="button" data-food-storage="'+esc(id)+'">Zustand &amp; Verwendung</button>');
     });
     root.querySelectorAll('[data-food-consume]').forEach(button=>button.addEventListener('click',()=>consumeModal(button.dataset.foodConsume)));
+    root.querySelectorAll('[data-food-weigh]').forEach(button=>button.addEventListener('click',()=>weighPendingModal(button.dataset.foodWeigh)));
     root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
     root.querySelectorAll('[data-food-meal-card]').forEach(card=>card.addEventListener('click',event=>{
       if(event.target?.closest?.('button,input,select,textarea,label'))return;
