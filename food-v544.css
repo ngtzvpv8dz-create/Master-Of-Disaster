@@ -643,3 +643,52 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-recipe-actions-v582 .food-action-v544{
   margin-top:0!important;
 }
+
+
+/* V621 · Einkaufsliste: lange Namen, klare Mengen und tappbare Abhak-Aktion */
+.food-shopping-list-v544>li{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px 14px;
+}
+.food-shopping-list-v544>li>strong{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.food-shopping-list-v544>li.manual>span{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:7px;
+  min-width:0;
+}
+.food-shopping-list-v544>li.manual>span>b{
+  color:#526952;
+  font-size:10px;
+  white-space:nowrap;
+}
+.food-shopping-list-v544>li.manual button[data-shopping-check]{
+  position:relative;
+  z-index:3;
+  min-height:34px;
+  margin-left:0;
+  padding:7px 10px;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+@media(max-width:560px){
+  .food-shopping-list-v544>li{
+    grid-template-columns:1fr;
+    align-items:start;
+  }
+  .food-shopping-list-v544>li.manual>span{
+    justify-content:flex-start;
+  }
+  .food-shopping-gap-v572>span{
+    justify-items:start;
+    text-align:left;
+  }
+}
