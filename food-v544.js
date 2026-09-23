@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V630';
+  const VERSION='V631';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -94,6 +94,12 @@
     if(q===null||Number.isNaN(q))return ingredientName(item);
     return fmtQty(q,item?.unit)+' '+ingredientName(item);
   };
+  const PANTRY_BASICS=new Set([
+    'olivenöl','rapsöl','sonnenblumenöl','salz','pfeffer','paprikapulver edelsüß',
+    'paprikapulver rosenscharf','zimt','muskatnuss','currypulver','chiliflocken',
+    'oregano','basilikum','thymian','rosmarin','knoblauchpulver','zwiebelpulver'
+  ]);
+  const isPantryBasicName=name=>PANTRY_BASICS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
   const recipeInstructions=recipe=>String(recipe?.instructions||'').split(/\s*\|\s*|\n+/).map(line=>line.trim().replace(/^\s*(?:\d+[.)]|[-•])\s*/,'' )).filter(Boolean);
   const mealTypeOptions=selected=>['breakfast','snack','lunch','dinner'].map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(MEAL_LABELS[type])+'</option>').join('');
   const recipeCategoryOptions=selected=>RECIPE_CATEGORY_ORDER.map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(RECIPE_GROUP_LABELS[type]||type)+'</option>').join('');
@@ -464,6 +470,7 @@
       const stock=need.inventory_id
         ?inventoryById.get(need.inventory_id)
         :inventoryByName.get(normalizedNeed);
+      if(!stock&&isPantryBasicName(need.label))return;
       const sameUnit=!stock||String(stock.unit||'')===String(need.unit||'');
       if(stock?.pending_weighing===true&&sameUnit)return;
       const stockQty=sameUnit?num(stock?.quantity):0;
