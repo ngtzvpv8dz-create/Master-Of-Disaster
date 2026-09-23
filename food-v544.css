@@ -726,3 +726,25 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   font-size:9px;
   font-weight:900;
 }
+
+
+/* V626 · Manuelle Einkaufseinträge direkt bearbeiten oder entfernen */
+.food-shopping-edit-actions-v626{
+  display:flex!important;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:5px;
+  margin-top:2px;
+}
+.food-shopping-edit-actions-v626 button{
+  margin-left:0!important;
+  background:#eef3e9!important;
+  color:#526952!important;
+}
+.food-shopping-edit-actions-v626 button[data-shopping-delete]{
+  background:#f5ebe8!important;
+  color:#8b5549!important;
+}
+@media(max-width:560px){
+  .food-shopping-edit-actions-v626{justify-content:flex-start}
+}
