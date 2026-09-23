@@ -851,3 +851,62 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   .food-stock-meta-v629{grid-template-columns:1fr}
   .food-stock-meta-v629 span.is-wide{grid-column:auto}
 }
+
+
+/* V630 · Mengen pro eingeplanter Rezept-Mahlzeit */
+.food-meal-plan-actions-v630{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+.food-meal-plan-actions-v630 .food-action-v544{
+  margin-top:0!important;
+}
+.food-planned-qty-list-v630{
+  display:grid;
+  gap:8px;
+}
+.food-planned-qty-row-v630{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px!important;
+  padding:10px 11px;
+  border:1px solid rgba(65,98,69,.14);
+  border-radius:12px;
+  background:rgba(248,251,244,.82);
+}
+.food-planned-qty-row-v630>span:first-child{
+  min-width:0;
+}
+.food-planned-qty-row-v630 strong{
+  display:block;
+  color:#405845;
+  font-size:11px;
+}
+.food-planned-qty-row-v630 small{
+  display:block;
+  margin-top:2px;
+  color:#7a877c;
+  font-size:8px;
+}
+.food-planned-qty-row-v630>span:last-child{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+.food-planned-qty-row-v630 input{
+  width:92px!important;
+  min-width:72px!important;
+  text-align:right!important;
+}
+.food-planned-qty-row-v630 b{
+  min-width:34px;
+  color:#59685c;
+  font-size:10px;
+}
+@media(max-width:430px){
+  .food-planned-qty-row-v630{grid-template-columns:1fr}
+  .food-planned-qty-row-v630>span:last-child{justify-content:flex-start}
+}
