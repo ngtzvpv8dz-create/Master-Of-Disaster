@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V627';
+  const VERSION='V628';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -14,9 +14,10 @@
   const LABELS={today:'Heute',plan:'Plan',inventory:'Vorrat',shopping:'Einkauf',recipes:'Rezepte'};
   const MEAL_LABELS={breakfast:'Frühstück',snack:'Snack',lunch:'Mittag',dinner:'Abendessen'};
   const RECIPE_GROUP_LABELS={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack',allrounder:'Allrounder'};
-  const RECIPE_CATEGORY_ORDER=['breakfast','lunch','dinner','snack','allrounder'];
+  const RECIPE_CATEGORY_ORDER=['breakfast','lunch','snack','dinner','allrounder'];
   const MEAL_ICONS={breakfast:'☀',snack:'●',lunch:'◒',dinner:'☾'};
   let activeTab='today';
+  let activeRecipeCategory='breakfast';
   let loadPromise=null;
   let renderSerial=0;
   let state=null;
@@ -404,12 +405,17 @@
   }
 
   function inventoryView(data){
+    const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
     const regular=data.inventory.filter(item=>{
       const name=String(item.name||'').trim().toLocaleLowerCase('de-DE');
       return name!=='knoblauchknollen'&&name!=='knoblauchzehen';
     });
-    const cards=garlicCard(data)+regular.map(inventoryCard).join('');
-    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div><div class="food-inventory-grid-v544">'+(cards||'<div class="food-empty-card-v544"><h4>Der Vorrat ist leer.</h4></div>')+'</div>';
+    const cards=regular.map(item=>({name:item.name||'',html:inventoryCard(item)}));
+    const garlic=garlicCard(data);
+    if(garlic)cards.push({name:'Knoblauch',html:garlic});
+    cards.sort((a,b)=>collator.compare(String(a.name||''),String(b.name||'')));
+    const cardHtml=cards.map(item=>item.html).join('');
+    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div><div class="food-inventory-grid-v544">'+(cardHtml||'<div class="food-empty-card-v544"><h4>Der Vorrat ist leer.</h4></div>')+'</div>';
   }
 
   function deriveShopping(data){
@@ -455,34 +461,47 @@
   }
 
   function shoppingView(data){
+    const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
     const gaps=deriveShopping(data);
     const manual=(data.shopping||[]).filter(item=>!item.checked);
     const inventoryByName=new Map((data.inventory||[]).filter(item=>item.is_active!==false).map(item=>[String(item.name||'').trim().toLocaleLowerCase('de-DE'),item]));
-    const planned=gaps.map(item=>{
+    const rows=[];
+    gaps.forEach(item=>{
       const buyText=item.garlic?'Kaufen '+fmtQty(item.purchaseQuantity,item.purchaseUnit):'Kaufen '+fmtQty(item.missing,item.unit);
       const stockName=item.garlic?item.purchaseName:item.label;
       const stockQty=item.garlic?item.purchaseQuantity:item.missing;
       const stockUnit=item.garlic?item.purchaseUnit:item.unit;
       const stockId=item.garlic?item.purchaseInventoryId:item.inventory_id;
-      return '<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>';
-    }).join('');
-    const manualHtml=manual.map(item=>{
+      rows.push({
+        label:item.label||'',
+        html:'<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>'
+      });
+    });
+    manual.forEach(item=>{
       const required=num(item.quantity);
       const unit=String(item.unit||'').trim();
       if(required===null||required<=0||!unit){
-        return '<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>';
+        rows.push({
+          label:item.label||'',
+          html:'<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>'
+        });
+        return;
       }
       const normalized=String(item.label||'').trim().toLocaleLowerCase('de-DE');
       const stock=inventoryByName.get(normalized);
       const sameUnit=!stock||String(stock.unit||'')===unit;
-      if(stock?.pending_weighing===true&&sameUnit)return '';
+      if(stock?.pending_weighing===true&&sameUnit)return;
       const stockQty=sameUnit?num(stock?.quantity):0;
       const available=stockQty===null?0:Math.max(0,stockQty||0);
       const missing=Math.max(0,required-available);
-      if(missing<=0)return '';
-      return '<li class="food-shopping-gap-v572 manual"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stock&&!sameUnit?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(sameUnit?(stock?.id||''):'')+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>';
-    }).join('');
-    const all=planned+manualHtml;
+      if(missing<=0)return;
+      rows.push({
+        label:item.label||'',
+        html:'<li class="food-shopping-gap-v572 manual"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stock&&!sameUnit?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(sameUnit?(stock?.id||''):'')+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>'
+      });
+    });
+    rows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
+    const all=rows.map(item=>item.html).join('');
     return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
       (all?'<ul class="food-shopping-list-v544">'+all+'</ul>':'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Vorrat und geplante Rezeptmengen decken sich aktuell.</p></div>');
   }
@@ -654,22 +673,27 @@
 
   function recipesView(data){
     const recipes=data.recipes.length?data.recipes:data.meals.map(meal=>({id:meal.id,title:meal.title,meal_type:meal.meal_type,ingredients:meal.ingredients}));
-    const order=RECIPE_CATEGORY_ORDER;
-    const groups=order.map(type=>({
-      type,
-      label:RECIPE_GROUP_LABELS[type]||MEAL_LABELS[type]||type,
-      recipes:recipes.filter(recipe=>recipe.meal_type===type)
-    })).filter(group=>group.recipes.length);
-    const uncategorized=recipes.filter(recipe=>!order.includes(recipe.meal_type));
-    if(uncategorized.length)groups.push({type:'other',label:'Weitere Rezepte',recipes:uncategorized});
-    const sections=groups.map(group=>
-      '<section class="food-day-group-v544" data-food-recipe-group="'+esc(group.type)+'">'
-        +'<div class="food-day-label-v544"><strong>'+esc(group.label)+'</strong><span>'+group.recipes.length+' '+(group.recipes.length===1?'Rezept':'Rezepte')+'</span></div>'
-        +'<div class="food-recipe-grid-v544">'+group.recipes.map(recipeCard).join('')+'</div>'
-      +'</section>'
-    ).join('');
-    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Nach Kategorie sortiert</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte</small><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div>'
-      +(sections||'<div class="food-empty-card-v544"><h4>Noch keine Rezepte gespeichert.</h4><p>Lege dein erstes Rezept an und ordne es direkt einer Kategorie zu.</p></div>');
+    const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
+    const knownCategories=RECIPE_CATEGORY_ORDER;
+    if(!knownCategories.includes(activeRecipeCategory))activeRecipeCategory='breakfast';
+    const selected=recipes
+      .filter(recipe=>recipe.meal_type===activeRecipeCategory)
+      .sort((a,b)=>collator.compare(String(a.title||''),String(b.title||'')));
+    const categoryTabs=knownCategories.map(type=>{
+      const count=recipes.filter(recipe=>recipe.meal_type===type).length;
+      const label=RECIPE_GROUP_LABELS[type]||MEAL_LABELS[type]||type;
+      const active=type===activeRecipeCategory;
+      return '<button type="button" data-food-recipe-category="'+esc(type)+'" class="'+(active?'active':'')+'" aria-pressed="'+active+'"><span>'+esc(label)+'</span><small>'+count+'</small></button>';
+    }).join('');
+    const uncategorized=recipes.filter(recipe=>!knownCategories.includes(recipe.meal_type)).length;
+    const selectedLabel=RECIPE_GROUP_LABELS[activeRecipeCategory]||MEAL_LABELS[activeRecipeCategory]||activeRecipeCategory;
+    const grid=selected.length
+      ?'<div class="food-recipe-grid-v544">'+selected.map(recipeCard).join('')+'</div>'
+      :'<div class="food-empty-card-v544"><h4>Noch keine Rezepte in '+esc(selectedLabel)+'.</h4><p>Neue Rezepte kannst du direkt dieser Kategorie zuordnen.</p></div>';
+    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Deine Rezeptsammlung</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte'+(uncategorized?' · '+uncategorized+' ohne Kategorie':'')+'</small><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div>'
+      +'<nav class="food-recipe-tabs-v628" aria-label="Rezeptkategorien">'+categoryTabs+'</nav>'
+      +'<div class="food-recipe-category-head-v628"><strong>'+esc(selectedLabel)+'</strong><span>'+selected.length+' '+(selected.length===1?'Rezept':'Rezepte')+'</span></div>'
+      +grid;
   }
 
   function content(data){
@@ -1354,6 +1378,11 @@
     root.querySelectorAll('[data-food-garlic-adjust]').forEach(button=>button.addEventListener('click',()=>garlicStockModal()));
     root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
+    root.querySelectorAll('[data-food-recipe-category]').forEach(button=>button.addEventListener('click',()=>{
+      activeRecipeCategory=String(button.dataset.foodRecipeCategory||'breakfast');
+      expandedRecipes.clear();
+      renderState();
+    }));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
     root.querySelectorAll('[data-food-edit-free-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editFreeMealModal(button.dataset.foodEditFreeMeal);}));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
