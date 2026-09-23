@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V620';
+  const VERSION='V621';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -66,9 +66,17 @@
     const n=num(value);
     if(n===null||Number.isNaN(n))return 'Menge offen';
     const text=new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
+    const singular=Math.abs(n-1)<.0001;
+    const plurals={
+      Zehe:'Zehen',
+      Knolle:'Knollen',
+      Scheibe:'Scheiben',
+      Portion:'Portionen',
+      Packung:'Packungen',
+      Glas:'Gläser'
+    };
     let displayUnit=unit||'';
-    if(unit==='Zehe')displayUnit=Math.abs(n-1)<.0001?'Zehe':'Zehen';
-    if(unit==='Knolle')displayUnit=Math.abs(n-1)<.0001?'Knolle':'Knollen';
+    if(!singular&&plurals[unit])displayUnit=plurals[unit];
     return displayUnit?text+' '+displayUnit:text;
   };
   const normalizedStatus=status=>status==='consumed'||status==='prepared'?'completed':status==='completed'?'completed':'planned';
@@ -446,7 +454,7 @@
       const stockId=item.garlic?item.purchaseInventoryId:item.inventory_id;
       return '<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>';
     }).join('');
-    const manualHtml=manual.map(item=>'<li class="manual"><strong>'+esc(item.label)+'</strong><span>'+esc(fmtQty(item.quantity,item.unit))+' <button type="button" data-shopping-check="'+esc(item.id)+'">erledigt</button></span></li>').join('');
+    const manualHtml=manual.map(item=>'<li class="manual"><strong>'+esc(item.label)+'</strong><span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button></span></li>').join('');
     const all=planned+manualHtml;
     return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
       (all?'<ul class="food-shopping-list-v544">'+all+'</ul>':'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Vorrat und geplante Rezeptmengen decken sich aktuell.</p></div>');
