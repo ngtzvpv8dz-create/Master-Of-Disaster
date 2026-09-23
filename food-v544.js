@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V628';
+  const VERSION='V629';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -373,19 +373,30 @@
       (groups.length?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></section>').join(''):'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
   }
 
+  function inventoryNoteHtml(note){
+    const parts=String(note||'').split(/\s*·\s*/).map(part=>part.trim()).filter(Boolean);
+    if(!parts.length)return '';
+    return '<div class="food-stock-meta-v629">'+parts.map(part=>{
+      const wide=/^(Nährwerte|Zutaten:|nach dem Öffnen|Herstellerportion)/i.test(part);
+      return '<span class="'+(wide?'is-wide':'')+'">'+esc(part)+'</span>';
+    }).join('')+'</div>';
+  }
+
   function inventoryCard(item){
     const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
     const pending=item.pending_weighing===true;
     const known=num(item.quantity);
+    const empty=!pending&&known!==null&&known<=0;
     const quantity=pending
       ?((known!==null&&known>0)?baseQuantity+' + Einkauf noch abwiegen':'Einkauf noch abwiegen')
       :baseQuantity;
-    const forecast=item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
-    const priority=item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
+    const forecast=!empty&&item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
+    const priority=!empty&&item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
     const weighing=pending?'<span class="food-weigh-pending-v625">⚖ Menge noch offen</span>':'';
-    const tomorrowClass=item.use_priority==='tomorrow'&&Number(item.quantity)!==0?' priority-tomorrow-v574':'';
+    const tomorrowClass=!empty&&item.use_priority==='tomorrow'?' priority-tomorrow-v574':'';
     const weighAction=pending?'<button type="button" data-food-weigh="'+esc(item.id)+'">Jetzt abwiegen</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(item.tone||'stock')+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">'+(item.opened?'angebrochen':'unangebrochen')+'</span></div>'+weighing+priority+forecast+'<p>'+esc(item.note||'')+'</p><div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    const status=empty?'leer':(item.opened?'angebrochen':'unangebrochen');
+    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':'')+'">'+status+'</span></div>'+weighing+priority+forecast+inventoryNoteHtml(item.note)+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
   }
 
   function garlicParts(data=state){
