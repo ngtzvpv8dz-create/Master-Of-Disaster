@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V622';
+  const VERSION='V623';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -446,6 +446,7 @@
   function shoppingView(data){
     const gaps=deriveShopping(data);
     const manual=(data.shopping||[]).filter(item=>!item.checked);
+    const inventoryByName=new Map((data.inventory||[]).filter(item=>item.is_active!==false).map(item=>[String(item.name||'').trim().toLocaleLowerCase('de-DE'),item]));
     const planned=gaps.map(item=>{
       const buyText=item.garlic?'Kaufen '+fmtQty(item.purchaseQuantity,item.purchaseUnit):'Kaufen '+fmtQty(item.missing,item.unit);
       const stockName=item.garlic?item.purchaseName:item.label;
@@ -454,7 +455,21 @@
       const stockId=item.garlic?item.purchaseInventoryId:item.inventory_id;
       return '<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>';
     }).join('');
-    const manualHtml=manual.map(item=>'<li class="manual"><strong>'+esc(item.label)+'</strong><span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button></span></li>').join('');
+    const manualHtml=manual.map(item=>{
+      const required=num(item.quantity);
+      const unit=String(item.unit||'').trim();
+      if(required===null||required<=0||!unit){
+        return '<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button></span></li>';
+      }
+      const normalized=String(item.label||'').trim().toLocaleLowerCase('de-DE');
+      const stock=inventoryByName.get(normalized);
+      const sameUnit=!stock||String(stock.unit||'')===unit;
+      const stockQty=sameUnit?num(stock?.quantity):0;
+      const available=stockQty===null?0:Math.max(0,stockQty||0);
+      const missing=Math.max(0,required-available);
+      if(missing<=0)return '';
+      return '<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stock&&!sameUnit?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(sameUnit?(stock?.id||''):'')+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button></span></li>';
+    }).join('');
     const all=planned+manualHtml;
     return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
       (all?'<ul class="food-shopping-list-v544">'+all+'</ul>':'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Vorrat und geplante Rezeptmengen decken sich aktuell.</p></div>');
@@ -465,6 +480,8 @@
     const suggested=Number(button?.dataset?.foodStockQuantity||0);
     const unit=String(button?.dataset?.foodStockUnit||'').trim();
     const inventoryId=String(button?.dataset?.foodStockId||'').trim()||null;
+    const shoppingId=String(button?.dataset?.shoppingId||'').trim()||null;
+    const shoppingRequired=Number(button?.dataset?.shoppingRequired||0);
     if(!name)return;
     addModal('Vorrat übernehmen','<form><p class="food-modal-copy-v544"><strong>'+esc(name)+'</strong></p><div class="food-form-grid-v544"><label>Menge vorhanden / gekauft<input name="quantity" type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(suggested||1)+'" required></label><label>Einheit<input name="unit" value="'+esc(unit||'Stück')+'" required></label></div><button class="food-action-v544" type="submit">In Vorrat übernehmen</button></form>',async form=>{
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
@@ -480,12 +497,14 @@
         ?(state?.inventory||[]).find(item=>String(item.id)===String(inventoryId))
         :(state?.inventory||[]).find(item=>String(item.name||'').trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE'));
 
+      let quantityAfter=quantity;
       if(existing){
         if(String(existing.unit||'')!==chosenUnit)throw new Error('Die Einheit passt nicht zum vorhandenen Vorrat.');
         const current=num(existing.quantity);
         const newQuantity=(current===null?0:current)+quantity;
         const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:existing.id,p_new_quantity:newQuantity,p_reason:'Vorrat vorhanden / eingekauft',p_note:null});
         if(result.error)throw result.error;
+        quantityAfter=newQuantity;
       }else{
         const maxSort=(state?.inventory||[]).reduce((max,item)=>Math.max(max,Number(item.sort_order)||0),0);
         const result=await supabase.from('food_inventory').insert({
@@ -493,6 +512,10 @@
           forecast_label:null,tone:'stock',note:null,sort_order:maxSort+1,opened:false,use_priority:'later',is_active:true
         });
         if(result.error)throw result.error;
+      }
+      if(shoppingId&&shoppingRequired>0&&quantityAfter>=shoppingRequired){
+        const check=await supabase.from('food_shopping_items').update({checked:true}).eq('id',shoppingId);
+        if(check.error)throw check.error;
       }
       await mutate(()=>true);
     });
