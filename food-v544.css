@@ -910,3 +910,17 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   .food-planned-qty-row-v630{grid-template-columns:1fr}
   .food-planned-qty-row-v630>span:last-child{justify-content:flex-start}
 }
+
+
+/* V632 · Meal Prep und einheitliche Hinweistexte */
+.food-recipe-note-v572{
+  font-size:10px!important;
+  line-height:1.45!important;
+  font-weight:400!important;
+}
+.food-leftover-meal-v632 .food-recipe-type-v544{
+  color:#6f8667!important;
+}
+.food-leftover-meal-v632 .food-meal-plan-note-v581{
+  margin-top:10px!important;
+}
