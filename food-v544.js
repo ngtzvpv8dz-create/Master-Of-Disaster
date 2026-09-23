@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V631';
+  const VERSION='V632';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -307,7 +307,7 @@
     const eaten=Math.max(.01,Number(meal.eaten_servings)||prepared);
     const rest=Math.max(0,prepared-eaten);
     const isToday=meal.meal_date===todayIso();
-    if(meal.leftover_id)return portionLabel(eaten)+' aus Resten geplant';
+    if(meal.leftover_id)return portionLabel(eaten)+' · Meal Prep';
     if(rest>0){
       return isToday
         ?portionLabel(prepared)+' geplant · '+portionLabel(eaten)+' heute · '+portionLabel(rest)+' für morgen'
@@ -320,8 +320,29 @@
     const status=normalizedStatus(meal.status);
     const expanded=expandedMeals.has(String(meal.id));
     const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
-    const action=status==='completed'?'':'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">Als zubereitet markieren</button>';
-    const statusMeta=status==='completed'?fmtPreparedAt(meal.prepared_at):'Geplant';
+    const isLeftover=Boolean(meal.leftover_id);
+    const action=status==='completed'
+      ?''
+      :'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isLeftover?'Als gegessen markieren':'Als zubereitet markieren')+'</button>';
+    const statusMeta=status==='completed'
+      ?(isLeftover?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at))
+      :(isLeftover?'Bereits zubereitet':'Geplant');
+
+    if(isLeftover){
+      const title=recipe?.title||meal.title||'Meal Prep';
+      const details=expanded
+        ?'<div class="food-recipe-details-v572"><p class="food-recipe-note-v572">'+esc(meal.note||'Meal Prep · bereits zubereitet und für diese Mahlzeit eingeplant.')+'</p></div>'
+        :'';
+      return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
+        +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
+          +'<span><small class="food-recipe-type-v544">MEAL PREP</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · bereits zubereitet')+'</em></span>'
+          +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
+        +'</button>'
+        +details
+        +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
+        +action
+        +'</article>';
+    }
 
     if(recipe){
       const view=recipePresentation(recipe,expanded,meal.ingredients||[],meal.prepared_servings);
@@ -341,7 +362,7 @@
 
     const items=meal.ingredients||[];
     const portionMeta=mealPlanMeta(meal);
-    const editAction=status==='completed'
+    const editAction=status==='completed'||isLeftover
       ?''
       :'<button type="button" class="food-action-v544 compact" data-food-edit-free-meal="'+esc(meal.id)+'">Zutaten bearbeiten</button>';
     const details=expanded
@@ -372,7 +393,8 @@
     const groups=[];
     future.forEach(meal=>{let group=groups.find(item=>item.date===meal.meal_date);if(!group){group={date:meal.meal_date,meals:[]};groups.push(group);}group.meals.push(meal);});
     const priority=data.inventory.filter(item=>item.is_active!==false&&item.use_priority==='tomorrow');
-    const leftovers=(data.leftovers||[]).filter(item=>Number(item.available_servings)>0);
+    const assignedLeftoverIds=new Set((data.meals||[]).filter(meal=>meal.leftover_id).map(meal=>String(meal.leftover_id)));
+    const leftovers=(data.leftovers||[]).filter(item=>Number(item.available_servings)>0&&!assignedLeftoverIds.has(String(item.id)));
     const leftoverBlock=leftovers.length
       ?'<section class="food-leftovers-v572"><div class="food-leftovers-head-v572"><strong>Restportionen</strong><span>'+leftovers.length+' verfügbar</span></div><div class="food-leftovers-grid-v572">'+leftovers.map(item=>{const recipe=item.food_recipes||{};return '<article><div><small>'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||'RESTE')+'</small><strong>'+esc(recipe.title||'Restportion')+'</strong><span>'+esc(portionLabel(item.available_servings))+' verfügbar</span></div><button type="button" class="food-action-v544 compact" data-food-schedule-leftover="'+esc(item.id)+'">Einplanen</button></article>';}).join('')+'</div></section>'
       :'';
