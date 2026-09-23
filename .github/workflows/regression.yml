@@ -113,7 +113,7 @@ jobs:
             const todoStarted=Date.now();
             await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('todo'));
             const todoElapsed=Date.now()-todoStarted;
-            await page.waitForFunction(()=>window.__modTodoStabilityV603&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:45000});
+            await page.waitForFunction(()=>window.__modTodoStabilityV603&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508&&window.__modTodayWorkBlocksV474&&window.__modTodayCreateRenderV480,{timeout:45000});
             const todoStage=await page.evaluate(()=>({
               progress:(window.__v609Progress||[]).filter(x=>x?.phase==='area'&&x?.areaLoading==='todo'),
               historyLoaded:!!window.__modRecoveryHistoryV498,
@@ -126,6 +126,27 @@ jobs:
             await page.evaluate(()=>window.__modAreaRuntimeV609.loadSection('backup'));
             await page.waitForFunction(()=>window.__modSummaryWeightDuePolishV494&&window.__modUiAlignmentV493&&window.__modTodayActionOrderV501&&window.__modTodayInteractionStabilityV503&&window.__modCategoryCreateStabilityV504&&window.__modRunningTaskRenderStabilityV505&&window.__modRecoveryHistoryV498&&window.__modBackupStabilityV506&&window.__modBackupSourceFallbackV506?.patchRevision==='V506.3'&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508,{timeout:60000});
             const day=await page.evaluate(()=>getBerlinDateKey());
+            const directTodayCreate=await page.evaluate(day=>{
+              localStorage.removeItem(window.__modTodayWorkBlocksV474.storageKey);
+              tasks=[];archive=[];nextArchiveNumber=1;saveTasks();saveArchive();switchTab('all');render();
+              window.__modTodayCreateRenderV480.setNewTaskToday(true);
+              const input=document.getElementById('taskInput');
+              if(!input)throw new Error('V628 task input missing');
+              input.value='V628 Direkt Heute Arbeitsblock 1';
+              addTask();
+              const task=(tasks||[]).find(t=>t.text==='V628 Direkt Heute Arbeitsblock 1');
+              const blocks=window.__modTodayWorkBlocksV474.getBlocks(day)||[];
+              switchTab('today');render();
+              const visible=[...document.querySelectorAll('#viewContainer .task:not(.archive-task)')].some(card=>(card.querySelector('.task-text')?.textContent||'').includes('V628 Direkt Heute Arbeitsblock 1'));
+              return {
+                task:task?{todayDate:task.todayDate||null,todayWorkBlockId:task.todayWorkBlockId||null}:null,
+                firstBlockId:blocks[0]?.id||null,
+                blockCount:blocks.length,
+                visible
+              };
+            },day);
+            if(!directTodayCreate.task||directTodayCreate.task.todayDate!==day||!directTodayCreate.task.todayWorkBlockId||directTodayCreate.task.todayWorkBlockId!==directTodayCreate.firstBlockId||directTodayCreate.blockCount<1||!directTodayCreate.visible)throw new Error('V628 direct Today create/work-block regression '+JSON.stringify(directTodayCreate));
+
             await page.evaluate(day=>{
               localStorage.removeItem(window.__modTodayWorkBlocksV474?.storageKey||'');
               tasks=[

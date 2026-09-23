@@ -31,7 +31,8 @@
       './summary-weight-due-polish-v494.js?v=494-2103',
       './today-paused-v446.js?v=609-current',
       './render-stability-v479.js?v=609-current',
-      './today-create-render-v480.js?v=609-current',
+      './today-work-blocks-v474.js?v=628-today-blocks',
+      './today-create-render-v480.js?v=628-today-create',
       './terminal-delete-v485.js?v=609-current',
       './time-segment-scroll-v486.js?v=609-current',
       './task-title-library-v507.js?v=507-1345',
@@ -286,7 +287,7 @@
   async function verifyArea(id){
     if(id==='todo'){
       await waitFor(()=>typeof window.render==='function'&&typeof window.switchTab==='function');
-      await waitFor(()=>window.__modTodoStabilityV603&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508);
+      await waitFor(()=>window.__modTodoStabilityV603&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508&&window.__modTodayWorkBlocksV474&&window.__modTodayCreateRenderV480);
     }else if(id==='sport'){
       await waitFor(()=>window.__modSportV568||window.__modSportModeV510);
     }else if(id==='food'){
