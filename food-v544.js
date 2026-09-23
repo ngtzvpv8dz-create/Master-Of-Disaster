@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V625';
+  const VERSION='V626';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -467,7 +467,7 @@
       const required=num(item.quantity);
       const unit=String(item.unit||'').trim();
       if(required===null||required<=0||!unit){
-        return '<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button></span></li>';
+        return '<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>';
       }
       const normalized=String(item.label||'').trim().toLocaleLowerCase('de-DE');
       const stock=inventoryByName.get(normalized);
@@ -477,7 +477,7 @@
       const available=stockQty===null?0:Math.max(0,stockQty||0);
       const missing=Math.max(0,required-available);
       if(missing<=0)return '';
-      return '<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stock&&!sameUnit?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(sameUnit?(stock?.id||''):'')+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button></span></li>';
+      return '<li class="food-shopping-gap-v572 manual"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stock&&!sameUnit?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(sameUnit?(stock?.id||''):'')+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>';
     }).join('');
     const all=planned+manualHtml;
     return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
@@ -1291,6 +1291,38 @@
     });
   }
 
+  function editShoppingModal(id){
+    const item=(state?.shopping||[]).find(row=>String(row.id)===String(id));
+    if(!item)return;
+    addModal('Einkauf bearbeiten','<form><label>Bezeichnung<input name="label" value="'+esc(item.label||'')+'" required></label><div class="food-form-grid-v544"><label>Menge<input name="quantity" type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(item.quantity??'')+'"></label><label>Einheit<input name="unit" value="'+esc(item.unit||'')+'" placeholder="g, ml, Stück …"></label></div><p class="food-modal-copy-v544">Die Änderung gilt nur für diesen Einkaufszettel-Eintrag. Ein zugrunde liegendes Rezept oder eine geplante Mahlzeit wird dadurch nicht verändert.</p><button class="food-action-v544" type="submit">Änderung speichern</button></form>',async form=>{
+      const label=String(form.get('label')||'').trim();
+      const raw=String(form.get('quantity')||'').trim();
+      const quantity=raw===''?null:Number(raw);
+      const unit=String(form.get('unit')||'').trim()||null;
+      if(!label)throw new Error('Bitte eine Bezeichnung eingeben.');
+      if(quantity!==null&&(!Number.isFinite(quantity)||quantity<0))throw new Error('Bitte eine gültige Menge eingeben.');
+      if(quantity!==null&&quantity>0&&!unit)throw new Error('Bitte eine Einheit zur Menge eingeben.');
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await supabase.from('food_shopping_items').update({
+        label,
+        quantity,
+        unit:quantity===null?unit:unit
+      }).eq('id',id);
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
+  async function deleteShopping(id){
+    const item=(state?.shopping||[]).find(row=>String(row.id)===String(id));
+    if(!item)return;
+    if(!confirm('Einkauf "'+item.label+'" wirklich entfernen?'))return;
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await supabase.from('food_shopping_items').delete().eq('id',id);
+    if(result.error)throw result.error;
+    await mutate(()=>result.data);
+  }
+
   async function checkShopping(id){
     const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
     const result=await supabase.from('food_shopping_items').update({checked:true}).eq('id',id);
@@ -1340,6 +1372,8 @@
     root.querySelector('[data-food-add-shopping]')?.addEventListener('click',shoppingModal);
     root.querySelector('[data-food-add-recipe]')?.addEventListener('click',addRecipeModal);
     root.querySelectorAll('[data-shopping-check]').forEach(button=>button.addEventListener('click',()=>checkShopping(button.dataset.shoppingCheck).catch(error=>alert(error?.message||'Eintrag konnte nicht geändert werden.'))));
+    root.querySelectorAll('[data-shopping-edit]').forEach(button=>button.addEventListener('click',()=>editShoppingModal(button.dataset.shoppingEdit)));
+    root.querySelectorAll('[data-shopping-delete]').forEach(button=>button.addEventListener('click',()=>deleteShopping(button.dataset.shoppingDelete).catch(error=>alert(error?.message||'Eintrag konnte nicht entfernt werden.'))));
     root.querySelectorAll('[data-food-jump]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodJump;render();}));
     root.querySelector('[data-food-retry]')?.addEventListener('click',()=>{loadPromise=null;render();});
   }
