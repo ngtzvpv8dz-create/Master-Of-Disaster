@@ -6,12 +6,12 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V632';
+  const VERSION='V633';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
-  const TABS=['today','plan','inventory','shopping','recipes'];
-  const LABELS={today:'Heute',plan:'Plan',inventory:'Vorrat',shopping:'Einkauf',recipes:'Rezepte'};
+  const TABS=['today','plan','history','inventory','shopping','recipes'];
+  const LABELS={today:'Heute',plan:'Plan',history:'History',inventory:'Vorrat',shopping:'Einkauf',recipes:'Rezepte'};
   const MEAL_LABELS={breakfast:'Frühstück',snack:'Snack',lunch:'Mittag',dinner:'Abendessen'};
   const RECIPE_GROUP_LABELS={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack',allrounder:'Allrounder'};
   const RECIPE_CATEGORY_ORDER=['breakfast','lunch','snack','dinner','allrounder'];
@@ -234,7 +234,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').gte('meal_date',todayIso()).lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing').order('sort_order')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -402,6 +402,22 @@
       '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
       leftoverBlock+
       (groups.length?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></section>').join(''):'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
+  }
+
+  function historyView(data){
+    const past=data.meals
+      .filter(meal=>meal.meal_date<todayIso())
+      .sort((a,b)=>b.meal_date.localeCompare(a.meal_date)||(a.sort_order||0)-(b.sort_order||0));
+    const groups=[];
+    past.forEach(meal=>{
+      let group=groups.find(item=>item.date===meal.meal_date);
+      if(!group){group={date:meal.meal_date,meals:[]};groups.push(group);}
+      group.meals.push(meal);
+    });
+    return '<div class="food-section-head-v544"><div><span>HISTORY</span><h3>Vergangene Tage</h3></div><small>'+past.length+' Mahlzeiten</small></div>'+
+      (groups.length
+        ?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></section>').join('')
+        :'<div class="food-empty-card-v544"><h4>Noch keine vergangenen Mahlzeiten.</h4><p>Sobald ein Tag vorbei ist, bleibt er hier weiterhin abrufbar.</p></div>');
   }
 
   function inventoryNoteHtml(note){
@@ -742,6 +758,7 @@
   function content(data){
     if(activeTab==='today')return todayView(data);
     if(activeTab==='plan')return planView(data);
+    if(activeTab==='history')return historyView(data);
     if(activeTab==='inventory')return inventoryView(data);
     if(activeTab==='shopping')return shoppingView(data);
     return recipesView(data);
