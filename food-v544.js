@@ -393,7 +393,7 @@
     const groups=[];
     future.forEach(meal=>{let group=groups.find(item=>item.date===meal.meal_date);if(!group){group={date:meal.meal_date,meals:[]};groups.push(group);}group.meals.push(meal);});
     const priority=data.inventory.filter(item=>item.is_active!==false&&item.use_priority==='tomorrow');
-    const assignedLeftoverIds=new Set((data.meals||[]).filter(meal=>meal.leftover_id).map(meal=>String(meal.leftover_id)));
+    const assignedLeftoverIds=new Set((data.meals||[]).filter(meal=>meal.meal_date>=todayIso()&&meal.leftover_id).map(meal=>String(meal.leftover_id)));
     const leftovers=(data.leftovers||[]).filter(item=>Number(item.available_servings)>0&&!assignedLeftoverIds.has(String(item.id)));
     const leftoverBlock=leftovers.length
       ?'<section class="food-leftovers-v572"><div class="food-leftovers-head-v572"><strong>Restportionen</strong><span>'+leftovers.length+' verfügbar</span></div><div class="food-leftovers-grid-v572">'+leftovers.map(item=>{const recipe=item.food_recipes||{};return '<article><div><small>'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||'RESTE')+'</small><strong>'+esc(recipe.title||'Restportion')+'</strong><span>'+esc(portionLabel(item.available_servings))+' verfügbar</span></div><button type="button" class="food-action-v544 compact" data-food-schedule-leftover="'+esc(item.id)+'">Einplanen</button></article>';}).join('')+'</div></section>'
@@ -478,7 +478,7 @@
 
   function deriveShopping(data){
     const needs=new Map();
-    data.meals.filter(meal=>normalizedStatus(meal.status)==='planned').forEach(meal=>(meal.ingredients||[]).forEach(item=>{
+    data.meals.filter(meal=>meal.meal_date>=todayIso()&&normalizedStatus(meal.status)==='planned').forEach(meal=>(meal.ingredients||[]).forEach(item=>{
       const quantity=num(item.quantity);
       if(quantity===null||quantity<=0)return;
       const name=ingredientName(item);
