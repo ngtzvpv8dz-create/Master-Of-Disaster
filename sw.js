@@ -28,7 +28,8 @@ const CORE_SHELL=[
   "./assets/icons/shopping-v584-192.png",
   "./assets/icons/progress-v540-192.png",
   "./assets/icons/finance-v584-192.png",
-  "./assets/icons/backstage-v524-192.png"
+  "./assets/icons/backstage-v524-192.png",
+  "./assets/icons/denkfabrik-v634-192.jpg"
 ];
 
 self.addEventListener("install",event=>{

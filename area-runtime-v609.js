@@ -64,6 +64,12 @@
       './finance-v552.js?v=552-finance',
       './finance-data-v553.js?v=617-finance-balance'
     ],
+    denkfabrik:[
+      SUPABASE,
+      './supabase-config.js?v=609',
+      './supabase-client-lite-v593.js?v=593',
+      './denkfabrik-v634.js?v=634-readonly'
+    ],
     backstage:[
       SUPABASE,
       './supabase-config.js?v=609',
@@ -125,6 +131,7 @@
     food:['./food-v544.js?v=633-history'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=617-finance-balance'],
+    denkfabrik:['./denkfabrik-v634.js?v=634-readonly'],
     backstage:['./backstage-v531.js?v=609','./project-history-v452.js?v=452-1501']
   };
 
@@ -134,6 +141,7 @@
     food:'Food',
     kistology:'Kistologie',
     finance:'Finanzen',
+    denkfabrik:'Denkfabrik',
     backstage:'Backstage'
   };
 
@@ -145,7 +153,7 @@
   };
 
   const HEAVY_AREAS=new Set(['todo','backstage']);
-  const ACTIVE_AREAS=new Set(['todo','sport','food','kistology','finance','backstage']);
+  const ACTIVE_AREAS=new Set(['todo','sport','food','kistology','finance','denkfabrik','backstage']);
   const executed=new Set();
   const executing=new Map();
   const readyAreas=new Set();
@@ -684,6 +692,8 @@
       result=(window.__modFinanceV553||window.__modFinanceV552)?.open?.();
     }else if(id==='kistology'){
       result=window.__modKistologyV603?.open?.();
+    }else if(id==='denkfabrik'){
+      result=window.__modDenkfabrikV634?.open?.();
     }else if(id==='backstage'){
       result=window.__modBackstageV531?.open?.({section:'dev'});
     }
