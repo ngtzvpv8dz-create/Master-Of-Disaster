@@ -16,7 +16,8 @@
     shopping:'./assets/icons/shopping-v584-192.png?v=603',
     finance:'./assets/icons/finance-v584-192.png?v=603',
     progress:'./assets/icons/progress-v540-192.png?v=603',
-    backstage:'./assets/icons/backstage-v524-192.png?v=603'
+    backstage:'./assets/icons/backstage-v524-192.png?v=603',
+    denkfabrik:'./assets/icons/denkfabrik-v634-192.jpg?v=634'
   };
   const MODULES=[
     {id:'todo',label:'TO-DO',active:true},
@@ -26,7 +27,8 @@
     {id:'shopping',label:'EINKAUFSLISTE',active:false},
     {id:'finance',label:'FINANZEN',active:true},
     {id:'progress',label:'PROGRESS',active:false},
-    {id:'backstage',label:'BACKSTAGE',active:true}
+    {id:'backstage',label:'BACKSTAGE',active:true},
+    {id:'denkfabrik',label:'DENKFABRIK',active:true}
   ];
   let observer=null;
   let patching=false;
@@ -41,7 +43,7 @@
   }
   function labelMarkup(item){return '<span class="mod-hub-app-label-v517">'+item.label+'</span>';}
   function ariaLabel(item){
-    const names={todo:'To-do',sport:'Sport',kistology:'Kistology',food:'Food',shopping:'Einkaufsliste',finance:'Finanzen',progress:'Progress',backstage:'Backstage'};
+    const names={todo:'To-do',sport:'Sport',kistology:'Kistology',food:'Food',shopping:'Einkaufsliste',finance:'Finanzen',progress:'Progress',backstage:'Backstage',denkfabrik:'Denkfabrik'};
     return (names[item.id]||item.label)+(item.active?' öffnen':' noch nicht aktiv');
   }
   function progressMarkup(){
@@ -113,7 +115,7 @@
 
   const api={
     version:VERSION,render,sources:{...SOURCES},modules:MODULES.map(item=>({...item})),
-    updateProgress,homescreenStyle:true,eightTileGrid:true,realBootstrapProgress:true,legacyLoadersRemoved:true
+    updateProgress,homescreenStyle:true,nineTileGrid:true,denkfabrikTileV634:true,realBootstrapProgress:true,legacyLoadersRemoved:true
   };
   window.__modHubLauncherV603=api;
   /* Namespace aliases keep existing feature modules/tests pointed at the one current launcher. */
