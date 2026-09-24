@@ -1,9 +1,9 @@
-/* V620 · SPORT · phase reconstruction display */
+/* V621 · SPORT · phase reconstruction in completed summaries */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V620';
+  const VERSION='V621';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -1116,6 +1116,8 @@
         if(phase.resistance_level)parts.push('Stufe '+phase.resistance_level);
         if(phase.speed_kmh!==null)parts.push(phase.speed_kmh+' km/h');
         if(phase.incline_percent!==null)parts.push(phase.incline_percent+' %');
+        if(phase.distance_km_estimated!==null)parts.push('≈ '+String(Math.round(phase.distance_km_estimated*100)/100).replace('.',',')+' km');
+        if(phase.calories_kcal_estimated!==null)parts.push('≈ '+String(Math.round(phase.calories_kcal_estimated))+' kcal');
         return '<i><b>Phase '+(index+1)+'</b><em>'+esc(parts.join(' · ')||'keine Werte')+'</em></i>';
       }).join('')+'</span>':'';
       detailHtml='<span>'+esc(detail||'keine Gesamtwerte')+'</span>'+phaseHtml;
