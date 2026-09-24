@@ -1,9 +1,9 @@
-/* V616 · SPORT · iOS rapid-tap zoom guard */
+/* V620 · SPORT · phase reconstruction display */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V619';
+  const VERSION='V620';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -117,7 +117,9 @@
       duration_minutes:numberOrNull(phase?.duration_minutes),
       resistance_level:phase?.resistance_level===null||phase?.resistance_level===undefined?'':String(phase.resistance_level),
       speed_kmh:numberOrNull(phase?.speed_kmh),
-      incline_percent:numberOrNull(phase?.incline_percent)
+      incline_percent:numberOrNull(phase?.incline_percent),
+      distance_km_estimated:numberOrNull(phase?.distance_km_estimated),
+      calories_kcal_estimated:numberOrNull(phase?.calories_kcal_estimated)
     }));
   }
 
@@ -150,9 +152,21 @@
     return '<label><span>'+esc(meta[0])+'</span><input data-phase-key="'+esc(key)+'"'+attrs+' value="'+esc(value)+'"></label>';
   }
 
+  function cardioPhaseEstimateText(phase){
+    const distance=numberOrNull(phase?.distance_km_estimated);
+    const calories=numberOrNull(phase?.calories_kcal_estimated);
+    const parts=[];
+    if(distance!==null)parts.push('≈ '+String(Math.round(distance*100)/100).replace('.',',')+' km');
+    if(calories!==null)parts.push('≈ '+String(Math.round(calories))+' kcal');
+    return parts.join(' · ');
+  }
+
   function cardioPhaseRow(phase,index,fields){
+    const estimate=cardioPhaseEstimateText(phase);
     return '<div class="sport-cardio-phase-v613" data-cardio-phase-row>'+
-      '<div class="sport-cardio-phase-title-v613"><strong>Phase '+(index+1)+'</strong><div>'+
+      '<div class="sport-cardio-phase-title-v613"><strong>Phase '+(index+1)+'</strong>'+
+        (estimate?'<span class="sport-cardio-phase-estimate-v620">'+esc(estimate)+'</span>':'')+
+        '<div>'+
         '<button type="button" data-sport-phase-action="up" aria-label="Phase nach oben">↑</button>'+
         '<button type="button" data-sport-phase-action="down" aria-label="Phase nach unten">↓</button>'+
         '<button type="button" data-sport-phase-action="duplicate" aria-label="Phase duplizieren">⧉</button>'+
