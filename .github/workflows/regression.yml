@@ -113,6 +113,17 @@ jobs:
               backstage:!!window.__modBackstageV531
             }));
             if(preloadOnly.mode!=='worker-warm-staged-heavy-execution'||preloadOnly.executed!==0||preloadOnly.renderType==='function'||preloadOnly.kistology||preloadOnly.food||preloadOnly.backstage)throw new Error('V609 preload executed area modules '+JSON.stringify(preloadOnly));
+            await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('denkfabrik'));
+            await page.waitForFunction(()=>window.__modDenkfabrikV634&&document.body.classList.contains('mod-denkfabrik-v634'),{timeout:30000});
+            const denkfabrik=await page.evaluate(()=>({
+              readOnly:window.__modDenkfabrikV634?.readOnly===true,
+              root:!!document.getElementById('modDenkfabrikV634'),
+              tile:!!document.querySelector('[data-mod-hub-launch-v517="denkfabrik"]'),
+              active:document.body.dataset.modAppSurfaceV515==='denkfabrik'
+            }));
+            if(!denkfabrik.readOnly||!denkfabrik.root||!denkfabrik.tile||!denkfabrik.active)throw new Error('V634 Denkfabrik wiring regression '+JSON.stringify(denkfabrik));
+            await page.evaluate(()=>window.__modAppHubV603.show());
+            await page.waitForFunction(()=>document.body.classList.contains('mod-app-hub-v515'),{timeout:10000});
             await page.evaluate(()=>{
               window.__v609Progress=[];
               window.addEventListener('mod:bootstrap-v609-progress',event=>window.__v609Progress.push(event.detail));
