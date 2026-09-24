@@ -73,6 +73,9 @@ Ziel ist möglichst wenig Eingabeaufwand. Eine vollautomatische Bestandsführung
 - Mengen für Frühstück, Snacks, Mittag- und Abendessen festlegen.
 - Ernährung auf Gewichtsabnahme ausrichten.
 - Persönliche Vorlieben berücksichtigen, solange das Abnehmziel Priorität behält.
+- Ab Samstag, 26.09.2026, Tagesplanung auf **1.500 bis maximal 1.800 kcal** ausrichten.
+- Mittag- und Abendessen künftig bewusst kleiner portionieren; beide sollen nicht mehr den Großteil des Tagesbudgets auffressen.
+- Bereits geplante Mahlzeiten für Donnerstag, 24.09.2026, und Freitag, 25.09.2026, bleiben unverändert.
 
 ### 6. Verknüpfung Einkauf ↔ Bestand ↔ Essensplan
 
