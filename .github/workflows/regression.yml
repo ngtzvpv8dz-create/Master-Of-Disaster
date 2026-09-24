@@ -24,6 +24,7 @@ jobs:
           node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
           node --check food-v544.js
+          node --check denkfabrik-v634.js
           node --check kistology-v603.js
           node --check log-core-v603.js
           node --check todo-stability-v603.js
@@ -37,16 +38,21 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
-          grep -q 'area-runtime-v609.js?v=633-food-history-loader' index.html
+          grep -q 'area-runtime-v609.js?v=634-denkfabrik' index.html
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
           grep -q 'area-loader-v608.css?v=608-staged' index.html
-          grep -q 'app-hub-launcher-v603.js?v=603-loader' index.html
+          grep -q 'app-hub-launcher-v603.js?v=634-denkfabrik' index.html
+          grep -q 'app-hub-launcher-v603.css?v=634-denkfabrik' index.html
+          grep -q 'denkfabrik-v634.css?v=634-readonly' index.html
           grep -q 'surface-header-v603.js?v=603-header' index.html
           grep -q 'kistology-v603.css?v=603' index.html
           ! grep -q "serviceWorker.register('./sw.js" index.html
           grep -q 'log-core-v603.js' area-runtime-v609.js
           grep -q 'history-safety-net-v498.js' area-runtime-v609.js
           grep -q 'backup-model-v600.js' area-runtime-v609.js
+          grep -q 'denkfabrik-v634.js?v=634-readonly' area-runtime-v609.js
+          grep -q "denkfabrik:'Denkfabrik'" area-runtime-v609.js
+          grep -q 'denkfabrik-v634-192.jpg?v=634' app-hub-launcher-v603.js
           grep -q 'app-hub-launcher-v603.js' sw.js
           grep -q 'surface-header-v603.js' sw.js
           grep -q 'service-worker-gate-v611.js' sw.js
