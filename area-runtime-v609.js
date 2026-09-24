@@ -43,7 +43,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v616.js?v=619-course-plan'
+      './sport-v616.js?v=620-phase-reconstruction'
     ],
     food:[
       SUPABASE,
