@@ -583,6 +583,7 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 .sport-cardio-phase-v613{padding:8px;border:1px solid rgba(111,228,234,.09);border-radius:11px;background:rgba(2,14,17,.48)}
 .sport-cardio-phase-title-v613{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
 .sport-cardio-phase-title-v613 strong{color:#73cdd3;font-size:.59rem}
+.sport-cardio-phase-estimate-v620{color:#8aa4a6;font-size:.56rem;line-height:1.2;white-space:nowrap}
 .sport-cardio-phase-title-v613>div{display:flex;gap:4px}
 .sport-cardio-phase-title-v613 button{min-width:28px;padding:5px 6px!important;border:1px solid rgba(111,228,234,.11)!important;border-radius:8px!important;background:rgba(9,49,55,.4)!important;color:#a9dadd!important;font:inherit!important;font-size:.58rem!important;cursor:pointer}
 .sport-cardio-phase-title-v613 button.danger{color:#dfa0a0!important;border-color:rgba(223,160,160,.15)!important;background:rgba(98,35,35,.16)!important}
