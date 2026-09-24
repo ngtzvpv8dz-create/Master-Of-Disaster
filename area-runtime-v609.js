@@ -121,7 +121,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v616.js?v=619-course-plan'],
+    sport:['./sport-v616.js?v=621-phase-summary'],
     food:['./food-v544.js?v=632-mealprep'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=617-finance-balance'],
