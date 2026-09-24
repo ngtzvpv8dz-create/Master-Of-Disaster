@@ -19,7 +19,9 @@
     superseded:{label:'Ersetzt',short:'ERSETZT'},
     historical:{label:'Historisch',short:'HISTORISCH'}
   };
-  const AREA_ORDER=['Denkfabrik','Global','Food','Sport','To-do','Kistology','Finance','Shop','Backup','Backstage','Progress','Integration','Dev'];
+  const AREA_ORDER=['denkfabrik','global','food','sport','todo','kistology','finance','shopping','backup','backstage','progress','integration','development'];
+  const AREA_LABELS={denkfabrik:'Denkfabrik',global:'Global',food:'Food',sport:'Sport',todo:'To-do',kistology:'Kistology',finance:'Finanzen',shopping:'Einkaufsliste',backup:'Backup',backstage:'Backstage',progress:'Progress',integration:'Integration',development:'Entwicklung'};
+  const areaLabel=area=>AREA_LABELS[String(area||'')]||String(area||'Sonstiges');
 
   let rows=[];
   let loadState='idle';
@@ -42,7 +44,7 @@
   const statusMeta=status=>STATUS_META[status]||{label:String(status||'Unbekannt'),short:String(status||'?').toUpperCase()};
   const currentRows=()=>rows.filter(row=>CURRENT_STATUSES.has(row.status));
   const uniqueAreas=()=>{
-    const found=[...new Set(rows.map(row=>String(row.area||'Sonstiges')).filter(Boolean))];
+    const found=[...new Set(rows.map(row=>String(row.area||'sonstiges')).filter(Boolean))];
     return found.sort((a,b)=>{
       const ai=AREA_ORDER.indexOf(a),bi=AREA_ORDER.indexOf(b);
       if(ai!==-1||bi!==-1){
@@ -163,13 +165,13 @@
 
   function areaFilters(){
     const areas=uniqueAreas();
-    return '<div class="denk-area-row-v634" role="group" aria-label="Bereich filtern"><button type="button" data-denk-area="all" class="'+(activeArea==='all'?'is-active':'')+'">Alle Bereiche</button>'+areas.map(area=>'<button type="button" data-denk-area="'+esc(area)+'" class="'+(activeArea===area?'is-active':'')+'">'+esc(area)+'</button>').join('')+'</div>';
+    return '<div class="denk-area-row-v634" role="group" aria-label="Bereich filtern"><button type="button" data-denk-area="all" class="'+(activeArea==='all'?'is-active':'')+'">Alle Bereiche</button>'+areas.map(area=>'<button type="button" data-denk-area="'+esc(area)+'" class="'+(activeArea===area?'is-active':'')+'">'+esc(areaLabel(area))+'</button>').join('')+'</div>';
   }
 
   function openAreaSummary(){
     const groups=openByArea();
     if(!groups.length)return '';
-    return '<section class="denk-open-areas-v634"><div class="denk-section-head-v634"><div><span>OFFENE PUNKTE</span><h3>Wo noch was brennt</h3></div><small>'+groups.reduce((sum,item)=>sum+item[1],0)+' offen</small></div><div class="denk-open-area-grid-v634">'+groups.map(([area,count])=>'<button type="button" data-denk-open-area="'+esc(area)+'"><span>'+esc(area)+'</span><strong>'+count+'</strong></button>').join('')+'</div></section>';
+    return '<section class="denk-open-areas-v634"><div class="denk-section-head-v634"><div><span>OFFENE PUNKTE</span><h3>Wo noch was brennt</h3></div><small>'+groups.reduce((sum,item)=>sum+item[1],0)+' offen</small></div><div class="denk-open-area-grid-v634">'+groups.map(([area,count])=>'<button type="button" data-denk-open-area="'+esc(area)+'"><span>'+esc(areaLabel(area))+'</span><strong>'+count+'</strong></button>').join('')+'</div></section>';
   }
 
   function sourceMarkup(row){
@@ -187,7 +189,7 @@
     const priority=row.priority?'<span class="denk-priority-v634">P'+esc(row.priority)+'</span>':'';
     const verify=row.needs_verification?'<span class="denk-verify-v634">PRÜFEN</span>':'';
     return '<details class="denk-entry-v634 status-'+esc(row.status)+'" data-denk-key="'+esc(row.brain_key)+'">'
-      +'<summary><span class="denk-entry-main-v634"><small>'+esc(row.brain_key)+' · '+esc(row.area)+'</small><strong>'+esc(row.title)+'</strong></span><span class="denk-entry-side-v634"><span class="denk-status-v634">'+esc(meta.short)+'</span>'+priority+verify+'<b aria-hidden="true">+</b></span></summary>'
+      +'<summary><span class="denk-entry-main-v634"><small>'+esc(row.brain_key)+' · '+esc(areaLabel(row.area))+'</small><strong>'+esc(row.title)+'</strong></span><span class="denk-entry-side-v634"><span class="denk-status-v634">'+esc(meta.short)+'</span>'+priority+verify+'<b aria-hidden="true">+</b></span></summary>'
       +'<div class="denk-entry-body-v634"><p>'+esc(row.details)+'</p>'
       +(row.supersedes_note?'<div class="denk-note-v634"><strong>Ersetzt / ersetzt durch</strong><span>'+esc(row.supersedes_note)+'</span></div>':'')
       +sourceMarkup(row)
@@ -204,7 +206,7 @@
       if(!group){group={area:row.area,rows:[]};groups.push(group);}
       group.rows.push(row);
     });
-    return '<div class="denk-results-v634"><div class="denk-results-count-v634">'+filtered.length+' '+(filtered.length===1?'Eintrag':'Einträge')+'</div>'+groups.map(group=>'<section class="denk-area-group-v634"><div class="denk-area-head-v634"><h3>'+esc(group.area)+'</h3><span>'+group.rows.length+'</span></div>'+group.rows.map(entryMarkup).join('')+'</section>').join('')+'</div>';
+    return '<div class="denk-results-v634"><div class="denk-results-count-v634">'+filtered.length+' '+(filtered.length===1?'Eintrag':'Einträge')+'</div>'+groups.map(group=>'<section class="denk-area-group-v634"><div class="denk-area-head-v634"><h3>'+esc(areaLabel(group.area))+'</h3><span>'+group.rows.length+'</span></div>'+group.rows.map(entryMarkup).join('')+'</section>').join('')+'</div>';
   }
 
   function shell(){
