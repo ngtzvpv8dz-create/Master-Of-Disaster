@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V636';
+  const VERSION='V637';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -317,8 +317,7 @@
       return '<button type="button" class="'+(active?'is-active':'')+'" data-food-rate-recipe="'+esc(id)+'" data-food-rating="'+value+'" aria-label="'+label+'" aria-pressed="'+pressed+'" title="'+label+'">★</button>';
     }).join('');
     const status=rating===null?'Unbewertet':rating+' von 5 Sternen';
-    const clear=rating===null?'':'<button type="button" class="food-recipe-rating-clear-v636" data-food-clear-rating="'+esc(id)+'">Bewertung löschen</button>';
-    return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(recipe?.title||'Rezept')+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div>'+clear+'</div>';
+    return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(recipe?.title||'Rezept')+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div></div>';
   }
 
   async function setRecipeRating(recipeId,value){
@@ -1542,12 +1541,6 @@
       button.disabled=true;
       try{await setRecipeRating(button.dataset.foodRateRecipe,Number(button.dataset.foodRating));}
       catch(error){alert(error?.message||'Bewertung konnte nicht gespeichert werden.');button.disabled=false;}
-    }));
-    root.querySelectorAll('[data-food-clear-rating]').forEach(button=>button.addEventListener('click',async event=>{
-      event.stopPropagation();
-      button.disabled=true;
-      try{await setRecipeRating(button.dataset.foodClearRating,null);}
-      catch(error){alert(error?.message||'Bewertung konnte nicht gelöscht werden.');button.disabled=false;}
     }));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));
