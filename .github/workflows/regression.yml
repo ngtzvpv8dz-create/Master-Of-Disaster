@@ -24,6 +24,7 @@ jobs:
           node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
           node --check food-v544.js
+          node --check finance-data-v553.js
           node --check denkfabrik-v635.js
           node --check kistology-v603.js
           node --check log-core-v603.js
@@ -38,7 +39,7 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
-          grep -q 'area-runtime-v609.js?v=635-denkfabrik-refresh' index.html
+          grep -q 'area-runtime-v609.js?v=618-finance-recent-pfand' index.html
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
           grep -q 'area-loader-v608.css?v=608-staged' index.html
           grep -q 'app-hub-launcher-v603.js?v=634-denkfabrik' index.html

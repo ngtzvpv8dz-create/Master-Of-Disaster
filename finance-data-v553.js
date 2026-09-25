@@ -5,7 +5,7 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V555';
+  const VERSION='V618';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=5000;
   let loadPromise=null;
@@ -140,28 +140,37 @@
     (state.monthTransactions||[]).filter(row=>row.transaction_type==='expense').forEach(row=>{
       const items=Array.isArray(row.finance_items)?row.finance_items:[];
       const txMeta=transactionMeta(row);
-      let assigned=0,itemDiscounts=0,itemDeposits=0;
+      let assigned=0,itemDiscounts=0,itemDeposits=0,itemDepositReturns=0;
 
       if(items.length){
         items.forEach(item=>{
-          const itemAmount=num(item.total_price),deposit=num(item.deposit_amount),discount=num(item.discount_amount);
+          const itemAmount=num(item.total_price);
+          const deposit=num(item.deposit_amount);
+          const depositReturn=num(item.deposit_return_amount);
+          const discount=num(item.discount_amount);
           const label=String(item.category||row.category||'Sonstiges').trim()||'Sonstiges';
           const detail={...txMeta,name:item.item_name||label,category:label,subcategory:item.subcategory||null,quantity:item.quantity,unit:item.unit,sortOrder:item.sort_order||0};
           add('cat:'+label,label,'spend',itemAmount,detail);
           if(deposit>0)add('special:deposit-paid','Pfand bezahlt','deposit-paid',deposit,detail);
+          if(depositReturn>0)add('special:deposit-returned','Pfand zurückbekommen','deposit-returned',depositReturn,detail);
           if(discount>0)add('special:discounts','Rabatte erhalten','discount',discount,detail);
-          assigned+=itemAmount+deposit;
+          assigned+=itemAmount+deposit-depositReturn-discount;
           itemDiscounts+=discount;
           itemDeposits+=deposit;
+          itemDepositReturns+=depositReturn;
         });
       }else{
         const deposit=num(row.deposit_total);
-        const baseAmount=Math.max(0,num(row.total_amount)-deposit);
+        const depositReturn=num(row.deposit_return_total);
+        const discount=num(row.discount_total);
+        const baseAmount=Math.max(0,num(row.total_amount)-deposit+depositReturn+discount);
         const label=String(row.category||'Sonstiges').trim()||'Sonstiges';
         const detail={...txMeta,name:row.merchant||label,category:label,subcategory:null,quantity:null,unit:null,sortOrder:0};
         add('cat:'+label,label,'spend',baseAmount,detail);
         if(deposit>0)add('special:deposit-paid','Pfand bezahlt','deposit-paid',deposit,detail);
-        assigned=baseAmount+deposit;
+        if(depositReturn>0)add('special:deposit-returned','Pfand zurückbekommen','deposit-returned',depositReturn,detail);
+        if(discount>0)add('special:discounts','Rabatte erhalten','discount',discount,detail);
+        assigned=baseAmount+deposit-depositReturn-discount;
       }
 
       const depositRemainder=Math.max(0,num(row.deposit_total)-itemDeposits);
@@ -169,8 +178,16 @@
         add('special:deposit-paid','Pfand bezahlt','deposit-paid',depositRemainder,{...txMeta,name:'Weiteres Pfand',category:'Pfand',subcategory:null,quantity:null,unit:null,sortOrder:999});
         assigned+=depositRemainder;
       }
+      const depositReturnRemainder=Math.max(0,num(row.deposit_return_total)-itemDepositReturns);
+      if(items.length&&depositReturnRemainder>0.009){
+        add('special:deposit-returned','Pfand zurückbekommen','deposit-returned',depositReturnRemainder,{...txMeta,name:'Weitere Pfandrückgabe',category:'Pfand',subcategory:null,quantity:null,unit:null,sortOrder:999});
+        assigned-=depositReturnRemainder;
+      }
       const discountRemainder=Math.max(0,num(row.discount_total)-itemDiscounts);
-      if(discountRemainder>0.009)add('special:discounts','Rabatte erhalten','discount',discountRemainder,{...txMeta,name:'Weiterer Rabatt',category:'Rabatt',subcategory:null,quantity:null,unit:null,sortOrder:999});
+      if(discountRemainder>0.009){
+        add('special:discounts','Rabatte erhalten','discount',discountRemainder,{...txMeta,name:'Weiterer Rabatt',category:'Rabatt',subcategory:null,quantity:null,unit:null,sortOrder:999});
+        assigned-=discountRemainder;
+      }
 
       const unassigned=Math.max(0,num(row.total_amount)-assigned);
       if(unassigned>0.009){
@@ -229,17 +246,19 @@
     if(!items.length||!expandedTransactions.has(row.id))return '';
     const detailRows=items.map(item=>{
       const meta=[item.category,item.subcategory,fmtQuantity(item.quantity,item.unit)].filter(Boolean).join(' · ');
-      const discount=num(item.discount_amount),deposit=num(item.deposit_amount);
+      const discount=num(item.discount_amount),deposit=num(item.deposit_amount),depositReturn=num(item.deposit_return_amount);
       const extras=[
-        discount>0?'<small class="is-discount">Rabatt −'+fmtMoney(discount,row.currency)+'</small>':'',
-        deposit>0?'<small class="is-deposit">Pfand +'+fmtMoney(deposit,row.currency)+'</small>':''
+        deposit>0?'<small class="is-deposit">Pfand +'+fmtMoney(deposit,row.currency)+'</small>':'',
+        depositReturn>0?'<small class="is-discount">Pfandrückgabe −'+fmtMoney(depositReturn,row.currency)+'</small>':'',
+        discount>0?'<small class="is-discount">Rabatt −'+fmtMoney(discount,row.currency)+'</small>':''
       ].filter(Boolean).join('');
       return '<div class="finance-detail-row-v554"><div class="finance-detail-main-v554"><strong>'+esc(item.item_name||'Position')+'</strong><span>'+esc(meta)+'</span>'+(extras?'<div class="finance-detail-tags-v554">'+extras+'</div>':'')+'</div><b>'+fmtMoney(item.total_price,row.currency)+'</b></div>';
     }).join('');
     const footerBits=[
       items.length+' '+(items.length===1?'Position':'Positionen'),
-      num(row.discount_total)>0?'Rabatt '+fmtMoney(row.discount_total,row.currency):'',
-      num(row.deposit_total)>0?'Pfand '+fmtMoney(row.deposit_total,row.currency):''
+      num(row.deposit_total)>0?'Pfand bezahlt '+fmtMoney(row.deposit_total,row.currency):'',
+      num(row.deposit_return_total)>0?'Pfandrückgabe '+fmtMoney(row.deposit_return_total,row.currency):'',
+      num(row.discount_total)>0?'Rabatt '+fmtMoney(row.discount_total,row.currency):''
     ].filter(Boolean).join(' · ');
     return '<div class="finance-transaction-detail-v554" id="finance-tx-'+esc(row.id)+'">'+detailRows+'<div class="finance-detail-footer-v554">'+esc(footerBits)+'</div></div>';
   }
@@ -329,7 +348,7 @@
 
     const range=monthRange();
     const monthQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,sort_order)')
+      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
       .gte('transaction_date',range.start)
       .lt('transaction_date',range.end)
       .order('transaction_date',{ascending:false})
@@ -338,9 +357,8 @@
     const balanceQuery=supabase.rpc('finance_current_balance');
 
     const recentQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,sort_order)')
-      .order('transaction_date',{ascending:false})
-      .order('transaction_time',{ascending:false})
+      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
+      .order('created_at',{ascending:false})
       .limit(8);
 
     const [monthResult,recentResult,balanceResult]=await Promise.all([
@@ -385,6 +403,10 @@
     render();
     load(false);
     return true;
+  }
+
+  function refreshWhenVisible(){
+    if(document.visibilityState==='visible'&&isOpen())load(true);
   }
 
   function patchBaseApi(){
@@ -448,6 +470,9 @@
   window.__modFinanceDataV553=api;
 
   function init(){
+    document.addEventListener('visibilitychange',refreshWhenVisible);
+    window.addEventListener('focus',refreshWhenVisible);
+    window.addEventListener('pageshow',refreshWhenVisible);
     if(attachObservers())return;
     const wait=new MutationObserver(()=>{
       if(attachObservers())wait.disconnect();
