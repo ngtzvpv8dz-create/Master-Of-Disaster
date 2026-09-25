@@ -24,6 +24,7 @@ jobs:
           node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
           node --check food-v544.js
+          node --check finance-data-v553.js
           node --check denkfabrik-v635.js
           node --check kistology-v603.js
           node --check log-core-v603.js
