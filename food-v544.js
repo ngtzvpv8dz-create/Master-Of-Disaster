@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V633';
+  const VERSION='V636';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -236,7 +236,7 @@
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing').order('sort_order')),
-      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
+      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false}))
     ]);
@@ -300,6 +300,51 @@
       :'';
     const meta=[portionLabel(servings),recipe.prep_minutes?recipe.prep_minutes+' Min.':null,nutrition||null].filter(Boolean).join(' · ');
     return {details,meta};
+  }
+
+  const normalizedRecipeRating=value=>{
+    const rating=Number(value);
+    return Number.isInteger(rating)&&rating>=1&&rating<=5?rating:null;
+  };
+
+  function recipeRatingControl(recipe){
+    const rating=normalizedRecipeRating(recipe?.rating);
+    const id=String(recipe?.id||'');
+    const stars=[1,2,3,4,5].map(value=>{
+      const active=rating!==null&&value<=rating;
+      const pressed=rating===value;
+      const label=value===1?'1 Stern':value+' Sterne';
+      return '<button type="button" class="'+(active?'is-active':'')+'" data-food-rate-recipe="'+esc(id)+'" data-food-rating="'+value+'" aria-label="'+label+'" aria-pressed="'+pressed+'" title="'+label+'">★</button>';
+    }).join('');
+    const status=rating===null?'Unbewertet':rating+' von 5 Sternen';
+    const clear=rating===null?'':'<button type="button" class="food-recipe-rating-clear-v636" data-food-clear-rating="'+esc(id)+'">Bewertung löschen</button>';
+    return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(recipe?.title||'Rezept')+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div>'+clear+'</div>';
+  }
+
+  async function setRecipeRating(recipeId,value){
+    if(!sourceIsReal('recipes'))throw new Error('Die Rezeptdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst „Erneut laden“ verwenden.');
+    const recipe=(state?.recipes||[]).find(item=>String(item.id)===String(recipeId));
+    if(!recipe)throw new Error('Rezept nicht gefunden.');
+    const requested=value===null?null:normalizedRecipeRating(value);
+    if(value!==null&&requested===null)throw new Error('Die Bewertung muss zwischen 1 und 5 Sternen liegen.');
+    const current=normalizedRecipeRating(recipe.rating);
+    const next=requested!==null&&current===requested?null:requested;
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await withTimeout(
+      supabase.from('food_recipes')
+        .update({rating:next,rating_updated_at:next===null?null:new Date().toISOString()})
+        .eq('id',recipeId)
+        .select('id,rating,rating_updated_at')
+        .single(),
+      'Rezeptbewertung speichern',
+      8000
+    );
+    if(result?.error)throw result.error;
+    recipe.rating=result.data?.rating??null;
+    recipe.rating_updated_at=result.data?.rating_updated_at??null;
+    sourceState.recipes='cloud';
+    renderState();
+    return result.data;
   }
 
   function mealPlanMeta(meal){
@@ -727,7 +772,7 @@
   function recipeCard(recipe){
     const expanded=expandedRecipes.has(String(recipe.id));
     const view=recipePresentation(recipe,expanded);
-    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
+    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+recipeRatingControl(recipe)+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
   }
 
   function recipesView(data){
@@ -1492,6 +1537,18 @@
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
     root.querySelectorAll('[data-food-edit-free-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editFreeMealModal(button.dataset.foodEditFreeMeal);}));
     root.querySelectorAll('[data-food-edit-planned-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editPlannedMealQuantitiesModal(button.dataset.foodEditPlannedMeal);}));
+    root.querySelectorAll('[data-food-rate-recipe]').forEach(button=>button.addEventListener('click',async event=>{
+      event.stopPropagation();
+      button.disabled=true;
+      try{await setRecipeRating(button.dataset.foodRateRecipe,Number(button.dataset.foodRating));}
+      catch(error){alert(error?.message||'Bewertung konnte nicht gespeichert werden.');button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-clear-rating]').forEach(button=>button.addEventListener('click',async event=>{
+      event.stopPropagation();
+      button.disabled=true;
+      try{await setRecipeRating(button.dataset.foodClearRating,null);}
+      catch(error){alert(error?.message||'Bewertung konnte nicht gelöscht werden.');button.disabled=false;}
+    }));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));
     root.querySelectorAll('[data-food-schedule-leftover]').forEach(button=>button.addEventListener('click',()=>scheduleLeftoverModal(button.dataset.foodScheduleLeftover)));
