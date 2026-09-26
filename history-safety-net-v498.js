@@ -1,6 +1,6 @@
 /* V498 · HISTORY / UNDO / BACKUP SAFETY NET
    - globales rotes R im MASTER-OF-DISASTER-Titel
-   - 7 Tage lokaler Ereignisverlauf + Wiederherstellungspunkte in IndexedDB
+   - 48 Stunden lokaler Ereignisverlauf + Wiederherstellungspunkte in IndexedDB
    - sichere Voll-Restores und, wenn eindeutig, chirurgisches Rueckgaengig
    - bestehendes DEV-Vollbackup wird um Log + History erweitert
    - manuelle, datierte Wochen-Cloudbackups (12 Generationen) in legacy_metadata
@@ -13,7 +13,7 @@
   const DB_VERSION=1;
   const POINT_STORE='recoveryPoints';
   const LOG_STORE='logEntries';
-  const RETENTION_MS=7*24*60*60*1000;
+  const RETENTION_MS=48*60*60*1000;
   const MAX_POINTS=1500;
   const MAX_LOGS=20000;
   const LIVE_LOG_KEY='masterOfDisasterLiveLogV453';
@@ -416,7 +416,7 @@
     root.querySelector('[data-full-v498]')?.addEventListener('click',()=>restoreFullPoint(point));
   }
 
-  function rangeCutoff(range){const now=Date.now();if(range==='24H')return now-24*60*60*1000;if(range==='3D')return now-3*24*60*60*1000;if(range==='7D')return now-RETENTION_MS;const today=berlinParts().dateKey;return {today};}
+  function rangeCutoff(range){const now=Date.now();if(range==='24H')return now-24*60*60*1000;if(range==='48H')return now-RETENTION_MS;const today=berlinParts().dateKey;return {today};}
   function logMatches(row){
     const ts=new Date(row?.at).getTime();if(!Number.isFinite(ts))return false;
     const cutoff=rangeCutoff(logRange);if(typeof cutoff==='number'&&ts<cutoff)return false;if(cutoff?.today&&berlinParts(row.at).dateKey!==cutoff.today)return false;
@@ -435,7 +435,7 @@
     const today=berlinParts().dateKey;
     const groupHtml=[...groups.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([dateKey,group])=>{const entries=group.rows.slice().reverse().map(row=>{const p=berlinParts(row.at),badge=row?.meta?.recoveryPointId?`<button type="button" class="mod-recovery-badge-v498" data-log-point-v498="${esc(row.meta.recoveryPointId)}">↩ WIEDERHERSTELLUNG</button>`:'';return `<div class="mod-log-row-v498" data-level="${esc(row.level||'INFO')}"><div class="mod-log-time-v498">${esc(p.clock)}</div><div class="mod-log-area-v498">${esc(row.level==='ERROR'?'ERROR':row.level==='WARN'?'WARN':row.area||'LOG')}</div><div class="mod-log-message-v498">${esc(row.message||'')}</div>${badge}</div>`;}).join('');return `<details class="mod-log-day-v498" ${dateKey===today?'open':''}><summary>${esc(group.label)} · ${group.rows.length} Einträge</summary><div class="mod-log-day-body-v498">${entries}</div></details>`;}).join('');
     const areas=['ALL','TASK','EDIT','ARCHIVE','WEIGHT','SYNC','REMOTE','SYSTEM','WARN','ERROR'];
-    host.innerHTML=`<section class="mod-log-v498"><div><h2>LOG · LETZTE 7 TAGE</h2><div style="opacity:.68;font-size:.85rem">${all.length} relevante Einträge lokal gesichert · Wiederherstellungspunkte sind direkt markiert</div></div><div class="mod-log-toolbar-v498">${['TODAY','24H','3D','7D'].map(r=>`<button type="button" class="mod-log-chip-v498${logRange===r?' active':''}" data-range-v498="${r}">${r==='TODAY'?'HEUTE':r==='3D'?'3 TAGE':r==='7D'?'7 TAGE':'24 H'}</button>`).join('')}<button type="button" class="mod-log-chip-v498${recoveryOnly?' active':''}" data-recovery-only-v498>↩ NUR RESTORE</button></div><input class="mod-log-search-v498" id="modLogSearchV498" type="search" placeholder="Log durchsuchen, z. B. Kisten…" value="${esc(logSearch)}"><div class="mod-log-toolbar-v498">${areas.map(a=>`<button type="button" class="mod-log-chip-v498${logFilter===a?' active':''}" data-filter-v498="${a}">${a==='ALL'?'ALLE':a==='ARCHIVE'?'ARCHIV':a==='WEIGHT'?'GEWICHT':a}</button>`).join('')}<button type="button" class="mod-log-chip-v498${logFollow?' active':''}" data-follow-v498>LIVE ${logFollow?'AN':'AUS'}</button></div><div class="mod-point-list-v498">${groupHtml||'<div style="opacity:.7;padding:10px">Für diese Auswahl gibt es keine Einträge.</div>'}</div></section>`;
+    host.innerHTML=`<section class="mod-log-v498"><div><h2>LOG · LETZTE 48 STUNDEN</h2><div style="opacity:.68;font-size:.85rem">${all.length} relevante Einträge lokal gesichert · Wiederherstellungspunkte sind direkt markiert</div></div><div class="mod-log-toolbar-v498">${['TODAY','24H','48H'].map(r=>`<button type="button" class="mod-log-chip-v498${logRange===r?' active':''}" data-range-v498="${r}">${r==='TODAY'?'HEUTE':r==='48H'?'48 H':'24 H'}</button>`).join('')}<button type="button" class="mod-log-chip-v498${recoveryOnly?' active':''}" data-recovery-only-v498>↩ NUR RESTORE</button></div><input class="mod-log-search-v498" id="modLogSearchV498" type="search" placeholder="Log durchsuchen, z. B. Kisten…" value="${esc(logSearch)}"><div class="mod-log-toolbar-v498">${areas.map(a=>`<button type="button" class="mod-log-chip-v498${logFilter===a?' active':''}" data-filter-v498="${a}">${a==='ALL'?'ALLE':a==='ARCHIVE'?'ARCHIV':a==='WEIGHT'?'GEWICHT':a}</button>`).join('')}<button type="button" class="mod-log-chip-v498${logFollow?' active':''}" data-follow-v498>LIVE ${logFollow?'AN':'AUS'}</button></div><div class="mod-point-list-v498">${groupHtml||'<div style="opacity:.7;padding:10px">Für diese Auswahl gibt es keine Einträge.</div>'}</div></section>`;
     host.querySelectorAll('[data-range-v498]').forEach(btn=>btn.addEventListener('click',()=>{logRange=btn.dataset.rangeV498;renderEnhancedLog();}));
     host.querySelectorAll('[data-filter-v498]').forEach(btn=>btn.addEventListener('click',()=>{logFilter=btn.dataset.filterV498;renderEnhancedLog();}));
     host.querySelector('[data-recovery-only-v498]')?.addEventListener('click',()=>{recoveryOnly=!recoveryOnly;renderEnhancedLog();});
@@ -451,7 +451,7 @@
   }
 
   function collectAllMasterLocalStorage(){const out={};try{for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key?.startsWith('masterOfDisaster'))out[key]=localStorage.getItem(key);}}catch(error){out.__error=error?.message||String(error);}return out;}
-  async function exportPackage(){await mirrorLiveLogs(true);await pruneAll();return {schema:'master-of-disaster-safety-net',version:1,build:BUILD_VERSION,exportedAt:nowIso(),retentionDays:7,points:await storeGetAll(POINT_STORE),logs:await storeGetAll(LOG_STORE)};}
+  async function exportPackage(){await mirrorLiveLogs(true);await pruneAll();return {schema:'master-of-disaster-safety-net',version:1,build:BUILD_VERSION,exportedAt:nowIso(),retentionDays:2,retentionHours:48,points:await storeGetAll(POINT_STORE),logs:await storeGetAll(LOG_STORE)};}
   async function importPackage(pkg,{replace=true,extraPoints=[]}={}){
     if(!pkg||pkg.schema!=='master-of-disaster-safety-net'||!Array.isArray(pkg.points)||!Array.isArray(pkg.logs))throw new Error('Ungültige V498-History-Datei.');
     if(replace){await storeClear(POINT_STORE);await storeClear(LOG_STORE);}
@@ -496,17 +496,42 @@
     try{
       setState('⏳ BACKUP WIRD GEBAUT…',true);
       if(typeof JSZip!=='function')throw new Error('ZIP-Bibliothek wurde nicht geladen.');
-      if(!navigator.onLine)throw new Error('Für das Code-Vollbackup wird Internet benötigt.');
-      const stamp=berlinParts(),zip=new JSZip(),appFolder=zip.folder('APP'),dataFolder=zip.folder('DATA');
-      const treeRes=await fetch('https://api.github.com/repos/ngtzvpv8dz-create/Master-Of-Disaster/git/trees/main?recursive=1',{cache:'no-store',headers:{Accept:'application/vnd.github+json'}});if(!treeRes.ok)throw new Error(`GitHub-Dateiliste konnte nicht geladen werden (${treeRes.status}).`);const tree=await treeRes.json();const files=(tree.tree||[]).filter(x=>x?.type==='blob'&&x.path),failed=[];
-      for(let i=0;i<files.length;i++){const item=files[i];setState(`⏳ CODE ${i+1}/${files.length}…`,true);try{const url='https://raw.githubusercontent.com/ngtzvpv8dz-create/Master-Of-Disaster/main/'+item.path.split('/').map(encodeURIComponent).join('/');const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error(String(res.status));appFolder.file(item.path,await res.arrayBuffer(),{binary:true});}catch(error){failed.push(`${item.path} · ${error?.message||error}`);}}
-      const complete=createCompleteBackupPayload();complete.masterVersion=BUILD_VERSION;complete.fullBackupCreatedAt=nowIso();const safety=await exportPackage();const local=collectAllMasterLocalStorage();
-      dataFolder.file('complete-data-backup.json',JSON.stringify(complete,null,2));dataFolder.file('localstorage-master-of-disaster.json',JSON.stringify(local,null,2));dataFolder.file('recovery-history-v498.json',JSON.stringify(safety,null,2));dataFolder.file('live-log-7-days.json',JSON.stringify(safety.logs,null,2));
-      const info=['MASTER OF DISASTER · VOLLSTÄNDIGES KOMPLETT-BACKUP','====================================================',`Build: ${BUILD_VERSION}`,`Erstellt: ${stamp.dateLabel} ${stamp.clock} Europe/Berlin`,`Git-Stand/Tree: ${tree.sha||'unbekannt'}`,`Repo-Dateien: ${files.length-failed.length}/${files.length}`,`Wiederherstellungspunkte: ${safety.points.length}`,`7-Tage-Logeinträge: ${safety.logs.length}`,'','DATA/complete-data-backup.json = App-Datenstand','DATA/localstorage-master-of-disaster.json = lokale App-Werte','DATA/recovery-history-v498.json = Wiederherstellungspunkte + 7-Tage-Log','DATA/live-log-7-days.json = lesbarer 7-Tage-Log','',failed.length?'Fehlgeschlagene Repo-Dateien:\n'+failed.join('\n'):'Keine fehlgeschlagenen Repo-Dateien.'].join('\n');zip.file('BACKUP-INFO.txt',info);
-      setState('⏳ ZIP WIRD GEPACKT…',true);const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});const filename=`Master-of-Disaster_${BUILD_VERSION}_Vollbackup_${stamp.file}.zip`;const summary=`Code + App-Daten + ${safety.points.length} Wiederherstellungspunkte + ${safety.logs.length} Logeinträge wurden gesichert.`;deliverFullBackupBlob(blob,filename,summary);setState('✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
+      if(!navigator.onLine)throw new Error('Für das Vollbackup wird Internet benötigt.');
+      const stamp=berlinParts(),zip=new JSZip(),dataFolder=zip.folder('DATA'),supabaseFolder=zip.folder('SUPABASE');
+      const complete=createCompleteBackupPayload();
+      complete.masterVersion=BUILD_VERSION;
+      complete.fullBackupCreatedAt=nowIso();
+      const local=collectAllMasterLocalStorage();
+      dataFolder.file('complete-data-backup.json',JSON.stringify(complete,null,2));
+      dataFolder.file('localstorage-master-of-disaster.json',JSON.stringify(local,null,2));
+      const backupModel=window.__modBackupModelV600;
+      if(!backupModel?.requestSupabaseExport)throw new Error('Supabase-Backupmodul V600 ist noch nicht bereit.');
+      setState('⏳ AKTUELLE SUPABASE-DATEN…',true);
+      const supabaseExport=await backupModel.requestSupabaseExport();
+      supabaseFolder.file('current-data-export.json',JSON.stringify(supabaseExport,null,2));
+      const info=[
+        'MASTER OF DISASTER · SCHLANKES KATASTROPHEN-BACKUP',
+        '===================================================',
+        `Build: ${BUILD_VERSION}`,
+        `Erstellt: ${stamp.dateLabel} ${stamp.clock} Europe/Berlin`,
+        'Enthalten: aktueller lokaler App-Datenstand + aktuelle wiederherstellungsrelevante Supabase-Nutzdaten.',
+        'Nicht enthalten: GitHub-Code, 48-Stunden-Audit/History, alte Backup-Schemas oder Logs.',
+        'Der Programmcode und die Datenbank-Migrationen bleiben in GitHub versioniert.',
+        '',
+        'DATA/complete-data-backup.json = aktueller lokaler App-Datenstand',
+        'DATA/localstorage-master-of-disaster.json = lokale Master-of-Disaster-Werte',
+        'SUPABASE/current-data-export.json = aktuelle wiederherstellungsrelevante Supabase-Nutzdaten'
+      ].join('\n');
+      zip.file('BACKUP-INFO.txt',info);
+      setState('⏳ ZIP WIRD GEPACKT…',true);
+      const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+      const filename=`Master-of-Disaster_${BUILD_VERSION}_Vollbackup_${stamp.file}.zip`;
+      const summary='Aktuelle App-Daten und aktuelle Supabase-Nutzdaten wurden gesichert. GitHub-Code und 48-Stunden-Historie bleiben bewusst außerhalb der ZIP.';
+      deliverFullBackupBlob(blob,filename,summary);
+      setState('✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
     }catch(error){console.error('V498 Vollbackup fehlgeschlagen:',error);setState('📦 VOLLSTÄNDIGES KOMPLETT-BACKUP',false);showInfoModal?.('Vollbackup fehlgeschlagen',error?.message||String(error));}
   }
-  function installBackupOverride(){const btn=document.getElementById('fullBackupV397');if(!btn||btn.dataset.v498Enhanced==='1')return;btn.dataset.v498Enhanced='1';btn.textContent='📦 VOLLSTÄNDIGES KOMPLETT-BACKUP';btn.onclick=createEnhancedFullBackup;const wrap=document.getElementById('fullBackupWrapV397');const note=wrap?.querySelector('div:nth-child(2)');if(note)note.textContent='ZIP mit aktuellem Programmcode + kompletten App-Daten + 7-Tage-Log + Wiederherstellungspunkten.';}
+  function installBackupOverride(){const btn=document.getElementById('fullBackupV397');if(!btn||btn.dataset.v498Enhanced==='1')return;btn.dataset.v498Enhanced='1';btn.textContent='📦 VOLLSTÄNDIGES KOMPLETT-BACKUP';btn.onclick=createEnhancedFullBackup;const wrap=document.getElementById('fullBackupWrapV397');const note=wrap?.querySelector('div:nth-child(2)');if(note)note.textContent='Schlanke ZIP mit aktuellem lokalem App-Stand + aktuellen Supabase-Nutzdaten. GitHub-Code und 48-Stunden-Historie bleiben außerhalb.';}
 
   async function cloudContext(){const client=getSupabaseClient?.();if(!client)throw new Error('Kein Supabase-Client verfügbar.');const {data,error}=await client.auth.getSession();if(error)throw error;const user=data?.session?.user;if(!user?.id)throw new Error('Supabase-Login fehlt.');return {client,userId:user.id};}
   function weeklyKey(){return WEEKLY_PREFIX+nowIso().replace(/[:.]/g,'-');}
@@ -528,7 +553,7 @@
     try{if(typeof currentTab!=='undefined'&&currentTab!=='dev')return;}catch(_){return;}
     if(document.getElementById('modDevSafetyV498'))return;
     const host=document.querySelector('.dev-panel')||document.getElementById('viewContainer');if(!host)return;
-    const wrap=document.createElement('section');wrap.id='modDevSafetyV498';wrap.className='mod-dev-safety-v498';wrap.innerHTML=`<div style="font-size:10px;font-weight:900;letter-spacing:.8px">🔴 DATENSICHERHEIT · 7-TAGE-NETZ</div><div style="font-size:10px;line-height:1.5;opacity:.82">7-Tage-Zeitmaschine lokal + rollierend in Supabase · Vollbackup als eine ZIP · keine Wochen-Cloudarchive mehr.</div><button type="button" class="mod-action-v498" data-zip-import-v498>📥 VOLLBACKUP-ZIP IMPORTIEREN</button><input type="file" accept=".zip,application/zip" data-zip-file-v498 hidden>`;host.appendChild(wrap);const fileInput=wrap.querySelector('[data-zip-file-v498]');wrap.querySelector('[data-zip-import-v498]')?.addEventListener('click',()=>fileInput?.click());fileInput?.addEventListener('change',event=>{const file=event.target.files?.[0];if(file)importFullBackupZip(file);event.target.value='';});
+    const wrap=document.createElement('section');wrap.id='modDevSafetyV498';wrap.className='mod-dev-safety-v498';wrap.innerHTML=`<div style="font-size:10px;font-weight:900;letter-spacing:.8px">🔴 DATENSICHERHEIT · 7-TAGE-NETZ</div><div style="font-size:10px;line-height:1.5;opacity:.82">48-Stunden-Zeitmaschine lokal + rollierend in Supabase · Vollbackup als eine ZIP · keine Wochen-Cloudarchive mehr.</div><button type="button" class="mod-action-v498" data-zip-import-v498>📥 VOLLBACKUP-ZIP IMPORTIEREN</button><input type="file" accept=".zip,application/zip" data-zip-file-v498 hidden>`;host.appendChild(wrap);const fileInput=wrap.querySelector('[data-zip-file-v498]');wrap.querySelector('[data-zip-import-v498]')?.addEventListener('click',()=>fileInput?.click());fileInput?.addEventListener('change',event=>{const file=event.target.files?.[0];if(file)importFullBackupZip(file);event.target.value='';});
   }
 
   function showRestoreNotice(){try{const msg=sessionStorage.getItem('modV498RestoreNotice');if(msg){sessionStorage.removeItem('modV498RestoreNotice');setTimeout(()=>showInfoModal?.('Wiederherstellung abgeschlossen ✅',msg),350);}}catch(_){} }
@@ -553,7 +578,7 @@
     window.addEventListener('focus',()=>{mirrorLiveLogs(true).catch(()=>{});queueCapture(80);});
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){mirrorLiveLogs(true).catch(()=>{});queueCapture(80);}});
     window.__modRecoveryHistoryV498={version:BUILD_VERSION,dbName:DB_NAME,retentionMs:RETENTION_MS,openQuickHistory,openPoint,restoreFullPoint,surgicalUndo,recentPoints,readSevenDayLogs,renderEnhancedLog,exportPackage,importPackage,createWeeklyCloudBackup,listWeeklyCloudBackups,createEnhancedFullBackup,importFullBackupZip,captureSnapshot,mirrorLiveLogs,pruneAll,resetDbConnection,deliverFullBackupBlob,dbReconnectV506:true,iosBackupHandoffV506:true};
-    try{window.__modLiveLogV453?.append?.('SYSTEM','PASS','Datensicherheitsnetz V498 aktiv · DB-Reconnect V506 · 7-Tage-Verlauf + Wiederherstellungspunkte');}catch(_){}
+    try{window.__modLiveLogV453?.append?.('SYSTEM','PASS','Datensicherheitsnetz V498 aktiv · DB-Reconnect V506 · 48-Stunden-Verlauf + Wiederherstellungspunkte');}catch(_){}
   }
 
   function waitForDependencies(){
