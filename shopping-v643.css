@@ -275,3 +275,82 @@ body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544 button[type=submit
   .shopping-purchased-row-v647>span{grid-area:state}
   .shopping-purchased-row-v647>button{grid-area:action;justify-self:end}
 }
+
+
+/* V648 · pastel navy shopping palette */
+:root{
+  --shop-bg:#111823;
+  --shop-panel:#182230;
+  --shop-panel-2:#202d3d;
+  --shop-cream:#f0ece5;
+  --shop-muted:#a7b3c0;
+  --shop-gold:#d8a37b;
+  --shop-green:#9fb89f;
+  --shop-blue:#8fb2c9;
+  --shop-border:rgba(143,178,201,.16);
+}
+html.mod-shopping-surface-v643,body.mod-shopping-v643{background:#111823!important}
+.shopping-hero-v643{
+  border-color:rgba(143,178,201,.22);
+  background:linear-gradient(145deg,#1d2938 0%,#17212d 60%,#131b25 100%);
+}
+.shopping-hero-v643 span{color:#a8bfd0}
+.shopping-hero-v643 h2{color:#f2eee8}
+.shopping-hero-v643 p{color:#a8b3bf}
+.shopping-hero-v643>button{border-color:rgba(143,178,201,.28);background:rgba(143,178,201,.10);color:#c9d9e4}
+
+.shopping-summary-v643>div{border-color:rgba(143,178,201,.14);background:#182230}
+.shopping-summary-v643 strong{color:#cbd9e2}
+.shopping-summary-v643 span{color:#93a2af}
+
+.shopping-section-v643,.shopping-section-v643.is-purchased-v647,#shoppingReviewV647{
+  border-color:rgba(143,178,201,.16);
+  background:#182230;
+}
+.shopping-section-v643>header,#shoppingReviewV647>header,.shopping-section-v643.is-purchased-v647>header{
+  border-bottom-color:rgba(255,255,255,.05);
+  background:#1c2836;
+}
+.shopping-section-v643>header small,#shoppingReviewV647>header small{color:#91a0ad}
+.shopping-section-v643.is-now>header span,.shopping-section-v643.is-now>header>strong,
+.shopping-section-v643.is-purchased-v647>header span,.shopping-section-v643.is-purchased-v647>header>strong,
+#shoppingReviewV647>header span,#shoppingReviewV647>header>strong{color:#d9b08e}
+.shopping-section-v643.is-now>header>strong,.shopping-section-v643.is-purchased-v647>header>strong,#shoppingReviewV647>header>strong{background:rgba(216,163,123,.10)}
+.shopping-section-v643.is-later>header span,.shopping-section-v643.is-later>header>strong{color:#a8c4d4}
+.shopping-section-v643.is-later>header>strong{background:rgba(143,178,201,.10)}
+.shopping-section-v643.is-cart>header span,.shopping-section-v643.is-cart>header>strong{color:#adc4ad}
+.shopping-section-v643.is-cart>header>strong{background:rgba(159,184,159,.10)}
+
+.shopping-list-v643,.shopping-purchased-list-v647,#shoppingReviewV647 .shopping-review-list-v644{background:rgba(255,255,255,.025)}
+.shopping-item-v643,.shopping-purchased-row-v647,#shoppingReviewV647 .shopping-review-item-v644{background:#1b2633}
+.shopping-item-v643.is-cart{background:#1b2a2b}
+.shopping-item-main-v643 strong,.shopping-purchased-store-v647 strong,#shoppingReviewV647 .shopping-review-copy-v644 strong{color:#ede9e3}
+.shopping-item-main-v643 b,.shopping-purchased-row-v647>b{color:#d7aa85}
+.shopping-item-meta-v643,#shoppingReviewV647 .shopping-review-copy-v644 span{color:#95a5b2}
+.shopping-badges-v643 span{background:rgba(255,255,255,.04);color:#94a3af}
+.shopping-actions-v643 button,.shopping-purchased-row-v647>button,#shoppingReviewV647 .shopping-review-actions-v644 button{
+  border-color:rgba(143,178,201,.16);
+  background:rgba(143,178,201,.055);
+  color:#bdd0dd;
+}
+.shopping-actions-v643 button.is-quiet,#shoppingReviewV647 .shopping-review-actions-v644 button.is-quiet{color:#8d99a4}
+.shopping-cart-v643{border-color:rgba(143,178,201,.18);background:rgba(143,178,201,.055);color:#9fb8c8}
+.shopping-cart-v643.is-active{border-color:rgba(159,184,159,.34);background:rgba(159,184,159,.10);color:#b1c9b2}
+
+.shopping-section-footer-v646{background:#16212b;border-top-color:rgba(255,255,255,.04)}
+.shopping-checkout-action-v646{
+  border-color:rgba(143,178,201,.20);
+  background:linear-gradient(145deg,rgba(143,178,201,.12),rgba(159,184,159,.08));
+  color:#dfe7eb;
+}
+.shopping-checkout-action-v646 strong{color:#edf1f2}
+.shopping-checkout-action-v646 small{color:#9fb0bc}
+.shopping-checkout-check-v646{background:rgba(159,184,159,.11);color:#b7cdb8}
+.shopping-checkout-action-v646>b{color:#abc4d4}
+
+.shopping-modal-card-v643{border-color:rgba(143,178,201,.18);background:#182230;color:#eeeae4}
+.shopping-modal-card-v643 input,.shopping-modal-card-v643 select{border-color:rgba(143,178,201,.14);background:#111823;color:#eeeae4}
+.shopping-submit-v643,.shopping-product-new-v644{border-color:rgba(143,178,201,.22);background:rgba(143,178,201,.08);color:#c7d7e1}
+.shopping-product-options-v644 button{border-color:rgba(143,178,201,.13);background:#141e29;color:#eae7e1}
+.shopping-checkout-receipts-v645 button{border-color:rgba(143,178,201,.14);background:#141e29;color:#eae7e1}
+.shopping-checkout-receipts-v645 button strong{color:#d7aa85}
