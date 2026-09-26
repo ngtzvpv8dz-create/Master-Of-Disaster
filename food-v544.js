@@ -617,7 +617,7 @@
 
       const shortageDate=shortageDateFor(need,available);
       const leadDays=freshShoppingLeadDays(stock?.name||need.label);
-      const buyFrom=shortageDate&&leadDays!==null?plusDays(shortageDate,-leadDays):shortageDate;
+      const buyFrom=shortageDate&&leadDays!==null?plusDays(shortageDate,-leadDays):null;
 
       gaps.push({
         ...need,
