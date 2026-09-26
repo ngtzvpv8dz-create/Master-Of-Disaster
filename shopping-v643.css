@@ -76,3 +76,12 @@ body:not(.mod-shopping-v643) #modShoppingV643{display:none!important}
   .shopping-item-foot-v643{align-items:flex-start;flex-direction:column}.shopping-actions-v643{justify-content:flex-start}
 }
 @media(prefers-reduced-motion:reduce){.shopping-loading-v643 i{animation:none}}
+
+/* Food stock handoff dialogs are re-parented to body while Shopping is active. */
+body.mod-shopping-v643>.food-modal-v544{z-index:15020;box-sizing:border-box}
+body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544{box-sizing:border-box;min-width:0;max-width:100%;max-height:calc(100dvh - 32px);overflow:auto;text-align:left}
+body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544 form,
+body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544 label{min-width:0;text-align:left}
+body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544 input,
+body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544 select{min-width:0;max-width:100%;font-size:16px;text-align:left}
+body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544 button[type=submit]{width:100%;justify-content:flex-start;text-align:left}
