@@ -26,7 +26,7 @@ jobs:
           node --check remote-commands.js
           node --check remote-historical-archive-import-v541.js
           node --check food-v544.js
-          node --check shopping-v646.js
+          node --check shopping-v647.js
           node --check finance-data-v553.js
           node --check denkfabrik-v635.js
           node --check kistology-v603.js
@@ -49,12 +49,13 @@ jobs:
           grep -q 'app-hub-launcher-v603.css?v=' index.html
           grep -q 'denkfabrik-v634.css?v=634-readonly' index.html
           grep -q 'shopping-v643.css?v=' index.html
-          grep -q 'shopping-v646.js?v=' area-runtime-v609.js
+          grep -q 'shopping-v647.js?v=' area-runtime-v609.js
           grep -q "shopping:'Einkaufsliste'" area-runtime-v609.js
-          grep -q '__modShoppingV646' shopping-v646.js
-          grep -q 'shopping_receipt_reviews' shopping-v646.js
-          grep -q 'Einkauf abschließen' shopping-v646.js
-          grep -q 'BON GEGENPRÜFEN' shopping-v646.js
+          grep -q '__modShoppingV647' shopping-v647.js
+          grep -q 'shopping_receipt_reviews' shopping-v647.js
+          grep -q 'Einkauf abschließen' shopping-v647.js
+          grep -q 'BON GEGENPRÜFEN' shopping-v647.js
+          ! grep -Fq '\\n  <link rel="stylesheet" href="./shopping-v643.css' index.html
           grep -q 'shopping_excluded' food-v544.js
           grep -q 'surface-header-v603.js?v=603-header' index.html
           grep -q 'kistology-v603.css?v=603' index.html
