@@ -1,5 +1,6 @@
--- V646b · historische Hähnchen-Kürbisbrot-Mahlzeit unverändert bewahren
--- Das alte Rezept bleibt als inaktive Historie; ein neues Standardrezept ohne Kürbisbrot wird angelegt.
+-- V646b · historische Hähnchen-Kürbisbrot-Mahlzeit bewahren
+-- Das alte Rezept bleibt als inaktive Historie. Die erledigte Mahlzeit behält ihre damals gegessenen Meal-Zutaten.
+-- Ein neues aktives Standardrezept ohne Kürbisbrot wird daraus abgeleitet.
 
 update public.food_recipes
 set title='Hähnchen-Gemüse-Reispfanne mit Kürbisbrot',
@@ -15,20 +16,6 @@ set title='Hähnchen-Gemüse-Reispfanne mit Kürbisbrot',
     display_note='Historisches Rezept vom 25.09.2026. Nicht als Standardrezept verwenden; Kürbisbrot nur bei bewusstem Neu-Backen.',
     updated_at=now()
 where id='f4bbcc7e-43a9-4faf-8e07-45a0bb1047ec';
-
-insert into public.food_recipe_ingredients(
-  user_id,recipe_id,inventory_id,label,quantity,unit,sort_order,name
-)
-select
-  r.user_id,r.id,'b894261a-c83b-4d8a-b911-dbcfae8376aa'::uuid,
-  '1 Scheibe Hokkaido-Kürbisbrot · Scheibe 5: 63 g · ca. 131 kcal',
-  1,'Scheibe',8,'Hokkaido-Kürbisbrot'
-from public.food_recipes r
-where r.id='f4bbcc7e-43a9-4faf-8e07-45a0bb1047ec'
-  and not exists(
-    select 1 from public.food_recipe_ingredients ri
-    where ri.recipe_id=r.id and ri.inventory_id='b894261a-c83b-4d8a-b911-dbcfae8376aa'
-  );
 
 insert into public.food_recipes(
   user_id,title,meal_type,description,active,prep_minutes,difficulty,servings,
@@ -92,5 +79,4 @@ select
 from public.food_recipe_ingredients old
 join public.food_recipes new
   on new.user_id=old.user_id and new.title='Hähnchen-Gemüse-Reispfanne'
-where old.recipe_id='f4bbcc7e-43a9-4faf-8e07-45a0bb1047ec'
-  and coalesce(old.inventory_id::text,'')<>'b894261a-c83b-4d8a-b911-dbcfae8376aa';
+where old.recipe_id='f4bbcc7e-43a9-4faf-8e07-45a0bb1047ec';
