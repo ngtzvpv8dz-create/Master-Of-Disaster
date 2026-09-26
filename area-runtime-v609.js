@@ -87,7 +87,7 @@
 
   const HISTORY_GROUP=[
     './log-core-v603.js?v=609-current',
-    './history-safety-net-v498.js?v=641-backup-48h'
+    './history-safety-net-v498.js?v=642-disaster-recovery'
   ];
 
   const OPTIONAL_HISTORY_GROUP=[
@@ -103,10 +103,10 @@
       'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
       './cloud-backup-restore-v394.js?v=600-live-previous',
       './full-backup-v397.js?v=446-1228',
-      './backup-stability-v506.js?v=641-backup-48h',
-      './backup-model-v600.js?v=641-backup-48h',
+      './backup-stability-v506.js?v=642-disaster-recovery',
+      './backup-model-v600.js?v=642-disaster-recovery',
       './backup-source-fallback-v506.js?v=506-1244',
-      './backstage-backup-v533.js?v=641-backup-48h',
+      './backstage-backup-v533.js?v=642-disaster-recovery',
       './backstage-backup-v534.js?v=534-backup-consolidation'
     ],
     restore:[
@@ -114,10 +114,10 @@
       'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
       './cloud-backup-restore-v394.js?v=600-live-previous',
       './full-backup-v397.js?v=446-1228',
-      './backup-stability-v506.js?v=641-backup-48h',
-      './backup-model-v600.js?v=641-backup-48h',
+      './backup-stability-v506.js?v=642-disaster-recovery',
+      './backup-model-v600.js?v=642-disaster-recovery',
       './backup-source-fallback-v506.js?v=506-1244',
-      './backstage-backup-v533.js?v=641-backup-48h',
+      './backstage-backup-v533.js?v=642-disaster-recovery',
       './backstage-backup-v534.js?v=534-backup-consolidation'
     ]
   };
