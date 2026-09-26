@@ -387,3 +387,18 @@ html.mod-shopping-surface-v643,body.mod-shopping-v643{background:#111823!importa
   font-weight:920;
   line-height:1;
 }
+
+
+/* V650 · review state cleanup */
+#shoppingReviewV647 .shopping-review-item-v644.is-pending-data{
+  background:#1b2633;
+  border-color:rgba(143,178,201,.10);
+}
+#shoppingReviewV647 .shopping-review-item-v644.is-pending-data .shopping-review-copy-v644 span{
+  color:#9fb6c6;
+}
+#shoppingReviewV647 .shopping-review-item-v644.is-pending-data .shopping-review-actions-v644 button{
+  border-color:rgba(143,178,201,.16);
+  background:rgba(143,178,201,.055);
+  color:#bdd0dd;
+}
