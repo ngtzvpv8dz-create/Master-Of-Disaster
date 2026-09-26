@@ -280,7 +280,7 @@
     const cutoff=Date.now()-RETENTION_MS;
     let pointCount=0,logCount=0,firstPoint=true,firstLog=true;
     await writer.add('DATA/recovery-history-v498.json',async emit=>{
-      emit(`{"schema":"master-of-disaster-safety-net","version":1,"build":"V498","exportedAt":${JSON.stringify(nowIso())},"retentionDays":7,"points":[`);
+      emit(`{"schema":"master-of-disaster-safety-net","version":1,"build":"V498","exportedAt":${JSON.stringify(nowIso())},"retentionDays":2,"retentionHours":48,"points":[`);
       await scanSafetyStore(POINT_STORE,row=>{
         const t=new Date(row?.at).getTime();if(!Number.isFinite(t)||t<cutoff)return;
         if(!firstPoint)emit(',');firstPoint=false;emit(JSON.stringify(row));pointCount++;
@@ -294,7 +294,7 @@
       });
       emit(']}');
     });
-    await writer.add('DATA/live-log-48hs.json',async emit=>{
+    await writer.add('DATA/live-log-48h.json',async emit=>{
       let first=true;emit('[');
       await scanSafetyStore(LOG_STORE,row=>{
         const t=new Date(row?.at).getTime();if(!Number.isFinite(t)||t<cutoff)return;
@@ -321,8 +321,17 @@
     try{
       setButtonState(button,'⏳ BACKUP WIRD GEBAUT…',true);
       if(!navigator.onLine)throw new Error('Für das Vollbackup wird Internet benötigt.');
+      if(!('indexedDB' in window))throw new Error('IndexedDB ist auf diesem Gerät nicht verfügbar.');
+
+      const api=window.__modRecoveryHistoryV498;
+      if(!api?.captureSnapshot)throw new Error('Datensicherheitsmodul V498 ist noch nicht bereit.');
 
       const stamp=berlinParts(),writer=new StoreZipWriter();
+
+      markFullStage('GITHUB-CODEARCHIV');
+      setButtonState(button,'⏳ GITHUB-CODE WIRD GESICHERT…',true);
+      const source=await fetchSourceArchive();
+      await writer.addBlob('APP/source-main.zip',source.blob);
 
       markFullStage('AKTUELLER APP-DATENSTAND');
       setButtonState(button,'⏳ APP-DATEN WERDEN GESICHERT…',true);
@@ -334,31 +343,79 @@
       await writer.add('DATA/complete-data-backup.json',emit=>emit(JSON.stringify(complete)));
       await writer.add('DATA/localstorage-master-of-disaster.json',emit=>emit(JSON.stringify(local)));
 
-      markFullStage('SUPABASE-AKTUELLDATEN');
-      setButtonState(button,'⏳ AKTUELLE SUPABASE-DATEN…',true);
+      markFullStage('SUPABASE-DISASTER-EXPORT');
+      setButtonState(button,'⏳ SUPABASE WIRD GESICHERT…',true);
       const backupModel=window.__modBackupModelV600;
       if(!backupModel?.requestSupabaseExport)throw new Error('Das Supabase-Backupmodul V600 ist noch nicht bereit.');
+      try{await backupModel.syncSafetyNow?.({force:true});}catch(_){}
       const supabaseExport=await backupModel.requestSupabaseExport();
-      await writer.add('SUPABASE/current-data-export.json',emit=>emit(JSON.stringify(supabaseExport)));
+      await writer.add('SUPABASE/complete-current-data-and-catalog.json',emit=>emit(JSON.stringify(supabaseExport)));
+
+      markFullStage('48-STUNDEN-HISTORIE');
+      setButtonState(button,'⏳ 48-STUNDEN-HISTORIE WIRD GESICHERT…',true);
+      try{await api.mirrorLiveLogs?.(true);}catch(_){}
+      const counts=await addSafetyPackage(writer,text=>setButtonState(button,`⏳ ${text}`,true));
+
+      const recoveryContext={
+        format:'Master of Disaster Recovery Context',
+        version:1,
+        createdAt:nowIso(),
+        github:{
+          owner:'ngtzvpv8dz-create',
+          repository:'Master-Of-Disaster',
+          repositoryFullName:'ngtzvpv8dz-create/Master-Of-Disaster',
+          defaultBranch:'main',
+          commitSha:source.sha,
+          cloneUrl:'https://github.com/ngtzvpv8dz-create/Master-Of-Disaster.git'
+        },
+        supabase:{
+          projectRef:supabaseExport?.project_ref||'oktpzwhhndsbikkeelot',
+          projectUrl:supabaseExport?.project_url||null,
+          userReference:supabaseExport?.auth_user_reference||null
+        },
+        safetyNet:{
+          retentionHours:48,
+          localRecoveryPoints:counts.pointCount,
+          localLogEntries:counts.logCount,
+          supabaseAuditIncluded:true,
+          liveAndPreviousIncluded:true
+        },
+        security:{
+          credentialsIncluded:false,
+          note:'Keine Passwörter, 2FA-Codes, API-Schlüssel oder Zugriffstokens in diesem Backup.'
+        }
+      };
+      await writer.add('META/recovery-context.json',emit=>emit(JSON.stringify(recoveryContext,null,2)));
 
       markFullStage('ZIP-VERZEICHNIS');
       setButtonState(button,'⏳ ZIP WIRD ABGESCHLOSSEN…',true);
       await writer.add('BACKUP-INFO.txt',emit=>emit([
-        'MASTER OF DISASTER · SCHLANKES KATASTROPHEN-BACKUP',
-        '===================================================',
+        'MASTER OF DISASTER · DISASTER-RECOVERY-VOLLBACKUP',
+        '==================================================',
         `Build: ${currentBuild()} · Backup-Hotfix ${PATCH_VERSION}`,
         `Erstellt: ${stamp.dateLabel} ${stamp.clock} Europe/Berlin`,
-        'Enthalten: aktueller lokaler App-Datenstand + aktuelle wiederherstellungsrelevante Supabase-Nutzdaten.',
-        'Nicht enthalten: GitHub-Code, 48-Stunden-Audit/History, alte Backup-Schemas oder Logs.',
-        'Der Programmcode und die Datenbank-Migrationen bleiben in GitHub versioniert.',
+        `GitHub: ngtzvpv8dz-create/Master-Of-Disaster · main · Commit ${source.sha}`,
+        `Supabase-Projekt: ${supabaseExport?.project_ref||'oktpzwhhndsbikkeelot'}`,
         '',
+        'ENTHALTEN:',
+        'APP/source-main.zip = kompletter GitHub-Quellcode von main inklusive versionierter Supabase-Migrationen',
         'DATA/complete-data-backup.json = aktueller lokaler App-Datenstand',
         'DATA/localstorage-master-of-disaster.json = lokale Master-of-Disaster-Werte',
-        'SUPABASE/current-data-export.json = aktuelle wiederherstellungsrelevante Supabase-Nutzdaten'
+        'SUPABASE/complete-current-data-and-catalog.json = aktuelle Supabase-Nutzdaten, LIVE/PREVIOUS, 48h-Audit sowie Datenbankkatalog/Migrationen',
+        'DATA/recovery-history-v498.json = lokale Wiederherstellungspunkte der letzten 48 Stunden',
+        'DATA/live-log-48h.json = lokaler Log der letzten 48 Stunden',
+        'META/recovery-context.json = GitHub-/Supabase-Zuordnung für den Wiederaufbau',
+        '',
+        `Lokale Wiederherstellungspunkte: ${counts.pointCount}`,
+        `Lokale 48h-Logeinträge: ${counts.logCount}`,
+        '',
+        'NICHT ENTHALTEN: Passwörter, 2FA-Codes, API-Schlüssel oder Zugriffstokens.',
+        'Alte historische Backup-Schemas und abgelaufene Historie werden bewusst nicht mitgeschleppt.'
       ].join('\n')));
+
       const blob=writer.finish();
-      const filename=`Master-of-Disaster_${currentBuild()}_Vollbackup_${stamp.file}.zip`;
-      const summary='Aktuelle App-Daten + aktuelle Supabase-Nutzdaten wurden in die ZIP geschrieben. GitHub-Code und 48-Stunden-Historie bleiben bewusst außerhalb.';
+      const filename=`Master-of-Disaster_${currentBuild()}_Disaster-Recovery_${stamp.file}.zip`;
+      const summary=`GitHub-Code + lokaler App-Stand + Supabase-Datenbankdaten/-struktur + LIVE/PREVIOUS + 48-Stunden-Sicherheitsnetz wurden gesichert. ${counts.pointCount} lokale Wiederherstellungspunkte und ${counts.logCount} Logeinträge sind enthalten.`;
       clearFullStage();
       presentFullBackup(blob,filename,summary);
       setButtonState(button,'✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
