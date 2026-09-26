@@ -125,3 +125,38 @@ body.mod-shopping-v643>.food-modal-v544 .food-modal-card-v544 button[type=submit
   .shopping-section-tools-v645{gap:5px}
   .shopping-checkout-button-v645{padding:5px 6px;font-size:.47rem}
 }
+
+
+/* V646 · checkout + receipt review polish */
+.shopping-section-footer-v646{padding:9px;border-top:1px solid rgba(255,255,255,.05);background:linear-gradient(180deg,rgba(66,96,72,.045),rgba(20,24,20,.16))}
+.shopping-checkout-action-v646{display:grid;grid-template-columns:34px minmax(0,1fr) 18px;align-items:center;gap:10px;width:100%;padding:10px 11px;border:1px solid rgba(143,203,161,.24);border-radius:12px;background:linear-gradient(145deg,rgba(69,112,80,.20),rgba(45,75,54,.12));color:#dcebdd;text-align:left;font:inherit}
+.shopping-checkout-action-v646>span:nth-child(2){min-width:0}.shopping-checkout-action-v646 strong{display:block;color:#e7f1e8;font-size:.66rem;font-weight:900;letter-spacing:.025em}.shopping-checkout-action-v646 small{display:block;margin-top:2px;color:#91a994;font-size:.52rem;line-height:1.25}.shopping-checkout-action-v646>b{justify-self:end;color:#9fceb0;font-size:1.05rem}.shopping-checkout-check-v646{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:rgba(126,192,146,.13);color:#a5d6b3;font-size:.9rem;font-weight:950}
+.shopping-checkout-action-v646:active{transform:translateY(1px);background:rgba(69,112,80,.26)}
+
+.shopping-purchased-v646{margin-top:12px;overflow:hidden;border:1px solid rgba(140,201,160,.16);border-radius:18px;background:#181d18}
+.shopping-purchased-v646>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.045);background:linear-gradient(90deg,rgba(93,151,110,.10),rgba(93,151,110,.025))}
+.shopping-purchased-v646>header div{min-width:0}.shopping-purchased-v646>header span{display:block;color:#a8d6b5;font-size:.66rem;font-weight:920;letter-spacing:.08em}.shopping-purchased-v646>header small{display:block;margin-top:2px;color:#839487;font-size:.55rem;line-height:1.32}.shopping-purchased-v646>header>strong{display:grid;place-items:center;min-width:28px;height:24px;padding:0 6px;border-radius:8px;background:rgba(126,192,146,.10);color:#a4cfaf;font-size:.66rem}
+.shopping-purchased-list-v646{display:grid;gap:7px;padding:8px}
+.shopping-purchased-card-v646{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main status" "main action";gap:4px 10px;padding:10px 11px;border:1px solid rgba(255,255,255,.055);border-radius:13px;background:linear-gradient(145deg,#1d241d,#192019)}
+.shopping-purchased-main-v646{grid-area:main;min-width:0}.shopping-purchased-main-v646 small{display:block;color:#758378;font-size:.49rem;font-weight:760}.shopping-purchased-main-v646 strong{display:block;margin-top:2px;color:#e3ede4;font-size:.78rem}.shopping-purchased-main-v646 span{display:block;margin-top:3px;color:#acc8b3;font-size:.63rem;font-weight:850}
+.shopping-purchased-status-v646{grid-area:status;justify-self:end;text-align:right}.shopping-purchased-status-v646 b{display:block;color:#9ed0aa;font-size:.60rem}.shopping-purchased-status-v646 span{display:block;margin-top:1px;color:#748579;font-size:.48rem}
+.shopping-purchased-card-v646>button{grid-area:action;justify-self:end;align-self:end;appearance:none;border:0;padding:0;background:transparent;color:#c0d8c5;font:inherit;font-size:.53rem;font-weight:870}.shopping-purchased-card-v646>button b{margin-left:3px;font-size:.8rem}
+
+#shoppingReviewV646{border-color:rgba(230,184,106,.15);background:#1b1812}
+#shoppingReviewV646>header{background:linear-gradient(90deg,rgba(230,184,106,.075),rgba(230,184,106,.015))}
+#shoppingReviewV646>header span,#shoppingReviewV646>header>strong{color:#e3bd7c}
+#shoppingReviewV646>header>strong{background:rgba(230,184,106,.095)}
+#shoppingReviewV646 .shopping-review-list-v644{gap:6px;padding:7px;background:transparent}
+#shoppingReviewV646 .shopping-review-item-v644{padding:9px 10px;border:1px solid rgba(255,255,255,.055);border-radius:12px;background:#1e1a14}
+#shoppingReviewV646 .shopping-review-item-v644.is-pending-data{background:#211c14;border-color:rgba(230,184,106,.10)}
+#shoppingReviewV646 .shopping-review-copy-v644 strong{font-size:.70rem}
+#shoppingReviewV646 .shopping-review-copy-v644 span{font-size:.55rem}
+#shoppingReviewV646 .shopping-review-actions-v644{gap:4px;max-width:52%}
+#shoppingReviewV646 .shopping-review-actions-v644 button{border-color:rgba(230,184,106,.14);background:rgba(230,184,106,.045);color:#cbb48e;font-size:.48rem;padding:5px 6px}
+#shoppingReviewV646 .shopping-review-actions-v644 button:first-child{border-color:rgba(126,192,146,.20);background:rgba(126,192,146,.075);color:#9dccaa}
+
+@media(max-width:520px){
+  .shopping-purchased-card-v646{grid-template-columns:minmax(0,1fr);grid-template-areas:"main" "status" "action";gap:6px}
+  .shopping-purchased-status-v646,.shopping-purchased-card-v646>button{justify-self:start;text-align:left}
+  #shoppingReviewV646 .shopping-review-actions-v644{max-width:none;width:100%}
+}
