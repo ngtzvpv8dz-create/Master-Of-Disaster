@@ -20,7 +20,7 @@
   const SAFETY_DB_VERSION=1;
   const POINT_STORE='recoveryPoints';
   const LOG_STORE='logEntries';
-  const RETENTION_MS=7*24*60*60*1000;
+  const RETENTION_MS=48*60*60*1000;
   const CRASH_MARKER='modV5062FullBackupStage';
   const EXCLUDED_WEEKLY_KEYS=new Set([
     LIVE_LOG_KEY,
@@ -294,7 +294,7 @@
       });
       emit(']}');
     });
-    await writer.add('DATA/live-log-7-days.json',async emit=>{
+    await writer.add('DATA/live-log-48hs.json',async emit=>{
       let first=true;emit('[');
       await scanSafetyStore(LOG_STORE,row=>{
         const t=new Date(row?.at).getTime();if(!Number.isFinite(t)||t<cutoff)return;
@@ -320,16 +320,9 @@
     markFullStage('START');
     try{
       setButtonState(button,'⏳ BACKUP WIRD GEBAUT…',true);
-      if(!navigator.onLine)throw new Error('Für das Code-Vollbackup wird Internet benötigt.');
-      if(!('indexedDB' in window))throw new Error('IndexedDB ist auf diesem Gerät nicht verfügbar.');
-      const api=window.__modRecoveryHistoryV498;
-      if(!api?.captureSnapshot)throw new Error('Datensicherheitsmodul V498 ist noch nicht bereit.');
+      if(!navigator.onLine)throw new Error('Für das Vollbackup wird Internet benötigt.');
 
       const stamp=berlinParts(),writer=new StoreZipWriter();
-      markFullStage('GITHUB-CODEARCHIV');
-      setButtonState(button,'⏳ CODEARCHIV WIRD GELADEN…',true);
-      const source=await fetchSourceArchive();
-      await writer.addBlob('APP/source-main.zip',source.blob);
 
       markFullStage('AKTUELLER APP-DATENSTAND');
       setButtonState(button,'⏳ APP-DATEN WERDEN GESICHERT…',true);
@@ -341,41 +334,31 @@
       await writer.add('DATA/complete-data-backup.json',emit=>emit(JSON.stringify(complete)));
       await writer.add('DATA/localstorage-master-of-disaster.json',emit=>emit(JSON.stringify(local)));
 
-      markFullStage('SUPABASE-KOMPLETTEXPORT');
-      setButtonState(button,'⏳ SUPABASE WIRD GESICHERT…',true);
+      markFullStage('SUPABASE-AKTUELLDATEN');
+      setButtonState(button,'⏳ AKTUELLE SUPABASE-DATEN…',true);
       const backupModel=window.__modBackupModelV600;
-      if(!backupModel?.requestSupabaseExport)throw new Error('Das neue Supabase-Backupmodul V600 ist noch nicht bereit.');
-      try{await backupModel.syncSafetyNow?.({force:true});}catch(_){}
+      if(!backupModel?.requestSupabaseExport)throw new Error('Das Supabase-Backupmodul V600 ist noch nicht bereit.');
       const supabaseExport=await backupModel.requestSupabaseExport();
-      await writer.add('SUPABASE/complete-export.json',emit=>emit(JSON.stringify(supabaseExport)));
-
-      markFullStage('7-TAGE-HISTORIE / WIEDERHERSTELLUNGSPUNKTE');
-      setButtonState(button,'⏳ HISTORIE WIRD GESTREAMT…',true);
-      try{await api.mirrorLiveLogs?.(true);}catch(_){}
-      const counts=await addSafetyPackage(writer,text=>setButtonState(button,`⏳ ${text}`,true));
+      await writer.add('SUPABASE/current-data-export.json',emit=>emit(JSON.stringify(supabaseExport)));
 
       markFullStage('ZIP-VERZEICHNIS');
       setButtonState(button,'⏳ ZIP WIRD ABGESCHLOSSEN…',true);
       await writer.add('BACKUP-INFO.txt',emit=>emit([
-        'MASTER OF DISASTER · VOLLSTÄNDIGES KOMPLETT-BACKUP',
-        '====================================================',
+        'MASTER OF DISASTER · SCHLANKES KATASTROPHEN-BACKUP',
+        '===================================================',
         `Build: ${currentBuild()} · Backup-Hotfix ${PATCH_VERSION}`,
         `Erstellt: ${stamp.dateLabel} ${stamp.clock} Europe/Berlin`,
-        `Git-Stand: ${source.sha}`,
-        'APP/source-main.zip = kompletter aktueller GitHub-Quellcode von main',
-        'DATA/complete-data-backup.json = kompletter aktueller lokaler App-Datenstand',
-        'DATA/localstorage-master-of-disaster.json = lokale Master-of-Disaster-Werte',
-        'SUPABASE/complete-export.json = aktueller Supabase-Datenstand + LIVE/PREVIOUS + 7-Tage-Sicherheitsdaten + Schema/Migrationen/Storage',
-        'DATA/recovery-history-v498.json = lokale 7-Tage-Wiederherstellungspunkte + Log',
-        'DATA/live-log-7-days.json = 7-Tage-Log',
-        `Wiederherstellungspunkte: ${counts.pointCount}`,
-        `7-Tage-Logeinträge: ${counts.logCount}`,
+        'Enthalten: aktueller lokaler App-Datenstand + aktuelle wiederherstellungsrelevante Supabase-Nutzdaten.',
+        'Nicht enthalten: GitHub-Code, 48-Stunden-Audit/History, alte Backup-Schemas oder Logs.',
+        'Der Programmcode und die Datenbank-Migrationen bleiben in GitHub versioniert.',
         '',
-        'V506.2-Hinweis: Das äußere ZIP wird absichtlich ohne erneute Kompression gestreamt, damit iOS nicht mehrere vollständige Kopien der History gleichzeitig im RAM halten muss.'
+        'DATA/complete-data-backup.json = aktueller lokaler App-Datenstand',
+        'DATA/localstorage-master-of-disaster.json = lokale Master-of-Disaster-Werte',
+        'SUPABASE/current-data-export.json = aktuelle wiederherstellungsrelevante Supabase-Nutzdaten'
       ].join('\n')));
       const blob=writer.finish();
       const filename=`Master-of-Disaster_${currentBuild()}_Vollbackup_${stamp.file}.zip`;
-      const summary=`Code + lokale App-Daten + Supabase-Komplettexport + ${counts.pointCount} Wiederherstellungspunkte + ${counts.logCount} Logeinträge wurden in eine ZIP geschrieben.`;
+      const summary='Aktuelle App-Daten + aktuelle Supabase-Nutzdaten wurden in die ZIP geschrieben. GitHub-Code und 48-Stunden-Historie bleiben bewusst außerhalb.';
       clearFullStage();
       presentFullBackup(blob,filename,summary);
       setButtonState(button,'✅ VOLLSTÄNDIGES KOMPLETT-BACKUP',false);
@@ -404,7 +387,7 @@
         savedAt:nowIso(),
         complete,
         localStorage:localStoragePayload,
-        history:{mode:'local-only',module:'V498',retentionDays:7,reason:'Cloud-Wochenstand enthält bewusst keine duplizierten Voll-Snapshots.'}
+        history:{mode:'local-only',module:'V498',retentionDays:2,retentionHours:48,reason:'Cloud-Wochenstand enthält bewusst keine duplizierten Voll-Snapshots.'}
       };
       const key=weeklyKey();
       setButtonState(button,'⏳ CLOUD-UPLOAD…',true);
@@ -417,7 +400,7 @@
       if(old.length){const del=await client.from('legacy_metadata').delete().eq('user_id',userId).in('id',old);if(del.error)throw del.error;}
       window.__modLiveLogV453?.append?.('SYSTEM','PASS','Wochen-Cloudbackup erstellt · kompakter App-Stand · Historie bleibt lokal in V498');
       setButtonState(button,'✅ WOCHEN-CLOUDBACKUP ERSTELLT',false);
-      modal('Wochen-Cloudbackup erstellt ✅',`<div style="line-height:1.55">Der wiederherstellbare App-Stand wurde in der Cloud gespeichert.<br><br><span style="opacity:.72">Die 7-Tage-Zeitmaschine bleibt lokal im V498-Sicherheitsmodul und wird nicht mehr als riesiger Stapel vollständiger Snapshots in eine einzelne Cloud-Zeile kopiert.</span></div>`);
+      modal('Wochen-Cloudbackup erstellt ✅',`<div style="line-height:1.55">Der wiederherstellbare App-Stand wurde in der Cloud gespeichert.<br><br><span style="opacity:.72">Die 48-Stunden-Zeitmaschine bleibt lokal im V498-Sicherheitsmodul und wird nicht mehr als riesiger Stapel vollständiger Snapshots in eine einzelne Cloud-Zeile kopiert.</span></div>`);
     }catch(error){
       setButtonState(button,'☁️ WOCHEN-CLOUDBACKUP ERSTELLEN',false);
       showError('Cloudbackup fehlgeschlagen',error);
