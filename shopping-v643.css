@@ -402,3 +402,22 @@ html.mod-shopping-surface-v643,body.mod-shopping-v643{background:#111823!importa
   background:rgba(143,178,201,.055);
   color:#bdd0dd;
 }
+
+
+/* V651 · robust product picker */
+.shopping-product-options-v644 button.is-suggested-v651{
+  border-color:rgba(159,184,159,.28);
+  background:linear-gradient(145deg,rgba(159,184,159,.10),rgba(143,178,201,.055));
+}
+.shopping-product-options-v644 button.is-suggested-v651 span{
+  color:#abc4ad;
+}
+.shopping-product-options-v644 button:disabled{
+  opacity:.58;
+  cursor:default;
+}
+.shopping-product-options-v644 button.is-saving-v651{
+  opacity:1;
+  border-color:rgba(143,178,201,.30);
+  background:rgba(143,178,201,.11);
+}
