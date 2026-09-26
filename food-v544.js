@@ -1811,7 +1811,45 @@
     open();
   },true);
 
-  const api={version:VERSION,open,close,render,reload(){loadPromise=null;return render();},fallbackData:fallback,planningDoesNotConsume:true,receiptExcluded:true,getDataSources(){return {...sourceState};},getCloudIssues(){return [...cloudIssues];}};
+  async function getShoppingSnapshot({refresh=false}={}){
+    if(refresh)loadPromise=null;
+    const data=await load();
+    state=data;
+    const gaps=deriveShopping(data);
+    const manualFood=(data.shopping||[]).filter(item=>!item.checked);
+    const cartKeys=(data.cart||[]).map(item=>String(item.shopping_key||'')).filter(Boolean);
+    return {
+      gaps:gaps.map(item=>({...item,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
+      manualFood:manualFood.map(item=>({...item})),
+      cartKeys:[...cartKeys],
+      inventory:(data.inventory||[]).map(item=>({...item}))
+    };
+  }
+
+  function openShoppingStockModal(details={}){
+    const dataset={
+      foodStockName:String(details.stockName||details.name||''),
+      foodStockQuantity:String(details.stockQuantity??details.quantity??''),
+      foodStockUnit:String(details.stockUnit||details.unit||''),
+      foodStockId:String(details.stockId||details.inventoryId||''),
+      shoppingId:String(details.shoppingId||''),
+      shoppingRequired:String(details.shoppingRequired??''),
+      foodCartKey:String(details.cartKey||'')
+    };
+    return stockGapModal({dataset});
+  }
+
+  const api={
+    version:VERSION,open,close,render,
+    reload(){loadPromise=null;return render();},
+    fallbackData:fallback,planningDoesNotConsume:true,receiptExcluded:true,
+    getDataSources(){return {...sourceState};},
+    getCloudIssues(){return [...cloudIssues];},
+    getShoppingSnapshot,
+    toggleShoppingCart,
+    openShoppingStockModal,
+    checkShopping
+  };
   window.__modFoodV544=api;
   window.__modFoodV543=api;
   const observer=new MutationObserver(patchHub);
