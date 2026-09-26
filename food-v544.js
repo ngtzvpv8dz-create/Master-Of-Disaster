@@ -6,11 +6,11 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V639';
+  const VERSION='V643';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
-  const TABS=['today','plan','history','inventory','shopping','recipes'];
+  const TABS=['today','plan','history','inventory','recipes'];
   const LABELS={today:'Heute',plan:'Plan',history:'History',inventory:'Vorrat',shopping:'Einkauf',recipes:'Rezepte'};
   const MEAL_LABELS={breakfast:'Frühstück',snack:'Snack',lunch:'Mittag',dinner:'Abendessen'};
   const RECIPE_GROUP_LABELS={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack',allrounder:'Allrounder'};
