@@ -4,7 +4,7 @@ const path = require('node:path');
 const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES ? process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES + '/playwright' : 'playwright');
 const root = path.resolve(__dirname, '..');
 const foodSource = fs.readFileSync(path.join(root,'food-v544.js'),'utf8');
-assert(foodSource.includes("const VERSION='V639'"));
+assert(foodSource.includes("const VERSION='V653'"));
 assert(foodSource.includes('saveInventoryStorage'));
 assert(foodSource.includes('food-cloud-warning-v548'));
 assert(foodSource.includes('getDataSources'));
@@ -17,6 +17,7 @@ assert(foodSource.includes("freshShoppingLeadDays"));
 assert(foodSource.includes("food_shopping_cart_state"));
 assert(foodSource.includes("shoppingCartButton"));
 assert(foodSource.includes("toggleShoppingCart"));
+assert(foodSource.includes("calories_kcal_per_serving_override"));
 (async()=>{
   const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
   try {
