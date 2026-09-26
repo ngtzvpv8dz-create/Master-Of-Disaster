@@ -406,24 +406,25 @@
     await updateGeneral(row.general.id,{status:row.section==='later'?'now':'later'});
   }
 
-  function refreshAfterFoodModal(){
-    const host=document.getElementById('modalContainer');
-    if(!host){setTimeout(()=>reload(),800);return;}
+  function refreshAfterFoodModal(modal){
+    if(!modal){setTimeout(()=>reload(),900);return;}
     const started=Date.now();
-    const observer=new MutationObserver(()=>{
-      if(Date.now()-started>120000){observer.disconnect();return;}
-      if(!host.children.length){observer.disconnect();setTimeout(()=>reload(),220);}
-    });
-    observer.observe(host,{childList:true,subtree:false});
-    setTimeout(()=>{if(Date.now()-started>120000)observer.disconnect();},120500);
+    const timer=setInterval(()=>{
+      if(!modal.isConnected){
+        clearInterval(timer);
+        setTimeout(()=>reload(),220);
+        return;
+      }
+      if(Date.now()-started>120000)clearInterval(timer);
+    },250);
   }
 
   async function completeFood(row){
     const api=window.__modFoodV544;
     if(row.foodAction){
       if(!api?.openShoppingStockModal)throw new Error('Food-Vorratsübernahme ist nicht verfügbar.');
-      api.openShoppingStockModal(row.foodAction);
-      refreshAfterFoodModal();
+      const modal=api.openShoppingStockModal(row.foodAction);
+      refreshAfterFoodModal(modal);
       return;
     }
     if(row.shoppingId&&api?.checkShopping){
