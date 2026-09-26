@@ -380,7 +380,11 @@
   }
 
   function reviewMarkup(){
-    const reviews=state.reviews||[];
+    const reviews=[...(state.reviews||[])].sort((a,b)=>{
+      const ac=reviewCandidate(a)?0:(a.status==='new_product_pending'?2:1);
+      const bc=reviewCandidate(b)?0:(b.status==='new_product_pending'?2:1);
+      return ac-bc||String(a.receipt_label||'').localeCompare(String(b.receipt_label||''),'de');
+    });
     if(!reviews.length){
       return '<section id="shoppingReviewV647" class="shopping-review-v644 is-empty"><header><div><span>EINKAUF GEGENPRÜFEN</span><small>Bonpositionen mit Produktbezug</small></div><strong>0</strong></header><div class="shopping-review-empty-v644">Nichts offen. Der Produktdetektiv hat Pause.</div></section>';
     }
