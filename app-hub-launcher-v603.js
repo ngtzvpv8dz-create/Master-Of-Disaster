@@ -39,6 +39,14 @@
   function isReady(){return runtime()?.ready===true;}
 
   function iconMarkup(item){
+    if(item.id==='shopping'){
+      return '<svg class="mod-hub-app-shopping-svg-v645" viewBox="0 0 96 96" aria-hidden="true">'
+        +'<path class="shop-handle" d="M28 34 39 19h18l11 15"/>'
+        +'<path class="shop-basket" d="M20 36h56l-5 37H25z"/>'
+        +'<path class="shop-line" d="M33 45v19M48 45v19M63 45v19"/>'
+        +'<circle class="shop-dot" cx="34" cy="80" r="3"/><circle class="shop-dot" cx="62" cy="80" r="3"/>'
+        +'</svg>';
+    }
     return '<img class="mod-hub-app-icon-v517" src="'+SOURCES[item.id]+'" alt="" draggable="false" decoding="async" width="192" height="192">';
   }
   function labelMarkup(item){return '<span class="mod-hub-app-label-v517">'+item.label+'</span>';}
