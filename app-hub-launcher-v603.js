@@ -40,11 +40,25 @@
 
   function iconMarkup(item){
     if(item.id==='shopping'){
-      return '<svg class="mod-hub-app-shopping-svg-v645" viewBox="0 0 96 96" aria-hidden="true">'
-        +'<path class="shop-handle" d="M28 34 39 19h18l11 15"/>'
-        +'<path class="shop-basket" d="M20 36h56l-5 37H25z"/>'
-        +'<path class="shop-line" d="M33 45v19M48 45v19M63 45v19"/>'
-        +'<circle class="shop-dot" cx="34" cy="80" r="3"/><circle class="shop-dot" cx="62" cy="80" r="3"/>'
+      return '<svg class="mod-hub-app-shopping-art-v646" viewBox="0 0 192 192" aria-hidden="true">'
+        +'<defs>'
+          +'<linearGradient id="shopBg646" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b371d"/><stop offset=".52" stop-color="#3d2818"/><stop offset="1" stop-color="#251c15"/></linearGradient>'
+          +'<linearGradient id="shopBasket646" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1c477"/><stop offset="1" stop-color="#c98940"/></linearGradient>'
+          +'<linearGradient id="shopPaper646" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4da"/><stop offset="1" stop-color="#e7d5ad"/></linearGradient>'
+          +'<linearGradient id="shopLeaf646" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9cbd6a"/><stop offset="1" stop-color="#557a45"/></linearGradient>'
+        +'</defs>'
+        +'<rect x="7" y="7" width="178" height="178" rx="39" fill="url(#shopBg646)" stroke="#d79a52" stroke-width="3"/>'
+        +'<path d="M118 35h39a9 9 0 0 1 9 9v56a9 9 0 0 1-9 9h-39a9 9 0 0 1-9-9V44a9 9 0 0 1 9-9Z" fill="url(#shopPaper646)" opacity=".98"/>'
+        +'<path d="M120 52h12M139 52h15M120 68h12M139 68h15M120 84h12M139 84h15" fill="none" stroke="#8a6841" stroke-width="4" stroke-linecap="round"/>'
+        +'<path d="m120 51 4 4 7-8M120 67l4 4 7-8M120 83l4 4 7-8" fill="none" stroke="#6c8c4f" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>'
+        +'<path d="M64 55c3-15 14-26 28-29 4 16-2 29-18 37" fill="url(#shopLeaf646)"/>'
+        +'<path d="M80 59c8-17 21-24 36-21-1 15-11 26-28 31" fill="#72944f"/>'
+        +'<path d="M45 68c0-13 7-23 18-29 8 12 7 25-4 37" fill="#89ad59"/>'
+        +'<path d="M42 74 31 56c-3-5 1-11 7-11h8l14 26" fill="#e2a454"/>'
+        +'<path d="M30 73h102l-9 65H42Z" fill="url(#shopBasket646)" stroke="#6d4627" stroke-width="4" stroke-linejoin="round"/>'
+        +'<path d="M24 73h115M52 86l5 39M78 86l2 39M104 86l-2 39" fill="none" stroke="#7b5030" stroke-width="4" stroke-linecap="round"/>'
+        +'<path d="M33 72 23 49H13" fill="none" stroke="#efc67f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
+        +'<circle cx="56" cy="151" r="9" fill="#2d241d" stroke="#d5a35e" stroke-width="4"/><circle cx="112" cy="151" r="9" fill="#2d241d" stroke="#d5a35e" stroke-width="4"/>'
         +'</svg>';
     }
     return '<img class="mod-hub-app-icon-v517" src="'+SOURCES[item.id]+'" alt="" draggable="false" decoding="async" width="192" height="192">';
