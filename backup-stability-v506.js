@@ -280,7 +280,7 @@
     const cutoff=Date.now()-RETENTION_MS;
     let pointCount=0,logCount=0,firstPoint=true,firstLog=true;
     await writer.add('DATA/recovery-history-v498.json',async emit=>{
-      emit(`{"schema":"master-of-disaster-safety-net","version":1,"build":"V498","exportedAt":${JSON.stringify(nowIso())},"retentionDays":7,"points":[`);
+      emit(`{"schema":"master-of-disaster-safety-net","version":1,"build":"V498","exportedAt":${JSON.stringify(nowIso())},"retentionDays":2,"retentionHours":48,"points":[`);
       await scanSafetyStore(POINT_STORE,row=>{
         const t=new Date(row?.at).getTime();if(!Number.isFinite(t)||t<cutoff)return;
         if(!firstPoint)emit(',');firstPoint=false;emit(JSON.stringify(row));pointCount++;
