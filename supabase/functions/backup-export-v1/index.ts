@@ -151,13 +151,27 @@ Deno.serve(async (req: Request) => {
       where schemaname = any(${schemas})
       order by schemaname,viewname
     `;
+    const functions = await sql`
+      select n.nspname as schema_name,p.proname as function_name,
+             pg_get_function_identity_arguments(p.oid) as identity_args,
+             pg_get_functiondef(p.oid) as definition
+      from pg_proc p
+      join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname in ('public','mega_sortierung','backup_internal')
+      order by n.nspname,p.proname,pg_get_function_identity_arguments(p.oid)
+    `;
+    const extensions = await sql`
+      select extname,extversion
+      from pg_extension
+      order by extname
+    `;
     const migrations = await sql`
       select version,name,statements
       from supabase_migrations.schema_migrations
       order by version
     `;
 
-    return new Response(JSON.stringify({
+    return new Response(jsonStringifySafe({
       format: "Master of Disaster Current Data Backup",
       schema_version: 2,
       created_at: new Date().toISOString(),
@@ -174,6 +188,8 @@ Deno.serve(async (req: Request) => {
         policies,
         triggers,
         views,
+        functions,
+        extensions,
         migrations
       },
       recovery_notes: {
