@@ -36,6 +36,8 @@ const TABLES = [
   ["public", "progress_daily"],
   ["public", "project_brain"],
   ["public", "shopping_items"],
+  ["public", "shopping_checkouts"],
+  ["public", "shopping_checkout_items"],
   ["public", "shopping_products"],
   ["public", "shopping_receipt_aliases"],
   ["public", "shopping_receipt_reviews"],
