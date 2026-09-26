@@ -1836,7 +1836,10 @@
       shoppingRequired:String(details.shoppingRequired??''),
       foodCartKey:String(details.cartKey||'')
     };
-    return stockGapModal({dataset});
+    stockGapModal({dataset});
+    const modal=document.querySelector('#'+ROOT_ID+' .food-modal-v544');
+    if(modal&&document.body.classList.contains('mod-shopping-v643'))document.body.appendChild(modal);
+    return modal||null;
   }
 
   const api={
