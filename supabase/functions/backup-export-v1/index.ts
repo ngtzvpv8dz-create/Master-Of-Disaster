@@ -35,6 +35,7 @@ const TABLES = [
   ["public", "food_shopping_items"],
   ["public", "progress_daily"],
   ["public", "project_brain"],
+  ["public", "shopping_items"],
   ["public", "legacy_metadata"],
   ["public", "sport_activities"],
   ["public", "sport_activity_participants"],
