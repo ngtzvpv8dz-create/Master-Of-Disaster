@@ -63,18 +63,17 @@ function defaultPublishableKey() {
   return Deno.env.get("SUPABASE_ANON_KEY") || "";
 }
 
-async function readAllRows(client: any, schema: string, table: string, userId: string) {
-  const rows: unknown[] = [];
-  const pageSize = 1000;
-  for (let from = 0; ; from += pageSize) {
-    const query = client.schema(schema).from(table).select("*").eq("user_id", userId).range(from, from + pageSize - 1);
-    const { data, error } = await query;
-    if (error) throw new Error(schema + "." + table + ": " + error.message);
-    const part = Array.isArray(data) ? data : [];
-    rows.push(...part);
-    if (part.length < pageSize) break;
-  }
-  return rows;
+function quoteIdent(value: string) {
+  return '"' + String(value).replaceAll('"', '""') + '"';
+}
+
+async function readAllRows(sql: any, schema: string, table: string, userId: string) {
+  const fullName = quoteIdent(schema) + "." + quoteIdent(table);
+  return await sql.unsafe("select * from " + fullName + " where user_id=$1", [userId]);
+}
+
+function jsonStringifySafe(value: unknown) {
+  return JSON.stringify(value, (_key, item) => typeof item === "bigint" ? item.toString() : item);
 }
 
 Deno.serve(async (req: Request) => {
@@ -89,7 +88,7 @@ Deno.serve(async (req: Request) => {
   const dbUrl = Deno.env.get("SUPABASE_DB_URL") || "";
   const publishableKey = defaultPublishableKey();
   if (!supabaseUrl || !dbUrl || !publishableKey) {
-    return new Response(JSON.stringify({ error: "Server configuration missing" }), { status: 500, headers: corsHeaders });
+    return new Response(jsonStringifySafe({ error: "Server configuration missing" }), { status: 500, headers: corsHeaders });
   }
 
   const client = createClient(supabaseUrl, publishableKey, {
@@ -105,7 +104,7 @@ Deno.serve(async (req: Request) => {
   try {
     const currentData: Record<string, unknown[]> = {};
     for (const [schema, table] of TABLES) {
-      currentData[schema + "." + table] = await readAllRows(client, schema, table, user.id);
+      currentData[schema + "." + table] = await readAllRows(sql, schema, table, user.id);
     }
 
     const schemas = ["public", "mega_sortierung"];
