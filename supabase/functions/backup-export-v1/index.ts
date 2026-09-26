@@ -1,6 +1,5 @@
 import "jsr:@supabase/functions-js@2/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
-import postgres from "npm:postgres@3.4.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,23 +9,43 @@ const corsHeaders = {
   "Cache-Control": "no-store"
 };
 
-const SCHEMAS = ["public", "mega_sortierung"];
-const EXCLUDED_TABLES = new Set([
-  "backup_db_changes",
-  "backup_log_entries",
-  "backup_recovery_points",
-  "legacy_metadata",
-  "remote_commands",
-  "health_sync_keys"
-]);
-
-function quoteIdent(value: string) {
-  return '"' + String(value).replaceAll('"', '""') + '"';
-}
-
-function jsonSafe(value: unknown) {
-  return JSON.parse(JSON.stringify(value, (_key, item) => typeof item === "bigint" ? item.toString() : item));
-}
+const TABLES = [
+  ["mega_sortierung", "containers"],
+  ["mega_sortierung", "items"],
+  ["public", "app_state"],
+  ["public", "archive_active_segments"],
+  ["public", "archive_entries"],
+  ["public", "finance_items"],
+  ["public", "finance_transactions"],
+  ["public", "food_ingredient_preference_aliases"],
+  ["public", "food_ingredient_preferences"],
+  ["public", "food_inventory"],
+  ["public", "food_inventory_aliases"],
+  ["public", "food_inventory_movements"],
+  ["public", "food_leftovers"],
+  ["public", "food_meal_ingredients"],
+  ["public", "food_meals"],
+  ["public", "food_recipe_ingredients"],
+  ["public", "food_recipes"],
+  ["public", "food_shopping_cart_state"],
+  ["public", "food_shopping_items"],
+  ["public", "progress_daily"],
+  ["public", "project_brain"],
+  ["public", "sport_activities"],
+  ["public", "sport_activity_participants"],
+  ["public", "sport_course_catalog"],
+  ["public", "sport_course_plans"],
+  ["public", "sport_equipment_catalog"],
+  ["public", "sport_exercise_catalog"],
+  ["public", "sport_exercise_sets"],
+  ["public", "sport_session_exercises"],
+  ["public", "sport_session_participants"],
+  ["public", "sport_sessions"],
+  ["public", "task_active_segments"],
+  ["public", "task_cooking_segments"],
+  ["public", "tasks"],
+  ["public", "weight_phases"]
+] as const;
 
 function defaultPublishableKey() {
   const raw = Deno.env.get("SUPABASE_PUBLISHABLE_KEYS");
@@ -39,6 +58,20 @@ function defaultPublishableKey() {
   return Deno.env.get("SUPABASE_ANON_KEY") || "";
 }
 
+async function readAllRows(client: any, schema: string, table: string, userId: string) {
+  const rows: unknown[] = [];
+  const pageSize = 1000;
+  for (let from = 0; ; from += pageSize) {
+    const query = client.schema(schema).from(table).select("*").eq("user_id", userId).range(from, from + pageSize - 1);
+    const { data, error } = await query;
+    if (error) throw new Error(schema + "." + table + ": " + error.message);
+    const part = Array.isArray(data) ? data : [];
+    rows.push(...part);
+    if (part.length < pageSize) break;
+  }
+  return rows;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return new Response(JSON.stringify({ error: "POST required" }), { status: 405, headers: corsHeaders });
@@ -48,64 +81,43 @@ Deno.serve(async (req: Request) => {
   if (!token) return new Response(JSON.stringify({ error: "Missing user token" }), { status: 401, headers: corsHeaders });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-  const dbUrl = Deno.env.get("SUPABASE_DB_URL") || "";
   const publishableKey = defaultPublishableKey();
-  if (!supabaseUrl || !dbUrl || !publishableKey) {
+  if (!supabaseUrl || !publishableKey) {
     return new Response(JSON.stringify({ error: "Server configuration missing" }), { status: 500, headers: corsHeaders });
   }
 
-  const userClient = createClient(supabaseUrl, publishableKey, {
+  const client = createClient(supabaseUrl, publishableKey, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: authHeader } }
   });
 
-  const { data: userData, error: userError } = await userClient.auth.getUser(token);
+  const { data: userData, error: userError } = await client.auth.getUser(token);
   const user = userData?.user;
   if (userError || !user?.id) return new Response(JSON.stringify({ error: "Invalid user session" }), { status: 401, headers: corsHeaders });
 
-  const sql = postgres(dbUrl, { prepare: false, max: 1, idle_timeout: 2 });
   try {
-    const schemaList = SCHEMAS.map(s => "'" + s.replaceAll("'", "''") + "'").join(",");
-    const tableMeta = await sql.unsafe(
-      "select t.schemaname as schema_name, t.tablename as table_name, " +
-      "exists (select 1 from information_schema.columns c where c.table_schema=t.schemaname and c.table_name=t.tablename and c.column_name='user_id') as has_user_id " +
-      "from pg_tables t where t.schemaname in (" + schemaList + ") order by t.schemaname,t.tablename"
-    );
-
-    const data: Record<string, unknown[]> = {};
-    const exportedTables: string[] = [];
-    for (const item of tableMeta) {
-      const schemaName = String(item.schema_name);
-      const tableName = String(item.table_name);
-      if (!item.has_user_id || EXCLUDED_TABLES.has(tableName) || tableName.startsWith("backup_")) continue;
-      const fullName = quoteIdent(schemaName) + "." + quoteIdent(tableName);
-      const rows = await sql.unsafe("select * from " + fullName + " where user_id=$1", [user.id]);
-      const key = schemaName + "." + tableName;
-      data[key] = jsonSafe(rows);
-      exportedTables.push(key);
+    const currentData: Record<string, unknown[]> = {};
+    for (const [schema, table] of TABLES) {
+      currentData[schema + "." + table] = await readAllRows(client, schema, table, user.id);
     }
 
-    const body = {
+    return new Response(JSON.stringify({
       format: "Master of Disaster Current Data Backup",
       schema_version: 2,
       created_at: new Date().toISOString(),
       project_ref: "oktpzwhhndsbikkeelot",
       user_id: user.id,
-      current_data: data,
-      exported_tables: exportedTables,
+      current_data: currentData,
+      exported_tables: TABLES.map(([schema, table]) => schema + "." + table),
       intentionally_excluded: {
         short_term_safety_net: ["public.backup_db_changes", "public.backup_log_entries", "public.backup_recovery_points"],
         transient_or_recreatable: ["public.legacy_metadata", "public.remote_commands", "public.health_sync_keys"],
         code_and_schema: "GitHub repository + versioned Supabase migrations",
         historical_backup_schemas: "not exported"
       }
-    };
-
-    return new Response(JSON.stringify(body), { status: 200, headers: corsHeaders });
+    }), { status: 200, headers: corsHeaders });
   } catch (error) {
     console.error("backup-export-v1", error);
     return new Response(JSON.stringify({ error: String(error?.message || error) }), { status: 500, headers: corsHeaders });
-  } finally {
-    await sql.end({ timeout: 1 }).catch(() => {});
   }
 });
