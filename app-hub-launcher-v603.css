@@ -136,6 +136,12 @@ body.mod-app-hub-v515 #modAppHubV515{
   user-select:none;
   -webkit-user-drag:none;
 }
+.mod-hub-app-button-shopping-v517 .mod-hub-app-icon-v517{
+  object-fit:contain;
+  transform:scale(.88);
+  border-radius:15px;
+}
+
 .mod-hub-app-label-v517{
   display:block;
   min-height:16px;
