@@ -6,11 +6,11 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V639';
+  const VERSION='V643';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
-  const TABS=['today','plan','history','inventory','shopping','recipes'];
+  const TABS=['today','plan','history','inventory','recipes'];
   const LABELS={today:'Heute',plan:'Plan',history:'History',inventory:'Vorrat',shopping:'Einkauf',recipes:'Rezepte'};
   const MEAL_LABELS={breakfast:'Frühstück',snack:'Snack',lunch:'Mittag',dinner:'Abendessen'};
   const RECIPE_GROUP_LABELS={breakfast:'Frühstück',lunch:'Mittagessen',dinner:'Abendessen',snack:'Snack',allrounder:'Allrounder'};
@@ -1811,7 +1811,48 @@
     open();
   },true);
 
-  const api={version:VERSION,open,close,render,reload(){loadPromise=null;return render();},fallbackData:fallback,planningDoesNotConsume:true,receiptExcluded:true,getDataSources(){return {...sourceState};},getCloudIssues(){return [...cloudIssues];}};
+  async function getShoppingSnapshot({refresh=false}={}){
+    if(refresh)loadPromise=null;
+    const data=await load();
+    state=data;
+    const gaps=deriveShopping(data);
+    const manualFood=(data.shopping||[]).filter(item=>!item.checked);
+    const cartKeys=(data.cart||[]).map(item=>String(item.shopping_key||'')).filter(Boolean);
+    return {
+      gaps:gaps.map(item=>({...item,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
+      manualFood:manualFood.map(item=>({...item})),
+      cartKeys:[...cartKeys],
+      inventory:(data.inventory||[]).map(item=>({...item}))
+    };
+  }
+
+  function openShoppingStockModal(details={}){
+    const dataset={
+      foodStockName:String(details.stockName||details.name||''),
+      foodStockQuantity:String(details.stockQuantity??details.quantity??''),
+      foodStockUnit:String(details.stockUnit||details.unit||''),
+      foodStockId:String(details.stockId||details.inventoryId||''),
+      shoppingId:String(details.shoppingId||''),
+      shoppingRequired:String(details.shoppingRequired??''),
+      foodCartKey:String(details.cartKey||'')
+    };
+    stockGapModal({dataset});
+    const modal=document.querySelector('#'+ROOT_ID+' .food-modal-v544');
+    if(modal&&document.body.classList.contains('mod-shopping-v643'))document.body.appendChild(modal);
+    return modal||null;
+  }
+
+  const api={
+    version:VERSION,open,close,render,
+    reload(){loadPromise=null;return render();},
+    fallbackData:fallback,planningDoesNotConsume:true,receiptExcluded:true,
+    getDataSources(){return {...sourceState};},
+    getCloudIssues(){return [...cloudIssues];},
+    getShoppingSnapshot,
+    toggleShoppingCart,
+    openShoppingStockModal,
+    checkShopping
+  };
   window.__modFoodV544=api;
   window.__modFoodV543=api;
   const observer=new MutationObserver(patchHub);

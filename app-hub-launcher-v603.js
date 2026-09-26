@@ -13,7 +13,7 @@
     sport:'./assets/icons/sport-v524-192.png?v=603',
     kistology:'./assets/icons/kistology-v524-192.png?v=603',
     food:'./assets/icons/food-v524-192.png?v=603',
-    shopping:'./assets/icons/shopping-v584-192.png?v=603',
+    shopping:'./assets/icons/shopping-v584-192.png?v=643',
     finance:'./assets/icons/finance-v584-192.png?v=603',
     progress:'./assets/icons/progress-v540-192.png?v=603',
     backstage:'./assets/icons/backstage-v524-192.png?v=603',
@@ -24,7 +24,7 @@
     {id:'sport',label:'SPORT',active:true},
     {id:'kistology',label:'KISTOLOGY',active:true},
     {id:'food',label:'FOOD',active:true},
-    {id:'shopping',label:'EINKAUFSLISTE',active:false},
+    {id:'shopping',label:'EINKAUFSLISTE',active:true},
     {id:'finance',label:'FINANZEN',active:true},
     {id:'progress',label:'PROGRESS',active:false},
     {id:'backstage',label:'BACKSTAGE',active:true},
@@ -115,7 +115,7 @@
 
   const api={
     version:VERSION,render,sources:{...SOURCES},modules:MODULES.map(item=>({...item})),
-    updateProgress,homescreenStyle:true,nineTileGrid:true,denkfabrikTileV634:true,realBootstrapProgress:true,legacyLoadersRemoved:true
+    updateProgress,homescreenStyle:true,nineTileGrid:true,denkfabrikTileV634:true,shoppingActiveV643:true,realBootstrapProgress:true,legacyLoadersRemoved:true
   };
   window.__modHubLauncherV603=api;
   /* Namespace aliases keep existing feature modules/tests pointed at the one current launcher. */

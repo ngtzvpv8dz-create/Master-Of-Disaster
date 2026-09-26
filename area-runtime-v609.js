@@ -51,7 +51,14 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=639-shopping-cart'
+      './food-v544.js?v=643-shopping-bridge'
+    ],
+    shopping:[
+      SUPABASE,
+      './supabase-config.js?v=609',
+      './supabase-client-lite-v593.js?v=593',
+      './food-v544.js?v=643-shopping-bridge',
+      './shopping-v643.js?v=643-foundation'
     ],
     kistology:[
       SUPABASE,
@@ -132,7 +139,8 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v616.js?v=621-phase-summary'],
-    food:['./food-v544.js?v=633-history'],
+    food:['./food-v544.js?v=643-shopping-bridge'],
+    shopping:['./food-v544.js?v=643-shopping-bridge','./shopping-v643.js?v=643-foundation'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=618-finance-recent-pfand'],
     denkfabrik:['./denkfabrik-v635.js?v=635-refresh'],
@@ -143,6 +151,7 @@
     todo:'To Do',
     sport:'Sport',
     food:'Food',
+    shopping:'Einkaufsliste',
     kistology:'Kistologie',
     finance:'Finanzen',
     denkfabrik:'Denkfabrik',
@@ -157,7 +166,7 @@
   };
 
   const HEAVY_AREAS=new Set(['todo','backstage']);
-  const ACTIVE_AREAS=new Set(['todo','sport','food','kistology','finance','denkfabrik','backstage']);
+  const ACTIVE_AREAS=new Set(['todo','sport','food','shopping','kistology','finance','denkfabrik','backstage']);
   const executed=new Set();
   const executing=new Map();
   const readyAreas=new Set();
@@ -304,6 +313,8 @@
       await waitFor(()=>window.__modSportV568||window.__modSportModeV510);
     }else if(id==='food'){
       await waitFor(()=>window.__modFoodV544);
+    }else if(id==='shopping'){
+      await waitFor(()=>window.__modShoppingV643);
     }else if(id==='kistology'){
       await waitFor(()=>window.__modKistologyV603);
     }else if(id==='finance'){
@@ -473,7 +484,7 @@
   function warmEntries(){
     const seen=new Set();
     const entries=[];
-    for(const id of ['todo','sport','food','kistology','finance','backstage']){
+    for(const id of ['todo','sport','food','shopping','kistology','finance','backstage']){
       for(const src of WARM_GROUPS[id]||[]){
         const url=abs(src);
         if(seen.has(url))continue;
@@ -692,6 +703,8 @@
       result=window.__modAppHubV515?.open?.('sport',{source:'v609-ready'});
     }else if(id==='food'){
       result=window.__modFoodV544?.open?.();
+    }else if(id==='shopping'){
+      result=window.__modShoppingV643?.open?.();
     }else if(id==='finance'){
       result=(window.__modFinanceV553||window.__modFinanceV552)?.open?.();
     }else if(id==='kistology'){
