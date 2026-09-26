@@ -1,7 +1,7 @@
 /* V600 · UNIFIED BACKUP MODEL
    - Supabase: LIVE + PREVIOUS für den lokalen Master-Stand.
-   - 7-Tage-Zeitmaschine + 7-Tage-Log werden rollierend nach Supabase gespiegelt.
-   - Direkte Supabase-Bereiche werden serverseitig per Delta-Audit für 7 Tage abgesichert.
+   - 48-Stunden-Zeitmaschine + 48-Stunden-Log werden rollierend nach Supabase gespiegelt.
+   - Direkte Supabase-Bereiche werden serverseitig per Delta-Audit für 48 Stunden abgesichert.
    - Wochen-Cloudbackups sind stillgelegt.
    - Vollbackup holt zusätzlich einen authentifizierten Supabase-Komplettexport.
 */
@@ -10,7 +10,7 @@
   if(window.__modBackupModelV600)return;
 
   const VERSION='V600';
-  const RETENTION_MS=7*24*60*60*1000;
+  const RETENTION_MS=48*60*60*1000;
   const LAST_SYNC_KEY='masterOfDisasterSafetyCloudLastSyncV600';
   const PENDING_KEY='masterOfDisasterSafetyCloudPendingV600';
   const LAST_ERROR_KEY='masterOfDisasterSafetyCloudLastErrorV600';
@@ -116,7 +116,7 @@
       safeSet(PENDING_KEY,'0');
       safeRemove(LAST_ERROR_KEY);
       try{
-        window.__modLiveLogV453?.append?.('SYSTEM','PASS',`7-Tage-Sicherheitsnetz → Supabase · ${points.length} Punkte · ${logs.length} Logs aktualisiert`);
+        window.__modLiveLogV453?.append?.('SYSTEM','PASS',`48-Stunden-Sicherheitsnetz → Supabase · ${points.length} Punkte · ${logs.length} Logs aktualisiert`);
       }catch(_){}
       return true;
     }catch(error){
@@ -143,7 +143,7 @@
     try{
       window.showInfoModal?.(
         'Wochen-Cloudbackups wurden ersetzt',
-        'Das neue Backup-Modell nutzt LIVE + PREVIOUS, eine rollierende 7-Tage-Zeitmaschine und eine einzige Vollbackup-ZIP. Alte Wochen-Cloudbackups werden nicht mehr neu erzeugt.'
+        'Das neue Backup-Modell nutzt LIVE + PREVIOUS, eine rollierende 48-Stunden-Zeitmaschine und eine einzige Vollbackup-ZIP. Alte Wochen-Cloudbackups werden nicht mehr neu erzeugt.'
       );
     }catch(_){}
     return false;
@@ -169,7 +169,7 @@
     document.querySelectorAll('[data-weekly-create-v498],[data-weekly-list-v498]').forEach(el=>el.remove());
     const panel=document.getElementById('modDevSafetyV498');
     const note=panel?.querySelector('div:nth-child(2)');
-    if(note)note.textContent='7-Tage-Zeitmaschine lokal + rollierend in Supabase · Vollbackup als eine ZIP · keine Wochen-Cloudbackups mehr.';
+    if(note)note.textContent='48-Stunden-Zeitmaschine lokal + rollierend in Supabase · Vollbackup als eine ZIP · keine Wochen-Cloudbackups mehr.';
   }
 
   function install(){
@@ -191,7 +191,8 @@
 
   window.__modBackupModelV600={
     version:VERSION,
-    retentionDays:7,
+    retentionDays:2,
+    retentionHours:48,
     livePlusPrevious:true,
     weeklyCloudBackups:false,
     syncSafetyNow,
