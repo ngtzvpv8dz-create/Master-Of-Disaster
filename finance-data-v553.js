@@ -409,7 +409,7 @@
       return state;
     }).catch(error=>{
       console.warn('V654 FINANZEN Daten konnten nach Resume nicht geladen werden.',error);
-      state={...state,loaded:hadData,loading:false,error:error?.message||String(error)};
+      state={...state,loaded:hadData,loading:false,error:hadData?null:(error?.message||String(error))};
       if(window.__modFinanceV552)window.__modFinanceV552.dataConnected=hadData;
       render();
       return state;
