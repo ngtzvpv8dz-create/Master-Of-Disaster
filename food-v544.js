@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V637';
+  const VERSION='V638';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -94,12 +94,43 @@
     if(q===null||Number.isNaN(q))return ingredientName(item);
     return fmtQty(q,item?.unit)+' '+ingredientName(item);
   };
-  const PANTRY_BASICS=new Set([
-    'olivenöl','rapsöl','sonnenblumenöl','salz','pfeffer','paprikapulver edelsüß',
-    'paprikapulver rosenscharf','zimt','muskatnuss','currypulver','chiliflocken',
-    'oregano','basilikum','thymian','rosmarin','knoblauchpulver','zwiebelpulver'
-  ]);
-  const isPantryBasicName=name=>PANTRY_BASICS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
+  const normalizedIngredient=(name,unit='')=>{
+    const normalized=String(name||'').trim().toLocaleLowerCase('de-DE');
+    if(String(unit||'').trim()==='Zehe'&&(normalized==='knoblauch'||normalized==='knoblauchzehen'))return 'knoblauchzehen';
+    if(normalized==='pfeffer'||normalized==='pfeffer schwarz')return 'pfeffer schwarz';
+    return normalized;
+  };
+  const NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser']);
+  const isNonShoppingIngredient=name=>NON_SHOPPING_INGREDIENTS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
+  const freshShoppingLeadDays=name=>{
+    const normalized=String(name||'').trim().toLocaleLowerCase('de-DE');
+    if(normalized.includes('hackfleisch'))return 2;
+    if(normalized.includes('hähnchenbrust'))return 2;
+    if(normalized==='feldsalat')return 2;
+    if(normalized==='spinat frisch')return 2;
+    if(normalized==='himbeeren')return 2;
+    return null;
+  };
+  const fmtShortDate=iso=>iso?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00')):'';
+  const inventoryQuantityInUnit=(stock,targetUnit)=>{
+    if(!stock)return {available:0,unitMismatch:false,converted:false};
+    const quantity=Math.max(0,num(stock.quantity)||0);
+    const sourceUnit=String(stock.unit||'').trim();
+    const target=String(targetUnit||'').trim();
+    if(sourceUnit===target)return {available:quantity,unitMismatch:false,converted:false};
+    if(sourceUnit==='kg'&&target==='g')return {available:quantity*1000,unitMismatch:false,converted:true};
+    if(sourceUnit==='g'&&target==='kg')return {available:quantity/1000,unitMismatch:false,converted:true};
+    if(sourceUnit==='l'&&target==='ml')return {available:quantity*1000,unitMismatch:false,converted:true};
+    if(sourceUnit==='ml'&&target==='l')return {available:quantity/1000,unitMismatch:false,converted:true};
+    if(target==='g'&&/^(Päckchen|Packung)$/i.test(sourceUnit)){
+      const match=String(stock.note||'').match(/([0-9]+(?:[.,][0-9]+)?)\s*g\s+pro\s+(?:Päckchen|Packung)/i);
+      if(match){
+        const grams=Number(match[1].replace(',','.'));
+        if(Number.isFinite(grams)&&grams>0)return {available:quantity*grams,unitMismatch:false,converted:true};
+      }
+    }
+    return {available:0,unitMismatch:true,converted:false};
+  };
   const recipeInstructions=recipe=>String(recipe?.instructions||'').split(/\s*\|\s*|\n+/).map(line=>line.trim().replace(/^\s*(?:\d+[.)]|[-•])\s*/,'' )).filter(Boolean);
   const mealTypeOptions=selected=>['breakfast','snack','lunch','dinner'].map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(MEAL_LABELS[type])+'</option>').join('');
   const recipeCategoryOptions=selected=>RECIPE_CATEGORY_ORDER.map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(RECIPE_GROUP_LABELS[type]||type)+'</option>').join('');
@@ -522,91 +553,156 @@
 
   function deriveShopping(data){
     const needs=new Map();
-    data.meals.filter(meal=>meal.meal_date>=todayIso()&&normalizedStatus(meal.status)==='planned').forEach(meal=>(meal.ingredients||[]).forEach(item=>{
-      const quantity=num(item.quantity);
-      if(quantity===null||quantity<=0)return;
-      const name=ingredientName(item);
-      const unit=String(item.unit||'').trim();
-      const key=item.inventory_id?'stock|'+item.inventory_id+'|'+unit:'free|'+name.toLocaleLowerCase('de-DE')+'|'+unit.toLocaleLowerCase('de-DE');
-      const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,unit,required:0};
-      current.required+=quantity;
-      needs.set(key,current);
-    }));
-    const inventoryById=new Map(data.inventory.map(item=>[item.id,item]));
-    const inventoryByName=new Map(data.inventory.filter(item=>item.is_active!==false).map(item=>[String(item.name||'').trim().toLocaleLowerCase('de-DE'),item]));
+    data.meals
+      .filter(meal=>meal.meal_date>=todayIso()&&normalizedStatus(meal.status)==='planned')
+      .forEach(meal=>(meal.ingredients||[]).forEach(item=>{
+        const quantity=num(item.quantity);
+        if(quantity===null||quantity<=0)return;
+        const name=ingredientName(item);
+        if(isNonShoppingIngredient(name))return;
+        const unit=String(item.unit||'').trim();
+        const canonical=normalizedIngredient(name,unit);
+        const key=item.inventory_id?'stock|'+item.inventory_id+'|'+unit:'free|'+canonical+'|'+unit.toLocaleLowerCase('de-DE');
+        const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,canonical,unit,required:0,uses:[]};
+        current.required+=quantity;
+        current.uses.push({date:meal.meal_date,quantity});
+        if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
+        if(current.canonical==='knoblauchzehen')current.label='Knoblauchzehen';
+        needs.set(key,current);
+      }));
+
+    const inventoryRows=(data.inventory||[]).filter(item=>item.is_active!==false);
+    const inventoryById=new Map(inventoryRows.map(item=>[item.id,item]));
+    const inventoryByName=new Map(inventoryRows.map(item=>[normalizedIngredient(item.name,item.unit),item]));
     const gaps=[];
+
+    const shortageDateFor=(need,available)=>{
+      let remaining=Math.max(0,available||0);
+      const byDate=new Map();
+      need.uses.forEach(use=>byDate.set(use.date,(byDate.get(use.date)||0)+use.quantity));
+      for(const [date,quantity] of [...byDate.entries()].sort((a,b)=>a[0].localeCompare(b[0]))){
+        if(remaining>=quantity){remaining-=quantity;continue;}
+        return date;
+      }
+      return null;
+    };
+
     needs.forEach(need=>{
-      const normalizedNeed=String(need.label||'').trim().toLocaleLowerCase('de-DE');
+      const normalizedNeed=need.canonical||normalizedIngredient(need.label,need.unit);
+
       if(normalizedNeed==='knoblauchzehen'){
         const cloveStock=inventoryByName.get('knoblauchzehen');
-        const bulbStock=inventoryByName.get('knoblauchknollen');
-        const cloveQty=String(cloveStock?.unit||'')==='Zehe'?num(cloveStock?.quantity):0;
-        const available=cloveQty===null?0:Math.max(0,cloveQty||0);
+        const bulbStock=inventoryRows.find(item=>String(item.name||'').trim().toLocaleLowerCase('de-DE')==='knoblauchknollen')||null;
+        const cloveInfo=inventoryQuantityInUnit(cloveStock,'Zehe');
+        const available=cloveInfo.available;
         const missing=Math.max(0,need.required-available);
         const bulbsAvailable=String(bulbStock?.unit||'')==='Knolle'?Math.max(0,num(bulbStock?.quantity)||0):0;
         if(missing>0&&bulbsAvailable<=0){
-          gaps.push({...need,inventory_id:null,available,missing,label:'Knoblauchzehen',garlic:true,purchaseInventoryId:bulbStock?.id||null,purchaseName:'Knoblauchknollen',purchaseQuantity:1,purchaseUnit:'Knolle'});
+          const shortageDate=shortageDateFor(need,available);
+          gaps.push({...need,inventory_id:null,available,missing,label:'Knoblauchzehen',garlic:true,purchaseInventoryId:bulbStock?.id||null,purchaseName:'Knoblauchknollen',purchaseQuantity:1,purchaseUnit:'Knolle',shortageDate,buyFrom:shortageDate});
         }
         return;
       }
+
       const stock=need.inventory_id
         ?inventoryById.get(need.inventory_id)
         :inventoryByName.get(normalizedNeed);
-      if(!stock&&isPantryBasicName(need.label))return;
-      const sameUnit=!stock||String(stock.unit||'')===String(need.unit||'');
-      if(stock?.pending_weighing===true&&sameUnit)return;
-      const stockQty=sameUnit?num(stock?.quantity):0;
-      const available=stockQty===null?0:Math.max(0,stockQty||0);
+
+      if(stock?.pending_weighing===true)return;
+
+      const stockInfo=inventoryQuantityInUnit(stock,need.unit);
+      const available=stockInfo.available;
       const missing=Math.max(0,need.required-available);
-      if(missing>0)gaps.push({...need,inventory_id:need.inventory_id||stock?.id||null,available,missing,label:stock?.name||need.label,unitMismatch:!!stock&&!sameUnit});
+      if(missing<=0)return;
+
+      const shortageDate=shortageDateFor(need,available);
+      const leadDays=freshShoppingLeadDays(stock?.name||need.label);
+      const buyFrom=shortageDate&&leadDays!==null?plusDays(shortageDate,-leadDays):null;
+
+      gaps.push({
+        ...need,
+        inventory_id:need.inventory_id||stock?.id||null,
+        available,
+        missing,
+        label:stock?.name||need.label,
+        unitMismatch:stockInfo.unitMismatch,
+        convertedStock:stockInfo.converted,
+        shortageDate,
+        buyFrom
+      });
     });
     return gaps;
   }
 
   function shoppingView(data){
     const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
+    const today=todayIso();
     const gaps=deriveShopping(data);
     const manual=(data.shopping||[]).filter(item=>!item.checked);
-    const inventoryByName=new Map((data.inventory||[]).filter(item=>item.is_active!==false).map(item=>[String(item.name||'').trim().toLocaleLowerCase('de-DE'),item]));
-    const rows=[];
+    const inventoryRows=(data.inventory||[]).filter(item=>item.is_active!==false);
+    const inventoryByName=new Map(inventoryRows.map(item=>[normalizedIngredient(item.name,item.unit),item]));
+    const derivedKeys=new Set(gaps.map(item=>normalizedIngredient(item.label,item.unit)+'|'+String(item.unit||'').toLocaleLowerCase('de-DE')));
+    const nowRows=[];
+    const laterRows=[];
+
+    const pushRow=(bucket,row)=>bucket.push(row);
+
     gaps.forEach(item=>{
       const buyText=item.garlic?'Kaufen '+fmtQty(item.purchaseQuantity,item.purchaseUnit):'Kaufen '+fmtQty(item.missing,item.unit);
       const stockName=item.garlic?item.purchaseName:item.label;
       const stockQty=item.garlic?item.purchaseQuantity:item.missing;
       const stockUnit=item.garlic?item.purchaseUnit:item.unit;
       const stockId=item.garlic?item.purchaseInventoryId:item.inventory_id;
-      rows.push({
-        label:item.label||'',
-        html:'<li class="food-shopping-gap-v572"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>'
-      });
+      const delayed=Boolean(item.buyFrom&&item.buyFrom>today);
+      const timing=item.shortageDate
+        ?(delayed?'Noch nicht kaufen · ab '+fmtShortDate(item.buyFrom)+' · gebraucht '+fmtShortDate(item.shortageDate):'Gebraucht ab '+fmtShortDate(item.shortageDate))
+        :'';
+      const conversion=item.convertedStock?'<em>Vorrat passend umgerechnet</em>':'';
+      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638':'')+'"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>';
+      pushRow(delayed?laterRows:nowRows,{label:item.label||'',html});
     });
+
     manual.forEach(item=>{
       const required=num(item.quantity);
       const unit=String(item.unit||'').trim();
+      const duplicateKey=normalizedIngredient(item.label,unit)+'|'+unit.toLocaleLowerCase('de-DE');
+      if(derivedKeys.has(duplicateKey))return;
+
       if(required===null||required<=0||!unit){
-        rows.push({
+        nowRows.push({
           label:item.label||'',
-          html:'<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>'
+          html:'<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button></span></li>'
         });
         return;
       }
-      const normalized=String(item.label||'').trim().toLocaleLowerCase('de-DE');
+
+      const normalized=normalizedIngredient(item.label,unit);
       const stock=inventoryByName.get(normalized);
-      const sameUnit=!stock||String(stock.unit||'')===unit;
-      if(stock?.pending_weighing===true&&sameUnit)return;
-      const stockQty=sameUnit?num(stock?.quantity):0;
-      const available=stockQty===null?0:Math.max(0,stockQty||0);
+      if(stock?.pending_weighing===true)return;
+      const stockInfo=inventoryQuantityInUnit(stock,unit);
+      const available=stockInfo.available;
       const missing=Math.max(0,required-available);
       if(missing<=0)return;
-      rows.push({
+
+      nowRows.push({
         label:item.label||'',
-        html:'<li class="food-shopping-gap-v572 manual"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stock&&!sameUnit?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(sameUnit?(stock?.id||''):'')+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button><span class="food-shopping-edit-actions-v626"><button type="button" data-shopping-edit="'+esc(item.id)+'">Bearbeiten</button><button type="button" data-shopping-delete="'+esc(item.id)+'">Entfernen</button></span></span></li>'
+        html:'<li class="food-shopping-gap-v572 manual"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stockInfo.converted?'<em>Vorrat passend umgerechnet</em>':'')+(stockInfo.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(stockInfo.unitMismatch?'':(stock?.id||''))+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button></span></li>'
       });
     });
-    rows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
-    const all=rows.map(item=>item.html).join('');
-    return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'+
-      (all?'<ul class="food-shopping-list-v544">'+all+'</ul>':'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Vorrat und geplante Rezeptmengen decken sich aktuell.</p></div>');
+
+    nowRows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
+    laterRows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
+
+    const nowHtml=nowRows.length
+      ?'<div class="food-shopping-group-v638"><div class="food-shopping-group-head-v638"><strong>Jetzt kaufen</strong><span>'+nowRows.length+' Positionen</span></div><ul class="food-shopping-list-v544">'+nowRows.map(item=>item.html).join('')+'</ul></div>'
+      :'';
+    const laterHtml=laterRows.length
+      ?'<div class="food-shopping-group-v638 is-later-v638"><div class="food-shopping-group-head-v638"><strong>Später kaufen</strong><span>Frische Sachen erst kurz vor dem Einsatz</span></div><ul class="food-shopping-list-v544">'+laterRows.map(item=>item.html).join('')+'</ul></div>'
+      :'';
+    const all=nowHtml+laterHtml;
+
+    return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'
+      +(all||'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Vorrat und geplante Rezeptmengen decken sich aktuell.</p></div>');
   }
 
   function stockGapModal(button){
@@ -886,17 +982,23 @@
   function recipeNeedPreview(recipe,preparedServings){
     const base=Math.max(.01,Number(recipe?.servings)||1);
     const factor=Math.max(.01,Number(preparedServings)||base)/base;
-    const inventoryById=new Map((state?.inventory||[]).map(item=>[item.id,item]));
+    const inventoryRows=(state?.inventory||[]).filter(item=>item.is_active!==false);
+    const inventoryById=new Map(inventoryRows.map(item=>[item.id,item]));
+    const inventoryByName=new Map(inventoryRows.map(item=>[normalizedIngredient(item.name,item.unit),item]));
     const items=recipe?.food_recipe_ingredients||recipe?.ingredients||[];
     if(!items.length)return '<p class="food-recipe-preview-empty-v572">Keine Zutaten hinterlegt.</p>';
     return '<div class="food-recipe-preview-v572">'+items.map(item=>{
       const required=num(item.quantity)===null?null:Number(item.quantity)*factor;
-      const stock=item.inventory_id?inventoryById.get(item.inventory_id):null;
-      const sameUnit=!stock||String(stock.unit||'')===String(item.unit||'');
-      const available=sameUnit&&num(stock?.quantity)!==null?Number(stock.quantity):0;
+      const name=ingredientName(item);
+      if(isNonShoppingIngredient(name)){
+        return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+'</small></span><b class="is-ok">Kein Einkauf nötig</b></div>';
+      }
+      const stock=item.inventory_id?inventoryById.get(item.inventory_id):inventoryByName.get(normalizedIngredient(name,item.unit));
+      const stockInfo=inventoryQuantityInUnit(stock,item.unit);
+      const available=stockInfo.available;
       const missing=required===null?null:Math.max(0,required-available);
       const stateLabel=required===null?'Menge offen':missing>0?'Kaufen '+fmtQty(missing,item.unit):'Vorrat reicht';
-      return '<div><span><strong>'+esc(ingredientName(item))+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+' · vorhanden '+esc(fmtQty(available,item.unit))+'</small></span><b class="'+(missing>0?'is-missing':'is-ok')+'">'+esc(stateLabel)+'</b></div>';
+      return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+' · vorhanden '+esc(fmtQty(available,item.unit))+'</small></span><b class="'+(missing>0?'is-missing':'is-ok')+'">'+esc(stateLabel)+'</b></div>';
     }).join('')+'</div>';
   }
 
@@ -1563,8 +1665,6 @@
     root.querySelector('[data-food-add-shopping]')?.addEventListener('click',shoppingModal);
     root.querySelector('[data-food-add-recipe]')?.addEventListener('click',addRecipeModal);
     root.querySelectorAll('[data-shopping-check]').forEach(button=>button.addEventListener('click',()=>checkShopping(button.dataset.shoppingCheck).catch(error=>alert(error?.message||'Eintrag konnte nicht geändert werden.'))));
-    root.querySelectorAll('[data-shopping-edit]').forEach(button=>button.addEventListener('click',()=>editShoppingModal(button.dataset.shoppingEdit)));
-    root.querySelectorAll('[data-shopping-delete]').forEach(button=>button.addEventListener('click',()=>deleteShopping(button.dataset.shoppingDelete).catch(error=>alert(error?.message||'Eintrag konnte nicht entfernt werden.'))));
     root.querySelectorAll('[data-food-jump]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodJump;render();}));
     root.querySelector('[data-food-retry]')?.addEventListener('click',()=>{loadPromise=null;render();});
   }

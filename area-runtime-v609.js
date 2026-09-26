@@ -49,7 +49,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=637-recipe-rating-polish'
+      './food-v544.js?v=638-shopping-single-source'
     ],
     kistology:[
       SUPABASE,

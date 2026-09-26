@@ -4,13 +4,16 @@ const path = require('node:path');
 const {chromium} = require(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES ? process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES + '/playwright' : 'playwright');
 const root = path.resolve(__dirname, '..');
 const foodSource = fs.readFileSync(path.join(root,'food-v544.js'),'utf8');
-assert(foodSource.includes("const VERSION='V637'"));
+assert(foodSource.includes("const VERSION='V638'"));
 assert(foodSource.includes('saveInventoryStorage'));
 assert(foodSource.includes('food-cloud-warning-v548'));
 assert(foodSource.includes('getDataSources'));
 assert(foodSource.includes('addRecipeModal'));
 assert(foodSource.includes("data-food-add-recipe"));
 assert(foodSource.includes("food_recipe_ingredients"));
+assert(foodSource.includes("NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser'])"));
+assert(foodSource.includes("inventoryQuantityInUnit"));
+assert(foodSource.includes("freshShoppingLeadDays"));
 (async()=>{
   const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
   try {
@@ -39,6 +42,10 @@ assert(foodSource.includes("food_recipe_ingredients"));
       assert.deepEqual(await page.locator('.food-meal-card-v544').evaluateAll(cards=>cards.map(c=>Array.from(c.querySelectorAll('.food-arc-v545'),a=>a.getAttribute('style')))),arcs);
       assert.equal(await page.locator('.food-meal-card-v544').first().evaluate(el=>getComputedStyle(el).backgroundImage.includes('radial-gradient')),true);
       assert.notEqual(await page.locator('#appFixedTopV475 .header h1').evaluate(el=>getComputedStyle(el).transform),'none');
+      await page.click('[data-food-tab="shopping"]');
+      assert.equal(await page.locator('[data-shopping-edit]').count(),0);
+      assert.equal(await page.locator('[data-shopping-delete]').count(),0);
+      assert.equal(await page.locator('.food-shopping-group-v638').count()>0,true);
       await page.click('[data-food-tab="recipes"]');
       assert.equal(await page.locator('.food-recipe-card-v544').first().locator('[data-food-rate-recipe]').count(),5);
       assert.equal((await page.locator('.food-recipe-card-v544').first().locator('.food-recipe-rating-v636>span').textContent()).trim(),'Unbewertet');

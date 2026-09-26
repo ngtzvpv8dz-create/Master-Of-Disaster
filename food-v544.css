@@ -971,3 +971,45 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 @media(max-width:430px){
   .food-recipe-stars-v636 button{width:22px;height:22px;font-size:16px}
 }
+
+
+/* V638 · eine Einkaufsliste aus Plan + Vorrat, mit Frische-Timing */
+.food-shopping-group-v638{
+  display:grid;
+  gap:8px;
+  margin-bottom:14px;
+}
+.food-shopping-group-head-v638{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:0 2px;
+}
+.food-shopping-group-head-v638 strong{
+  color:#405845;
+  font-size:10px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.food-shopping-group-head-v638 span{
+  color:#7a877c;
+  font-size:9px;
+}
+.food-shopping-group-v638.is-later-v638{
+  margin-top:18px;
+}
+.food-shopping-gap-v572.is-later-v638{
+  border-style:dashed;
+  background:rgba(248,250,244,.76);
+}
+.food-shopping-gap-v572.is-later-v638>span>b{
+  color:#6c725f;
+}
+@media(max-width:560px){
+  .food-shopping-group-head-v638{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:2px;
+  }
+}
