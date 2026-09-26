@@ -420,7 +420,7 @@
     button.classList.remove('is-tap-feedback-v649');
     void button.offsetWidth;
     button.classList.add('is-tap-feedback-v649');
-    window.setTimeout(()=>button.classList.remove('is-tap-feedback-v649'),320);
+    window.setTimeout(()=>button.classList.remove('is-tap-feedback-v649'),180);
   }
 
   function reviewMarkup(){
