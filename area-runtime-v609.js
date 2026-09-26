@@ -58,7 +58,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-v544.js?v=643-shopping-bridge',
-      './shopping-v644.js?v=644-product-review'
+      './shopping-v645.js?v=645-checkout'
     ],
     kistology:[
       SUPABASE,
@@ -140,7 +140,7 @@
     ],
     sport:['./sport-v616.js?v=621-phase-summary'],
     food:['./food-v544.js?v=643-shopping-bridge'],
-    shopping:['./food-v544.js?v=643-shopping-bridge','./shopping-v644.js?v=644-product-review'],
+    shopping:['./food-v544.js?v=643-shopping-bridge','./shopping-v645.js?v=645-checkout'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=618-finance-recent-pfand'],
     denkfabrik:['./denkfabrik-v635.js?v=635-refresh'],
@@ -314,7 +314,7 @@
     }else if(id==='food'){
       await waitFor(()=>window.__modFoodV544);
     }else if(id==='shopping'){
-      await waitFor(()=>window.__modShoppingV644||window.__modShoppingV643);
+      await waitFor(()=>window.__modShoppingV645||window.__modShoppingV644||window.__modShoppingV643);
     }else if(id==='kistology'){
       await waitFor(()=>window.__modKistologyV603);
     }else if(id==='finance'){
@@ -704,7 +704,7 @@
     }else if(id==='food'){
       result=window.__modFoodV544?.open?.();
     }else if(id==='shopping'){
-      result=(window.__modShoppingV644||window.__modShoppingV643)?.open?.();
+      result=(window.__modShoppingV645||window.__modShoppingV644||window.__modShoppingV643)?.open?.();
     }else if(id==='finance'){
       result=(window.__modFinanceV553||window.__modFinanceV552)?.open?.();
     }else if(id==='kistology'){
