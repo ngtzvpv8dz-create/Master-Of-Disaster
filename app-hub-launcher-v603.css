@@ -328,3 +328,29 @@ html.mod-bootstrap-ready-v603 .mod-hub-app-button-v517[aria-disabled="true"]{
     0 8px 18px rgba(0,0,0,.34),
     inset 0 1px 0 rgba(255,255,255,.10);
 }
+
+
+/* V647 · shopping icon palette from approved reference */
+.mod-hub-app-shopping-art-v647{
+  display:block;
+  width:100%;
+  height:100%;
+  border-radius:inherit;
+  overflow:hidden;
+}
+.mod-hub-app-button-shopping-v517 .mod-hub-app-face-v517{
+  background:#0e1115;
+  box-shadow:
+    0 7px 16px rgba(0,0,0,.34),
+    -2px 0 9px rgba(231,163,75,.18),
+    2px 0 9px rgba(42,71,108,.18),
+    inset 0 1px 0 rgba(245,234,215,.08);
+}
+.mod-hub-app-button-shopping-v517:active .mod-hub-app-face-v517,
+.mod-hub-app-button-shopping-v517:hover .mod-hub-app-face-v517{
+  box-shadow:
+    0 7px 16px rgba(0,0,0,.34),
+    -2px 0 9px rgba(231,163,75,.18),
+    2px 0 9px rgba(42,71,108,.18),
+    inset 0 1px 0 rgba(245,234,215,.08);
+}
