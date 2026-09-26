@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "version": "V651",
+  "live": true,
+  "bootstrap": true,
+  "preloadOnly": true,
+  "reentry": true,
+  "home": true,
+  "todo": true,
+  "sport": true,
+  "food": true,
+  "kistology": true,
+  "backstage": true,
+  "log": true,
+  "backup": true,
+  "serviceWorker": true,
+  "errors": []
+}
