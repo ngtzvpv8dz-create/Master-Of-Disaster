@@ -354,3 +354,36 @@ html.mod-shopping-surface-v643,body.mod-shopping-v643{background:#111823!importa
 .shopping-product-options-v644 button{border-color:rgba(143,178,201,.13);background:#141e29;color:#eae7e1}
 .shopping-checkout-receipts-v645 button{border-color:rgba(143,178,201,.14);background:#141e29;color:#eae7e1}
 .shopping-checkout-receipts-v645 button strong{color:#d7aa85}
+
+
+/* V649 · tap acknowledgement + receipt quantity */
+.mod-shopping-v643 button{
+  transition:transform .12s ease,filter .12s ease,box-shadow .16s ease,background-color .16s ease,border-color .16s ease;
+}
+.mod-shopping-v643 button.is-tap-feedback-v649,
+.shopping-modal-v643 button.is-tap-feedback-v649{
+  transform:scale(.965);
+  filter:brightness(1.12);
+  box-shadow:0 0 0 3px rgba(143,178,201,.13),inset 0 0 0 1px rgba(240,236,229,.08);
+}
+.shopping-review-copy-v644 strong{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+.shopping-review-qty-v649{
+  flex:none;
+  display:inline-grid;
+  place-items:center;
+  min-width:25px;
+  height:20px;
+  padding:0 6px;
+  border:1px solid rgba(216,163,123,.18);
+  border-radius:999px;
+  background:rgba(216,163,123,.08);
+  color:#dfb690;
+  font-size:.50rem;
+  font-weight:920;
+  line-height:1;
+}
