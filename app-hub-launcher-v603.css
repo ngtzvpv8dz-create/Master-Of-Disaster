@@ -306,3 +306,25 @@ html.mod-bootstrap-ready-v603 .mod-hub-app-button-v517[aria-disabled="true"]{
 @media(prefers-reduced-motion:reduce){
   .mod-hub-preload-track-v603>i{transition:none}
 }
+
+
+/* V646 · shopping icon unified with warm app style */
+.mod-hub-app-shopping-art-v646{
+  display:block;
+  width:100%;
+  height:100%;
+  border-radius:inherit;
+  overflow:hidden;
+}
+.mod-hub-app-button-shopping-v517 .mod-hub-app-face-v517{
+  background:#3b291c;
+  box-shadow:
+    0 8px 18px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
+.mod-hub-app-button-shopping-v517:active .mod-hub-app-face-v517,
+.mod-hub-app-button-shopping-v517:hover .mod-hub-app-face-v517{
+  box-shadow:
+    0 8px 18px rgba(0,0,0,.34),
+    inset 0 1px 0 rgba(255,255,255,.10);
+}
