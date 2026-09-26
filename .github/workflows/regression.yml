@@ -23,6 +23,8 @@ jobs:
           node --check surface-header-v603.js
           node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
+          node --check remote-commands.js
+          node --check remote-historical-archive-import-v541.js
           node --check food-v544.js
           node --check finance-data-v553.js
           node --check denkfabrik-v635.js
@@ -52,6 +54,9 @@ jobs:
           grep -q 'history-safety-net-v498.js' area-runtime-v609.js
           grep -q 'backup-model-v600.js' area-runtime-v609.js
           grep -q 'denkfabrik-v635.js?v=635-refresh' area-runtime-v609.js
+          grep -q 'remote-commands.js?v=640-staged-bridge' area-runtime-v609.js
+          grep -q 'remote-historical-archive-import-v541.js?v=640-staged-bridge' area-runtime-v609.js
+          grep -q "document.readyState==='complete'" remote-commands.js
           grep -q "denkfabrik:'Denkfabrik'" area-runtime-v609.js
           grep -q 'denkfabrik-v634-192.jpg?v=634' app-hub-launcher-v603.js
           grep -q 'app-hub-launcher-v603.js' sw.js

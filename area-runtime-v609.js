@@ -16,6 +16,8 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './app.js?v=609',
+      './remote-commands.js?v=640-staged-bridge',
+      './remote-historical-archive-import-v541.js?v=640-staged-bridge',
       './segment-active-duration-v487.js?v=487-1528',
       './segment-duration-v444.js?v=446-1228',
       './time-segments-v443.js?v=446-1228',
@@ -123,6 +125,8 @@
   const WARM_GROUPS={
     todo:[
       './app.js?v=609',
+      './remote-commands.js?v=640-staged-bridge',
+      './remote-historical-archive-import-v541.js?v=640-staged-bridge',
       './categories.js?v=609-category-refresh',
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
