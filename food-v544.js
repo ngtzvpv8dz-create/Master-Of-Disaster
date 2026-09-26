@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V638';
+  const VERSION='V639';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -22,7 +22,7 @@
   let renderSerial=0;
   let state=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','recipes','shopping','leftovers'];
+  const SOURCE_KEYS=['meals','inventory','recipes','shopping','cart','leftovers'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -100,6 +100,15 @@
     if(normalized==='pfeffer'||normalized==='pfeffer schwarz')return 'pfeffer schwarz';
     return normalized;
   };
+  const shoppingGapKey=item=>{
+    const unit=String(item?.unit||'').trim();
+    if(item?.inventory_id)return 'stock:'+String(item.inventory_id)+':'+unit.toLocaleLowerCase('de-DE');
+    return 'free:'+normalizedIngredient(item?.label||item?.name,unit)+':'+unit.toLocaleLowerCase('de-DE');
+  };
+  const manualShoppingKey=item=>'manual:'+String(item?.id||'');
+  const shoppingCartIcon=()=>'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 9.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 7H7"/><circle cx="10" cy="19" r="1.4"/><circle cx="18" cy="19" r="1.4"/></svg>';
+  const shoppingCartButton=(key,inCart)=>'<button type="button" class="food-cart-toggle-v639 '+(inCart?'is-in-cart':'')+'" data-food-cart-toggle="'+esc(key)+'" aria-pressed="'+inCart+'" aria-label="'+(inCart?'Aus dem Einkaufswagen zurück auf die Liste':'In den Einkaufswagen legen')+'" title="'+(inCart?'Zurück auf die Liste':'In den Einkaufswagen')+'">'+shoppingCartIcon()+'</button>';
+
   const NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser']);
   const isNonShoppingIngredient=name=>NON_SHOPPING_INGREDIENTS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
   const freshShoppingLeadDays=name=>{
@@ -183,6 +192,7 @@
     ],
     recipes:[],
     shopping:[],
+    cart:[],
     leftovers:[]
   };
 
@@ -269,6 +279,7 @@
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing').order('sort_order')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
+      safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false}))
     ]);
 
@@ -289,7 +300,8 @@
       inventory:take('inventory',1,rows=>rows),
       recipes:take('recipes',2,rows=>rows),
       shopping:take('shopping',3,rows=>rows),
-      leftovers:take('leftovers',4,rows=>rows)
+      cart:take('cart',4,rows=>rows),
+      leftovers:take('leftovers',5,rows=>rows)
     };
   }
 
@@ -639,15 +651,19 @@
     const today=todayIso();
     const gaps=deriveShopping(data);
     const manual=(data.shopping||[]).filter(item=>!item.checked);
+    const cartSet=new Set((data.cart||[]).map(item=>String(item.shopping_key||'')));
     const inventoryRows=(data.inventory||[]).filter(item=>item.is_active!==false);
     const inventoryByName=new Map(inventoryRows.map(item=>[normalizedIngredient(item.name,item.unit),item]));
     const derivedKeys=new Set(gaps.map(item=>normalizedIngredient(item.label,item.unit)+'|'+String(item.unit||'').toLocaleLowerCase('de-DE')));
     const nowRows=[];
     const laterRows=[];
+    const cartRows=[];
 
     const pushRow=(bucket,row)=>bucket.push(row);
 
     gaps.forEach(item=>{
+      const key=shoppingGapKey(item);
+      const inCart=cartSet.has(key);
       const buyText=item.garlic?'Kaufen '+fmtQty(item.purchaseQuantity,item.purchaseUnit):'Kaufen '+fmtQty(item.missing,item.unit);
       const stockName=item.garlic?item.purchaseName:item.label;
       const stockQty=item.garlic?item.purchaseQuantity:item.missing;
@@ -658,8 +674,8 @@
         ?(delayed?'Noch nicht kaufen · ab '+fmtShortDate(item.buyFrom)+' · gebraucht '+fmtShortDate(item.shortageDate):'Gebraucht ab '+fmtShortDate(item.shortageDate))
         :'';
       const conversion=item.convertedStock?'<em>Vorrat passend umgerechnet</em>':'';
-      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638':'')+'"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'">Vorhanden / eingekauft</button></span></li>';
-      pushRow(delayed?laterRows:nowRows,{label:item.label||'',html});
+      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
+      pushRow(inCart?cartRows:(delayed?laterRows:nowRows),{label:item.label||'',html});
     });
 
     manual.forEach(item=>{
@@ -667,12 +683,12 @@
       const unit=String(item.unit||'').trim();
       const duplicateKey=normalizedIngredient(item.label,unit)+'|'+unit.toLocaleLowerCase('de-DE');
       if(derivedKeys.has(duplicateKey))return;
+      const key=manualShoppingKey(item);
+      const inCart=cartSet.has(key);
 
       if(required===null||required<=0||!unit){
-        nowRows.push({
-          label:item.label||'',
-          html:'<li class="manual"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button></span></li>'
-        });
+        const html='<li class="manual '+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><button type="button" data-shopping-check="'+esc(item.id)+'" aria-label="'+esc(item.label)+' abhaken">✓ Abhaken</button></span>'+shoppingCartButton(key,inCart)+'</li>';
+        pushRow(inCart?cartRows:nowRows,{label:item.label||'',html});
         return;
       }
 
@@ -684,25 +700,58 @@
       const missing=Math.max(0,required-available);
       if(missing<=0)return;
 
-      nowRows.push({
-        label:item.label||'',
-        html:'<li class="food-shopping-gap-v572 manual"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stockInfo.converted?'<em>Vorrat passend umgerechnet</em>':'')+(stockInfo.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(stockInfo.unitMismatch?'':(stock?.id||''))+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'">Vorhanden / eingekauft</button></span></li>'
-      });
+      const html='<li class="food-shopping-gap-v572 manual '+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stockInfo.converted?'<em>Vorrat passend umgerechnet</em>':'')+(stockInfo.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(stockInfo.unitMismatch?'':(stock?.id||''))+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
+      pushRow(inCart?cartRows:nowRows,{label:item.label||'',html});
     });
 
     nowRows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
     laterRows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
+    cartRows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
 
     const nowHtml=nowRows.length
-      ?'<div class="food-shopping-group-v638"><div class="food-shopping-group-head-v638"><strong>Jetzt kaufen</strong><span>'+nowRows.length+' Positionen</span></div><ul class="food-shopping-list-v544">'+nowRows.map(item=>item.html).join('')+'</ul></div>'
+      ?'<div class="food-shopping-group-v638"><div class="food-shopping-group-head-v638"><strong>Noch holen</strong><span>'+nowRows.length+' Positionen</span></div><ul class="food-shopping-list-v544">'+nowRows.map(item=>item.html).join('')+'</ul></div>'
       :'';
     const laterHtml=laterRows.length
       ?'<div class="food-shopping-group-v638 is-later-v638"><div class="food-shopping-group-head-v638"><strong>Später kaufen</strong><span>Frische Sachen erst kurz vor dem Einsatz</span></div><ul class="food-shopping-list-v544">'+laterRows.map(item=>item.html).join('')+'</ul></div>'
       :'';
-    const all=nowHtml+laterHtml;
+    const cartHtml=cartRows.length
+      ?'<div class="food-shopping-group-v638 food-shopping-cart-group-v639"><div class="food-shopping-group-head-v638"><strong>Im Einkaufswagen</strong><span>'+cartRows.length+' '+(cartRows.length===1?'Position':'Positionen')+'</span></div><ul class="food-shopping-list-v544">'+cartRows.map(item=>item.html).join('')+'</ul></div>'
+      :'';
+    const all=nowHtml+laterHtml+cartHtml;
 
     return '<div class="food-section-head-v544"><div><span>EINKAUF</span><h3>Was noch fehlt</h3></div><button type="button" class="food-action-v544 compact" data-food-add-shopping>+ Eintrag</button></div>'
       +(all||'<div class="food-empty-card-v544"><div class="food-empty-icon-v544">✓</div><h4>Aus dem aktuellen Plan fehlt gerade nichts.</h4><p>Vorrat und geplante Rezeptmengen decken sich aktuell.</p></div>');
+  }
+
+  async function toggleShoppingCart(key,inCart){
+    const shoppingKey=String(key||'').trim();
+    if(!shoppingKey)throw new Error('Einkaufsposition konnte nicht zugeordnet werden.');
+    if(!sourceIsReal('cart'))throw new Error('Der Einkaufswagen ist gerade nicht sicher mit der Cloud synchronisiert. Bitte neu laden.');
+
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const session=await withTimeout(supabase.auth.getSession(),'Anmeldung',2500);
+    const user=session?.data?.session?.user;
+    if(session?.error||!user?.id)throw new Error('Nicht angemeldet.');
+
+    if(inCart){
+      const result=await supabase.from('food_shopping_cart_state')
+        .delete()
+        .eq('user_id',user.id)
+        .eq('shopping_key',shoppingKey);
+      if(result.error)throw result.error;
+    }else{
+      const result=await supabase.from('food_shopping_cart_state')
+        .upsert({user_id:user.id,shopping_key:shoppingKey,added_at:new Date().toISOString()},{onConflict:'user_id,shopping_key'});
+      if(result.error)throw result.error;
+    }
+    await mutate(()=>true);
+  }
+
+  async function clearShoppingCartKey(supabase,key){
+    const shoppingKey=String(key||'').trim();
+    if(!shoppingKey)return;
+    const result=await supabase.from('food_shopping_cart_state').delete().eq('shopping_key',shoppingKey);
+    if(result.error)throw result.error;
   }
 
   function stockGapModal(button){
@@ -712,6 +761,7 @@
     const inventoryId=String(button?.dataset?.foodStockId||'').trim()||null;
     const shoppingId=String(button?.dataset?.shoppingId||'').trim()||null;
     const shoppingRequired=Number(button?.dataset?.shoppingRequired||0);
+    const cartKey=String(button?.dataset?.foodCartKey||'').trim()||null;
     if(!name)return;
 
     let modal;
@@ -780,6 +830,7 @@
           const check=await supabase.from('food_shopping_items').update({checked:true}).eq('id',shoppingId);
           if(check.error)throw check.error;
         }
+        await clearShoppingCartKey(supabase,cartKey);
         await mutate(()=>true);
         return;
       }
@@ -835,6 +886,7 @@
         const check=await supabase.from('food_shopping_items').update({checked:true}).eq('id',shoppingId);
         if(check.error)throw check.error;
       }
+      await clearShoppingCartKey(supabase,cartKey);
       await mutate(()=>true);
     });
 
@@ -1624,6 +1676,12 @@
       const id=String(card.dataset.foodMealCard);
       if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);
       renderState();
+    }));
+    root.querySelectorAll('[data-food-cart-toggle]').forEach(button=>button.addEventListener('click',async event=>{
+      event.stopPropagation();
+      button.disabled=true;
+      try{await toggleShoppingCart(button.dataset.foodCartToggle,button.getAttribute('aria-pressed')==='true');}
+      catch(error){alert(error?.message||'Einkaufswagen konnte nicht aktualisiert werden.');button.disabled=false;}
     }));
     root.querySelectorAll('[data-food-stock-gap]').forEach(button=>button.addEventListener('click',()=>stockGapModal(button)));
     root.querySelectorAll('[data-food-open-garlic]').forEach(button=>button.addEventListener('click',()=>openGarlicModal(button.dataset.foodOpenGarlic)));
