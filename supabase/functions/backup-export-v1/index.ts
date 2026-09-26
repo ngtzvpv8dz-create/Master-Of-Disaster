@@ -13,6 +13,9 @@ const TABLES = [
   ["mega_sortierung", "containers"],
   ["mega_sortierung", "items"],
   ["public", "app_state"],
+  ["public", "backup_db_changes"],
+  ["public", "backup_log_entries"],
+  ["public", "backup_recovery_points"],
   ["public", "archive_active_segments"],
   ["public", "archive_entries"],
   ["public", "finance_items"],
@@ -31,6 +34,7 @@ const TABLES = [
   ["public", "food_shopping_items"],
   ["public", "progress_daily"],
   ["public", "project_brain"],
+  ["public", "legacy_metadata"],
   ["public", "sport_activities"],
   ["public", "sport_activity_participants"],
   ["public", "sport_course_catalog"],
@@ -106,13 +110,18 @@ Deno.serve(async (req: Request) => {
       schema_version: 2,
       created_at: new Date().toISOString(),
       project_ref: "oktpzwhhndsbikkeelot",
+      project_url: supabaseUrl,
       user_id: user.id,
+      auth_user_reference: { id: user.id, email: user.email || null, created_at: user.created_at || null },
       current_data: currentData,
       exported_tables: TABLES.map(([schema, table]) => schema + "." + table),
+      recovery_notes: {
+        short_term_safety_net: "48-hour audit/history included",
+        live_previous: "legacy_metadata included",
+        database_structure: "GitHub source archive contains versioned Supabase migrations"
+      },
       intentionally_excluded: {
-        short_term_safety_net: ["public.backup_db_changes", "public.backup_log_entries", "public.backup_recovery_points"],
-        transient_or_recreatable: ["public.legacy_metadata", "public.remote_commands", "public.health_sync_keys"],
-        code_and_schema: "GitHub repository + versioned Supabase migrations",
+        transient_or_sensitive: ["public.remote_commands", "public.health_sync_keys"],
         historical_backup_schemas: "not exported"
       }
     }), { status: 200, headers: corsHeaders });
