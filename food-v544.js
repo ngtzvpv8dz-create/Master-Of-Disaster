@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V645';
+  const VERSION='V653';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -275,7 +275,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -432,7 +432,8 @@
     }
 
     if(recipe){
-      const view=recipePresentation(recipe,expanded,meal.ingredients||[],meal.prepared_servings);
+      const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings);
       const quantityAction=status==='completed'
         ?''
         :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Mengen ändern</button>';
@@ -1219,7 +1220,7 @@
     ).join('');
 
     const body='<form class="food-recipe-form-v549">'
-      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Hier änderst du nur die Mengen dieser geplanten Mahlzeit. Das Grundrezept bleibt unverändert.</p>'
+      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Hier änderst du nur die Mengen dieser geplanten Mahlzeit. Das Grundrezept bleibt unverändert. Ein mahlzeitspezifischer Kalorienwert wird bei einer neuen Mengenänderung verworfen und anschließend mit den tatsächlichen Zutaten neu gesetzt.</p>'
       +'<div class="food-planned-qty-list-v630">'+rows+'</div>'
       +'<button class="food-action-v544" type="submit">Mengen speichern</button>'
       +'</form>';
