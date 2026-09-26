@@ -18,6 +18,7 @@
   let hubPatched=false;
   let originalHubShow=null;
   let originalHubOpen=null;
+  let tapFeedbackBound=false;
 
   const esc=value=>String(value??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
   const num=value=>value===null||value===undefined||value===''?null:Number(value);
@@ -865,7 +866,6 @@
   }
 
   function bind(root){
-    root.querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>flashTap(button),{capture:true}));
     root.querySelector('[data-shopping-add]')?.addEventListener('click',openModal);
     root.querySelector('[data-shopping-checkout]')?.addEventListener('click',openCheckoutModal);
     root.querySelectorAll('[data-review-jump]').forEach(button=>button.addEventListener('click',()=>{
@@ -988,6 +988,15 @@
   function init(){
     ensureRoot();
     patchHub();
+    if(!tapFeedbackBound){
+      document.addEventListener('click',event=>{
+        const button=event.target?.closest?.('button');
+        if(!button)return;
+        const insideShopping=button.closest?.('#'+ROOT_ID+', .shopping-modal-v643');
+        if(insideShopping)flashTap(button);
+      },true);
+      tapFeedbackBound=true;
+    }
     observer.observe(document.documentElement,{subtree:true,childList:true});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
