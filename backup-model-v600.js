@@ -133,8 +133,8 @@
     const {client}=await context();
     const {data,error}=await client.functions.invoke('backup-export-v1',{body:{mode:'full'}});
     if(error)throw error;
-    if(!data||data.format!=='Master of Disaster Unified Supabase Backup'){
-      throw new Error('Supabase-Komplettexport hat ein unerwartetes Format.');
+    if(!data||data.format!=='Master of Disaster Current Data Backup'){
+      throw new Error('Supabase-Aktuelldatenexport hat ein unerwartetes Format.');
     }
     return data;
   }
