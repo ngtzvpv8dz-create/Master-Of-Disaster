@@ -1,4 +1,4 @@
-/* V450 · SMART REMOTE COMMAND BRIDGE
+/* V640 · SMART REMOTE COMMAND BRIDGE
    Supabase ist nur Befehls-Briefkasten. localStorage bleibt Master.
    V450 verhindert Remote-Dubletten, übernimmt etablierte Metadaten und bewahrt abgeschlossene Durchgänge.
 */
@@ -241,8 +241,10 @@
   window.addEventListener('online',()=>setTimeout(poll,250));
   window.addEventListener('focus',()=>setTimeout(poll,200));
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(poll,200);});
-  window.addEventListener('load',()=>setTimeout(start,700));
+  if(document.readyState==='complete')setTimeout(start,250);
+  else window.addEventListener('load',()=>setTimeout(start,700),{once:true});
   window.__modRemoteCommandsV441={poll,pollMs:POLL_MS,integrityResult,taskDetailResult};
   window.__modRemoteCommandsV448={version:'V448',poll,pollMs:POLL_MS,integrityResult,taskDetailResult,normalizeTodayDate,applyRemoteToday,createLocalTask};
-  window.__modRemoteCommandsV450={version:'V450',poll,pollMs:POLL_MS,integrityResult,taskDetailResult,normalizeTodayDate,applyRemoteToday,findReusableTask,latestReference,metadataForNewTask,createLocalTask};
+  window.__modRemoteCommandsV450={version:'V640',poll,pollMs:POLL_MS,integrityResult,taskDetailResult,normalizeTodayDate,applyRemoteToday,findReusableTask,latestReference,metadataForNewTask,createLocalTask};
+  window.__modRemoteCommandsV640={version:'V640',poll,pollMs:POLL_MS,integrityResult,taskDetailResult,normalizeTodayDate,applyRemoteToday,findReusableTask,latestReference,metadataForNewTask,createLocalTask};
 })();
