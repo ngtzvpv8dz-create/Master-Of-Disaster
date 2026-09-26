@@ -5,10 +5,11 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V618';
+  const VERSION='V654';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=5000;
   let loadPromise=null;
+  let visibleRefreshTimer=null;
   let rootObserver=null;
   let bodyObserver=null;
   let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,monthTransactions:[],recentTransactions:[]};
@@ -338,6 +339,24 @@
     return true;
   }
 
+  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+
+  async function remoteDataWithRetry(){
+    let lastError=null;
+    for(let attempt=0;attempt<2;attempt++){
+      try{
+        return await remoteData();
+      }catch(error){
+        lastError=error;
+        const message=String(error?.message||error||'');
+        const transient=/Load failed|Failed to fetch|NetworkError|fetch/i.test(message);
+        if(!transient||attempt>0)throw error;
+        await sleep(900);
+      }
+    }
+    throw lastError||new Error('Finanzdaten konnten nicht geladen werden.');
+  }
+
   async function remoteData(){
     const supabase=client();
     if(!supabase)throw new Error('Supabase-Client ist nicht verfügbar.');
@@ -379,18 +398,19 @@
   }
 
   async function load(force=false){
-    if(loadPromise&&!force)return loadPromise;
+    if(loadPromise)return loadPromise;
+    const hadData=state.loaded&&state.monthTransactions.length>=0;
     state={...state,loading:true,error:null};
     render();
-    const task=remoteData().then(data=>{
+    const task=remoteDataWithRetry().then(data=>{
       state={loaded:true,loading:false,error:null,...data};
       if(window.__modFinanceV552)window.__modFinanceV552.dataConnected=true;
       render();
       return state;
     }).catch(error=>{
-      console.warn('V553 FINANZEN Daten konnten nicht geladen werden.',error);
-      state={...state,loaded:false,loading:false,error:error?.message||String(error)};
-      if(window.__modFinanceV552)window.__modFinanceV552.dataConnected=false;
+      console.warn('V654 FINANZEN Daten konnten nach Resume nicht geladen werden.',error);
+      state={...state,loaded:hadData,loading:false,error:hadData?null:(error?.message||String(error))};
+      if(window.__modFinanceV552)window.__modFinanceV552.dataConnected=hadData;
       render();
       return state;
     }).finally(()=>{if(loadPromise===task)loadPromise=null;});
@@ -406,7 +426,12 @@
   }
 
   function refreshWhenVisible(){
-    if(document.visibilityState==='visible'&&isOpen())load(true);
+    if(document.visibilityState!=='visible'||!isOpen())return;
+    clearTimeout(visibleRefreshTimer);
+    visibleRefreshTimer=setTimeout(()=>{
+      visibleRefreshTimer=null;
+      if(document.visibilityState==='visible'&&isOpen())load(true);
+    },450);
   }
 
   function patchBaseApi(){
