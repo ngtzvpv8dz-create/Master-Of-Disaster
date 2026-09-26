@@ -1013,3 +1013,68 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
     gap:2px;
   }
 }
+
+
+/* V639 · Einkaufswagen-Status: offene Positionen oben, bereits im Wagen unten */
+.food-shopping-list-v544>li{
+  position:relative;
+  padding-bottom:46px;
+}
+.food-cart-toggle-v639{
+  position:absolute!important;
+  right:10px;
+  bottom:9px;
+  z-index:4;
+  display:grid!important;
+  place-items:center;
+  width:31px;
+  height:31px;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid rgba(65,98,69,.16)!important;
+  border-radius:10px!important;
+  background:#eef3e9!important;
+  color:#57705b!important;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.food-cart-toggle-v639 svg{
+  width:17px;
+  height:17px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  pointer-events:none;
+}
+.food-cart-toggle-v639.is-in-cart{
+  border-color:rgba(64,108,69,.28)!important;
+  background:#dcebd9!important;
+  color:#315f3d!important;
+}
+.food-cart-toggle-v639:focus-visible{
+  outline:2px solid #88a66f;
+  outline-offset:2px;
+}
+.food-shopping-cart-group-v639{
+  margin-top:22px;
+  padding-top:15px;
+  border-top:1px solid rgba(65,98,69,.14);
+}
+.food-shopping-cart-group-v639 .food-shopping-group-head-v638 strong{
+  color:#315f3d;
+}
+.food-shopping-list-v544>li.is-in-cart-v639{
+  opacity:.78;
+  background:rgba(244,247,240,.82);
+}
+@media(max-width:560px){
+  .food-cart-toggle-v639{
+    right:10px;
+    bottom:9px;
+    width:34px;
+    height:34px;
+  }
+  .food-cart-toggle-v639 svg{width:18px;height:18px}
+}
