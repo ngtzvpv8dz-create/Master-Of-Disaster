@@ -23,6 +23,7 @@ jobs:
           node --check surface-header-v603.js
           node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
+          node --check sport-circuit-v669.js
           node --check remote-commands.js
           node --check remote-historical-archive-import-v541.js
           node --check food-v544.js
