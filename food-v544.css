@@ -1093,16 +1093,7 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   background:linear-gradient(90deg,transparent 38%,rgba(229,244,249,.32) 63%,rgba(207,234,246,.72) 100%);
 }
 .food-stock-card-v544.has-freeze-plan-v664::after{
-  content:"❄  ✦  ❅";
-  position:absolute;
-  right:12px;
-  bottom:48px;
-  z-index:0;
-  color:rgba(91,158,185,.18);
-  font-size:22px;
-  letter-spacing:7px;
-  transform:rotate(-7deg);
-  pointer-events:none;
+  content:none;
 }
 .food-freeze-plan-v664{
   position:relative;
@@ -1172,15 +1163,7 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 5px 12px rgba(83,151,178,.08);
 }
 .food-stock-slice-v664.is-frozen::after{
-  content:"❄  ✦  ❅";
-  position:absolute;
-  right:8px;
-  top:50%;
-  color:rgba(76,147,177,.2);
-  font-size:17px;
-  letter-spacing:5px;
-  transform:translateY(-50%) rotate(-8deg);
-  pointer-events:none;
+  content:none;
 }
 .food-stock-slice-v664.is-frozen>span,
 .food-stock-slice-v664.is-frozen>strong{
@@ -1246,6 +1229,44 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   line-height:1.35;
 }
 @media(max-width:430px){
-  .food-stock-card-v544.has-freeze-plan-v664::after{right:5px;bottom:44px;font-size:18px;letter-spacing:4px}
   .food-stock-slice-v664{min-height:37px}
+}
+
+
+/* V665 · große, neblige Frostkristalle werden pro Food-Öffnung neu verteilt */
+.food-frost-crystal-v665{
+  position:absolute;
+  z-index:0;
+  display:block;
+  width:1em;
+  height:1em;
+  line-height:1;
+  color:rgba(255,255,255,.96);
+  font-family:"Times New Roman",Georgia,serif;
+  font-style:normal;
+  font-weight:400;
+  text-align:center;
+  text-shadow:
+    0 0 10px rgba(255,255,255,.86),
+    0 0 24px rgba(188,224,238,.42);
+  filter:blur(.28px);
+  mix-blend-mode:screen;
+  pointer-events:none;
+  user-select:none;
+}
+.food-stock-card-v544.has-freeze-plan-v664 .food-frost-crystal-v665{
+  color:rgba(255,255,255,.98);
+  text-shadow:
+    0 0 12px rgba(255,255,255,.9),
+    0 0 28px rgba(166,213,232,.38);
+}
+.food-stock-slice-v664.is-frozen .food-frost-crystal-v665{
+  color:rgba(255,255,255,.99);
+  text-shadow:
+    0 0 9px rgba(255,255,255,.94),
+    0 0 22px rgba(152,205,227,.5);
+}
+.food-stock-slice-v664.is-frozen>span{
+  position:relative;
+  z-index:2;
 }
