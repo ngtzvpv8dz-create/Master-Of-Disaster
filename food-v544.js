@@ -406,7 +406,7 @@
   }
 
   function noteSentences(note){
-    return String(note||'').trim().split(/(?<=[.!?])\s+/).map(part=>part.trim()).filter(Boolean);
+    return String(note||'').trim().split(/[.!?]+(?:\s+|$)|\n+/).map(part=>part.trim()).filter(Boolean);
   }
 
   function freezeInstruction(note){
