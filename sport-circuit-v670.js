@@ -1,7 +1,7 @@
 /* V669 · SPORT · cloud circuit planner + live interval runner */
 (function(){
   'use strict';
-  if(window.__modSportCircuitV669)return;
+  if(window.__modSportCircuitV670)return;
 
   const VERSION='V670';
   const ROOT_ID='sportRootV510';
@@ -1012,7 +1012,7 @@
   });
   window.addEventListener('focus',()=>{if(!runtime)loadData({seed:false}).catch(()=>{});});
 
-  window.__modSportCircuitV669={
+  const api={
     version:VERSION,
     refresh:()=>loadData({seed:false}),
     start:()=>document.querySelector('[data-circuit-start]')?.click(),
@@ -1023,6 +1023,8 @@
       running:runtime?{runId:runtime.run.id,phase:runtime.phase,round:runtime.round,exercise:runtime.index+1}:runningDbRun()
     })
   };
+  window.__modSportCircuitV670=api;
+  window.__modSportCircuitV669=api;
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
