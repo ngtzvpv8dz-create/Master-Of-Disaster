@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV651)return;
 
-  const VERSION='V651';
+  const VERSION='V677';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -49,8 +49,9 @@
   };
   const foodGapKey=item=>{
     const unit=String(item?.unit||'').trim();
-    if(item?.inventory_id)return 'stock:'+String(item.inventory_id)+':'+unit.toLocaleLowerCase('de-DE');
-    return 'free:'+normalizedIngredient(item?.label||item?.name,unit)+':'+unit.toLocaleLowerCase('de-DE');
+    const window=':'+(item?.buyFrom||'any');
+    if(item?.inventory_id)return 'stock:'+String(item.inventory_id)+':'+unit.toLocaleLowerCase('de-DE')+window;
+    return 'free:'+normalizedIngredient(item?.label||item?.name,unit)+':'+unit.toLocaleLowerCase('de-DE')+window;
   };
   const manualFoodKey=item=>'manual:'+String(item?.id||'');
 
