@@ -46,7 +46,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './sport-v616.js?v=622-execution-catalog',
-      './sport-circuit-v669.js?v=669-circuit-runner'
+      './sport-circuit-v670.js?v=670-circuit-cue-fix'
     ],
     food:[
       SUPABASE,
@@ -139,7 +139,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v616.js?v=622-execution-catalog','./sport-circuit-v669.js?v=669-circuit-runner'],
+    sport:['./sport-v616.js?v=622-execution-catalog','./sport-circuit-v670.js?v=670-circuit-cue-fix'],
     food:['./food-v544.js?v=668-frost-svg'],
     shopping:['./food-v544.js?v=668-frost-svg','./shopping-v651.js?v=651-confirm'],
     kistology:['./kistology-v603.js?v=609-current'],
