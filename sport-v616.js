@@ -1,9 +1,9 @@
-/* V625 · SPORT · active copy */
+/* V626 · SPORT · unified session history */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V625';
+  const VERSION='V626';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -21,10 +21,10 @@
     {id:'statistics',label:'STATISTIK'}
   ];
   const COURSE_NAMES=new Map([
-    ['tour de x','tour de x'],
-    ['into x','into x'],
-    ['functional x','functional x'],
-    ['yogilatix','yogilatix']
+    ['tour de x','Tour de X'],
+    ['into x','Into X'],
+    ['functional x','Functional X'],
+    ['yogilatix','Yogilatix']
   ]);
 
   const regressionRoute=(()=>{
@@ -270,8 +270,9 @@
       sessionId:String(row.session_id||row.sessionId||''),
       exerciseId:String(row.exercise_id||row.exerciseId||''),
       equipmentId:row.equipment_id||row.equipmentId||null,
-      name:String(row.name_snapshot||row.name||'Trainingselement'),
+      name:String(row.name_snapshot||row.name||'Trainingsgerät'),
       kind:String(row.kind||'strength'),
+      itemType:String(row.item_type||row.itemType||''),
       status:String(row.status||'planned'),
       sortOrder:Number(row.sort_order??row.sortOrder??999),
       startedAt:row.started_at||row.startedAt||null,
@@ -294,6 +295,33 @@
         rir:numberOrNull(set.rir),
         rirPlus:Boolean(set.rir_plus??set.rirPlus??false)
       })).sort((a,b)=>a.setNumber-b.setNumber)
+    };
+  }
+
+  function normalizeCircuitRun(row){
+    if(!row||typeof row!=='object'||!row.id)return null;
+    const exercises=(row.exercises||row.runExercises||[]).map(item=>({
+      id:String(item.id||''),
+      name:String(item.name_snapshot||item.name||'Übung'),
+      settings:item.settings_snapshot||item.settings||'',
+      sortOrder:Number(item.sort_order??item.sortOrder??999)
+    })).sort((a,b)=>a.sortOrder-b.sortOrder);
+    return {
+      id:String(row.id),
+      status:String(row.status||'completed'),
+      name:String(row.name_snapshot||row.name||'Zirkeltraining'),
+      plannedRounds:Number(row.planned_rounds??row.plannedRounds??0),
+      workSeconds:Number(row.work_seconds??row.workSeconds??0),
+      restSeconds:Number(row.rest_seconds??row.restSeconds??0),
+      roundBreakSeconds:Number(row.round_break_seconds??row.roundBreakSeconds??0),
+      completedRounds:Number(row.completed_rounds??row.completedRounds??0),
+      currentRound:Number(row.current_round??row.currentRound??1),
+      currentExerciseIndex:Number(row.current_exercise_index??row.currentExerciseIndex??0),
+      currentElapsedSeconds:Number(row.current_elapsed_seconds??row.currentElapsedSeconds??0),
+      totalActiveSeconds:Number(row.total_active_seconds??row.totalActiveSeconds??0),
+      startedAt:row.started_at||row.startedAt||null,
+      endedAt:row.ended_at||row.endedAt||null,
+      exercises
     };
   }
 
@@ -330,7 +358,8 @@
       note:row.notes||row.note||'',
       participants:normalizeParticipants(row.sessionParticipants||row.participants||[]),
       workout,
-      activities
+      activities,
+      circuitRun:normalizeCircuitRun(row.circuitRun||row.circuit_run||null)
     };
   }
 
@@ -368,12 +397,14 @@
       supabase.from('sport_exercise_catalog').select('id,name,kind,item_type,equipment_number,category,muscle_group,settings_text,load_mode,metric_config,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_equipment_catalog').select('id,name,equipment_number,category,settings_text,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_session_exercises').select('id,session_id,exercise_id,equipment_id,name_snapshot,kind,status,sort_order,started_at,ended_at,duration_minutes,distance_km,resistance_level,speed_kmh,incline_percent,equipment_number_snapshot,settings_snapshot,load_mode_snapshot,calories_kcal,metric_values,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5000),
-      supabase.from('sport_exercise_sets').select('id,session_exercise_id,set_number,weight_kg,repetitions,rir,rir_plus').eq('user_id',user.id).order('set_number').limit(15000)
+      supabase.from('sport_exercise_sets').select('id,session_exercise_id,set_number,weight_kg,repetitions,rir,rir_plus').eq('user_id',user.id).order('set_number').limit(15000),
+      supabase.from('sport_circuit_runs').select('id,session_id,name_snapshot,planned_rounds,work_seconds,rest_seconds,round_break_seconds,status,completed_rounds,current_round,current_exercise_index,current_elapsed_seconds,total_active_seconds,started_at,ended_at').eq('user_id',user.id).order('started_at',{ascending:false}).limit(500),
+      supabase.from('sport_circuit_run_exercises').select('id,run_id,name_snapshot,settings_snapshot,sort_order').eq('user_id',user.id).order('sort_order').limit(10000)
     ];
-    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Kurskatalog','Kursplan','Übungskatalog','Gerätekatalog','Trainingselemente','Sätze'];
+    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Kurskatalog','Kursplan','Übungskatalog','Gerätekatalog','Übungen & Geräte','Sätze','Zirkel-Läufe','Zirkel-Übungen'];
     const results=await Promise.all(queries.map((query,index)=>withTimeout(query,labels[index],6500)));
     for(const result of results)if(result?.error)throw result.error;
-    const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,courseResult,coursePlansResult,catalogResult,equipmentResult,workoutResult,setsResult]=results;
+    const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,courseResult,coursePlansResult,catalogResult,equipmentResult,workoutResult,setsResult,circuitRunsResult,circuitExercisesResult]=results;
 
     const peopleByActivity=new Map();
     (participantsResult.data||[]).forEach(row=>{
@@ -401,11 +432,28 @@
       list.push(row);
       setsByExercise.set(row.session_exercise_id,list);
     });
+    const catalogById=new Map((catalogResult.data||[]).map(item=>[String(item.id),item]));
     const workoutBySession=new Map();
     (workoutResult.data||[]).forEach(row=>{
       const list=workoutBySession.get(row.session_id)||[];
-      list.push({...row,sets:setsByExercise.get(row.id)||[]});
+      const catalogItem=catalogById.get(String(row.exercise_id));
+      list.push({...row,item_type:catalogItem?.item_type||'',sets:setsByExercise.get(row.id)||[]});
       workoutBySession.set(row.session_id,list);
+    });
+
+    const circuitExercisesByRun=new Map();
+    (circuitExercisesResult.data||[]).forEach(row=>{
+      const list=circuitExercisesByRun.get(String(row.run_id))||[];
+      list.push(row);
+      circuitExercisesByRun.set(String(row.run_id),list);
+    });
+    const circuitBySession=new Map();
+    (circuitRunsResult.data||[]).forEach(run=>{
+      if(!run.session_id)return;
+      circuitBySession.set(String(run.session_id),{
+        ...run,
+        exercises:circuitExercisesByRun.get(String(run.id))||[]
+      });
     });
 
     state={...state,
@@ -422,7 +470,8 @@
       ...row,
       activities:activitiesBySession.get(row.id)||[],
       sessionParticipants:peopleBySession.get(row.id)||[],
-      workout:workoutBySession.get(row.id)||[]
+      workout:workoutBySession.get(row.id)||[],
+      circuitRun:circuitBySession.get(String(row.id))||null
     })));
   }
 
