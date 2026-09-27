@@ -1,14 +1,16 @@
-/* V654 · SPORT · iPhone/PWA voice lab with custom sliders */
+/* V655 · SPORT · voice FX lab with room/reverb experiments */
 (function(){
   'use strict';
   if(window.__modSportAudioTestV652)return;
 
-  const VERSION='V654';
+  const VERSION='V655';
   const ROOT_ID='sportRootV510';
   const CARD_ID='sportAudioTestV652';
   const VOICE_KEY='masterOfDisasterSportVoiceV653';
   const PRESET_KEY='masterOfDisasterSportVoicePresetV653';
   const CUSTOM_KEY='masterOfDisasterSportVoiceCustomV654';
+  const FX_KEY='masterOfDisasterSportVoiceFxV655';
+
   let audioContext=null;
   let timers=[];
   let running=false;
@@ -18,6 +20,64 @@
     dark:{label:'Dark',pitch:0.55,rate:0.82,volume:1},
     brutal:{label:'Deep & Slow',pitch:0.38,rate:0.68,volume:1},
     clean:{label:'Clean',pitch:0.88,rate:0.95,volume:1}
+  };
+
+  const fxPresets={
+    raw:{
+      label:'Raw',
+      note:'Nur Stimme + trockener Signalton.',
+      room:0,
+      decay:0.25,
+      delay:0,
+      feedback:0,
+      tailCount:0,
+      tailPitch:-0.04,
+      tailVolume:0.34
+    },
+    darkroom:{
+      label:'Dark Room',
+      note:'Kurzer dunkler Raum, wenig Nachhall.',
+      room:0.22,
+      decay:0.85,
+      delay:0.09,
+      feedback:0.12,
+      tailCount:1,
+      tailPitch:-0.06,
+      tailVolume:0.28
+    },
+    arena:{
+      label:'Arena',
+      note:'Größerer Raum mit hörbarem Echo.',
+      room:0.38,
+      decay:1.65,
+      delay:0.18,
+      feedback:0.20,
+      tailCount:2,
+      tailPitch:-0.05,
+      tailVolume:0.24
+    },
+    abyss:{
+      label:'Abyss',
+      note:'Sehr dunkel, lang und etwas übertrieben.',
+      room:0.52,
+      decay:2.45,
+      delay:0.24,
+      feedback:0.26,
+      tailCount:2,
+      tailPitch:-0.10,
+      tailVolume:0.20
+    },
+    industrial:{
+      label:'Industrial',
+      note:'Kurzes hartes Echo für Commands.',
+      room:0.28,
+      decay:1.05,
+      delay:0.11,
+      feedback:0.30,
+      tailCount:1,
+      tailPitch:-0.02,
+      tailVolume:0.30
+    }
   };
 
   const limits={
@@ -35,17 +95,19 @@
     #${CARD_ID} .sat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
     #${CARD_ID} label{display:grid;gap:4px;color:#76979b;font-size:.55rem;font-weight:800}
     #${CARD_ID} select{width:100%;min-width:0;padding:9px;border:1px solid rgba(111,228,234,.15);border-radius:10px;background:#07191c;color:#e4f7f8;font:inherit;font-size:.64rem}
-    #${CARD_ID} .sat-presets,#${CARD_ID} .sat-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    #${CARD_ID} .sat-presets,#${CARD_ID} .sat-actions,#${CARD_ID} .sat-fx-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
     #${CARD_ID} button{padding:9px 11px;border:1px solid rgba(111,228,234,.25);border-radius:10px;background:linear-gradient(180deg,rgba(24,123,135,.72),rgba(12,74,84,.75));color:#e7fcfd;font:inherit;font-size:.65rem;font-weight:850}
     #${CARD_ID} button.is-active{box-shadow:0 0 0 2px rgba(111,228,234,.22) inset;border-color:rgba(111,228,234,.55)}
     #${CARD_ID} button.sat-stop{background:rgba(75,31,31,.55);border-color:rgba(238,116,116,.2)}
     #${CARD_ID} button:disabled{opacity:.45}
-    #${CARD_ID} .sat-sliders{display:grid;gap:10px;margin-top:12px;padding:11px;border:1px solid rgba(111,228,234,.12);border-radius:13px;background:rgba(0,0,0,.14)}
+    #${CARD_ID} .sat-sliders,#${CARD_ID} .sat-fx-box{display:grid;gap:10px;margin-top:12px;padding:11px;border:1px solid rgba(111,228,234,.12);border-radius:13px;background:rgba(0,0,0,.14)}
     #${CARD_ID} .sat-slider{display:grid;grid-template-columns:76px minmax(0,1fr) 50px;align-items:center;gap:10px}
     #${CARD_ID} .sat-slider span{color:#9ab7ba;font-size:.62rem;font-weight:850}
     #${CARD_ID} .sat-slider output{color:#dff7f9;font-size:.62rem;font-weight:900;text-align:right;font-variant-numeric:tabular-nums}
     #${CARD_ID} input[type="range"]{width:100%;min-width:0;margin:0;accent-color:#2aaeba}
-    #${CARD_ID} .sat-custom-note{margin-top:7px;color:#64878b;font-size:.56rem;line-height:1.4}
+    #${CARD_ID} .sat-custom-note,#${CARD_ID} .sat-fx-note{color:#64878b;font-size:.56rem;line-height:1.4}
+    #${CARD_ID} .sat-fx-title{color:#91cbd0;font-size:.58rem;font-weight:900;letter-spacing:.08em}
+    #${CARD_ID} .sat-fx-explain{margin-top:3px;color:#698b8f;font-size:.56rem;line-height:1.45}
     @media(max-width:520px){
       #${CARD_ID} .sat-grid{grid-template-columns:1fr}
       #${CARD_ID} .sat-slider{grid-template-columns:62px minmax(0,1fr) 46px;gap:8px}
@@ -108,6 +170,16 @@
     return {label:presets[key].label,...presets[key]};
   }
 
+  function currentFxKey(){
+    const key=localStorage.getItem(FX_KEY)||'darkroom';
+    return fxPresets[key]?key:'darkroom';
+  }
+
+  function chosenFx(){
+    const key=currentFxKey();
+    return {key,...fxPresets[key]};
+  }
+
   async function ensureAudio(){
     const AudioCtx=window.AudioContext||window.webkitAudioContext;
     if(!AudioCtx)throw new Error('Web Audio wird von diesem Browser nicht unterstützt.');
@@ -116,20 +188,64 @@
     return audioContext;
   }
 
+  function impulseBuffer(ctx,duration,decay){
+    const seconds=Math.max(0.15,Math.min(3.5,Number(duration)||0.8));
+    const length=Math.max(1,Math.floor(ctx.sampleRate*seconds));
+    const buffer=ctx.createBuffer(2,length,ctx.sampleRate);
+    for(let channel=0;channel<2;channel++){
+      const data=buffer.getChannelData(channel);
+      for(let i=0;i<length;i++){
+        const t=i/length;
+        data[i]=(Math.random()*2-1)*Math.pow(1-t,Math.max(1,Number(decay)||1.4));
+      }
+    }
+    return buffer;
+  }
+
   async function beep(freq=880,durationMs=120){
     const ctx=await ensureAudio();
+    const fx=chosenFx();
     const osc=ctx.createOscillator();
-    const gain=ctx.createGain();
+    const dry=ctx.createGain();
+    const wet=ctx.createGain();
+    const convolver=ctx.createConvolver();
     const now=ctx.currentTime;
+    const stopAt=now+durationMs/1000+Math.max(0.1,fx.decay);
+
     osc.type='sine';
     osc.frequency.setValueAtTime(freq,now);
-    gain.gain.setValueAtTime(0.0001,now);
-    gain.gain.exponentialRampToValueAtTime(0.12,now+0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001,now+durationMs/1000);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+
+    dry.gain.setValueAtTime(0.0001,now);
+    dry.gain.exponentialRampToValueAtTime(0.12,now+0.01);
+    dry.gain.exponentialRampToValueAtTime(0.0001,now+durationMs/1000);
+
+    osc.connect(dry);
+    dry.connect(ctx.destination);
+
+    if(fx.room>0){
+      convolver.buffer=impulseBuffer(ctx,fx.decay,2.2);
+      wet.gain.setValueAtTime(Math.max(0.01,Math.min(0.7,fx.room)),now);
+      osc.connect(convolver);
+      convolver.connect(wet);
+      wet.connect(ctx.destination);
+    }
+
+    if(fx.delay>0){
+      const delay=ctx.createDelay(1);
+      const feedback=ctx.createGain();
+      const echoOut=ctx.createGain();
+      delay.delayTime.setValueAtTime(fx.delay,now);
+      feedback.gain.setValueAtTime(Math.max(0,Math.min(0.55,fx.feedback)),now);
+      echoOut.gain.setValueAtTime(0.34,now);
+      osc.connect(delay);
+      delay.connect(echoOut);
+      echoOut.connect(ctx.destination);
+      delay.connect(feedback);
+      feedback.connect(delay);
+    }
+
     osc.start(now);
-    osc.stop(now+durationMs/1000+0.03);
+    osc.stop(stopAt);
   }
 
   function englishVoices(){
@@ -142,29 +258,61 @@
     return voices.find(v=>v.name===name)||englishVoices()[0]||voices[0]||null;
   }
 
+  function tailWord(text){
+    const clean=String(text||'').trim();
+    if(/^go\b/i.test(clean))return 'Go.';
+    if(/^rest\b/i.test(clean))return 'Rest.';
+    if(/^halfway\b/i.test(clean))return 'Push.';
+    if(/^get ready\b/i.test(clean))return 'Go.';
+    const words=clean.replace(/[^a-zA-Z' ]+/g,' ').trim().split(/\s+/).filter(Boolean);
+    return words.length?words[words.length-1]+'.':'';
+  }
+
+  function makeUtterance(text,{pitch,rate,volume}){
+    const utterance=new SpeechSynthesisUtterance(text);
+    const voice=chosenVoice();
+    utterance.lang=voice?.lang||'en-US';
+    if(voice)utterance.voice=voice;
+    utterance.rate=rate;
+    utterance.pitch=pitch;
+    utterance.volume=volume;
+    return utterance;
+  }
+
   function speak(text){
     if(!capabilities().speech)return false;
     try{
       const synth=window.speechSynthesis;
-      const utterance=new SpeechSynthesisUtterance(text);
-      const voice=chosenVoice();
       const settings=chosenSettings();
-      utterance.lang=voice?.lang||'en-US';
-      if(voice)utterance.voice=voice;
-      utterance.rate=settings.rate;
-      utterance.pitch=settings.pitch;
-      utterance.volume=settings.volume;
+      const fx=chosenFx();
+      const primary=makeUtterance(text,settings);
       synth.cancel();
-      synth.speak(utterance);
+
+      if(fx.tailCount>0){
+        primary.addEventListener('end',()=>{
+          const token=tailWord(text);
+          if(!token)return;
+          for(let i=0;i<fx.tailCount;i++){
+            const tail=makeUtterance(token,{
+              pitch:Math.max(0,settings.pitch+fx.tailPitch-(i*0.03)),
+              rate:Math.max(0.5,settings.rate*0.90),
+              volume:Math.max(0.05,settings.volume*fx.tailVolume*Math.pow(0.72,i))
+            });
+            synth.speak(tail);
+          }
+        },{once:true});
+      }
+
+      synth.speak(primary);
       return true;
     }catch(error){
-      console.warn('[V654 voice lab] speech failed',error);
+      console.warn('[V655 voice FX lab] speech failed',error);
       return false;
     }
   }
 
   async function announce(text,freq){
-    try{await beep(freq);}catch(error){console.warn('[V654 voice lab] beep failed',error);}
+    try{await beep(freq);}catch(error){console.warn('[V655 voice FX lab] beep failed',error);}
     setTimeout(()=>speak(text),90);
   }
 
@@ -183,7 +331,7 @@
       :'<option value="">No English voices found yet</option>';
     if(current&&list.some(v=>v.name===current))select.value=current;
     else{
-      const preferred=list.find(v=>/daniel|alex|aaron|evan|oliver|jamie|rishi/i.test(v.name))||list.find(v=>/^en-GB$/i.test(v.lang))||list[0];
+      const preferred=list.find(v=>/boing|daniel|alex|aaron|evan|oliver|jamie|rishi/i.test(v.name))||list.find(v=>/^en-GB$/i.test(v.lang))||list[0];
       if(preferred){
         select.value=preferred.name;
         try{localStorage.setItem(VOICE_KEY,preferred.name);}catch(_){}
@@ -205,6 +353,7 @@
     if(!card)return;
     const settings=chosenSettings();
     const mode=currentModeKey();
+    const fx=chosenFx();
     const voice=chosenVoice();
 
     setRangeValue('pitch',settings.pitch);
@@ -213,12 +362,19 @@
 
     const status=card.querySelector('[data-sat-status]');
     const base='Voice: '+(voice?voice.name+' · '+voice.lang:'none')+' · '+settings.label+
+      ' · FX '+fx.label+
       ' · pitch '+settings.pitch.toFixed(2)+' · speed '+settings.rate.toFixed(2)+' · volume '+settings.volume.toFixed(2);
     if(status)status.textContent=message?message+' · '+base:base;
 
     card.querySelectorAll('[data-sat-preset]').forEach(btn=>{
       btn.classList.toggle('is-active',btn.dataset.satPreset===mode);
     });
+    card.querySelectorAll('[data-sat-fx]').forEach(btn=>{
+      btn.classList.toggle('is-active',btn.dataset.satFx===fx.key);
+    });
+
+    const fxNote=card.querySelector('[data-sat-fx-note]');
+    if(fxNote)fxNote.textContent=fx.note;
 
     const start=card.querySelector('[data-sat-start]');
     const stop=card.querySelector('[data-sat-stop]');
@@ -240,6 +396,13 @@
     writeCustom(current);
     try{localStorage.setItem(PRESET_KEY,'custom');}catch(_){}
     syncControls('Custom');
+    if(preview)previewVoice();
+  }
+
+  function applyFx(key,{preview=true}={}){
+    if(!fxPresets[key])return;
+    try{localStorage.setItem(FX_KEY,key);}catch(_){}
+    syncControls();
     if(preview)previewVoice();
   }
 
@@ -266,9 +429,10 @@
     },9000));
   }
 
-  function previewVoice(){
+  async function previewVoice(){
     try{window.speechSynthesis?.cancel?.();}catch(_){}
-    speak('Get ready. Three, two, one. Go.');
+    try{await beep(640,90);}catch(_){}
+    setTimeout(()=>speak('Get ready. Three, two, one. Go.'),80);
     syncControls('Preview');
   }
 
@@ -281,18 +445,24 @@
     '</div>';
   }
 
+  function fxButtonsHtml(){
+    return Object.entries(fxPresets).map(([key,fx])=>
+      '<button type="button" data-sat-fx="'+key+'">'+escapeHtml(fx.label)+'</button>'
+    ).join('');
+  }
+
   function cardHtml(){
     const caps=capabilities();
     return `
       <section id="${CARD_ID}" aria-label="Voice laboratory">
-        <div class="sat-kicker">VOICE LAB · V654</div>
+        <div class="sat-kicker">VOICE FX LAB · V655</div>
         <h3>English timer voice</h3>
-        <p>Choose a voice, use a preset or tune pitch, speed and volume yourself.</p>
+        <p>Choose your voice, tune it and test different room/echo flavours.</p>
         <div class="sat-status" data-sat-status>Web Audio: ${caps.webAudio?'yes':'no'} · Speech: ${caps.speech?'yes':'no'}</div>
 
         <div class="sat-grid">
           <label>VOICE<select data-sat-voice><option>Loading voices…</option></select></label>
-          <label>PRESET<div class="sat-presets">
+          <label>VOICE PRESET<div class="sat-presets">
             <button type="button" data-sat-preset="dark">Dark</button>
             <button type="button" data-sat-preset="brutal">Deep & Slow</button>
             <button type="button" data-sat-preset="clean">Clean</button>
@@ -305,10 +475,19 @@
           ${sliderHtml('rate','Speed')}
           ${sliderHtml('volume','Volume')}
         </div>
-        <div class="sat-custom-note">Moving any slider switches to Custom automatically. Values are saved on this device.</div>
+        <div class="sat-custom-note">Moving any slider switches to Custom automatically. Values stay saved on this device.</div>
+
+        <div class="sat-fx-box">
+          <div>
+            <div class="sat-fx-title">ROOM / ECHO EXPERIMENTS</div>
+            <div class="sat-fx-explain">Real reverb is applied to the Web-Audio signal tones. The system voice gets a short dark command tail because iOS does not expose that voice as a Web-Audio source.</div>
+          </div>
+          <div class="sat-fx-buttons">${fxButtonsHtml()}</div>
+          <div class="sat-fx-note" data-sat-fx-note></div>
+        </div>
 
         <div class="sat-actions">
-          <button type="button" data-sat-preview>🔊 Preview voice</button>
+          <button type="button" data-sat-preview>🔊 Preview voice + FX</button>
           <button type="button" data-sat-start>▶ 9-second sequence</button>
           <button type="button" class="sat-stop" data-sat-stop disabled>■ Stop</button>
         </div>
@@ -319,6 +498,7 @@
     card.querySelector('[data-sat-voice]')?.addEventListener('change',event=>{
       try{localStorage.setItem(VOICE_KEY,event.currentTarget.value||'');}catch(_){}
       syncControls();
+      previewVoice();
     });
 
     card.querySelectorAll('[data-sat-preset]').forEach(button=>button.addEventListener('click',event=>{
@@ -345,6 +525,10 @@
         applySliderChange(key,value,{preview:true});
       });
     });
+
+    card.querySelectorAll('[data-sat-fx]').forEach(button=>button.addEventListener('click',event=>{
+      applyFx(event.currentTarget.dataset.satFx||'raw',{preview:true});
+    }));
 
     card.querySelector('[data-sat-preview]')?.addEventListener('click',previewVoice);
     card.querySelector('[data-sat-start]')?.addEventListener('click',runTest);
@@ -386,7 +570,8 @@
     preview:previewVoice,
     capabilities,
     voices:()=>englishVoices().map(v=>({name:v.name,lang:v.lang,localService:v.localService})),
-    settings:()=>chosenSettings()
+    settings:()=>chosenSettings(),
+    fx:()=>chosenFx()
   };
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
