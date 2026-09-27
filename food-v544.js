@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V668';
+  const VERSION='V677';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -143,8 +143,9 @@
   };
   const shoppingGapKey=item=>{
     const unit=String(item?.unit||'').trim();
-    if(item?.inventory_id)return 'stock:'+String(item.inventory_id)+':'+unit.toLocaleLowerCase('de-DE');
-    return 'free:'+normalizedIngredient(item?.label||item?.name,unit)+':'+unit.toLocaleLowerCase('de-DE');
+    const window=':'+(item?.buyFrom||'any');
+    if(item?.inventory_id)return 'stock:'+String(item.inventory_id)+':'+unit.toLocaleLowerCase('de-DE')+window;
+    return 'free:'+normalizedIngredient(item?.label||item?.name,unit)+':'+unit.toLocaleLowerCase('de-DE')+window;
   };
   const manualShoppingKey=item=>'manual:'+String(item?.id||'');
   const shoppingCartIcon=()=>'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 9.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 7H7"/><circle cx="10" cy="19" r="1.4"/><circle cx="18" cy="19" r="1.4"/></svg>';
@@ -152,14 +153,19 @@
 
   const NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser']);
   const isNonShoppingIngredient=name=>NON_SHOPPING_INGREDIENTS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
-  const freshShoppingLeadDays=name=>{
-    const normalized=String(name||'').trim().toLocaleLowerCase('de-DE');
-    if(normalized.includes('hackfleisch'))return 2;
-    if(normalized.includes('hähnchenbrust'))return 2;
-    if(normalized==='feldsalat')return 2;
-    if(normalized==='spinat frisch')return 2;
-    if(normalized==='himbeeren')return 2;
-    return null;
+  const SHOPPING_DATE_OVERRIDES={'2026-10-17':'2026-10-16'};
+  const regularShoppingDate=(iso,mealType='')=>{
+    const day=new Date(String(iso)+'T12:00:00Z').getUTCDay();
+    let offset=0;
+    if(day===0)offset=-1;
+    else if(day===1)offset=-2;
+    else if(day===2)offset=-3;
+    else if(day===3)offset=mealType==='dinner'?0:-4;
+    else if(day===4)offset=-1;
+    else if(day===5)offset=-2;
+    else if(day===6)offset=mealType==='breakfast'?-3:0;
+    const normal=plusDays(iso,offset);
+    return SHOPPING_DATE_OVERRIDES[normal]||normal;
   };
   const fmtShortDate=iso=>iso?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00')):'';
   const inventoryQuantityInUnit=(stock,targetUnit)=>{
@@ -726,7 +732,7 @@
         const key=item.inventory_id?'stock|'+item.inventory_id+'|'+unit:'free|'+canonical+'|'+unit.toLocaleLowerCase('de-DE');
         const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,canonical,unit,required:0,uses:[]};
         current.required+=quantity;
-        current.uses.push({date:meal.meal_date,quantity});
+        current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
         if(current.canonical==='knoblauchzehen')current.label='Knoblauchzehen';
         needs.set(key,current);
@@ -773,24 +779,37 @@
       if(stock?.pending_weighing===true)return;
 
       const stockInfo=inventoryQuantityInUnit(stock,need.unit);
-      const available=stockInfo.available;
-      const missing=Math.max(0,need.required-available);
-      if(missing<=0)return;
+      let remaining=Math.max(0,stockInfo.available||0);
+      const windows=new Map();
 
-      const shortageDate=shortageDateFor(need,available);
-      const leadDays=freshShoppingLeadDays(stock?.name||need.label);
-      const buyFrom=shortageDate&&leadDays!==null?plusDays(shortageDate,-leadDays):null;
+      need.uses.forEach(use=>{
+        const buyFrom=regularShoppingDate(use.date,use.mealType);
+        const current=windows.get(buyFrom)||{buyFrom,required:0,uses:[],shortageDate:use.date};
+        current.required+=use.quantity;
+        current.uses.push(use);
+        if(use.date<current.shortageDate)current.shortageDate=use.date;
+        windows.set(buyFrom,current);
+      });
 
-      gaps.push({
-        ...need,
-        inventory_id:need.inventory_id||stock?.id||null,
-        available,
-        missing,
-        label:stock?.name||need.label,
-        unitMismatch:stockInfo.unitMismatch,
-        convertedStock:stockInfo.converted,
-        shortageDate,
-        buyFrom
+      [...windows.values()].sort((a,b)=>a.buyFrom.localeCompare(b.buyFrom)).forEach(window=>{
+        const available=Math.min(remaining,window.required);
+        remaining=Math.max(0,remaining-window.required);
+        const missing=Math.max(0,window.required-available);
+        if(missing<=0)return;
+
+        gaps.push({
+          ...need,
+          required:window.required,
+          uses:window.uses,
+          inventory_id:need.inventory_id||stock?.id||null,
+          available,
+          missing,
+          label:stock?.name||need.label,
+          unitMismatch:stockInfo.unitMismatch,
+          convertedStock:stockInfo.converted,
+          shortageDate:window.shortageDate,
+          buyFrom:window.buyFrom
+        });
       });
     });
     return gaps;
