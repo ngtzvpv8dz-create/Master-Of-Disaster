@@ -928,3 +928,11 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 @media(max-width:520px){
   .sport-active-clock-v623{font-size:1.9rem}
 }
+
+.sport-active-slogan-v674{
+  margin:10px 0 0;
+  color:#a8d9dc;
+  font-size:.68rem;
+  font-weight:850;
+  line-height:1.4;
+}
