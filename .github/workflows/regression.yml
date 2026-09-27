@@ -23,7 +23,12 @@ jobs:
           node --check surface-header-v603.js
           node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
-          node --check sport-circuit-v671.js
+          node --check sport-circuit-v675.js
+          grep -Fq 'round_break_seconds' sport-circuit-v675.js
+          grep -Fq 'RUNDENPAUSE' sport-circuit-v675.js
+          grep -Fq 'Cardio-Gerät' sport-v616.js
+          grep -Fq 'Trainingsgerät' sport-v616.js
+          grep -Fq 'Tour de X' sport-v616.js
           grep -Fq 'Hier läuft gerade nichts. Nicht mal du.' sport-v616.js
           grep -Fq 'Jetzt nicht nachdenken. Machen reicht völlig.' sport-v616.js
           grep -Fq "if(mode==='sport')activeTab='overview';" sport-v616.js
@@ -46,8 +51,8 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
-          grep -q 'area-runtime-v609.js?v=674-active-copy' index.html
-          grep -q 'sport-circuit-v671.js?v=674-active-copy' area-runtime-v609.js
+          grep -q 'area-runtime-v609.js?v=675-round-break-history' index.html
+          grep -q 'sport-circuit-v675.js?v=675-round-break-history' area-runtime-v609.js
           ! grep -q 'sport-audio-test-v652.js?v=657-beep-cues' area-runtime-v609.js
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
           grep -q 'area-loader-v608.css?v=608-staged' index.html
