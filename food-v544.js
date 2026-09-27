@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V654';
+  const VERSION='V664';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -22,7 +22,7 @@
   let renderSerial=0;
   let state=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','recipes','shopping','cart','leftovers'];
+  const SOURCE_KEYS=['meals','inventory','lots','recipes','shopping','cart','leftovers'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -193,7 +193,8 @@
     recipes:[],
     shopping:[],
     cart:[],
-    leftovers:[]
+    leftovers:[],
+    lots:[]
   };
 
   function ensureRoot(){
@@ -277,6 +278,7 @@
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
+      safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
@@ -298,10 +300,11 @@
     return {
       meals:take('meals',0,flattenMeals),
       inventory:take('inventory',1,rows=>rows),
-      recipes:take('recipes',2,rows=>rows),
-      shopping:take('shopping',3,rows=>rows),
-      cart:take('cart',4,rows=>rows),
-      leftovers:take('leftovers',5,rows=>rows)
+      lots:take('lots',2,rows=>rows),
+      recipes:take('recipes',3,rows=>rows),
+      shopping:take('shopping',4,rows=>rows),
+      cart:take('cart',5,rows=>rows),
+      leftovers:take('leftovers',6,rows=>rows)
     };
   }
 
@@ -398,7 +401,36 @@
     const source=mealPrepSource(meal);
     if(!source?.meal_date)return '';
     const weekday=new Intl.DateTimeFormat('de-DE',{weekday:'long',timeZone:'Europe/Berlin'}).format(new Date(source.meal_date+'T12:00:00'));
-    return weekday+' · '+(MEAL_LABELS[source.meal_type]||source.meal_type||'Mahlzeit');
+    const suffix=source.meal_type==='dinner'?'abend':source.meal_type==='lunch'?'mittag':source.meal_type==='breakfast'?'morgen':'';
+    return weekday+suffix;
+  }
+
+  function noteSentences(note){
+    return String(note||'').trim().split(/(?<=[.!?])\s+/).map(part=>part.trim()).filter(Boolean);
+  }
+
+  function freezeInstruction(note){
+    const sentence=noteSentences(note).find(part=>/einfrier/i.test(part));
+    if(!sentence)return '';
+    const quantities=[...sentence.matchAll(/(\d+(?:[.,]\d+)?)\s*(g|kg|Portion(?:en)?|Stück)/gi)];
+    const last=quantities.length?quantities[quantities.length-1]:null;
+    if(last)return last[1]+' '+last[2]+' direkt nach der Zubereitung einfrieren';
+    return sentence.replace(/^Meal Prep:\s*/i,'').replace(/[.!?]+$/,'');
+  }
+
+  function visibleMealNote(note,{suppressGenericMealPrep=false}={}){
+    const parts=noteSentences(note)
+      .filter(part=>!/einfrier/i.test(part))
+      .map(part=>part.replace(/^Meal Prep:\s*/i,'').trim())
+      .filter(Boolean);
+    const text=parts.join(' ');
+    if(suppressGenericMealPrep&&/^Meal Prep vom .+bereits zubereitet\.?$/i.test(String(note||'').trim()))return '';
+    return text;
+  }
+
+  function freezeInstructionMarkup(note){
+    const text=freezeInstruction(note);
+    return text?'<div class="food-freeze-hint-v664"><span aria-hidden="true">❄</span><div><strong>Einfrieren</strong><small>'+esc(text)+'</small></div></div>':'';
   }
 
   function mealPlanMeta(meal){
@@ -406,10 +438,8 @@
     const eaten=Math.max(.01,Number(meal.eaten_servings)||prepared);
     const rest=Math.max(0,prepared-eaten);
     const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
-    if(isMealPrep)return portionLabel(eaten)+' · Meal Prep';
-    if(rest>0){
-      return portionLabel(prepared)+' Meal Prep · '+portionLabel(eaten)+' an diesem Tag · '+portionLabel(rest)+' vorbereitet';
-    }
+    if(isMealPrep)return portionLabel(eaten);
+    if(rest>0)return portionLabel(prepared)+' · '+portionLabel(rest)+' Meal Prep';
     return portionLabel(eaten);
   }
 
@@ -426,28 +456,25 @@
       :'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isMealPrep?'Als gegessen markieren':'Als zubereitet markieren')+'</button>';
     const statusMeta=status==='completed'
       ?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at))
-      :(isMealPrep
-        ?(mealPrepReady?'Bereits zubereitet':(sourceLabel?'Wird bei '+sourceLabel+' zubereitet':'Meal Prep eingeplant'))
-        :'Geplant');
+      :'Geplant';
 
     if(isMealPrep){
       const title=recipe?.title||meal.title||'Meal Prep';
       const extras=meal.ingredients||[];
-      const sourceText=sourceLabel?' · Quelle: '+sourceLabel:'';
+      const detailNote=visibleMealNote(meal.note,{suppressGenericMealPrep:true});
       const details=expanded
         ?'<div class="food-recipe-details-v572">'
-          +(meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'')
+          +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
           +(extras.length?'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong><ul>'+extras.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
-          +(!meal.note&&!extras.length?'<p class="food-recipe-note-v572">Diese Portion kommt vollständig aus dem Meal Prep der Quellmahlzeit.</p>':'')
         +'</div>'
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-          +'<span><small class="food-recipe-type-v544">MEAL PREP'+esc(sourceText)+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em></span>'
+          +'<span><small class="food-recipe-type-v544">MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +details
-        +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
+        +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +action
         +'</article>';
     }
@@ -455,7 +482,9 @@
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
       const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings);
-      const planNote=expanded&&meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'';
+      const note=visibleMealNote(meal.note);
+      const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
+      const freezeHint=expanded?freezeInstructionMarkup(meal.note):'';
       const quantityAction=status==='completed'
         ?''
         :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Mengen ändern</button>';
@@ -464,7 +493,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
-        +view.details+planNote
+        +view.details+freezeHint+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
         +'</article>';
@@ -475,11 +504,13 @@
     const editAction=status==='completed'
       ?''
       :'<button type="button" class="food-action-v544 compact" data-food-edit-free-meal="'+esc(meal.id)+'">Zutaten bearbeiten</button>';
+    const note=visibleMealNote(meal.note);
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
         +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
-        +(meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'')
-        +(!items.length&&!meal.note?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
+        +freezeInstructionMarkup(meal.note)
+        +(note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'')
+        +(!items.length&&!note&&!freezeInstruction(meal.note)?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
         +(expanded&&editAction?'<div class="food-meal-edit-actions-v618">'+editAction+'</div>':'')
         +'</div>'
       :'';
@@ -539,6 +570,47 @@
     }).join('')+'</div>';
   }
 
+  const frozenStorageLocation=value=>/gefrier|tiefkühl|freezer|frozen/i.test(String(value||''));
+  const lotQuantityForInventory=(lot,item)=>{
+    const target=String(item?.unit||'').trim();
+    const packUnit=String(lot?.package_unit||'').trim();
+    const openedUnit=String(lot?.opened_remaining_unit||packUnit).trim();
+    let total=0;
+    let known=false;
+    const packageQuantity=num(lot?.package_quantity);
+    const unopened=Math.max(0,Number(lot?.unopened_packages)||0);
+    if(packageQuantity!==null&&Number.isFinite(packageQuantity)&&unopened>0&&packUnit===target){
+      total+=packageQuantity*unopened;
+      known=true;
+    }
+    const openedQuantity=num(lot?.opened_remaining_quantity);
+    if(openedQuantity!==null&&Number.isFinite(openedQuantity)&&openedQuantity>0&&openedUnit===target){
+      total+=openedQuantity;
+      known=true;
+    }
+    return known?total:null;
+  };
+
+  function inventoryStorageSlices(item,data=state){
+    const lots=(data?.lots||[]).filter(lot=>String(lot.inventory_id)===String(item.id));
+    if(!lots.length)return [];
+    const grouped=new Map();
+    for(const lot of lots){
+      const quantity=lotQuantityForInventory(lot,item);
+      if(quantity===null||quantity<=0)continue;
+      const frozen=frozenStorageLocation(lot.storage_location);
+      const key=frozen?'frozen':'fresh';
+      grouped.set(key,(grouped.get(key)||0)+quantity);
+    }
+    const slices=[];
+    if((grouped.get('fresh')||0)>0)slices.push({kind:'fresh',quantity:grouped.get('fresh'),label:'frisch'});
+    if((grouped.get('frozen')||0)>0)slices.push({kind:'frozen',quantity:grouped.get('frozen'),label:'eingefroren'});
+    const aggregate=num(item.quantity);
+    const explained=slices.reduce((sum,slice)=>sum+slice.quantity,0);
+    if(aggregate!==null&&Math.abs(explained-aggregate)>.05)return [];
+    return slices;
+  }
+
   function inventoryCard(item){
     const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
     const pending=item.pending_weighing===true;
@@ -547,13 +619,26 @@
     const quantity=pending
       ?((known!==null&&known>0)?baseQuantity+' + Einkauf noch abwiegen':'Einkauf noch abwiegen')
       :baseQuantity;
-    const forecast=!empty&&item.forecast_label?'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>':'';
+    const freezePlanned=!empty&&/einfrier/i.test(String(item.forecast_label||''));
+    const forecast=!empty&&item.forecast_label
+      ?(freezePlanned
+        ?'<span class="food-freeze-plan-v664"><b aria-hidden="true">❄</b><span>'+esc(item.forecast_label)+'</span></span>'
+        :'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>')
+      :'';
     const priority=!empty&&item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
     const weighing=pending?'<span class="food-weigh-pending-v625">⚖ Menge noch offen</span>':'';
     const tomorrowClass=!empty&&item.use_priority==='tomorrow'?' priority-tomorrow-v574':'';
+    const freezePlanClass=freezePlanned?' has-freeze-plan-v664':'';
+    const slices=empty?[]:inventoryStorageSlices(item);
+    const showSlices=slices.length>1||slices.some(slice=>slice.kind==='frozen');
+    const sliceMarkup=showSlices
+      ?'<div class="food-stock-slices-v664" aria-label="Bestandsaufteilung">'+slices.map(slice=>
+        '<div class="food-stock-slice-v664 is-'+slice.kind+'"><span>'+esc(slice.label)+'</span><strong>'+esc(fmtQty(slice.quantity,item.unit))+'</strong></div>'
+      ).join('')+'</div>'
+      :'';
     const weighAction=pending?'<button type="button" data-food-weigh="'+esc(item.id)+'">Jetzt abwiegen</button>':'';
     const status=empty?'leer':(item.opened?'angebrochen':'unangebrochen');
-    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':'')+'">'+status+'</span></div>'+weighing+priority+forecast+inventoryNoteHtml(item.note)+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+freezePlanClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':'')+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+inventoryNoteHtml(item.note)+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
   }
 
   function garlicParts(data=state){
