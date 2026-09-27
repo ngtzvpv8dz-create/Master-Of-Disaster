@@ -28,7 +28,7 @@ jobs:
           grep -Fq 'RUNDENPAUSE' sport-circuit-v675.js
           grep -Fq 'Cardio-Gerät' sport-v616.js
           grep -Fq 'Trainingsgerät' sport-v616.js
-          grep -Fq 'Tour de X' sport-v616.js
+          grep -Fq "['tour de x','tour de x']" sport-v616.js
           grep -Fq 'Hier läuft gerade nichts. Nicht mal du.' sport-v616.js
           grep -Fq 'Jetzt nicht nachdenken. Machen reicht völlig.' sport-v616.js
           grep -Fq "if(mode==='sport')activeTab='overview';" sport-v616.js
@@ -51,7 +51,7 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
-          grep -q 'area-runtime-v609.js?v=675-round-break-history' index.html
+          grep -q 'area-runtime-v609.js?v=676-tour-lowercase' index.html
           grep -q 'sport-circuit-v675.js?v=675-round-break-history' area-runtime-v609.js
           ! grep -q 'sport-audio-test-v652.js?v=657-beep-cues' area-runtime-v609.js
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
