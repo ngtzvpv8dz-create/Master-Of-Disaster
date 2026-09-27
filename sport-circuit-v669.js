@@ -259,8 +259,10 @@
       }
       if(phase==='done'){label='GESCHAFFT';remaining=0;sub='Zirkel vollständig abgeschlossen';}
       if(phase==='aborted'){label='ABGEBROCHEN';remaining=Math.max(0,Math.round(runtime.partialAtAbort||0));sub='Bis hierhin wird dokumentiert';}
+      const shownRound=phase==='rest'&&next?next.round:runtime.round;
+      const shownIndex=phase==='rest'&&next?next.index:runtime.index;
       return '<section id="'+CARD_LIVE+'" class="'+(phase==='done'?'sc-done-v669':'')+'">'+
-        '<div class="sc-live-top-v669"><span class="sc-phase-v669" data-circuit-live-phase>'+esc(label)+'</span><span class="sc-round-v669" data-circuit-live-round>Runde '+runtime.round+' / '+runtime.run.planned_rounds+' · Übung '+(runtime.index+1)+' / '+runtime.exercises.length+'</span></div>'+
+        '<div class="sc-live-top-v669"><span class="sc-phase-v669" data-circuit-live-phase>'+esc(label)+'</span><span class="sc-round-v669" data-circuit-live-round>Runde '+shownRound+' / '+runtime.run.planned_rounds+' · Übung '+(shownIndex+1)+' / '+runtime.exercises.length+'</span></div>'+
         '<div class="sc-exercise-v669" data-circuit-live-exercise>'+esc(title)+'</div><div class="sc-next-v669" data-circuit-live-next>'+esc(sub)+'</div>'+
         '<div class="sc-clock-v669" data-circuit-live-clock>'+remaining+'</div><div class="sc-clock-unit-v669">Sekunden</div>'+
         '<div class="sc-progress-v669"><i data-circuit-live-progress></i></div>'+
@@ -471,7 +473,7 @@
   const low=()=>toneSpec(520,.14,.12);
   const go=()=>toneSpec(940,.26,.14);
   const half=()=>toneSpec(720,.09,.11);
-  const endTone=()=>toneSpec(390,1.35,.105);
+  const endTone=()=>toneSpec(390,2.00,.10);
 
   function roundSequence(offset=0){
     scheduleSequence([[440,.08,.11,'sine',.04],[554,.08,.11,'sine',.04],[659,.08,.11,'sine',.04],[880,.16,.12,'sine',0]],offset);
@@ -664,8 +666,8 @@
 
     const isLastExercise=runtime.index===runtime.exercises.length-1;
     const isFinal=isLastExercise&&runtime.round===runtime.run.planned_rounds;
-    if(isFinal)finishSequence(duration+1.45);
-    else if(isLastExercise)roundSequence(duration+1.45);
+    if(isFinal)finishSequence(duration+2.10);
+    else if(isLastExercise)roundSequence(duration+2.10);
 
     saveLocalRuntime();
     updateLiveDom();
@@ -838,7 +840,9 @@
     const progress=card.querySelector('[data-circuit-live-progress]');
     const sync=card.querySelector('[data-circuit-live-sync]');
     if(phaseEl)phaseEl.textContent=label;
-    if(roundEl)roundEl.textContent='Runde '+runtime.round+' / '+runtime.run.planned_rounds+' · Übung '+(runtime.index+1)+' / '+runtime.exercises.length;
+    const shownRound=phase==='rest'&&next?next.round:runtime.round;
+    const shownIndex=phase==='rest'&&next?next.index:runtime.index;
+    if(roundEl)roundEl.textContent='Runde '+shownRound+' / '+runtime.run.planned_rounds+' · Übung '+(shownIndex+1)+' / '+runtime.exercises.length;
     if(exEl)exEl.textContent=title;
     if(nextEl)nextEl.textContent=sub;
     if(clockEl)clockEl.textContent=remaining;
