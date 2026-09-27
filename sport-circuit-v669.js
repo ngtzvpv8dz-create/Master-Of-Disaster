@@ -307,8 +307,11 @@
   }
 
   function scheduleMount(){
-    clearTimeout(mountTimer);
-    mountTimer=setTimeout(mount,20);
+    if(mountTimer)return;
+    mountTimer=setTimeout(()=>{
+      mountTimer=null;
+      mount();
+    },20);
   }
 
   function bindRoot(root){
