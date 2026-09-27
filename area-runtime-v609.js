@@ -45,7 +45,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v616.js?v=626-unified-history',
+      './sport-v616.js?v=626-tour-lowercase',
       './sport-circuit-v675.js?v=675-round-break-history'
     ],
     food:[
