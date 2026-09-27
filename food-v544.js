@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V665';
+  const VERSION='V666';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -36,12 +36,12 @@
       const glyphs=['❄','❅','❆'];
       const html=Array.from({length:count},(_,index)=>{
         const glyph=glyphs[Math.floor(Math.random()*glyphs.length)];
-        const size=(subtle?42:50)+Math.floor(Math.random()*(subtle?38:48));
-        const top=4+Math.floor(Math.random()*72);
-        const right=-14+Math.floor(Math.random()*42);
-        const opacity=(subtle?.065:.09)+Math.random()*(subtle?.07:.1);
-        const rotate=-28+Math.floor(Math.random()*57);
-        const x=index&&Math.random()>.58?-18-Math.floor(Math.random()*18):0;
+        const size=(subtle?74:92)+Math.floor(Math.random()*(subtle?56:70));
+        const top=8+Math.floor(Math.random()*76);
+        const right=-28+Math.floor(Math.random()*54);
+        const opacity=(subtle?.17:.22)+Math.random()*(subtle?.10:.13);
+        const rotate=-32+Math.floor(Math.random()*65);
+        const x=index&&Math.random()>.52?-20-Math.floor(Math.random()*34):0;
         return '<i aria-hidden="true" class="food-frost-crystal-v665" style="top:'+top+'%;right:'+right+'px;font-size:'+size+'px;opacity:'+opacity.toFixed(3)+';transform:translate('+x+'px,-50%) rotate('+rotate+'deg)">'+glyph+'</i>';
       }).join('');
       frostDecor.set(key,html);
