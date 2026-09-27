@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V667';
+  const VERSION='V668';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -30,12 +30,19 @@
   const expandedRecipes=new Set();
   const expandedMeals=new Set();
 
+  function frostSvgMarkup(variant){
+    const shapes=[
+      '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><g class="food-frost-lines-v668"><path d="M50 7v86M13 29l74 42M13 71l74-42"/><path d="M50 7l-8 12M50 7l8 12M50 93l-8-12M50 93l8-12M13 29l15 1M13 29l7 13M87 71l-15-1M87 71l-7-13M13 71l15-1M13 71l7-13M87 29l-15 1M87 29l-7 13"/></g></svg>',
+      '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><g class="food-frost-lines-v668"><path d="M50 5v90M5 50h90M18 18l64 64M18 82l64-64"/><path d="M50 19l-7 9M50 19l7 9M50 81l-7-9M50 81l7-9M19 50l9-7M19 50l9 7M81 50l-9-7M81 50l-9 7M28 28l12 2M28 28l2 12M72 72l-12-2M72 72l-2-12M28 72l12-2M28 72l2-12M72 28l-12 2M72 28l-2 12"/></g></svg>',
+      '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><g class="food-frost-lines-v668"><path d="M50 8v84M16 20l68 60M16 80l68-60"/><path d="M50 25l-10 8M50 25l10 8M50 75l-10-8M50 75l10-8M30 33l14 2M30 33l2 14M70 67l-14-2M70 67l-2-14M30 67l14-2M30 67l2-14M70 33l-14 2M70 33l-2 14"/></g></svg>'
+    ];
+    return shapes[Math.abs(Number(variant)||0)%shapes.length];
+  }
+
   function frostDecorHtml(key,{subtle=false}={}){
     if(!frostDecor.has(key)){
       const count=2+Math.floor(Math.random()*2);
-      const glyphs=['❄','❅','❆'];
       const html=Array.from({length:count},(_,index)=>{
-        const glyph=glyphs[Math.floor(Math.random()*glyphs.length)];
         const minSize=subtle?80:95;
         const maxSize=subtle?150:180;
         const size=minSize+Math.floor(Math.random()*(maxSize-minSize+1));
@@ -44,14 +51,15 @@
         const opacity=(subtle?.25:.30)+Math.random()*(subtle?.10:.12);
         const rotate=-38+Math.floor(Math.random()*77);
         const overlap=index&&Math.random()>.42?-24-Math.floor(Math.random()*46):0;
-        return '<i aria-hidden="true" class="food-frost-crystal-v665" style="top:'+top+'%;right:'+right+'px;font-size:'+size+'px;opacity:'+opacity.toFixed(3)+';transform:translate('+overlap+'px,-50%) rotate('+rotate+'deg)">'+glyph+'</i>';
+        const variant=Math.floor(Math.random()*3);
+        return '<span aria-hidden="true" class="food-frost-shape-v668" style="top:'+top+'%;right:'+right+'px;width:'+size+'px;height:'+size+'px;opacity:'+opacity.toFixed(3)+';transform:translate('+overlap+'px,-50%) rotate('+rotate+'deg)">'+frostSvgMarkup(variant)+'</span>';
       }).join('');
       frostDecor.set(key,html);
     }
     return frostDecor.get(key);
   }
 
-  function decorateCards(root){
+    function decorateCards(root){
     root.querySelectorAll('.food-meal-card-v544,.food-stock-card-v544,.food-recipe-card-v544,.food-empty-card-v544,.food-shopping-list-v544>li').forEach((card,index)=>{
       const key=activeTab+':'+(card.querySelector('h4,strong')?.textContent||index);
       if(!cardArcs.has(key)){
@@ -463,7 +471,7 @@
 
   function freezeInstructionMarkup(note){
     const text=freezeInstruction(note);
-    return text?'<div class="food-freeze-hint-v664"><span aria-hidden="true">❄</span><div><strong>Einfrieren</strong><small>'+esc(text)+'</small></div></div>':'';
+    return text?'<div class="food-freeze-hint-v664"><div><strong>Einfrieren</strong><small>'+esc(text)+'</small></div></div>':'';
   }
 
   function mealPlanMeta(meal){
@@ -655,7 +663,7 @@
     const freezePlanned=!empty&&/einfrier/i.test(String(item.forecast_label||''));
     const forecast=!empty&&item.forecast_label
       ?(freezePlanned
-        ?'<span class="food-freeze-plan-v664"><b aria-hidden="true">❄</b><span>'+esc(item.forecast_label)+'</span></span>'
+        ?'<span class="food-freeze-plan-v664"><span>'+esc(item.forecast_label)+'</span></span>'
         :'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>')
       :'';
     const priority=!empty&&item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
