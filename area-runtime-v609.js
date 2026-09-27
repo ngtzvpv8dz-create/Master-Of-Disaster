@@ -46,7 +46,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './sport-v616.js?v=622-execution-catalog',
-      './sport-audio-test-v652.js?v=657-beep-cues'
+      './sport-circuit-v669.js?v=669-circuit-runner'
     ],
     food:[
       SUPABASE,
@@ -139,7 +139,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v616.js?v=622-execution-catalog','./sport-audio-test-v652.js?v=657-beep-cues'],
+    sport:['./sport-v616.js?v=622-execution-catalog','./sport-circuit-v669.js?v=669-circuit-runner'],
     food:['./food-v544.js?v=668-frost-svg'],
     shopping:['./food-v544.js?v=668-frost-svg','./shopping-v651.js?v=651-confirm'],
     kistology:['./kistology-v603.js?v=609-current'],
@@ -311,7 +311,7 @@
       await waitFor(()=>typeof window.render==='function'&&typeof window.switchTab==='function');
       await waitFor(()=>window.__modTodoStabilityV603&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508&&window.__modTodayWorkBlocksV474&&window.__modTodayCreateRenderV480);
     }else if(id==='sport'){
-      await waitFor(()=>window.__modSportV568||window.__modSportModeV510);
+      await waitFor(()=>(window.__modSportV568||window.__modSportModeV510)&&window.__modSportCircuitV669);
     }else if(id==='food'){
       await waitFor(()=>window.__modFoodV544);
     }else if(id==='shopping'){
