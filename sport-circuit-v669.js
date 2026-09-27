@@ -146,6 +146,9 @@
         state={...state,runExercises:runItemsR.data||[]};
       }else state={...state,runExercises:[]};
 
+      document.getElementById(CARD_PLAN)?.remove();
+      document.getElementById(CARD_HISTORY)?.remove();
+      if(!runtime)document.getElementById(CARD_LIVE)?.remove();
       scheduleMount();
     }catch(error){
       state={...state,loading:false,error:error?.message||String(error)};
@@ -715,6 +718,11 @@
     runtime.completedWorkSeconds+=duration;
     const completedRound=runtime.index===runtime.exercises.length-1?runtime.round:runtime.round-1;
 
+    const currentRound=runtime.round;
+    const currentIndex=runtime.index;
+    const next=nextPosition(runtime);
+    const activeSeconds=runtime.completedWorkSeconds;
+    const runId=runtime.run.id;
     queueDb(async()=>{
       const {supabase}=await sportUser();
       if(intervalId){
@@ -723,16 +731,15 @@
         }).eq('id',intervalId);
         if(interval.error)throw interval.error;
       }
-      const next=nextPosition(runtime);
       const patch={
         completed_rounds:Math.max(0,completedRound),
-        current_round:next?.round||runtime.round,
-        current_exercise_index:(next?.index??runtime.index)+1,
+        current_round:next?.round||currentRound,
+        current_exercise_index:(next?.index??currentIndex)+1,
         current_elapsed_seconds:next?0:duration,
-        total_active_seconds:runtime.completedWorkSeconds,
+        total_active_seconds:activeSeconds,
         updated_at:endedAt
       };
-      const result=await supabase.from('sport_circuit_runs').update(patch).eq('id',runtime.run.id);
+      const result=await supabase.from('sport_circuit_runs').update(patch).eq('id',runId);
       if(result.error)throw result.error;
     });
 
@@ -759,14 +766,19 @@
     if(bucket<=runtime.lastProgressBucket)return;
     runtime.lastProgressBucket=bucket;
     saveLocalRuntime();
+    const round=runtime.round;
+    const exerciseIndex=runtime.index+1;
+    const totalActive=Math.round((runtime.completedWorkSeconds+elapsed)*1000)/1000;
+    const runId=runtime.run.id;
+    const updatedAt=new Date().toISOString();
     queueDb(async()=>{
       const {supabase}=await sportUser();
       const result=await supabase.from('sport_circuit_runs').update({
-        current_round:runtime.round,current_exercise_index:runtime.index+1,
+        current_round:round,current_exercise_index:exerciseIndex,
         current_elapsed_seconds:Math.round(elapsed*1000)/1000,
-        total_active_seconds:Math.round((runtime.completedWorkSeconds+elapsed)*1000)/1000,
-        updated_at:new Date().toISOString()
-      }).eq('id',runtime.run.id);
+        total_active_seconds:totalActive,
+        updated_at:updatedAt
+      }).eq('id',runId);
       if(result.error)throw result.error;
     });
   }
@@ -966,7 +978,18 @@
 
   function initObserver(){
     if(observer)return;
-    observer=new MutationObserver(scheduleMount);
+    const bindRootObserver=()=>{
+      const root=document.getElementById(ROOT_ID);
+      if(!root)return false;
+      observer?.disconnect();
+      observer=new MutationObserver(scheduleMount);
+      observer.observe(root,{childList:true});
+      return true;
+    };
+    if(bindRootObserver())return;
+    observer=new MutationObserver(()=>{
+      if(bindRootObserver())scheduleMount();
+    });
     observer.observe(document.body,{childList:true,subtree:true});
   }
 
