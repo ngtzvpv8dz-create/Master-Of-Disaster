@@ -523,6 +523,7 @@
   }
   function groupActivities(group){return (group?.sessions||[]).flatMap(session=>session.activities||[]);}
   function groupWorkout(group){return (group?.sessions||[]).flatMap(session=>session.workout||[]).filter(item=>item.status!=='skipped');}
+  function groupCircuits(group){return (group?.sessions||[]).filter(session=>session.kind==='circuit'&&session.circuitRun);}
   function groupParticipants(group){
     const names=new Set();
     (group?.sessions||[]).forEach(session=>{
@@ -544,19 +545,58 @@
     const ends=sessions.map(session=>validDate(session.endedAt)).filter(Boolean).sort((a,b)=>a-b);
     return starts.length&&ends.length?clock(starts[0])+'–'+clock(ends[ends.length-1]):'Zeit nicht vollständig dokumentiert';
   }
+  function workoutType(item){
+    if(item?.kind==='cardio')return 'cardio_machine';
+    if(item?.itemType)return item.itemType;
+    const catalog=state.catalogExercises.find(entry=>String(entry.id)===String(item?.exerciseId));
+    return catalog?.item_type||catalog?.itemType||(item?.equipmentId?'strength_machine':'free_exercise');
+  }
+  function workoutBreakdown(workout){
+    const counts={cardio:0,machine:0,free:0,outdoor:0,other:0};
+    (workout||[]).forEach(item=>{
+      const type=workoutType(item);
+      if(type==='cardio_machine')counts.cardio++;
+      else if(type==='strength_machine')counts.machine++;
+      else if(type==='free_exercise')counts.free++;
+      else if(type==='outdoor_activity')counts.outdoor++;
+      else counts.other++;
+    });
+    return counts;
+  }
+  function countLabel(count,singular,plural){return count+' '+(count===1?singular:plural);}
+  function circuitProgressSummary(run){
+    if(!run)return 'Zirkeltraining';
+    if(run.status==='completed')return countLabel(run.plannedRounds,'Runde abgeschlossen','Runden abgeschlossen');
+    const parts=[countLabel(run.completedRounds,'Runde abgeschlossen','Runden abgeschlossen')];
+    const exercise=run.exercises[Math.max(0,run.currentExerciseIndex-1)];
+    if(run.currentRound>run.completedRounds){
+      let stop='Abbruch in Runde '+run.currentRound;
+      if(exercise)stop+=' · Übung '+run.currentExerciseIndex+' '+exercise.name;
+      if(run.currentElapsedSeconds>0)stop+=' · '+Math.round(run.currentElapsedSeconds)+' s';
+      parts.push(stop);
+    }else if(exercise){
+      parts.push('Abbruch nach '+exercise.name);
+    }else parts.push('Abgebrochen');
+    return parts.join(' · ');
+  }
   function groupSummary(group){
-    const activities=groupActivities(group),workout=groupWorkout(group),people=groupParticipants(group);
-    const cardio=workout.filter(item=>item.kind==='cardio').length;
+    const activities=groupActivities(group),workout=groupWorkout(group),circuits=groupCircuits(group),people=groupParticipants(group);
     const parts=[];
-    if(activities.length){
-      let coursePart=activities.length+' '+(activities.length===1?'Kurs':'Kurse');
-      if(people.length)coursePart+=' · '+people.join(', ');
-      parts.push(coursePart);
-    }else if(people.length){
-      parts.push(people.join(', '));
+    if(circuits.length){
+      if(circuits.length===1)parts.push('Zirkeltraining',circuitProgressSummary(circuits[0].circuitRun));
+      else parts.push(countLabel(circuits.length,'Zirkeltraining','Zirkeltrainings'));
     }
-    if(workout.length)parts.push(workout.length+' Trainingselement'+(workout.length===1?'':'e'));
-    if(cardio)parts.push(cardio+' Cardio');
+    if(activities.length)parts.push(countLabel(activities.length,'Kurs','Kurse'));
+    if(workout.length){
+      const counts=workoutBreakdown(workout);
+      parts.push('Freies Training');
+      if(counts.machine)parts.push(countLabel(counts.machine,'Trainingsgerät','Trainingsgeräte'));
+      if(counts.cardio)parts.push(countLabel(counts.cardio,'Cardio-Gerät','Cardio-Geräte'));
+      if(counts.free)parts.push(countLabel(counts.free,'freie Übung','freie Übungen'));
+      if(counts.outdoor)parts.push(countLabel(counts.outdoor,'Outdoor-Aktivität','Outdoor-Aktivitäten'));
+      if(counts.other)parts.push(countLabel(counts.other,'Übung','Übungen'));
+    }
+    if(people.length)parts.push((workout.length&&!activities.length?'mit ':'')+people.join(', '));
     return parts.join(' · ')||'Einheit ohne Detailangaben';
   }
 
@@ -565,8 +605,32 @@
     return `<article class="sport-course-card-v568 sport-course-card-compact-v610" style="--sport-course-index-v568:${index}"><div class="sport-course-top-v568"><div><h3>${esc(activity.name)}</h3><div class="sport-card-sub-v510">${esc(clock(activity.startedAt))}–${esc(clock(activity.endedAt)+people)}</div></div><span class="sport-chip-v510">${esc(formatMinutes(activityMinutes(activity)))}</span></div></article>`;
   }
 
+  function circuitRunCard(session){
+    const run=session?.circuitRun;
+    if(!run)return '';
+    const status=run.status==='completed'?'Abgeschlossen':'Abgebrochen';
+    const settings=[
+      run.workSeconds+' s Arbeit',
+      run.restSeconds+' s Stationspause',
+      run.roundBreakSeconds+' s Rundenpause'
+    ].join(' · ');
+    const time=(run.startedAt?clock(run.startedAt):'–')+(run.endedAt?'–'+clock(run.endedAt):'');
+    const list=(run.exercises||[]).length
+      ?'<ol class="sport-circuit-exercises-v675">'+run.exercises.map((item,index)=>{
+          const current=run.status!=='completed'&&index===Math.max(0,run.currentExerciseIndex-1);
+          return '<li class="'+(current?'is-stop-v675':'')+'"><span>'+(index+1)+'</span><div><strong>'+esc(item.name)+'</strong>'+(item.settings?'<small>'+esc(item.settings)+'</small>':'')+'</div></li>';
+        }).join('')+'</ol>'
+      :'<div class="sport-empty-inline-v568">Keine Übungssnapshots vorhanden.</div>';
+    return '<article class="sport-circuit-history-v675">'+
+      '<div class="sport-circuit-history-head-v675"><div><span>ZIRKELTRAINING</span><strong>'+esc(run.name)+'</strong></div><b class="'+(run.status==='completed'?'is-done-v675':'is-stop-v675')+'">'+esc(status)+'</b></div>'+
+      '<p>'+esc(circuitProgressSummary(run))+'</p>'+
+      '<small>'+esc(time)+' · '+esc(settings)+' · '+Math.round(run.totalActiveSeconds)+' s Belastung</small>'+
+      list+
+    '</article>';
+  }
+
   function unitCard(group,index=0){
-    const courses=groupActivities(group),workout=groupWorkout(group);
+    const courses=groupActivities(group),workout=groupWorkout(group),circuits=groupCircuits(group);
     const targetSession=(group.sessions||[]).find(session=>session.kind==='xtraining'&&(session.workout||[]).length)||(group.sessions||[]).find(session=>session.kind==='xtraining')||null;
     const editing=targetSession&&String(editingSessionId||'')===String(targetSession.id);
     const parts=venueParts(group.venue||targetSession?.venue);
@@ -578,13 +642,14 @@
           (editing?'<button type="button" data-sport-open-catalog data-session-id="'+esc(targetSession.id)+'">+ Übung aus Katalog</button><button type="button" data-sport-stop-edit-session>Bearbeitung schließen</button>':'<button type="button" data-sport-edit-session="'+esc(targetSession.id)+'">Training bearbeiten</button>')+
         '</div>':'')+
         (workout.length?(editing?'<div class="sport-workout-list-v573 sport-history-edit-list-v613">'+(targetSession.workout||[]).map(workoutExerciseCard).join('')+'</div>':'<div class="sport-section-title-v568">Freies Training</div><div class="sport-history-workout-v574">'+workout.map(workoutSummaryCard).join('')+'</div>'):'')+
+        (circuits.length?'<div class="sport-section-title-v568">Zirkeltraining</div><div class="sport-circuit-history-list-v675">'+circuits.map(circuitRunCard).join('')+'</div>':'')+
       '</div></details>';
   }
 
-  function completedSessions(rows){return (Array.isArray(rows)?rows:[]).filter(session=>session.status==='completed');}
+  function completedSessions(rows){return (Array.isArray(rows)?rows:[]).filter(session=>session.status==='completed'||(session.kind==='circuit'&&session.status==='cancelled'));}
   function unitHistory(rows){
     const groups=groupSessions(completedSessions(rows));
-    return groups.length?'<div class="sport-unit-list-v610">'+groups.map(unitCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine abgeschlossenen Trainingseinheiten dokumentiert.</div>';
+    return groups.length?'<div class="sport-unit-list-v610">'+groups.map(unitCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine dokumentierten Trainingseinheiten.</div>';
   }
   function isSessionActive(session){
     if(!session||session.status==='completed'||session.status==='cancelled')return false;
@@ -840,7 +905,7 @@
       String(item.name||'').trim().toLowerCase()===name.toLowerCase() &&
       String(item.equipment_number||'')===String(equipmentNumber||'')
     );
-    if(duplicate)throw new Error('Dieses Trainingselement ist bereits im Katalog.');
+    if(duplicate)throw new Error('Diese Übung bzw. dieses Gerät ist bereits im Katalog.');
     const result=await supabase.from('sport_exercise_catalog').insert({
       user_id:user.id,name,kind,item_type:itemType,equipment_number:equipmentNumber,
       category,muscle_group:muscleGroup,settings_text:settingsText,load_mode:loadMode,
@@ -1345,7 +1410,7 @@
 
   function xTrainingPanel(){
     return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="sessions">'+wave()+
-      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>EINHEITEN '+statusBadge()+'</div><p class="sport-date-v510">Abgeschlossene Trainingstage. Geplante und laufende Einheiten bleiben hier draußen.</p><div class="sport-section-mark-v512">E</div></div>'+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>EINHEITEN '+statusBadge()+'</div><p class="sport-date-v510">Dokumentierte Trainingstage. Geplante und laufende Einheiten bleiben hier draußen.</p><div class="sport-section-mark-v512">E</div></div>'+
       '<div class="sport-content-v510">'+unitHistory(state.sessions)+errorNote()+'</div></section>';
   }
 
@@ -1390,7 +1455,7 @@
           '</article>';
         }).join('')+'</div>'+
       '</section>';
-    }).join(''):'<div class="sport-empty-inline-v568">Noch keine Trainingselemente im Katalog.</div>';
+    }).join(''):'<div class="sport-empty-inline-v568">Noch keine Übungen oder Geräte im Katalog.</div>';
 
     const targetLabel=current
       ?(current.status==='completed'?'Abgeschlossene Einheit · '+shortDate(current.date):dateLabel(current.date))
@@ -1402,8 +1467,8 @@
       '<div class="sport-content-v510">'+
         '<div class="sport-catalog-note-v573">Jeder Klick landet direkt in <b>'+esc(current?.status==='completed'?'dieser abgeschlossenen Einheit':'diesem Trainingsplan')+'</b>. Ein grüner Haken bedeutet: ist schon drin.</div>'+
         '<button type="button" class="sport-back-plan-v612" data-sport-catalog-back="'+esc(backTarget)+'">← Zurück</button>'+
-        '<div class="sport-section-title-v568">Trainingselemente</div>'+itemsHtml+
-        '<details class="sport-catalog-create-v573"><summary>+ Trainingselement hinzufügen</summary>'+
+        '<div class="sport-section-title-v568">Übungen & Geräte</div>'+itemsHtml+
+        '<details class="sport-catalog-create-v573"><summary>+ Übung oder Gerät hinzufügen</summary>'+
           '<form data-sport-add-exercise-form>'+
             '<label>Typ<select name="item_type"><option value="strength_machine">Kraftgerät</option><option value="cardio_machine">Cardiogerät</option><option value="free_exercise">Freie Übung</option><option value="outdoor_activity">Outdoor-Aktivität</option></select></label>'+
             '<label>Bezeichnung<input name="name" required placeholder="z. B. Brustpresse oder Sit-Ups"></label>'+
@@ -1412,7 +1477,7 @@
             '<label>Muskelgruppe optional<input name="muscle_group" placeholder="z. B. Quadrizeps"></label>'+
             '<label>Geräteeinstellungen optional<input name="settings_text" placeholder="z. B. Sitzposition 4 · Fußrolle 3"></label>'+
             '<label>Belastung<select name="load_mode"><option value="weight">Gewicht</option><option value="assistance">Unterstützungsgewicht</option><option value="none">Keine Gewichtsangabe</option></select></label>'+
-            '<button type="submit">Trainingselement speichern</button>'+
+            '<button type="submit">Übung / Gerät speichern</button>'+
           '</form>'+
         '</details>'+
         errorNote()+
@@ -1520,7 +1585,7 @@
     const s=aggregate(rows);
     const courses=s.courseCounts.length?`<div class="sport-rank-v568">${s.courseCounts.map(([name,val])=>`<div><span>${esc(name)}</span><b>${val.count}× · ${esc(formatMinutes(val.minutes))}</b></div>`).join('')}</div>`:'<div class="sport-empty-inline-v568">Noch keine Kurse für eine Auswertung.</div>';
     const people=s.partnerCounts.length?`<div class="sport-rank-v568">${s.partnerCounts.map(([name,count])=>`<div><span>${esc(name)}</span><b>${count} gemeinsame${count===1?' Einheit':' Einheiten'}</b></div>`).join('')}</div>`:'<div class="sport-empty-inline-v568">Noch keine Trainingspartner dokumentiert.</div>';
-    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="statistics" data-sport-panel-v568="statistics">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>STATISTIK ${statusBadge()}</div><p class="sport-date-v510">Alle Sportarten und Trainingsformen gemeinsam</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" data-total-minutes="${s.allMinutes}">${esc(formatMinutes(s.allMinutes).replace(' h',''))}</div><div class="sport-duration-unit-v510">Trainingszeit gesamt</div></div></div><div class="sport-content-v510"><div class="sport-stat-grid-v568"><article class="sport-stat-card-v512"><span>Trainingstage</span><strong>${s.allSessions}</strong></article><article class="sport-stat-card-v512"><span>FitX-Besuche</span><strong>${s.fitxSessions}</strong></article><article class="sport-stat-card-v512"><span>Freies Training</span><strong>${s.freeTrainingCount}</strong></article><article class="sport-stat-card-v512"><span>Kurse</span><strong>${s.courseCount}</strong></article><article class="sport-stat-card-v512"><span>Trainingselemente</span><strong>${s.workoutItemCount}</strong></article><article class="sport-stat-card-v512"><span>Gemischte Tage</span><strong>${s.mixedCount}</strong></article></div><div class="sport-stat-foot-v610">FitX-Zeit: <b>${esc(formatMinutes(s.fitxMinutes))}</b> · Kurszeit: <b>${esc(formatMinutes(s.courseTotal))}</b> · Cardio-Einträge: <b>${s.cardioCount}</b></div><div class="sport-stats-columns-v568"><div><div class="sport-section-title-v568">Kurse</div>${courses}</div><div><div class="sport-section-title-v568">Mit dabei</div>${people}</div></div>${errorNote()}</div></section>`;
+    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="statistics" data-sport-panel-v568="statistics">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>STATISTIK ${statusBadge()}</div><p class="sport-date-v510">Alle Sportarten und Trainingsformen gemeinsam</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" data-total-minutes="${s.allMinutes}">${esc(formatMinutes(s.allMinutes).replace(' h',''))}</div><div class="sport-duration-unit-v510">Trainingszeit gesamt</div></div></div><div class="sport-content-v510"><div class="sport-stat-grid-v568"><article class="sport-stat-card-v512"><span>Trainingstage</span><strong>${s.allSessions}</strong></article><article class="sport-stat-card-v512"><span>FitX-Besuche</span><strong>${s.fitxSessions}</strong></article><article class="sport-stat-card-v512"><span>Freies Training</span><strong>${s.freeTrainingCount}</strong></article><article class="sport-stat-card-v512"><span>Kurse</span><strong>${s.courseCount}</strong></article><article class="sport-stat-card-v512"><span>Übungen & Geräte</span><strong>${s.workoutItemCount}</strong></article><article class="sport-stat-card-v512"><span>Gemischte Tage</span><strong>${s.mixedCount}</strong></article></div><div class="sport-stat-foot-v610">FitX-Zeit: <b>${esc(formatMinutes(s.fitxMinutes))}</b> · Kurszeit: <b>${esc(formatMinutes(s.courseTotal))}</b> · Cardio-Geräte: <b>${s.cardioCount}</b></div><div class="sport-stats-columns-v568"><div><div class="sport-section-title-v568">Kurse</div>${courses}</div><div><div class="sport-section-title-v568">Mit dabei</div>${people}</div></div>${errorNote()}</div></section>`;
   }
 
 
