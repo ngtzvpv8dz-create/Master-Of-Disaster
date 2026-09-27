@@ -1,9 +1,9 @@
-/* V621 · SPORT · phase reconstruction in completed summaries */
+/* V622 · SPORT · exercise execution catalogue */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V621';
+  const VERSION='V622';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -17,6 +17,7 @@
     {id:'planning',label:'PLANEN'},
     {id:'sessions',label:'EINHEITEN'},
     {id:'catalog',label:'KATALOG'},
+    {id:'execution',label:'AUSFÜHRUNG'},
     {id:'statistics',label:'STATISTIK'}
   ];
   const COURSE_NAMES=new Map([
@@ -1336,6 +1337,63 @@
       '</div></section>';
   }
 
+
+  function exerciseExecutionData(item){
+    const config=item?.metric_config&&typeof item.metric_config==='object'?item.metric_config:{};
+    const execution=config.execution&&typeof config.execution==='object'?config.execution:null;
+    return execution?{...execution,circuit:Boolean(config.circuit)}:null;
+  }
+
+  function executionPanel(){
+    const items=(state.catalogExercises||[])
+      .map(item=>({item,execution:exerciseExecutionData(item)}))
+      .filter(entry=>entry.execution?.circuit)
+      .sort((a,b)=>(Number(a.item.sort_order)||9999)-(Number(b.item.sort_order)||9999)||byName(a.item.name,b.item.name));
+
+    const cards=items.length?items.map(({item,execution},index)=>{
+      const steps=Array.isArray(execution.steps)?execution.steps:[];
+      const cues=Array.isArray(execution.cues)?execution.cues:[];
+      const visuals=execution.visuals&&typeof execution.visuals==='object'?execution.visuals:{};
+      const halfway=Boolean(execution.halfway_switch);
+      return '<details class="sport-execution-card-v622" style="--sport-execution-index-v622:'+index+'">'+
+        '<summary>'+
+          '<div><span>ZIRKELTRAINING'+(item.settings_text?' · '+esc(item.settings_text):'')+'</span><h3>'+esc(item.name)+'</h3><small>'+esc(item.muscle_group||item.category||'')+'</small></div>'+
+          (halfway?'<b class="sport-execution-half-v622">½ SEITENWECHSEL</b>':'<b>AUSFÜHRUNG</b>')+
+        '</summary>'+
+        '<div class="sport-execution-body-v622">'+
+          '<p>'+esc(execution.summary||'')+'</p>'+
+          (steps.length?'<ol>'+steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'')+
+          (cues.length?'<div class="sport-execution-cues-v622"><strong>Darauf achten</strong><div>'+cues.map(cue=>'<span>'+esc(cue)+'</span>').join('')+'</div></div>':'')+
+          ((visuals.start||visuals.key)?'<div class="sport-execution-visual-plan-v622"><div><span>STARTPOSITION</span><small>'+esc(visuals.start||'')+'</small></div><div><span>SCHLÜSSELPOSITION</span><small>'+esc(visuals.key||'')+'</small></div><em>Skizzen folgen später</em></div>':'')+
+        '</div>'+
+      '</details>';
+    }).join(''):'<div class="sport-empty-inline-v568">Für den Ausführungskatalog sind noch keine Zirkelübungen hinterlegt.</div>';
+
+    const homeNames=[
+      'Goblet Squat mit Medizinball',
+      'Kettlebell Swing',
+      'Ring Row',
+      'Plank Up-Down',
+      'Side Plank',
+      'Stability Ball Pass',
+      'Mountain Climbers',
+      'Plank'
+    ];
+    const available=new Set(items.map(entry=>entry.item.name));
+    const home=homeNames.filter(name=>available.has(name));
+    const homeBlock=home.length?'<section class="sport-home-circuit-draft-v622">'+
+      '<div><span>HOME-ZIRKEL · ENTWURF</span><strong>8 Stationen · 40 s Arbeit · 20 s Pause</strong><small>2–3 Runden · Side Plank wechselt beim Halbzeitsignal die Seite.</small></div>'+
+      '<div class="sport-home-circuit-stations-v622">'+home.map((name,index)=>'<i><b>'+(index+1)+'</b><span>'+esc(name)+'</span></i>').join('')+'</div>'+
+    '</section>':'';
+
+    return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="execution">'+wave()+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AUSFÜHRUNG '+statusBadge()+'</div><p class="sport-date-v510">Zirkelübungen kurz nachschlagen, ohne den Trainingsfluss zu zerlegen.</p><div class="sport-section-mark-v512">A</div></div>'+
+      '<div class="sport-content-v510">'+homeBlock+
+        '<div class="sport-execution-note-v622">Antippen öffnet die Ausführung. Die kleinen Start-/Schlüsselpositions-Skizzen sind bereits als Konzept hinterlegt und werden später gestalterisch ergänzt.</div>'+
+        '<div class="sport-execution-list-v622">'+cards+'</div>'+errorNote()+
+      '</div></section>';
+  }
+
   function flatActivities(rows){
     const flat=[];rows.forEach(session=>(session.activities||[]).forEach(activity=>flat.push({session,activity})));
     return flat.sort((a,b)=>String(b.activity.startedAt||b.session.date).localeCompare(String(a.activity.startedAt||a.session.date)));
@@ -1384,7 +1442,7 @@
   }
 
 
-  function panel(rows){if(activeTab==='planning')return planningPanel();if(activeTab==='sessions')return xTrainingPanel();if(activeTab==='catalog')return catalogPanel();if(activeTab==='statistics')return statisticsPanel(rows);return fitxPanel(rows);}
+  function panel(rows){if(activeTab==='planning')return planningPanel();if(activeTab==='sessions')return xTrainingPanel();if(activeTab==='catalog')return catalogPanel();if(activeTab==='execution')return executionPanel();if(activeTab==='statistics')return statisticsPanel(rows);return fitxPanel(rows);}
 
   function render({animate=false}={}){
     const serial=++renderSerial;
