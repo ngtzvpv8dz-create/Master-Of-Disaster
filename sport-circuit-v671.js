@@ -293,9 +293,11 @@
     if(planning&&!document.getElementById(CARD_PLAN))planning.insertAdjacentHTML('afterbegin',planningHtml());
 
     const overview=root.querySelector('[data-sport-panel-v568="overview"] .sport-content-v510')||(root.dataset.sportTabV568==='overview'?root.querySelector('.sport-panel-v510 .sport-content-v510'):null);
-    if(overview&&!document.getElementById(CARD_LIVE)){
+    if(overview){
       const html=liveHtml();
-      if(html)overview.insertAdjacentHTML('afterbegin',html);
+      const empty=overview.querySelector('[data-sport-active-empty]');
+      if(empty)empty.hidden=Boolean(html);
+      if(html&&!document.getElementById(CARD_LIVE))overview.insertAdjacentHTML('afterbegin',html);
     }
 
     const sessions=root.querySelector('[data-sport-panel-v568="sessions"] .sport-content-v510');
