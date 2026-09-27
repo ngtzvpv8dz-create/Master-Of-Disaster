@@ -1,9 +1,9 @@
-/* V624 · SPORT · active home is default */
+/* V625 · SPORT · active copy */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V624';
+  const VERSION='V625';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -606,10 +606,10 @@
       const start=activeSessionStart(active);
       const startMs=start?start.getTime():0;
       const startedLabel=start?clock(start):'–';
-      return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · LAUFENDE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(active.date))} · ${esc(location)}</p><div class="sport-active-clock-v623" data-sport-active-elapsed data-start-ms="${startMs}">${esc(elapsedClockText(start))}</div><div class="sport-active-clock-sub-v623">gestartet ${esc(startedLabel)} Uhr</div></div><div class="sport-content-v510">${timelineBlock(active)}${participantsBlock(active)}${courses.length?`<div class="sport-section-title-v568">Kurse${people.length?' · '+people.map(esc).join(', '):''}</div><div class="sport-course-list-v568">${courses.map(courseCard).join('')}</div>`:''}<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>AKTUELLE EINHEIT</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="${esc(active.id)}">Katalog öffnen</button></div>${workoutLists(active)}</section>${errorNote()}</div></section>`;
+      return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · LAUFENDE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(active.date))} · ${esc(location)}</p><div class="sport-active-clock-v623" data-sport-active-elapsed data-start-ms="${startMs}">${esc(elapsedClockText(start))}</div><div class="sport-active-clock-sub-v623">gestartet ${esc(startedLabel)} Uhr</div><p class="sport-active-slogan-v674" data-sport-active-slogan>Jetzt nicht nachdenken. Machen reicht völlig.</p></div><div class="sport-content-v510">${timelineBlock(active)}${participantsBlock(active)}${courses.length?`<div class="sport-section-title-v568">Kurse${people.length?' · '+people.map(esc).join(', '):''}</div><div class="sport-course-list-v568">${courses.map(courseCard).join('')}</div>`:''}<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>AKTUELLE EINHEIT</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="${esc(active.id)}">Katalog öffnen</button></div>${workoutLists(active)}</section>${errorNote()}</div></section>`;
     }
 
-    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV ${statusBadge()}</div><p class="sport-date-v510">Hier erscheint nur, was gerade wirklich läuft.</p></div><div class="sport-content-v510"><div class="sport-active-empty-v623" data-sport-active-empty><strong>Aktuell kein Training aktiv</strong><span>Sobald du eine Einheit oder einen Zirkel startest, läuft sie hier live.</span></div>${errorNote()}</div></section>`;
+    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV ${statusBadge()}</div><p class="sport-date-v510" data-sport-active-slogan>Hier läuft gerade nichts. Nicht mal du.</p></div><div class="sport-content-v510"><div class="sport-active-empty-v623" data-sport-active-empty><strong>Aktuell kein Training aktiv</strong><span>Sobald du eine Einheit oder einen Zirkel startest, läuft sie hier live.</span></div>${errorNote()}</div></section>`;
   }
 
   async function sportUser(){
