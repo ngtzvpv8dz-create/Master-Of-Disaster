@@ -311,7 +311,7 @@
       await waitFor(()=>typeof window.render==='function'&&typeof window.switchTab==='function');
       await waitFor(()=>window.__modTodoStabilityV603&&window.__modTaskTitleLibraryV507&&window.__modArchiveWeightLayoutV508&&window.__modTodayWorkBlocksV474&&window.__modTodayCreateRenderV480);
     }else if(id==='sport'){
-      await waitFor(()=>(window.__modSportV568||window.__modSportModeV510)&&window.__modSportCircuitV669);
+      await waitFor(()=>(window.__modSportV568||window.__modSportModeV510)&&window.__modSportCircuitV670);
     }else if(id==='food'){
       await waitFor(()=>window.__modFoodV544);
     }else if(id==='shopping'){
