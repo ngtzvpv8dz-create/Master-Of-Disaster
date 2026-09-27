@@ -1,9 +1,9 @@
-/* V622 · SPORT · exercise execution catalogue */
+/* V623 · SPORT · active home */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V622';
+  const VERSION='V623';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -13,7 +13,7 @@
   const HEALTH_EVENT='mod:health-sync-request';
   const REQUEST_TIMEOUT_MS=4500;
   const TABS=[
-    {id:'overview',label:'ÜBERSICHT'},
+    {id:'overview',label:'AKTIV'},
     {id:'planning',label:'PLANEN'},
     {id:'sessions',label:'EINHEITEN'},
     {id:'catalog',label:'KATALOG'},
@@ -65,6 +65,7 @@
   let catalogTargetSessionId=null;
   let editingSessionId=null;
   let coursePickerDate=null;
+  let activeClockTimer=null;
   const expandedExercises=new Set();
   const collapsedPlanDates=new Set();
 
@@ -564,6 +565,37 @@
     '</div>';
   }
 
+  function activeSessionStart(session){
+    return validDate(session?.startedAt||session?.driveStartedAt||session?.trainingStartedAt||(session?.workout||[]).find(item=>item.startedAt)?.startedAt);
+  }
+
+  function elapsedClockText(start){
+    const d=validDate(start);
+    if(!d)return '00:00:00';
+    const total=Math.max(0,Math.floor((Date.now()-d.getTime())/1000));
+    const h=Math.floor(total/3600);
+    const m=Math.floor((total%3600)/60);
+    const s=total%60;
+    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  function startActiveClock(root){
+    if(activeClockTimer){clearInterval(activeClockTimer);activeClockTimer=null;}
+    const target=root?.querySelector?.('[data-sport-active-elapsed]');
+    if(!target)return;
+    const startMs=Number(target.dataset.startMs||0);
+    if(!Number.isFinite(startMs)||startMs<=0)return;
+    const paint=()=>{
+      const total=Math.max(0,Math.floor((Date.now()-startMs)/1000));
+      const h=Math.floor(total/3600);
+      const m=Math.floor((total%3600)/60);
+      const s=total%60;
+      target.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+    };
+    paint();
+    activeClockTimer=setInterval(paint,1000);
+  }
+
   function fitxPanel(rows){
     const active=activeTrainingSession();
     if(active){
@@ -571,18 +603,14 @@
       const courses=groupActivities(current);
       const people=groupParticipants(current);
       const location=active.venue||'Ort offen';
-      return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>ÜBERSICHT · AKTUELLE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(active.date))} · ${esc(location)}</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">${(active.workout||[]).filter(item=>item.status==='completed').length}/${(active.workout||[]).filter(item=>item.status!=='skipped').length}</div><div class="sport-duration-unit-v510">Übungen erledigt</div></div></div><div class="sport-content-v510">${timelineBlock(active)}${participantsBlock(active)}${courses.length?`<div class="sport-section-title-v568">Kurse${people.length?' · '+people.map(esc).join(', '):''}</div><div class="sport-course-list-v568">${courses.map(courseCard).join('')}</div>`:''}<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>AKTUELLE EINHEIT</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="${esc(active.id)}">Katalog öffnen</button></div>${workoutLists(active)}</section>${errorNote()}</div></section>`;
+      const start=activeSessionStart(active);
+      const startMs=start?start.getTime():0;
+      const startedLabel=start?clock(start):'–';
+      return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · LAUFENDE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(active.date))} · ${esc(location)}</p><div class="sport-active-clock-v623" data-sport-active-elapsed data-start-ms="${startMs}">${esc(elapsedClockText(start))}</div><div class="sport-active-clock-sub-v623">gestartet ${esc(startedLabel)} Uhr</div></div><div class="sport-content-v510">${timelineBlock(active)}${participantsBlock(active)}${courses.length?`<div class="sport-section-title-v568">Kurse${people.length?' · '+people.map(esc).join(', '):''}</div><div class="sport-course-list-v568">${courses.map(courseCard).join('')}</div>`:''}<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>AKTUELLE EINHEIT</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="${esc(active.id)}">Katalog öffnen</button></div>${workoutLists(active)}</section>${errorNote()}</div></section>`;
     }
 
-    const latest=groupSessions(completedSessions(rows))[0]||null;
-    const todayPlan=planSessionForDate(todayIso());
-    if(!latest){
-      return `<section class="sport-panel-v510 sport-panel-v512">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>ÜBERSICHT ${statusBadge()}</div><p class="sport-date-v510">${state.loading?'Sportdaten werden geladen …':'Noch keine abgeschlossene Trainingseinheit gespeichert.'}</p></div><div class="sport-content-v510">${todayPlan?`<div class="sport-plan-teaser-v612"><strong>Für heute geplant</strong><span>${(todayPlan.workout||[]).filter(item=>item.status!=='skipped').length} Trainingselemente · ${esc(todayPlan.venue||'Ort offen')}</span><button type="button" data-sport-open-plan>Plan öffnen</button></div>`:''}${errorNote()}</div></section>`;
-    }
-    const courses=groupActivities(latest),workout=groupWorkout(latest);
-    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>ÜBERSICHT · LETZTE ABGESCHLOSSENE EINHEIT ${statusBadge()}</div><p class="sport-date-v510">${esc(dateLabel(latest.date))} · ${esc(latest.venue||'Ort offen')}</p><div class="sport-duration-row-v510"><div class="sport-duration-v510" data-total-minutes="${groupDuration(latest)}">${esc(formatMinutes(groupDuration(latest)).replace(' h',''))}</div><div class="sport-duration-unit-v510">Gesamtaufwand</div></div><div class="sport-time-window-v510">${esc(groupTimeWindow(latest))}</div></div><div class="sport-content-v510"><div class="sport-meta-grid-v568"><div class="sport-meta-v510"><div class="sport-meta-label-v510">Kurse</div><div class="sport-meta-value-v510">${courses.length}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Freies Training</div><div class="sport-meta-value-v510">${workout.length?'Ja':'–'}</div></div><div class="sport-meta-v510"><div class="sport-meta-label-v510">Trainingselemente</div><div class="sport-meta-value-v510">${workout.length}</div></div></div>${todayPlan?`<div class="sport-plan-teaser-v612"><strong>Für heute geplant</strong><span>${(todayPlan.workout||[]).filter(item=>item.status!=='skipped').length} Trainingselemente · ${esc(todayPlan.venue||'Ort offen')}</span><button type="button" data-sport-open-plan>Plan öffnen</button></div>`:''}${courses.length?`<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">${courses.map(courseCard).join('')}</div>`:''}${workout.length?`<div class="sport-section-title-v568">Freies Training</div><div class="sport-history-workout-v574">${workout.map(workoutSummaryCard).join('')}</div>`:''}${errorNote()}<div class="sport-mode-hint-v510">Abgeschlossene Trainingstage findest du unter „Einheiten“.</div></div></section>`;
+    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">${wave()}<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV ${statusBadge()}</div><p class="sport-date-v510">Hier erscheint nur, was gerade wirklich läuft.</p></div><div class="sport-content-v510"><div class="sport-active-empty-v623" data-sport-active-empty><strong>Aktuell kein Training aktiv</strong><span>Sobald du eine Einheit oder einen Zirkel startest, läuft sie hier live.</span></div>${errorNote()}</div></section>`;
   }
-
 
   async function sportUser(){
     const supabase=client();
@@ -637,6 +665,7 @@
   async function startPlanSession(sessionId){
     const session=state.sessions.find(item=>item.id===sessionId);
     const patch={session_status:'running'};
+    if(!session?.startedAt)patch.started_at=new Date().toISOString();
     if(session?.legacyAutoFitx){
       patch.title='Training';
       patch.venue=null;
@@ -654,7 +683,11 @@
       patch.started_at=stamp;
       patch.session_status='running';
     }
-    if(column==='training_started_at')patch.session_status='running';
+    if(column==='training_started_at'){
+      patch.session_status='running';
+      const session=state.sessions.find(item=>item.id===sessionId);
+      if(!session?.startedAt)patch.started_at=stamp;
+    }
     if(column==='home_arrived_at'){
       patch.ended_at=stamp;
       patch.session_status='completed';
@@ -1243,7 +1276,7 @@
           '<div class="sport-plan-day-body-v613">'+
             planVenueForm(current)+
             (current.date===todayIso()&&current.status==='planned'?'<button class="sport-start-plan-v612" type="button" data-sport-start-plan="'+esc(current.id)+'">Heutige Einheit starten</button>':'')+
-            (isSessionActive(current)?'<div class="sport-plan-running-v612">Diese Einheit läuft bereits. In der Übersicht siehst du den aktuellen Ablauf.</div>':'')+
+            (isSessionActive(current)?'<div class="sport-plan-running-v612">Diese Einheit läuft bereits. Unter „Aktiv“ siehst du den aktuellen Ablauf.</div>':'')+
             '<div class="sport-plan-toolbar-v612"><button type="button" data-sport-open-catalog data-session-id="'+esc(current.id)+'">Katalog öffnen</button></div>'+
             workoutLists(current)+
           '</div>'+
@@ -1450,6 +1483,7 @@
     if(!root)return false;
     root.dataset.sportTabV568=activeTab;
     root.innerHTML=`<div class="sport-stage-v510 sport-stage-v512 sport-stage-v568">${tabRail()}${panel(state.sessions)}</div>`;
+    startActiveClock(root);
 
     const handle=async(button,task)=>{
       if(button)button.disabled=true;
