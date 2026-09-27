@@ -289,7 +289,7 @@
     const planning=root.querySelector('[data-sport-panel-v568="planning"] .sport-content-v510');
     if(planning&&!document.getElementById(CARD_PLAN))planning.insertAdjacentHTML('afterbegin',planningHtml());
 
-    const overview=root.querySelector('[data-sport-panel-v568="overview"] .sport-content-v510');
+    const overview=root.querySelector('[data-sport-panel-v568="overview"] .sport-content-v510')||(root.dataset.sportTabV568==='overview'?root.querySelector('.sport-panel-v510 .sport-content-v510'):null);
     if(overview&&!document.getElementById(CARD_LIVE)){
       const html=liveHtml();
       if(html)overview.insertAdjacentHTML('afterbegin',html);
@@ -471,7 +471,7 @@
   const low=()=>toneSpec(520,.14,.12);
   const go=()=>toneSpec(940,.26,.14);
   const half=()=>toneSpec(720,.09,.11);
-  const endTone=()=>toneSpec(390,1.15,.105);
+  const endTone=()=>toneSpec(390,1.35,.105);
 
   function roundSequence(offset=0){
     scheduleSequence([[440,.08,.11,'sine',.04],[554,.08,.11,'sine',.04],[659,.08,.11,'sine',.04],[880,.16,.12,'sine',0]],offset);
@@ -664,8 +664,8 @@
 
     const isLastExercise=runtime.index===runtime.exercises.length-1;
     const isFinal=isLastExercise&&runtime.round===runtime.run.planned_rounds;
-    if(isFinal)finishSequence(duration+.78);
-    else if(isLastExercise)roundSequence(duration+.78);
+    if(isFinal)finishSequence(duration+1.45);
+    else if(isLastExercise)roundSequence(duration+1.45);
 
     saveLocalRuntime();
     updateLiveDom();
