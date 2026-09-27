@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V666';
+  const VERSION='V667';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -32,17 +32,19 @@
 
   function frostDecorHtml(key,{subtle=false}={}){
     if(!frostDecor.has(key)){
-      const count=1+Math.floor(Math.random()*3);
+      const count=2+Math.floor(Math.random()*2);
       const glyphs=['❄','❅','❆'];
       const html=Array.from({length:count},(_,index)=>{
         const glyph=glyphs[Math.floor(Math.random()*glyphs.length)];
-        const size=(subtle?74:92)+Math.floor(Math.random()*(subtle?56:70));
-        const top=8+Math.floor(Math.random()*76);
-        const right=-28+Math.floor(Math.random()*54);
-        const opacity=(subtle?.17:.22)+Math.random()*(subtle?.10:.13);
-        const rotate=-32+Math.floor(Math.random()*65);
-        const x=index&&Math.random()>.52?-20-Math.floor(Math.random()*34):0;
-        return '<i aria-hidden="true" class="food-frost-crystal-v665" style="top:'+top+'%;right:'+right+'px;font-size:'+size+'px;opacity:'+opacity.toFixed(3)+';transform:translate('+x+'px,-50%) rotate('+rotate+'deg)">'+glyph+'</i>';
+        const minSize=subtle?80:95;
+        const maxSize=subtle?150:180;
+        const size=minSize+Math.floor(Math.random()*(maxSize-minSize+1));
+        const top=-2+Math.floor(Math.random()*95);
+        const right=-58+Math.floor(Math.random()*88);
+        const opacity=(subtle?.25:.30)+Math.random()*(subtle?.10:.12);
+        const rotate=-38+Math.floor(Math.random()*77);
+        const overlap=index&&Math.random()>.42?-24-Math.floor(Math.random()*46):0;
+        return '<i aria-hidden="true" class="food-frost-crystal-v665" style="top:'+top+'%;right:'+right+'px;font-size:'+size+'px;opacity:'+opacity.toFixed(3)+';transform:translate('+overlap+'px,-50%) rotate('+rotate+'deg)">'+glyph+'</i>';
       }).join('');
       frostDecor.set(key,html);
     }
