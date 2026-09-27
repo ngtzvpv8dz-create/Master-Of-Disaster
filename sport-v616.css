@@ -858,3 +858,39 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   .sport-course-settings-v619 form{grid-template-columns:1fr 1fr}
   .sport-course-settings-v619 form>strong,.sport-course-settings-v619 form>button{grid-column:1/-1}
 }
+
+
+/* V622 · AUSFÜHRUNGSKATALOG */
+.sport-execution-note-v622{margin:0 0 12px;padding:10px 12px;border:1px solid rgba(111,228,234,.12);border-radius:12px;background:rgba(5,25,29,.48);color:#78999d;font-size:.62rem;line-height:1.45}
+.sport-execution-list-v622{display:grid;gap:9px}
+.sport-execution-card-v622{border:1px solid rgba(111,228,234,.13);border-radius:14px;background:rgba(3,20,24,.66);overflow:hidden}
+.sport-execution-card-v622>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;cursor:pointer}
+.sport-execution-card-v622>summary::-webkit-details-marker{display:none}
+.sport-execution-card-v622>summary div{min-width:0}
+.sport-execution-card-v622>summary span{display:block;color:#5f969b;font-size:.5rem;font-weight:900;letter-spacing:.09em}
+.sport-execution-card-v622>summary h3{margin:3px 0 2px;color:#edfafa;font-size:.82rem;line-height:1.15}
+.sport-execution-card-v622>summary small{display:block;color:#78999d;font-size:.58rem}
+.sport-execution-card-v622>summary>b{flex:0 0 auto;color:#70cbd1;font-size:.53rem;letter-spacing:.06em}
+.sport-execution-card-v622>summary>b.sport-execution-half-v622{color:#e4b66d}
+.sport-execution-body-v622{padding:0 12px 13px;border-top:1px solid rgba(111,228,234,.08)}
+.sport-execution-body-v622>p{margin:11px 0;color:#d9ebed;font-size:.68rem;line-height:1.55}
+.sport-execution-body-v622 ol{margin:0;padding-left:19px;color:#9fb9bc;font-size:.64rem;line-height:1.52}
+.sport-execution-body-v622 li+li{margin-top:5px}
+.sport-execution-cues-v622{margin-top:11px;padding:10px;border-radius:11px;background:rgba(0,0,0,.18)}
+.sport-execution-cues-v622>strong{display:block;margin-bottom:6px;color:#7fd3d8;font-size:.56rem;letter-spacing:.05em;text-transform:uppercase}
+.sport-execution-cues-v622>div{display:flex;flex-wrap:wrap;gap:6px}
+.sport-execution-cues-v622 span{padding:5px 7px;border-radius:999px;background:rgba(89,156,163,.11);color:#a7c3c6;font-size:.56rem}
+.sport-execution-visual-plan-v622{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px;padding-bottom:17px}
+.sport-execution-visual-plan-v622>div{min-height:55px;padding:9px;border:1px dashed rgba(111,228,234,.15);border-radius:10px;background:rgba(7,28,32,.36)}
+.sport-execution-visual-plan-v622 span{display:block;color:#649ba0;font-size:.49rem;font-weight:900;letter-spacing:.08em}
+.sport-execution-visual-plan-v622 small{display:block;margin-top:5px;color:#91adb0;font-size:.56rem;line-height:1.35}
+.sport-execution-visual-plan-v622 em{position:absolute;left:0;bottom:0;color:#516f73;font-size:.49rem;font-style:normal}
+.sport-home-circuit-draft-v622{margin-bottom:12px;padding:12px;border:1px solid rgba(228,182,109,.16);border-radius:14px;background:linear-gradient(180deg,rgba(54,39,18,.18),rgba(7,25,29,.52))}
+.sport-home-circuit-draft-v622>div:first-child>span{display:block;color:#d2a861;font-size:.52rem;font-weight:950;letter-spacing:.1em}
+.sport-home-circuit-draft-v622>div:first-child>strong{display:block;margin-top:4px;color:#f1e7d4;font-size:.76rem}
+.sport-home-circuit-draft-v622>div:first-child>small{display:block;margin-top:3px;color:#9a8c76;font-size:.56rem;line-height:1.35}
+.sport-home-circuit-stations-v622{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:10px}
+.sport-home-circuit-stations-v622 i{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:9px;background:rgba(0,0,0,.16);font-style:normal}
+.sport-home-circuit-stations-v622 i b{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:rgba(111,228,234,.1);color:#7ed7dc;font-size:.52rem}
+.sport-home-circuit-stations-v622 i span{min-width:0;color:#adc3c6;font-size:.56rem;line-height:1.2}
+@media(max-width:520px){.sport-home-circuit-stations-v622{grid-template-columns:1fr}.sport-execution-visual-plan-v622{grid-template-columns:1fr}}
