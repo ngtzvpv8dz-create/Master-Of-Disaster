@@ -296,7 +296,9 @@
     if(overview){
       const html=liveHtml();
       const empty=overview.querySelector('[data-sport-active-empty]');
+      const slogan=root.querySelector('[data-sport-active-slogan]');
       if(empty)empty.hidden=Boolean(html);
+      if(slogan)slogan.textContent=html?'Jetzt nicht nachdenken. Machen reicht völlig.':'Hier läuft gerade nichts. Nicht mal du.';
       if(html&&!document.getElementById(CARD_LIVE))overview.insertAdjacentHTML('afterbegin',html);
     }
 
