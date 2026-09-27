@@ -894,3 +894,37 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 .sport-home-circuit-stations-v622 i b{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:rgba(111,228,234,.1);color:#7ed7dc;font-size:.52rem}
 .sport-home-circuit-stations-v622 i span{min-width:0;color:#adc3c6;font-size:.56rem;line-height:1.2}
 @media(max-width:520px){.sport-home-circuit-stations-v622{grid-template-columns:1fr}.sport-execution-visual-plan-v622{grid-template-columns:1fr}}
+
+
+/* V623 · AKTIV: nur laufende Einheit */
+.sport-active-hero-v623 .sport-date-v510{margin-bottom:10px}
+.sport-active-clock-v623{
+  margin-top:10px;
+  color:#f5ffff;
+  font-size:2.2rem;
+  font-weight:950;
+  line-height:.95;
+  letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;
+}
+.sport-active-clock-sub-v623{
+  margin-top:5px;
+  color:#73969a;
+  font-size:.6rem;
+  font-weight:800;
+  letter-spacing:.03em;
+}
+.sport-active-empty-v623{
+  display:grid;
+  gap:5px;
+  padding:18px 14px;
+  border:1px solid rgba(111,228,234,.11);
+  border-radius:14px;
+  background:rgba(4,24,28,.42);
+}
+.sport-active-empty-v623 strong{color:#dff5f7;font-size:.74rem}
+.sport-active-empty-v623 span{color:#6f9296;font-size:.61rem;line-height:1.45}
+.sport-active-empty-v623[hidden]{display:none!important}
+@media(max-width:520px){
+  .sport-active-clock-v623{font-size:1.9rem}
+}
