@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V664';
+  const VERSION='V665';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -26,8 +26,28 @@
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
+  const frostDecor=new Map();
   const expandedRecipes=new Set();
   const expandedMeals=new Set();
+
+  function frostDecorHtml(key,{subtle=false}={}){
+    if(!frostDecor.has(key)){
+      const count=1+Math.floor(Math.random()*3);
+      const glyphs=['❄','❅','❆'];
+      const html=Array.from({length:count},(_,index)=>{
+        const glyph=glyphs[Math.floor(Math.random()*glyphs.length)];
+        const size=(subtle?42:50)+Math.floor(Math.random()*(subtle?38:48));
+        const top=4+Math.floor(Math.random()*72);
+        const right=-14+Math.floor(Math.random()*42);
+        const opacity=(subtle?.065:.09)+Math.random()*(subtle?.07:.1);
+        const rotate=-28+Math.floor(Math.random()*57);
+        const x=index&&Math.random()>.58?-18-Math.floor(Math.random()*18):0;
+        return '<i aria-hidden="true" class="food-frost-crystal-v665" style="top:'+top+'%;right:'+right+'px;font-size:'+size+'px;opacity:'+opacity.toFixed(3)+';transform:translate('+x+'px,-50%) rotate('+rotate+'deg)">'+glyph+'</i>';
+      }).join('');
+      frostDecor.set(key,html);
+    }
+    return frostDecor.get(key);
+  }
 
   function decorateCards(root){
     root.querySelectorAll('.food-meal-card-v544,.food-stock-card-v544,.food-recipe-card-v544,.food-empty-card-v544,.food-shopping-list-v544>li').forEach((card,index)=>{
@@ -42,6 +62,17 @@
         }).join(''));
       }
       card.insertAdjacentHTML('afterbegin',cardArcs.get(key));
+    });
+
+    root.querySelectorAll('.food-stock-card-v544.has-freeze-plan-v664').forEach((card,index)=>{
+      const key='freeze-plan:'+(card.querySelector('h4')?.textContent||index);
+      card.insertAdjacentHTML('afterbegin',frostDecorHtml(key,{subtle:true}));
+    });
+
+    root.querySelectorAll('.food-stock-slice-v664.is-frozen').forEach((slice,index)=>{
+      const card=slice.closest('.food-stock-card-v544');
+      const key='frozen:'+(card?.querySelector('h4')?.textContent||'stock')+':'+(slice.querySelector('strong')?.textContent||index);
+      slice.insertAdjacentHTML('afterbegin',frostDecorHtml(key,{subtle:false}));
     });
   }
 
@@ -1881,6 +1912,7 @@
 
   function open(){
     cardArcs.clear();
+    frostDecor.clear();
     window.__modAppHubV515?.hide?.();
     document.body.classList.remove('mod-backstage-v530');
     setSurface(true);
