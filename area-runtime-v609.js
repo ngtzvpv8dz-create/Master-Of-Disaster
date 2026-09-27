@@ -45,7 +45,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v616.js?v=621-phase-summary',
+      './sport-v616.js?v=622-execution-catalog',
       './sport-audio-test-v652.js?v=657-beep-cues'
     ],
     food:[
@@ -139,7 +139,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v616.js?v=621-phase-summary','./sport-audio-test-v652.js?v=657-beep-cues'],
+    sport:['./sport-v616.js?v=622-execution-catalog','./sport-audio-test-v652.js?v=657-beep-cues'],
     food:['./food-v544.js?v=653-meal-kcal'],
     shopping:['./food-v544.js?v=653-meal-kcal','./shopping-v651.js?v=651-confirm'],
     kistology:['./kistology-v603.js?v=609-current'],
