@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V653';
+  const VERSION='V654';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -275,7 +275,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -389,40 +389,61 @@
     return result.data;
   }
 
+  function mealPrepSource(meal){
+    if(!meal?.source_meal_id)return null;
+    return (state?.meals||[]).find(item=>String(item.id)===String(meal.source_meal_id))||null;
+  }
+
+  function mealPrepSourceLabel(meal){
+    const source=mealPrepSource(meal);
+    if(!source?.meal_date)return '';
+    const weekday=new Intl.DateTimeFormat('de-DE',{weekday:'long',timeZone:'Europe/Berlin'}).format(new Date(source.meal_date+'T12:00:00'));
+    return weekday+' · '+(MEAL_LABELS[source.meal_type]||source.meal_type||'Mahlzeit');
+  }
+
   function mealPlanMeta(meal){
     const prepared=Math.max(.01,Number(meal.prepared_servings)||1);
     const eaten=Math.max(.01,Number(meal.eaten_servings)||prepared);
     const rest=Math.max(0,prepared-eaten);
-    const isToday=meal.meal_date===todayIso();
-    if(meal.leftover_id)return portionLabel(eaten)+' · Meal Prep';
+    const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
+    if(isMealPrep)return portionLabel(eaten)+' · Meal Prep';
     if(rest>0){
-      return isToday
-        ?portionLabel(prepared)+' geplant · '+portionLabel(eaten)+' heute · '+portionLabel(rest)+' für morgen'
-        :portionLabel(prepared)+' geplant · '+portionLabel(eaten)+' an diesem Tag · '+portionLabel(rest)+' als Rest';
+      return portionLabel(prepared)+' Meal Prep · '+portionLabel(eaten)+' an diesem Tag · '+portionLabel(rest)+' vorbereitet';
     }
-    return portionLabel(eaten)+' geplant';
+    return portionLabel(eaten);
   }
 
   function mealCard(meal){
     const status=normalizedStatus(meal.status);
     const expanded=expandedMeals.has(String(meal.id));
     const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
-    const isLeftover=Boolean(meal.leftover_id);
+    const sourceMeal=mealPrepSource(meal);
+    const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
+    const sourceLabel=mealPrepSourceLabel(meal);
+    const mealPrepReady=Boolean(meal.leftover_id)||normalizedStatus(sourceMeal?.status)==='completed';
     const action=status==='completed'
       ?''
-      :'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isLeftover?'Als gegessen markieren':'Als zubereitet markieren')+'</button>';
+      :'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isMealPrep?'Als gegessen markieren':'Als zubereitet markieren')+'</button>';
     const statusMeta=status==='completed'
-      ?(isLeftover?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at))
-      :(isLeftover?'Bereits zubereitet':'Geplant');
+      ?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at))
+      :(isMealPrep
+        ?(mealPrepReady?'Bereits zubereitet':(sourceLabel?'Wird bei '+sourceLabel+' zubereitet':'Meal Prep eingeplant'))
+        :'Geplant');
 
-    if(isLeftover){
+    if(isMealPrep){
       const title=recipe?.title||meal.title||'Meal Prep';
+      const extras=meal.ingredients||[];
+      const sourceText=sourceLabel?' · Quelle: '+sourceLabel:'';
       const details=expanded
-        ?'<div class="food-recipe-details-v572"><p class="food-recipe-note-v572">'+esc(meal.note||'Meal Prep · bereits zubereitet und für diese Mahlzeit eingeplant.')+'</p></div>'
+        ?'<div class="food-recipe-details-v572">'
+          +(meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'')
+          +(extras.length?'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong><ul>'+extras.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
+          +(!meal.note&&!extras.length?'<p class="food-recipe-note-v572">Diese Portion kommt vollständig aus dem Meal Prep der Quellmahlzeit.</p>':'')
+        +'</div>'
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-          +'<span><small class="food-recipe-type-v544">MEAL PREP</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · bereits zubereitet')+'</em></span>'
+          +'<span><small class="food-recipe-type-v544">MEAL PREP'+esc(sourceText)+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +details
@@ -434,6 +455,7 @@
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
       const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings);
+      const planNote=expanded&&meal.note?'<p class="food-recipe-note-v572">'+esc(meal.note)+'</p>':'';
       const quantityAction=status==='completed'
         ?''
         :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Mengen ändern</button>';
@@ -442,7 +464,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
-        +view.details
+        +view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
         +'</article>';
@@ -450,7 +472,7 @@
 
     const items=meal.ingredients||[];
     const portionMeta=mealPlanMeta(meal);
-    const editAction=status==='completed'||isLeftover
+    const editAction=status==='completed'
       ?''
       :'<button type="button" class="food-action-v544 compact" data-food-edit-free-meal="'+esc(meal.id)+'">Zutaten bearbeiten</button>';
     const details=expanded
