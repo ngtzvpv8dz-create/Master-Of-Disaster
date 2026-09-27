@@ -471,7 +471,7 @@
 
   function freezeInstructionMarkup(note){
     const text=freezeInstruction(note);
-    return text?'<div class="food-freeze-hint-v664"><span aria-hidden="true">❄</span><div><strong>Einfrieren</strong><small>'+esc(text)+'</small></div></div>':'';
+    return text?'<div class="food-freeze-hint-v664"><div><strong>Einfrieren</strong><small>'+esc(text)+'</small></div></div>':'';
   }
 
   function mealPlanMeta(meal){
@@ -663,7 +663,7 @@
     const freezePlanned=!empty&&/einfrier/i.test(String(item.forecast_label||''));
     const forecast=!empty&&item.forecast_label
       ?(freezePlanned
-        ?'<span class="food-freeze-plan-v664"><b aria-hidden="true">❄</b><span>'+esc(item.forecast_label)+'</span></span>'
+        ?'<span class="food-freeze-plan-v664"><span>'+esc(item.forecast_label)+'</span></span>'
         :'<span class="food-forecast-v544">↳ '+esc(item.forecast_label)+'</span>')
       :'';
     const priority=!empty&&item.use_priority&&item.use_priority!=='later'?'<span class="food-priority-v544">'+esc(priorityLabel(item.use_priority))+'</span>':'';
