@@ -24,6 +24,7 @@ jobs:
           node --check service-worker-gate-v611.js
           node --check area-runtime-v609.js
           node --check sport-circuit-v671.js
+          grep -Fq "if(mode==='sport')activeTab='overview';" sport-v616.js
           node --check remote-commands.js
           node --check remote-historical-archive-import-v541.js
           node --check food-v544.js
@@ -43,7 +44,7 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
-          grep -q 'area-runtime-v609.js?v=672-active-home' index.html
+          grep -q 'area-runtime-v609.js?v=673-active-default' index.html
           grep -q 'sport-circuit-v671.js?v=672-active-home' area-runtime-v609.js
           ! grep -q 'sport-audio-test-v652.js?v=657-beep-cues' area-runtime-v609.js
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
