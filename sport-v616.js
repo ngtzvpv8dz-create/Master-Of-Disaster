@@ -21,7 +21,7 @@
     {id:'statistics',label:'STATISTIK'}
   ];
   const COURSE_NAMES=new Map([
-    ['tour de x','Tour de X'],
+    ['tour de x','tour de x'],
     ['into x','Into X'],
     ['functional x','Functional X'],
     ['yogilatix','Yogilatix']
