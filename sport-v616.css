@@ -936,3 +936,28 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   font-weight:850;
   line-height:1.4;
 }
+
+
+/* V675 · unified circuit history */
+.sport-circuit-history-list-v675{display:grid;gap:8px}
+.sport-circuit-history-v675{
+  padding:11px 12px;
+  border:1px solid rgba(111,228,234,.12);
+  border-radius:12px;
+  background:rgba(3,20,24,.58);
+}
+.sport-circuit-history-head-v675{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.sport-circuit-history-head-v675>div{min-width:0}
+.sport-circuit-history-head-v675 span{display:block;color:#609ba0;font-size:.5rem;font-weight:950;letter-spacing:.09em}
+.sport-circuit-history-head-v675 strong{display:block;margin-top:3px;color:#edfafa;font-size:.74rem}
+.sport-circuit-history-head-v675>b{flex:0 0 auto;font-size:.54rem;letter-spacing:.04em}
+.sport-circuit-history-head-v675>b.is-done-v675{color:#7bdca4}
+.sport-circuit-history-head-v675>b.is-stop-v675{color:#e3a47f}
+.sport-circuit-history-v675>p{margin:8px 0 4px;color:#b9d0d2;font-size:.62rem;line-height:1.45}
+.sport-circuit-history-v675>small{display:block;color:#688b8f;font-size:.55rem;line-height:1.4}
+.sport-circuit-exercises-v675{display:grid;gap:5px;margin:10px 0 0;padding:0;list-style:none}
+.sport-circuit-exercises-v675 li{display:grid;grid-template-columns:23px minmax(0,1fr);align-items:center;gap:7px;padding:6px 8px;border-radius:9px;background:rgba(0,0,0,.14)}
+.sport-circuit-exercises-v675 li>span{display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:rgba(111,228,234,.09);color:#87cdd1;font-size:.51rem;font-weight:950}
+.sport-circuit-exercises-v675 li strong{display:block;color:#bcd2d4;font-size:.58rem}
+.sport-circuit-exercises-v675 li small{display:block;margin-top:2px;color:#66878a;font-size:.51rem}
+.sport-circuit-exercises-v675 li.is-stop-v675{border:1px solid rgba(227,164,127,.18);background:rgba(83,43,28,.14)}
