@@ -259,7 +259,7 @@
         remaining=Math.max(0,Math.ceil(runtime.run.rest_seconds-runtimeElapsed()));
       }
       if(phase==='done'){label='GESCHAFFT';remaining=0;sub=runtime.testMode?'Testrunde beendet · nichts gespeichert':'Zirkel vollständig abgeschlossen';}
-      if(phase==='aborted'){label='ABGEBROCHEN';remaining=Math.max(0,Math.round(runtime.partialAtAbort||0));sub='Bis hierhin wird dokumentiert';}
+      if(phase==='aborted'){label='ABGEBROCHEN';remaining=Math.max(0,Math.round(runtime.partialAtAbort||0));sub=runtime.testMode?'Testrunde beendet · nichts gespeichert':'Bis hierhin wird dokumentiert';}
       const shownRound=phase==='rest'&&next?next.round:runtime.round;
       const shownIndex=phase==='rest'&&next?next.index:runtime.index;
       return '<section id="'+CARD_LIVE+'" class="'+(phase==='done'?'sc-done-v669':'')+'">'+
@@ -268,7 +268,7 @@
         '<div class="sc-clock-v669" data-circuit-live-clock>'+remaining+'</div><div class="sc-clock-unit-v669">Sekunden</div>'+
         '<div class="sc-progress-v669"><i data-circuit-live-progress></i></div>'+
         '<div class="sc-live-meta-v669"><span>'+runtime.run.work_seconds+' s Arbeit · '+runtime.run.rest_seconds+' s Pause</span><span data-circuit-live-sync>'+(runtime.testMode?'NICHT GESPEICHERT':(runtime.syncError?'Sync-Fehler':'LIVE'))+'</span></div>'+
-        '<div class="sc-live-actions-v669">'+(phase==='countdown'||phase==='work'||phase==='rest'?'<button class="danger" type="button" data-circuit-abort>Training abbrechen</button>':'')+'</div>'+
+        '<div class="sc-live-actions-v669">'+(phase==='countdown'||phase==='work'||phase==='rest'?'<button class="danger" type="button" data-circuit-abort>'+(runtime.testMode?'Testrunde abbrechen':'Training abbrechen')+'</button>':'')+'</div>'+
       '</section>';
     }
 
@@ -881,7 +881,7 @@
     }else if(phase==='done'){
       label='GESCHAFFT';remaining=0;sub=runtime.testMode?'Testrunde beendet · nichts gespeichert':'Alle '+runtime.run.planned_rounds+' Runden erledigt';
     }else if(phase==='aborted'){
-      label='ABGEBROCHEN';remaining=Math.max(0,Math.round(runtime.partialAtAbort||0));sub='Bis hierhin dokumentiert';
+      label='ABGEBROCHEN';remaining=Math.max(0,Math.round(runtime.partialAtAbort||0));sub=runtime.testMode?'Testrunde beendet · nichts gespeichert':'Bis hierhin dokumentiert';
     }
     const phaseEl=card.querySelector('[data-circuit-live-phase]');
     const roundEl=card.querySelector('[data-circuit-live-round]');
@@ -957,7 +957,8 @@
 
   async function abortCircuit(){
     if(!runtime)return;
-    if(!window.confirm('Training wirklich abbrechen? Alles bis hierhin wird dokumentiert.'))return;
+    const confirmText=runtime.testMode?'Testrunde wirklich abbrechen? Es wird nichts gespeichert.':'Training wirklich abbrechen? Alles bis hierhin wird dokumentiert.';
+    if(!window.confirm(confirmText))return;
     cancelAnimationFrame(runtime.raf||0);
     cancelAudio();
 
