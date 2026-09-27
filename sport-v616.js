@@ -1,9 +1,9 @@
-/* V623 · SPORT · active home */
+/* V624 · SPORT · active home is default */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V623';
+  const VERSION='V624';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -1780,7 +1780,9 @@
   function setTab(id,{animate=true,persist=true}={}){const migrated={fitx:'overview',xtraining:'planning',activities:'sessions'}[id]||id;activeTab=TABS.some(t=>t.id===migrated)?migrated:'overview';if(persist)try{localStorage.setItem(TAB_KEY,activeTab);}catch(_){ }render({animate});return activeTab;}
   function currentMode(){return document.body.classList.contains('mod-sport-mode-v510')?'sport':'todo';}
   function setMode(mode,{persist=true,animate=true}={}){
-    mode=mode==='sport'?'sport':'todo';ensureRoot();ensureChrome();document.body.classList.toggle('mod-sport-mode-v510',mode==='sport');document.body.dataset.modAppModeV510=mode;document.getElementById('sportSwitchV510')?.removeAttribute('aria-pressed');
+    mode=mode==='sport'?'sport':'todo';
+    if(mode==='sport')activeTab='overview';
+    ensureRoot();ensureChrome();document.body.classList.toggle('mod-sport-mode-v510',mode==='sport');document.body.dataset.modAppModeV510=mode;document.getElementById('sportSwitchV510')?.removeAttribute('aria-pressed');
     if(persist)try{localStorage.setItem(MODE_KEY,mode);}catch(_){ }
     render({animate:animate&&mode==='sport'});
     if(mode==='sport'&&!historicalRegression)load(false);
@@ -1799,9 +1801,7 @@
       state={...state,sessions:readCache()};
     }
     try{
-      const stored=localStorage.getItem(TAB_KEY);
-      const migrated={fitx:'overview',xtraining:'planning',activities:'sessions'}[stored]||stored;
-      activeTab=TABS.some(t=>t.id===migrated)?migrated:'overview';
+      activeTab='overview';
       const savedPlanDate=localStorage.getItem(PLAN_DATE_KEY);
       planDate=/^\d{4}-\d{2}-\d{2}$/.test(savedPlanDate||'')?savedPlanDate:todayIso();
     }catch(_){activeTab='overview';planDate=todayIso();}
