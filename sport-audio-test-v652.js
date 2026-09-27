@@ -1,15 +1,17 @@
-/* V655 · SPORT · voice FX lab with room/reverb experiments */
+/* V656 · SPORT · Boing voice text laboratory */
 (function(){
   'use strict';
   if(window.__modSportAudioTestV652)return;
 
-  const VERSION='V655';
+  const VERSION='V656';
   const ROOT_ID='sportRootV510';
   const CARD_ID='sportAudioTestV652';
   const VOICE_KEY='masterOfDisasterSportVoiceV653';
   const PRESET_KEY='masterOfDisasterSportVoicePresetV653';
   const CUSTOM_KEY='masterOfDisasterSportVoiceCustomV654';
   const FX_KEY='masterOfDisasterSportVoiceFxV655';
+  const DEFAULTS_KEY='masterOfDisasterSportVoiceDefaultsV656';
+  const VOICE_DEFAULT_KEY='masterOfDisasterSportVoiceBoingV656';
 
   let audioContext=null;
   let timers=[];
@@ -82,9 +84,17 @@
 
   const limits={
     pitch:{min:0.10,max:1.50,step:0.01},
-    rate:{min:0.50,max:1.40,step:0.01},
+    rate:{min:0.10,max:1.40,step:0.01},
     volume:{min:0.10,max:1.00,step:0.01}
   };
+
+  const textVariants=[
+    {key:'countdown',label:'Countdown',text:'Three. Two. One. Go.'},
+    {key:'command',label:'Command',text:'Get ready. Go.'},
+    {key:'minimal',label:'Minimal',text:'Go.'},
+    {key:'brutal',label:'Brutal',text:'Move. Now.'},
+    {key:'drill',label:'Drill',text:'No excuses. Go.'}
+  ];
 
   const css=`
     #${CARD_ID}{margin:0 0 14px;padding:14px;border:1px solid rgba(111,228,234,.18);border-radius:16px;background:linear-gradient(180deg,rgba(7,33,38,.82),rgba(3,18,22,.72));box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
@@ -105,7 +115,7 @@
     #${CARD_ID} .sat-slider span{color:#9ab7ba;font-size:.62rem;font-weight:850}
     #${CARD_ID} .sat-slider output{color:#dff7f9;font-size:.62rem;font-weight:900;text-align:right;font-variant-numeric:tabular-nums}
     #${CARD_ID} input[type="range"]{width:100%;min-width:0;margin:0;accent-color:#2aaeba}
-    #${CARD_ID} .sat-custom-note,#${CARD_ID} .sat-fx-note{color:#64878b;font-size:.56rem;line-height:1.4}
+    #${CARD_ID} .sat-custom-note,#${CARD_ID} .sat-fx-note{color:#64878b;font-size:.56rem;line-height:1.4}\n    #${CARD_ID} .sat-text-box{display:grid;gap:9px;margin-top:12px;padding:11px;border:1px solid rgba(111,228,234,.12);border-radius:13px;background:rgba(0,0,0,.14)}\n    #${CARD_ID} .sat-text-variants{display:flex;flex-wrap:wrap;gap:7px}\n    #${CARD_ID} textarea{box-sizing:border-box;width:100%;min-height:72px;resize:vertical;padding:10px;border:1px solid rgba(111,228,234,.15);border-radius:10px;background:#07191c;color:#e4f7f8;font:inherit;font-size:.72rem;line-height:1.4}
     #${CARD_ID} .sat-fx-title{color:#91cbd0;font-size:.58rem;font-weight:900;letter-spacing:.08em}
     #${CARD_ID} .sat-fx-explain{margin-top:3px;color:#698b8f;font-size:.56rem;line-height:1.45}
     @media(max-width:520px){
@@ -135,7 +145,7 @@
   }
 
   function readCustom(){
-    const fallback={...presets.dark};
+    const fallback={pitch:0.10,rate:0.10,volume:1};
     try{
       const raw=JSON.parse(localStorage.getItem(CUSTOM_KEY)||'null');
       if(!raw)return fallback;
@@ -160,7 +170,7 @@
   }
 
   function currentModeKey(){
-    const key=localStorage.getItem(PRESET_KEY)||'dark';
+    const key=localStorage.getItem(PRESET_KEY)||'custom';
     return key==='custom'||presets[key]?key:'dark';
   }
 
@@ -171,13 +181,23 @@
   }
 
   function currentFxKey(){
-    const key=localStorage.getItem(FX_KEY)||'darkroom';
-    return fxPresets[key]?key:'darkroom';
+    const key=localStorage.getItem(FX_KEY)||'raw';
+    return fxPresets[key]?key:'raw';
   }
 
   function chosenFx(){
     const key=currentFxKey();
     return {key,...fxPresets[key]};
+  }
+
+  function ensureV656Defaults(){
+    try{
+      if(localStorage.getItem(DEFAULTS_KEY)==='1')return;
+      writeCustom({pitch:0.10,rate:0.10,volume:1});
+      localStorage.setItem(PRESET_KEY,'custom');
+      localStorage.setItem(FX_KEY,'raw');
+      localStorage.setItem(DEFAULTS_KEY,'1');
+    }catch(_){}
   }
 
   async function ensureAudio(){
@@ -306,7 +326,7 @@
       synth.speak(primary);
       return true;
     }catch(error){
-      console.warn('[V655 voice FX lab] speech failed',error);
+      console.warn('[V656 voice text lab] speech failed',error);
       return false;
     }
   }
@@ -329,12 +349,26 @@
     select.innerHTML=list.length
       ?list.map(v=>'<option value="'+escapeHtml(v.name)+'">'+escapeHtml(v.name)+' · '+escapeHtml(v.lang)+(v.localService?' · local':'')+'</option>').join('')
       :'<option value="">No English voices found yet</option>';
-    if(current&&list.some(v=>v.name===current))select.value=current;
-    else{
-      const preferred=list.find(v=>/boing|daniel|alex|aaron|evan|oliver|jamie|rishi/i.test(v.name))||list.find(v=>/^en-GB$/i.test(v.lang))||list[0];
+    let forceBoing=false;
+    try{forceBoing=localStorage.getItem(VOICE_DEFAULT_KEY)!=='1';}catch(_){}
+    const boing=list.find(v=>/boing/i.test(v.name));
+    if(forceBoing&&boing){
+      select.value=boing.name;
+      try{
+        localStorage.setItem(VOICE_KEY,boing.name);
+        localStorage.setItem(VOICE_DEFAULT_KEY,'1');
+      }catch(_){}
+    }else if(current&&list.some(v=>v.name===current)){
+      select.value=current;
+      if(forceBoing&&!boing)try{localStorage.setItem(VOICE_DEFAULT_KEY,'1');}catch(_){}
+    }else{
+      const preferred=boing||list.find(v=>/daniel|alex|aaron|evan|oliver|jamie|rishi/i.test(v.name))||list.find(v=>/^en-GB$/i.test(v.lang))||list[0];
       if(preferred){
         select.value=preferred.name;
-        try{localStorage.setItem(VOICE_KEY,preferred.name);}catch(_){}
+        try{
+          localStorage.setItem(VOICE_KEY,preferred.name);
+          if(forceBoing)localStorage.setItem(VOICE_DEFAULT_KEY,'1');
+        }catch(_){}
       }
     }
     syncControls();
@@ -414,25 +448,29 @@
     syncControls('Stopped');
   }
 
+  function previewText(){
+    const field=document.querySelector('#'+CARD_ID+' [data-sat-preview-text]');
+    const value=String(field?.value||'').trim();
+    return value||'Three. Two. One. Go.';
+  }
+
   async function runTest(){
     if(running)return;
-    try{if(capabilities().webAudio)await ensureAudio();}catch(error){console.warn(error);}
     running=true;
     syncControls('Running');
-    announce('Go',880);
-    timers.push(setTimeout(()=>announce('Halfway. Keep pushing.',760),3000));
-    timers.push(setTimeout(()=>announce('Rest.',520),6000));
+    speak('Go.');
+    timers.push(setTimeout(()=>speak('Halfway. Keep pushing.'),3000));
+    timers.push(setTimeout(()=>speak('Rest.'),6000));
     timers.push(setTimeout(()=>{
-      announce('Go.',980);
+      speak('Go.');
       running=false;
       syncControls('Finished');
     },9000));
   }
 
-  async function previewVoice(){
+  function previewVoice(){
     try{window.speechSynthesis?.cancel?.();}catch(_){}
-    try{await beep(640,90);}catch(_){}
-    setTimeout(()=>speak('Get ready. Three, two, one. Go.'),80);
+    speak(previewText());
     syncControls('Preview');
   }
 
@@ -445,6 +483,12 @@
     '</div>';
   }
 
+  function textButtonsHtml(){
+    return textVariants.map(item=>
+      '<button type="button" data-sat-text-variant="'+item.key+'" data-sat-text="'+escapeHtml(item.text)+'">'+escapeHtml(item.label)+'</button>'
+    ).join('');
+  }
+
   function fxButtonsHtml(){
     return Object.entries(fxPresets).map(([key,fx])=>
       '<button type="button" data-sat-fx="'+key+'">'+escapeHtml(fx.label)+'</button>'
@@ -455,9 +499,9 @@
     const caps=capabilities();
     return `
       <section id="${CARD_ID}" aria-label="Voice laboratory">
-        <div class="sat-kicker">VOICE FX LAB · V655</div>
+        <div class="sat-kicker">VOICE TEXT LAB · V656</div>
         <h3>English timer voice</h3>
-        <p>Choose your voice, tune it and test different room/echo flavours.</p>
+        <p>Boing baseline: Raw · pitch 0.10 · speed 0.10 · volume 1.00. Then test the wording.</p>
         <div class="sat-status" data-sat-status>Web Audio: ${caps.webAudio?'yes':'no'} · Speech: ${caps.speech?'yes':'no'}</div>
 
         <div class="sat-grid">
@@ -477,17 +521,26 @@
         </div>
         <div class="sat-custom-note">Moving any slider switches to Custom automatically. Values stay saved on this device.</div>
 
+        <div class="sat-text-box">
+          <div>
+            <div class="sat-fx-title">TEXT LAB</div>
+            <div class="sat-fx-explain">Voice-only previews. No signal beep, so you can judge the wording and voice cleanly.</div>
+          </div>
+          <div class="sat-text-variants">${textButtonsHtml()}</div>
+          <textarea data-sat-preview-text aria-label="Preview text">Three. Two. One. Go.</textarea>
+        </div>
+
         <div class="sat-fx-box">
           <div>
             <div class="sat-fx-title">ROOM / ECHO EXPERIMENTS</div>
-            <div class="sat-fx-explain">Real reverb is applied to the Web-Audio signal tones. The system voice gets a short dark command tail because iOS does not expose that voice as a Web-Audio source.</div>
+            <div class="sat-fx-explain">FX remain available for comparison, but the text previews themselves have no signal beep. Raw is the new baseline.</div>
           </div>
           <div class="sat-fx-buttons">${fxButtonsHtml()}</div>
           <div class="sat-fx-note" data-sat-fx-note></div>
         </div>
 
         <div class="sat-actions">
-          <button type="button" data-sat-preview>🔊 Preview voice + FX</button>
+          <button type="button" data-sat-preview>🔊 Preview text</button>
           <button type="button" data-sat-start>▶ 9-second sequence</button>
           <button type="button" class="sat-stop" data-sat-stop disabled>■ Stop</button>
         </div>
@@ -530,6 +583,12 @@
       applyFx(event.currentTarget.dataset.satFx||'raw',{preview:true});
     }));
 
+    card.querySelectorAll('[data-sat-text-variant]').forEach(button=>button.addEventListener('click',event=>{
+      const field=card.querySelector('[data-sat-preview-text]');
+      if(field)field.value=event.currentTarget.dataset.satText||'';
+      previewVoice();
+    }));
+
     card.querySelector('[data-sat-preview]')?.addEventListener('click',previewVoice);
     card.querySelector('[data-sat-start]')?.addEventListener('click',runTest);
     card.querySelector('[data-sat-stop]')?.addEventListener('click',clearTimers);
@@ -554,6 +613,7 @@
 
   const observer=new MutationObserver(()=>mount());
   function init(){
+    ensureV656Defaults();
     mount();
     if(window.speechSynthesis){
       window.speechSynthesis.addEventListener?.('voiceschanged',populateVoices);
