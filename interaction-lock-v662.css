@@ -1,0 +1,51 @@
+/* V662 · Vertikale App-Navigation ohne Seitenverschieben/Zoom
+   Ziel auf Touch-Geraeten: nur vertikal scrollen.
+*/
+html,
+body{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden!important;
+  overscroll-behavior-x:none;
+  touch-action:pan-y;
+}
+
+@supports (overflow:clip){
+  html,
+  body{
+    overflow-x:clip!important;
+  }
+}
+
+body{
+  position:relative;
+}
+
+.app,
+#modalContainer{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:hidden;
+  touch-action:pan-y;
+}
+
+/* Bisher horizontal scrollende Chip-/Tab-Reihen werden umgebrochen,
+   damit keine Funktion hinter einem gesperrten Seitenscroll verschwindet. */
+.tabs,
+.food-recipe-tabs-v628,
+.denk-filter-row-v634,
+.denk-area-row-v634,
+.mod-kistology-filters-v535{
+  overflow-x:visible!important;
+  flex-wrap:wrap!important;
+  -webkit-overflow-scrolling:auto!important;
+}
+
+/* Medien duerfen den Viewport nicht verbreitern. */
+img,
+video,
+canvas{
+  max-width:100%;
+  height:auto;
+}
