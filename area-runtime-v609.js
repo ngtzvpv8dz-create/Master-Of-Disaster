@@ -52,13 +52,13 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=665-frost-random'
+      './food-v544.js?v=666-frost-visible'
     ],
     shopping:[
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=665-frost-random',
+      './food-v544.js?v=666-frost-visible',
       './shopping-v651.js?v=651-confirm'
     ],
     kistology:[
@@ -140,8 +140,8 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v616.js?v=622-execution-catalog','./sport-audio-test-v652.js?v=657-beep-cues'],
-    food:['./food-v544.js?v=665-frost-random'],
-    shopping:['./food-v544.js?v=665-frost-random','./shopping-v651.js?v=651-confirm'],
+    food:['./food-v544.js?v=666-frost-visible'],
+    shopping:['./food-v544.js?v=666-frost-visible','./shopping-v651.js?v=651-confirm'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=654-resume-refresh'],
     denkfabrik:['./denkfabrik-v635.js?v=635-refresh'],

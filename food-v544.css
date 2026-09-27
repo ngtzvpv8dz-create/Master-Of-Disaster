@@ -1233,7 +1233,7 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 }
 
 
-/* V665 · große, neblige Frostkristalle werden pro Food-Öffnung neu verteilt */
+/* V665/V666 · große, neblige Frostkristalle werden pro Food-Öffnung neu verteilt */
 .food-frost-crystal-v665{
   position:absolute;
   z-index:0;
@@ -1241,30 +1241,34 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   width:1em;
   height:1em;
   line-height:1;
-  color:rgba(255,255,255,.96);
-  font-family:"Times New Roman",Georgia,serif;
+  color:rgba(255,255,255,.82);
+  -webkit-text-stroke:1px rgba(96,154,178,.24);
+  font-family:Georgia,"Times New Roman",serif;
   font-style:normal;
   font-weight:400;
   text-align:center;
   text-shadow:
-    0 0 10px rgba(255,255,255,.86),
-    0 0 24px rgba(188,224,238,.42);
-  filter:blur(.28px);
-  mix-blend-mode:screen;
+    0 0 8px rgba(255,255,255,.9),
+    0 0 18px rgba(130,190,214,.32),
+    0 0 32px rgba(130,190,214,.18);
+  filter:blur(.12px);
   pointer-events:none;
   user-select:none;
 }
 .food-stock-card-v544.has-freeze-plan-v664 .food-frost-crystal-v665{
-  color:rgba(255,255,255,.98);
+  color:rgba(255,255,255,.78);
+  -webkit-text-stroke:1px rgba(83,146,171,.22);
   text-shadow:
-    0 0 12px rgba(255,255,255,.9),
-    0 0 28px rgba(166,213,232,.38);
+    0 0 8px rgba(255,255,255,.9),
+    0 0 20px rgba(126,188,212,.3);
 }
 .food-stock-slice-v664.is-frozen .food-frost-crystal-v665{
-  color:rgba(255,255,255,.99);
+  color:rgba(255,255,255,.88);
+  -webkit-text-stroke:1px rgba(76,141,168,.28);
   text-shadow:
-    0 0 9px rgba(255,255,255,.94),
-    0 0 22px rgba(152,205,227,.5);
+    0 0 8px rgba(255,255,255,.94),
+    0 0 20px rgba(115,181,207,.38),
+    0 0 34px rgba(115,181,207,.2);
 }
 .food-stock-slice-v664.is-frozen>span{
   position:relative;
