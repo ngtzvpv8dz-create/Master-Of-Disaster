@@ -1,5 +1,5 @@
 /* V544 · FOOD
-   Bedienung: Geplant/Erledigt, belastbare Bestandsbuchung, 14-Tage-Plan,
+   Bedienung: Geplant/Erledigt, belastbare Bestandsbuchung, Monats-Stichtag-Plan,
    editierbarer Vorrat, Einkaufslücken und einplanbare Rezepte.
 */
 (function(){
@@ -95,6 +95,28 @@
     date.setDate(date.getDate()+days);
     return date.toISOString().slice(0,10);
   };
+  const monthlyPlanningCutoff=(baseIso=todayIso())=>{
+    const base=new Date(String(baseIso)+'T12:00:00Z');
+    if(Number.isNaN(base.getTime()))return plusDays(todayIso(),14);
+    const cutoffFor=(year,month)=>{
+      const anchor=new Date(Date.UTC(year,month,23,12));
+      let offset=0;
+      while(offset<7){
+        const candidate=new Date(anchor.getTime()+offset*86400000);
+        const weekday=candidate.getUTCDay();
+        if(weekday===3||weekday===6)return candidate.toISOString().slice(0,10);
+        offset+=1;
+      }
+      return anchor.toISOString().slice(0,10);
+    };
+    let cutoff=cutoffFor(base.getUTCFullYear(),base.getUTCMonth());
+    if(cutoff<String(baseIso)){
+      const nextMonth=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+1,1,12));
+      cutoff=cutoffFor(nextMonth.getUTCFullYear(),nextMonth.getUTCMonth());
+    }
+    return cutoff;
+  };
+  const planningHorizonIso=()=>monthlyPlanningCutoff(todayIso());
   const fmtDate=iso=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00'));
   const fmtDay=iso=>new Intl.DateTimeFormat('de-DE',{weekday:'long',day:'2-digit',month:'long',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00'));
   const fmtPreparedAt=value=>{
@@ -323,7 +345,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',plusDays(todayIso(),14)).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
@@ -577,7 +599,8 @@
   }
 
   function planView(data){
-    const future=data.meals.filter(meal=>meal.meal_date>todayIso()).sort((a,b)=>(a.meal_date+a.sort_order).localeCompare(b.meal_date+b.sort_order));
+    const horizon=planningHorizonIso();
+    const future=data.meals.filter(meal=>meal.meal_date>todayIso()&&meal.meal_date<=horizon).sort((a,b)=>(a.meal_date+a.sort_order).localeCompare(b.meal_date+b.sort_order));
     const groups=[];
     future.forEach(meal=>{let group=groups.find(item=>item.date===meal.meal_date);if(!group){group={date:meal.meal_date,meals:[]};groups.push(group);}group.meals.push(meal);});
     const priority=data.inventory.filter(item=>item.is_active!==false&&item.use_priority==='tomorrow');
@@ -586,7 +609,7 @@
     const leftoverBlock=leftovers.length
       ?'<section class="food-leftovers-v572"><div class="food-leftovers-head-v572"><strong>Restportionen</strong><span>'+leftovers.length+' verfügbar</span></div><div class="food-leftovers-grid-v572">'+leftovers.map(item=>{const recipe=item.food_recipes||{};return '<article><div><small>'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||'RESTE')+'</small><strong>'+esc(recipe.title||'Restportion')+'</strong><span>'+esc(portionLabel(item.available_servings))+' verfügbar</span></div><button type="button" class="food-action-v544 compact" data-food-schedule-leftover="'+esc(item.id)+'">Einplanen</button></article>';}).join('')+'</div></section>'
       :'';
-    return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Die nächsten 14 Tage</h3></div><small>Heute bleibt bei Heute</small></div>'+
+    return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Geplant bis '+esc(fmtDate(horizon))+'</h3></div><small>Heute bleibt bei Heute</small></div>'+
       '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
       leftoverBlock+
       (groups.length?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></section>').join(''):'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
@@ -721,7 +744,7 @@
   function deriveShopping(data){
     const needs=new Map();
     data.meals
-      .filter(meal=>meal.meal_date>=todayIso()&&normalizedStatus(meal.status)==='planned')
+      .filter(meal=>meal.meal_date>=todayIso()&&meal.meal_date<=planningHorizonIso()&&normalizedStatus(meal.status)==='planned')
       .forEach(meal=>(meal.ingredients||[]).forEach(item=>{
         const quantity=num(item.quantity);
         if(quantity===null||quantity<=0)return;
