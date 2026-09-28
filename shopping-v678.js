@@ -1,4 +1,4 @@
-/* V682 · SHOPPING / STEP 3 MOBILE CLEANUP + FINAL INVENTORY BOOKING
+/* V683 · SHOPPING / CLEAN PHASE UI + ADD ENTRY IN SHOPPING SECTION
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V682';
+  const VERSION='V683';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -342,6 +342,12 @@
       +'</section>';
   }
 
+  function addEntryActionMarkup(){
+    return '<button type="button" class="shopping-add-entry-v683" data-shopping-add>'
+      +'<span>＋</span><strong>Eintrag hinzufügen</strong>'
+      +'</button>';
+  }
+
   function checkoutActionMarkup(){
     return '<button type="button" class="shopping-checkout-action-v646" data-shopping-checkout>'
       +'<span class="shopping-checkout-check-v646">2</span>'
@@ -393,12 +399,12 @@
       catch(_){return '';}
     };
     return '<section class="shopping-section-v643 is-purchased-v647">'
-      +'<header><div><span>SCHRITT 3 · BON</span><small>gekaufter Einkauf · hier wird nur der Bon verknüpft</small></div><strong>'+checkouts.length+'</strong></header>'
+      +'<header><div><span>PHASE 3 · BON</span><small>gekaufter Einkauf · hier wird nur der Bon verknüpft</small></div><strong>'+checkouts.length+'</strong></header>'
       +'<div class="shopping-purchased-list-v647">'
       +checkouts.map(checkout=>{
         const openCount=(state.reviews||[]).filter(review=>String(review.checkout_id||'')===String(checkout.id)).length;
         const awaiting=checkout.status==='awaiting_receipt';
-        const stateText=awaiting?'Bon fehlt':('✓ Bon verknüpft · '+(openCount===1?'1 Produkt in Schritt 4':openCount+' Produkte in Schritt 4'));
+        const stateText=awaiting?'Bon fehlt':('✓ Bon verknüpft · '+(openCount===1?'1 Produkt in Phase 4':openCount+' Produkte in Phase 4'));
         return '<article class="shopping-purchased-row-v647">'
           +'<div class="shopping-purchased-store-v647"><small>'+esc(when(checkout.completed_at))+'</small><strong>'+esc(checkout.retailer||'Einkauf')+'</strong></div>'
           +'<b>'+(checkout.total_amount===null||checkout.total_amount===undefined?'—':esc(money(checkout.total_amount)))+'</b>'
@@ -476,9 +482,9 @@
       return ac-bc||String(a.receipt_label||'').localeCompare(String(b.receipt_label||''),'de');
     });
     if(!reviews.length){
-      return '<section id="shoppingReviewV647" class="shopping-review-v644 is-empty"><header><div><span>SCHRITT 4 · BON & PRODUKTE PRÜFEN</span><small>erscheint, sobald ein Bon mit dem Einkauf verknüpft ist</small></div><strong>0</strong></header><div class="shopping-review-empty-v644">Keine Produktzuordnung offen.</div></section>';
+      return '<section id="shoppingReviewV647" class="shopping-review-v644 is-empty"><header><div><span>PHASE 4 · BON & PRODUKTE PRÜFEN</span><small>erscheint, sobald ein Bon mit dem Einkauf verknüpft ist</small></div><strong>0</strong></header><div class="shopping-review-empty-v644">Keine Produktzuordnung offen.</div></section>';
     }
-    return '<section id="shoppingReviewV647" class="shopping-review-v644"><header><div><span>SCHRITT 4 · BON & PRODUKTE PRÜFEN</span><small>Bontext dem Produktstamm zuordnen · mit ✓ Passt wird der Food-Bestand genau einmal gebucht</small></div><strong>'+reviews.length+'</strong></header><div class="shopping-review-list-v644">'
+    return '<section id="shoppingReviewV647" class="shopping-review-v644"><header><div><span>PHASE 4 · BON & PRODUKTE PRÜFEN</span><small>Bontext dem Produktstamm zuordnen · mit ✓ Passt wird der Food-Bestand genau einmal gebucht</small></div><strong>'+reviews.length+'</strong></header><div class="shopping-review-list-v644">'
       +reviews.map(review=>{
         const candidate=reviewCandidate(review);
         const pending=review.status==='new_product_pending';
@@ -511,15 +517,13 @@
       ?'<div class="shopping-warning-v643"><strong>Food-Bedarf gerade nicht verfügbar.</strong><span>'+esc(state.foodError)+'</span></div>'
       :'';
 
-    return '<div class="shopping-hero-v643"><div><span>SHOPPING CONTROL · V681</span><h2>EINKAUFSLISTE</h2><p>1 · Einpacken → 2 · Kauf vormerken → 3 · Bon → 4 · prüfen & buchen.</p></div>'
-      +'<button type="button" data-shopping-add>+ EINTRAG</button></div>'
-      +'<div class="shopping-stepbar-v678"><span><b>1</b>Einkaufswagen</span><span><b>2</b>Menge & MHD</span><span><b>3</b>Bon</span><span><b>4</b>Produkt</span></div>'
+    return '<div class="shopping-hero-v643"><div><span>SHOPPING CONTROL</span><h2>EINKAUFSLISTE</h2></div></div>'
       +'<div class="shopping-summary-v643"><div><strong>'+now.length+'</strong><span>Einkaufen</span></div><div><strong>'+later.length+'</strong><span>Später</span></div><div><strong>'+cart.length+'</strong><span>Im Wagen</span></div><div><strong>'+reviewCount+'</strong><span>Prüfen</span></div></div>'
       +warning
       +'<div class="shopping-sections-v643">'
-      +sectionMarkup('now','EINKAUFEN','jetzt relevant',now)
+      +sectionMarkup('now','PHASE 1 · EINKAUFEN','jetzt relevant',now,addEntryActionMarkup())
       +laterSectionMarkup(later)
-      +sectionMarkup('cart','IM EINKAUFSWAGEN','liegt schon drin',cart,cart.length?checkoutActionMarkup():'')
+      +sectionMarkup('cart','PHASE 2 · IM EINKAUFSWAGEN','liegt schon drin',cart,cart.length?checkoutActionMarkup():'')
       +'</div>'
       +purchasedMarkup()
       +reviewMarkup();
@@ -650,8 +654,8 @@
     const modal=document.createElement('div');
     modal.id='shoppingCheckoutV645';
     modal.className='shopping-modal-v643 shopping-checkout-modal-v645';
-    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-checkout-card-v678"><div class="shopping-modal-head-v643"><div><span>SCHRITT 2 VON 4</span><strong>Kauf vormerken</strong></div><button type="button" data-checkout-close>✕</button></div>'
-      +'<p class="shopping-checkout-copy-v645">Trag ein, was wirklich im Wagen gelandet ist. Noch wird kein Vorrat erhöht. Die endgültige Buchung erfolgt erst nach der Bon-/Produktprüfung in Schritt 4.</p>'
+    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-checkout-card-v678"><div class="shopping-modal-head-v643"><div><span>PHASE 2 VON 4</span><strong>Kauf vormerken</strong></div><button type="button" data-checkout-close>✕</button></div>'
+      +'<p class="shopping-checkout-copy-v645">Trag ein, was wirklich im Wagen gelandet ist. Noch wird kein Vorrat erhöht. Die endgültige Buchung erfolgt erst nach der Bon-/Produktprüfung in Phase 4.</p>'
       +'<form data-checkout-form-v678>'
       +'<div class="shopping-checkout-items-v678">'
       +cart.map((item,index)=>{
@@ -674,7 +678,7 @@
           +'</article>';
       }).join('')
       +'</div>'
-      +'<div class="shopping-checkout-receipt-step-v678"><div><span>SCHRITT 3 VON 4</span><strong>Bon zuordnen</strong><small>Optional. Fehlt er noch, kannst du ihn später verknüpfen.</small></div><select data-checkout-receipt>'+receiptOptions()+'</select></div>'
+      +'<div class="shopping-checkout-receipt-step-v678"><div><span>PHASE 3 VON 4</span><strong>Bon zuordnen</strong><small>Optional. Fehlt er noch, kannst du ihn später verknüpfen.</small></div><select data-checkout-receipt>'+receiptOptions()+'</select></div>'
       +'<button type="submit" class="shopping-submit-v643">Einkauf vormerken</button>'
       +'</form></div>';
     document.body.appendChild(modal);
@@ -934,7 +938,7 @@
     const modal=document.createElement('div');
     modal.id='shoppingReceiptAttachV678';
     modal.className='shopping-modal-v643';
-    modal.innerHTML='<div class="shopping-modal-card-v643"><div class="shopping-modal-head-v643"><div><span>SCHRITT 3 VON 4</span><strong>Bon zuordnen</strong></div><button type="button" data-receipt-attach-close>✕</button></div>'
+    modal.innerHTML='<div class="shopping-modal-card-v643"><div class="shopping-modal-head-v643"><div><span>PHASE 3 VON 4</span><strong>Bon zuordnen</strong></div><button type="button" data-receipt-attach-close>✕</button></div>'
       +'<p class="shopping-checkout-copy-v645">Wähle den Finanz-Bon, der zu diesem Einkauf gehört.</p>'
       +'<label>Bon<select data-receipt-attach-select>'+receiptOptions()+'</select></label>'
       +'<button type="button" class="shopping-submit-v643" data-receipt-attach-confirm>Bon verknüpfen</button></div>';
