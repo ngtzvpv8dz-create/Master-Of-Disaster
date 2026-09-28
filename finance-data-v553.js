@@ -5,7 +5,7 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V679';
+  const VERSION='V680';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
@@ -107,6 +107,7 @@
   function bookingTagHtml(row){
     const tags=[];
     if(row?.booking_status==='pending')tags.push('<small class="finance-booking-tag-v679 is-pending">VORGEMERKT</small>');
+    if(row?.category==='Testgutschrift'&&/schwarz payment/i.test(String(row?.merchant||''))&&Math.abs(num(row?.total_amount)-0.01)<0.0001)tags.push('<small class="finance-booking-tag-v679 is-work">TESTBUCHUNG · LIDL APP</small>');
     if(row?.booking_status==='not_visible')tags.push('<small class="finance-booking-tag-v679 is-not-visible">NOCH NICHT BANKSEITIG</small>');
     if(row?.work_related)tags.push('<small class="finance-booking-tag-v679 is-work">ARBEIT</small>');
     if(row?.reimbursement_expected)tags.push('<small class="finance-booking-tag-v679 is-reimbursement">ERSTATTUNG OFFEN</small>');
