@@ -92,3 +92,61 @@
   .finance-category-detail-row-v554 strong{white-space:normal}
   .finance-recent-amount-v554{gap:6px}
 }
+
+
+/* V679 · Bankstatus, Vormerkungen und Projektion */
+.finance-balance-open-v679{
+  display:grid;
+  gap:5px;
+  margin:-2px 13px 11px;
+  padding:9px 10px;
+  border:1px solid rgba(255,209,102,.15);
+  background:rgba(255,209,102,.035);
+}
+.finance-balance-open-v679>div{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.finance-balance-open-v679 span{
+  font-size:8.5px;
+  line-height:1.35;
+  color:rgba(255,225,165,.62);
+}
+.finance-balance-open-v679 strong{
+  font-size:9px;
+  line-height:1.35;
+  text-align:right;
+  white-space:nowrap;
+  color:rgba(255,225,165,.92);
+}
+.finance-balance-open-v679 .is-soft span,
+.finance-balance-open-v679 .is-soft strong{color:rgba(214,255,228,.48)}
+.finance-booking-tags-v679{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  margin-top:2px;
+}
+.finance-booking-tag-v679{
+  display:inline-flex;
+  align-items:center;
+  min-height:16px;
+  padding:2px 5px;
+  border:1px solid rgba(255,209,102,.18);
+  font-size:7px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.06em;
+  color:rgba(255,225,165,.78);
+  background:rgba(255,209,102,.035);
+}
+.finance-booking-tag-v679.is-not-visible{border-color:rgba(214,255,228,.13);color:rgba(214,255,228,.48);background:rgba(214,255,228,.025)}
+.finance-booking-tag-v679.is-work{border-color:rgba(112,255,180,.18);color:rgba(112,255,180,.74);background:rgba(112,255,180,.035)}
+.finance-booking-tag-v679.is-reimbursement{border-color:rgba(112,255,180,.18);color:rgba(112,255,180,.74);background:rgba(112,255,180,.035)}
+@media(max-width:640px){
+  .finance-balance-open-v679{margin-left:11px;margin-right:11px}
+  .finance-balance-open-v679>div{display:grid;gap:2px}
+  .finance-balance-open-v679 strong{text-align:left}
+}
