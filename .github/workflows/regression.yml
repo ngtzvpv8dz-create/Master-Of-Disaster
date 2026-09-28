@@ -51,7 +51,7 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=611-worker-gate' index.html
-          grep -q 'area-runtime-v609.js?v=684-monthly-horizon' index.html
+          grep -q 'area-runtime-v609.js?v=685-collapsible-days' index.html
           grep -q 'sport-circuit-v675.js?v=675-round-break-history' area-runtime-v609.js
           ! grep -q 'sport-audio-test-v652.js?v=657-beep-cues' area-runtime-v609.js
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
@@ -75,6 +75,10 @@ jobs:
           ! grep -Fq '\\n  <link rel="stylesheet" href="./shopping-v643.css' index.html
           grep -q 'shopping_excluded' food-v544.js
           grep -q 'monthlyPlanningCutoff' food-v544.js
+          grep -q 'food-plan-day-v685' food-v544.js
+          grep -q 'food-plan-day-v685' food-v544.css
+          grep -q 'food-v544.css?v=685-collapsible-days' index.html
+          grep -q 'food-v544.js?v=685-collapsible-days' area-runtime-v609.js
           grep -Fq ".lte('meal_date',planningHorizonIso())" food-v544.js
           grep -Fq "meal.meal_date<=planningHorizonIso()" food-v544.js
           ! grep -Fq ".lte('meal_date',plusDays(todayIso(),14))" food-v544.js
