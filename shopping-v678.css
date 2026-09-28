@@ -256,3 +256,33 @@
   line-height:1.35;
   color:rgba(181,204,218,.62);
 }
+
+
+/* V683 · allgemeiner Eintrag direkt im Einkaufsbereich */
+.shopping-add-entry-v683{
+  appearance:none;
+  -webkit-appearance:none;
+  width:100%;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border:1px solid rgba(143,178,201,.20);
+  border-radius:11px;
+  background:rgba(143,178,201,.055);
+  color:#c5d6e1;
+  font:inherit;
+  cursor:pointer;
+}
+.shopping-add-entry-v683 span{
+  font-size:1rem;
+  line-height:1;
+  color:#a8c4d4;
+}
+.shopping-add-entry-v683 strong{
+  font-size:.62rem;
+  font-weight:900;
+  letter-spacing:.045em;
+}
+.shopping-add-entry-v683:active{transform:scale(.992)}
