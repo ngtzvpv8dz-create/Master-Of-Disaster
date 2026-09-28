@@ -660,9 +660,15 @@
           +'<div class="shopping-checkout-fields-v678">'
           +'<label>Gekauft<input data-checkout-qty type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(item.plannedQuantity??'')+'"></label>'
           +'<label>Einheit<input data-checkout-unit value="'+esc(item.plannedUnit||'')+'" placeholder="Stück, g, ml …"></label>'
-          +'<label>Packungen<input data-checkout-packages type="number" min="1" step="1" inputmode="numeric" value="'+esc(item.packageCount||'')+'" placeholder="optional"></label>'
-          +'<label>MHD<input data-checkout-mhd type="date"></label>'
           +'</div>'
+          +(item.category==='Lebensmittel'
+            ?'<div class="shopping-checkout-lots-v678"><div class="shopping-checkout-lots-head-v678"><div><span>PACKUNGEN & MHD</span><small>Jedes MHD ist eine eigene Charge.</small></div><button type="button" data-checkout-add-lot>+ weiteres MHD</button></div>'
+              +'<div data-checkout-lots><div class="shopping-checkout-lot-row-v678" data-checkout-lot-row>'
+                +'<label>Packungen<input data-lot-count type="number" min="1" step="1" inputmode="numeric" value="'+esc(item.packageCount||1)+'"></label>'
+                +'<label>MHD<input data-lot-mhd type="date"></label>'
+                +'<button type="button" data-checkout-remove-lot aria-label="MHD-Zeile entfernen">✕</button>'
+              +'</div></div></div>'
+            :'')
           +'<label class="shopping-checkout-product-v678">Produktstamm<select data-checkout-product>'+productOptions(item.productId,item.inventoryId)+'</select></label>'
           +'</article>';
       }).join('')
@@ -672,7 +678,28 @@
       +'</form></div>';
     document.body.appendChild(modal);
     modal.querySelector('[data-checkout-close]')?.addEventListener('click',()=>modal.remove());
-    modal.addEventListener('click',event=>{if(event.target===modal)modal.remove();});
+    modal.addEventListener('click',event=>{
+      if(event.target===modal){modal.remove();return;}
+      const add=event.target?.closest?.('[data-checkout-add-lot]');
+      if(add){
+        const article=add.closest('[data-checkout-index]');
+        const host=article?.querySelector('[data-checkout-lots]');
+        if(host){
+          host.insertAdjacentHTML('beforeend','<div class="shopping-checkout-lot-row-v678" data-checkout-lot-row><label>Packungen<input data-lot-count type="number" min="1" step="1" inputmode="numeric" value="1"></label><label>MHD<input data-lot-mhd type="date"></label><button type="button" data-checkout-remove-lot aria-label="MHD-Zeile entfernen">✕</button></div>');
+        }
+        return;
+      }
+      const remove=event.target?.closest?.('[data-checkout-remove-lot]');
+      if(remove){
+        const host=remove.closest('[data-checkout-lots]');
+        const rows=host?.querySelectorAll('[data-checkout-lot-row]')||[];
+        if(rows.length>1)remove.closest('[data-checkout-lot-row]')?.remove();
+        else{
+          const date=remove.closest('[data-checkout-lot-row]')?.querySelector('[data-lot-mhd]');
+          if(date)date.value='';
+        }
+      }
+    });
     modal.querySelector('[data-checkout-form-v678]')?.addEventListener('submit',async event=>{
       event.preventDefault();
       const button=event.currentTarget.querySelector('button[type="submit"]');
@@ -684,18 +711,24 @@
           const rawQty=String(node.querySelector('[data-checkout-qty]')?.value||'').trim();
           const quantity=rawQty===''?null:Number(rawQty);
           const unit=String(node.querySelector('[data-checkout-unit]')?.value||'').trim()||null;
-          const rawPackages=String(node.querySelector('[data-checkout-packages]')?.value||'').trim();
-          const packageCount=rawPackages===''?null:Number(rawPackages);
-          const bestBefore=String(node.querySelector('[data-checkout-mhd]')?.value||'').trim()||null;
           const productId=String(node.querySelector('[data-checkout-product]')?.value||'').trim()||null;
           const product=productId?(state.products||[]).find(p=>String(p.id)===productId):null;
           const inventoryId=product?.inventory_id||base.inventoryId||null;
           if(quantity===null||!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte für „'+base.label+'“ eine gekaufte Menge größer 0 eintragen.');
           if(!unit)throw new Error('Bitte für „'+base.label+'“ eine Einheit eintragen.');
-          if(packageCount!==null&&(!Number.isInteger(packageCount)||packageCount<=0))throw new Error('Packungen müssen als ganze Zahl größer 0 angegeben werden.');
+
+          const lots=[...node.querySelectorAll('[data-checkout-lot-row]')].map(lotNode=>{
+            const rawCount=String(lotNode.querySelector('[data-lot-count]')?.value||'').trim();
+            const count=rawCount===''?null:Number(rawCount);
+            const bestBefore=String(lotNode.querySelector('[data-lot-mhd]')?.value||'').trim()||null;
+            if(count!==null&&(!Number.isInteger(count)||count<=0))throw new Error('Packungen für „'+base.label+'“ müssen als ganze Zahl größer 0 angegeben werden.');
+            return {packageCount:count,bestBefore};
+          }).filter(lot=>lot.packageCount!==null);
+          const packageCount=lots.length?lots.reduce((sum,lot)=>sum+lot.packageCount,0):null;
+          const bestBefore=lots.length===1?lots[0].bestBefore:null;
           return {
-            ...base,quantity,unit,packageCount,bestBefore,productId,inventoryId,
-            note:bestBefore?'MHD beim Kauf bestätigt.':null
+            ...base,quantity,unit,packageCount,bestBefore,productId,inventoryId,lots,
+            note:lots.some(lot=>lot.bestBefore)?'MHD beim Kauf chargenbezogen bestätigt.':null
           };
         });
         const transactionId=String(event.currentTarget.querySelector('[data-checkout-receipt]')?.value||'').trim()||null;
@@ -850,6 +883,22 @@
       .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,created_at');
     if(snap.error)throw snap.error;
     const inserted=Array.isArray(snap.data)?snap.data:[];
+
+    const lotRows=[];
+    inserted.forEach(item=>{
+      const source=prepared.find(candidate=>String(candidate.key)===String(item.shopping_key));
+      (source?.lots||[]).forEach(lot=>{
+        lotRows.push({
+          user_id:user.id,checkout_item_id:item.id,
+          package_count:lot.packageCount,best_before_date:lot.bestBefore||null,
+          note:lot.bestBefore?'MHD beim Einkauf erfasst.':null
+        });
+      });
+    });
+    if(lotRows.length){
+      const lotInsert=await supabase.from('shopping_checkout_item_lots').insert(lotRows);
+      if(lotInsert.error)throw lotInsert.error;
+    }
 
     for(const item of inserted){
       if(!item.inventory_id)continue;
