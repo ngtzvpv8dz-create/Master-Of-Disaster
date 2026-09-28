@@ -5,9 +5,9 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V654';
+  const VERSION='V678';
   const ROOT_ID='modFinanceV552';
-  const REQUEST_TIMEOUT_MS=5000;
+  const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
   let visibleRefreshTimer=null;
   let rootObserver=null;
@@ -343,15 +343,15 @@
 
   async function remoteDataWithRetry(){
     let lastError=null;
-    for(let attempt=0;attempt<2;attempt++){
+    for(let attempt=0;attempt<3;attempt++){
       try{
         return await remoteData();
       }catch(error){
         lastError=error;
         const message=String(error?.message||error||'');
         const transient=/Load failed|Failed to fetch|NetworkError|fetch/i.test(message);
-        if(!transient||attempt>0)throw error;
-        await sleep(900);
+        if(!transient||attempt>1)throw error;
+        await sleep(750);
       }
     }
     throw lastError||new Error('Finanzdaten konnten nicht geladen werden.');
