@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V677';
+  const VERSION='V686';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -150,6 +150,22 @@
     if(n===null||Number.isNaN(n))return 'Portion offen';
     const text=new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
     return text+' '+(Math.abs(n-1)<.0001?'Portion':'Portionen');
+  };
+  const preparedPortionTotal=(recipeId,data=state)=>{
+    const id=String(recipeId||'');
+    if(!id)return 0;
+    return (data?.meals||[]).reduce((total,meal)=>{
+      if(String(meal?.recipe_id||'')!==id)return total;
+      if(normalizedStatus(meal?.status)!=='completed')return total;
+      if(meal?.leftover_id||meal?.source_meal_id)return total;
+      const prepared=Number(meal?.prepared_servings);
+      return total+(Number.isFinite(prepared)&&prepared>0?prepared:0);
+    },0);
+  };
+  const preparedPortionLabel=value=>{
+    const n=Math.max(0,Number(value)||0);
+    const text=new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
+    return text+' '+(Math.abs(n-1)<.0001?'Portion':'Portionen')+' zubereitet';
   };
   const ingredientName=item=>String(item?.name||item?.label||'Zutat').trim();
   const ingredientDisplay=item=>{
@@ -1108,10 +1124,12 @@
     });
   }
 
-  function recipeCard(recipe){
+  function recipeCard(recipe,data){
     const expanded=expandedRecipes.has(String(recipe.id));
     const view=recipePresentation(recipe,expanded);
-    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+recipeRatingControl(recipe)+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
+    const preparedTotal=preparedPortionTotal(recipe.id,data);
+    const meta=[view.meta,preparedPortionLabel(preparedTotal)].filter(Boolean).join(' · ');
+    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+recipeRatingControl(recipe)+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
   }
 
   function recipesView(data){
@@ -1131,7 +1149,7 @@
     const uncategorized=recipes.filter(recipe=>!knownCategories.includes(recipe.meal_type)).length;
     const selectedLabel=RECIPE_GROUP_LABELS[activeRecipeCategory]||MEAL_LABELS[activeRecipeCategory]||activeRecipeCategory;
     const grid=selected.length
-      ?'<div class="food-recipe-grid-v544">'+selected.map(recipeCard).join('')+'</div>'
+      ?'<div class="food-recipe-grid-v544">'+selected.map(recipe=>recipeCard(recipe,data)).join('')+'</div>'
       :'<div class="food-empty-card-v544"><h4>Noch keine Rezepte in '+esc(selectedLabel)+'.</h4><p>Neue Rezepte kannst du direkt dieser Kategorie zuordnen.</p></div>';
     return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Deine Rezeptsammlung</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte'+(uncategorized?' · '+uncategorized+' ohne Kategorie':'')+'</small><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div>'
       +'<nav class="food-recipe-tabs-v628" aria-label="Rezeptkategorien">'+categoryTabs+'</nav>'
