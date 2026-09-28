@@ -689,7 +689,7 @@
           const bestBefore=String(node.querySelector('[data-checkout-mhd]')?.value||'').trim()||null;
           const productId=String(node.querySelector('[data-checkout-product]')?.value||'').trim()||null;
           const product=productId?(state.products||[]).find(p=>String(p.id)===productId):null;
-          const inventoryId=base.inventoryId||product?.inventory_id||null;
+          const inventoryId=product?.inventory_id||base.inventoryId||null;
           if(quantity===null||!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte für „'+base.label+'“ eine gekaufte Menge größer 0 eintragen.');
           if(!unit)throw new Error('Bitte für „'+base.label+'“ eine Einheit eintragen.');
           if(packageCount!==null&&(!Number.isInteger(packageCount)||packageCount<=0))throw new Error('Packungen müssen als ganze Zahl größer 0 angegeben werden.');
@@ -792,6 +792,33 @@
     }
   }
 
+  async function ensureInventoryForPurchase(item,supabase,user){
+    if(item.inventoryId)return item;
+    if(String(item.category||'')!=='Lebensmittel')return item;
+    const inventory=(state.food?.inventory||[]).filter(row=>row.is_active!==false);
+    const existing=inventory.find(row=>
+      normalizedIngredient(row.name,row.unit)===normalizedIngredient(item.label,item.unit)
+      &&String(row.unit||'').toLocaleLowerCase('de-DE')===String(item.unit||'').toLocaleLowerCase('de-DE')
+    );
+    if(existing)return {...item,inventoryId:existing.id};
+
+    const maxSort=inventory.reduce((max,row)=>Math.max(max,Number(row.sort_order)||0),0);
+    const created=await supabase.from('food_inventory').insert({
+      user_id:user.id,name:item.label,quantity:0,unit:item.unit,
+      quantity_label:fmtQty(0,item.unit),tone:'empty',sort_order:maxSort+1,
+      opened:false,use_priority:'later',is_active:true,pending_weighing:false,shopping_excluded:false
+    }).select('id').single();
+    if(created.error)throw created.error;
+    const withInventory={...item,inventoryId:created.data.id};
+    if(item.productId){
+      const linked=await supabase.from('shopping_products').update({
+        inventory_id:created.data.id,updated_at:new Date().toISOString()
+      }).eq('id',item.productId).is('inventory_id',null);
+      if(linked.error)throw linked.error;
+    }
+    return withInventory;
+  }
+
   async function completeCheckout(transactionId,cart){
     const {supabase,user}=await currentUser();
     const tx=transactionId?(state.receipts||[]).find(item=>String(item.id)===String(transactionId)):null;
@@ -809,7 +836,10 @@
     if(checkoutResult.error)throw checkoutResult.error;
     const checkoutId=checkoutResult.data.id;
 
-    const snapshotRows=cart.map(item=>({
+    const prepared=[];
+    for(const item of cart)prepared.push(await ensureInventoryForPurchase(item,supabase,user));
+
+    const snapshotRows=prepared.map(item=>({
       user_id:user.id,checkout_id:checkoutId,shopping_key:item.key,label:item.label,
       quantity:item.quantity,unit:item.unit,source:item.source,
       planned_quantity:item.plannedQuantity,planned_unit:item.plannedUnit,
@@ -825,6 +855,9 @@
       if(!item.inventory_id)continue;
       const applied=await supabase.rpc('apply_shopping_checkout_item_inventory',{p_checkout_item_id:item.id});
       if(applied.error)throw applied.error;
+      if(applied.data&&applied.data.applied===false){
+        throw new Error('Vorrat für „'+item.label+'“ konnte nicht übernommen werden: '+(applied.data.reason||'unbekannter Grund')+'.');
+      }
     }
 
     const foodClear=await supabase.from('food_shopping_cart_state').delete().eq('user_id',user.id);
