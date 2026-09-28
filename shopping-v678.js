@@ -826,7 +826,19 @@
   }
 
   async function ensureInventoryForPurchase(item,supabase,user){
-    if(item.inventoryId)return item;
+    if(item.inventoryId){
+      if(item.productId){
+        const product=(state.products||[]).find(row=>String(row.id)===String(item.productId));
+        if(product&&!product.inventory_id){
+          const linked=await supabase.from('shopping_products').update({
+            inventory_id:item.inventoryId,updated_at:new Date().toISOString()
+          }).eq('id',item.productId).is('inventory_id',null);
+          if(linked.error)throw linked.error;
+          product.inventory_id=item.inventoryId;
+        }
+      }
+      return item;
+    }
     if(String(item.category||'')!=='Lebensmittel')return item;
     const inventory=(state.food?.inventory||[]).filter(row=>row.is_active!==false);
     const existing=inventory.find(row=>
