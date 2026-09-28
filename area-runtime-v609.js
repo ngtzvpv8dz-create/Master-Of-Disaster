@@ -59,7 +59,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-v544.js?v=677-shopping-windows',
-      './shopping-v651.js?v=677-shopping-windows'
+      './shopping-v678.js?v=678-checkout-steps'
     ],
     kistology:[
       SUPABASE,
@@ -141,7 +141,7 @@
     ],
     sport:['./sport-v616.js?v=623-active-home','./sport-circuit-v671.js?v=672-active-home'],
     food:['./food-v544.js?v=677-shopping-windows'],
-    shopping:['./food-v544.js?v=677-shopping-windows','./shopping-v651.js?v=677-shopping-windows'],
+    shopping:['./food-v544.js?v=677-shopping-windows','./shopping-v678.js?v=678-checkout-steps'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=654-resume-refresh'],
     denkfabrik:['./denkfabrik-v635.js?v=635-refresh'],
@@ -315,7 +315,7 @@
     }else if(id==='food'){
       await waitFor(()=>window.__modFoodV544);
     }else if(id==='shopping'){
-      await waitFor(()=>window.__modShoppingV651||window.__modShoppingV650||window.__modShoppingV649||window.__modShoppingV648||window.__modShoppingV647||window.__modShoppingV646||window.__modShoppingV645||window.__modShoppingV644||window.__modShoppingV643);
+      await waitFor(()=>window.__modShoppingV678||window.__modShoppingV651||window.__modShoppingV650||window.__modShoppingV649||window.__modShoppingV648||window.__modShoppingV647||window.__modShoppingV646||window.__modShoppingV645||window.__modShoppingV644||window.__modShoppingV643);
     }else if(id==='kistology'){
       await waitFor(()=>window.__modKistologyV603);
     }else if(id==='finance'){
