@@ -53,6 +53,17 @@ body.mod-food-v544 #modFoodV544{display:block}
 .food-priority-strip-v544{display:grid;gap:4px;margin:0 0 14px;padding:14px 16px;border:1px solid rgba(143,111,48,.18);border-radius:17px;background:#f5edda;color:#6b5a34}
 .food-priority-strip-v544 strong{font-size:11px}.food-priority-strip-v544 span{font-size:10px;line-height:1.4}
 .food-day-group-v544{margin:0 0 18px}.food-day-label-v544{display:flex;align-items:baseline;justify-content:space-between;margin:0 4px 8px;color:#526952}.food-day-label-v544 strong{font-family:Georgia,serif;font-size:16px}.food-day-label-v544 span{font-size:10px}
+.food-plan-days-v685{display:grid;gap:9px}
+.food-plan-day-v685{overflow:hidden;margin:0;border:1px solid rgba(72,103,74,.14);border-radius:18px;background:rgba(255,255,255,.66);box-shadow:0 7px 18px rgba(49,72,51,.045)}
+.food-plan-day-v685>.food-day-label-v544{list-style:none;align-items:center;margin:0;padding:13px 14px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.food-plan-day-v685>.food-day-label-v544::-webkit-details-marker{display:none}
+.food-plan-day-title-v685{display:grid;gap:2px;min-width:0}
+.food-plan-day-v685>.food-day-label-v544 .food-plan-day-title-v685 strong{font-family:Georgia,serif;font-size:15px;line-height:1.2;color:#415b45}
+.food-plan-day-v685>.food-day-label-v544 .food-plan-day-title-v685 em{font-style:normal;font-size:9px;color:#829083}
+.food-plan-day-count-v685{display:grid;place-items:center;min-width:28px;height:24px;padding:0 6px;border-radius:8px;background:#e8f0df;color:#58715a;font-size:9px;font-weight:900}
+.food-plan-day-v685[open]>.food-day-label-v544{border-bottom:1px solid rgba(72,103,74,.09);background:rgba(224,236,214,.35)}
+.food-plan-day-body-v685{padding:10px}
+.food-plan-day-body-v685 .food-meal-list-v544{display:grid;gap:8px}
 .food-inventory-grid-v544{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .food-stock-card-v544{min-width:0;padding:15px;border:1px solid var(--food-line);border-radius:20px;background:rgba(255,255,255,.77);box-shadow:0 8px 20px rgba(45,67,47,.05)}
 .food-stock-card-v544.tone-priority{background:#f5edda}.food-stock-card-v544.tone-empty{background:#eeeae4;opacity:.8}
