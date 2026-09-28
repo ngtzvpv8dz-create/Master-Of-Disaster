@@ -705,7 +705,7 @@
     }else if(id==='food'){
       result=window.__modFoodV544?.open?.();
     }else if(id==='shopping'){
-      result=(window.__modShoppingV651||window.__modShoppingV650||window.__modShoppingV649||window.__modShoppingV648||window.__modShoppingV647||window.__modShoppingV646||window.__modShoppingV645||window.__modShoppingV644||window.__modShoppingV643)?.open?.();
+      result=(window.__modShoppingV678||window.__modShoppingV651||window.__modShoppingV650||window.__modShoppingV649||window.__modShoppingV648||window.__modShoppingV647||window.__modShoppingV646||window.__modShoppingV645||window.__modShoppingV644||window.__modShoppingV643)?.open?.();
     }else if(id==='finance'){
       result=(window.__modFinanceV553||window.__modFinanceV552)?.open?.();
     }else if(id==='kistology'){
