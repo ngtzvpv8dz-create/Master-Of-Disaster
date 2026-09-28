@@ -152,3 +152,35 @@ Die App darf einen Bestand nicht als sicher vorhanden oder verbraucht behandeln,
 **Physisch bestätigter Einkauf und bestätigter Verbrauch schlagen Planung.**
 
 Damit bleibt der Bestand auch langfristig belastbar.
+
+
+## V678 – Einkauf als klarer 4-Schritt-Prozess
+
+Der zentrale Einkaufsbereich trennt Planung und tatsächlichen Einkauf bewusst:
+
+1. **Einkaufswagen:** Geplante Artikel werden beim realen Einkauf in den Wagen gelegt.
+2. **Kauf bestätigen:** Tatsächlich gekaufte Menge, Einheit, optionale Packungsanzahl und optionales MHD werden bestätigt.
+3. **Bon:** Ein Finanz-Bon kann sofort oder später mit dem bestätigten Einkauf verknüpft werden.
+4. **Bon & Produkte prüfen:** Bonbezeichnungen werden dem wiederverwendbaren Produktstamm zugeordnet. Dieser Schritt darf den Vorrat **nicht erneut erhöhen**.
+
+### Produktstamm vs. konkreter Einkauf
+
+Der Produktstamm enthält nur wiederverwendbare Produktdaten, z. B. Marke, Produktname, Variante, Barcode, Packungsgröße, Zutaten und Nährwerte.
+
+Kaufspezifische Daten gehören **nicht** in den Produktstamm:
+
+- Mindesthaltbarkeits-/Verbrauchsdatum
+- Kaufdatum
+- Chargen-/Herkunftsinformationen, wenn sie je Packung variieren
+- tatsächlich gekaufte Menge
+- konkrete Packungsanzahl
+
+Diese Daten werden auf Einkaufs-/Chargenebene gespeichert. Mehrere Packungen desselben Produktstamms können dadurch gleichzeitig unterschiedliche MHDs besitzen.
+
+### Einkaufsplanung
+
+Spätere Bedarfe werden nach dem vorgesehenen Einkaufstag gruppiert und einklappbar dargestellt, z. B. „Kaufen am Samstag, 03.10.2026“. Der Einkaufstag ist die Gruppe; innerhalb der Position wird nur noch der tatsächliche Bedarf bzw. das späteste benötigte Datum gezeigt.
+
+### Datenintegrität
+
+Die Vorratsaddition erfolgt idempotent pro bestätigter Einkaufsposition. Die spätere Bon-/Produktprüfung verknüpft nur Produktdaten und darf dieselbe Menge nicht ein zweites Mal in den Vorrat buchen.
