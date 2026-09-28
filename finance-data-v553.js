@@ -5,14 +5,14 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V678';
+  const VERSION='V679';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
   let visibleRefreshTimer=null;
   let rootObserver=null;
   let bodyObserver=null;
-  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,monthTransactions:[],recentTransactions:[]};
+  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,monthTransactions:[],recentTransactions:[],pendingTransactions:[],notVisibleTransactions:[]};
   const expandedTransactions=new Set();
   const expandedCategories=new Set();
 
@@ -75,6 +75,43 @@
   }
 
   const fmtTime=value=>value?String(value).slice(0,5):'';
+
+  function bookingImpact(row){
+    const amount=num(row?.total_amount);
+    if(row?.transaction_type==='income')return amount;
+    if(row?.transaction_type==='expense')return -amount;
+    return 0;
+  }
+
+  function fmtImpact(value,currency='EUR'){
+    const amount=num(value);
+    return (amount>=0?'+':'−')+fmtMoney(Math.abs(amount),currency);
+  }
+
+  function openBalanceModel(){
+    const pending=state.pendingTransactions||[];
+    const notVisible=state.notVisibleTransactions||[];
+    const pendingImpact=pending.reduce((sum,row)=>sum+bookingImpact(row),0);
+    const notVisibleImpact=notVisible.reduce((sum,row)=>sum+bookingImpact(row),0);
+    const current=num(state.currentBalance);
+    return {
+      pendingCount:pending.length,
+      notVisibleCount:notVisible.length,
+      pendingImpact,
+      notVisibleImpact,
+      afterPending:current+pendingImpact,
+      afterAll:current+pendingImpact+notVisibleImpact
+    };
+  }
+
+  function bookingTagHtml(row){
+    const tags=[];
+    if(row?.booking_status==='pending')tags.push('<small class="finance-booking-tag-v679 is-pending">VORGEMERKT</small>');
+    if(row?.booking_status==='not_visible')tags.push('<small class="finance-booking-tag-v679 is-not-visible">NOCH NICHT BANKSEITIG</small>');
+    if(row?.work_related)tags.push('<small class="finance-booking-tag-v679 is-work">ARBEIT</small>');
+    if(row?.reimbursement_expected)tags.push('<small class="finance-booking-tag-v679 is-reimbursement">ERSTATTUNG OFFEN</small>');
+    return tags.length?'<div class="finance-booking-tags-v679">'+tags.join('')+'</div>':'';
+  }
 
   function isOpen(){
     const root=document.getElementById(ROOT_ID);
@@ -274,7 +311,8 @@
       const meta=[fmtDate(row.transaction_date),fmtTime(row.transaction_time),row.payment_method].filter(Boolean).join(' · ');
       const items=Array.isArray(row.finance_items)?row.finance_items:[];
       const expandable=items.length>0,expanded=expandedTransactions.has(row.id);
-      const rowContent='<div class="finance-recent-main-v554"><strong>'+esc(row.merchant||'Unbekannt')+'</strong><span>'+esc(meta)+'</span></div><div class="finance-recent-amount-v554"><b class="'+amountClass+'">'+sign+fmtMoney(row.total_amount,row.currency)+'</b>'+(expandable?'<i class="finance-chevron-v554" aria-hidden="true">'+(expanded?'⌃':'⌄')+'</i>':'')+'</div>';
+      const tags=bookingTagHtml(row);
+      const rowContent='<div class="finance-recent-main-v554"><strong>'+esc(row.merchant||'Unbekannt')+'</strong><span>'+esc(meta)+'</span>'+tags+'</div><div class="finance-recent-amount-v554"><b class="'+amountClass+'">'+sign+fmtMoney(row.total_amount,row.currency)+'</b>'+(expandable?'<i class="finance-chevron-v554" aria-hidden="true">'+(expanded?'⌃':'⌄')+'</i>':'')+'</div>';
       if(!expandable)return '<div class="finance-recent-entry-v554"><div class="finance-recent-row-v553 is-static">'+rowContent+'</div></div>';
       return '<div class="finance-recent-entry-v554"><button type="button" class="finance-recent-row-v553 finance-toggle-v554" data-finance-transaction-toggle="'+esc(row.id)+'" aria-expanded="'+String(expanded)+'" aria-controls="finance-tx-'+esc(row.id)+'">'+rowContent+'</button>'+transactionDetailHtml(row)+'</div>';
     }).join('')+'</div>';
@@ -309,6 +347,13 @@
     const errorHtml=state.error?'<div class="finance-alert-v553"><strong>DATENFEHLER</strong><span>'+esc(state.error)+'</span></div>':'';
     const cashflowClass=summary.cashflow>0?'is-positive':summary.cashflow<0?'is-negative':'';
     const balanceClass=summary.balance>0?'is-positive':summary.balance<0?'is-negative':'';
+    const openBalance=openBalanceModel();
+    const balanceNotesHtml=connected
+      ?'<div class="finance-balance-open-v679">'
+        +(openBalance.pendingCount?'<div><span>'+openBalance.pendingCount+' vorgemerkt · '+fmtImpact(openBalance.pendingImpact,currency)+'</span><strong>nach Buchung: '+fmtMoney(openBalance.afterPending,currency)+'</strong></div>':'')
+        +(openBalance.notVisibleCount?'<div class="is-soft"><span>+ '+openBalance.notVisibleCount+' noch nicht bankseitig sichtbar · '+fmtImpact(openBalance.notVisibleImpact,currency)+'</span><strong>danach: '+fmtMoney(openBalance.afterAll,currency)+'</strong></div>':'')
+      +'</div>'
+      :'';
 
     return '<div class="finance-terminal-v552">'+
       '<div class="finance-topline-v552" aria-hidden="true"><span>MOD FINANCE</span><span class="finance-live-v552"><i></i> '+(state.loading?'SYNC':'BEREIT')+'</span><span>'+todayLabel()+'</span></div>'+
@@ -323,7 +368,7 @@
       '</div>'+
       '<div class="finance-grid-v552">'+
         '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>Monatsverlauf</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
-        '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Konto</h3></div><small>AKTUELL</small></div><div class="finance-score-v552"><strong class="'+balanceClass+'">'+(connected?fmtMoney(summary.balance,currency):'—')+'</strong><span>Saldo</span></div><div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
+        '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Konto</h3></div><small>AKTUELL</small></div><div class="finance-score-v552"><strong class="'+balanceClass+'">'+(connected?fmtMoney(summary.balance,currency):'—')+'</strong><span>Saldo</span></div>'+balanceNotesHtml+'<div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>03 · BUCHUNGEN</span><h3>Letzte Bewegungen</h3></div><small>RECENT</small></div>'+recentHtml()+'</section>'+
         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · KATEGORIEN</span><h3>Ausgaben & Vorteile</h3></div><small>DETAIL</small></div>'+categoriesHtml()+'</section>'+
       '</div>'+
@@ -367,7 +412,7 @@
 
     const range=monthRange();
     const monthQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
+      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
       .gte('transaction_date',range.start)
       .lt('transaction_date',range.end)
       .order('transaction_date',{ascending:false})
@@ -375,25 +420,35 @@
 
     const balanceQuery=supabase.rpc('finance_current_balance');
 
+    const openQuery=supabase.from('finance_transactions')
+      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected')
+      .in('booking_status',['pending','not_visible'])
+      .order('transaction_date',{ascending:false})
+      .order('created_at',{ascending:false});
+
     const recentQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
+      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
       .order('created_at',{ascending:false})
       .limit(8);
 
-    const [monthResult,recentResult,balanceResult]=await Promise.all([
+    const [monthResult,recentResult,balanceResult,openResult]=await Promise.all([
       withTimeout(monthQuery,'Monatsdaten'),
       withTimeout(recentQuery,'Letzte Buchungen'),
-      withTimeout(balanceQuery,'Kontostand')
+      withTimeout(balanceQuery,'Kontostand'),
+      withTimeout(openQuery,'Vorgemerkte Buchungen')
     ]);
     if(monthResult?.error)throw monthResult.error;
     if(recentResult?.error)throw recentResult.error;
     if(balanceResult?.error)throw balanceResult.error;
+    if(openResult?.error)throw openResult.error;
 
     return {
       userId:user.id,
       currentBalance:num(balanceResult?.data),
       monthTransactions:(monthResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))})),
-      recentTransactions:(recentResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))}))
+      recentTransactions:(recentResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))})),
+      pendingTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='pending'),
+      notVisibleTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='not_visible')
     };
   }
 
