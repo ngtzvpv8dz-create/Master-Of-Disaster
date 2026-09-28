@@ -228,3 +228,21 @@
   .shopping-checkout-lot-row-v678{grid-template-columns:.75fr 1.25fr 30px}
   .shopping-checkout-lot-row-v678>button{width:30px}
 }
+
+
+/* V679 · Schritt 3 ist nach Bon-Verknüpfung nur noch Status, nicht zweite Produktprüfung */
+.shopping-step-done-v679{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:31px;
+  padding:6px 10px;
+  border:1px solid rgba(157,197,173,.22);
+  border-radius:10px;
+  background:rgba(157,197,173,.07);
+  color:#b7c9b9;
+  font-size:.56rem;
+  font-weight:900;
+  letter-spacing:.055em;
+  white-space:nowrap;
+}
