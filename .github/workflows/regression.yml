@@ -78,7 +78,7 @@ jobs:
           grep -q 'food-plan-day-v685' food-v544.js
           grep -q 'food-plan-day-v685' food-v544.css
           grep -q 'food-v544.css?v=685-collapsible-days' index.html
-          grep -q 'food-v544.js?v=685-collapsible-days' area-runtime-v609.js
+          grep -q 'food-v544.js?v=686-recipe-portions' area-runtime-v609.js
           grep -Fq ".lte('meal_date',planningHorizonIso())" food-v544.js
           grep -Fq "meal.meal_date<=planningHorizonIso()" food-v544.js
           ! grep -Fq ".lte('meal_date',plusDays(todayIso(),14))" food-v544.js
