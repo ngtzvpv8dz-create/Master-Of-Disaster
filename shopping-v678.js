@@ -1,4 +1,4 @@
-/* V679 · SHOPPING / CLEAR CHECKOUT STEPS + PURCHASE-SPECIFIC MHD + CLEAN STEP 3
+/* V681 · SHOPPING / FINAL INVENTORY BOOKING IN STEP 4 + GENERAL SHOPPING ITEMS
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,11 +6,11 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V679';
+  const VERSION='V681';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
-  const CATEGORIES=['Lebensmittel','Haushalt','Drogerie','Technik','Sonstiges'];
+  const CATEGORIES=['Lebensmittel','Getränke','Haushalt','Drogerie','Technik','Sonstiges'];
 
   let state={general:[],food:null,reviews:[],products:[],aliases:[],checkouts:[],checkoutItems:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
   let loadPromise=null;
@@ -345,7 +345,7 @@
   function checkoutActionMarkup(){
     return '<button type="button" class="shopping-checkout-action-v646" data-shopping-checkout>'
       +'<span class="shopping-checkout-check-v646">2</span>'
-      +'<span><strong>Kauf bestätigen</strong><small>Mengen, Packungen und MHD prüfen · Bon danach zuordnen</small></span>'
+      +'<span><strong>Kauf vormerken</strong><small>Mengen, Packungen und MHD festhalten · Bestand erst nach Bonprüfung</small></span>'
       +'<b aria-hidden="true">›</b>'
       +'</button>';
   }
@@ -478,7 +478,7 @@
     if(!reviews.length){
       return '<section id="shoppingReviewV647" class="shopping-review-v644 is-empty"><header><div><span>SCHRITT 4 · BON & PRODUKTE PRÜFEN</span><small>erscheint, sobald ein Bon mit dem Einkauf verknüpft ist</small></div><strong>0</strong></header><div class="shopping-review-empty-v644">Keine Produktzuordnung offen.</div></section>';
     }
-    return '<section id="shoppingReviewV647" class="shopping-review-v644"><header><div><span>SCHRITT 4 · BON & PRODUKTE PRÜFEN</span><small>Bontext dem richtigen Produktstamm zuordnen · Bestand wird hier nicht erneut erhöht</small></div><strong>'+reviews.length+'</strong></header><div class="shopping-review-list-v644">'
+    return '<section id="shoppingReviewV647" class="shopping-review-v644"><header><div><span>SCHRITT 4 · BON & PRODUKTE PRÜFEN</span><small>Bontext dem Produktstamm zuordnen · mit ✓ Passt wird der Food-Bestand genau einmal gebucht</small></div><strong>'+reviews.length+'</strong></header><div class="shopping-review-list-v644">'
       +reviews.map(review=>{
         const candidate=reviewCandidate(review);
         const pending=review.status==='new_product_pending';
@@ -491,7 +491,7 @@
               ?'<span>Vorschlag: '+esc(productLabel(candidate))+'</span>'
               :'<span>Noch kein eindeutiger Produktvorschlag</span>')
           +'</div><div class="shopping-review-actions-v644">'
-          +(candidate&&!pending?'<button type="button" data-review-confirm="'+esc(review.id)+'">✓ Passt</button>':'')
+          +(candidate&&!pending?'<button type="button" data-review-confirm="'+esc(review.id)+'">✓ Passt & buchen</button>':'')
           +'<button type="button" data-review-choose="'+esc(review.id)+'">Produkt ändern</button>'
           +'<button type="button" data-review-pending="'+esc(review.id)+'">Fotos / Daten kommen noch</button>'
           +'<button type="button" class="is-quiet" data-review-ignore="'+esc(review.id)+'">Kein Produktstamm</button>'
@@ -511,7 +511,7 @@
       ?'<div class="shopping-warning-v643"><strong>Food-Bedarf gerade nicht verfügbar.</strong><span>'+esc(state.foodError)+'</span></div>'
       :'';
 
-    return '<div class="shopping-hero-v643"><div><span>SHOPPING CONTROL · V678</span><h2>EINKAUFSLISTE</h2><p>1 · Einpacken → 2 · Kauf bestätigen → 3 · Bon → 4 · Produkt prüfen.</p></div>'
+    return '<div class="shopping-hero-v643"><div><span>SHOPPING CONTROL · V681</span><h2>EINKAUFSLISTE</h2><p>1 · Einpacken → 2 · Kauf vormerken → 3 · Bon → 4 · prüfen & buchen.</p></div>'
       +'<button type="button" data-shopping-add>+ EINTRAG</button></div>'
       +'<div class="shopping-stepbar-v678"><span><b>1</b>Einkaufswagen</span><span><b>2</b>Menge & MHD</span><span><b>3</b>Bon</span><span><b>4</b>Produkt</span></div>'
       +'<div class="shopping-summary-v643"><div><strong>'+now.length+'</strong><span>Einkaufen</span></div><div><strong>'+later.length+'</strong><span>Später</span></div><div><strong>'+cart.length+'</strong><span>Im Wagen</span></div><div><strong>'+reviewCount+'</strong><span>Prüfen</span></div></div>'
@@ -547,9 +547,10 @@
     root.id='shoppingModalV643';
     root.className='shopping-modal-v643';
     root.innerHTML='<div class="shopping-modal-card-v643"><div class="shopping-modal-head-v643"><div><span>NEUER EINTRAG</span><strong>Was soll mit?</strong></div><button type="button" data-shopping-modal-close>✕</button></div>'
-      +'<form data-shopping-add-form><label>Artikel<input name="label" required placeholder="z. B. Duschgel" autocomplete="off"></label>'
+      +'<form data-shopping-add-form><label>Artikel<input name="label" required placeholder="z. B. Duschgel, Waschmittel, Batterien" autocomplete="off"></label>'
       +'<div class="shopping-form-grid-v643"><label>Menge<input name="quantity" type="number" min="0" step="0.01" inputmode="decimal"></label><label>Einheit<input name="unit" placeholder="Stück, Packung, ml …"></label></div>'
-      +'<div class="shopping-form-grid-v643"><label>Kategorie<select name="category">'+CATEGORIES.map(cat=>'<option>'+esc(cat)+'</option>').join('')+'</select></label><label>Benötigt bis<input name="needed_by" type="date"></label></div>'
+      +'<div class="shopping-form-grid-v643"><label>Kategorie<select name="category">'+CATEGORIES.map(cat=>'<option '+(cat==='Sonstiges'?'selected':'')+'>'+esc(cat)+'</option>').join('')+'</select></label><label>Benötigt bis<input name="needed_by" type="date"></label></div>'
+      +'<small class="shopping-add-hint-v681">Ohne „Erst später“ landet der Eintrag direkt bei EINKAUFEN.</small>'
       +'<label>Notiz<input name="notes" placeholder="optional"></label>'
       +'<label class="shopping-later-check-v643"><input name="later" type="checkbox"> Erst später einkaufen</label>'
       +'<button type="submit" class="shopping-submit-v643">Zur Einkaufsliste</button></form></div>';
@@ -649,8 +650,8 @@
     const modal=document.createElement('div');
     modal.id='shoppingCheckoutV645';
     modal.className='shopping-modal-v643 shopping-checkout-modal-v645';
-    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-checkout-card-v678"><div class="shopping-modal-head-v643"><div><span>SCHRITT 2 VON 4</span><strong>Kauf bestätigen</strong></div><button type="button" data-checkout-close>✕</button></div>'
-      +'<p class="shopping-checkout-copy-v645">Trag ein, was wirklich im Wagen gelandet ist. Das MHD gehört zu genau diesem Einkauf und nicht zum Produktstamm.</p>'
+    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-checkout-card-v678"><div class="shopping-modal-head-v643"><div><span>SCHRITT 2 VON 4</span><strong>Kauf vormerken</strong></div><button type="button" data-checkout-close>✕</button></div>'
+      +'<p class="shopping-checkout-copy-v645">Trag ein, was wirklich im Wagen gelandet ist. Noch wird kein Vorrat erhöht. Die endgültige Buchung erfolgt erst nach der Bon-/Produktprüfung in Schritt 4.</p>'
       +'<form data-checkout-form-v678>'
       +'<div class="shopping-checkout-items-v678">'
       +cart.map((item,index)=>{
@@ -674,7 +675,7 @@
       }).join('')
       +'</div>'
       +'<div class="shopping-checkout-receipt-step-v678"><div><span>SCHRITT 3 VON 4</span><strong>Bon zuordnen</strong><small>Optional. Fehlt er noch, kannst du ihn später verknüpfen.</small></div><select data-checkout-receipt>'+receiptOptions()+'</select></div>'
-      +'<button type="submit" class="shopping-submit-v643">Einkauf jetzt bestätigen</button>'
+      +'<button type="submit" class="shopping-submit-v643">Einkauf vormerken</button>'
       +'</form></div>';
     document.body.appendChild(modal);
     modal.querySelector('[data-checkout-close]')?.addEventListener('click',()=>modal.remove());
@@ -869,8 +870,7 @@
     const tx=transactionId?(state.receipts||[]).find(item=>String(item.id)===String(transactionId)):null;
     if(transactionId&&!tx)throw new Error('Kassenbon nicht gefunden.');
 
-    const prepared=[];
-    for(const item of cart)prepared.push(await ensureInventoryForPurchase(item,supabase,user));
+    const prepared=cart.map(item=>({...item}));
 
     const checkoutResult=await supabase.from('shopping_checkouts').insert({
       user_id:user.id,
@@ -910,15 +910,6 @@
     if(lotRows.length){
       const lotInsert=await supabase.from('shopping_checkout_item_lots').insert(lotRows);
       if(lotInsert.error)throw lotInsert.error;
-    }
-
-    for(const item of inserted){
-      if(!item.inventory_id)continue;
-      const applied=await supabase.rpc('apply_shopping_checkout_item_inventory',{p_checkout_item_id:item.id});
-      if(applied.error)throw applied.error;
-      if(applied.data&&applied.data.applied===false){
-        throw new Error('Vorrat für „'+item.label+'“ konnte nicht übernommen werden: '+(applied.data.reason||'unbekannter Grund')+'.');
-      }
     }
 
     const foodClear=await supabase.from('food_shopping_cart_state').delete().eq('user_id',user.id);
