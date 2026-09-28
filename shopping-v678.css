@@ -246,3 +246,13 @@
   letter-spacing:.055em;
   white-space:nowrap;
 }
+
+
+/* V681 · Hinweis für allgemeine Einkaufslisteneinträge */
+.shopping-add-hint-v681{
+  display:block;
+  margin-top:-3px;
+  font-size:.57rem;
+  line-height:1.35;
+  color:rgba(181,204,218,.62);
+}
