@@ -72,7 +72,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './finance-v552.js?v=552-finance',
-      './finance-data-v553.js?v=654-resume-refresh'
+      './finance-data-v553.js?v=678-mobile-retry'
     ],
     denkfabrik:[
       SUPABASE,
@@ -143,7 +143,7 @@
     food:['./food-v544.js?v=677-shopping-windows'],
     shopping:['./food-v544.js?v=677-shopping-windows','./shopping-v678.js?v=678-checkout-steps'],
     kistology:['./kistology-v603.js?v=609-current'],
-    finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=654-resume-refresh'],
+    finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=678-mobile-retry'],
     denkfabrik:['./denkfabrik-v635.js?v=635-refresh'],
     backstage:['./backstage-v531.js?v=609','./project-history-v452.js?v=452-1501']
   };
