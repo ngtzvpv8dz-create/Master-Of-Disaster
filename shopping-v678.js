@@ -486,14 +486,14 @@
         return '<article class="shopping-review-item-v644 '+(pending?'is-pending-data':'')+'">'
           +'<div class="shopping-review-copy-v644"><small>'+esc(review.retailer||'Händler')+(receipt.detail?' · '+esc(receipt.detail):'')+'</small><strong>'+esc(review.receipt_label||'Bonposition')+'</strong>'
           +(pending
-            ?'<span>Daten kommen noch · noch keinem Produkt zugeordnet</span>'
+            ?'<span>Fotos / Daten kommen noch · noch keinem Produkt zugeordnet</span>'
             :candidate
               ?'<span>Vorschlag: '+esc(productLabel(candidate))+'</span>'
               :'<span>Noch kein eindeutiger Produktvorschlag</span>')
           +'</div><div class="shopping-review-actions-v644">'
           +(candidate&&!pending?'<button type="button" data-review-confirm="'+esc(review.id)+'">✓ Passt</button>':'')
           +'<button type="button" data-review-choose="'+esc(review.id)+'">Produkt ändern</button>'
-          +'<button type="button" data-review-pending="'+esc(review.id)+'">Daten kommen noch</button>'
+          +'<button type="button" data-review-pending="'+esc(review.id)+'">Fotos / Daten kommen noch</button>'
           +'<button type="button" class="is-quiet" data-review-ignore="'+esc(review.id)+'">Kein Produktstamm</button>'
           +'</div></article>';
       }).join('')
@@ -1048,7 +1048,7 @@
             +'</button>';
         }).join('')+'</div>'
         :'<div class="shopping-review-empty-v644">Noch keine bekannten Produkte im Produktstamm.</div>')
-      +'<button type="button" class="shopping-product-new-v644" data-product-new-pending>Anderes Produkt · Daten kommen noch</button></div>';
+      +'<button type="button" class="shopping-product-new-v644" data-product-new-pending>Anderes Produkt · Fotos / Daten kommen noch</button></div>';
     document.body.appendChild(modal);
     modal.querySelector('[data-product-picker-close]')?.addEventListener('click',()=>modal.remove());
     modal.addEventListener('click',event=>{if(event.target===modal)modal.remove();});
