@@ -857,6 +857,9 @@
     const tx=transactionId?(state.receipts||[]).find(item=>String(item.id)===String(transactionId)):null;
     if(transactionId&&!tx)throw new Error('Kassenbon nicht gefunden.');
 
+    const prepared=[];
+    for(const item of cart)prepared.push(await ensureInventoryForPurchase(item,supabase,user));
+
     const checkoutResult=await supabase.from('shopping_checkouts').insert({
       user_id:user.id,
       finance_transaction_id:tx?.id||null,
@@ -868,9 +871,6 @@
     }).select('id').single();
     if(checkoutResult.error)throw checkoutResult.error;
     const checkoutId=checkoutResult.data.id;
-
-    const prepared=[];
-    for(const item of cart)prepared.push(await ensureInventoryForPurchase(item,supabase,user));
 
     const snapshotRows=prepared.map(item=>({
       user_id:user.id,checkout_id:checkoutId,shopping_key:item.key,label:item.label,
