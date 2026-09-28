@@ -1,4 +1,4 @@
-/* V678 · SHOPPING / CLEAR CHECKOUT STEPS + PURCHASE-SPECIFIC MHD
+/* V679 · SHOPPING / CLEAR CHECKOUT STEPS + PURCHASE-SPECIFIC MHD + CLEAN STEP 3
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V678';
+  const VERSION='V679';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -374,9 +374,9 @@
     return '<section class="shopping-section-v643 is-later">'
       +'<header><div><span>SPÄTER EINKAUFEN</span><small>nach Einkaufstag gebündelt</small></div><strong>'+rows.length+'</strong></header>'
       +'<div class="shopping-date-groups-v678">'
-      +keys.map((key,index)=>{
+      +keys.map(key=>{
         const group=groups.get(key)||[];
-        return '<details class="shopping-date-group-v678" '+(index===0?'open':'')+'>'
+        return '<details class="shopping-date-group-v678">'
           +'<summary><span>'+esc(fmtGroupDate(key==='undated'?null:key))+'</span><strong>'+group.length+'</strong></summary>'
           +'<div class="shopping-list-v643">'+group.map(rowMarkup).join('')+'</div>'
           +'</details>';
@@ -393,19 +393,19 @@
       catch(_){return '';}
     };
     return '<section class="shopping-section-v643 is-purchased-v647">'
-      +'<header><div><span>SCHRITT 3 · BON</span><small>gekaufter Einkauf · Bon zuordnen oder Produkte prüfen</small></div><strong>'+checkouts.length+'</strong></header>'
+      +'<header><div><span>SCHRITT 3 · BON</span><small>gekaufter Einkauf · hier wird nur der Bon verknüpft</small></div><strong>'+checkouts.length+'</strong></header>'
       +'<div class="shopping-purchased-list-v647">'
       +checkouts.map(checkout=>{
         const openCount=(state.reviews||[]).filter(review=>String(review.checkout_id||'')===String(checkout.id)).length;
         const awaiting=checkout.status==='awaiting_receipt';
-        const stateText=awaiting?'Bon fehlt':(openCount===1?'1 Produkt offen':openCount+' Produkte offen');
+        const stateText=awaiting?'Bon fehlt':('Bon verknüpft · '+(openCount===1?'1 Produkt in Schritt 4':openCount+' Produkte in Schritt 4'));
         return '<article class="shopping-purchased-row-v647">'
           +'<div class="shopping-purchased-store-v647"><small>'+esc(when(checkout.completed_at))+'</small><strong>'+esc(checkout.retailer||'Einkauf')+'</strong></div>'
           +'<b>'+(checkout.total_amount===null||checkout.total_amount===undefined?'—':esc(money(checkout.total_amount)))+'</b>'
           +'<span>'+esc(stateText)+'</span>'
           +(awaiting
             ?'<button type="button" data-checkout-attach-receipt="'+esc(checkout.id)+'">BON ZUORDNEN</button>'
-            :'<button type="button" data-review-jump="'+esc(checkout.id)+'">PRODUKTE PRÜFEN</button>')
+            :'<span class="shopping-step-done-v679">BON VERKNÜPFT ✓</span>')
           +'</article>';
       }).join('')
       +'</div></section>';
@@ -1168,9 +1168,6 @@
     root.querySelector('[data-shopping-add]')?.addEventListener('click',openModal);
     root.querySelector('[data-shopping-checkout]')?.addEventListener('click',openCheckoutModal);
     root.querySelectorAll('[data-checkout-attach-receipt]').forEach(button=>button.addEventListener('click',()=>openReceiptAttachModal(button.dataset.checkoutAttachReceipt)));
-    root.querySelectorAll('[data-review-jump]').forEach(button=>button.addEventListener('click',()=>{
-      document.getElementById('shoppingReviewV647')?.scrollIntoView({behavior:'smooth',block:'start'});
-    }));
     root.querySelector('[data-shopping-retry]')?.addEventListener('click',()=>reload());
     root.querySelectorAll('[data-shopping-cart]').forEach(button=>button.addEventListener('click',async()=>{
       const row=rowMap.get(button.dataset.shoppingCart);if(!row)return;
