@@ -1,4 +1,4 @@
-/* V681 · SHOPPING / FINAL INVENTORY BOOKING IN STEP 4 + GENERAL SHOPPING ITEMS
+/* V682 · SHOPPING / STEP 3 MOBILE CLEANUP + FINAL INVENTORY BOOKING
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V681';
+  const VERSION='V682';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -398,14 +398,14 @@
       +checkouts.map(checkout=>{
         const openCount=(state.reviews||[]).filter(review=>String(review.checkout_id||'')===String(checkout.id)).length;
         const awaiting=checkout.status==='awaiting_receipt';
-        const stateText=awaiting?'Bon fehlt':('Bon verknüpft · '+(openCount===1?'1 Produkt in Schritt 4':openCount+' Produkte in Schritt 4'));
+        const stateText=awaiting?'Bon fehlt':('✓ Bon verknüpft · '+(openCount===1?'1 Produkt in Schritt 4':openCount+' Produkte in Schritt 4'));
         return '<article class="shopping-purchased-row-v647">'
           +'<div class="shopping-purchased-store-v647"><small>'+esc(when(checkout.completed_at))+'</small><strong>'+esc(checkout.retailer||'Einkauf')+'</strong></div>'
           +'<b>'+(checkout.total_amount===null||checkout.total_amount===undefined?'—':esc(money(checkout.total_amount)))+'</b>'
           +'<span>'+esc(stateText)+'</span>'
           +(awaiting
             ?'<button type="button" data-checkout-attach-receipt="'+esc(checkout.id)+'">BON ZUORDNEN</button>'
-            :'<span class="shopping-step-done-v679">BON VERKNÜPFT ✓</span>')
+            :'')
           +'</article>';
       }).join('')
       +'</div></section>';
