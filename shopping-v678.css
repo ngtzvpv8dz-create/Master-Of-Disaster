@@ -1,0 +1,168 @@
+/* V678 · Shopping steps, date groups and purchase data */
+.shopping-stepbar-v678{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  margin:0 0 12px;
+}
+.shopping-stepbar-v678 span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  padding:8px 7px;
+  border:1px solid rgba(143,178,201,.14);
+  border-radius:12px;
+  background:#182230;
+  color:#aab8c3;
+  font-size:.52rem;
+  font-weight:820;
+  line-height:1.15;
+}
+.shopping-stepbar-v678 b{
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:20px;
+  height:20px;
+  border-radius:7px;
+  background:rgba(143,178,201,.10);
+  color:#c8d8e2;
+  font-size:.56rem;
+}
+.shopping-date-groups-v678{display:grid;gap:7px;padding:7px}
+.shopping-date-group-v678{
+  overflow:hidden;
+  border:1px solid rgba(143,178,201,.12);
+  border-radius:13px;
+  background:#16212d;
+}
+.shopping-date-group-v678>summary{
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 10px;
+  cursor:pointer;
+  color:#b5ccda;
+}
+.shopping-date-group-v678>summary::-webkit-details-marker{display:none}
+.shopping-date-group-v678>summary span{
+  font-size:.62rem;
+  font-weight:900;
+  letter-spacing:.025em;
+}
+.shopping-date-group-v678>summary strong{
+  display:grid;
+  place-items:center;
+  min-width:24px;
+  height:22px;
+  padding:0 5px;
+  border-radius:7px;
+  background:rgba(143,178,201,.09);
+  color:#a9c4d4;
+  font-size:.58rem;
+}
+.shopping-date-group-v678[open]>summary{
+  border-bottom:1px solid rgba(255,255,255,.045);
+  background:rgba(143,178,201,.045);
+}
+.shopping-date-group-v678 .shopping-list-v643{background:transparent}
+
+.shopping-checkout-card-v678{width:min(100%,640px)}
+.shopping-checkout-card-v678 form{gap:12px}
+.shopping-checkout-items-v678{display:grid;gap:8px}
+.shopping-checkout-item-v678{
+  display:grid;
+  gap:9px;
+  padding:10px;
+  border:1px solid rgba(143,178,201,.13);
+  border-radius:13px;
+  background:#141e29;
+}
+.shopping-checkout-item-head-v678{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+.shopping-checkout-item-head-v678 div{min-width:0}
+.shopping-checkout-item-head-v678 small{
+  display:block;
+  color:#8396a5;
+  font-size:.49rem;
+  font-weight:780;
+}
+.shopping-checkout-item-head-v678 strong{
+  display:block;
+  margin-top:2px;
+  color:#eeeae4;
+  font-size:.74rem;
+  line-height:1.2;
+}
+.shopping-checkout-item-head-v678>span{
+  flex:none;
+  padding:4px 6px;
+  border-radius:7px;
+  background:rgba(159,184,159,.09);
+  color:#b3cbb5;
+  font-size:.47rem;
+  font-weight:850;
+}
+.shopping-checkout-fields-v678{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr 1.25fr;
+  gap:7px;
+}
+.shopping-checkout-product-v678 select{height:38px}
+.shopping-checkout-receipt-step-v678{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(160px,.8fr);
+  align-items:end;
+  gap:10px;
+  padding:11px;
+  border:1px solid rgba(216,163,123,.15);
+  border-radius:13px;
+  background:rgba(216,163,123,.045);
+}
+.shopping-checkout-receipt-step-v678>div span{
+  display:block;
+  color:#d2aa88;
+  font-size:.49rem;
+  font-weight:900;
+  letter-spacing:.07em;
+}
+.shopping-checkout-receipt-step-v678>div strong{
+  display:block;
+  margin-top:2px;
+  color:#ece7df;
+  font-size:.72rem;
+}
+.shopping-checkout-receipt-step-v678>div small{
+  display:block;
+  margin-top:3px;
+  color:#93a1ad;
+  font-size:.53rem;
+  line-height:1.3;
+}
+.shopping-checkout-receipt-step-v678 select{
+  width:100%;
+  height:40px;
+  padding:0 9px;
+  border:1px solid rgba(143,178,201,.14);
+  border-radius:10px;
+  background:#111823;
+  color:#eeeae4;
+  font:inherit;
+  font-size:.62rem;
+}
+
+@media(max-width:620px){
+  .shopping-checkout-fields-v678{grid-template-columns:1fr 1fr}
+  .shopping-checkout-receipt-step-v678{grid-template-columns:1fr}
+}
+@media(max-width:420px){
+  .shopping-stepbar-v678{grid-template-columns:1fr 1fr}
+  .shopping-checkout-fields-v678{grid-template-columns:1fr 1fr}
+}
