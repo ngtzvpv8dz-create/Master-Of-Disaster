@@ -285,10 +285,10 @@
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
       const secondary=isStockup
-        ?(item.needed_by?'Erster Bedarf '+fmtDate(item.needed_by):'Vorratskauf')
+        ?('Heute kaufen'+(item.needed_by?' · Bedarf '+fmtDate(item.needed_by):''))
         :(item.notes||'');
       const timing=isStockup
-        ?'Heute kaufen'
+        ?''
         :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
       rows.push({
         id:'general:'+item.id,key:'general:'+item.id,source:'general',label:item.label,
