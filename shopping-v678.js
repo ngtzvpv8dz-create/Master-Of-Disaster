@@ -283,12 +283,20 @@
     (state.general||[]).forEach(item=>{
       const section=item.status==='cart'?'cart':item.status==='later'?'later':'now';
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
+      const isStockup=item.source==='food-stockup';
+      const stockupUntil=String(item.notes||'').match(/bis\s+(\d{2}\.\d{2}\.\d{4})/i)?.[1]||'';
+      const secondary=isStockup
+        ?(stockupUntil?'Vorrat bis '+stockupUntil.slice(0,5):'Vorratskauf')
+        :(item.notes||'');
+      const timing=isStockup
+        ?(item.needed_by===todayIso()?'Heute kaufen':(item.needed_by?'Einkauf '+fmtDate(item.needed_by):'Vorratskauf'))
+        :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
       rows.push({
         id:'general:'+item.id,key:'general:'+item.id,source:'general',label:item.label,
         section,inCart:section==='cart',primary:quantity||item.category||'Manueller Eintrag',
-        secondary:item.notes||'',timing:item.needed_by?'Benötigt '+fmtDate(item.needed_by):'',
+        secondary,timing,
         buyFrom:item.status==='later'?(item.needed_by||null):null,neededDate:item.needed_by||null,
-        category:item.category||'Sonstiges',general:item,flags:{}
+        category:item.category||'Sonstiges',general:item,flags:{stockup:isStockup}
       });
     });
 
@@ -306,6 +314,7 @@
     const badges=[
       row.category?'<span>'+esc(row.category)+'</span>':'',
       row.source==='food-gap'?'<span>PLAN</span>':'',
+      row.flags?.stockup?'<span>VORRAT</span>':'',
       row.flags?.converted?'<span>UMGERECHNET</span>':'',
       row.flags?.unitMismatch?'<span class="is-warn">EINHEIT PRÜFEN</span>':''
     ].filter(Boolean).join('');
