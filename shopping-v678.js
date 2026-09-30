@@ -284,12 +284,11 @@
       const section=item.status==='cart'?'cart':item.status==='later'?'later':'now';
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
-      const stockupUntil=String(item.notes||'').match(/bis\s+(\d{2}\.\d{2}\.\d{4})/i)?.[1]||'';
       const secondary=isStockup
-        ?(stockupUntil?'Vorrat bis '+stockupUntil.slice(0,5):'Vorratskauf')
+        ?(item.needed_by?'Erster Bedarf '+fmtDate(item.needed_by):'Vorratskauf')
         :(item.notes||'');
       const timing=isStockup
-        ?(item.needed_by===todayIso()?'Heute kaufen':(item.needed_by?'Einkauf '+fmtDate(item.needed_by):'Vorratskauf'))
+        ?'Heute kaufen'
         :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
       rows.push({
         id:'general:'+item.id,key:'general:'+item.id,source:'general',label:item.label,
