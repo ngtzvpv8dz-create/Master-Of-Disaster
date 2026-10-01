@@ -187,3 +187,23 @@
 @media(max-width:640px){
   .finance-period-switch-v691 button{min-height:40px;font-size:9.5px}
 }
+
+
+/* V693 · Bankabgleich */
+.finance-bankcheck-head-v693{
+  padding-bottom:7px!important;
+  margin-bottom:2px;
+  border-bottom:1px solid rgba(112,255,180,.10);
+}
+.finance-bankcheck-head-v693 span{
+  font-weight:900;
+  letter-spacing:.11em;
+  color:var(--fin-green)!important;
+}
+.finance-bankcheck-head-v693 strong{
+  color:rgba(112,255,180,.85)!important;
+}
+.finance-balance-open-v679 .is-ok span,
+.finance-balance-open-v679 .is-ok strong{
+  color:rgba(112,255,180,.76);
+}
