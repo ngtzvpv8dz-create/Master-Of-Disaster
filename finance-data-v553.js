@@ -398,7 +398,7 @@
 
   function shell(){
     const summary=summarize();
-    const currency=(state.monthTransactions[0]&&state.monthTransactions[0].currency)||'EUR';
+    const currency=(state.periodTransactions[0]&&state.periodTransactions[0].currency)||'EUR';
     const connected=state.loaded&&!state.error;
     const statusText=state.loading?'VERBINDUNG…':state.error?'VERBINDUNGSFEHLER':connected?'SUPABASE · LIVE':'BEREIT';
     const statusClass=state.error?'is-error':connected?'is-connected':'';
