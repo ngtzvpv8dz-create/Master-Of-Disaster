@@ -78,7 +78,7 @@
 
   function setPeriodMode(mode){
     if(!['month','year','all'].includes(mode)||mode===state.periodMode)return false;
-    state={...state,periodMode:mode};
+    state={...state,periodMode:mode,periodTransactions:[],loading:true,error:null};
     expandedTransactions.clear();
     expandedCategories.clear();
     try{localStorage.setItem('mod.finance.period.v691',mode);}catch(_){}
@@ -527,17 +527,19 @@
   }
 
   async function load(force=false){
-    if(loadPromise)return loadPromise;
+    if(loadPromise&&!force)return loadPromise;
+    const requestedMode=state.periodMode||'month';
     const hadData=state.loaded&&state.periodTransactions.length>=0;
     state={...state,loading:true,error:null};
     render();
     const task=remoteDataWithRetry().then(data=>{
+      if(data.periodMode!==state.periodMode)return state;
       state={loaded:true,loading:false,error:null,...data};
       if(window.__modFinanceV552)window.__modFinanceV552.dataConnected=true;
       render();
       return state;
     }).catch(error=>{
-      console.warn('V654 FINANZEN Daten konnten nach Resume nicht geladen werden.',error);
+      console.warn('V691 FINANZEN Daten konnten nicht geladen werden.',error);
       state={...state,loaded:hadData,loading:false,error:hadData?null:(error?.message||String(error))};
       if(window.__modFinanceV552)window.__modFinanceV552.dataConnected=hadData;
       render();
