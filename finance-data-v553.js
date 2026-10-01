@@ -5,7 +5,7 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V692';
+  const VERSION='V693';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
@@ -138,10 +138,20 @@
     const tags=[];
     if(row?.booking_status==='pending')tags.push('<small class="finance-booking-tag-v679 is-pending">VORGEMERKT</small>');
     if(row?.category==='Testgutschrift'&&/schwarz payment/i.test(String(row?.merchant||''))&&Math.abs(num(row?.total_amount)-0.01)<0.0001)tags.push('<small class="finance-booking-tag-v679 is-work">TESTBUCHUNG · LIDL APP</small>');
-    if(row?.booking_status==='not_visible')tags.push('<small class="finance-booking-tag-v679 is-not-visible">NOCH NICHT BANKSEITIG</small>');
+    if(row?.booking_status==='not_visible')tags.push('<small class="finance-booking-tag-v679 is-not-visible">NOCH NICHT BANKSEITIG SICHTBAR</small>');
     if(row?.work_related)tags.push('<small class="finance-booking-tag-v679 is-work">ARBEIT</small>');
     if(row?.reimbursement_expected)tags.push('<small class="finance-booking-tag-v679 is-reimbursement">ERSTATTUNG OFFEN</small>');
     return tags.length?'<div class="finance-booking-tags-v679">'+tags.join('')+'</div>':'';
+  }
+
+  function bankMeta(row){
+    const transactionDate=row?.transaction_date?fmtDate(row.transaction_date):'';
+    if(row?.category==='Anfangsbestand')return transactionDate?'Startsaldo '+transactionDate:'Startsaldo';
+    if(row?.booking_status==='pending')return [transactionDate?'Vorgang '+transactionDate:'','Bank: vorgemerkt'].filter(Boolean).join(' · ');
+    if(row?.booking_status==='not_visible')return [transactionDate?'Vorgang '+transactionDate:'','Bank: noch nicht sichtbar'].filter(Boolean).join(' · ');
+    const bankDate=row?.bank_booking_date?fmtDate(row.bank_booking_date):'';
+    if(bankDate)return [transactionDate?'Vorgang '+transactionDate:'','Bank '+bankDate].filter(Boolean).join(' · ');
+    return transactionDate;
   }
 
   function isOpen(){
@@ -366,7 +376,7 @@
       const type=row.transaction_type||'expense';
       const sign=type==='income'?'+':type==='expense'?'−':'↔';
       const amountClass=type==='income'?'is-positive':type==='expense'?'is-negative':'is-neutral';
-      const meta=[fmtDate(row.transaction_date),fmtTime(row.transaction_time),row.payment_method].filter(Boolean).join(' · ');
+      const meta=[bankMeta(row),fmtTime(row.transaction_time),row.payment_method].filter(Boolean).join(' · ');
       const items=Array.isArray(row.finance_items)?row.finance_items:[];
       const expandable=items.length>0,expanded=expandedTransactions.has(row.id);
       const tags=bookingTagHtml(row);
@@ -408,8 +418,10 @@
     const openBalance=openBalanceModel();
     const balanceNotesHtml=connected
       ?'<div class="finance-balance-open-v679">'
+        +'<div class="finance-bankcheck-head-v693"><span>BANKABGLEICH</span><strong>'+(openBalance.pendingCount||openBalance.notVisibleCount?'OFFENE BEWEGUNGEN':'SAUBER')+'</strong></div>'
         +(openBalance.pendingCount?'<div><span>'+openBalance.pendingCount+' vorgemerkt · '+fmtImpact(openBalance.pendingImpact,currency)+'</span><strong>nach Buchung: '+fmtMoney(openBalance.afterPending,currency)+'</strong></div>':'')
-        +(openBalance.notVisibleCount?'<div class="is-soft"><span>+ '+openBalance.notVisibleCount+' noch nicht bankseitig sichtbar · '+fmtImpact(openBalance.notVisibleImpact,currency)+'</span><strong>danach: '+fmtMoney(openBalance.afterAll,currency)+'</strong></div>':'')
+        +(openBalance.notVisibleCount?'<div class="is-soft"><span>'+openBalance.notVisibleCount+' bekannt, aber noch nicht bankseitig sichtbar · '+fmtImpact(openBalance.notVisibleImpact,currency)+'</span><strong>danach: '+fmtMoney(openBalance.afterAll,currency)+'</strong></div>':'')
+        +(!openBalance.pendingCount&&!openBalance.notVisibleCount?'<div class="is-ok"><span>Keine bekannten offenen Bankbewegungen.</span><strong>ABGEGLICHEN</strong></div>':'')
       +'</div>'
       :'';
 
@@ -465,7 +477,7 @@
     throw lastError||new Error('Finanzdaten konnten nicht geladen werden.');
   }
 
-  const TRANSACTION_SELECT='id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)';
+  const TRANSACTION_SELECT='id,transaction_date,bank_booking_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)';
 
   async function fetchPeriodTransactions(supabase,spec){
     const pageSize=500;
@@ -503,7 +515,7 @@
     const periodPromise=fetchPeriodTransactions(supabase,spec);
     const balanceQuery=supabase.rpc('finance_current_balance');
     const openQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected')
+      .select('id,transaction_date,bank_booking_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected')
       .in('booking_status',['pending','not_visible'])
       .order('transaction_date',{ascending:false})
       .order('created_at',{ascending:false});
