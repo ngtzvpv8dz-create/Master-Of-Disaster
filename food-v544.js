@@ -457,7 +457,7 @@
     const prepItems=hasFresh?(ingredientGroups.prep||[]):items;
     const ingredientBlocks=hasFresh
       ?'<div class="food-recipe-detail-block-v572"><strong>Vorbereitung für Meal Prep</strong>'+ingredientListMarkup(prepItems)+'</div>'
-        +'<div class="food-recipe-detail-block-v572"><strong>'+esc(ingredientGroups.freshLabel||'Frisch dazu an diesem Tag')+'</strong><p class="food-recipe-note-v572">Nur zu dieser Portion frisch dazugeben · nicht mit einfrieren.</p>'+ingredientListMarkup(ingredientGroups.fresh)+'</div>'
+        +'<div class="food-recipe-detail-block-v572"><strong>'+esc(ingredientGroups.freshLabel||'Frisch dazu an diesem Tag')+'</strong>'+ingredientListMarkup(ingredientGroups.fresh)+'</div>'
       :'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items)+'</div>';
     const details=expanded
       ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
