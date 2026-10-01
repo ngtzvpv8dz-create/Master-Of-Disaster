@@ -363,7 +363,7 @@
 
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
-      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
+      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -727,7 +727,8 @@
       :'';
     const weighAction=pending?'<button type="button" data-food-weigh="'+esc(item.id)+'">Jetzt abwiegen</button>':'';
     const status=empty?'leer':(item.opened?'angebrochen':'unangebrochen');
-    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+freezePlanClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(item.name)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':'')+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+inventoryNoteHtml(item.note)+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    const displayName=String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):item.name;
+    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+freezePlanClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':'')+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+inventoryNoteHtml(item.note)+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
   }
 
   function garlicParts(data=state){
@@ -761,15 +762,43 @@
       .trim().toLocaleLowerCase('de-DE')==='getränke';
     const foodCards=regular
       .filter(item=>!isDrink(item))
-      .map(item=>({name:item.name||'',html:inventoryCard(item)}));
+      .map(item=>({
+        name:item.name||'',
+        family:String(item.family_name||'').trim(),
+        variant:String(item.variant_label||item.name||'').trim(),
+        html:inventoryCard(item)
+      }));
     const drinkCards=regular
       .filter(isDrink)
-      .map(item=>({name:item.name||'',html:inventoryCard(item)}));
+      .map(item=>({
+        name:item.name||'',
+        family:String(item.family_name||'').trim(),
+        variant:String(item.variant_label||item.name||'').trim(),
+        html:inventoryCard(item)
+      }));
     const garlic=garlicCard(data);
-    if(garlic)foodCards.push({name:'Knoblauch',html:garlic});
-    [foodCards,drinkCards].forEach(cards=>cards.sort((a,b)=>collator.compare(String(a.name||''),String(b.name||''))));
+    if(garlic)foodCards.push({name:'Knoblauch',family:'',variant:'Knoblauch',html:garlic});
+
+    const familyLayout=cards=>{
+      const families=new Map();
+      const loose=[];
+      cards.forEach(card=>{
+        if(!card.family){loose.push(card);return;}
+        if(!families.has(card.family))families.set(card.family,[]);
+        families.get(card.family).push(card);
+      });
+      loose.sort((a,b)=>collator.compare(String(a.name||''),String(b.name||'')));
+      const familyNames=[...families.keys()].sort((a,b)=>collator.compare(a,b));
+      const familyHtml=familyNames.map(family=>{
+        const children=families.get(family).sort((a,b)=>collator.compare(String(a.variant||a.name||''),String(b.variant||b.name||'')));
+        return '<section class="food-inventory-family-v694"><div class="food-inventory-family-head-v694"><strong>'+esc(family)+'</strong><span>'+children.length+' '+(children.length===1?'Variante':'Varianten')+'</span></div><div class="food-inventory-grid-v544">'+children.map(item=>item.html).join('')+'</div></section>';
+      }).join('');
+      const looseHtml=loose.length?'<div class="food-inventory-grid-v544 food-inventory-loose-v694">'+loose.map(item=>item.html).join('')+'</div>':'';
+      return familyHtml+looseHtml;
+    };
+
     const group=(label,cards)=>cards.length
-      ?'<section class="food-inventory-group-v690"><div class="food-inventory-group-head-v690"><strong>'+esc(label)+'</strong><span>'+cards.length+' '+(cards.length===1?'Eintrag':'Einträge')+'</span></div><div class="food-inventory-grid-v544">'+cards.map(item=>item.html).join('')+'</div></section>'
+      ?'<section class="food-inventory-group-v690"><div class="food-inventory-group-head-v690"><strong>'+esc(label)+'</strong><span>'+cards.length+' '+(cards.length===1?'Eintrag':'Einträge')+'</span></div>'+familyLayout(cards)+'</section>'
       :'';
     const groups=group('Lebensmittel',foodCards)+group('Getränke',drinkCards);
     return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div>'+(groups||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>Der Vorrat ist leer.</h4></div></div>');
