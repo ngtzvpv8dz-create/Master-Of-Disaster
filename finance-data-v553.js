@@ -5,7 +5,7 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V691';
+  const VERSION='V692';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
