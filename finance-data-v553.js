@@ -5,14 +5,14 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V680';
+  const VERSION='V691';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
   let visibleRefreshTimer=null;
   let rootObserver=null;
   let bodyObserver=null;
-  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,monthTransactions:[],recentTransactions:[],pendingTransactions:[],notVisibleTransactions:[]};
+  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[]};
   const expandedTransactions=new Set();
   const expandedCategories=new Set();
 
@@ -55,6 +55,36 @@
       return new Intl.DateTimeFormat('de-DE',{month:'short',year:'numeric',timeZone:'Europe/Berlin'})
         .format(new Date(range.start+'T12:00:00Z')).replace('.','').toUpperCase();
     }catch(_){return range.start.slice(0,7);}
+  }
+
+  function yearRange(){
+    const year=Number(todayIso().slice(0,4));
+    return {start:String(year).padStart(4,'0')+'-01-01',end:String(year+1).padStart(4,'0')+'-01-01',year};
+  }
+
+  function periodSpec(mode=state.periodMode){
+    if(mode==='year'){
+      const range=yearRange();
+      return {mode:'year',start:range.start,end:range.end,label:String(range.year),title:'Jahresverlauf'};
+    }
+    if(mode==='all')return {mode:'all',start:null,end:null,label:'GESAMT',title:'Gesamtverlauf'};
+    const range=monthRange();
+    return {mode:'month',start:range.start,end:range.end,label:monthLabel(),title:'Monatsverlauf'};
+  }
+
+  function periodRows(){
+    return state.periodTransactions||[];
+  }
+
+  function setPeriodMode(mode){
+    if(!['month','year','all'].includes(mode)||mode===state.periodMode)return false;
+    state={...state,periodMode:mode};
+    expandedTransactions.clear();
+    expandedCategories.clear();
+    try{localStorage.setItem('mod.finance.period.v691',mode);}catch(_){}
+    render();
+    load(true);
+    return true;
   }
 
   function todayLabel(){
@@ -121,26 +151,54 @@
 
   function summarize(){
     let income=0,expenses=0,expenseCount=0,incomeCount=0;
-    (state.monthTransactions||[]).forEach(row=>{
+    periodRows().forEach(row=>{
       const amount=num(row.total_amount);
       if(row.transaction_type==='income'){income+=amount;incomeCount+=1;}
       if(row.transaction_type==='expense'){expenses+=amount;expenseCount+=1;}
     });
-    return {income,expenses,cashflow:income-expenses,balance:num(state.currentBalance),count:(state.monthTransactions||[]).length,expenseCount,incomeCount};
+    return {income,expenses,cashflow:income-expenses,balance:num(state.currentBalance),count:periodRows().length,expenseCount,incomeCount};
   }
 
   function chartModel(){
-    const range=monthRange();
-    const days=new Date(Date.UTC(range.year,range.month,0)).getUTCDate();
-    const daily=Array.from({length:days},()=>0);
-    (state.monthTransactions||[]).forEach(row=>{
-      const day=Number(String(row.transaction_date||'').slice(8,10));
-      if(!day||day>days)return;
-      if(row.transaction_type==='income')daily[day-1]+=num(row.total_amount);
-      else if(row.transaction_type==='expense')daily[day-1]-=num(row.total_amount);
-    });
+    const rows=periodRows();
+    const spec=periodSpec();
+    let buckets=[];
+    let axisLabels=['','',''];
+
+    if(spec.mode==='month'){
+      const range=monthRange();
+      const days=new Date(Date.UTC(range.year,range.month,0)).getUTCDate();
+      buckets=Array.from({length:days},()=>0);
+      rows.forEach(row=>{
+        const day=Number(String(row.transaction_date||'').slice(8,10));
+        if(day>=1&&day<=days)buckets[day-1]+=bookingImpact(row);
+      });
+      axisLabels=['1',String(Math.ceil(days/2)),String(days)];
+    }else if(spec.mode==='year'){
+      buckets=Array.from({length:12},()=>0);
+      rows.forEach(row=>{
+        const month=Number(String(row.transaction_date||'').slice(5,7));
+        if(month>=1&&month<=12)buckets[month-1]+=bookingImpact(row);
+      });
+      axisLabels=['JAN','JUN','DEZ'];
+    }else{
+      const monthMap=new Map();
+      rows.forEach(row=>{
+        const key=String(row.transaction_date||'').slice(0,7);
+        if(!/^\d{4}-\d{2}$/.test(key))return;
+        monthMap.set(key,(monthMap.get(key)||0)+bookingImpact(row));
+      });
+      const keys=Array.from(monthMap.keys()).sort();
+      buckets=keys.map(key=>monthMap.get(key)||0);
+      const short=key=>key?key.slice(5,7)+'/'+key.slice(2,4):'';
+      if(keys.length){
+        axisLabels=[short(keys[0]),short(keys[Math.floor((keys.length-1)/2)]),short(keys[keys.length-1])];
+      }else axisLabels=['START','','HEUTE'];
+    }
+
+    if(!buckets.length)buckets=[0];
     let running=0;
-    const cumulative=daily.map(value=>(running+=value));
+    const cumulative=buckets.map(value=>(running+=value));
     const min=Math.min(0,...cumulative);
     const max=Math.max(0,...cumulative);
     const spread=Math.max(1,max-min);
@@ -149,10 +207,10 @@
     const pad=14;
     const y=value=>pad+(max-value)/spread*(height-pad*2);
     const points=cumulative.map((value,index)=>{
-      const x=days<=1?0:index/(days-1)*width;
+      const x=cumulative.length<=1?500:index/(cumulative.length-1)*width;
       return x.toFixed(1)+','+y(value).toFixed(1);
     }).join(' ');
-    return {days,points,zeroY:y(0).toFixed(1),hasData:(state.monthTransactions||[]).length>0};
+    return {points,zeroY:y(0).toFixed(1),hasData:rows.length>0,axisLabels,title:spec.title};
   }
 
   function categoryModel(){
@@ -176,7 +234,7 @@
       transactionId:row.id
     });
 
-    (state.monthTransactions||[]).filter(row=>row.transaction_type==='expense').forEach(row=>{
+    periodRows().filter(row=>row.transaction_type==='expense').forEach(row=>{
       const items=Array.isArray(row.finance_items)?row.finance_items:[];
       const txMeta=transactionMeta(row);
       let assigned=0,itemDiscounts=0,itemDeposits=0,itemDepositReturns=0;
@@ -235,7 +293,7 @@
       }
     });
 
-    (state.monthTransactions||[]).filter(row=>row.transaction_type==='income').forEach(row=>{
+    periodRows().filter(row=>row.transaction_type==='income').forEach(row=>{
       const haystack=[row.category,row.merchant,row.receipt_source,row.notes].filter(Boolean).join(' ').toLowerCase();
       if(!/pfand|leergut/.test(haystack)&&num(row.deposit_total)<=0)return;
       const amount=num(row.deposit_total)>0?num(row.deposit_total):num(row.total_amount);
@@ -256,18 +314,17 @@
 
   function chartHtml(){
     const chart=chartModel();
+    const axis='<div class="finance-axis-v552"><span>'+esc(chart.axisLabels[0])+'</span><span>'+esc(chart.axisLabels[1])+'</span><span>'+esc(chart.axisLabels[2])+'</span></div>';
     if(!chart.hasData){
-      return '<div class="finance-chart-v552" aria-label="Noch keine Cashflow-Daten">'+
-        '<div class="finance-axis-v552"><span>1</span><span>15</span><span>'+chart.days+'</span></div>'+
-        '<div class="finance-chart-empty-v552"><strong>NO DATA</strong><span>Die Datenquelle ist bereit. Mit der ersten Buchung entsteht hier dein Monatsverlauf.</span></div>'+
+      return '<div class="finance-chart-v552" aria-label="Noch keine Cashflow-Daten">'+axis+
+        '<div class="finance-chart-empty-v552"><strong>NO DATA</strong><span>Für diesen Zeitraum sind noch keine Buchungen vorhanden.</span></div>'+
       '</div>';
     }
-    return '<div class="finance-chart-v552 finance-chart-has-data-v553" aria-label="Cashflow-Monatsverlauf">'+
+    return '<div class="finance-chart-v552 finance-chart-has-data-v553" aria-label="'+esc(chart.title)+'">'+
       '<svg class="finance-chart-live-v553" viewBox="0 0 1000 180" preserveAspectRatio="none" aria-hidden="true">'+
         '<line class="finance-chart-zero-v553" x1="0" x2="1000" y1="'+chart.zeroY+'" y2="'+chart.zeroY+'"></line>'+
         '<polyline class="finance-chart-line-v553" points="'+chart.points+'"></polyline>'+
-      '</svg>'+
-      '<div class="finance-axis-v552"><span>1</span><span>15</span><span>'+chart.days+'</span></div>'+
+      '</svg>'+axis+
     '</div>';
   }
 
@@ -303,8 +360,8 @@
   }
 
   function recentHtml(){
-    const rows=state.recentTransactions||[];
-    if(!rows.length)return '<div class="finance-empty-row-v552"><span>Keine Buchungen vorhanden.</span><small>Der Bereich ist verbunden. Die erste echte Buchung erscheint hier nach dem Speichern.</small></div>';
+    const rows=periodRows();
+    if(!rows.length)return '<div class="finance-empty-row-v552"><span>Keine Buchungen in diesem Zeitraum.</span><small>Wechsle oben zwischen Monat, Jahr und Gesamt.</small></div>';
     return '<div class="finance-recent-v553">'+rows.map(row=>{
       const type=row.transaction_type||'expense';
       const sign=type==='income'?'+':type==='expense'?'−':'↔';
@@ -358,19 +415,24 @@
 
     return '<div class="finance-terminal-v552">'+
       '<div class="finance-topline-v552" aria-hidden="true"><span>MOD FINANCE</span><span class="finance-live-v552"><i></i> '+(state.loading?'SYNC':'BEREIT')+'</span><span>'+todayLabel()+'</span></div>'+
-      '<header class="finance-hero-v552"><div><span class="finance-kicker-v552">FINANZZENTRALE</span><h2>MONEY DESK</h2><p>Ausgaben, Einnahmen und Monatsverlauf auf einen Blick.</p></div><div class="finance-status-v552 '+statusClass+'"><span>DATENQUELLE</span><strong>'+statusText+'</strong></div></header>'+
+      '<header class="finance-hero-v552"><div><span class="finance-kicker-v552">FINANZZENTRALE</span><h2>MONEY DESK</h2><p>Ausgaben, Einnahmen und Verlauf auf einen Blick.</p></div><div class="finance-status-v552 '+statusClass+'"><span>DATENQUELLE</span><strong>'+statusText+'</strong></div></header>'+
       errorHtml+
+      '<div class="finance-period-switch-v691" role="group" aria-label="Finanzzeitraum">'+
+        '<button type="button" data-finance-period="month" class="'+(state.periodMode==='month'?'is-active':'')+'">MONAT</button>'+
+        '<button type="button" data-finance-period="year" class="'+(state.periodMode==='year'?'is-active':'')+'">JAHR</button>'+
+        '<button type="button" data-finance-period="all" class="'+(state.periodMode==='all'?'is-active':'')+'">GESAMT</button>'+
+      '</div>'+
       '<div class="finance-ticker-v552" aria-label="Finanzkennzahlen">'+
-        '<div><span>MONAT</span><strong>'+monthLabel()+'</strong></div>'+
+        '<div><span>ZEITRAUM</span><strong>'+periodSpec().label+'</strong></div>'+
         '<div><span>EINNAHMEN</span><strong class="is-positive">'+(connected?fmtMoney(summary.income,currency):'—')+'</strong></div>'+
         '<div><span>AUSGABEN</span><strong class="is-negative">'+(connected?fmtMoney(summary.expenses,currency):'—')+'</strong></div>'+
         '<div><span>CASHFLOW</span><strong class="'+cashflowClass+'">'+(connected?fmtMoney(summary.cashflow,currency):'—')+'</strong></div>'+
         '<div><span>FREI</span><strong>—</strong></div>'+
       '</div>'+
       '<div class="finance-grid-v552">'+
-        '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>Monatsverlauf</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
+        '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>'+periodSpec().title+'</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
         '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Konto</h3></div><small>AKTUELL</small></div><div class="finance-score-v552"><strong class="'+balanceClass+'">'+(connected?fmtMoney(summary.balance,currency):'—')+'</strong><span>Saldo</span></div>'+balanceNotesHtml+'<div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
-        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>03 · BUCHUNGEN</span><h3>Letzte Bewegungen</h3></div><small>RECENT</small></div>'+recentHtml()+'</section>'+
+        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>03 · BUCHUNGEN</span><h3>Alle im Zeitraum</h3></div><small>'+esc(periodSpec().label)+'</small></div>'+recentHtml()+'</section>'+
         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · KATEGORIEN</span><h3>Ausgaben & Vorteile</h3></div><small>DETAIL</small></div>'+categoriesHtml()+'</section>'+
       '</div>'+
       '<footer class="finance-footer-v552"><span><i></i> '+(connected?'Supabase verbunden':'Oberfläche bereit')+'</span><span>'+VERSION+' · LIVE DATA</span></footer>'+
@@ -403,6 +465,31 @@
     throw lastError||new Error('Finanzdaten konnten nicht geladen werden.');
   }
 
+  const TRANSACTION_SELECT='id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)';
+
+  async function fetchPeriodTransactions(supabase,spec){
+    const pageSize=500;
+    let from=0;
+    const rows=[];
+    while(true){
+      let query=supabase.from('finance_transactions')
+        .select(TRANSACTION_SELECT)
+        .order('transaction_date',{ascending:false})
+        .order('transaction_time',{ascending:false})
+        .order('created_at',{ascending:false})
+        .range(from,from+pageSize-1);
+      if(spec.start)query=query.gte('transaction_date',spec.start);
+      if(spec.end)query=query.lt('transaction_date',spec.end);
+      const result=await withTimeout(query,'Buchungen laden',12000);
+      if(result?.error)throw result.error;
+      const page=result?.data||[];
+      rows.push(...page);
+      if(page.length<pageSize)break;
+      from+=pageSize;
+    }
+    return rows.map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))}));
+  }
+
   async function remoteData(){
     const supabase=client();
     if(!supabase)throw new Error('Supabase-Client ist nicht verfügbar.');
@@ -411,43 +498,29 @@
     if(sessionResult?.error)throw sessionResult.error;
     if(!user?.id)throw new Error('Keine aktive Cloud-Sitzung.');
 
-    const range=monthRange();
-    const monthQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
-      .gte('transaction_date',range.start)
-      .lt('transaction_date',range.end)
-      .order('transaction_date',{ascending:false})
-      .order('transaction_time',{ascending:false});
-
+    const mode=state.periodMode||'month';
+    const spec=periodSpec(mode);
+    const periodPromise=fetchPeriodTransactions(supabase,spec);
     const balanceQuery=supabase.rpc('finance_current_balance');
-
     const openQuery=supabase.from('finance_transactions')
       .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected')
       .in('booking_status',['pending','not_visible'])
       .order('transaction_date',{ascending:false})
       .order('created_at',{ascending:false});
 
-    const recentQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,discount_total,deposit_total,deposit_return_total,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,quantity,unit,unit_price,total_price,category,subcategory,discount_amount,deposit_amount,deposit_return_amount,sort_order)')
-      .order('created_at',{ascending:false})
-      .limit(8);
-
-    const [monthResult,recentResult,balanceResult,openResult]=await Promise.all([
-      withTimeout(monthQuery,'Monatsdaten'),
-      withTimeout(recentQuery,'Letzte Buchungen'),
+    const [periodTransactions,balanceResult,openResult]=await Promise.all([
+      periodPromise,
       withTimeout(balanceQuery,'Kontostand'),
       withTimeout(openQuery,'Vorgemerkte Buchungen')
     ]);
-    if(monthResult?.error)throw monthResult.error;
-    if(recentResult?.error)throw recentResult.error;
     if(balanceResult?.error)throw balanceResult.error;
     if(openResult?.error)throw openResult.error;
 
     return {
       userId:user.id,
       currentBalance:num(balanceResult?.data),
-      monthTransactions:(monthResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))})),
-      recentTransactions:(recentResult?.data||[]).map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))})),
+      periodMode:mode,
+      periodTransactions,
       pendingTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='pending'),
       notVisibleTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='not_visible')
     };
@@ -455,7 +528,7 @@
 
   async function load(force=false){
     if(loadPromise)return loadPromise;
-    const hadData=state.loaded&&state.monthTransactions.length>=0;
+    const hadData=state.loaded&&state.periodTransactions.length>=0;
     state={...state,loading:true,error:null};
     render();
     const task=remoteDataWithRetry().then(data=>{
@@ -526,7 +599,9 @@
         return;
       }
       const categoryButton=event.target?.closest?.('[data-finance-category-toggle]');
-      if(categoryButton&&root.contains(categoryButton))toggleExpanded(expandedCategories,categoryButton.dataset.financeCategoryToggle);
+      if(categoryButton&&root.contains(categoryButton)){toggleExpanded(expandedCategories,categoryButton.dataset.financeCategoryToggle);return;}
+      const periodButton=event.target?.closest?.('[data-finance-period]');
+      if(periodButton&&root.contains(periodButton))setPeriodMode(periodButton.dataset.financePeriod);
     });
   }
 
@@ -551,6 +626,7 @@
   window.__modFinanceDataV553=api;
 
   function init(){
+    try{const saved=localStorage.getItem('mod.finance.period.v691');if(['month','year','all'].includes(saved))state.periodMode=saved;}catch(_){}
     document.addEventListener('visibilitychange',refreshWhenVisible);
     window.addEventListener('focus',refreshWhenVisible);
     window.addEventListener('pageshow',refreshWhenVisible);
