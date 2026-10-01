@@ -1294,3 +1294,40 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-inventory-group-head-v690{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 4px 9px}
 .food-inventory-group-head-v690 strong{color:#526b4c;font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
 .food-inventory-group-head-v690 span{color:#8b958b;font-size:9px;font-weight:760}
+
+
+/* V694 · Produktfamilien im Vorrat */
+.food-inventory-family-v694{
+  margin:0 0 13px;
+  padding:10px;
+  border:1px solid rgba(75,111,79,.12);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(249,251,247,.86),rgba(243,248,242,.72));
+}
+.food-inventory-family-v694:last-child{margin-bottom:0}
+.food-inventory-family-head-v694{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:0 2px 9px;
+}
+.food-inventory-family-head-v694 strong{
+  color:#49684d;
+  font-size:13px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+.food-inventory-family-head-v694 span{
+  color:#7b8f7c;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.food-inventory-family-v694 .food-inventory-grid-v544{margin:0}
+.food-inventory-loose-v694{margin-top:10px}
+@media(max-width:430px){
+  .food-inventory-family-v694{padding:9px}
+  .food-inventory-family-head-v694 strong{font-size:12px}
+}
