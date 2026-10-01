@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V690';
+  const VERSION='V695';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -421,7 +421,31 @@
       '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
   }
 
-  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null){
+  function ingredientListMarkup(items){
+    return '<ul>'+items.map(item=>{const q=num(item.quantity);return '<li><span>'+esc(ingredientName(item))+'</span>'+(q===null||Number.isNaN(q)?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+'</li>';}).join('')+'</ul>';
+  }
+
+  function splitMealIngredients(recipe,items){
+    const recipeItems=recipe?.food_recipe_ingredients||recipe?.ingredients||[];
+    const remaining=new Map();
+    const key=item=>normalizedIngredient(ingredientName(item),item?.unit)+'|'+String(item?.unit||'').trim().toLocaleLowerCase('de-DE');
+    recipeItems.forEach(item=>remaining.set(key(item),(remaining.get(key(item))||0)+1));
+    const prep=[];
+    const fresh=[];
+    (items||[]).forEach(item=>{
+      const itemKey=key(item);
+      const left=remaining.get(itemKey)||0;
+      if(left>0){
+        prep.push(item);
+        remaining.set(itemKey,left-1);
+      }else{
+        fresh.push(item);
+      }
+    });
+    return {prep,fresh};
+  }
+
+  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
     const instructions=recipeInstructions(recipe);
@@ -429,8 +453,14 @@
       num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
       num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
     ].filter(Boolean).join(' · ');
+    const hasFresh=Boolean(ingredientGroups?.fresh?.length);
+    const prepItems=hasFresh?(ingredientGroups.prep||[]):items;
+    const ingredientBlocks=hasFresh
+      ?'<div class="food-recipe-detail-block-v572"><strong>Vorbereitung für Meal Prep</strong>'+ingredientListMarkup(prepItems)+'</div>'
+        +'<div class="food-recipe-detail-block-v572"><strong>'+esc(ingredientGroups.freshLabel||'Frisch dazu an diesem Tag')+'</strong><p class="food-recipe-note-v572">Nur zu dieser Portion frisch dazugeben · nicht mit einfrieren.</p>'+ingredientListMarkup(ingredientGroups.fresh)+'</div>'
+      :'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items)+'</div>';
     const details=expanded
-      ?'<div class="food-recipe-details-v572"><div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong><ul>'+items.map(item=>{const q=num(item.quantity);return '<li><span>'+esc(ingredientName(item))+'</span>'+(q===null||Number.isNaN(q)?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+'</li>';}).join('')+'</ul></div><div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
+      ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
       :'';
     const meta=[portionLabel(servings),recipe.prep_minutes?recipe.prep_minutes+' Min.':null,nutrition||null].filter(Boolean).join(' · ');
     return {details,meta};
@@ -569,10 +599,12 @@
 
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
-      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings);
+      const ingredientGroups=splitMealIngredients(recipe,meal.ingredients||[]);
+      const freshLabel=meal.meal_date===todayIso()?'Für heute frisch dazu':'Frisch dazu an diesem Tag';
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,{...ingredientGroups,freshLabel});
       const note=visibleMealNote(meal.note);
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
-      const freezeHint=expanded?freezeInstructionMarkup(meal.note):'';
+      const freezeHint=freezeInstructionMarkup(meal.note);
       const quantityAction=status==='completed'
         ?''
         :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Mengen ändern</button>';
@@ -581,7 +613,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
-        +view.details+freezeHint+planNote
+        +freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
         +'</article>';
