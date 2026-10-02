@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V697';
+  const VERSION='V702';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -228,12 +228,69 @@
     }
     return {available:0,unitMismatch:true,converted:false};
   };
+  const FAMILY_FRESH_QUALIFIERS=new Set(['frisch','frische','frischer','frisches','bio']);
+  const FAMILY_FROZEN_QUALIFIERS=new Set(['tk','tiefkühl','tiefgekühlt','tiefgefroren','gefroren']);
+  const familyText=value=>String(value||'')
+    .trim()
+    .toLocaleLowerCase('de-DE')
+    .replace(/[·_]+/g,' ')
+    .replace(/\s+/g,' ');
+  const familyAliases=value=>String(value||'')
+    .split(/\s*[/|]\s*/)
+    .map(familyText)
+    .filter(Boolean);
+  const familyNeedMatch=(name,familyName)=>{
+    const need=familyText(name);
+    if(!need)return null;
+    for(const alias of familyAliases(familyName)){
+      if(need===alias)return {matched:true,mode:'generic',alias};
+      const prefix=need.startsWith(alias+' ')?need.slice(alias.length).trim():'';
+      const suffix=need.endsWith(' '+alias)?need.slice(0,need.length-alias.length).trim():'';
+      const remainder=prefix||suffix;
+      if(!remainder)continue;
+      const tokens=remainder.split(/\s+/).filter(Boolean);
+      const allowed=tokens.every(token=>FAMILY_FRESH_QUALIFIERS.has(token)||FAMILY_FROZEN_QUALIFIERS.has(token));
+      if(!allowed)continue;
+      const mode=tokens.some(token=>FAMILY_FROZEN_QUALIFIERS.has(token))
+        ?'frozen'
+        :tokens.some(token=>FAMILY_FRESH_QUALIFIERS.has(token))
+          ?'fresh'
+          :'generic';
+      return {matched:true,mode,alias};
+    }
+    return null;
+  };
+  const familyRowMode=item=>{
+    const text=familyText((item?.name||'')+' '+(item?.variant_label||''));
+    if(/(?:^|\s)(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)(?:\s|$)/.test(text))return 'frozen';
+    if(/(?:^|\s)(?:frisch|frische|frischer|frisches)(?:\s|$)/.test(text))return 'fresh';
+    return 'neutral';
+  };
   const inventoryFamilyStockInfo=(name,targetUnit,rows=state?.inventory||[])=>{
-    const family=normalizedIngredient(name,targetUnit);
-    const matches=(rows||[]).filter(item=>
-      item?.is_active!==false
-      && normalizedIngredient(item?.family_name,item?.unit)===family
-    );
+    const families=new Map();
+    (rows||[]).forEach(item=>{
+      if(item?.is_active===false||!item?.family_name)return;
+      const key=familyText(item.family_name);
+      if(!families.has(key))families.set(key,{name:item.family_name,rows:[]});
+      families.get(key).rows.push(item);
+    });
+
+    let selected=null;
+    for(const family of families.values()){
+      const match=familyNeedMatch(name,family.name);
+      if(match){selected={...family,match};break;}
+    }
+    if(!selected)return {available:0,converted:false,unitMismatch:false,family:false,rows:[]};
+
+    let matches=selected.rows;
+    if(selected.match.mode==='fresh')matches=matches.filter(item=>familyRowMode(item)==='fresh');
+    else if(selected.match.mode==='frozen')matches=matches.filter(item=>familyRowMode(item)==='frozen');
+    else{
+      const fresh=matches.filter(item=>familyRowMode(item)==='fresh');
+      const frozen=matches.filter(item=>familyRowMode(item)==='frozen');
+      if(fresh.length&&frozen.length)matches=matches.filter(item=>familyRowMode(item)!=='frozen');
+    }
+
     let available=0;
     let compatible=0;
     let converted=false;
@@ -249,7 +306,9 @@
       available,
       converted,
       unitMismatch:matches.length>0&&compatible===0,
-      family:matches.length>0,
+      family:true,
+      familyName:selected.name,
+      familyMode:selected.match.mode,
       rows:matches
     };
   };
@@ -996,6 +1055,7 @@
     const manual=(data.shopping||[]).filter(item=>!item.checked);
     const cartSet=new Set((data.cart||[]).map(item=>String(item.shopping_key||'')));
     const inventoryRows=(data.inventory||[]).filter(item=>item.is_active!==false);
+    const inventoryById=new Map(inventoryRows.map(item=>[item.id,item]));
     const inventoryByName=new Map(inventoryRows.map(item=>[normalizedIngredient(item.name,item.unit),item]));
     const derivedKeys=new Set(gaps.map(item=>normalizedIngredient(item.label,item.unit)+'|'+String(item.unit||'').toLocaleLowerCase('de-DE')));
     const nowRows=[];
@@ -1035,15 +1095,14 @@
         return;
       }
 
-      const normalized=normalizedIngredient(item.label,unit);
-      const stock=inventoryByName.get(normalized);
+      const stockInfo=ingredientStockInfo({name:item.label,unit},inventoryRows,inventoryById,inventoryByName);
+      const stock=stockInfo.stock||null;
       if(stock?.pending_weighing===true)return;
-      const stockInfo=inventoryQuantityInUnit(stock,unit);
       const available=stockInfo.available;
       const missing=Math.max(0,required-available);
       if(missing<=0)return;
 
-      const html='<li class="food-shopping-gap-v572 manual '+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stockInfo.converted?'<em>Vorrat passend umgerechnet</em>':'')+(stockInfo.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc(stockInfo.unitMismatch?'':(stock?.id||''))+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
+      const html='<li class="food-shopping-gap-v572 manual '+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(required,unit))+' · Vorrat '+esc(fmtQty(available,unit))+'</small><b>Kaufen '+esc(fmtQty(missing,unit))+'</b>'+(stockInfo.converted?'<em>Vorrat passend umgerechnet</em>':'')+(stockInfo.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(item.label)+'" data-food-stock-quantity="'+esc(missing)+'" data-food-stock-unit="'+esc(unit)+'" data-food-stock-id="'+esc((stockInfo.family||stockInfo.unitMismatch)?'':(stock?.id||''))+'" data-shopping-id="'+esc(item.id)+'" data-shopping-required="'+esc(required)+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
       pushRow(inCart?cartRows:nowRows,{label:item.label||'',html});
     });
 
