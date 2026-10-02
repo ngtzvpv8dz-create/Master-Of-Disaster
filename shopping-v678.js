@@ -134,7 +134,7 @@
 
       const substitutionResult=await supabase.from('shopping_substitutions')
         .select('id,shopping_key,source,original_label,original_quantity,original_unit,replacement_label,replacement_quantity,replacement_unit,replacement_inventory_id,replacement_product_id,status,note,created_at,updated_at')
-        .eq('status','cart')
+        .in('status',['cart','purchased'])
         .order('created_at',{ascending:true});
       if(substitutionResult.error)throw substitutionResult.error;
       state.substitutions=Array.isArray(substitutionResult.data)?substitutionResult.data:[];
@@ -221,11 +221,12 @@
     const inventory=(food.inventory||[]).filter(item=>item.is_active!==false);
     const inventoryByName=new Map(inventory.map(item=>[normalizedIngredient(item.name,item.unit),item]));
     const pendingCheckoutKeys=new Set((state.checkoutItems||[]).map(item=>String(item.shopping_key||'')));
+    const purchasedSubstitutionKeys=new Set((state.substitutions||[]).filter(item=>item.status==='purchased').map(item=>String(item.shopping_key||'')));
     const derivedKeys=new Set();
 
     (food.gaps||[]).forEach(item=>{
       const key=foodGapKey(item);
-      if(pendingCheckoutKeys.has(key))return;
+      if(pendingCheckoutKeys.has(key)||purchasedSubstitutionKeys.has(key))return;
       const inCart=cartSet.has(key);
       const delayed=Boolean(item.buyFrom&&String(item.buyFrom)>todayIso());
       const stockName=item.garlic?item.purchaseName:item.label;
@@ -256,7 +257,7 @@
       const duplicateKey=normalizedIngredient(item.label,unit)+'|'+unit.toLocaleLowerCase('de-DE');
       if(derivedKeys.has(duplicateKey))return;
       const key=manualFoodKey(item);
-      if(pendingCheckoutKeys.has(key))return;
+      if(pendingCheckoutKeys.has(key)||purchasedSubstitutionKeys.has(key))return;
       const inCart=cartSet.has(key);
       let primary=required&&unit?'Kaufen '+fmtQty(required,unit):'Manueller Food-Eintrag';
       let secondary='';
