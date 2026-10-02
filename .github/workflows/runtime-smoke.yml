@@ -103,7 +103,7 @@ jobs:
               await page.evaluate(()=>window.__modAppHubV603.show());
               await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('shopping'));
               await page.waitForFunction(()=>!!window.__modShoppingV678,null,{timeout:30000});
-              out.shopping=await page.evaluate(()=>!!window.__modShoppingV678&&/^V\\d+$/.test(window.__modShoppingV678.version||'')&&document.body.dataset.modAppSurfaceV515==='shopping');
+              out.shopping=await page.evaluate(()=>!!window.__modShoppingV678&&/^V\d+$/.test(window.__modShoppingV678.version||'')&&document.body.dataset.modAppSurfaceV515==='shopping');
 
               await page.evaluate(()=>window.__modAppHubV603.show());
               await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('kistology'));
