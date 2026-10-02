@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V704';
+  const VERSION='V705';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -869,7 +869,9 @@
     const displayName=String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):item.name;
     const details=item.note&&expanded?'<div class="food-stock-details-v697">'+inventoryNoteHtml(item.note)+'</div>':'';
     const detailsToggle=item.note?'<button type="button" class="food-stock-details-toggle-v697" data-food-stock-toggle="'+esc(item.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Details schließen':'Details')+'</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+detailsToggle+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
+    const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
+    return '<article class="food-stock-card-v544 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+detailsToggle+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -896,9 +898,7 @@
         .map(product=>[String(product.inventory_id),product])
     );
     const needle=String(inventorySearch||'').trim().toLocaleLowerCase('de-DE');
-    const regular=data.inventory.filter(item=>{
-      const name=String(item.name||'').trim().toLocaleLowerCase('de-DE');
-      if(name==='knoblauchknollen'||name==='knoblauchzehen')return false;
+    const matchesSearch=item=>{
       if(!needle)return true;
       const product=productsByInventoryId.get(String(item.id))||{};
       const haystack=[
@@ -906,27 +906,34 @@
         product.brand,product.product_name,product.variant,product.category
       ].filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
       return haystack.includes(needle);
+    };
+    const regular=(data.inventory||[]).filter(item=>{
+      const name=String(item.name||'').trim().toLocaleLowerCase('de-DE');
+      if(name==='knoblauchknollen'||name==='knoblauchzehen')return false;
+      return matchesSearch(item);
     });
+    const isActuallyEmpty=item=>{
+      const quantity=num(item.quantity);
+      return item.pending_weighing!==true&&quantity!==null&&quantity<=0;
+    };
+    const availableRows=regular.filter(item=>!isActuallyEmpty(item));
+    const emptyRows=regular.filter(isActuallyEmpty);
     const isDrink=item=>String(productsByInventoryId.get(String(item.id))?.category||'')
       .trim().toLocaleLowerCase('de-DE')==='getränke';
-    const foodCards=regular
-      .filter(item=>!isDrink(item))
-      .map(item=>({
-        name:item.name||'',
-        family:String(item.family_name||'').trim(),
-        variant:String(item.variant_label||item.name||'').trim(),
-        html:inventoryCard(item)
-      }));
-    const drinkCards=regular
-      .filter(isDrink)
-      .map(item=>({
-        name:item.name||'',
-        family:String(item.family_name||'').trim(),
-        variant:String(item.variant_label||item.name||'').trim(),
-        html:inventoryCard(item)
-      }));
+    const toCard=item=>({
+      name:item.name||'',
+      family:String(item.family_name||'').trim(),
+      variant:String(item.variant_label||item.name||'').trim(),
+      display:String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):(item.name||''),
+      html:inventoryCard(item)
+    });
+    const foodCards=availableRows.filter(item=>!isDrink(item)).map(toCard);
+    const drinkCards=availableRows.filter(isDrink).map(toCard);
+    const emptyCards=emptyRows.map(toCard).sort((a,b)=>collator.compare(String(a.display||a.name||''),String(b.display||b.name||'')));
+
     const garlic=garlicCard(data);
-    if(garlic)foodCards.push({name:'Knoblauch',family:'',variant:'Knoblauch',html:garlic});
+    const garlicState=garlicParts(data);
+    if(garlic&&(garlicState.bulbs>0||garlicState.cloves>0))foodCards.push({name:'Knoblauch',family:'',variant:'Knoblauch',display:'Knoblauch',html:garlic});
 
     const familyLayout=cards=>{
       const families=new Map();
@@ -949,10 +956,14 @@
     const group=(label,cards)=>cards.length
       ?'<section class="food-inventory-group-v690"><div class="food-inventory-group-head-v690"><strong>'+esc(label)+'</strong><span>'+cards.length+' '+(cards.length===1?'Eintrag':'Einträge')+'</span></div>'+familyLayout(cards)+'</section>'
       :'';
-    const groups=group('Lebensmittel',foodCards)+group('Getränke',drinkCards);
+    const availableGroups=group('Lebensmittel',foodCards)+group('Getränke',drinkCards);
+    const unavailable=emptyCards.length
+      ?'<details class="food-inventory-empty-group-v705" '+(needle?'open':'')+'><summary><span><strong>Nicht vorrätig</strong><small>Aktuell 0 Bestand</small></span><b>'+emptyCards.length+'</b></summary><div class="food-inventory-empty-body-v705"><div class="food-inventory-grid-v544">'+emptyCards.map(item=>item.html).join('')+'</div></div></details>'
+      :'';
     const tools='<div class="food-inventory-tools-v697"><label><span>Vorrat durchsuchen</span><input type="search" data-food-inventory-search value="'+esc(inventorySearch)+'" placeholder="z. B. Tomaten, Salsa, Skyr …" autocomplete="off"></label><small>Sortierung: A–Z nach Familie und Variante</small></div>';
     const emptyCopy=needle?'Keine passenden Vorräte gefunden.':'Der Vorrat ist leer.';
-    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div>'+tools+(groups||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>'+esc(emptyCopy)+'</h4></div></div>');
+    const content=availableGroups+unavailable;
+    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div>'+tools+(content||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>'+esc(emptyCopy)+'</h4></div></div>');
   }
 
   function deriveShopping(data){
@@ -2100,11 +2111,6 @@
       if(!date)return;
       if(day.open)expandedPlanDays.add(date);else expandedPlanDays.delete(date);
     }));
-    root.querySelectorAll('[data-food-adjust]').forEach(button=>{
-      const id=button.dataset.foodAdjust;
-      button.insertAdjacentHTML('afterend','<button type="button" data-food-consume="'+esc(id)+'">Verbraucht</button><button type="button" data-food-storage="'+esc(id)+'">Zustand &amp; Verwendung</button>');
-    });
-    root.querySelectorAll('[data-food-consume]').forEach(button=>button.addEventListener('click',()=>consumeModal(button.dataset.foodConsume)));
     root.querySelectorAll('[data-food-weigh]').forEach(button=>button.addEventListener('click',()=>weighPendingModal(button.dataset.foodWeigh)));
     root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
     root.querySelectorAll('[data-food-meal-card]').forEach(card=>card.addEventListener('click',event=>{
@@ -2154,7 +2160,6 @@
       renderState();
     }));
     root.querySelectorAll('[data-food-adjust]').forEach(button=>button.addEventListener('click',()=>adjustModal(button.dataset.foodAdjust)));
-    root.querySelectorAll('[data-food-archive]').forEach(button=>button.addEventListener('click',()=>archiveInventory(button.dataset.foodArchive).catch(error=>alert(error?.message||'Vorrat konnte nicht entfernt werden.'))));
     root.querySelector('[data-food-add-inventory]')?.addEventListener('click',addInventoryModal);
     root.querySelector('[data-food-add-shopping]')?.addEventListener('click',shoppingModal);
     root.querySelector('[data-food-add-recipe]')?.addEventListener('click',addRecipeModal);
