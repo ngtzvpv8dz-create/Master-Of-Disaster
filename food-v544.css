@@ -1394,7 +1394,6 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-stock-details-v697{margin-top:2px}
 .food-stock-card-v544.is-details-open-v697{
   border-color:rgba(76,112,79,.22);
-  background:rgba(255,255,255,.9);
 }
 @media(max-width:430px){
   .food-inventory-tools-v697{align-items:stretch;flex-direction:column}
@@ -1414,7 +1413,61 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   border:1px solid rgba(102,82,112,.16);
 }
 .food-stock-open-v544.is-empty-v629{
-  background:#eeeae3!important;
-  color:#8a8177!important;
-  border:1px solid rgba(138,129,119,.14);
+  background:#d7d3cc!important;
+  color:#5f5a54!important;
+  border:1px solid rgba(95,90,84,.2);
+}
+
+
+/* V705 · Nicht vorrätig separat, leere Bestände klarer grau */
+.food-stock-card-v544.tone-empty{
+  background:radial-gradient(circle at 12% 88%,rgba(155,148,138,.18),transparent 42%),linear-gradient(145deg,#e9e6e1,#dfdbd4);
+  opacity:.9;
+}
+.food-inventory-empty-group-v705{
+  margin-top:18px;
+  border:1px solid rgba(95,90,84,.16);
+  border-radius:18px;
+  background:rgba(226,223,217,.48);
+  overflow:hidden;
+}
+.food-inventory-empty-group-v705>summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:13px 14px;
+  cursor:pointer;
+  list-style:none;
+  color:#575550;
+}
+.food-inventory-empty-group-v705>summary::-webkit-details-marker{display:none}
+.food-inventory-empty-group-v705>summary span{display:grid;gap:2px}
+.food-inventory-empty-group-v705>summary strong{
+  font-size:11px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.food-inventory-empty-group-v705>summary small{
+  color:#817d76;
+  font-size:8px;
+  font-weight:700;
+}
+.food-inventory-empty-group-v705>summary b{
+  display:grid;
+  place-items:center;
+  min-width:28px;
+  height:24px;
+  padding:0 7px;
+  border-radius:999px;
+  background:#d1cdc6;
+  color:#5f5a54;
+  font-size:9px;
+}
+.food-inventory-empty-body-v705{
+  padding:0 10px 10px;
+}
+.food-inventory-empty-group-v705[open]>summary{
+  border-bottom:1px solid rgba(95,90,84,.12);
+  margin-bottom:10px;
 }
