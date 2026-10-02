@@ -59,7 +59,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-v544.js?v=697-inventory-family-ux',
-      './shopping-v678.js?v=689-compact-stockup'
+      './shopping-v678.js?v=698-substitute-items'
     ],
     kistology:[
       SUPABASE,
@@ -141,7 +141,7 @@
     ],
     sport:['./sport-v616.js?v=623-active-home','./sport-circuit-v671.js?v=672-active-home'],
     food:['./food-v544.js?v=697-inventory-family-ux'],
-    shopping:['./food-v544.js?v=697-inventory-family-ux','./shopping-v678.js?v=689-compact-stockup'],
+    shopping:['./food-v544.js?v=697-inventory-family-ux','./shopping-v678.js?v=698-substitute-items'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
     denkfabrik:['./denkfabrik-v635.js?v=635-refresh'],
