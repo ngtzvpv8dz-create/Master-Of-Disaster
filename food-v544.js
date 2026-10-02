@@ -283,12 +283,15 @@
     if(!selected)return {available:0,converted:false,unitMismatch:false,family:false,rows:[]};
 
     let matches=selected.rows;
-    if(selected.match.mode==='fresh')matches=matches.filter(item=>familyRowMode(item)==='fresh');
-    else if(selected.match.mode==='frozen')matches=matches.filter(item=>familyRowMode(item)==='frozen');
-    else{
-      const fresh=matches.filter(item=>familyRowMode(item)==='fresh');
+    if(selected.match.mode==='fresh'){
+      const explicitFresh=matches.filter(item=>familyRowMode(item)==='fresh');
+      matches=explicitFresh.length?explicitFresh:matches.filter(item=>familyRowMode(item)!=='frozen');
+    }else if(selected.match.mode==='frozen'){
+      matches=matches.filter(item=>familyRowMode(item)==='frozen');
+    }else{
       const frozen=matches.filter(item=>familyRowMode(item)==='frozen');
-      if(fresh.length&&frozen.length)matches=matches.filter(item=>familyRowMode(item)!=='frozen');
+      const nonFrozen=matches.filter(item=>familyRowMode(item)!=='frozen');
+      if(frozen.length&&nonFrozen.length)matches=nonFrozen;
     }
 
     let available=0;
