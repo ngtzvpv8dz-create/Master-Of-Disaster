@@ -938,7 +938,7 @@
         const bulbsAvailable=String(bulbStock?.unit||'')==='Knolle'?Math.max(0,num(bulbStock?.quantity)||0):0;
         if(missing>0&&bulbsAvailable<=0){
           const shortageDate=shortageDateFor(need,available);
-          gaps.push({...need,inventory_id:null,available,missing,label:'Knoblauchzehen',garlic:true,purchaseInventoryId:bulbStock?.id||null,purchaseName:'Knoblauchknollen',purchaseQuantity:1,purchaseUnit:'Knolle',shortageDate,buyFrom:shortageDate});
+          gaps.push({...need,inventory_id:null,available,currentAvailable:available,missing,label:'Knoblauchzehen',garlic:true,purchaseInventoryId:bulbStock?.id||null,purchaseName:'Knoblauchknollen',purchaseQuantity:1,purchaseUnit:'Knolle',shortageDate,buyFrom:shortageDate});
         }
         return;
       }
@@ -976,6 +976,7 @@
           uses:window.uses,
           inventory_id:stockInfo.family?null:(need.inventory_id||stock?.id||null),
           available,
+          currentAvailable:Math.max(0,stockInfo.available||0),
           missing,
           label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
