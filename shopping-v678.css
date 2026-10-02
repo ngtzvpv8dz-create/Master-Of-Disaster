@@ -286,3 +286,115 @@
   letter-spacing:.045em;
 }
 .shopping-add-entry-v683:active{transform:scale(.992)}
+
+
+/* V698 · Ersatzartikel */
+.shopping-item-v643.has-substitution-v698{
+  grid-template-areas:"main cart" "sub cart" "meta cart" "foot foot";
+}
+.shopping-substitute-v698{
+  grid-area:sub;
+  display:grid;
+  grid-template-columns:18px minmax(0,1fr) auto;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+  padding:3px 0 2px;
+  color:#b9c8d2;
+}
+.shopping-substitute-v698>span{
+  color:#d7aa85;
+  font-size:1rem;
+  line-height:1;
+  font-weight:900;
+  transform:translateY(-1px);
+}
+.shopping-substitute-v698>div{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  min-width:0;
+}
+.shopping-substitute-v698 small{
+  flex:none;
+  color:#7ea695;
+  font-size:.48rem;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+.shopping-substitute-v698 strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#dfe9e4;
+  font-size:.66rem;
+  line-height:1.15;
+}
+.shopping-substitute-v698>b{
+  color:#9fc7b4;
+  font-size:.58rem;
+  line-height:1;
+  white-space:nowrap;
+}
+.shopping-badges-v643 .is-substitute-v698{
+  border-color:rgba(126,166,149,.32);
+  background:rgba(126,166,149,.12);
+  color:#9fc7b4;
+}
+.shopping-actions-v643 button.is-substitute-v698{
+  border-color:rgba(126,166,149,.34);
+  background:rgba(126,166,149,.11);
+  color:#a8cfbd;
+}
+.shopping-substitution-card-v698{
+  width:min(560px,calc(100vw - 24px));
+}
+.shopping-substitution-preview-v698{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);
+  align-items:center;
+  gap:8px;
+  margin:0 0 12px;
+  padding:10px;
+  border:1px solid rgba(126,166,149,.18);
+  border-radius:12px;
+  background:rgba(126,166,149,.06);
+}
+.shopping-substitution-preview-v698 strong,
+.shopping-substitution-preview-v698 b{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.72rem;
+}
+.shopping-substitution-preview-v698 strong{color:#aab5bd}
+.shopping-substitution-preview-v698 span{
+  text-align:center;
+  color:#d7aa85;
+  font-size:1.1rem;
+  font-weight:900;
+}
+.shopping-substitution-preview-v698 b{color:#dfe9e4}
+.shopping-substitution-actions-v698{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:12px;
+}
+.shopping-substitution-actions-v698 .is-quiet{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:9px;
+  padding:8px 10px;
+  background:rgba(255,255,255,.025);
+  color:#8d99a4;
+  font:inherit;
+  font-size:.58rem;
+  font-weight:800;
+}
+@media (max-width:560px){
+  .shopping-substitute-v698>div{align-items:flex-start;flex-direction:column;gap:2px}
+  .shopping-substitution-actions-v698{align-items:stretch;flex-direction:column}
+}
