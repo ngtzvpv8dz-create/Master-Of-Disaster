@@ -1,4 +1,4 @@
-/* V683 · SHOPPING / CLEAN PHASE UI + ADD ENTRY IN SHOPPING SECTION
+/* V698 · SHOPPING / SUBSTITUTE ITEMS END-TO-END
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,13 +6,13 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V683';
+  const VERSION='V698';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
   const CATEGORIES=['Lebensmittel','Getränke','Haushalt','Drogerie','Technik','Sonstiges'];
 
-  let state={general:[],food:null,reviews:[],products:[],aliases:[],checkouts:[],checkoutItems:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
+  let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],checkouts:[],checkoutItems:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
   let loadPromise=null;
   let rowMap=new Map();
   let hubPatched=false;
@@ -132,6 +132,13 @@
       state.products=Array.isArray(productResult.data)?productResult.data:[];
       state.aliases=Array.isArray(aliasResult.data)?aliasResult.data:[];
 
+      const substitutionResult=await supabase.from('shopping_substitutions')
+        .select('id,shopping_key,source,original_label,original_quantity,original_unit,replacement_label,replacement_quantity,replacement_unit,replacement_inventory_id,replacement_product_id,status,note,created_at,updated_at')
+        .eq('status','cart')
+        .order('created_at',{ascending:true});
+      if(substitutionResult.error)throw substitutionResult.error;
+      state.substitutions=Array.isArray(substitutionResult.data)?substitutionResult.data:[];
+
       const reviewFinanceIds=state.reviews.map(item=>item.finance_item_id).filter(Boolean);
       if(reviewFinanceIds.length){
         const financeItemsResult=await supabase.from('finance_items')
@@ -161,7 +168,7 @@
       const checkoutIds=state.checkouts.map(item=>item.id);
       if(checkoutIds.length){
         const checkoutItemsResult=await supabase.from('shopping_checkout_items')
-          .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,created_at')
+          .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at')
           .in('checkout_id',checkoutIds)
           .order('created_at',{ascending:true});
         if(checkoutItemsResult.error)throw checkoutItemsResult.error;
@@ -299,6 +306,9 @@
       });
     });
 
+    const substitutionsByKey=new Map((state.substitutions||[]).map(item=>[String(item.shopping_key||''),item]));
+    rows.forEach(row=>{row.substitution=substitutionsByKey.get(String(row.key||''))||null;});
+
     const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
     rows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
     rowMap=new Map(rows.map(row=>[row.id,row]));
@@ -315,7 +325,8 @@
       row.source==='food-gap'?'<span>PLAN</span>':'',
       row.flags?.stockup?'<span>VORRAT</span>':'',
       row.flags?.converted?'<span>UMGERECHNET</span>':'',
-      row.flags?.unitMismatch?'<span class="is-warn">EINHEIT PRÜFEN</span>':''
+      row.flags?.unitMismatch?'<span class="is-warn">EINHEIT PRÜFEN</span>':'',
+      row.substitution?'<span class="is-substitute-v698">ERSATZ</span>':''
     ].filter(Boolean).join('');
 
     const completeAction=row.inCart
@@ -334,11 +345,20 @@
       ?'<button type="button" class="is-quiet" data-shopping-delete="'+esc(row.id)+'">Entfernen</button>'
       :'';
 
-    return '<article class="shopping-item-v643 '+(row.inCart?'is-cart':'')+'">'
+    const substituteAction=row.section!=='later'
+      ?'<button type="button" class="'+(row.substitution?'is-substitute-v698':'')+'" data-shopping-substitute="'+esc(row.id)+'">'+(row.substitution?'Ersatz ändern':'Ersatz')+'</button>'
+      :'';
+
+    const substitution=row.substitution
+      ?'<div class="shopping-substitute-v698"><span aria-hidden="true">↳</span><div><small>ERSATZ GEKAUFT</small><strong>'+esc(row.substitution.replacement_label||'Ersatzartikel')+'</strong></div><b>'+esc(fmtQty(row.substitution.replacement_quantity,row.substitution.replacement_unit||''))+'</b></div>'
+      :'';
+
+    return '<article class="shopping-item-v643 '+(row.inCart?'is-cart ':'')+(row.substitution?'has-substitution-v698':'')+'">'
       +'<div class="shopping-item-main-v643"><strong>'+esc(row.label)+'</strong><b>'+esc(row.primary||'')+'</b></div>'
+      +substitution
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
       +'<div class="shopping-item-meta-v643"><span>'+esc(row.secondary||row.timing||'')+'</span>'+(row.secondary&&row.timing?'<em>'+esc(row.timing)+'</em>':'')+'</div>'
-      +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+completeAction+remove+'</div></div>'
+      +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+remove+'</div></div>'
       +'</article>';
   }
 
@@ -624,13 +644,144 @@
     return '';
   }
 
+  function cartPlannedQuantity(row){
+    return row.foodAction?.stockQuantity??row.general?.quantity??null;
+  }
+
+  function cartPlannedUnit(row){
+    return row.foodAction?.stockUnit??row.general?.unit??null;
+  }
+
+  async function saveSubstitution(row,payload){
+    const {supabase,user}=await currentUser();
+    const originalQuantity=cartPlannedQuantity(row);
+    const originalUnit=cartPlannedUnit(row);
+    const result=await supabase.from('shopping_substitutions').upsert({
+      user_id:user.id,
+      shopping_key:row.key,
+      source:row.source,
+      original_label:row.label,
+      original_quantity:originalQuantity,
+      original_unit:originalUnit,
+      replacement_label:payload.label,
+      replacement_quantity:payload.quantity,
+      replacement_unit:payload.unit,
+      replacement_inventory_id:payload.inventoryId||null,
+      replacement_product_id:payload.productId||null,
+      status:'cart',
+      note:'Ersatzartikel direkt beim Einkauf gewählt.',
+      updated_at:new Date().toISOString()
+    },{onConflict:'user_id,shopping_key'})
+      .select('id')
+      .single();
+    if(result.error)throw result.error;
+    if(!row.inCart)await toggleCart(row);
+    else await reload({refreshFood:false});
+    return result.data;
+  }
+
+  async function removeSubstitution(row,{refresh=true}={}){
+    const substitution=row?.substitution;
+    if(!substitution)return;
+    const {supabase}=await currentUser();
+    const result=await supabase.from('shopping_substitutions').delete().eq('id',substitution.id);
+    if(result.error)throw result.error;
+    if(refresh)await reload({refreshFood:false});
+  }
+
+  function openSubstitutionModal(row){
+    if(!row)return;
+    document.getElementById('shoppingSubstitutionV698')?.remove();
+    const existing=row.substitution||null;
+    const originalQuantity=cartPlannedQuantity(row);
+    const originalUnit=cartPlannedUnit(row)||'';
+    const selectedProductId=existing?.replacement_product_id||'';
+    const selectedProduct=selectedProductId?(state.products||[]).find(p=>String(p.id)===String(selectedProductId)):null;
+    const initialLabel=existing?.replacement_label||selectedProduct?.product_name||'';
+    const initialQuantity=existing?.replacement_quantity??selectedProduct?.package_quantity??originalQuantity??'';
+    const initialUnit=existing?.replacement_unit||selectedProduct?.package_unit||originalUnit;
+
+    const modal=document.createElement('div');
+    modal.id='shoppingSubstitutionV698';
+    modal.className='shopping-modal-v643 shopping-substitution-modal-v698';
+    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-substitution-card-v698"><div class="shopping-modal-head-v643"><div><span>ERSATZARTIKEL</span><strong>'+esc(row.label)+'</strong></div><button type="button" data-substitution-close>✕</button></div>'
+      +'<p class="shopping-checkout-copy-v645">Wenn der geplante Artikel nicht da ist, trägst du hier ein, was stattdessen im Wagen landet.</p>'
+      +'<div class="shopping-substitution-preview-v698"><strong>'+esc(row.label)+'</strong><span>↳</span><b data-substitution-preview>'+esc(initialLabel||'Ersatz auswählen')+'</b></div>'
+      +'<form data-substitution-form>'
+      +'<label>Bekanntes Produkt<select data-substitution-product><option value="">Anderes / neues Produkt</option>'
+      +(state.products||[]).map(product=>'<option value="'+esc(product.id)+'" '+(String(product.id)===String(selectedProductId)?'selected':'')+'>'+esc(productLabel(product))+'</option>').join('')
+      +'</select></label>'
+      +'<label>Ersatzartikel<input data-substitution-label required value="'+esc(initialLabel)+'" placeholder="z. B. TK-Blattspinat"></label>'
+      +'<div class="shopping-form-grid-v643"><label>Gekaufte Menge<input data-substitution-qty type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(initialQuantity)+'"></label><label>Einheit<input data-substitution-unit required value="'+esc(initialUnit)+'" placeholder="g, ml, Stück …"></label></div>'
+      +'<div class="shopping-substitution-actions-v698">'
+      +(existing?'<button type="button" class="is-quiet" data-substitution-remove>Ersatz entfernen</button>':'')
+      +'<button type="submit" class="shopping-submit-v643">Als Ersatz in den Wagen</button>'
+      +'</div></form></div>';
+    document.body.appendChild(modal);
+
+    const select=modal.querySelector('[data-substitution-product]');
+    const labelInput=modal.querySelector('[data-substitution-label]');
+    const qtyInput=modal.querySelector('[data-substitution-qty]');
+    const unitInput=modal.querySelector('[data-substitution-unit]');
+    const preview=modal.querySelector('[data-substitution-preview]');
+    const updatePreview=()=>{if(preview)preview.textContent=String(labelInput?.value||'').trim()||'Ersatz auswählen';};
+    select?.addEventListener('change',()=>{
+      const product=(state.products||[]).find(p=>String(p.id)===String(select.value));
+      if(!product)return;
+      if(labelInput)labelInput.value=product.product_name||productLabel(product);
+      if(qtyInput&&product.package_quantity!==null&&product.package_quantity!==undefined)qtyInput.value=product.package_quantity;
+      if(unitInput&&product.package_unit)unitInput.value=product.package_unit;
+      updatePreview();
+    });
+    labelInput?.addEventListener('input',updatePreview);
+    modal.querySelector('[data-substitution-close]')?.addEventListener('click',()=>modal.remove());
+    modal.addEventListener('click',event=>{if(event.target===modal)modal.remove();});
+    modal.querySelector('[data-substitution-remove]')?.addEventListener('click',async()=>{
+      try{await removeSubstitution(row);modal.remove();}
+      catch(error){alert(error?.message||'Ersatz konnte nicht entfernt werden.');}
+    });
+    modal.querySelector('[data-substitution-form]')?.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=event.currentTarget.querySelector('button[type="submit"]');
+      if(button)button.disabled=true;
+      try{
+        const label=String(labelInput?.value||'').trim();
+        const quantity=Number(String(qtyInput?.value||'').replace(',','.'));
+        const unit=String(unitInput?.value||'').trim();
+        if(!label)throw new Error('Bitte einen Ersatzartikel eintragen.');
+        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte eine gekaufte Menge größer 0 eintragen.');
+        if(!unit)throw new Error('Bitte eine Einheit eintragen.');
+        const productId=String(select?.value||'').trim()||null;
+        const product=productId?(state.products||[]).find(p=>String(p.id)===productId):null;
+        await saveSubstitution(row,{label,quantity,unit,productId,inventoryId:product?.inventory_id||null});
+        modal.remove();
+      }catch(error){
+        if(button)button.disabled=false;
+        alert(error?.message||'Ersatzartikel konnte nicht gespeichert werden.');
+      }
+    });
+    setTimeout(()=>labelInput?.focus(),50);
+  }
+
   function checkoutSnapshot(){
     return [...rowMap.values()].filter(row=>row.section==='cart').map(row=>{
-      const plannedQuantity=row.foodAction?.stockQuantity??row.general?.quantity??null;
-      const plannedUnit=row.foodAction?.stockUnit??row.general?.unit??null;
-      const inventoryId=row.foodAction?.stockId||null;
-      const base={key:row.key,label:row.label,plannedQuantity,plannedUnit,source:row.source,inventoryId,category:row.category||null};
-      const product=defaultProductForCartItem(base);
+      const originalQuantity=cartPlannedQuantity(row);
+      const originalUnit=cartPlannedUnit(row);
+      const substitution=row.substitution||null;
+      const plannedQuantity=substitution?.replacement_quantity??originalQuantity;
+      const plannedUnit=substitution?.replacement_unit??originalUnit;
+      const inventoryId=substitution?.replacement_inventory_id||row.foodAction?.stockId||null;
+      const label=substitution?.replacement_label||row.label;
+      const base={
+        key:row.key,label,plannedQuantity,plannedUnit,source:row.source,inventoryId,category:row.category||null,
+        substitutionId:substitution?.id||null,
+        originalLabel:substitution?row.label:null,
+        originalQuantity:substitution?originalQuantity:null,
+        originalUnit:substitution?originalUnit:null
+      };
+      const product=substitution?.replacement_product_id
+        ?(state.products||[]).find(p=>String(p.id)===String(substitution.replacement_product_id))
+        :defaultProductForCartItem(base);
       return {...base,productId:product?.id||null,packageCount:defaultPackageCount(base,product)};
     });
   }
@@ -669,7 +820,7 @@
       +cart.map((item,index)=>{
         const product=item.productId?(state.products||[]).find(p=>String(p.id)===String(item.productId)):null;
         return '<article class="shopping-checkout-item-v678" data-checkout-index="'+index+'" data-shopping-key="'+esc(item.key)+'" data-source="'+esc(item.source)+'" data-inventory-id="'+esc(item.inventoryId||'')+'">'
-          +'<div class="shopping-checkout-item-head-v678"><div><small>Geplant '+esc(fmtQty(item.plannedQuantity,item.plannedUnit||''))+'</small><strong>'+esc(item.label)+'</strong></div>'+(product?'<span>bekannt</span>':'<span>Produkt offen</span>')+'</div>'
+          +'<div class="shopping-checkout-item-head-v678"><div><small>'+(item.originalLabel?'Ersatz für '+esc(item.originalLabel)+' · ':'')+'Geplant '+esc(fmtQty(item.plannedQuantity,item.plannedUnit||''))+'</small><strong>'+esc(item.label)+'</strong></div>'+(product?'<span>bekannt</span>':'<span>Produkt offen</span>')+'</div>'
           +'<div class="shopping-checkout-fields-v678">'
           +'<label>Gekauft<input data-checkout-qty type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(item.plannedQuantity??'')+'"></label>'
           +'<label>Einheit<input data-checkout-unit value="'+esc(item.plannedUnit||'')+'" placeholder="Stück, g, ml …"></label>'
@@ -901,10 +1052,12 @@
       quantity:item.quantity,unit:item.unit,source:item.source,
       planned_quantity:item.plannedQuantity,planned_unit:item.plannedUnit,
       inventory_id:item.inventoryId||null,product_id:item.productId||null,
-      best_before_date:item.bestBefore||null,package_count:item.packageCount||null,note:item.note||null
+      best_before_date:item.bestBefore||null,package_count:item.packageCount||null,note:item.note||null,
+      substitution_id:item.substitutionId||null,original_label:item.originalLabel||null,
+      original_quantity:item.originalQuantity??null,original_unit:item.originalUnit||null
     }));
     const snap=await supabase.from('shopping_checkout_items').insert(snapshotRows)
-      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,created_at');
+      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at');
     if(snap.error)throw snap.error;
     const inserted=Array.isArray(snap.data)?snap.data:[];
 
@@ -922,6 +1075,14 @@
     if(lotRows.length){
       const lotInsert=await supabase.from('shopping_checkout_item_lots').insert(lotRows);
       if(lotInsert.error)throw lotInsert.error;
+    }
+
+    const substitutionIds=[...new Set(prepared.map(item=>item.substitutionId).filter(Boolean))];
+    if(substitutionIds.length){
+      const substitutionDone=await supabase.from('shopping_substitutions').update({
+        status:'purchased',updated_at:new Date().toISOString()
+      }).in('id',substitutionIds);
+      if(substitutionDone.error)throw substitutionDone.error;
     }
 
     const foodClear=await supabase.from('food_shopping_cart_state').delete().eq('user_id',user.id);
@@ -943,6 +1104,7 @@
     const checkout=(state.checkouts||[]).find(item=>String(item.id)===String(checkoutId));
     if(!checkout)return;
     document.getElementById('shoppingReceiptAttachV678')?.remove();
+    document.getElementById('shoppingSubstitutionV698')?.remove();
     const modal=document.createElement('div');
     modal.id='shoppingReceiptAttachV678';
     modal.className='shopping-modal-v643';
@@ -973,7 +1135,7 @@
     const tx=(state.receipts||[]).find(item=>String(item.id)===String(transactionId));
     if(!tx)throw new Error('Kassenbon nicht gefunden.');
     const itemsResult=await supabase.from('shopping_checkout_items')
-      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,created_at')
+      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at')
       .eq('checkout_id',checkoutId)
       .order('created_at',{ascending:true});
     if(itemsResult.error)throw itemsResult.error;
@@ -1114,6 +1276,10 @@
   }
 
   async function toggleCart(row){
+    if(row.inCart&&row.substitution){
+      await removeSubstitution(row,{refresh:false});
+      row.substitution=null;
+    }
     if(row.source==='general'){
       const item=row.general;
       if(row.inCart){
@@ -1175,6 +1341,10 @@
     root.querySelectorAll('[data-shopping-cart]').forEach(button=>button.addEventListener('click',async()=>{
       const row=rowMap.get(button.dataset.shoppingCart);if(!row)return;
       try{await toggleCart(row);}catch(error){alert(error?.message||'Einkaufswagen konnte nicht geändert werden.');}
+    }));
+    root.querySelectorAll('[data-shopping-substitute]').forEach(button=>button.addEventListener('click',()=>{
+      const row=rowMap.get(button.dataset.shoppingSubstitute);if(!row)return;
+      openSubstitutionModal(row);
     }));
     root.querySelectorAll('[data-shopping-done]').forEach(button=>button.addEventListener('click',async()=>{
       const row=rowMap.get(button.dataset.shoppingDone);if(!row)return;
@@ -1276,7 +1446,8 @@
       general:state.general.map(item=>({...item})),
       food:state.food?structuredClone(state.food):null,
       reviews:state.reviews.map(item=>({...item})),
-      products:state.products.map(item=>({...item}))
+      products:state.products.map(item=>({...item})),
+      substitutions:state.substitutions.map(item=>({...item}))
     }),
     centralShopping:true,foodDemandIsDynamic:true,productReviewPlanned:false,productReviewActive:true,checkoutActive:true
   };
