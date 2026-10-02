@@ -194,7 +194,7 @@
 
   const NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser']);
   const isNonShoppingIngredient=name=>NON_SHOPPING_INGREDIENTS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
-  const SHOPPING_DATE_OVERRIDES={'2026-10-17':'2026-10-16'};
+  const SHOPPING_DATE_OVERRIDES={'2026-10-03':'2026-10-02','2026-10-17':'2026-10-16'};
   const regularShoppingDate=(iso,mealType='')=>{
     const day=new Date(String(iso)+'T12:00:00Z').getUTCDay();
     let offset=0;
