@@ -1331,3 +1331,72 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   .food-inventory-family-v694{padding:9px}
   .food-inventory-family-head-v694 strong{font-size:12px}
 }
+
+
+/* V697 · kompakter Vorrat mit Suche und aufklappbaren Details */
+.food-inventory-tools-v697{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+  margin:0 4px 13px;
+}
+.food-inventory-tools-v697 label{
+  display:grid;
+  gap:5px;
+  flex:1 1 auto;
+}
+.food-inventory-tools-v697 label>span{
+  color:#6d855c;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.food-inventory-tools-v697 input{
+  width:100%;
+  min-height:40px;
+  padding:9px 12px;
+  border:1px solid rgba(67,101,65,.16);
+  border-radius:13px;
+  background:rgba(255,255,255,.82);
+  color:#304334;
+  font:inherit;
+  font-size:12px;
+  outline:none;
+}
+.food-inventory-tools-v697 input:focus{
+  border-color:rgba(67,101,65,.38);
+  box-shadow:0 0 0 3px rgba(121,154,112,.10);
+}
+.food-inventory-tools-v697 small{
+  flex:0 0 auto;
+  padding-bottom:7px;
+  color:#89948a;
+  font-size:8px;
+  font-weight:760;
+}
+.food-stock-details-toggle-v697{
+  position:relative;
+  z-index:2;
+  display:inline-flex;
+  align-items:center;
+  margin-top:9px;
+  padding:5px 8px;
+  border:1px solid rgba(62,91,63,.13);
+  border-radius:9px;
+  background:rgba(247,250,244,.9);
+  color:#667866;
+  font-size:8px;
+  font-weight:850;
+  cursor:pointer;
+}
+.food-stock-details-v697{margin-top:2px}
+.food-stock-card-v544.is-details-open-v697{
+  border-color:rgba(76,112,79,.22);
+  background:rgba(255,255,255,.9);
+}
+@media(max-width:430px){
+  .food-inventory-tools-v697{align-items:stretch;flex-direction:column}
+  .food-inventory-tools-v697 small{padding:0 2px}
+}
