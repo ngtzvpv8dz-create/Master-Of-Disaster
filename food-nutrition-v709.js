@@ -1,0 +1,324 @@
+/* V709 · Dynamic FOOD nutrition overlay.
+   Rechnet Rezept- und Mahlzeitenwerte aus den aktuellen Zutatenmengen.
+   Keine stillen Zuordnungen bei mehrdeutigen Produkten. */
+(function(){
+  'use strict';
+  if(window.__modFoodNutritionV709)return;
+
+  const VERSION='V709';
+  const ROOT_ID='modFoodV544';
+  const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
+  let timer=null;
+  let running=false;
+  let rerun=false;
+  let lastStatus={recipes:0,meals:0,dynamicRecipes:0,dynamicMeals:0,unresolvedRecipes:[],unresolvedMeals:[]};
+
+  const number=value=>{
+    if(value===null||value===undefined||value==='')return null;
+    const n=Number(value);
+    return Number.isFinite(n)?n:null;
+  };
+  const text=value=>String(value||'').trim().toLocaleLowerCase('de-DE').replace(/[·_]+/g,' ').replace(/\s+/g,' ');
+  const key=value=>{
+    const raw=text(value).replace(/[^a-z0-9äöüß]+/g,'');
+    return raw==='schwarzerpfeffer'?'pfefferschwarz':raw;
+  };
+  const itemName=item=>String(item?.name||item?.label||'Zutat').trim();
+
+  function nutrient(source,names){
+    const data=source&&typeof source==='object'?source:{};
+    for(const name of names){
+      const n=number(data[name]);
+      if(n!==null)return n;
+    }
+    return null;
+  }
+
+  function nutritionOf(product){
+    const n=product?.nutrition_per_100||{};
+    return {
+      kcal:nutrient(n,['energy_kcal','calories_kcal','kcal']),
+      protein:nutrient(n,['protein_g','protein']),
+      carbs:nutrient(n,['carbohydrates_g','carbs_g']),
+      fat:nutrient(n,['fat_g'])
+    };
+  }
+
+  function signature(product){
+    const n=nutritionOf(product);
+    return [n.kcal,n.protein,n.carbs,n.fat].map(v=>v===null?'?':String(v)).join('|');
+  }
+
+  function chooseProduct(rows){
+    const usable=(rows||[]).filter(row=>{
+      const n=nutritionOf(row);
+      return n.kcal!==null&&n.protein!==null;
+    });
+    if(!usable.length)return null;
+    return new Set(usable.map(signature)).size===1?usable[0]:null;
+  }
+
+  function rowMode(row){
+    const value=text((row?.name||'')+' '+(row?.variant_label||''));
+    if(/(?:^|\s)(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)(?:\s|$)/.test(value))return 'frozen';
+    if(/(?:^|\s)(?:frisch|frische|frischer|frisches|babyspinat)(?:\s|$)/.test(value))return 'fresh';
+    return 'neutral';
+  }
+
+  function familyMatch(name,family){
+    const need=text(name);
+    const base=text(family);
+    if(!need||!base)return null;
+    if(need===base)return 'generic';
+    if(need.startsWith(base+' ')||need.endsWith(' '+base)){
+      if(/\b(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\b/.test(need))return 'frozen';
+      if(/\b(?:frisch|frische|frischer|frisches|bio|babyspinat)\b/.test(need))return 'fresh';
+      return 'generic';
+    }
+    return null;
+  }
+
+  function noteNutrition(stock){
+    const note=String(stock?.note||'');
+    const kcal=note.match(/([0-9]+(?:[.,][0-9]+)?)\s*kcal\s*\/\s*100\s*g/i);
+    const protein=note.match(/protein\s*:?\s*([0-9]+(?:[.,][0-9]+)?)\s*g\s*\/\s*100\s*g/i);
+    if(!kcal||!protein)return null;
+    return {kcal:Number(kcal[1].replace(',','.')),protein:Number(protein[1].replace(',','.')),carbs:null,fat:null};
+  }
+
+  function sourceFor(item,data){
+    const name=itemName(item);
+    if(ZERO_NAMES.has(text(name)))return {nutrition:{kcal:0,protein:0,carbs:0,fat:0},product:null,stock:null};
+
+    const inventory=data.inventory;
+    const products=data.products;
+    let stock=item?.inventory_id?inventory.find(row=>String(row.id)===String(item.inventory_id)):null;
+
+    if(!stock){
+      const exact=inventory.filter(row=>key(row.name)===key(name));
+      if(exact.length===1)stock=exact[0];
+    }
+
+    let product=null;
+    if(stock){
+      product=chooseProduct(products.filter(row=>String(row.inventory_id||'')===String(stock.id)));
+      if(!product&&stock.family_name){
+        let related=inventory.filter(row=>text(row.family_name)===text(stock.family_name));
+        const mode=rowMode(stock);
+        if(mode==='fresh')related=related.filter(row=>rowMode(row)!=='frozen');
+        if(mode==='frozen')related=related.filter(row=>rowMode(row)==='frozen');
+        const ids=new Set(related.map(row=>String(row.id)));
+        product=chooseProduct(products.filter(row=>ids.has(String(row.inventory_id||''))));
+      }
+    }else{
+      const familyRows=inventory.filter(row=>familyMatch(name,row.family_name));
+      if(familyRows.length){
+        const requested=familyMatch(name,familyRows[0].family_name);
+        let related=familyRows;
+        if(requested==='fresh')related=related.filter(row=>rowMode(row)!=='frozen');
+        if(requested==='frozen')related=related.filter(row=>rowMode(row)==='frozen');
+        const ids=new Set(related.map(row=>String(row.id)));
+        product=chooseProduct(products.filter(row=>ids.has(String(row.inventory_id||''))));
+      }
+      if(!product)product=chooseProduct(products.filter(row=>key(row.product_name)===key(name)));
+    }
+
+    if(product)return {nutrition:nutritionOf(product),product,stock};
+    const fromNote=noteNutrition(stock);
+    return fromNote?{nutrition:fromNote,product:null,stock}:null;
+  }
+
+  function basisAmount(item,source){
+    const qty=number(item?.quantity);
+    if(qty===null||qty<0)return null;
+    const unit=text(item?.unit);
+    if(unit==='g'||unit==='ml')return qty;
+    if(unit==='kg'||unit==='l')return qty*1000;
+
+    const product=source?.product||{};
+    const productData=product.product_data&&typeof product.product_data==='object'?product.product_data:{};
+    const packageUnit=text(product.package_unit);
+    const servingUnit=text(product.serving_unit);
+    const values=[
+      productData.piece_weight_g,
+      productData.unit_weight_g,
+      productData.slice_weight_g,
+      (servingUnit==='g'||servingUnit==='ml')?product.serving_quantity:null,
+      (number(product.servings_per_package)>0&&(packageUnit==='g'||packageUnit==='ml'))
+        ?number(product.package_quantity)/number(product.servings_per_package)
+        :null,
+      (/^(päckchen|packung)$/.test(unit)&&(packageUnit==='g'||packageUnit==='ml'))?product.package_quantity:null
+    ].map(number).filter(v=>v!==null&&v>0);
+    if(values.length)return qty*values[0];
+
+    const note=String(source?.stock?.note||'');
+    const unitPattern=unit==='zehe'?'zehe(?:n)?':unit==='scheibe'?'scheibe(?:n)?':unit==='stück'?'stück':unit==='päckchen'?'päckchen':unit==='packung'?'packung(?:en)?':null;
+    if(unitPattern){
+      const match=note.match(new RegExp('([0-9]+(?:[.,][0-9]+)?)\\s*g\\s+pro\\s+'+unitPattern,'i'));
+      if(match){
+        const weight=Number(match[1].replace(',','.'));
+        if(Number.isFinite(weight)&&weight>0)return qty*weight;
+      }
+    }
+    return null;
+  }
+
+  function calculate(items,servings,data){
+    const rows=Array.isArray(items)?items:[];
+    if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
+    const div=Math.max(.01,number(servings)||1);
+    let kcal=0,protein=0;
+    const missing=[];
+    for(const item of rows){
+      const source=sourceFor(item,data);
+      if(!source){missing.push(itemName(item));continue;}
+      const amount=basisAmount(item,source);
+      if(amount===null){missing.push(itemName(item)+' ('+(item?.unit||'Einheit')+')');continue;}
+      if(source.nutrition.kcal===null||source.nutrition.protein===null){missing.push(itemName(item));continue;}
+      kcal+=source.nutrition.kcal*amount/100;
+      protein+=source.nutrition.protein*amount/100;
+    }
+    if(missing.length)return {complete:false,missing:[...new Set(missing)]};
+    return {complete:true,kcal:kcal/div,protein:protein/div,missing:[]};
+  }
+
+  const zeroNutrition=()=>({complete:true,kcal:0,protein:0,missing:[]});
+  const combine=(a,b)=>a?.complete&&b?.complete
+    ?{complete:true,kcal:a.kcal+b.kcal,protein:a.protein+b.protein,missing:[]}
+    :{complete:false,missing:[...(a?.missing||[]),...(b?.missing||[])]};
+
+  function formatNumber(value,max=1){
+    return new Intl.NumberFormat('de-DE',{maximumFractionDigits:max}).format(value);
+  }
+  function nutritionText(n){
+    return n?.complete?Math.round(n.kcal)+' kcal · '+formatNumber(n.protein,1)+' g Protein':'';
+  }
+
+  function patchMeta(card,nutrition){
+    if(!nutrition?.complete)return false;
+    const em=card.querySelector('button[data-food-recipe-toggle] em,button[data-food-meal-toggle] em');
+    if(!em)return false;
+    const parts=String(em.textContent||'').split(/\s*·\s*/).filter(Boolean)
+      .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part));
+    const nutritionParts=nutritionText(nutrition).split(/\s*·\s*/);
+    let insertAt=parts.findIndex(part=>/zubereitet|geplant|erledigt|vorbereitet|gegessen/i.test(part));
+    if(insertAt<0)insertAt=parts.findIndex(part=>/Portion(?:en)?\s+zubereitet/i.test(part));
+    if(insertAt<0)insertAt=parts.length;
+    parts.splice(insertAt,0,...nutritionParts);
+    const next=parts.join(' · ');
+    if(em.textContent!==next)em.textContent=next;
+    card.dataset.foodNutritionV709='dynamic';
+    return true;
+  }
+
+  function plusDays(iso,days){
+    const d=new Date(iso+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10);
+  }
+  function todayIso(){
+    try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(new Date());}
+    catch(_){return new Date().toISOString().slice(0,10);}
+  }
+
+  async function fetchData(){
+    const supabase=window.getSupabaseClient?.();
+    if(!supabase)throw new Error('Supabase-Client fehlt.');
+    const session=await supabase.auth.getSession();
+    if(session?.error||!session?.data?.session?.user?.id)throw new Error('Keine aktive Sitzung.');
+    const from=plusDays(todayIso(),-45);
+    const to=plusDays(todayIso(),60);
+    const results=await Promise.all([
+      supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
+      supabase.from('food_meals').select('id,meal_date,title,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').gte('meal_date',from).lte('meal_date',to),
+      supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,note,is_active').eq('is_active',true),
+      supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true)
+    ]);
+    const bad=results.find(result=>result.error);
+    if(bad?.error)throw bad.error;
+    return {
+      recipes:results[0].data||[],
+      meals:results[1].data||[],
+      inventory:results[2].data||[],
+      products:results[3].data||[]
+    };
+  }
+
+  async function refresh(){
+    if(running){rerun=true;return;}
+    const root=document.getElementById(ROOT_ID);
+    if(!root||root.getAttribute('aria-hidden')==='true')return;
+    running=true;
+    try{
+      const data=await fetchData();
+      const recipeMap=new Map(data.recipes.map(row=>[String(row.id),row]));
+      const mealMap=new Map(data.meals.map(row=>[String(row.id),row]));
+      const unresolvedRecipes=[];
+      const unresolvedMeals=[];
+      let dynamicRecipes=0,dynamicMeals=0;
+
+      root.querySelectorAll('[data-food-recipe-card]').forEach(card=>{
+        const recipe=recipeMap.get(String(card.dataset.foodRecipeCard||''));
+        if(!recipe)return;
+        const n=calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data);
+        if(patchMeta(card,n))dynamicRecipes++;
+        else unresolvedRecipes.push({id:recipe.id,title:recipe.title,missing:n.missing||[]});
+      });
+
+      root.querySelectorAll('[data-food-meal-card]').forEach(card=>{
+        const meal=mealMap.get(String(card.dataset.foodMealCard||''));
+        if(!meal)return;
+        let n=null;
+        const items=meal.food_meal_ingredients||[];
+        if(meal.leftover_id||meal.source_meal_id){
+          const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
+          const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
+          const base=source
+            ?calculate(source.food_meal_ingredients||[],source.prepared_servings||1,data)
+            :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data):{complete:false,missing:['Meal-Prep-Basis']});
+          const extras=items.length?calculate(items,meal.eaten_servings||meal.prepared_servings||1,data):zeroNutrition();
+          n=combine(base,extras);
+        }else{
+          n=calculate(items,meal.prepared_servings||meal.eaten_servings||1,data);
+        }
+        if(patchMeta(card,n))dynamicMeals++;
+        else unresolvedMeals.push({id:meal.id,title:meal.title,missing:n?.missing||[]});
+      });
+
+      lastStatus={
+        recipes:data.recipes.length,
+        meals:data.meals.length,
+        dynamicRecipes,
+        dynamicMeals,
+        unresolvedRecipes,
+        unresolvedMeals,
+        refreshedAt:new Date().toISOString()
+      };
+    }catch(error){
+      console.warn('V709 FOOD dynamic nutrition:',error);
+      lastStatus={...lastStatus,error:error?.message||String(error),refreshedAt:new Date().toISOString()};
+    }finally{
+      running=false;
+      if(rerun){rerun=false;schedule(250);}
+    }
+  }
+
+  function schedule(delay=180){
+    clearTimeout(timer);
+    timer=setTimeout(()=>refresh(),delay);
+  }
+
+  const observer=new MutationObserver(mutations=>{
+    if(mutations.some(m=>m.type==='childList'&&m.addedNodes.length))schedule();
+  });
+  observer.observe(document.documentElement,{subtree:true,childList:true});
+
+  document.addEventListener('click',event=>{
+    if(event.target?.closest?.('[data-food-tab],[data-food-edit-recipe],[data-food-edit-planned-meal],[data-food-edit-free-meal]'))schedule(450);
+  },true);
+
+  window.__modFoodNutritionV709={
+    version:VERSION,
+    refresh,
+    getStatus(){return structuredClone(lastStatus);}
+  };
+  schedule(450);
+})();
