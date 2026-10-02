@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V705';
+  const VERSION='V706';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -31,6 +31,7 @@
   const expandedMeals=new Set();
   const expandedPlanDays=new Set();
   const expandedInventory=new Set();
+  let unavailableInventoryOpen=false;
   let inventorySearch='';
 
   function frostSvgMarkup(variant){
@@ -958,7 +959,7 @@
       :'';
     const availableGroups=group('Lebensmittel',foodCards)+group('Getränke',drinkCards);
     const unavailable=emptyCards.length
-      ?'<details class="food-inventory-empty-group-v705" '+(needle?'open':'')+'><summary><span><strong>Nicht vorrätig</strong><small>Aktuell 0 Bestand</small></span><b>'+emptyCards.length+'</b></summary><div class="food-inventory-empty-body-v705"><div class="food-inventory-grid-v544">'+emptyCards.map(item=>item.html).join('')+'</div></div></details>'
+      ?'<details class="food-inventory-empty-group-v705" data-food-empty-group '+((needle||unavailableInventoryOpen)?'open':'')+'><summary><span><strong>Nicht vorrätig</strong><small>Aktuell 0 Bestand</small></span><b>'+emptyCards.length+'</b></summary><div class="food-inventory-empty-body-v705"><div class="food-inventory-grid-v544">'+emptyCards.map(item=>item.html).join('')+'</div></div></details>'
       :'';
     const tools='<div class="food-inventory-tools-v697"><label><span>Vorrat durchsuchen</span><input type="search" data-food-inventory-search value="'+esc(inventorySearch)+'" placeholder="z. B. Tomaten, Salsa, Skyr …" autocomplete="off"></label><small>Sortierung: A–Z nach Familie und Variante</small></div>';
     const emptyCopy=needle?'Keine passenden Vorräte gefunden.':'Der Vorrat ist leer.';
@@ -1387,25 +1388,31 @@
   async function saveInventoryStorage(id,opened,usePriority){
     const supabase=client();
     if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
-    let firstError=null;
-    try{
-      const result=await withTimeout(
-        supabase.from('food_inventory')
-          .update({opened,use_priority:usePriority})
-          .eq('id',id)
-          .eq('is_active',true)
-          .select('id,opened,use_priority')
-          .maybeSingle(),
-        'Vorratsstatus speichern',
-        8000
-      );
-      if(!result?.error&&result?.data)return result.data;
-      firstError=result?.error||new Error('Die Cloud hat den Speichervorgang nicht bestätigt.');
-    }catch(error){
-      firstError=error;
+
+    const saveOnce=()=>supabase.from('food_inventory')
+      .update({opened,use_priority:usePriority})
+      .eq('id',id)
+      .eq('is_active',true)
+      .select('id,opened,use_priority')
+      .maybeSingle();
+
+    let lastError=null;
+    for(let attempt=0;attempt<2;attempt+=1){
+      if(attempt)await new Promise(resolve=>setTimeout(resolve,650));
+      try{
+        const result=await withTimeout(
+          saveOnce(),
+          attempt?'Vorratsstatus erneut speichern':'Vorratsstatus speichern',
+          12000
+        );
+        if(!result?.error&&result?.data)return result.data;
+        lastError=result?.error||new Error('Die Cloud hat den Speichervorgang nicht bestätigt.');
+      }catch(error){
+        lastError=error;
+      }
     }
 
-    await new Promise(resolve=>setTimeout(resolve,350));
+    await new Promise(resolve=>setTimeout(resolve,850));
     try{
       const check=await withTimeout(
         supabase.from('food_inventory')
@@ -1414,14 +1421,14 @@
           .eq('is_active',true)
           .maybeSingle(),
         'Speicherstand prüfen',
-        3500
+        8000
       );
       if(!check?.error&&check?.data&&check.data.opened===opened&&check.data.use_priority===usePriority)return check.data;
-      if(!firstError)firstError=check?.error;
+      if(check?.error)lastError=check.error;
     }catch(error){
-      if(!firstError)firstError=error;
+      lastError=error;
     }
-    throw firstError||new Error('Der neue Vorratsstatus konnte nicht bestätigt werden.');
+    throw lastError||new Error('Der neue Vorratsstatus konnte nicht bestätigt werden.');
   }
 
   async function completeMeal(id){
@@ -2093,6 +2100,10 @@
         const end=String(next.value||'').length;
         try{next.setSelectionRange(end,end);}catch(_){}
       }
+    });
+    root.querySelector('[data-food-empty-group]')?.addEventListener('toggle',event=>{
+      if(String(inventorySearch||'').trim())return;
+      unavailableInventoryOpen=event.currentTarget.open;
     });
     root.querySelectorAll('[data-food-stock-toggle]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();
