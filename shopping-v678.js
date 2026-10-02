@@ -1,4 +1,4 @@
-/* V698 · SHOPPING / SUBSTITUTE ITEMS END-TO-END
+/* V700 · SHOPPING / RECEIPT PHASE + PROJECTED STOCK UX
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,13 +6,13 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V698';
+  const VERSION='V700';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
   const CATEGORIES=['Lebensmittel','Getränke','Haushalt','Drogerie','Technik','Sonstiges'];
 
-  let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],checkouts:[],checkoutItems:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
+  let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],checkouts:[],checkoutItems:[],checkoutReceipts:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
   let loadPromise=null;
   let rowMap=new Map();
   let hubPatched=false;
@@ -173,8 +173,15 @@
           .order('created_at',{ascending:true});
         if(checkoutItemsResult.error)throw checkoutItemsResult.error;
         state.checkoutItems=Array.isArray(checkoutItemsResult.data)?checkoutItemsResult.data:[];
+        const checkoutReceiptsResult=await supabase.from('shopping_checkout_receipts')
+          .select('id,checkout_id,finance_transaction_id,created_at')
+          .in('checkout_id',checkoutIds)
+          .order('created_at',{ascending:true});
+        if(checkoutReceiptsResult.error)throw checkoutReceiptsResult.error;
+        state.checkoutReceipts=Array.isArray(checkoutReceiptsResult.data)?checkoutReceiptsResult.data:[];
       }else{
         state.checkoutItems=[];
+        state.checkoutReceipts=[];
       }
 
       state.foodError='';
@@ -240,7 +247,9 @@
         id:'food-gap:'+key,key,source:'food-gap',label:item.label||'Lebensmittel',
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
-        secondary:'Bedarf '+fmtQty(item.required,item.unit)+' · Vorrat '+fmtQty(item.available,item.unit),
+        secondary:delayed
+          ?'Aktuell gebucht '+fmtQty(item.currentAvailable??item.available,item.unit)+' · Am '+fmtDate(item.buyFrom)+' voraussichtlich '+fmtQty(item.available,item.unit)+' · Bedarf '+fmtQty(item.required,item.unit)
+          :'Bedarf '+fmtQty(item.required,item.unit)+' · Vorrat '+fmtQty(item.available,item.unit),
         timing:item.shortageDate?'Gebraucht '+fmtDate(item.shortageDate):'',
         buyFrom:item.buyFrom||null,neededDate:item.shortageDate||null,
         category:'Lebensmittel',
@@ -421,26 +430,31 @@
 
   function purchasedMarkup(){
     const checkouts=state.checkouts||[];
-    if(!checkouts.length)return '';
     const money=value=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(value)||0);
     const when=value=>{
       try{return new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(value));}
       catch(_){return '';}
     };
+    if(!checkouts.length){
+      return '<section class="shopping-section-v643 is-purchased-v647 is-phase-empty-v700">'
+        +'<header><div><span>PHASE 3 · KASSENBONS</span><small>nach „Kauf vormerken“ Bons zuordnen · mehrere Bons möglich</small></div><strong>0</strong></header>'
+        +'<div class="shopping-phase-empty-v700">Nach dem Vormerken erscheint dein Einkauf hier. Dann kannst du einen oder mehrere Kassenbons gemeinsam auswählen.</div>'
+        +'</section>';
+    }
     return '<section class="shopping-section-v643 is-purchased-v647">'
-      +'<header><div><span>PHASE 3 · BON</span><small>gekaufter Einkauf · hier wird nur der Bon verknüpft</small></div><strong>'+checkouts.length+'</strong></header>'
+      +'<header><div><span>PHASE 3 · KASSENBONS</span><small>gekaufter Einkauf · ein oder mehrere Bons zuordnen</small></div><strong>'+checkouts.length+'</strong></header>'
       +'<div class="shopping-purchased-list-v647">'
       +checkouts.map(checkout=>{
         const openCount=(state.reviews||[]).filter(review=>String(review.checkout_id||'')===String(checkout.id)).length;
-        const awaiting=checkout.status==='awaiting_receipt';
-        const stateText=awaiting?'Bon fehlt':('✓ Bon verknüpft · '+(openCount===1?'1 Produkt in Phase 4':openCount+' Produkte in Phase 4'));
+        const receiptCount=(state.checkoutReceipts||[]).filter(link=>String(link.checkout_id||'')===String(checkout.id)).length;
+        const stateText=receiptCount
+          ?('✓ '+receiptCount+' '+(receiptCount===1?'Bon':'Bons')+' verknüpft · '+(openCount===1?'1 Produkt in Phase 4':openCount+' Produkte in Phase 4'))
+          :'Noch kein Bon zugeordnet';
         return '<article class="shopping-purchased-row-v647">'
           +'<div class="shopping-purchased-store-v647"><small>'+esc(when(checkout.completed_at))+'</small><strong>'+esc(checkout.retailer||'Einkauf')+'</strong></div>'
           +'<b>'+(checkout.total_amount===null||checkout.total_amount===undefined?'—':esc(money(checkout.total_amount)))+'</b>'
           +'<span>'+esc(stateText)+'</span>'
-          +(awaiting
-            ?'<button type="button" data-checkout-attach-receipt="'+esc(checkout.id)+'">BON ZUORDNEN</button>'
-            :'')
+          +'<button type="button" data-checkout-attach-receipt="'+esc(checkout.id)+'">'+(receiptCount?'BONS ERGÄNZEN':'BONS ZUORDNEN')+'</button>'
           +'</article>';
       }).join('')
       +'</div></section>';
@@ -800,11 +814,23 @@
 
   function receiptOptions(selectedId=''){
     const receipts=state.receipts||[];
-    return '<option value="">Bon später zuordnen</option>'
+    return '<option value="">Bon später in Phase 3 zuordnen</option>'
       +receipts.map(tx=>{
         const label=[tx.merchant||'Einkauf',fmtDate(tx.transaction_date),money(tx.total_amount)].filter(Boolean).join(' · ');
         return '<option value="'+esc(tx.id)+'" '+(String(tx.id)===String(selectedId)?'selected':'')+'>'+esc(label)+'</option>';
       }).join('');
+  }
+
+  function receiptChecklist(selectedIds=[]){
+    const selected=new Set((selectedIds||[]).map(String));
+    const receipts=state.receipts||[];
+    if(!receipts.length)return '<div class="shopping-receipt-empty-v700">Noch keine erfassten Kassenbons vorhanden.</div>';
+    return '<div class="shopping-receipt-checklist-v700">'
+      +receipts.map(tx=>{
+        const label=[tx.merchant||'Einkauf',fmtDate(tx.transaction_date),money(tx.total_amount)].filter(Boolean).join(' · ');
+        return '<label class="shopping-receipt-choice-v700"><input type="checkbox" data-receipt-choice value="'+esc(tx.id)+'" '+(selected.has(String(tx.id))?'checked':'')+'><span>'+esc(label)+'</span></label>';
+      }).join('')
+      +'</div>';
   }
 
   function openCheckoutModal(){
@@ -838,7 +864,7 @@
           +'</article>';
       }).join('')
       +'</div>'
-      +'<div class="shopping-checkout-receipt-step-v678"><div><span>PHASE 3 VON 4</span><strong>Bon zuordnen</strong><small>Optional. Fehlt er noch, kannst du ihn später verknüpfen.</small></div><select data-checkout-receipt>'+receiptOptions()+'</select></div>'
+      +'<div class="shopping-checkout-receipt-step-v678"><div><span>ALS NÄCHSTES: PHASE 3</span><strong>Kassenbons zuordnen</strong><small>Nach dem Vormerken erscheint der Einkauf in Phase 3. Dort kannst du auch mehrere Bons auswählen.</small></div></div>'
       +'<button type="submit" class="shopping-submit-v643">Einkauf vormerken</button>'
       +'</form></div>';
     document.body.appendChild(modal);
@@ -896,8 +922,7 @@
             note:lots.some(lot=>lot.bestBefore)?'MHD beim Kauf chargenbezogen bestätigt.':null
           };
         });
-        const transactionId=String(event.currentTarget.querySelector('[data-checkout-receipt]')?.value||'').trim()||null;
-        await completeCheckout(transactionId,items);
+        await completeCheckout(null,items);
         modal.remove();
       }catch(error){
         if(button)button.disabled=false;
@@ -1106,47 +1131,84 @@
     if(!checkout)return;
     document.getElementById('shoppingReceiptAttachV678')?.remove();
     document.getElementById('shoppingSubstitutionV698')?.remove();
+    const selectedIds=(state.checkoutReceipts||[])
+      .filter(link=>String(link.checkout_id||'')===String(checkoutId))
+      .map(link=>String(link.finance_transaction_id||''));
     const modal=document.createElement('div');
     modal.id='shoppingReceiptAttachV678';
     modal.className='shopping-modal-v643';
-    modal.innerHTML='<div class="shopping-modal-card-v643"><div class="shopping-modal-head-v643"><div><span>PHASE 3 VON 4</span><strong>Bon zuordnen</strong></div><button type="button" data-receipt-attach-close>✕</button></div>'
-      +'<p class="shopping-checkout-copy-v645">Wähle den Finanz-Bon, der zu diesem Einkauf gehört.</p>'
-      +'<label>Bon<select data-receipt-attach-select>'+receiptOptions()+'</select></label>'
-      +'<button type="button" class="shopping-submit-v643" data-receipt-attach-confirm>Bon verknüpfen</button></div>';
+    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-receipt-attach-card-v700"><div class="shopping-modal-head-v643"><div><span>PHASE 3 VON 4</span><strong>Kassenbons zuordnen</strong></div><button type="button" data-receipt-attach-close>✕</button></div>'
+      +'<p class="shopping-checkout-copy-v645">Wähle alle Bons, die zu diesem Einkauf gehören. Mehrfachauswahl ist ausdrücklich erlaubt.</p>'
+      +receiptChecklist(selectedIds)
+      +'<button type="button" class="shopping-submit-v643" data-receipt-attach-confirm>Bons verknüpfen</button></div>';
     document.body.appendChild(modal);
     modal.querySelector('[data-receipt-attach-close]')?.addEventListener('click',()=>modal.remove());
     modal.addEventListener('click',event=>{if(event.target===modal)modal.remove();});
     modal.querySelector('[data-receipt-attach-confirm]')?.addEventListener('click',async()=>{
       const button=modal.querySelector('[data-receipt-attach-confirm]');
-      const transactionId=String(modal.querySelector('[data-receipt-attach-select]')?.value||'').trim();
-      if(!transactionId){alert('Bitte zuerst einen Bon auswählen.');return;}
+      const transactionIds=[...modal.querySelectorAll('[data-receipt-choice]:checked')].map(input=>String(input.value||'').trim()).filter(Boolean);
+      if(!transactionIds.length){alert('Bitte mindestens einen Bon auswählen.');return;}
       if(button)button.disabled=true;
       try{
-        await attachReceiptToCheckout(checkoutId,transactionId);
+        await attachReceiptsToCheckout(checkoutId,transactionIds);
         modal.remove();
       }catch(error){
         if(button)button.disabled=false;
-        alert(error?.message||'Bon konnte nicht zugeordnet werden.');
+        alert(error?.message||'Bons konnten nicht zugeordnet werden.');
       }
     });
   }
 
-  async function attachReceiptToCheckout(checkoutId,transactionId){
-    const {supabase}=await currentUser();
-    const tx=(state.receipts||[]).find(item=>String(item.id)===String(transactionId));
-    if(!tx)throw new Error('Kassenbon nicht gefunden.');
+  async function attachReceiptsToCheckout(checkoutId,transactionIds){
+    const {supabase,user}=await currentUser();
+    const uniqueIds=[...new Set((transactionIds||[]).map(String).filter(Boolean))];
+    if(!uniqueIds.length)throw new Error('Keine Kassenbons ausgewählt.');
+
+    const txResult=await supabase.from('finance_transactions')
+      .select('id,transaction_date,transaction_time,merchant,total_amount,currency,receipt_source,created_at')
+      .in('id',uniqueIds);
+    if(txResult.error)throw txResult.error;
+    const txs=Array.isArray(txResult.data)?txResult.data:[];
+    if(!txs.length)throw new Error('Kassenbons nicht gefunden.');
+
+    const existingIds=new Set((state.checkoutReceipts||[])
+      .filter(link=>String(link.checkout_id||'')===String(checkoutId))
+      .map(link=>String(link.finance_transaction_id||'')));
+    const newTxs=txs.filter(tx=>!existingIds.has(String(tx.id)));
+
+    if(newTxs.length){
+      const linked=await supabase.from('shopping_checkout_receipts').upsert(
+        newTxs.map(tx=>({user_id:user.id,checkout_id:checkoutId,finance_transaction_id:tx.id})),
+        {onConflict:'user_id,checkout_id,finance_transaction_id'}
+      );
+      if(linked.error)throw linked.error;
+    }
+
     const itemsResult=await supabase.from('shopping_checkout_items')
       .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at')
       .eq('checkout_id',checkoutId)
       .order('created_at',{ascending:true});
     if(itemsResult.error)throw itemsResult.error;
     const checkoutRows=itemsResult.data||[];
+
+    const merchants=[...new Set(txs.map(tx=>String(tx.merchant||'').trim()).filter(Boolean))];
+    const total=txs.reduce((sum,tx)=>sum+(Number(tx.total_amount)||0),0);
+    const primary=txs[0]||null;
     const updated=await supabase.from('shopping_checkouts').update({
-      finance_transaction_id:tx.id,status:'review',retailer:tx.merchant||null,total_amount:tx.total_amount??null,updated_at:new Date().toISOString()
+      finance_transaction_id:primary?.id||null,
+      status:'review',
+      retailer:merchants.length===1?merchants[0]:(merchants.length>1?'Mehrere Händler':null),
+      total_amount:total||null,
+      updated_at:new Date().toISOString()
     }).eq('id',checkoutId);
     if(updated.error)throw updated.error;
-    await queueReceiptReviews(checkoutId,tx,checkoutRows);
+
+    for(const tx of newTxs)await queueReceiptReviews(checkoutId,tx,checkoutRows);
     await reload({refreshFood:false});
+  }
+
+  async function attachReceiptToCheckout(checkoutId,transactionId){
+    return attachReceiptsToCheckout(checkoutId,[transactionId]);
   }
 
   async function maybeFinishCheckout(checkoutId){
@@ -1448,7 +1510,8 @@
       food:state.food?structuredClone(state.food):null,
       reviews:state.reviews.map(item=>({...item})),
       products:state.products.map(item=>({...item})),
-      substitutions:state.substitutions.map(item=>({...item}))
+      substitutions:state.substitutions.map(item=>({...item})),
+      checkoutReceipts:state.checkoutReceipts.map(item=>({...item}))
     }),
     centralShopping:true,foodDemandIsDynamic:true,productReviewPlanned:false,productReviewActive:true,checkoutActive:true
   };
