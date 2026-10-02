@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V706';
+  const VERSION='V707';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -839,6 +839,20 @@
     return slices;
   }
 
+  function inventoryMhdMarkup(item,data=state){
+    const lots=(data?.lots||[]).filter(lot=>String(lot.inventory_id)===String(item.id));
+    const activeLots=lots.filter(lot=>{
+      const unopened=Math.max(0,Number(lot.unopened_packages)||0);
+      const opened=Math.max(0,Number(lot.opened_packages)||0);
+      const openedRemaining=num(lot.opened_remaining_quantity);
+      return unopened>0||opened>0||(openedRemaining!==null&&openedRemaining>0);
+    });
+    const dates=[...new Set(activeLots.map(lot=>String(lot.best_before_date||'').trim()).filter(Boolean))].sort();
+    if(!dates.length)return '';
+    const label=dates.length>1?'Nächstes MHD':'MHD';
+    return '<span class="food-stock-mhd-v707">'+label+' '+esc(fmtDate(dates[0]))+'</span>';
+  }
+
   function inventoryCard(item){
     const expanded=expandedInventory.has(String(item.id));
     const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
@@ -869,10 +883,10 @@
     const status=empty?'leer':(item.opened?'angebrochen':'unangebrochen');
     const displayName=String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):item.name;
     const details=item.note&&expanded?'<div class="food-stock-details-v697">'+inventoryNoteHtml(item.note)+'</div>':'';
-    const detailsToggle=item.note?'<button type="button" class="food-stock-details-toggle-v697" data-food-stock-toggle="'+esc(item.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Details schließen':'Details')+'</button>':'';
+    const mhd=empty?'':inventoryMhdMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
     const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+detailsToggle+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -2105,12 +2119,6 @@
       if(String(inventorySearch||'').trim())return;
       unavailableInventoryOpen=event.currentTarget.open;
     });
-    root.querySelectorAll('[data-food-stock-toggle]').forEach(button=>button.addEventListener('click',event=>{
-      event.stopPropagation();
-      const id=String(button.dataset.foodStockToggle);
-      if(expandedInventory.has(id))expandedInventory.delete(id);else expandedInventory.add(id);
-      renderState();
-    }));
     root.querySelectorAll('[data-food-stock-card]').forEach(card=>card.addEventListener('click',event=>{
       if(event.target?.closest?.('button,input,select,textarea,label'))return;
       const id=String(card.dataset.foodStockCard);
