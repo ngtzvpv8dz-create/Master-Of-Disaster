@@ -1,4 +1,4 @@
-/* V700 · SHOPPING / RECEIPT PHASE + PROJECTED STOCK UX
+/* V701 · SHOPPING / MOBILE STOCK LINES
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V700';
+  const VERSION='V701';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -247,8 +247,9 @@
         id:'food-gap:'+key,key,source:'food-gap',label:item.label||'Lebensmittel',
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
+        currentStock:delayed?'Aktuell gebucht '+fmtQty(item.currentAvailable??item.available,item.unit):'',
         secondary:delayed
-          ?'Aktuell gebucht '+fmtQty(item.currentAvailable??item.available,item.unit)+' · Am '+fmtDate(item.buyFrom)+' voraussichtlich '+fmtQty(item.available,item.unit)+' · Bedarf '+fmtQty(item.required,item.unit)
+          ?'Am '+fmtDate(item.buyFrom)+' voraussichtlich '+fmtQty(item.available,item.unit)+' · Bedarf '+fmtQty(item.required,item.unit)
           :'Bedarf '+fmtQty(item.required,item.unit)+' · Vorrat '+fmtQty(item.available,item.unit),
         timing:item.shortageDate?'Gebraucht '+fmtDate(item.shortageDate):'',
         buyFrom:item.buyFrom||null,neededDate:item.shortageDate||null,
@@ -367,7 +368,11 @@
       +'<div class="shopping-item-main-v643"><strong>'+esc(row.label)+'</strong><b>'+esc(row.primary||'')+'</b></div>'
       +substitution
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
-      +'<div class="shopping-item-meta-v643"><span>'+esc(row.secondary||row.timing||'')+'</span>'+(row.secondary&&row.timing?'<em>'+esc(row.timing)+'</em>':'')+'</div>'
+      +'<div class="shopping-item-meta-v643">'
+      +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
+      +'<span>'+esc(row.secondary||row.timing||'')+'</span>'
+      +(row.secondary&&row.timing?'<em>'+esc(row.timing)+'</em>':'')
+      +'</div>'
       +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+remove+'</div></div>'
       +'</article>';
   }
