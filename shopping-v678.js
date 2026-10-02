@@ -1,4 +1,4 @@
-/* V701 · SHOPPING / MOBILE STOCK LINES
+/* V702 · SHOPPING / FAMILY-AWARE STOCK
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V701';
+  const VERSION='V702';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -221,6 +221,95 @@
     return {available:0,unitMismatch:true,converted:false};
   }
 
+  const FAMILY_FRESH_QUALIFIERS=new Set(['frisch','frische','frischer','frisches','bio']);
+  const FAMILY_FROZEN_QUALIFIERS=new Set(['tk','tiefkühl','tiefgekühlt','tiefgefroren','gefroren']);
+  const familyText=value=>String(value||'')
+    .trim()
+    .toLocaleLowerCase('de-DE')
+    .replace(/[·_]+/g,' ')
+    .replace(/\s+/g,' ');
+  const familyAliases=value=>String(value||'')
+    .split(/\s*[/|]\s*/)
+    .map(familyText)
+    .filter(Boolean);
+  const familyNeedMatch=(name,familyName)=>{
+    const need=familyText(name);
+    if(!need)return null;
+    for(const alias of familyAliases(familyName)){
+      if(need===alias)return {matched:true,mode:'generic',alias};
+      const prefix=need.startsWith(alias+' ')?need.slice(alias.length).trim():'';
+      const suffix=need.endsWith(' '+alias)?need.slice(0,need.length-alias.length).trim():'';
+      const remainder=prefix||suffix;
+      if(!remainder)continue;
+      const tokens=remainder.split(/\s+/).filter(Boolean);
+      const allowed=tokens.every(token=>FAMILY_FRESH_QUALIFIERS.has(token)||FAMILY_FROZEN_QUALIFIERS.has(token));
+      if(!allowed)continue;
+      const mode=tokens.some(token=>FAMILY_FROZEN_QUALIFIERS.has(token))
+        ?'frozen'
+        :tokens.some(token=>FAMILY_FRESH_QUALIFIERS.has(token))
+          ?'fresh'
+          :'generic';
+      return {matched:true,mode,alias};
+    }
+    return null;
+  };
+  const familyRowMode=item=>{
+    const text=familyText((item?.name||'')+' '+(item?.variant_label||''));
+    if(/(?:^|\s)(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)(?:\s|$)/.test(text))return 'frozen';
+    if(/(?:^|\s)(?:frisch|frische|frischer|frisches)(?:\s|$)/.test(text))return 'fresh';
+    return 'neutral';
+  };
+  function inventoryFamilyStockInfo(name,targetUnit,rows){
+    const families=new Map();
+    (rows||[]).forEach(item=>{
+      if(item?.is_active===false||!item?.family_name)return;
+      const key=familyText(item.family_name);
+      if(!families.has(key))families.set(key,{name:item.family_name,rows:[]});
+      families.get(key).rows.push(item);
+    });
+
+    let selected=null;
+    for(const family of families.values()){
+      const match=familyNeedMatch(name,family.name);
+      if(match){selected={...family,match};break;}
+    }
+    if(!selected)return {available:0,converted:false,unitMismatch:false,family:false,rows:[]};
+
+    let matches=selected.rows;
+    if(selected.match.mode==='fresh')matches=matches.filter(item=>familyRowMode(item)==='fresh');
+    else if(selected.match.mode==='frozen')matches=matches.filter(item=>familyRowMode(item)==='frozen');
+    else{
+      const fresh=matches.filter(item=>familyRowMode(item)==='fresh');
+      const frozen=matches.filter(item=>familyRowMode(item)==='frozen');
+      if(fresh.length&&frozen.length)matches=matches.filter(item=>familyRowMode(item)!=='frozen');
+    }
+
+    let available=0;
+    let compatible=0;
+    let converted=false;
+    matches.forEach(item=>{
+      const info=inventoryQuantityInUnit(item,targetUnit);
+      if(!info.unitMismatch){
+        available+=Math.max(0,info.available||0);
+        compatible+=1;
+        converted=converted||info.converted;
+      }
+    });
+    return {
+      available,
+      converted,
+      unitMismatch:matches.length>0&&compatible===0,
+      family:true,
+      rows:matches
+    };
+  }
+  function ingredientStockInfo(name,unit,inventory,inventoryByName){
+    const exact=inventoryByName.get(normalizedIngredient(name,unit))||null;
+    if(exact)return {...inventoryQuantityInUnit(exact,unit),stock:exact,family:false,rows:[exact]};
+    const familyInfo=inventoryFamilyStockInfo(name,unit,inventory);
+    return {...familyInfo,stock:null};
+  }
+
   function buildRows(){
     const rows=[];
     const food=state.food||{gaps:[],manualFood:[],cartKeys:[],inventory:[]};
@@ -247,10 +336,10 @@
         id:'food-gap:'+key,key,source:'food-gap',label:item.label||'Lebensmittel',
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
-        currentStock:delayed?'Aktuell gebucht '+fmtQty(item.currentAvailable??item.available,item.unit):'',
+        currentStock:'Aktuell gebucht '+fmtQty(item.currentAvailable??item.available,item.unit),
         secondary:delayed
           ?'Am '+fmtDate(item.buyFrom)+' voraussichtlich '+fmtQty(item.available,item.unit)+' · Bedarf '+fmtQty(item.required,item.unit)
-          :'Bedarf '+fmtQty(item.required,item.unit)+' · Vorrat '+fmtQty(item.available,item.unit),
+          :'Heute verfügbar '+fmtQty(item.available,item.unit)+' · Bedarf '+fmtQty(item.required,item.unit),
         timing:item.shortageDate?'Gebraucht '+fmtDate(item.shortageDate):'',
         buyFrom:item.buyFrom||null,neededDate:item.shortageDate||null,
         category:'Lebensmittel',
@@ -275,16 +364,16 @@
       let flags={converted:false,unitMismatch:false};
 
       if(required!==null&&required>0&&unit){
-        const stock=inventoryByName.get(normalizedIngredient(item.label,unit));
+        const info=ingredientStockInfo(item.label,unit,inventory,inventoryByName);
+        const stock=info.stock||null;
         if(stock?.pending_weighing===true)return;
-        const info=inventoryQuantityInUnit(stock,unit);
         const missing=Math.max(0,required-info.available);
         if(missing<=0)return;
         primary='Kaufen '+fmtQty(missing,unit);
-        secondary='Bedarf '+fmtQty(required,unit)+' · Vorrat '+fmtQty(info.available,unit);
+        secondary='Aktuell gebucht '+fmtQty(info.available,unit)+' · Bedarf '+fmtQty(required,unit);
         foodAction={
           stockName:item.label,stockQuantity:missing,stockUnit:unit,
-          stockId:info.unitMismatch?'':(stock?.id||''),shoppingId:item.id,
+          stockId:(info.family||info.unitMismatch)?'':(stock?.id||''),shoppingId:item.id,
           shoppingRequired:required,cartKey:key
         };
         flags={converted:info.converted,unitMismatch:info.unitMismatch};
