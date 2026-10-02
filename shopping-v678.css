@@ -398,3 +398,67 @@
   .shopping-substitute-v698>div{align-items:flex-start;flex-direction:column;gap:2px}
   .shopping-substitution-actions-v698{align-items:stretch;flex-direction:column}
 }
+
+
+/* V700 · vertikaler Modal-Lock, Phase 3 und Mehrfach-Bons */
+.shopping-modal-v643{
+  box-sizing:border-box;
+  width:100%;
+  max-width:100vw;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-x:none;
+  touch-action:pan-y;
+}
+.shopping-modal-card-v643,
+.shopping-checkout-card-v678,
+.shopping-receipt-attach-card-v700{
+  max-width:100%;
+  overflow-x:hidden;
+  overscroll-behavior-x:none;
+  touch-action:pan-y;
+}
+.shopping-phase-empty-v700{
+  padding:12px 13px;
+  border-top:1px solid rgba(143,178,201,.08);
+  color:#8fa0ac;
+  font-size:.62rem;
+  line-height:1.45;
+}
+.shopping-receipt-checklist-v700{
+  display:grid;
+  gap:7px;
+  margin:10px 0 14px;
+}
+.shopping-receipt-choice-v700{
+  display:grid!important;
+  grid-template-columns:20px minmax(0,1fr)!important;
+  align-items:center;
+  gap:9px!important;
+  min-width:0;
+  padding:9px 10px;
+  border:1px solid rgba(143,178,201,.12);
+  border-radius:10px;
+  background:rgba(143,178,201,.04);
+}
+.shopping-receipt-choice-v700 input{
+  width:18px!important;
+  height:18px!important;
+  margin:0;
+}
+.shopping-receipt-choice-v700 span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#d9e0e5;
+  font-size:.66rem;
+  font-weight:760;
+}
+.shopping-receipt-empty-v700{
+  margin:10px 0 14px;
+  padding:10px;
+  border:1px dashed rgba(143,178,201,.13);
+  border-radius:10px;
+  color:#8797a3;
+  font-size:.62rem;
+}
