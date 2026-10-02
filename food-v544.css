@@ -1471,3 +1471,22 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   border-bottom:1px solid rgba(95,90,84,.12);
   margin-bottom:10px;
 }
+
+
+/* V707 · MHD direkt auf Vorratskarte, Details nur über Karten-Tap */
+.food-stock-mhd-v707{
+  position:relative;
+  z-index:1;
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  margin-top:7px;
+  padding:4px 7px;
+  border-radius:8px;
+  background:rgba(235,232,220,.72);
+  color:#756f5d;
+  font-size:8px;
+  font-weight:820;
+  line-height:1.2;
+}
