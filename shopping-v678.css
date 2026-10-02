@@ -462,3 +462,22 @@
   color:#8797a3;
   font-size:.62rem;
 }
+
+
+/* V701 · mobile current/projected stock lines */
+.shopping-item-meta-v643.has-stock-lines-v701{
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+}
+.shopping-item-meta-v643.has-stock-lines-v701 span{
+  max-width:100%;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+}
+.shopping-current-stock-v701{
+  display:block;
+  width:100%;
+  font-weight:800;
+}
