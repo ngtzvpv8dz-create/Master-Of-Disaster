@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V696';
+  const VERSION='V697';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -29,6 +29,9 @@
   const frostDecor=new Map();
   const expandedRecipes=new Set();
   const expandedMeals=new Set();
+  const expandedPlanDays=new Set();
+  const expandedInventory=new Set();
+  let inventorySearch='';
 
   function frostSvgMarkup(variant){
     const shapes=[
@@ -225,6 +228,44 @@
     }
     return {available:0,unitMismatch:true,converted:false};
   };
+  const inventoryFamilyStockInfo=(name,targetUnit,rows=state?.inventory||[])=>{
+    const family=normalizedIngredient(name,targetUnit);
+    const matches=(rows||[]).filter(item=>
+      item?.is_active!==false
+      && normalizedIngredient(item?.family_name,item?.unit)===family
+    );
+    let available=0;
+    let compatible=0;
+    let converted=false;
+    matches.forEach(item=>{
+      const info=inventoryQuantityInUnit(item,targetUnit);
+      if(!info.unitMismatch){
+        available+=Math.max(0,info.available||0);
+        compatible+=1;
+        converted=converted||info.converted;
+      }
+    });
+    return {
+      available,
+      converted,
+      unitMismatch:matches.length>0&&compatible===0,
+      family:matches.length>0,
+      rows:matches
+    };
+  };
+  const ingredientStockInfo=(item,inventoryRows,inventoryById,inventoryByName)=>{
+    const unit=String(item?.unit||'').trim();
+    if(item?.inventory_id){
+      const stock=inventoryById.get(item.inventory_id)||null;
+      return {...inventoryQuantityInUnit(stock,unit),stock,family:false,rows:stock?[stock]:[]};
+    }
+    const name=ingredientName(item);
+    const exact=inventoryByName.get(normalizedIngredient(name,unit))||null;
+    if(exact)return {...inventoryQuantityInUnit(exact,unit),stock:exact,family:false,rows:[exact]};
+    const familyInfo=inventoryFamilyStockInfo(name,unit,inventoryRows);
+    return {...familyInfo,stock:null};
+  };
+
   const recipeInstructions=recipe=>String(recipe?.instructions||'').split(/\s*\|\s*|\n+/).map(line=>line.trim().replace(/^\s*(?:\d+[.)]|[-•])\s*/,'' )).filter(Boolean);
   const mealTypeOptions=selected=>['breakfast','snack','lunch','dinner'].map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(MEAL_LABELS[type])+'</option>').join('');
   const recipeCategoryOptions=selected=>RECIPE_CATEGORY_ORDER.map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(RECIPE_GROUP_LABELS[type]||type)+'</option>').join('');
@@ -588,7 +629,7 @@
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-          +'<span><small class="food-recipe-type-v544">MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em></span>'
+          +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +details
@@ -663,7 +704,7 @@
     return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Geplant bis '+esc(fmtDate(horizon))+'</h3></div><small>Heute bleibt bei Heute</small></div>'+
       '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
       leftoverBlock+
-      (groups.length?'<div class="food-plan-days-v685">'+groups.map(group=>'<details class="food-day-group-v544 food-plan-day-v685"><summary class="food-day-label-v544"><span class="food-plan-day-title-v685"><strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em></span><b class="food-plan-day-count-v685">'+esc(group.meals.length)+'</b></summary><div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></div></details>').join('')+'</div>':'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
+      (groups.length?'<div class="food-plan-days-v685">'+groups.map(group=>'<details class="food-day-group-v544 food-plan-day-v685" data-food-plan-day="'+esc(group.date)+'" '+(expandedPlanDays.has(group.date)?'open':'')+'><summary class="food-day-label-v544"><span class="food-plan-day-title-v685"><strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em></span><b class="food-plan-day-count-v685">'+esc(group.meals.length)+'</b></summary><div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></div></details>').join('')+'</div>':'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
   }
 
   function historyView(data){
@@ -733,6 +774,7 @@
   }
 
   function inventoryCard(item){
+    const expanded=expandedInventory.has(String(item.id));
     const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
     const pending=item.pending_weighing===true;
     const known=num(item.quantity);
@@ -760,7 +802,9 @@
     const weighAction=pending?'<button type="button" data-food-weigh="'+esc(item.id)+'">Jetzt abwiegen</button>':'';
     const status=empty?'leer':(item.opened?'angebrochen':'unangebrochen');
     const displayName=String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):item.name;
-    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+freezePlanClass+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':'')+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+inventoryNoteHtml(item.note)+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
+    const details=item.note&&expanded?'<div class="food-stock-details-v697">'+inventoryNoteHtml(item.note)+'</div>':'';
+    const detailsToggle=item.note?'<button type="button" class="food-stock-details-toggle-v697" data-food-stock-toggle="'+esc(item.id)+'" aria-expanded="'+expanded+'">'+(expanded?'Details schließen':'Details')+'</button>':'';
+    return '<article class="food-stock-card-v544 tone-'+esc(empty?'empty':(item.tone||'stock'))+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':'')+'">'+status+'</span></div>'+weighing+priority+forecast+sliceMarkup+detailsToggle+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+'<button type="button" data-food-archive="'+esc(item.id)+'">Entfernen</button></div></article>';
   }
 
   function garlicParts(data=state){
@@ -786,9 +830,17 @@
         .filter(product=>product?.inventory_id)
         .map(product=>[String(product.inventory_id),product])
     );
+    const needle=String(inventorySearch||'').trim().toLocaleLowerCase('de-DE');
     const regular=data.inventory.filter(item=>{
       const name=String(item.name||'').trim().toLocaleLowerCase('de-DE');
-      return name!=='knoblauchknollen'&&name!=='knoblauchzehen';
+      if(name==='knoblauchknollen'||name==='knoblauchzehen')return false;
+      if(!needle)return true;
+      const product=productsByInventoryId.get(String(item.id))||{};
+      const haystack=[
+        item.name,item.family_name,item.variant_label,item.note,
+        product.brand,product.product_name,product.variant,product.category
+      ].filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
+      return haystack.includes(needle);
     });
     const isDrink=item=>String(productsByInventoryId.get(String(item.id))?.category||'')
       .trim().toLocaleLowerCase('de-DE')==='getränke';
@@ -833,7 +885,9 @@
       ?'<section class="food-inventory-group-v690"><div class="food-inventory-group-head-v690"><strong>'+esc(label)+'</strong><span>'+cards.length+' '+(cards.length===1?'Eintrag':'Einträge')+'</span></div>'+familyLayout(cards)+'</section>'
       :'';
     const groups=group('Lebensmittel',foodCards)+group('Getränke',drinkCards);
-    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div>'+(groups||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>Der Vorrat ist leer.</h4></div></div>');
+    const tools='<div class="food-inventory-tools-v697"><label><span>Vorrat durchsuchen</span><input type="search" data-food-inventory-search value="'+esc(inventorySearch)+'" placeholder="z. B. Tomaten, Salsa, Skyr …" autocomplete="off"></label><small>Sortierung: A–Z nach Familie und Variante</small></div>';
+    const emptyCopy=needle?'Keine passenden Vorräte gefunden.':'Der Vorrat ist leer.';
+    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div>'+tools+(groups||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>'+esc(emptyCopy)+'</h4></div></div>');
   }
 
   function deriveShopping(data){
@@ -889,14 +943,15 @@
         return;
       }
 
-      const stock=need.inventory_id
-        ?inventoryById.get(need.inventory_id)
-        :inventoryByName.get(normalizedNeed);
+      const stockInfo=ingredientStockInfo(
+        {inventory_id:need.inventory_id||null,name:need.label,unit:need.unit},
+        inventoryRows,inventoryById,inventoryByName
+      );
+      const stock=stockInfo.stock||null;
 
       if(stock?.shopping_excluded===true)return;
       if(stock?.pending_weighing===true)return;
 
-      const stockInfo=inventoryQuantityInUnit(stock,need.unit);
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
 
@@ -919,10 +974,10 @@
           ...need,
           required:window.required,
           uses:window.uses,
-          inventory_id:need.inventory_id||stock?.id||null,
+          inventory_id:stockInfo.family?null:(need.inventory_id||stock?.id||null),
           available,
           missing,
-          label:stock?.name||need.label,
+          label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
           convertedStock:stockInfo.converted,
           shortageDate:window.shortageDate,
@@ -1334,8 +1389,7 @@
       if(isNonShoppingIngredient(name)){
         return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+'</small></span><b class="is-ok">Kein Einkauf nötig</b></div>';
       }
-      const stock=item.inventory_id?inventoryById.get(item.inventory_id):inventoryByName.get(normalizedIngredient(name,item.unit));
-      const stockInfo=inventoryQuantityInUnit(stock,item.unit);
+      const stockInfo=ingredientStockInfo(item,inventoryRows,inventoryById,inventoryByName);
       const available=stockInfo.available;
       const missing=required===null?null:Math.max(0,required-available);
       const stateLabel=required===null?'Menge offen':missing>0?'Kaufen '+fmtQty(missing,item.unit):'Vorrat reicht';
@@ -1953,6 +2007,33 @@
   }
 
   function wire(root){
+    root.querySelector('[data-food-inventory-search]')?.addEventListener('input',event=>{
+      inventorySearch=String(event.currentTarget.value||'');
+      renderState();
+      const next=ensureRoot()?.querySelector('[data-food-inventory-search]');
+      if(next){
+        next.focus();
+        const end=String(next.value||'').length;
+        try{next.setSelectionRange(end,end);}catch(_){}
+      }
+    });
+    root.querySelectorAll('[data-food-stock-toggle]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();
+      const id=String(button.dataset.foodStockToggle);
+      if(expandedInventory.has(id))expandedInventory.delete(id);else expandedInventory.add(id);
+      renderState();
+    }));
+    root.querySelectorAll('[data-food-stock-card]').forEach(card=>card.addEventListener('click',event=>{
+      if(event.target?.closest?.('button,input,select,textarea,label'))return;
+      const id=String(card.dataset.foodStockCard);
+      if(expandedInventory.has(id))expandedInventory.delete(id);else expandedInventory.add(id);
+      renderState();
+    }));
+    root.querySelectorAll('[data-food-plan-day]').forEach(day=>day.addEventListener('toggle',()=>{
+      const date=String(day.dataset.foodPlanDay||'');
+      if(!date)return;
+      if(day.open)expandedPlanDays.add(date);else expandedPlanDays.delete(date);
+    }));
     root.querySelectorAll('[data-food-adjust]').forEach(button=>{
       const id=button.dataset.foodAdjust;
       button.insertAdjacentHTML('afterend','<button type="button" data-food-consume="'+esc(id)+'">Verbraucht</button><button type="button" data-food-storage="'+esc(id)+'">Zustand &amp; Verwendung</button>');
@@ -2062,6 +2143,9 @@
   function open(){
     cardArcs.clear();
     frostDecor.clear();
+    expandedPlanDays.clear();
+    expandedInventory.clear();
+    inventorySearch='';
     window.__modAppHubV515?.hide?.();
     document.body.classList.remove('mod-backstage-v530');
     setSurface(true);
