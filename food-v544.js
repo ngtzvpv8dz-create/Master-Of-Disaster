@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V702';
+  const VERSION='V703';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -680,9 +680,12 @@
       :'Geplant';
 
     if(isMealPrep){
-      const title=recipe?.title||meal.title||'Meal Prep';
+      const title=meal.title||recipe?.title||'Meal Prep';
       const extras=meal.ingredients||[];
       const detailNote=visibleMealNote(meal.note,{suppressGenericMealPrep:true});
+      const extrasSummary=extras.length
+        ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
+        :'';
       const details=expanded
         ?'<div class="food-recipe-details-v572">'
           +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
@@ -691,7 +694,7 @@
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-          +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em></span>'
+          +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em>'+(extrasSummary?'<small class="food-meal-extras-summary-v703">'+esc(extrasSummary)+'</small>':'')+'</span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +details
