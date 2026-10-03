@@ -227,25 +227,44 @@
     document.head.appendChild(style);
   }
 
+  function variantRowsHtml(selectedId=''){
+    if(!state.plans.length)return '<span>Noch keine Zirkelvariante vorhanden.</span>';
+    return [...state.plans].sort(variantCompare).map(plan=>{
+      const count=selectedPlanRows(plan).length;
+      const selected=String(plan.id)===String(selectedId);
+      return '<button type="button" data-circuit-link-plan="'+esc(plan.id)+'" '+(selected?'disabled':'')+'><strong>'+esc(plan.name)+'</strong><small>'+esc(plan.rounds)+' Runden · '+count+' Stationen'+(selected?' · eingeplant':' · zum Tagesplan')+'</small></button>'+
+        '<button type="button" data-circuit-delete-variant="'+esc(plan.id)+'">🗑 '+esc(plan.name)+' löschen</button>';
+    }).join('');
+  }
+
+  function variantDraftHtml(){
+    if(!variantDraft)return '';
+    return '<details class="sc-picker-v669" open><summary>Neue Variante vorbereiten</summary>'+
+      '<div class="sc-grid-v669">'+
+        '<label>Name<input data-circuit-draft-field="name" type="text" maxlength="40" value="'+esc(variantDraft.name)+'"></label>'+
+        '<label>Runden<input data-circuit-draft-field="rounds" type="number" min="1" max="700" value="'+esc(variantDraft.rounds)+'"></label>'+
+        '<label>Arbeit s<input data-circuit-draft-field="work_seconds" type="number" min="5" max="600" value="'+esc(variantDraft.work_seconds)+'"></label>'+
+        '<label>Stationspause s<input data-circuit-draft-field="rest_seconds" type="number" min="0" max="300" value="'+esc(variantDraft.rest_seconds)+'"></label>'+
+        '<label>Rundenpause s<input data-circuit-draft-field="round_break_seconds" type="number" min="0" max="1800" value="'+esc(variantDraft.round_break_seconds)+'"></label>'+
+      '</div>'+
+      '<div class="sc-error-v669">Die Stationen werden erst beim Anlegen aus Variante 1 kopiert. Vorher wird nichts gespeichert.</div>'+
+      '<div class="sc-actions-v669"><button type="button" data-circuit-save-new-variant>Variante anlegen</button><button type="button" data-circuit-cancel-new-variant>Abbrechen</button></div>'+
+    '</details>';
+  }
+
   function planningHtml(){
     const session=plannedDaySession();
     const dateKey=currentPlanDate();
-    if(!session)return '';
-    const link=linkForSession(session.id);
+    const link=session?linkForSession(session.id):null;
     const linkedPlan=link?state.plans.find(plan=>String(plan.id)===String(link.plan_id))||null:null;
 
     if(!linkedPlan){
-      const variants=state.plans.length
-        ?state.plans.map((plan,index)=>{
-          const count=selectedPlanRows(plan).length;
-          return '<button type="button" data-circuit-link-plan="'+esc(plan.id)+'"><strong>'+esc(plan.name||('Variante '+(index+1)))+'</strong><small>'+esc(plan.rounds)+' Runden · '+count+' Stationen</small></button>';
-        }).join('')
-        :'<span>Noch keine Zirkelvariante vorhanden.</span>';
       return '<section id="'+CARD_PLAN+'" data-plan-date="'+esc(dateKey)+'">'+
         '<div class="sc-kicker-v669">ZIRKELTRAINING</div>'+
-        '<div class="sc-head-v669"><div><h3>Noch kein Zirkel eingeplant</h3><p>Nur auswählen, wenn dieser Trainingstag wirklich einen Zirkel enthalten soll.</p></div></div>'+
-        '<details class="sc-picker-v669"><summary>+ Zirkeltraining hinzufügen</summary><div class="sc-picker-grid-v669">'+variants+'</div></details>'+
-        '<div class="sc-actions-v669"><button type="button" data-circuit-create-variant>+ Neue Variante</button></div>'+
+        '<div class="sc-head-v669"><div><h3>Noch kein Zirkel eingeplant</h3><p>'+(session?'Wähle eine Variante für diesen Tagesplan.':'Wähle direkt eine Variante. Der Tagesplan wird automatisch angelegt.')+'</p></div></div>'+
+        '<details class="sc-picker-v669"><summary>+ Zirkeltraining hinzufügen</summary><div class="sc-picker-grid-v669">'+variantRowsHtml()+'</div></details>'+
+        '<div class="sc-actions-v669"><button type="button" data-circuit-create-variant>+ Neue Variante vorbereiten</button></div>'+
+        variantDraftHtml()+
       '</section>';
     }
 
@@ -262,15 +281,18 @@
       '<details class="sc-plan-edit-v676">'+
         '<summary class="sc-head-v669"><div><h3>'+esc(linkedPlan.name)+'</h3><p>'+esc(linkedPlan.rounds)+' Runden · '+selected.length+' Stationen · antippen zum Bearbeiten</p></div><span class="sc-round-v669">'+selected.length+' Stationen</span></summary>'+
         '<div class="sc-grid-v669">'+
-          '<label>Runden<input data-circuit-field="rounds" type="number" min="1" max="700" step="1" value="'+esc(linkedPlan.rounds)+'"></label>'+
-          '<label>Arbeit s<input data-circuit-field="work_seconds" type="number" min="5" max="600" step="1" value="'+esc(linkedPlan.work_seconds)+'"></label>'+
-          '<label>Stationspause s<input data-circuit-field="rest_seconds" type="number" min="0" max="300" step="1" value="'+esc(linkedPlan.rest_seconds)+'"></label>'+
-          '<label>Rundenpause s<input data-circuit-field="round_break_seconds" type="number" min="0" max="1800" step="5" value="'+esc(linkedPlan.round_break_seconds??90)+'"></label>'+
+          '<label>Runden<input data-circuit-field="rounds" type="number" min="1" max="700" value="'+esc(linkedPlan.rounds)+'"></label>'+
+          '<label>Arbeit s<input data-circuit-field="work_seconds" type="number" min="5" max="600" value="'+esc(linkedPlan.work_seconds)+'"></label>'+
+          '<label>Stationspause s<input data-circuit-field="rest_seconds" type="number" min="0" max="300" value="'+esc(linkedPlan.rest_seconds)+'"></label>'+
+          '<label>Rundenpause s<input data-circuit-field="round_break_seconds" type="number" min="0" max="1800" value="'+esc(linkedPlan.round_break_seconds??90)+'"></label>'+
         '</div>'+
         '<div class="sc-list-v669">'+rows+'</div>'+
         '<details class="sc-picker-v669"><summary>+ Übung hinzufügen</summary><div class="sc-picker-grid-v669">'+picker+'</div></details>'+
-        '<div class="sc-actions-v669"><button type="button" data-circuit-save>Variante speichern</button><button class="danger" type="button" data-circuit-unlink-plan="'+esc(link.id)+'">Aus Tagesplan entfernen</button></div>'+
+        '<div class="sc-actions-v669"><button type="button" data-circuit-save>Änderungen speichern</button><button class="danger" type="button" data-circuit-unlink-plan="'+esc(link.id)+'">Aus Tagesplan entfernen</button></div>'+
       '</details>'+
+      '<details class="sc-picker-v669"><summary>Variante wechseln / verwalten</summary><div class="sc-picker-grid-v669">'+variantRowsHtml(linkedPlan.id)+'</div></details>'+
+      '<div class="sc-actions-v669"><button type="button" data-circuit-create-variant>+ Neue Variante vorbereiten</button></div>'+
+      variantDraftHtml()+
     '</section>';
   }
 
