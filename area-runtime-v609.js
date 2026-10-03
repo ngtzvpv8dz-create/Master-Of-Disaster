@@ -46,7 +46,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './sport-v620.js?v=630-plan-management',
-      './sport-circuit-v677.js?v=677-no-sound-tests'
+      './sport-circuit-v678.js?v=678-variant-management'
     ],
     food:[
       SUPABASE,
@@ -141,7 +141,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v620.js?v=630-plan-management','./sport-circuit-v677.js?v=677-no-sound-tests'],
+    sport:['./sport-v620.js?v=630-plan-management','./sport-circuit-v678.js?v=678-variant-management'],
     food:['./food-v544.js?v=708-pages-redeploy',
       './food-nutrition-v710.js?v=710-family-fifo'],
     shopping:['./food-v544.js?v=708-pages-redeploy',
