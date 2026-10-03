@@ -557,12 +557,7 @@
       num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
       num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
     ].filter(Boolean).join(' · ');
-    const hasFresh=Boolean(ingredientGroups?.fresh?.length);
-    const prepItems=hasFresh?(ingredientGroups.prep||[]):items;
-    const ingredientBlocks=hasFresh
-      ?'<div class="food-recipe-detail-block-v572"><strong>Vorbereitung für Meal Prep</strong>'+ingredientListMarkup(prepItems)+'</div>'
-        +'<div class="food-recipe-detail-block-v572"><strong>'+esc(ingredientGroups.freshLabel||'Frisch dazu an diesem Tag')+'</strong>'+ingredientListMarkup(ingredientGroups.fresh)+'</div>'
-      :'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items)+'</div>';
+    const ingredientBlocks='<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items)+'</div>';
     const details=expanded
       ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
       :'';
@@ -706,9 +701,7 @@
 
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
-      const ingredientGroups=splitMealIngredients(recipe,meal.ingredients||[]);
-      const freshLabel=meal.meal_date===todayIso()?'Für heute frisch dazu':'Frisch dazu an diesem Tag';
-      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,{...ingredientGroups,freshLabel});
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings);
       const note=visibleMealNote(meal.note);
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
       const freezeHint=freezeInstructionMarkup(meal.note);
