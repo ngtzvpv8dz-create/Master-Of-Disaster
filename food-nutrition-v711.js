@@ -88,7 +88,7 @@
       .sort();
     if(dates.length)return dates[0];
     const stock=(data?.inventory||[]).find(row=>String(row.id)===String(inventoryId||''));
-    return String(stock?.created_at||'9999-12-31');
+    return '9999-12-31';
   }
 
   function stockAmountInBaseUnit(stock,targetUnit){
@@ -146,7 +146,7 @@
       .sort((a,b)=>{
         const da=lotDateForInventory(a.stock.id,data);
         const db=lotDateForInventory(b.stock.id,data);
-        return da.localeCompare(db)||String(a.stock.created_at||'').localeCompare(String(b.stock.created_at||''))||String(a.stock.id).localeCompare(String(b.stock.id));
+        return da.localeCompare(db)||Number(a.stock.sort_order||0)-Number(b.stock.sort_order||0)||String(a.stock.id).localeCompare(String(b.stock.id));
       });
 
     if(!compatible.length)return null;
@@ -466,7 +466,7 @@
     const results=await Promise.all([
       supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
       supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').gte('meal_date',from).lte('meal_date',to),
-      supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,created_at').eq('is_active',true),
+      supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
       supabase.from('food_inventory_lots').select('id,inventory_id,purchased_on,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit')
     ]);
