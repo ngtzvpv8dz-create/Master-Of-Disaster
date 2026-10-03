@@ -695,55 +695,6 @@
     return runtime.dbChain;
   }
 
-  async function startTestCircuit(button){
-    if(runtime||runningDbRun())return;
-    const plan=currentPlan();
-    const card=document.getElementById(CARD_PLAN);
-    if(!plan||!card)return;
-
-    button.disabled=true;
-    try{
-      await ensureAudio();
-      const work=Math.round(clamp(card.querySelector('[data-circuit-field="work_seconds"]')?.value,5,600));
-      const rest=Math.round(clamp(card.querySelector('[data-circuit-field="rest_seconds"]')?.value,0,300));
-      const roundBreak=Math.round(clamp(card.querySelector('[data-circuit-field="round_break_seconds"]')?.value,0,1800));
-      const selected=selectedPlanRows(plan);
-      if(!selected.length)throw new Error('Der Zirkel braucht mindestens eine Übung.');
-
-      const now=new Date().toISOString();
-      const runId='test-'+uid();
-      const snapshots=selected.map((entry,index)=>({
-        id:'test-'+uid(),run_id:runId,exercise_id:entry.item.id,
-        name_snapshot:entry.item.name,settings_snapshot:entry.item.settings_text||null,
-        execution_snapshot:entry.item.metric_config?.execution||{},sort_order:index+1
-      }));
-
-      runtime={
-        testMode:true,
-        run:{
-          id:runId,name_snapshot:plan.name+' · Testrunde',planned_rounds:1,
-          work_seconds:work,rest_seconds:rest,round_break_seconds:roundBreak,status:'running',
-          completed_rounds:0,current_round:1,current_exercise_index:1,
-          current_elapsed_seconds:0,total_active_seconds:0,started_at:now
-        },
-        sessionId:null,
-        exercises:snapshots,
-        round:1,index:0,phase:'countdown',phaseStartedAt:performance.now(),
-        currentIntervalId:null,completedIntervals:0,completedWorkSeconds:0,
-        lastProgressBucket:-1,syncError:null,dbChain:Promise.resolve(),raf:0,transitioning:false
-      };
-
-      await acquireWakeLock();
-      try{window.__modSportTabsV512?.setTab?.('overview',{animate:true,persist:true});}catch(_){}
-      scheduleMount();
-      enterCountdown();
-    }catch(error){
-      console.error('[V671 circuit test] start failed',error);
-      alert(error?.message||'Testrunde konnte nicht gestartet werden.');
-      button.disabled=false;
-    }
-  }
-
   async function startCircuit(button){
     if(runtime||runningDbRun())return;
     const active=activeDaySession();
@@ -1258,7 +1209,6 @@
     version:VERSION,
     refresh:()=>loadData({seed:false}),
     start:()=>document.querySelector('[data-circuit-start]')?.click(),
-    test:()=>document.querySelector('[data-circuit-test]')?.click(),
     abort:abortCircuit,
     preview:previewCue,
     getState:()=>({
