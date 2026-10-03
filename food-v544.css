@@ -1490,3 +1490,38 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   font-weight:820;
   line-height:1.2;
 }
+
+
+/* V712 · konkrete FIFO-Produktaufteilung direkt in Zutatenlisten */
+.food-recipe-detail-block-v572 ul li.food-ingredient-has-allocation-v712{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:3px 10px;
+}
+.food-recipe-detail-block-v572 ul li.food-ingredient-has-allocation-v712>span{grid-column:1}
+.food-recipe-detail-block-v572 ul li.food-ingredient-has-allocation-v712>b{grid-column:2}
+.food-ingredient-allocation-v712{
+  grid-column:1/-1;
+  display:grid;
+  gap:2px;
+  margin:1px 0 1px 14px;
+  padding:0;
+}
+.food-ingredient-allocation-line-v712{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:10px;
+  color:#78857b;
+  font-size:9px;
+  line-height:1.35;
+}
+.food-ingredient-allocation-line-v712>span{min-width:0}
+.food-ingredient-allocation-line-v712>b{
+  flex:none;
+  color:#607365;
+  font-size:9px;
+  font-weight:800;
+}
+.food-ingredient-allocation-line-v712.is-missing{color:#a06a4d}
