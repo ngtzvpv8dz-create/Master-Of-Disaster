@@ -466,8 +466,8 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
-      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded,created_at').order('sort_order')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -525,8 +525,169 @@
       '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
   }
 
-  function ingredientListMarkup(items){
-    return '<ul>'+items.map(item=>{const q=num(item.quantity);return '<li><span>'+esc(ingredientName(item))+'</span>'+(q===null||Number.isNaN(q)?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+'</li>';}).join('')+'</ul>';
+  function familyAllocationProductLabel(stock){
+    const product=(state?.products||[]).find(row=>String(row.inventory_id||'')===String(stock?.id||''))||null;
+    const brand=String(product?.brand||'').trim();
+    const name=String(product?.product_name||stock?.name||'Produkt').trim();
+    const variant=String(product?.variant||stock?.variant_label||'').trim();
+    let label=[brand,name].filter(Boolean).join(' ').trim()||String(stock?.name||'Produkt').trim();
+    if(variant&&!familyText(label).includes(familyText(variant)))label+=' · '+variant;
+    return label;
+  }
+
+  function familyAllocationLotDate(inventoryId){
+    const dates=(state?.lots||[])
+      .filter(lot=>String(lot.inventory_id||'')===String(inventoryId||''))
+      .filter(lot=>Number(lot.unopened_packages||0)>0||Number(lot.opened_remaining_quantity||0)>0)
+      .map(lot=>String(lot.purchased_on||''))
+      .filter(Boolean)
+      .sort();
+    if(dates.length)return dates[0];
+    const stock=(state?.inventory||[]).find(row=>String(row.id)===String(inventoryId||''));
+    return String(stock?.created_at||'9999-12-31');
+  }
+
+  function familyAllocationCandidates(item,inventoryRows=state?.inventory||[]){
+    const name=ingredientName(item);
+    const unit=String(item?.unit||'').trim();
+    let info=null;
+
+    if(item?.inventory_id){
+      const pinned=(inventoryRows||[]).find(row=>String(row.id)===String(item.inventory_id));
+      if(!pinned?.family_name||familyText(name)!==familyText(pinned.family_name))return [];
+      info=inventoryFamilyStockInfo(pinned.family_name,unit,inventoryRows);
+    }else{
+      info=inventoryFamilyStockInfo(name,unit,inventoryRows);
+    }
+
+    if(!info?.family)return [];
+    return (info.rows||[])
+      .map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
+      .filter(entry=>!entry.info.unitMismatch&&Number(entry.info.available)>0)
+      .sort((a,b)=>{
+        const da=familyAllocationLotDate(a.stock.id);
+        const db=familyAllocationLotDate(b.stock.id);
+        return da.localeCompare(db)||
+          Number(a.stock.sort_order||0)-Number(b.stock.sort_order||0)||
+          String(a.stock.id||'').localeCompare(String(b.stock.id||''));
+      });
+  }
+
+  function familyAllocationForItem(item,quantities=null){
+    const q=num(item?.quantity);
+    if(q===null||q<0)return null;
+    const unit=String(item?.unit||'').trim();
+    const candidates=familyAllocationCandidates(item);
+    if(!candidates.length)return null;
+
+    let remaining=q;
+    const allocations=[];
+    for(const entry of candidates){
+      if(remaining<=0.0001)break;
+      let available=Number(entry.info.available)||0;
+      if(quantities?.has(String(entry.stock.id))){
+        const virtualStock={...entry.stock,quantity:quantities.get(String(entry.stock.id))};
+        available=Number(inventoryQuantityInUnit(virtualStock,unit).available)||0;
+      }
+      if(available<=0)continue;
+      const take=Math.min(available,remaining);
+      allocations.push({
+        inventoryId:String(entry.stock.id),
+        label:familyAllocationProductLabel(entry.stock),
+        quantity:take,
+        unit:item?.unit||unit
+      });
+      remaining-=take;
+    }
+    return allocations.length?{allocations,remaining:Math.max(0,remaining)}:null;
+  }
+
+  function reserveSpecificIngredient(item,quantities){
+    if(!item?.inventory_id||!quantities)return;
+    const id=String(item.inventory_id);
+    const stock=(state?.inventory||[]).find(row=>String(row.id)===id);
+    if(!stock)return;
+    const needed=num(item.quantity);
+    if(needed===null)return;
+    const source=String(item.unit||'').trim();
+    const target=String(stock.unit||'').trim();
+    let inStockUnit=null;
+    if(source===target)inStockUnit=needed;
+    else if(source==='g'&&target==='kg')inStockUnit=needed/1000;
+    else if(source==='kg'&&target==='g')inStockUnit=needed*1000;
+    else if(source==='ml'&&target==='l')inStockUnit=needed/1000;
+    else if(source==='l'&&target==='ml')inStockUnit=needed*1000;
+    if(inStockUnit===null)return;
+    quantities.set(id,Math.max(0,(Number(quantities.get(id))||0)-inStockUnit));
+  }
+
+  function reserveFamilyAllocation(allocation,quantities){
+    if(!allocation||!quantities)return;
+    for(const part of allocation.allocations||[]){
+      const stock=(state?.inventory||[]).find(row=>String(row.id)===String(part.inventoryId));
+      if(!stock)continue;
+      const source=String(part.unit||'').trim();
+      const target=String(stock.unit||'').trim();
+      let inStockUnit=null;
+      if(source===target)inStockUnit=part.quantity;
+      else if(source==='g'&&target==='kg')inStockUnit=part.quantity/1000;
+      else if(source==='kg'&&target==='g')inStockUnit=part.quantity*1000;
+      else if(source==='ml'&&target==='l')inStockUnit=part.quantity/1000;
+      else if(source==='l'&&target==='ml')inStockUnit=part.quantity*1000;
+      if(inStockUnit===null)continue;
+      const id=String(part.inventoryId);
+      quantities.set(id,Math.max(0,(Number(quantities.get(id))||0)-inStockUnit));
+    }
+  }
+
+  function plannedFamilyAllocationMaps(){
+    const quantities=new Map((state?.inventory||[]).map(stock=>[String(stock.id),Math.max(0,num(stock.quantity)||0)]));
+    const maps=new Map();
+    const today=todayIso();
+    const meals=[...(state?.meals||[])]
+      .filter(meal=>String(meal.meal_date||'')>=today)
+      .sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||
+        Number(a.sort_order||0)-Number(b.sort_order||0)||
+        String(a.id||'').localeCompare(String(b.id||'')));
+
+    for(const meal of meals){
+      const perMeal=new Map();
+      maps.set(String(meal.id||''),perMeal);
+      if(normalizedStatus(meal.status)==='completed'||meal.inventory_booked_at)continue;
+      const items=[...(meal.ingredients||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
+      for(const item of items){
+        const allocation=familyAllocationForItem(item,quantities);
+        if(allocation){
+          if(item?.id)perMeal.set(String(item.id),allocation);
+          reserveFamilyAllocation(allocation,quantities);
+        }else{
+          reserveSpecificIngredient(item,quantities);
+        }
+      }
+    }
+    return maps;
+  }
+
+  function allocationMarkup(allocation,item){
+    if(!allocation?.allocations?.length)return '';
+    let html='<div class="food-ingredient-allocation-v712">';
+    allocation.allocations.forEach(part=>{
+      html+='<div class="food-ingredient-allocation-line-v712"><span>↳ '+esc(part.label)+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
+    });
+    if(Number(allocation.remaining)>0.0001){
+      html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ noch nicht aus Vorrat zugeordnet</span><b>'+esc(fmtQty(allocation.remaining,item?.unit))+'</b></div>';
+    }
+    return html+'</div>';
+  }
+
+  function ingredientListMarkup(items,allocationMap=null){
+    return '<ul>'+items.map(item=>{
+      const q=num(item.quantity);
+      const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||familyAllocationForItem(item);
+      return '<li class="'+(allocation?'food-ingredient-has-allocation-v712':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
+        (q===null||Number.isNaN(q)?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+
+        allocationMarkup(allocation,item)+'</li>';
+    }).join('')+'</ul>';
   }
 
   function splitMealIngredients(recipe,items){
@@ -549,7 +710,7 @@
     return {prep,fresh};
   }
 
-  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null){
+  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
     const instructions=recipeInstructions(recipe);
@@ -557,7 +718,7 @@
       num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
       num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
     ].filter(Boolean).join(' · ');
-    const ingredientBlocks='<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items)+'</div>';
+    const ingredientBlocks='<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items,allocationMap)+'</div>';
     const details=expanded
       ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
       :'';
@@ -685,7 +846,7 @@
       const details=expanded
         ?'<div class="food-recipe-details-v572">'
           +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
-          +(extras.length?'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong><ul>'+extras.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
+          +(extras.length?'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>':'')
         +'</div>'
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
@@ -701,7 +862,8 @@
 
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
-      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings);
+      const allocationMap=plannedFamilyAllocationMaps().get(String(meal.id))||null;
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap);
       const note=visibleMealNote(meal.note);
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
       const freezeHint=freezeInstructionMarkup(meal.note);
@@ -727,7 +889,7 @@
     const note=visibleMealNote(meal.note);
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
-        +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong><ul>'+items.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>':'')
+        +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong>'+ingredientListMarkup(items,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>':'')
         +freezeInstructionMarkup(meal.note)
         +(note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'')
         +(!items.length&&!note&&!freezeInstruction(meal.note)?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
