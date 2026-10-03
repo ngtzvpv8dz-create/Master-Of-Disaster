@@ -537,6 +537,27 @@
   }
 
 
+  async function deleteVariant(planId,button){
+    const plan=state.plans.find(item=>String(item.id)===String(planId));
+    if(!plan)return;
+    if(state.runs.some(run=>run.status==='running'&&String(run.plan_id)===String(planId))){
+      alert('Diese Variante läuft gerade und kann jetzt nicht gelöscht werden.');
+      return;
+    }
+    if(!window.confirm(plan.name+' wirklich löschen? Bereits absolvierte Zirkel bleiben in der Historie erhalten.'))return;
+    button.disabled=true;
+    try{
+      const {supabase}=await sportUser();
+      const result=await supabase.from('sport_circuit_plans').update({active:false,updated_at:new Date().toISOString()}).eq('id',planId);
+      if(result.error)throw result.error;
+      if(String(editingPlanId||'')===String(planId))editingPlanId=null;
+      await loadData({seed:false});
+    }catch(error){
+      alert(error?.message||'Variante konnte nicht gelöscht werden.');
+      button.disabled=false;
+    }
+  }
+
   async function savePlanFromDom(button){
     const plan=currentPlan();
     const card=document.getElementById(CARD_PLAN);
