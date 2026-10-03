@@ -445,7 +445,13 @@
       const unlink=event.target.closest('[data-circuit-unlink-plan]');
       if(unlink){unlinkPlanFromDay(unlink.dataset.circuitUnlinkPlan,unlink);return;}
       const create=event.target.closest('[data-circuit-create-variant]');
-      if(create){createVariant(create);return;}
+      if(create){beginVariantDraft();return;}
+      const saveNew=event.target.closest('[data-circuit-save-new-variant]');
+      if(saveNew){saveVariantDraft(saveNew);return;}
+      const cancelNew=event.target.closest('[data-circuit-cancel-new-variant]');
+      if(cancelNew){variantDraft=null;document.getElementById(CARD_PLAN)?.remove();scheduleMount();return;}
+      const deleteVariantButton=event.target.closest('[data-circuit-delete-variant]');
+      if(deleteVariantButton){deleteVariant(deleteVariantButton.dataset.circuitDeleteVariant,deleteVariantButton);return;}
       const save=event.target.closest('[data-circuit-save]');
       if(save){savePlanFromDom(save);return;}
       const start=event.target.closest('[data-circuit-start]');
