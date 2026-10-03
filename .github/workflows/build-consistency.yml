@@ -34,7 +34,7 @@ jobs:
           build=build.group(1)
 
           for marker in [
-            'service-worker-gate-v611.js?v=611-worker-gate',
+            'service-worker-gate-v611.js?v=612-network-first-code',
             'area-runtime-v609.js?v=',
             'area-loader-v608.css?v=608-staged',
             'backstage-section-loader-v609.css?v=609-sections'
@@ -66,7 +66,7 @@ jobs:
 
           for marker in ["reloadAuthority:'none'","singleReloadAuthority:'none'"]:
               if marker not in gate:
-                  raise SystemExit(f'Missing stable V611 gate marker: {marker}')
+                  raise SystemExit(f'Missing stable V612 gate marker: {marker}')
 
           for marker in ['location.reload()','client.navigate(']:
               if marker in gate or marker in sw:
@@ -75,11 +75,11 @@ jobs:
           if metrics.get('automated') is not True:
               raise SystemExit('Bundled metrics snapshot is not automated')
 
-          for marker in ['const SW_VERSION="V611"','const CACHE_NAME="master-of-disaster-v611-static"','cache.match(request)','cached(request,{ignoreSearch:true})']:
+          for marker in ['const SW_VERSION="V612"','const CACHE_NAME="master-of-disaster-v612-static"','networkFirstCode','cached(request,{ignoreSearch:true})']:
               if marker not in sw:
-                  raise SystemExit(f'Missing V611 worker cache marker: {marker}')
+                  raise SystemExit(f'Missing V612 worker cache marker: {marker}')
 
-          print(f'{build} build + V611 worker cache + V609 staged runtime wiring OK')
+          print(f'{build} build + V612 network-first worker + V609 staged runtime wiring OK')
 
       - name: JavaScript syntax
         run: |
