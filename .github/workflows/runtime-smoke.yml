@@ -164,7 +164,7 @@ jobs:
               out.reentry=await reentryPage.evaluate(async()=>{
                 const gate=window.__modWorkerGateV607;
                 const controllerVersion=await gate?.controllerVersion?.();
-                return gate?.version==='V611'&&controllerVersion==='V611'&&gate?.reloadAuthority==='none'&&window.__modAreaRuntimeV609?.preloadMode==='worker-warm-staged-heavy-execution'&&window.__modAreaRuntimeV609?.progress?.percent===100&&window.__modAreaRuntimeV609?.executedCount===0&&document.body.classList.contains('mod-app-hub-v515');
+                return gate?.version==='V612'&&controllerVersion==='V612'&&gate?.reloadAuthority==='none'&&window.__modAreaRuntimeV609?.preloadMode==='worker-warm-staged-heavy-execution'&&window.__modAreaRuntimeV609?.progress?.percent===100&&window.__modAreaRuntimeV609?.executedCount===0&&document.body.classList.contains('mod-app-hub-v515');
               });
               await reentryPage.waitForTimeout(1200);
               await reentryPage.close();
