@@ -471,16 +471,22 @@
 
 
   async function linkPlanToDay(planId,button){
-    const session=plannedDaySession();
-    if(!session)throw new Error('Für diesen Tag gibt es noch keinen geplanten Trainingstag.');
+    let session=plannedDaySession();
     button.disabled=true;
     try{
+      if(!session){
+        const create=window.__modSportV568?.createPlanSession;
+        if(typeof create!=='function')throw new Error('Tagesplan konnte nicht automatisch angelegt werden.');
+        session=await create(currentPlanDate());
+      }
+      if(!session)throw new Error('Tagesplan konnte nicht angelegt werden.');
       const {supabase,user}=await sportUser();
       let result=await supabase.from('sport_session_circuit_plans').delete().eq('session_id',session.id);
       if(result.error)throw result.error;
       result=await supabase.from('sport_session_circuit_plans').insert({user_id:user.id,session_id:session.id,plan_id:planId,sort_order:1});
       if(result.error)throw result.error;
       editingPlanId=planId;
+      variantDraft=null;
       await loadData({seed:false});
     }catch(error){
       alert(error?.message||'Zirkelvariante konnte nicht eingeplant werden.');
