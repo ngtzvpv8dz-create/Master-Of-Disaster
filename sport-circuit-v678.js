@@ -35,6 +35,7 @@
   };
   let runtime=null;
   let editingPlanId=null;
+  let variantDraft=null;
   let audioContext=null;
   let audioNodes=[];
   let wakeLock=null;
@@ -86,6 +87,23 @@
 
   function sportSessions(){
     return window.__modSportV568?.getSessions?.()||[];
+  }
+
+  function variantNumber(plan){
+    const match=/(\d+)/.exec(String(plan?.name||''));
+    return match?Number(match[1]):Number.MAX_SAFE_INTEGER;
+  }
+
+  function variantCompare(a,b){
+    const diff=variantNumber(a)-variantNumber(b);
+    return diff||String(a?.name||'').localeCompare(String(b?.name||''),'de',{numeric:true,sensitivity:'base'});
+  }
+
+  function nextVariantNumber(){
+    const used=new Set(state.plans.map(variantNumber).filter(Number.isFinite));
+    let n=1;
+    while(used.has(n))n++;
+    return n;
   }
 
   function linkForSession(sessionId){
@@ -156,7 +174,7 @@
       state={...state,
         user,
         catalog:catalogR.data||[],
-        plans:plansR.data||[],
+        plans:(plansR.data||[]).sort(variantCompare),
         planExercises:planItemsR.data||[],
         sessionPlans:sessionPlansR.data||[],
         runs:runsR.data||[],
