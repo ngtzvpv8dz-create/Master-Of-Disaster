@@ -684,9 +684,10 @@
     return '<ul>'+items.map(item=>{
       const q=num(item.quantity);
       const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||familyAllocationForItem(item);
-      return '<li class="'+(allocation?'food-ingredient-has-allocation-v712':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
-        (q===null||Number.isNaN(q)?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+
-        allocationMarkup(allocation,item)+'</li>';
+      const allocationHtml=allocationMarkup(allocation,item);
+      return '<li class="'+(allocationHtml?'food-ingredient-has-allocation-v712':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
+        (q===null||Number.isNaN(q)||allocationHtml?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+
+        allocationHtml+'</li>';
     }).join('')+'</ul>';
   }
 
