@@ -505,13 +505,15 @@
   }
 
   async function createVariant(button){
+    const next=nextVariantNumber();
+    if(!window.confirm('Variante '+next+' wirklich anlegen? Sie wird als Kopie von Variante 1 erstellt und noch nicht dem Tagesplan zugeordnet.'))return;
     button.disabled=true;
     try{
       const {supabase,user}=await sportUser();
-      const source=state.plans[0]||{rounds:3,work_seconds:40,rest_seconds:20,round_break_seconds:90};
+      const source=[...state.plans].sort(variantCompare)[0]||{rounds:3,work_seconds:40,rest_seconds:20,round_break_seconds:90};
       const planId=uid();
       const now=new Date().toISOString();
-      const name='Variante '+(state.plans.length+1);
+      const name='Variante '+next;
       let result=await supabase.from('sport_circuit_plans').insert({
         id:planId,user_id:user.id,name,rounds:source.rounds||3,work_seconds:source.work_seconds||40,
         rest_seconds:source.rest_seconds??20,round_break_seconds:source.round_break_seconds??90,
@@ -525,15 +527,8 @@
         })));
         if(result.error)throw result.error;
       }
-      await loadData({seed:false});
-      const session=plannedDaySession();
-      if(session){
-        result=await supabase.from('sport_session_circuit_plans').delete().eq('session_id',session.id);
-        if(result.error)throw result.error;
-        result=await supabase.from('sport_session_circuit_plans').insert({user_id:user.id,session_id:session.id,plan_id:planId,sort_order:1});
-        if(result.error)throw result.error;
-      }
-      editingPlanId=planId;
+      editingPlanId=null;
+      variantDraft=null;
       await loadData({seed:false});
     }catch(error){
       alert(error?.message||'Neue Zirkelvariante konnte nicht erstellt werden.');
