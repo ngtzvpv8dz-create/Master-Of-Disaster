@@ -124,9 +124,13 @@
   }
 
   function genericFamilyAllocation(item,data){
-    if(item?.inventory_id)return null;
     const name=itemName(item);
     const unit=text(item?.unit);
+    if(item?.inventory_id){
+      const pinned=(data?.inventory||[]).find(row=>String(row.id)===String(item.inventory_id));
+      const family=String(pinned?.family_name||'').trim();
+      if(!family||text(name)!==text(family))return null;
+    }
     if(!['g','kg','ml','l'].includes(unit))return null;
 
     const inventory=(data?.inventory||[])
@@ -261,15 +265,14 @@
       const perIngredient=new Map();
       const items=[...(meal.food_meal_ingredients||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
       for(const item of items){
-        if(item?.inventory_id){
-          reserveSpecific(item,quantities,data);
-          continue;
-        }
         const live=cloneDataWithStock(data,quantities);
         const allocation=genericFamilyAllocation(item,live);
-        if(!allocation)continue;
-        if(item?.id)perIngredient.set(String(item.id),allocation);
-        reserveGenericAllocation(allocation,quantities,data);
+        if(allocation){
+          if(item?.id)perIngredient.set(String(item.id),allocation);
+          reserveGenericAllocation(allocation,quantities,data);
+          continue;
+        }
+        if(item?.inventory_id)reserveSpecific(item,quantities,data);
       }
       allocations.set(id,perIngredient);
     }
