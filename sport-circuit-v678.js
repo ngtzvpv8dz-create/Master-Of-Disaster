@@ -263,7 +263,7 @@
         '<div class="sc-kicker-v669">ZIRKELTRAINING</div>'+
         '<div class="sc-head-v669"><div><h3>Noch kein Zirkel eingeplant</h3><p>'+(session?'Wähle eine Variante für diesen Tagesplan.':'Wähle direkt eine Variante. Der Tagesplan wird automatisch angelegt.')+'</p></div></div>'+
         '<details class="sc-picker-v669"><summary>+ Zirkeltraining hinzufügen</summary><div class="sc-picker-grid-v669">'+variantRowsHtml()+'</div></details>'+
-        '<div class="sc-actions-v669"><button type="button" data-circuit-create-variant>+ Neue Variante vorbereiten</button></div>'+
+        '<div class="sc-actions-v669"><button type="button" data-circuit-create-variant>+ Neue Variante</button></div>'+
         variantDraftHtml()+
       '</section>';
     }
@@ -291,7 +291,7 @@
         '<div class="sc-actions-v669"><button type="button" data-circuit-save>Änderungen speichern</button><button class="danger" type="button" data-circuit-unlink-plan="'+esc(link.id)+'">Aus Tagesplan entfernen</button></div>'+
       '</details>'+
       '<details class="sc-picker-v669"><summary>Variante wechseln / verwalten</summary><div class="sc-picker-grid-v669">'+variantRowsHtml(linkedPlan.id)+'</div></details>'+
-      '<div class="sc-actions-v669"><button type="button" data-circuit-create-variant>+ Neue Variante vorbereiten</button></div>'+
+      '<div class="sc-actions-v669"><button type="button" data-circuit-create-variant>+ Neue Variante</button></div>'+
       variantDraftHtml()+
     '</section>';
   }
@@ -445,11 +445,7 @@
       const unlink=event.target.closest('[data-circuit-unlink-plan]');
       if(unlink){unlinkPlanFromDay(unlink.dataset.circuitUnlinkPlan,unlink);return;}
       const create=event.target.closest('[data-circuit-create-variant]');
-      if(create){beginVariantDraft();return;}
-      const saveNew=event.target.closest('[data-circuit-save-new-variant]');
-      if(saveNew){saveVariantDraft(saveNew);return;}
-      const cancelNew=event.target.closest('[data-circuit-cancel-new-variant]');
-      if(cancelNew){variantDraft=null;document.getElementById(CARD_PLAN)?.remove();scheduleMount();return;}
+      if(create){createVariant(create);return;}
       const deleteVariantButton=event.target.closest('[data-circuit-delete-variant]');
       if(deleteVariantButton){deleteVariant(deleteVariantButton.dataset.circuitDeleteVariant,deleteVariantButton);return;}
       const save=event.target.closest('[data-circuit-save]');
