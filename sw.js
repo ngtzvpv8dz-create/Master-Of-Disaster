@@ -1,6 +1,6 @@
-// V611 · Version-gated service worker + query-aware app cache warming.
-const SW_VERSION="V611";
-const CACHE_NAME="master-of-disaster-v611-static";
+// V612 · Version-gated service worker + network-first code assets.
+const SW_VERSION="V612";
+const CACHE_NAME="master-of-disaster-v612-static";
 const CORE_SHELL=[
   "./",
   "./index.html",
@@ -55,7 +55,7 @@ self.addEventListener("activate",event=>{
     }
     await self.clients.claim();
 
-    /* V611: Kein automatisches Navigieren mehr.
+    /* V612: Kein automatisches Navigieren mehr.
        Der neue Worker übernimmt mit clients.claim(); die laufende Seite bleibt unangetastet. */
   })());
 });
@@ -137,12 +137,15 @@ async function networkFirst(request,{fallback=null,timeoutMs=2600}={}){
   return (await network)||Response.error();
 }
 
-async function cacheFirstCurrent(request){
+async function networkFirstCode(request){
+  const network=fetchAndRefresh(request).catch(()=>null);
+  const first=await Promise.race([network,timeout(1800)]);
+  if(first)return first;
   const exact=await cached(request);
   if(exact)return exact;
-  const fresh=await fetchAndRefresh(request).catch(()=>null);
-  if(fresh)return fresh;
-  return (await cached(request,{ignoreSearch:true}))||Response.error();
+  const fallback=await cached(request,{ignoreSearch:true});
+  if(fallback)return fallback;
+  return (await network)||Response.error();
 }
 
 self.addEventListener("fetch",event=>{
@@ -167,7 +170,7 @@ self.addEventListener("fetch",event=>{
   );
 
   if(codeAsset){
-    event.respondWith(cacheFirstCurrent(event.request));
+    event.respondWith(networkFirstCode(event.request));
     return;
   }
 
