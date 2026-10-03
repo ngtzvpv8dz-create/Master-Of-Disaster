@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "version": "V716",
+  "live": true,
+  "bootstrap": true,
+  "preloadOnly": true,
+  "reentry": true,
+  "home": true,
+  "todo": true,
+  "sport": true,
+  "food": true,
+  "shopping": true,
+  "kistology": true,
+  "backstage": true,
+  "log": true,
+  "backup": true,
+  "serviceWorker": true,
+  "errors": []
+}
