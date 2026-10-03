@@ -1,4 +1,4 @@
-/* V611 · SERVICE-WORKER UPGRADE GATE
+/* V612 · SERVICE-WORKER UPGRADE GATE
    Verhindert, dass ein neuer App-Build unter einem alten Worker/Cache startet.
    Bei Versionswechsel aktiviert die Seite nur den neuen Worker. Es gibt keinerlei automatische Navigation oder Reload.
 */
@@ -6,8 +6,8 @@
   'use strict';
   if(window.__modWorkerGateV611)return;
 
-  const VERSION='V611';
-  const SW_URL='./sw.js?v=611-worker-gate';
+  const VERSION='V612';
+  const SW_URL='./sw.js?v=612-network-first-code';
   const SCOPE='./';
     const LEGACY_CACHE_PREFIX='master-of-disaster-';
 
@@ -61,7 +61,7 @@
     if(!('caches' in window))return;
     try{
       const keys=await caches.keys();
-      await Promise.all(keys.filter(key=>key.startsWith(LEGACY_CACHE_PREFIX)&&key!=='master-of-disaster-v611-static').map(key=>caches.delete(key)));
+      await Promise.all(keys.filter(key=>key.startsWith(LEGACY_CACHE_PREFIX)&&key!=='master-of-disaster-v612-static').map(key=>caches.delete(key)));
     }catch(_){}
   }
 
@@ -113,7 +113,7 @@
 
       const hadLegacyController=!!beforeController&&beforeVersion!==VERSION;
 
-      /* V611: Nur der Service Worker selbst darf bei einem echten Legacy-Cache
+      /* V612: Nur der Service Worker selbst darf bei einem echten Legacy-Cache
          eine Navigation auslösen. Das Seiten-Gate wartet ausschließlich auf den
          aktuellen Controller und startet niemals zusätzlich neu. */
       emit({state:'ready',label:'Bereiche werden geladen',controller:VERSION,reloaded:false});
