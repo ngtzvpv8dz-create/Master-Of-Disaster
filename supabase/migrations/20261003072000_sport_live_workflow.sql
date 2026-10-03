@@ -61,6 +61,9 @@ create index if not exists sport_session_circuit_plans_user_idx
 create index if not exists sport_session_circuit_plans_session_idx
   on public.sport_session_circuit_plans(session_id, sort_order);
 
+create index if not exists sport_session_circuit_plans_plan_idx
+  on public.sport_session_circuit_plans(plan_id);
+
 alter table public.sport_session_circuit_plans enable row level security;
 
 revoke all on table public.sport_session_circuit_plans from anon, authenticated;
