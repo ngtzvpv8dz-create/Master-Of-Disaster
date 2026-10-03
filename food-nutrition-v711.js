@@ -425,51 +425,10 @@
     return formatNumber(n,2)+' '+String(unit||'').trim();
   }
 
-  function patchIngredientAllocations(card,items,data,allocationMap=null,{show=true}={}){
-    if(!card)return 0;
-    ensureAllocationStyle();
-    card.querySelectorAll('.food-ingredient-allocation-v711').forEach(node=>node.remove());
-    card.querySelectorAll('.food-ingredient-has-allocation-v711').forEach(node=>node.classList.remove('food-ingredient-has-allocation-v711'));
-    if(!show)return 0;
-
-    const rows=[...card.querySelectorAll('.food-recipe-detail-block-v572 ul > li')];
-    const ordered=[...(items||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
-    let shown=0;
-    ordered.forEach((item,index)=>{
-      const row=rows[index];
-      if(!row)return;
-      const override=item?.id&&allocationMap?.get?.(String(item.id))||null;
-      const allocation=override||genericFamilyAllocation(item,data);
-      if(!allocation||!(allocation.allocations||[]).length)return;
-
-      row.classList.add('food-ingredient-has-allocation-v711');
-      const box=document.createElement('div');
-      box.className='food-ingredient-allocation-v711';
-
-      for(const part of allocation.allocations){
-        const line=document.createElement('div');
-        line.className='food-ingredient-allocation-line-v711';
-        const label=document.createElement('span');
-        label.textContent='↳ '+part.label;
-        const qty=document.createElement('b');
-        qty.textContent=formatQty(part.take,part.unit);
-        line.append(label,qty);
-        box.appendChild(line);
-      }
-      if(allocation.remaining>0.0001){
-        const line=document.createElement('div');
-        line.className='food-ingredient-allocation-line-v711 food-ingredient-allocation-missing-v711';
-        const label=document.createElement('span');
-        label.textContent='↳ noch nicht aus Vorrat zugeordnet';
-        const qty=document.createElement('b');
-        qty.textContent=formatQty(allocation.remaining,item?.unit);
-        line.append(label,qty);
-        box.appendChild(line);
-      }
-      row.appendChild(box);
-      shown++;
-    });
-    return shown;
+  function patchIngredientAllocations(){
+    /* V712: Sichtbare FIFO-Aufteilung wird direkt von food-v544.js gerendert.
+       Dieses Overlay bleibt ausschließlich für dynamische Nährwerte zuständig. */
+    return 0;
   }
 
   function patchMeta(card,nutrition){
@@ -485,7 +444,7 @@
     parts.splice(insertAt,0,...nutritionParts);
     const next=parts.join(' · ');
     if(em.textContent!==next)em.textContent=next;
-    card.dataset.foodNutritionV710='dynamic';
+    card.dataset.foodNutritionV711='dynamic';
     return true;
   }
 
