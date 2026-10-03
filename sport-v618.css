@@ -1049,3 +1049,10 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   font-weight:900;
   cursor:pointer;
 }
+
+
+/* V628 · FitX timeline two points */
+.sport-timeline-v573{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:480px){
+  .sport-timeline-v573{grid-template-columns:1fr}
+}
