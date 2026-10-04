@@ -45,7 +45,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v626.js?v=743-cardio-bike-speed',
+      './sport-v626.js?v=744-cardio-all-phases',
       './sport-circuit-v682.js?v=682-home-focus'
     ],
     food:[
@@ -141,7 +141,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v626.js?v=743-cardio-bike-speed','./sport-circuit-v682.js?v=682-home-focus'],
+    sport:['./sport-v626.js?v=744-cardio-all-phases','./sport-circuit-v682.js?v=682-home-focus'],
     food:['./food-v544.js?v=741-ingredient-allocation',
       './food-nutrition-v711.js?v=713-inventory-view-fix'],
     shopping:['./food-v544.js?v=741-ingredient-allocation',
