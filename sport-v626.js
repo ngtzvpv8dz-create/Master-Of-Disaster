@@ -1129,7 +1129,7 @@
 
     if(column==='gym_arrived_at'){
       patch.session_status='running';
-      if(!session.startedAt)patch.started_at=stamp;
+      patch.started_at=stamp;
     }
 
     if(column==='gym_left_at'){
@@ -1142,12 +1142,19 @@
     if(result.error)throw result.error;
 
     if(column==='gym_arrived_at'){
-      const hasRunning=(session.workout||[]).some(item=>item.status==='running');
-      if(!hasRunning){
+      const running=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='running');
+      if(running){
+        result=await supabase.from('sport_session_exercises')
+          .update({started_at:stamp})
+          .eq('id',running.id)
+          .eq('status','running');
+        if(result.error)throw result.error;
+        expandedExercises.add(running.id);
+      }else{
         const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
         if(first){
           result=await supabase.from('sport_session_exercises')
-            .update({status:'running',started_at:first.startedAt||stamp})
+            .update({status:'running',started_at:stamp})
             .eq('id',first.id)
             .eq('status','planned');
           if(result.error)throw result.error;
