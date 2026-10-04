@@ -1,9 +1,9 @@
-/* V636 · SPORT · history sublines for courses, workout and circuit */
+/* V717 · SPORT · sequential active workout + isolated test sessions */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V636';
+  const VERSION='V717';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -59,6 +59,7 @@
 
   let activeTab='overview';
   let planDate='';
+  let planTestMode=false;
   let state={loaded:false,loading:false,error:null,source:'cache',sessions:[],courseCatalog:[],coursePlans:[],catalogExercises:[],equipment:[],sessionParticipants:[],exerciseParticipants:[],sessionExercises:[],exerciseSets:[]};
   let loadPromise=null;
   let renderSerial=0;
@@ -359,6 +360,7 @@
       homeArrivedAt:row.home_arrived_at||row.homeArrivedAt||null,
       durationMinutes:Number(row.duration_minutes??row.durationMinutes??diffMinutes(row.started_at||row.startedAt,row.ended_at||row.endedAt))||0,
       source:row.source||'manual',
+      isTest:String(row.source||'').toLowerCase()==='test',
       sourceKey:row.source_key||row.sourceKey||null,
       note:row.notes||row.note||'',
       participants:normalizeParticipants(row.sessionParticipants||row.participants||[]),
@@ -790,7 +792,7 @@
       '</div></details>';
   }
 
-  function completedSessions(rows){return (Array.isArray(rows)?rows:[]).filter(session=>session.status==='completed'||(session.kind==='circuit'&&session.status==='cancelled'));}
+  function completedSessions(rows){return (Array.isArray(rows)?rows:[]).filter(session=>!session.isTest&&(session.status==='completed'||(session.kind==='circuit'&&session.status==='cancelled')));}
   function unitHistory(rows){
     const groups=groupSessions(completedSessions(rows));
     return groups.length?'<div class="sport-unit-list-v610">'+groups.map(unitCard).join('')+'</div>':'<div class="sport-empty-inline-v568">Noch keine dokumentierten Trainingseinheiten.</div>';
@@ -803,11 +805,17 @@
     return state.sessions.find(session=>session.kind==='xtraining'&&isSessionActive(session))||null;
   }
   function planSessionForDate(dateKey){
-    return state.sessions.find(session=>session.kind==='xtraining'&&session.date===dateKey&&session.status==='planned')||null;
+    return state.sessions.find(session=>
+      session.kind==='xtraining'&&
+      session.date===dateKey&&
+      session.status==='planned'&&
+      Boolean(session.isTest)===Boolean(planTestMode)
+    )||null;
   }
 
   function currentGroupFor(session,rows){
     if(!session)return null;
+    if(session.isTest)return {date:session.date,venue:session.venue||'Ort offen',sessions:[session]};
     return groupSessions(rows).find(group=>(group.sessions||[]).some(item=>item.id===session.id))||{date:session.date,venue:session.venue||'Ort offen',sessions:[session]};
   }
   function workoutLists(session){
@@ -860,7 +868,8 @@
     const active=activeTrainingSession();
     if(active){
       const current=currentGroupFor(active,rows);
-      const courses=groupActivities(current);
+      const courses=groupActivities(current).filter(activity=>activity.type!=='test_course_plan');
+      const plannedTestCourses=active.isTest?(active.activities||[]).filter(activity=>activity.type==='test_course_plan'):[];
       const people=groupParticipants(current);
       const location=active.venue||'Ort offen';
       const fitx=isFitx(active);
@@ -868,24 +877,29 @@
       const startMs=start?start.getTime():0;
       const startedLabel=start?clock(start):'–';
       const courseHtml=courses.length?'<div class="sport-section-title-v568">Kurse'+(people.length?' · '+people.map(esc).join(', '):'')+'</div><div class="sport-course-list-v568">'+courses.map((course,index)=>courseCard(course,index,true)).join('')+'</div>':'';
+      const plannedTestCourseHtml=plannedTestCourses.length
+        ?'<div class="sport-section-title-v568">Kurse im Testplan</div><div class="sport-test-course-list-v717">'+plannedTestCourses.map(activity=>'<div><strong>'+esc(activity.name)+'</strong><span>geplant · Testdaten</span></div>').join('')+'</div>'
+        :'';
       const timingHtml=fitx?timelineBlock(active)+sessionTimeEditor(active):'';
       const clockSub=start
         ?(fitx?'bei FitX seit '+esc(startedLabel)+' Uhr':'Training seit '+esc(startedLabel)+' Uhr')
         :(fitx?'FitX-Zeit startet mit der Ankunft':'Training läuft');
 
-      return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">'+wave()+
-        '<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · LAUFENDE EINHEIT '+statusBadge()+'</div>'+
+      return '<section class="sport-panel-v510 sport-panel-v512 '+(active.isTest?'sport-test-session-v717':'')+'" data-sport-panel-v568="overview">'+wave()+
+        '<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · '+(active.isTest?'TESTEINHEIT':'LAUFENDE EINHEIT')+' '+statusBadge()+'</div>'+
         '<p class="sport-date-v510">'+esc(dateLabel(active.date))+' · '+esc(location)+'</p>'+
         '<div class="sport-active-clock-v623" data-sport-active-elapsed data-start-ms="'+startMs+'">'+esc(elapsedClockText(start))+'</div>'+
         '<div class="sport-active-clock-sub-v623">'+clockSub+'</div>'+
-        '<p class="sport-active-slogan-v674" data-sport-active-slogan>Jetzt nicht nachdenken. Machen reicht völlig.</p></div>'+
+        '<p class="sport-active-slogan-v674" data-sport-active-slogan>'+(active.isTest?'Testmodus: alles darf knirschen, Statistik bleibt sauber.':'Jetzt nicht nachdenken. Machen reicht völlig.')+'</p></div>'+
         '<div class="sport-content-v510">'+
+          (active.isTest?'<div class="sport-test-banner-v717"><strong>TESTMODUS</strong><span>Diese Einheit wird nicht in Einheiten, Statistik oder „Letztes Mal“ übernommen. Beim Beenden werden die Testdaten verworfen.</span></div>':'')+
           '<div class="sport-active-circuit-slot-v634" data-sport-active-circuit-slot></div>'+
           timingHtml+
           participantsBlock(active)+
+          plannedTestCourseHtml+
           courseHtml+
           '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>AKTUELLE EINHEIT</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="'+esc(active.id)+'">+ Übung hinzufügen</button></div>'+workoutLists(active)+'</section>'+
-          '<div class="sport-active-actions-v627"><button type="button" data-sport-complete-session="'+esc(active.id)+'">Training abschließen</button></div>'+
+          '<div class="sport-active-actions-v627"><button type="button" data-sport-complete-session="'+esc(active.id)+'">'+(active.isTest?'Testlauf beenden & verwerfen':'Training abschließen')+'</button></div>'+
           errorNote()+
         '</div></section>';
     }
@@ -913,7 +927,7 @@
     const cleanDate=/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey||''))?String(dateKey):todayIso();
     const existing=planSessionForDate(cleanDate);
     if(existing){
-      if(existing.legacyAutoFitx){
+      if(!existing.isTest&&existing.legacyAutoFitx){
         await updateSportSession(existing.id,{title:'Training',venue:'FitX'});
         return planSessionForDate(cleanDate);
       }
@@ -923,11 +937,12 @@
     const result=await supabase.from('sport_sessions').insert({
       user_id:user.id,
       session_date:cleanDate,
-      title:'Training',
+      title:planTestMode?'Testtraining':'Training',
       venue:'FitX',
       session_kind:'xtraining',
       session_status:'planned',
-      source:'manual'
+      source:planTestMode?'test':'manual',
+      notes:planTestMode?'Explizite Testeinheit · von Historie und Statistik ausgeschlossen':null
     }).select('id').single();
     if(result.error)throw result.error;
     await load(true);
@@ -940,13 +955,15 @@
     if(session.status!=='planned')throw new Error('Nur geplante, noch nicht gestartete Trainingstage können gelöscht werden.');
     const {supabase,user}=await sportUser();
 
-    let result=await supabase.from('sport_course_plans')
-      .delete()
-      .eq('user_id',user.id)
-      .eq('plan_date',session.date);
-    if(result.error)throw result.error;
+    if(!session.isTest){
+      const courseResult=await supabase.from('sport_course_plans')
+        .delete()
+        .eq('user_id',user.id)
+        .eq('plan_date',session.date);
+      if(courseResult.error)throw courseResult.error;
+    }
 
-    result=await supabase.from('sport_sessions')
+    const result=await supabase.from('sport_sessions')
       .delete()
       .eq('id',session.id)
       .eq('user_id',user.id)
@@ -967,13 +984,32 @@
 
   async function startPlanSession(sessionId){
     const session=state.sessions.find(item=>item.id===sessionId);
+    if(!session)throw new Error('Trainingstag nicht gefunden.');
+    const otherActive=activeTrainingSession();
+    if(otherActive&&String(otherActive.id)!==String(sessionId))throw new Error('Es läuft bereits eine andere Trainingseinheit. Beende oder verwirf sie zuerst.');
+
+    const {supabase}=await sportUser();
+    const stamp=new Date().toISOString();
     const patch={session_status:'running'};
-    if(!session?.startedAt)patch.started_at=new Date().toISOString();
-    if(session?.legacyAutoFitx){
+    if(!session.startedAt)patch.started_at=stamp;
+    if(session.legacyAutoFitx){
       patch.title='Training';
       patch.venue=null;
     }
-    return updateSportSession(sessionId,patch);
+
+    let result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
+    if(result.error)throw result.error;
+
+    const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
+    if(first){
+      result=await supabase.from('sport_session_exercises')
+        .update({status:'running',started_at:first.startedAt||stamp})
+        .eq('id',first.id)
+        .eq('status','planned');
+      if(result.error)throw result.error;
+      expandedExercises.add(first.id);
+    }
+    await load(true);
   }
 
   async function markTimeline(sessionId,column){
@@ -1103,6 +1139,23 @@
     const session=state.sessions.find(item=>String(item.id)===String(sessionId));
     if(!session)throw new Error('Training nicht gefunden.');
 
+    if(session.isTest){
+      if(session.circuitRun?.status==='running')throw new Error('Beende oder brich zuerst den laufenden Test-Zirkel ab.');
+      const {supabase,user}=await sportUser();
+      const runs=await supabase.from('sport_circuit_runs').select('id').eq('user_id',user.id).eq('session_id',sessionId);
+      if(runs.error)throw runs.error;
+      const runIds=(runs.data||[]).map(row=>row.id);
+      if(runIds.length){
+        const deletedRuns=await supabase.from('sport_circuit_runs').delete().in('id',runIds).eq('user_id',user.id);
+        if(deletedRuns.error)throw deletedRuns.error;
+      }
+      const deleted=await supabase.from('sport_sessions').delete().eq('id',sessionId).eq('user_id',user.id);
+      if(deleted.error)throw deleted.error;
+      expandedExercises.clear();
+      await load(true);
+      return;
+    }
+
     const now=new Date();
     const fitx=isFitx(session);
     const onlyCircuit=Boolean(session.circuitRun)&&!(session.workout||[]).length&&!(session.activities||[]).length;
@@ -1190,6 +1243,41 @@
     await load(true);
   }
 
+  function testCourseActivityCourseId(activity){
+    const match=/^test-course-(?:plan|attendance)\|(.+)$/.exec(String(activity?.note||''));
+    return match?match[1]:null;
+  }
+
+  async function addTestCoursePlan(courseId,dateKey){
+    const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(courseId));
+    if(!course)throw new Error('Kurs nicht gefunden.');
+    if(!planTestMode)throw new Error('Testmodus ist nicht ausgewählt.');
+    const session=await createPlanSession(dateKey);
+    if(!session?.isTest)throw new Error('Testplan konnte nicht angelegt werden.');
+    if((session.activities||[]).some(activity=>String(testCourseActivityCourseId(activity)||'')===String(course.id)))return;
+
+    const {supabase,user}=await sportUser();
+    const maxSort=(session.activities||[]).reduce((max,item)=>Math.max(max,Number(item.sortOrder)||0),0);
+    const result=await supabase.from('sport_activities').insert({
+      user_id:user.id,
+      session_id:session.id,
+      name:course.name,
+      kind:'test_course_plan',
+      sort_order:maxSort+1,
+      notes:'test-course-plan|'+course.id
+    });
+    if(result.error)throw result.error;
+    coursePickerDate=null;
+    await load(true);
+  }
+
+  async function removeTestCoursePlan(activityId){
+    const {supabase}=await sportUser();
+    const result=await supabase.from('sport_activities').delete().eq('id',activityId).eq('kind','test_course_plan');
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
   async function recordCourseAttendance(courseId,dateKey,participantText=''){
     const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(courseId));
     if(!course)throw new Error('Kurs nicht gefunden.');
@@ -1202,6 +1290,36 @@
       p_participants:participants
     });
     if(result.error)throw result.error;
+    await load(true);
+  }
+
+  async function recordTestCourseAttendance(activityId,courseId,participantText=''){
+    const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(courseId));
+    const session=state.sessions.find(item=>item.isTest&&(item.activities||[]).some(activity=>String(activity.id)===String(activityId)));
+    if(!course||!session)throw new Error('Testkurs nicht gefunden.');
+    const participants=[...new Set(String(participantText||'').split(/[,;+\n]/).map(name=>name.trim()).filter(Boolean))];
+    const start=localDateTimeIso(session.date,courseClock(course.start_time));
+    const end=localDateTimeIso(session.date,courseClock(course.end_time));
+    const duration=start&&end?Math.max(0,Math.round((new Date(end)-new Date(start))/60000)):null;
+    const {supabase,user}=await sportUser();
+
+    let result=await supabase.from('sport_activities').update({
+      kind:'course',
+      started_at:start,
+      ended_at:end,
+      duration_minutes:duration,
+      notes:'test-course-attendance|'+course.id
+    }).eq('id',activityId);
+    if(result.error)throw result.error;
+
+    result=await supabase.from('sport_activity_participants').delete().eq('activity_id',activityId);
+    if(result.error)throw result.error;
+    if(participants.length){
+      result=await supabase.from('sport_activity_participants').insert(participants.map(participant_name=>({
+        user_id:user.id,activity_id:activityId,participant_name
+      })));
+      if(result.error)throw result.error;
+    }
     await load(true);
   }
 
@@ -1342,12 +1460,38 @@
   }
 
   async function setExerciseStatus(id,status){
-    const patch={status};
+    const session=state.sessions.find(item=>(item.workout||[]).some(exercise=>String(exercise.id)===String(id)));
+    const exercise=(session?.workout||[]).find(item=>String(item.id)===String(id));
+    if(!exercise)throw new Error('Trainingselement nicht gefunden.');
+
+    const {supabase}=await sportUser();
     const stamp=new Date().toISOString();
-    if(status==='running')patch.started_at=stamp;
-    if(status==='completed')patch.ended_at=stamp;
+    const patch={status};
+    if(status==='running')patch.started_at=exercise.startedAt||stamp;
+    if(status==='completed'||status==='skipped')patch.ended_at=stamp;
     if(status==='planned'){patch.started_at=null;patch.ended_at=null;}
-    return updateSessionExercise(id,patch);
+
+    let result=await supabase.from('sport_session_exercises').update(patch).eq('id',id);
+    if(result.error)throw result.error;
+
+    if(status==='running'){
+      expandedExercises.add(id);
+    }else if(status==='completed'||status==='skipped'){
+      expandedExercises.delete(id);
+      const ordered=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder);
+      const index=ordered.findIndex(item=>String(item.id)===String(id));
+      const next=ordered.slice(Math.max(0,index+1)).find(item=>item.status==='planned');
+      if(next&&session.status==='running'){
+        result=await supabase.from('sport_session_exercises')
+          .update({status:'running',started_at:next.startedAt||stamp})
+          .eq('id',next.id)
+          .eq('status','planned');
+        if(result.error)throw result.error;
+        expandedExercises.add(next.id);
+      }
+    }
+
+    await load(true);
   }
 
   async function removeSessionExercise(id){
@@ -1456,7 +1600,7 @@
 
   function previousWorkoutValue(current){
     const candidates=state.sessions
-      .filter(session=>session.id!==current.sessionId)
+      .filter(session=>!session.isTest&&session.id!==current.sessionId)
       .flatMap(session=>(session.workout||[]).map(item=>({session,item})))
       .filter(entry=>entry.item.exerciseId===current.exerciseId&&entry.item.status==='completed')
       .sort((a,b)=>String(b.session.date).localeCompare(String(a.session.date)));
@@ -1664,9 +1808,11 @@
 
   function knownSportParticipants(){
     const names=new Set();
-    (state.sessionParticipants||[]).forEach(row=>{const name=String(row.participant_name||'').trim();if(name)names.add(name);});
-    (state.sessions||[]).forEach(session=>(session.activities||[]).forEach(activity=>(activity.participants||[]).forEach(name=>{name=String(name||'').trim();if(name)names.add(name);}))); 
-    (state.exerciseParticipants||[]).forEach(row=>{const name=String(row.participant_name||'').trim();if(name)names.add(name);});
+    (state.sessions||[]).filter(session=>!session.isTest).forEach(session=>{
+      (session.participants||[]).forEach(name=>{name=String(name||'').trim();if(name)names.add(name);});
+      (session.activities||[]).forEach(activity=>(activity.participants||[]).forEach(name=>{name=String(name||'').trim();if(name)names.add(name);}));
+      (session.workout||[]).forEach(exercise=>(exercise.participants||[]).forEach(name=>{name=String(name||'').trim();if(name)names.add(name);}));
+    });
     return [...names].sort(byName);
   }
 
@@ -1682,50 +1828,86 @@
     return (state.coursePlans||[]).find(plan=>String(plan.course_id)===String(courseId)&&String(plan.plan_date)===String(dateKey))||null;
   }
 
-  function courseAttendanceBlock(dateKey){
+  function courseAttendanceBlock(dateKey,session=null,testMode=Boolean(session?.isTest||planTestMode)){
     const courses=(state.courseCatalog||[]).filter(course=>course.active!==false);
-    const plans=(state.coursePlans||[]).filter(plan=>String(plan.plan_date)===String(dateKey));
     const courseById=new Map(courses.map(course=>[String(course.id),course]));
-    const plannedCourses=plans.map(plan=>({plan,course:courseById.get(String(plan.course_id))})).filter(item=>item.course);
-    const completed=courses.map(course=>({course,attendance:attendanceForCourse(course,dateKey)})).filter(item=>item.attendance);
-    const shownIds=new Set(completed.map(item=>String(item.course.id)));
-    plannedCourses.forEach(item=>shownIds.add(String(item.course.id)));
-
     const people=knownSportParticipants();
     const listId='sport-course-people-v619';
     const datalist=people.length?'<datalist id="'+listId+'">'+people.map(name=>'<option value="'+esc(name)+'"></option>').join('')+'</datalist>':'';
+    const pickerKey=(testMode?'test|':'real|')+String(dateKey);
+    const pickerOpen=String(coursePickerDate||'')===pickerKey;
 
-    const rows=[
-      ...completed.map(({course,attendance})=>{
-        const activity=attendance.activity;
-        const participantText=activity?.participants?.length?' · mit '+activity.participants.map(esc).join(', '):'';
-        return '<div class="sport-course-plan-row-v619 is-done"><div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+participantText+'</small></div><span>✓ Teilgenommen</span></div>';
-      }),
-      ...plannedCourses.filter(({course})=>!attendanceForCourse(course,dateKey)).map(({plan,course})=>
-        '<form class="sport-course-plan-row-v619" data-sport-course-attendance="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'">'
-          +'<div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+'</small></div>'
-          +'<input name="participants" list="'+listId+'" placeholder="Mit wem?">'
-          +'<button type="submit">Teilgenommen</button>'
-          +'<button type="button" class="sport-course-remove-v619" data-sport-remove-course-plan="'+esc(plan.id)+'" aria-label="Kurs aus Plan entfernen">×</button>'
-        +'</form>'
-      )
-    ].join('');
+    let rows='';
+    let shownIds=new Set();
 
-    const pickerOpen=String(coursePickerDate||'')===String(dateKey);
+    if(testMode){
+      const activities=session?.activities||[];
+      const planned=activities.filter(activity=>activity.type==='test_course_plan').map(activity=>({
+        activity,
+        course:courseById.get(String(testCourseActivityCourseId(activity)||''))
+      })).filter(item=>item.course);
+      const completed=activities.filter(activity=>activity.type==='course'&&String(activity.note||'').startsWith('test-course-attendance|')).map(activity=>({
+        activity,
+        course:courseById.get(String(testCourseActivityCourseId(activity)||''))
+      })).filter(item=>item.course);
+      completed.forEach(item=>shownIds.add(String(item.course.id)));
+      planned.forEach(item=>shownIds.add(String(item.course.id)));
+
+      rows=[
+        ...completed.map(({activity,course})=>{
+          const participantText=activity.participants?.length?' · mit '+activity.participants.map(esc).join(', '):'';
+          return '<div class="sport-course-plan-row-v619 is-done"><div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+participantText+'</small></div><span>✓ Test-Teilnahme</span></div>';
+        }),
+        ...planned.map(({activity,course})=>
+          '<form class="sport-course-plan-row-v619" data-sport-test-course-attendance="'+esc(activity.id)+'" data-course-id="'+esc(course.id)+'">'
+            +'<div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+' · TEST</small></div>'
+            +'<input name="participants" list="'+listId+'" placeholder="Mit wem?">'
+            +'<button type="submit">Teilgenommen testen</button>'
+            +'<button type="button" class="sport-course-remove-v619" data-sport-remove-test-course-plan="'+esc(activity.id)+'" aria-label="Testkurs aus Plan entfernen">×</button>'
+          +'</form>'
+        )
+      ].join('');
+    }else{
+      const plans=(state.coursePlans||[]).filter(plan=>String(plan.plan_date)===String(dateKey));
+      const plannedCourses=plans.map(plan=>({plan,course:courseById.get(String(plan.course_id))})).filter(item=>item.course);
+      const completed=courses.map(course=>({course,attendance:attendanceForCourse(course,dateKey)})).filter(item=>item.attendance);
+      completed.forEach(item=>shownIds.add(String(item.course.id)));
+      plannedCourses.forEach(item=>shownIds.add(String(item.course.id)));
+
+      rows=[
+        ...completed.map(({course,attendance})=>{
+          const activity=attendance.activity;
+          const participantText=activity?.participants?.length?' · mit '+activity.participants.map(esc).join(', '):'';
+          return '<div class="sport-course-plan-row-v619 is-done"><div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+participantText+'</small></div><span>✓ Teilgenommen</span></div>';
+        }),
+        ...plannedCourses.filter(({course})=>!attendanceForCourse(course,dateKey)).map(({plan,course})=>
+          '<form class="sport-course-plan-row-v619" data-sport-course-attendance="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'">'
+            +'<div><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+'</small></div>'
+            +'<input name="participants" list="'+listId+'" placeholder="Mit wem?">'
+            +'<button type="submit">Teilgenommen</button>'
+            +'<button type="button" class="sport-course-remove-v619" data-sport-remove-course-plan="'+esc(plan.id)+'" aria-label="Kurs aus Plan entfernen">×</button>'
+          +'</form>'
+        )
+      ].join('');
+    }
+
     const available=courses.filter(course=>!shownIds.has(String(course.id)));
     const picker=pickerOpen
       ?'<div class="sport-course-picker-v619">'
         +(available.length
-          ?available.map(course=>'<button type="button" data-sport-add-course-plan="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'"><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+'</small></button>').join('')
-          :'<span>Alle Kurse für diesen Tag sind schon im Plan.</span>')
-        +'<details class="sport-course-settings-v619"><summary>Kurszeiten ändern</summary>'
+          ?available.map(course=>testMode
+            ?'<button type="button" data-sport-add-test-course-plan="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'"><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+' · TEST</small></button>'
+            :'<button type="button" data-sport-add-course-plan="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'"><strong>'+esc(course.name)+'</strong><small>'+esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+'</small></button>'
+          ).join('')
+          :'<span>Alle Kurse für diesen '+(testMode?'Testplan':'Tag')+' sind schon eingeplant.</span>')
+        +(testMode?'':'<details class="sport-course-settings-v619"><summary>Kurszeiten ändern</summary>'
           +courses.map(course=>'<form data-sport-course-time="'+esc(course.id)+'"><strong>'+esc(course.name)+'</strong><label>Start<input type="time" name="start" value="'+esc(courseClock(course.start_time))+'" required></label><label>Ende<input type="time" name="end" value="'+esc(courseClock(course.end_time))+'" required></label><button type="submit">Speichern</button></form>').join('')
-        +'</details>'
+        +'</details>')
       +'</div>'
       :'';
 
-    return '<section class="sport-course-plan-v619">'
-      +'<div class="sport-course-plan-head-v619"><strong>Kurse</strong><button class="sport-plan-action-v632" type="button" data-sport-toggle-course-picker="'+esc(dateKey)+'">'+(pickerOpen?'Schließen':'+ Kurs hinzufügen')+'</button></div>'
+    return '<section class="sport-course-plan-v619 '+(testMode?'is-test-v717':'')+'">'
+      +'<div class="sport-course-plan-head-v619"><strong>Kurse'+(testMode?' · TEST':'')+'</strong><button class="sport-plan-action-v632" type="button" data-sport-toggle-course-picker="'+esc(dateKey)+'" data-course-picker-key="'+esc(pickerKey)+'">'+(pickerOpen?'Schließen':'+ Kurs hinzufügen')+'</button></div>'
       +datalist
       +(rows?'<div class="sport-course-plan-list-v619">'+rows+'</div>':'')
       +picker
@@ -1735,46 +1917,61 @@
   function planningPanel(){
     const current=planSessionForDate(planDate);
     const otherPlans=state.sessions
-      .filter(session=>session.kind==='xtraining'&&session.status==='planned'&&session.date!==planDate)
+      .filter(session=>session.kind==='xtraining'&&session.status==='planned'&&Boolean(session.isTest)===Boolean(planTestMode)&&session.date!==planDate)
       .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
 
     const freeItems=(current?.workout||[]).filter(item=>item.status!=='skipped');
     const hasFree=freeItems.length>0;
-    const hasCoursePlan=(state.coursePlans||[]).some(plan=>String(plan.plan_date)===String(planDate));
-    const hasCourseAttendance=(state.courseCatalog||[]).some(course=>Boolean(attendanceForCourse(course,planDate)));
+    const hasCoursePlan=planTestMode
+      ?(current?.activities||[]).some(activity=>activity.type==='test_course_plan')
+      :(state.coursePlans||[]).some(plan=>String(plan.plan_date)===String(planDate));
+    const hasCourseAttendance=planTestMode
+      ?(current?.activities||[]).some(activity=>activity.type==='course'&&String(activity.note||'').startsWith('test-course-attendance|'))
+      :(state.courseCatalog||[]).some(course=>Boolean(attendanceForCourse(course,planDate)));
     const hasBaseContent=hasFree||hasCoursePlan||hasCourseAttendance;
+
+    const modeSwitch=
+      '<section class="sport-plan-mode-v717" aria-label="Planmodus">'+
+        '<div><strong>PLANMODUS</strong><small>Test muss bewusst ausgewählt werden und zählt nirgends mit.</small></div>'+
+        '<div class="sport-plan-mode-buttons-v717">'+
+          '<button type="button" data-sport-plan-mode="real" class="'+(!planTestMode?'active':'')+'">ECHT</button>'+
+          '<button type="button" data-sport-plan-mode="test" class="'+(planTestMode?'active':'')+'">TEST</button>'+
+        '</div>'+
+      '</section>';
 
     const freeTraining=
       '<section class="sport-plan-block-v631">'+
-        '<div class="sport-plan-block-head-v631"><div><span>FREIES TRAINING</span><small>Übungen und Geräte</small></div>'+
+        '<div class="sport-plan-block-head-v631"><div><span>FREIES TRAINING'+(planTestMode?' · TEST':'')+'</span><small>Übungen und Geräte</small></div>'+
         '<button class="sport-plan-action-v632" type="button" data-sport-open-catalog '+(current?'data-session-id="'+esc(current.id)+'"':'')+'>+ Übung</button></div>'+
         (hasFree?workoutLists(current):'')+
       '</section>';
 
     const dayBody=
       (current?compactPlanVenue(current):'')+
-      courseAttendanceBlock(planDate)+
+      courseAttendanceBlock(planDate,current,planTestMode)+
       freeTraining+
       '<div class="sport-plan-circuit-slot-v631" data-sport-circuit-slot></div>'+
-      '<div class="sport-plan-global-empty-v632" data-sport-global-plan-empty data-has-base-content="'+(hasBaseContent?'1':'0')+'" '+(hasBaseContent?'hidden':'')+'>Keine offenen Übungen mehr. Sehr verdächtig produktiv.</div>'+
+      '<div class="sport-plan-global-empty-v632" data-sport-global-plan-empty data-has-base-content="'+(hasBaseContent?'1':'0')+'" '+(hasBaseContent?'hidden':'')+'>'+(planTestMode?'Testplan ist noch leer. Hier darfst du gefahrlos alles kaputtprüfen.':'Keine offenen Übungen mehr. Sehr verdächtig produktiv.')+'</div>'+
       (current&&isSessionActive(current)?'<div class="sport-plan-running-v612">Diese Einheit läuft bereits. Unter „Aktiv“ siehst du den aktuellen Ablauf.</div>':'')+
       '<div class="sport-plan-footer-actions-v632">'+
         (current&&current.status==='planned'
-          ?'<button class="sport-plan-start-v632" type="button" data-sport-start-plan="'+esc(current.id)+'">Training starten</button><button class="sport-plan-danger-v632" type="button" data-sport-delete-day-plan="'+esc(current.id)+'">Tagesplan löschen</button>'
-          :(!current?'<button class="sport-plan-action-v632" type="button" data-sport-create-plan="'+esc(planDate)+'">Plan anlegen</button>':''))+
+          ?'<button class="sport-plan-start-v632" type="button" data-sport-start-plan="'+esc(current.id)+'">'+(current.isTest?'Testtraining starten':'Training starten')+'</button><button class="sport-plan-danger-v632" type="button" data-sport-delete-day-plan="'+esc(current.id)+'">'+(current.isTest?'Testplan löschen':'Tagesplan löschen')+'</button>'
+          :(!current?'<button class="sport-plan-action-v632" type="button" data-sport-create-plan="'+esc(planDate)+'">'+(planTestMode?'Testplan anlegen':'Plan anlegen')+'</button>':''))+
       '</div>';
 
-    return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="planning">'+wave()+
-      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>PLANEN '+statusBadge()+'</div><p class="sport-date-v510">Trainingstage vorbereiten, ohne sie schon als absolvierte Einheit zu zählen.</p><div class="sport-section-mark-v512">P</div></div>'+
+    return '<section class="sport-panel-v510 sport-panel-v512 '+(planTestMode?'sport-test-planning-v717':'')+'" data-sport-panel-v568="planning">'+wave()+
+      '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>PLANEN'+(planTestMode?' · TESTMODUS':'')+' '+statusBadge()+'</div><p class="sport-date-v510">'+(planTestMode?'Komplette Abläufe prüfen, ohne echte Historie oder Statistik anzufassen.':'Trainingstage vorbereiten, ohne sie schon als absolvierte Einheit zu zählen.')+'</p><div class="sport-section-mark-v512">P</div></div>'+
       '<div class="sport-content-v510">'+
+        modeSwitch+
+        (planTestMode?'<div class="sport-test-banner-v717"><strong>TESTPLAN</strong><span>Kurse, Freies Training und Home-Zirkel benutzen die echten Funktionen. Nach dem Test wird nichts archiviert; beim Beenden werden die Testdaten verworfen.</span></div>':'')+
         '<section class="sport-planning-day-v632" data-sport-plan-day="'+esc(planDate)+'">'+
           '<div class="sport-planning-day-head-v632">'+
-            '<label><span>TRAININGSTAG</span><input type="date" data-sport-plan-date value="'+esc(planDate)+'"></label>'+
+            '<label><span>'+(planTestMode?'TESTTAG':'TRAININGSTAG')+'</span><input type="date" data-sport-plan-date value="'+esc(planDate)+'"></label>'+
             (current?'<div class="sport-planning-day-meta-v632"><span>Ort</span><strong>'+esc(venueDisplay(current.venue))+'</strong></div>':'')+
           '</div>'+
           '<div class="sport-planning-day-body-v632">'+dayBody+'</div>'+
         '</section>'+
-        (otherPlans.length?'<div class="sport-section-title-v568">Weitere offene Pläne</div><div class="sport-plan-list-v612">'+otherPlans.map(session=>'<button type="button" data-sport-select-plan="'+esc(session.date)+'"><strong>'+esc(shortDate(session.date))+'</strong><span>'+esc(venueDisplay(session.venue))+' · '+(session.workout||[]).filter(item=>item.status!=='skipped').length+' Übungen</span></button>').join('')+'</div>':'')+
+        (otherPlans.length?'<div class="sport-section-title-v568">'+(planTestMode?'Weitere offene Testpläne':'Weitere offene Pläne')+'</div><div class="sport-plan-list-v612">'+otherPlans.map(session=>'<button type="button" data-sport-select-plan="'+esc(session.date)+'"><strong>'+esc(shortDate(session.date))+'</strong><span>'+esc(venueDisplay(session.venue))+' · '+(session.workout||[]).filter(item=>item.status!=='skipped').length+' Übungen'+(session.isTest?' · TEST':'')+'</span></button>').join('')+'</div>':'')+
         errorNote()+
       '</div></section>';
   }
@@ -2073,6 +2270,12 @@
 
     root.querySelectorAll('[data-sport-tab-v568]').forEach(button=>button.addEventListener('click',()=>setTab(button.dataset.sportTabV568,{animate:true,persist:true})));
     root.querySelectorAll('[data-sport-retry-v568]').forEach(button=>button.addEventListener('click',()=>load(true)));
+    root.querySelectorAll('[data-sport-plan-mode]').forEach(button=>button.addEventListener('click',event=>{
+      planTestMode=event.currentTarget.dataset.sportPlanMode==='test';
+      coursePickerDate=null;
+      catalogTargetSessionId=null;
+      render({animate:true});
+    }));
 
     root.querySelectorAll('[data-sport-create-plan]').forEach(button=>button.addEventListener('click',event=>{
       const target=event.currentTarget;
@@ -2108,8 +2311,8 @@
     }));
 
     root.querySelectorAll('[data-sport-toggle-course-picker]').forEach(button=>button.addEventListener('click',event=>{
-      const date=event.currentTarget.dataset.sportToggleCoursePicker;
-      coursePickerDate=String(coursePickerDate||'')===String(date)?null:date;
+      const key=event.currentTarget.dataset.coursePickerKey||event.currentTarget.dataset.sportToggleCoursePicker;
+      coursePickerDate=String(coursePickerDate||'')===String(key)?null:key;
       render({animate:false});
     }));
 
@@ -2117,10 +2320,18 @@
       const target=event.currentTarget;
       handle(target,()=>addCoursePlan(target.dataset.sportAddCoursePlan,target.dataset.courseDate));
     }));
+    root.querySelectorAll('[data-sport-add-test-course-plan]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>addTestCoursePlan(target.dataset.sportAddTestCoursePlan,target.dataset.courseDate));
+    }));
 
     root.querySelectorAll('[data-sport-remove-course-plan]').forEach(button=>button.addEventListener('click',event=>{
       const target=event.currentTarget;
       handle(target,()=>removeCoursePlan(target.dataset.sportRemoveCoursePlan));
+    }));
+    root.querySelectorAll('[data-sport-remove-test-course-plan]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>removeTestCoursePlan(target.dataset.sportRemoveTestCoursePlan));
     }));
 
     root.querySelectorAll('[data-sport-course-attendance]').forEach(form=>form.addEventListener('submit',event=>{
@@ -2129,6 +2340,13 @@
       const submit=target.querySelector('button[type="submit"]');
       const data=new FormData(target);
       handle(submit,()=>recordCourseAttendance(target.dataset.sportCourseAttendance,target.dataset.courseDate,data.get('participants')));
+    }));
+    root.querySelectorAll('[data-sport-test-course-attendance]').forEach(form=>form.addEventListener('submit',event=>{
+      event.preventDefault();
+      const target=event.currentTarget;
+      const submit=target.querySelector('button[type="submit"]');
+      const data=new FormData(target);
+      handle(submit,()=>recordTestCourseAttendance(target.dataset.sportTestCourseAttendance,target.dataset.courseId,data.get('participants')));
     }));
 
     root.querySelectorAll('[data-sport-course-time]').forEach(form=>form.addEventListener('submit',event=>{
@@ -2196,8 +2414,10 @@
 
     root.querySelectorAll('[data-sport-complete-session]').forEach(button=>button.addEventListener('click',event=>{
       const target=event.currentTarget;
-      if(!window.confirm('Training wirklich abschließen?'))return;
-      handle(target,async()=>{await completeTrainingSession(target.dataset.sportCompleteSession);setTab('sessions',{animate:true,persist:true});});
+      const session=sessionById(target.dataset.sportCompleteSession);
+      const question=session?.isTest?'Testlauf beenden und alle Testdaten verwerfen?':'Training wirklich abschließen?';
+      if(!window.confirm(question))return;
+      handle(target,async()=>{await completeTrainingSession(target.dataset.sportCompleteSession);setTab(session?.isTest?'overview':'sessions',{animate:true,persist:true});});
     }));
 
     root.querySelectorAll('[data-sport-open-catalog]').forEach(button=>button.addEventListener('click',event=>{
@@ -2407,7 +2627,7 @@
     setMode('todo',{persist:false,animate:false});
   }
 
-  const api={version:VERSION,load,refresh:()=>load(true),render,setMode,toggle:toggleMode,currentMode,loadSessions,saveSessions,modeKey:MODE_KEY,dataKey:CACHE_KEY,getState:()=>({loaded:state.loaded,loading:state.loading,error:state.error,source:state.source,sessions:state.sessions.length,planDate}),getPlanDate:()=>planDate,getSessions:()=>state.sessions,getActiveSession:()=>activeTrainingSession(),getPlanSession:(dateKey=planDate)=>planSessionForDate(dateKey),createPlanSession,openExecutionHelp};
+  const api={version:VERSION,load,refresh:()=>load(true),render,setMode,toggle:toggleMode,currentMode,loadSessions,saveSessions,modeKey:MODE_KEY,dataKey:CACHE_KEY,getState:()=>({loaded:state.loaded,loading:state.loading,error:state.error,source:state.source,sessions:state.sessions.length,planDate,planTestMode}),getPlanDate:()=>planDate,getPlanTestMode:()=>planTestMode,getSessions:()=>state.sessions,getActiveSession:()=>activeTrainingSession(),getPlanSession:(dateKey=planDate)=>planSessionForDate(dateKey),createPlanSession,openExecutionHelp};
   window.__modSportV568=api;
   window.__modSportModeV510=api;
   window.__modSportTabsV512={version:VERSION,tabs:TABS.map(x=>({...x})),render,setTab,currentTab:()=>activeTab,tabKey:TAB_KEY,supabaseLiveV568:true};
