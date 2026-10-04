@@ -600,21 +600,28 @@
       .filter(lot=>String(lot.inventory_id||'')===String(stock?.id||''))
       .map(lot=>({lot,quantity:familyAllocationLotQuantity(lot,stock,targetUnit)}))
       .filter(entry=>entry.quantity!==null&&entry.quantity>0)
-      .sort((a,b)=>
-        String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
-        String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
-        String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))||
-        String(a.lot.id||'').localeCompare(String(b.lot.id||''))
-      );
+      .sort((a,b)=>{
+        const fa=frozenStorageLocation(a.lot.storage_location)?1:0;
+        const fb=frozenStorageLocation(b.lot.storage_location)?1:0;
+        if(fa!==fb)return fa-fb;
+        return String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
+          String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
+          String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))||
+          String(a.lot.id||'').localeCompare(String(b.lot.id||''));
+      });
 
     const tracked=lots.reduce((sum,entry)=>sum+entry.quantity,0);
     const segments=[];
     const untracked=Math.max(0,total-tracked);
-    if(untracked>0)segments.push({quantity:untracked,label:familyAllocationProductLabel(stock)});
+    if(untracked>0)segments.push({quantity:untracked,label:familyAllocationProductLabel(stock),frozen:false});
 
     for(const entry of lots){
       const product=(state?.products||[]).find(row=>String(row.id||'')===String(entry.lot.product_id||''))||null;
-      segments.push({quantity:entry.quantity,label:familyAllocationProductText(product,stock)});
+      segments.push({
+        quantity:entry.quantity,
+        label:familyAllocationProductText(product,stock),
+        frozen:frozenStorageLocation(entry.lot.storage_location)
+      });
     }
 
     let skip=Math.max(0,Number(consumedBefore)||0);
@@ -629,20 +636,19 @@
       const quantity=Math.min(available,remaining);
       if(quantity<=0)continue;
       const previous=parts[parts.length-1];
-      if(previous&&previous.label===segment.label)previous.quantity+=quantity;
-      else parts.push({label:segment.label,quantity});
+      if(previous&&previous.label===segment.label&&previous.frozen===segment.frozen)previous.quantity+=quantity;
+      else parts.push({label:segment.label,quantity,frozen:segment.frozen});
       remaining-=quantity;
     }
 
     if(remaining>0.0001){
       const label=familyAllocationProductLabel(stock);
       const previous=parts[parts.length-1];
-      if(previous&&previous.label===label)previous.quantity+=remaining;
-      else parts.push({label,quantity:remaining});
+      if(previous&&previous.label===label&&previous.frozen===false)previous.quantity+=remaining;
+      else parts.push({label,quantity:remaining,frozen:false});
     }
     return parts;
   }
-
 
   function familyAllocationLotDate(inventoryId){
     const dates=(state?.lots||[])
@@ -715,7 +721,8 @@
           inventoryId:String(entry.stock.id),
           label:part.label,
           quantity:part.quantity,
-          unit:item?.unit||unit
+          unit:item?.unit||unit,
+          frozen:part.frozen===true
         }));
       }else{
         allocations.push({
@@ -770,7 +777,8 @@
           inventoryId:String(stock.id),
           label:part.label,
           quantity:part.quantity,
-          unit:item?.unit||unit
+          unit:item?.unit||unit,
+          frozen:part.frozen===true
         }))
       :(take>0?[{
           inventoryId:String(stock.id),
@@ -862,7 +870,8 @@
     parts.forEach(part=>{
       const rawLabel=String(part.label||'').trim();
       const detailLabel=!rawLabel||familyText(rawLabel)===generic?'Produkt nicht genauer erfasst':rawLabel;
-      html+='<div class="food-ingredient-allocation-line-v712"><span>↳ '+esc(detailLabel)+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
+      const frozen=part.frozen===true;
+      html+='<div class="food-ingredient-allocation-line-v712 '+(frozen?'is-frozen-v736':'')+'"><span>↳ '+esc(detailLabel)+(frozen?' · eingefroren':'')+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
     });
     if(missing>0.0001){
       html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ fehlt im Vorrat</span><b>'+esc(fmtQty(missing,item?.unit))+'</b></div>';
@@ -1002,6 +1011,76 @@
     return text?'<div class="food-freeze-hint-v664"><div><strong>Einfrieren</strong><small>'+esc(text)+'</small></div></div>':'';
   }
 
+  function plannedThawTasks(){
+    const meals=[...(state?.meals||[])]
+      .filter(meal=>normalizedStatus(meal.status)==='planned'&&!meal.inventory_booked_at)
+      .sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||Number(a.sort_order||0)-Number(b.sort_order||0));
+    const allocationMaps=plannedFamilyAllocationMaps();
+    const tasks=[];
+
+    const reminderSlot=target=>{
+      const all=[...(state?.meals||[])].sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||Number(a.sort_order||0)-Number(b.sort_order||0));
+      const sameDate=all.filter(meal=>meal.meal_date===target.meal_date);
+      const previousDate=plusDays(target.meal_date,-1);
+      const previous=all.filter(meal=>meal.meal_date===previousDate);
+      const lastPrevious=previous.slice().sort((a,b)=>Number(b.sort_order||0)-Number(a.sort_order||0))[0]||null;
+      if(target.meal_type==='dinner'){
+        return sameDate.find(meal=>meal.meal_type==='breakfast')||
+          sameDate.find(meal=>meal.meal_type==='lunch')||
+          lastPrevious||target;
+      }
+      if(target.meal_type==='lunch'){
+        return previous.find(meal=>meal.meal_type==='dinner')||lastPrevious||
+          sameDate.find(meal=>meal.meal_type==='breakfast')||target;
+      }
+      if(target.meal_type==='breakfast'){
+        return previous.find(meal=>meal.meal_type==='dinner')||lastPrevious||target;
+      }
+      return sameDate.find(meal=>meal.meal_type==='breakfast')||
+        previous.find(meal=>meal.meal_type==='dinner')||lastPrevious||target;
+    };
+
+    for(const target of meals){
+      const map=allocationMaps.get(String(target.id||''))||new Map();
+      for(const item of (target.ingredients||[])){
+        const allocation=item?.id?map.get(String(item.id)):null;
+        const frozen=(allocation?.allocations||[]).filter(part=>part.frozen===true);
+        if(!frozen.length)continue;
+        const quantity=frozen.reduce((sum,part)=>sum+(Number(part.quantity)||0),0);
+        if(quantity<=0)continue;
+        const reminder=reminderSlot(target);
+        tasks.push({
+          targetMealId:String(target.id||''),
+          reminderMealId:String(reminder?.id||target.id||''),
+          targetDate:target.meal_date,
+          targetType:target.meal_type,
+          targetTitle:target.title||'Mahlzeit',
+          ingredient:ingredientName(item),
+          quantity,
+          unit:item.unit
+        });
+      }
+    }
+    return tasks;
+  }
+
+  function thawReminderMarkupForMeal(meal){
+    const tasks=plannedThawTasks().filter(task=>task.reminderMealId===String(meal?.id||''));
+    if(!tasks.length)return '';
+    return '<div class="food-thaw-reminder-v736"><strong>Auftauen</strong>'+
+      tasks.map(task=>'<span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' im Kühlschrank auftauen · für '+(MEAL_LABELS[task.targetType]||task.targetType)+' „'+task.targetTitle+'“')+'</span>').join('')+
+      '</div>';
+  }
+
+  function thawTodayAlertsMarkup(){
+    const today=todayIso();
+    const tasks=plannedThawTasks().filter(task=>task.targetDate===today);
+    if(!tasks.length)return '';
+    return '<section class="food-thaw-today-v736"><strong>Heute rechtzeitig auftauen</strong>'+
+      tasks.map(task=>'<span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+(MEAL_LABELS[task.targetType]||task.targetType)+' „'+task.targetTitle+'“')+'</span>').join('')+
+      '</section>';
+  }
+
   function mealPlanMeta(meal){
     const prepared=Math.max(.01,Number(meal.prepared_servings)||1);
     const eaten=Math.max(.01,Number(meal.eaten_servings)||prepared);
@@ -1023,6 +1102,7 @@
     const action=status==='completed'
       ?''
       :'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isMealPrep?'Als gegessen markieren':'Als zubereitet markieren')+'</button>';
+    const thawReminder=thawReminderMarkupForMeal(meal);
     const statusMeta=status==='completed'
       ?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at))
       :'Geplant';
@@ -1045,7 +1125,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em>'+(extrasSummary?'<small class="food-meal-extras-summary-v703">'+esc(extrasSummary)+'</small>':'')+'</span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
-        +details
+        +thawReminder+details
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +action
         +'</article>';
@@ -1066,7 +1146,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
-        +freezeHint+view.details+planNote
+        +thawReminder+freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
         +'</article>';
@@ -1092,13 +1172,14 @@
         +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta+' · '+statusMeta)+'</em></span>'
         +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
       +'</button>'
-      +details+action
+      +thawReminder+details+action
       +'</article>';
   }
 
   function todayView(data){
     const meals=data.meals.filter(meal=>meal.meal_date===todayIso()).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     return '<div class="food-section-head-v544"><div><span>HEUTE</span><h3>Dein Tagesplan</h3></div><small>'+meals.length+' Mahlzeiten</small></div>'+
+      thawTodayAlertsMarkup()+
       (meals.length?'<div class="food-meal-list-v544">'+meals.map(mealCard).join('')+'</div>':'<div class="food-empty-card-v544"><h4>Heute ist noch nichts eingeplant.</h4><p>Ein Rezept kann direkt aus dem Rezeptgarten eingeplant werden.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezepte öffnen</button></div>');
   }
 
@@ -1201,36 +1282,50 @@
 
   function inventoryCurrentProductMarkup(item,data=state){
     const productsById=new Map((data?.products||[]).map(product=>[String(product.id||''),product]));
-    const groups=new Map();
-    let tracked=0;
-    for(const lot of (data?.lots||[])){
-      if(String(lot.inventory_id||'')!==String(item?.id||''))continue;
-      const quantity=lotQuantityForInventory(lot,item);
-      if(quantity===null||quantity<=0||!lot.product_id)continue;
-      const product=productsById.get(String(lot.product_id));
-      if(!product)continue;
-      const id=String(product.id);
-      const current=groups.get(id)||{product,quantity:0};
-      current.quantity+=quantity;
-      tracked+=quantity;
-      groups.set(id,current);
-    }
-    if(!groups.size)return '';
-    const aggregate=num(item?.quantity);
-    const complete=aggregate!==null&&Math.abs(tracked-aggregate)<=.05;
-    const title=complete
-      ?(groups.size===1?'Aktuelles Produkt':'Aktuelle Produkte')
-      :'Erfasste Charge';
-    const rows=[...groups.values()].map(entry=>{
-      const label=[entry.product.brand,entry.product.product_name,entry.product.variant].filter(Boolean).join(' · ')||entry.product.product_name||'Produkt';
-      return '<div><span>'+esc(label)+'</span><b>'+esc(fmtQty(entry.quantity,item.unit))+'</b></div>';
+    const lots=(data?.lots||[])
+      .filter(lot=>String(lot.inventory_id||'')===String(item?.id||''))
+      .filter(lot=>Math.max(0,Number(lot.unopened_packages)||0)>0||Math.max(0,Number(lot.opened_remaining_quantity)||0)>0)
+      .sort((a,b)=>{
+        const fa=frozenStorageLocation(a.storage_location)?1:0;
+        const fb=frozenStorageLocation(b.storage_location)?1:0;
+        if(fa!==fb)return fa-fb;
+        return String(a.best_before_date||'9999-12-31').localeCompare(String(b.best_before_date||'9999-12-31'))||
+          String(a.purchased_on||'9999-12-31').localeCompare(String(b.purchased_on||'9999-12-31'))||
+          String(a.created_at||'').localeCompare(String(b.created_at||''));
+      });
+    if(!lots.length)return '';
+
+    const lotSummary=lot=>{
+      const parts=[];
+      const opened=Math.max(0,Number(lot.opened_remaining_quantity)||0);
+      const openedUnit=String(lot.opened_remaining_unit||lot.package_unit||item.unit||'').trim();
+      if(opened>0)parts.push(fmtQty(opened,openedUnit)+' offen');
+      const unopened=Math.max(0,Number(lot.unopened_packages)||0);
+      const packQty=Math.max(0,Number(lot.package_quantity)||0);
+      const packUnit=String(lot.package_unit||item.unit||'').trim();
+      if(unopened>0){
+        parts.push(packQty>0
+          ?unopened+' × '+fmtQty(packQty,packUnit)+' ungeöffnet'
+          :unopened+' '+(unopened===1?'Packung':'Packungen')+' ungeöffnet');
+      }
+      return parts.join(' + ')||fmtQty(lotQuantityForInventory(lot,item)||0,item.unit);
+    };
+
+    const rows=lots.map(lot=>{
+      const product=productsById.get(String(lot.product_id||''))||null;
+      const label=product
+        ?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
+        :'Produkt nicht genauer erfasst';
+      const frozen=frozenStorageLocation(lot.storage_location);
+      return '<div class="food-stock-product-row-v736 '+(frozen?'is-frozen-v736':'')+'"><span><b>'+esc(label)+'</b><small>'+esc(lotSummary(lot)+(frozen?' · eingefroren':''))+'</small></span></div>';
     }).join('');
-    return '<div class="food-stock-products-v733"><small>'+esc(title)+'</small>'+rows+'</div>';
+
+    return '<div class="food-stock-products-v736"><small>'+(lots.length===1?'Aktuelles Produkt':'Aktuelle Produkte')+'</small>'+rows+'</div>';
   }
 
   function inventoryCard(item){
     const expanded=expandedInventory.has(String(item.id));
-    const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
+    const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):fmtQty(item.quantity,item.unit);
     const pending=item.pending_weighing===true;
     const known=num(item.quantity);
     const empty=!pending&&known!==null&&known<=0;
@@ -1256,13 +1351,13 @@
       :'';
     const weighAction=pending?'<button type="button" data-food-weigh="'+esc(item.id)+'">Jetzt abwiegen</button>':'';
     const status=empty?'leer':(item.opened?'angebrochen':'unangebrochen');
-    const displayName=String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):item.name;
+    const displayName=String(item.catalog_variant_label||item.variant_label||item.name||'Variante').trim();
     const details=item.note&&expanded?'<div class="food-stock-details-v697">'+inventoryNoteHtml(item.note)+'</div>':'';
     const mhd=empty?'':inventoryMhdMarkup(item);
     const currentProduct=empty?'':inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
     const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -1278,26 +1373,31 @@
     const quantity=fmtQty(garlic.bulbs,'Knolle')+' · '+fmtQty(garlic.cloves,'Zehe');
     const tone=garlic.bulbs>0||garlic.cloves>0?'stock':'empty';
     const open=garlic.bulb&&garlic.bulbs>0?'<button type="button" data-food-open-garlic="'+esc(garlic.bulb.id)+'">Knolle öffnen</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+tone+'"><div class="food-stock-top-v544"><div><h4>Knoblauch</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">kombiniert</span></div><p>Ganze Knollen und lose Zehen in einem Vorratseintrag.</p><div class="food-stock-actions-v544"><button type="button" data-food-garlic-adjust>Menge ändern</button>'+open+'</div></article>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+tone+'"><div class="food-stock-top-v544"><div><h4>Knollen &amp; Zehen</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544">kombiniert</span></div><p>Ganze Knollen und lose Zehen gemeinsam verwaltet.</p><div class="food-stock-actions-v544"><button type="button" data-food-garlic-adjust>Menge ändern</button>'+open+'</div></article>';
   }
 
   function inventoryView(data){
     const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
-    const productsByInventoryId=new Map(
-      (data.products||[])
-        .filter(product=>product?.inventory_id)
-        .map(product=>[String(product.inventory_id),product])
-    );
+    const productsByInventoryId=new Map();
+    for(const product of (data.products||[])){
+      if(!product?.inventory_id)continue;
+      const key=String(product.inventory_id);
+      if(!productsByInventoryId.has(key))productsByInventoryId.set(key,[]);
+      productsByInventoryId.get(key).push(product);
+    }
+
     const needle=String(inventorySearch||'').trim().toLocaleLowerCase('de-DE');
     const matchesSearch=item=>{
       if(!needle)return true;
-      const product=productsByInventoryId.get(String(item.id))||{};
+      const products=productsByInventoryId.get(String(item.id))||[];
       const haystack=[
-        item.name,item.family_name,item.variant_label,item.note,
-        product.brand,product.product_name,product.variant,product.category
+        item.name,item.family_name,item.variant_label,
+        item.catalog_family_name,item.catalog_group_label,item.catalog_variant_label,item.note,
+        ...products.flatMap(product=>[product.brand,product.product_name,product.variant,product.category,product.barcode])
       ].filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
       return haystack.includes(needle);
     };
+
     const regular=(data.inventory||[]).filter(item=>{
       const name=String(item.name||'').trim().toLocaleLowerCase('de-DE');
       if(name==='knoblauchknollen'||name==='knoblauchzehen')return false;
@@ -1309,49 +1409,70 @@
     };
     const availableRows=regular.filter(item=>!isActuallyEmpty(item));
     const emptyRows=regular.filter(isActuallyEmpty);
-    const isDrink=item=>String(productsByInventoryId.get(String(item.id))?.category||'')
-      .trim().toLocaleLowerCase('de-DE')==='getränke';
+    const isDrink=item=>(productsByInventoryId.get(String(item.id))||[]).some(product=>
+      String(product?.category||'').trim().toLocaleLowerCase('de-DE')==='getränke'
+    );
     const toCard=item=>({
       name:item.name||'',
-      family:String(item.family_name||'').trim(),
-      variant:String(item.variant_label||item.name||'').trim(),
-      display:String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):(item.name||''),
+      family:String(item.catalog_family_name||item.family_name||item.name||'').trim(),
+      group:String(item.catalog_group_label||'').trim(),
+      variant:String(item.catalog_variant_label||item.variant_label||item.name||'').trim(),
+      display:String(item.catalog_variant_label||item.variant_label||item.name||'').trim(),
       html:inventoryCard(item)
     });
+
     const foodCards=availableRows.filter(item=>!isDrink(item)).map(toCard);
     const drinkCards=availableRows.filter(isDrink).map(toCard);
-    const emptyCards=emptyRows.map(toCard).sort((a,b)=>collator.compare(String(a.display||a.name||''),String(b.display||b.name||'')));
+    const emptyCards=emptyRows.map(toCard).sort((a,b)=>collator.compare(String(a.family||''),String(b.family||''))||collator.compare(String(a.variant||''),String(b.variant||'')));
 
     const garlic=garlicCard(data);
     const garlicState=garlicParts(data);
-    if(garlic&&(garlicState.bulbs>0||garlicState.cloves>0))foodCards.push({name:'Knoblauch',family:'',variant:'Knoblauch',display:'Knoblauch',html:garlic});
+    const garlicMatches=!needle||'knoblauch knollen zehen knolle zehe'.includes(needle);
+    if(garlic&&garlicMatches&&(garlicState.bulbs>0||garlicState.cloves>0)){
+      foodCards.push({name:'Knoblauch',family:'Knoblauch',group:'',variant:'Knollen & Zehen',display:'Knollen & Zehen',html:garlic});
+    }
 
     const familyLayout=cards=>{
       const families=new Map();
-      const loose=[];
       cards.forEach(card=>{
-        if(!card.family){loose.push(card);return;}
-        if(!families.has(card.family))families.set(card.family,[]);
-        families.get(card.family).push(card);
+        const family=card.family||card.name||'Sonstiges';
+        if(!families.has(family))families.set(family,[]);
+        families.get(family).push(card);
       });
-      loose.sort((a,b)=>collator.compare(String(a.name||''),String(b.name||'')));
       const familyNames=[...families.keys()].sort((a,b)=>collator.compare(a,b));
-      const familyHtml=familyNames.map(family=>{
-        const children=families.get(family).sort((a,b)=>collator.compare(String(a.variant||a.name||''),String(b.variant||b.name||'')));
-        return '<section class="food-inventory-family-v694"><div class="food-inventory-family-head-v694"><strong>'+esc(family)+'</strong><span>'+children.length+' '+(children.length===1?'Variante':'Varianten')+'</span></div><div class="food-inventory-grid-v544">'+children.map(item=>item.html).join('')+'</div></section>';
+      return familyNames.map(family=>{
+        const children=families.get(family);
+        const grouped=new Map();
+        for(const child of children){
+          const group=child.group||'';
+          if(!grouped.has(group))grouped.set(group,[]);
+          grouped.get(group).push(child);
+        }
+        const groups=[...grouped.keys()].sort((a,b)=>{
+          if(!a&&!b)return 0;
+          if(!a)return -1;
+          if(!b)return 1;
+          return collator.compare(a,b);
+        });
+        const body=groups.map(group=>{
+          const variants=grouped.get(group).sort((a,b)=>collator.compare(String(a.variant||a.name||''),String(b.variant||b.name||'')));
+          const grid='<div class="food-inventory-grid-v544">'+variants.map(item=>item.html).join('')+'</div>';
+          return group
+            ?'<div class="food-inventory-subgroup-v736"><div class="food-inventory-subgroup-head-v736"><strong>'+esc(group)+'</strong><span>'+variants.length+' '+(variants.length===1?'Variante':'Varianten')+'</span></div>'+grid+'</div>'
+            :grid;
+        }).join('');
+        return '<section class="food-inventory-family-v694"><div class="food-inventory-family-head-v694"><strong>'+esc(family)+'</strong><span>'+children.length+' '+(children.length===1?'Variante':'Varianten')+'</span></div>'+body+'</section>';
       }).join('');
-      const looseHtml=loose.length?'<div class="food-inventory-grid-v544 food-inventory-loose-v694">'+loose.map(item=>item.html).join('')+'</div>':'';
-      return familyHtml+looseHtml;
     };
 
     const group=(label,cards)=>cards.length
-      ?'<section class="food-inventory-group-v690"><div class="food-inventory-group-head-v690"><strong>'+esc(label)+'</strong><span>'+cards.length+' '+(cards.length===1?'Eintrag':'Einträge')+'</span></div>'+familyLayout(cards)+'</section>'
+      ?'<section class="food-inventory-group-v690"><div class="food-inventory-group-head-v690"><strong>'+esc(label)+'</strong><span>'+cards.length+' '+(cards.length===1?'Variante':'Varianten')+'</span></div>'+familyLayout(cards)+'</section>'
       :'';
     const availableGroups=group('Lebensmittel',foodCards)+group('Getränke',drinkCards);
     const unavailable=emptyCards.length
-      ?'<details class="food-inventory-empty-group-v705" data-food-empty-group '+((needle||unavailableInventoryOpen)?'open':'')+'><summary><span><strong>Nicht vorrätig</strong><small>Aktuell 0 Bestand</small></span><b>'+emptyCards.length+'</b></summary><div class="food-inventory-empty-body-v705"><div class="food-inventory-grid-v544">'+emptyCards.map(item=>item.html).join('')+'</div></div></details>'
+      ?'<details class="food-inventory-empty-group-v705" data-food-empty-group '+((needle||unavailableInventoryOpen)?'open':'')+'><summary><span><strong>Nicht vorrätig</strong><small>Aktuell 0 Bestand</small></span><b>'+emptyCards.length+'</b></summary><div class="food-inventory-empty-body-v705">'+familyLayout(emptyCards)+'</div></details>'
       :'';
-    const tools='<div class="food-inventory-tools-v697"><label><span>Vorrat durchsuchen</span><input type="search" data-food-inventory-search value="'+esc(inventorySearch)+'" placeholder="z. B. Tomaten, Salsa, Skyr …" autocomplete="off"></label><small>Sortierung: A–Z nach Familie und Variante</small></div>';
+    const tools='<div class="food-inventory-tools-v697"><label><span>Vorrat durchsuchen</span><input type="search" data-food-inventory-search value="'+esc(inventorySearch)+'" placeholder="Familie, Variante, Marke, Produkt, Barcode …" autocomplete="off"></label><small>Sortierung: A–Z nach Familie, Gruppe und Variante</small></div>';
     const emptyCopy=needle?'Keine passenden Vorräte gefunden.':'Der Vorrat ist leer.';
     const content=availableGroups+unavailable;
     return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div>'+tools+(content||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>'+esc(emptyCopy)+'</h4></div></div>');
