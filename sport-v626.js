@@ -1,9 +1,9 @@
-/* V720 · SPORT · FitX arrival gate before active workout */
+/* V721 · SPORT · FitX arrival gate + active workout recovery */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V720';
+  const VERSION='V721';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
