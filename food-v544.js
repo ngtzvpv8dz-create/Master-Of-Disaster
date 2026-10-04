@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V737';
+  const VERSION='V739';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -491,7 +491,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
@@ -1051,13 +1051,15 @@
         if(quantity<=0)continue;
         tasks.push({
           targetMealId:String(target.id||''),
+          ingredientId:String(item.id||''),
           targetDate:String(target.meal_date||''),
           dueDate:String(target.meal_date||'')===today?today:plusDays(String(target.meal_date||''),-1),
           targetType:target.meal_type,
           targetTitle:target.title||'Mahlzeit',
           ingredient:ingredientName(item),
           quantity,
-          unit:item.unit
+          unit:item.unit,
+          thawStartedAt:item.thaw_started_at||null
         });
       }
     }
@@ -1079,6 +1081,11 @@
     if(!tasks.length)return '';
 
     const timing=task=>{
+      if(task.thawStartedAt){
+        const date=new Date(task.thawStartedAt);
+        const time=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(date);
+        return time?'Auftauen läuft seit '+time+' Uhr':'Auftauen läuft';
+      }
       if(task.targetDate===today){
         if(task.targetType==='dinner'){
           if(hour<11)return 'Heute Vormittag in den Kühlschrank legen';
@@ -1102,9 +1109,49 @@
       return fmtDate(task.targetDate)+' · '+meal;
     };
 
-    return '<section class="food-thaw-today-v736"><strong>Auftauen · heute dran</strong>'+
-      tasks.map(task=>'<span><b>'+esc(timing(task))+'</b> · '+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span>').join('')+
-      '</section>';
+    const rows=tasks.map(task=>{
+      const thawing=Boolean(task.thawStartedAt);
+      return '<div class="food-thaw-entry-v739 '+(thawing?'is-thawing-v739':'is-frozen-v739')+'">'
+        +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
+        +'<button type="button" class="food-thaw-start-v739 '+(thawing?'is-active-v739':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" '+(thawing?'disabled':'')+'>Auftauen läuft</button>'
+        +'</div>';
+    }).join('');
+
+    return '<section class="food-thaw-today-v736 food-thaw-panel-v739"><strong>Auftauen · heute dran</strong>'+rows+'</section>';
+  }
+
+  async function startThawing(ingredientId){
+    if(!sourceIsReal('meals'))throw new Error('Die Mahlzeitdaten sind gerade nicht sicher mit der Cloud synchronisiert.');
+    const id=String(ingredientId||'');
+    if(!id)throw new Error('Auftau-Zutat nicht gefunden.');
+
+    let localItem=null;
+    for(const meal of state?.meals||[]){
+      const found=(meal.ingredients||[]).find(item=>String(item.id||'')===id);
+      if(found){localItem=found;break;}
+    }
+    if(!localItem)throw new Error('Auftau-Zutat nicht gefunden.');
+    if(localItem.thaw_started_at)return localItem.thaw_started_at;
+
+    const startedAt=new Date().toISOString();
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await withTimeout(
+      supabase.from('food_meal_ingredients')
+        .update({thaw_started_at:startedAt})
+        .eq('id',id)
+        .select('id,thaw_started_at')
+        .single(),
+      'Auftaustatus speichern',
+      8000
+    );
+    if(result?.error)throw result.error;
+
+    localItem.thaw_started_at=result.data?.thaw_started_at||startedAt;
+    plannedThawCacheState=null;
+    plannedThawCache=null;
+    sourceState.meals='cloud';
+    renderState();
+    return localItem.thaw_started_at;
   }
 
   function mealPlanMeta(meal){
@@ -2788,6 +2835,13 @@
       renderState();
     }));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
+    root.querySelectorAll('[data-food-thaw-start]').forEach(button=>button.addEventListener('click',async event=>{
+      event.stopPropagation();
+      if(button.getAttribute('aria-pressed')==='true')return;
+      button.disabled=true;
+      try{await startThawing(button.dataset.foodThawStart);}
+      catch(error){alert(error?.message||'Auftaustatus konnte nicht gespeichert werden.');button.disabled=false;}
+    }));
     root.querySelectorAll('[data-food-edit-free-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editFreeMealModal(button.dataset.foodEditFreeMeal);}));
     root.querySelectorAll('[data-food-edit-planned-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editPlannedMealQuantitiesModal(button.dataset.foodEditPlannedMeal);}));
     root.querySelectorAll('[data-food-rate-recipe]').forEach(button=>button.addEventListener('click',async event=>{
