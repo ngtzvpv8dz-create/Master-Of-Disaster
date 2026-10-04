@@ -1,9 +1,9 @@
-/* V727 · SPORT · enforce single running exercise */
+/* V728 · SPORT · atomic active strength set advance */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V727';
+  const VERSION='V728';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -1681,7 +1681,7 @@
     await load(true);
   }
 
-  async function saveStrengthSet(sessionExerciseId,setNumber,values){
+  async function saveStrengthSet(sessionExerciseId,setNumber,values,{reload=true}={}){
     const {supabase,user}=await sportUser();
     const rawRir=String(values.rir??'').trim();
     const rirPlus=/\+$/.test(rawRir);
@@ -1698,7 +1698,7 @@
     };
     const result=await supabase.from('sport_exercise_sets').upsert(payload,{onConflict:'session_exercise_id,set_number'});
     if(result.error)throw result.error;
-    await load(true);
+    if(reload)await load(true);
   }
 
   function activeStrengthFormFor(root,exerciseId){
@@ -1724,14 +1724,14 @@
     return Boolean(weight||reps||(rir&&rir!=='0'));
   }
 
-  async function saveActiveStrengthSet(root,exerciseId,{force=false}={}){
+  async function saveActiveStrengthSet(root,exerciseId,{force=false,reload=true}={}){
     const form=activeStrengthFormFor(root,exerciseId);
     if(!form)return {saved:false,setNumber:null};
     const values=strengthValuesFromForm(form);
     if(!force&&!hasEnteredStrengthValues(values))return {saved:false,setNumber:Number(form.dataset.setNumber)||null};
     const setNumber=Number(form.dataset.setNumber);
     if(!Number.isInteger(setNumber)||setNumber<1)throw new Error('Aktiver Satz konnte nicht bestimmt werden.');
-    await saveStrengthSet(exerciseId,setNumber,values);
+    await saveStrengthSet(exerciseId,setNumber,values,{reload});
     return {saved:true,setNumber};
   }
 
@@ -1739,9 +1739,10 @@
     const exercise=state.sessions.flatMap(session=>session.workout||[]).find(item=>String(item.id)===String(exerciseId));
     if(!exercise)throw new Error('Trainingselement nicht gefunden.');
     const countBefore=strengthSetCount(exercise);
-    const saved=await saveActiveStrengthSet(root,exerciseId,{force:true});
+    const saved=await saveActiveStrengthSet(root,exerciseId,{force:true,reload:false});
     if(!saved.setNumber)throw new Error('Aktiver Satz konnte nicht gefunden werden.');
-    if(saved.setNumber>=countBefore)await changeStrengthSetCount(exerciseId,'up');
+    if(saved.setNumber>=countBefore)await changeStrengthSetCount(exerciseId,'up',{reload:false});
+    await load(true);
   }
 
   function strengthSetCount(exercise){
@@ -1752,7 +1753,7 @@
     return savedMax>0?savedMax:3;
   }
 
-  async function changeStrengthSetCount(sessionExerciseId,direction){
+  async function changeStrengthSetCount(sessionExerciseId,direction,{reload=true}={}){
     const exercise=state.sessions.flatMap(session=>session.workout||[]).find(item=>item.id===sessionExerciseId);
     if(!exercise)return;
     const current=strengthSetCount(exercise);
@@ -1769,7 +1770,7 @@
     const metricValues={...(exercise.metricValues||{}),set_count:next};
     const updated=await supabase.from('sport_session_exercises').update({metric_values:metricValues}).eq('id',sessionExerciseId);
     if(updated.error)throw updated.error;
-    await load(true);
+    if(reload)await load(true);
   }
 
   async function saveCardioValues(id,values){
@@ -2666,7 +2667,7 @@
       handle(target,async()=>{
         const exerciseId=target.dataset.sportExerciseStatus;
         const status=target.dataset.status;
-        if(status==='completed')await saveActiveStrengthSet(root,exerciseId,{force:false});
+        if(status==='completed')await saveActiveStrengthSet(root,exerciseId,{force:false,reload:false});
         await setExerciseStatus(exerciseId,status);
       });
     }));
