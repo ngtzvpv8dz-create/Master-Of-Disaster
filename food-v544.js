@@ -1084,7 +1084,7 @@
       if(task.thawStartedAt){
         const date=new Date(task.thawStartedAt);
         const time=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(date);
-        return time?'Auftauen läuft seit '+time+' Uhr':'Auftauen läuft';
+        return time?'Aufgetaut · bestätigt '+time+' Uhr':'Aufgetaut';
       }
       if(task.targetDate===today){
         if(task.targetType==='dinner'){
@@ -1113,8 +1113,9 @@
       const thawing=Boolean(task.thawStartedAt);
       return '<div class="food-thaw-entry-v739 '+(thawing?'is-thawing-v739':'is-frozen-v739')+'">'
         +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
-        +'<button type="button" class="food-thaw-start-v739 '+(thawing?'is-active-v739':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" '+(thawing?'disabled':'')+'>Auftauen läuft</button>'
-        +(thawing?'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span>':'')
+        +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawing?'Aufgetaut':'Als aufgetaut markieren')+'" title="'+(thawing?'Aufgetaut':'Als aufgetaut markieren')+'" '+(thawing?'disabled':'')+'>'
+          +'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span>'
+        +'</button>'
         +'</div>';
     }).join('');
 
