@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V734';
+  const VERSION='V735';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -610,7 +610,7 @@
     const tracked=lots.reduce((sum,entry)=>sum+entry.quantity,0);
     const segments=[];
     const untracked=Math.max(0,total-tracked);
-    if(untracked>0)segments.push({quantity:untracked,label:String(stock?.variant_label||stock?.name||'Produkt').trim()});
+    if(untracked>0)segments.push({quantity:untracked,label:familyAllocationProductLabel(stock)});
 
     for(const entry of lots){
       const product=(state?.products||[]).find(row=>String(row.id||'')===String(entry.lot.product_id||''))||null;
@@ -730,6 +730,62 @@
     return allocations.length?{allocations,remaining:Math.max(0,remaining)}:null;
   }
 
+  function specificAllocationForItem(item,quantities=null){
+    const q=num(item?.quantity);
+    if(q===null||q<0)return null;
+    const unit=String(item?.unit||'').trim();
+    const name=ingredientName(item);
+
+    let stock=null;
+    if(item?.inventory_id){
+      stock=(state?.inventory||[]).find(row=>String(row.id)===String(item.inventory_id))||null;
+    }
+    if(!stock){
+      stock=(state?.inventory||[]).find(row=>
+        row?.is_active!==false&&normalizedIngredient(row.name,row.unit)===normalizedIngredient(name,unit)
+      )||null;
+    }
+    if(!stock)return null;
+
+    const family=String(stock.family_name||'').trim();
+    if(family&&familyText(family)===familyText(name))return null;
+
+    const baseInfo=inventoryQuantityInUnit(stock,unit);
+    if(baseInfo.unitMismatch)return null;
+    const baseAvailable=Math.max(0,Number(baseInfo.available)||0);
+
+    let available=baseAvailable;
+    if(quantities?.has(String(stock.id))){
+      const virtualStock={...stock,quantity:quantities.get(String(stock.id))};
+      const virtualInfo=inventoryQuantityInUnit(virtualStock,unit);
+      if(virtualInfo.unitMismatch)return null;
+      available=Math.max(0,Number(virtualInfo.available)||0);
+    }
+
+    const take=Math.min(q,available);
+    const consumedBefore=Math.max(0,baseAvailable-available);
+    const parts=take>0?familyAllocationStockParts(stock,unit,take,consumedBefore):[];
+    const allocations=parts.length
+      ?parts.map(part=>({
+          inventoryId:String(stock.id),
+          label:part.label,
+          quantity:part.quantity,
+          unit:item?.unit||unit
+        }))
+      :(take>0?[{
+          inventoryId:String(stock.id),
+          label:familyAllocationProductLabel(stock),
+          quantity:take,
+          unit:item?.unit||unit
+        }]:[]);
+
+    return {
+      allocations,
+      remaining:Math.max(0,q-take),
+      specific:true
+    };
+  }
+
   function reserveSpecificIngredient(item,quantities){
     if(!item?.inventory_id||!quantities)return;
     const id=String(item.inventory_id);
@@ -784,7 +840,7 @@
       if(normalizedStatus(meal.status)==='completed'||meal.inventory_booked_at)continue;
       const items=[...(meal.ingredients||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
       for(const item of items){
-        const allocation=familyAllocationForItem(item,quantities);
+        const allocation=familyAllocationForItem(item,quantities)||specificAllocationForItem(item,quantities);
         if(allocation){
           if(item?.id)perMeal.set(String(item.id),allocation);
           reserveFamilyAllocation(allocation,quantities);
@@ -797,13 +853,19 @@
   }
 
   function allocationMarkup(allocation,item){
-    if(!allocation?.allocations?.length)return '';
+    const parts=Array.isArray(allocation?.allocations)?allocation.allocations:[];
+    const missing=Math.max(0,Number(allocation?.remaining)||0);
+    if(!parts.length&&missing<=0.0001)return '';
+
+    const generic=familyText(ingredientName(item));
     let html='<div class="food-ingredient-allocation-v712">';
-    allocation.allocations.forEach(part=>{
-      html+='<div class="food-ingredient-allocation-line-v712"><span>↳ '+esc(part.label)+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
+    parts.forEach(part=>{
+      const rawLabel=String(part.label||'').trim();
+      const detailLabel=!rawLabel||familyText(rawLabel)===generic?'Produkt nicht genauer erfasst':rawLabel;
+      html+='<div class="food-ingredient-allocation-line-v712"><span>↳ '+esc(detailLabel)+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
     });
-    if(Number(allocation.remaining)>0.0001){
-      html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ fehlt im Vorrat</span><b>'+esc(fmtQty(allocation.remaining,item?.unit))+'</b></div>';
+    if(missing>0.0001){
+      html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ fehlt im Vorrat</span><b>'+esc(fmtQty(missing,item?.unit))+'</b></div>';
     }
     return html+'</div>';
   }
@@ -811,10 +873,10 @@
   function ingredientListMarkup(items,allocationMap=null){
     return '<ul>'+items.map(item=>{
       const q=num(item.quantity);
-      const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||familyAllocationForItem(item);
+      const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||familyAllocationForItem(item)||specificAllocationForItem(item);
       const allocationHtml=allocationMarkup(allocation,item);
       return '<li class="'+(allocationHtml?'food-ingredient-has-allocation-v712':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
-        (q===null||Number.isNaN(q)||allocationHtml?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+
+        (q===null||Number.isNaN(q)?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+
         allocationHtml+'</li>';
     }).join('')+'</ul>';
   }
