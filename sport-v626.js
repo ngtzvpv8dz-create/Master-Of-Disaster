@@ -1,9 +1,9 @@
-/* V725 · SPORT · strength flow without redundant skip choice */
+/* V726 · SPORT · active slogan only in empty state */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V725';
+  const VERSION='V726';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -992,7 +992,7 @@
         '<p class="sport-date-v510">'+esc(dateLabel(active.date))+' · '+esc(location)+'</p>'+
         activeExerciseFocus(active)+
         '<div class="sport-active-time-row-v719 '+(fitx&&!start?'is-waiting-v720':'')+'"><span>'+esc(clockSub)+'</span><strong data-sport-active-elapsed data-start-ms="'+startMs+'">'+esc(elapsedClockText(start))+'</strong></div>'+
-        '<p class="sport-active-slogan-v674" data-sport-active-slogan>'+(active.isTest?'Testmodus: alles darf knirschen, Statistik bleibt sauber.':'Aktuelle Übung zuerst. Der Rest darf kurz die Klappe halten.')+'</p></div>'+
+        '</div>'+
         '<div class="sport-content-v510">'+
           (active.isTest?'<div class="sport-test-banner-v717"><strong>TESTMODUS</strong><span>Diese Einheit wird nicht in Einheiten, Statistik oder „Letztes Mal“ übernommen. Beim Beenden werden die Testdaten verworfen.</span></div>':'')+
           '<div class="sport-active-circuit-slot-v634" data-sport-active-circuit-slot></div>'+
@@ -1005,7 +1005,7 @@
           errorNote()+
         '</div></section>';
     }
-    return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">'+wave()+'<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV '+statusBadge()+'</div><p class="sport-date-v510" data-sport-active-slogan>Hier läuft gerade nichts. Nicht mal du.</p></div><div class="sport-content-v510"><div class="sport-active-empty-v623" data-sport-active-empty><strong>Aktuell kein Training aktiv</strong><span>Sobald du einen geplanten Trainingstag startest, läuft er hier live.</span></div>'+errorNote()+'</div></section>';
+    return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="overview">'+wave()+'<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV '+statusBadge()+'</div><p class="sport-date-v510" data-sport-active-slogan>Hier läuft gerade nix. Nicht mal du.</p></div><div class="sport-content-v510"><div class="sport-active-empty-v623" data-sport-active-empty><strong>Aktuell kein Training aktiv</strong><span>Sobald du einen geplanten Trainingstag startest, läuft er hier live.</span></div>'+errorNote()+'</div></section>';
   }
 
   async function sportUser(){
