@@ -877,8 +877,15 @@
       const startMs=start?start.getTime():0;
       const startedLabel=start?clock(start):'–';
       const courseHtml=courses.length?'<div class="sport-section-title-v568">Kurse'+(people.length?' · '+people.map(esc).join(', '):'')+'</div><div class="sport-course-list-v568">'+courses.map((course,index)=>courseCard(course,index,true)).join('')+'</div>':'';
+      const testPeople=knownSportParticipants();
+      const testPeopleListId='sport-active-test-course-people-v717';
+      const testPeopleList=testPeople.length?'<datalist id="'+testPeopleListId+'">'+testPeople.map(name=>'<option value="'+esc(name)+'"></option>').join('')+'</datalist>':'';
       const plannedTestCourseHtml=plannedTestCourses.length
-        ?'<div class="sport-section-title-v568">Kurse im Testplan</div><div class="sport-test-course-list-v717">'+plannedTestCourses.map(activity=>'<div><strong>'+esc(activity.name)+'</strong><span>geplant · Testdaten</span></div>').join('')+'</div>'
+        ?'<div class="sport-section-title-v568">Kurse im Testplan</div>'+testPeopleList+'<div class="sport-test-course-list-v717">'+plannedTestCourses.map(activity=>{
+          const courseId=testCourseActivityCourseId(activity);
+          const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(courseId||''));
+          return '<form data-sport-test-course-attendance="'+esc(activity.id)+'" data-course-id="'+esc(courseId||'')+'"><div><strong>'+esc(activity.name)+'</strong><span>'+(course?esc(courseClock(course.start_time))+'–'+esc(courseClock(course.end_time))+' · ':'')+'TEST</span></div><input name="participants" list="'+testPeopleListId+'" placeholder="Mit wem?"><button type="submit">Teilgenommen testen</button></form>';
+        }).join('')+'</div>'
         :'';
       const timingHtml=fitx?timelineBlock(active)+sessionTimeEditor(active):'';
       const clockSub=start
