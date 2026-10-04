@@ -1796,7 +1796,7 @@
 
     let distanceMethod='time_share';
     let distanceWeights=[...durations];
-    if(isTreadmill&&phases.every((phase,index)=>durations[index]>0&&numberOrNull(phase.speed_kmh)!==null)){
+    if(phases.every((phase,index)=>durations[index]>0&&numberOrNull(phase.speed_kmh)!==null)){
       const theoretical=phases.map((phase,index)=>(numberOrNull(phase.speed_kmh)||0)*durations[index]/60);
       if(theoretical.reduce((sum,value)=>sum+value,0)>0){
         distanceWeights=theoretical;
