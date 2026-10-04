@@ -275,7 +275,9 @@
   };
   const familyFrozenFirstFor=item=>{
     const text=familyText((item?.name||'')+' '+(item?.family_name||'')+' '+(item?.catalog_family_name||''));
-    return /(?:^|\s)(?:hähnchen|huhn|hackfleisch|hack|rind|schwein|pute|fleisch)(?:\s|$|-)/.test(text);
+    return [
+      'hähnchen','huhn','hackfleisch','hack','rind','schwein','pute','fleisch'
+    ].some(token=>text.includes(token));
   };
   const familyNeedModeFromName=name=>{
     const text=' '+familyText(name)+' ';
