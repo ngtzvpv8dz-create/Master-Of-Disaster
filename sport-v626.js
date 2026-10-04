@@ -1,9 +1,9 @@
-/* V719 · SPORT · active exercise focus + sequential workout */
+/* V720 · SPORT · FitX arrival gate before active workout */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V719';
+  const VERSION='V720';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -920,7 +920,16 @@
     '</div>';
   }
 
+  function fitxArrivalGate(session){
+    if(!isFitx(session)||session?.gymArrivedAt)return '';
+    return '<section class="sport-fitx-arrival-gate-v720">'+
+      '<div><span>FITX · NOCH NICHT GESTARTET</span><h2>Erst Ankunft, dann Training</h2><small>Die Trainingszeit und die erste Übung starten erst mit deiner bestätigten Ankunft.</small></div>'+
+      '<button type="button" data-sport-timeline="'+esc(session.id)+'" data-column="gym_arrived_at">Bei FitX angekommen</button>'+
+    '</section>';
+  }
+
   function activeExerciseFocus(session){
+    if(isFitx(session)&&!session?.gymArrivedAt)return fitxArrivalGate(session);
     const ordered=[...(session?.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder);
     const exercise=ordered.find(item=>item.status==='running')||null;
     const next=ordered.find(item=>item.status==='planned')||null;
@@ -977,13 +986,13 @@
       const timingHtml=fitx?timelineBlock(active)+sessionTimeEditor(active):'';
       const clockSub=start
         ?(fitx?'bei FitX seit '+esc(startedLabel)+' Uhr':'Training seit '+esc(startedLabel)+' Uhr')
-        :(fitx?'FitX-Zeit startet mit der Ankunft':'Training läuft');
+        :(fitx?'Noch keine Ankunft gespeichert · Zeit startet erst dann':'Training läuft');
 
       return '<section class="sport-panel-v510 sport-panel-v512 '+(active.isTest?'sport-test-session-v717':'')+'" data-sport-panel-v568="overview">'+wave()+
         '<div class="sport-hero-v510 sport-active-hero-v623 sport-active-hero-v719"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · '+(active.isTest?'TESTEINHEIT':'LAUFENDE EINHEIT')+' '+statusBadge()+'</div>'+
         '<p class="sport-date-v510">'+esc(dateLabel(active.date))+' · '+esc(location)+'</p>'+
         activeExerciseFocus(active)+
-        '<div class="sport-active-time-row-v719"><span>'+esc(clockSub)+'</span><strong data-sport-active-elapsed data-start-ms="'+startMs+'">'+esc(elapsedClockText(start))+'</strong></div>'+
+        '<div class="sport-active-time-row-v719 '+(fitx&&!start?'is-waiting-v720':'')+'"><span>'+esc(clockSub)+'</span><strong data-sport-active-elapsed data-start-ms="'+startMs+'">'+esc(elapsedClockText(start))+'</strong></div>'+
         '<p class="sport-active-slogan-v674" data-sport-active-slogan>'+(active.isTest?'Testmodus: alles darf knirschen, Statistik bleibt sauber.':'Aktuelle Übung zuerst. Der Rest darf kurz die Klappe halten.')+'</p></div>'+
         '<div class="sport-content-v510">'+
           (active.isTest?'<div class="sport-test-banner-v717"><strong>TESTMODUS</strong><span>Diese Einheit wird nicht in Einheiten, Statistik oder „Letztes Mal“ übernommen. Beim Beenden werden die Testdaten verworfen.</span></div>':'')+
@@ -1084,24 +1093,27 @@
 
     const {supabase}=await sportUser();
     const stamp=new Date().toISOString();
+    const fitx=isFitx(session);
     const patch={session_status:'running'};
-    if(!session.startedAt)patch.started_at=stamp;
+    if(!fitx&&!session.startedAt)patch.started_at=stamp;
     if(session.legacyAutoFitx){
       patch.title='Training';
-      patch.venue=null;
+      patch.venue='FitX';
     }
 
     let result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
     if(result.error)throw result.error;
 
-    const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
-    if(first){
-      result=await supabase.from('sport_session_exercises')
-        .update({status:'running',started_at:first.startedAt||stamp})
-        .eq('id',first.id)
-        .eq('status','planned');
-      if(result.error)throw result.error;
-      expandedExercises.add(first.id);
+    if(!fitx){
+      const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
+      if(first){
+        result=await supabase.from('sport_session_exercises')
+          .update({status:'running',started_at:first.startedAt||stamp})
+          .eq('id',first.id)
+          .eq('status','planned');
+        if(result.error)throw result.error;
+        expandedExercises.add(first.id);
+      }
     }
     await load(true);
   }
@@ -1109,23 +1121,40 @@
   async function markTimeline(sessionId,column){
     const allowed=new Set(TIMELINE_STEPS.map(step=>step[1]));
     if(!allowed.has(column))throw new Error('Unbekannter Zeitpunkt.');
+    const session=state.sessions.find(item=>String(item.id)===String(sessionId));
+    if(!session)throw new Error('Trainingstag nicht gefunden.');
     const {supabase}=await sportUser();
     const stamp=new Date().toISOString();
     const patch={[column]:stamp};
 
     if(column==='gym_arrived_at'){
       patch.session_status='running';
+      if(!session.startedAt)patch.started_at=stamp;
     }
 
     if(column==='gym_left_at'){
-      const session=state.sessions.find(item=>item.id===sessionId);
       const start=validDate(session?.gymArrivedAt);
       patch.ended_at=stamp;
       if(start)patch.duration_minutes=Math.max(0,Math.round((new Date(stamp)-start)/60000));
     }
 
-    const result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId).select('id').single();
+    let result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId).select('id').single();
     if(result.error)throw result.error;
+
+    if(column==='gym_arrived_at'){
+      const hasRunning=(session.workout||[]).some(item=>item.status==='running');
+      if(!hasRunning){
+        const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
+        if(first){
+          result=await supabase.from('sport_session_exercises')
+            .update({status:'running',started_at:first.startedAt||stamp})
+            .eq('id',first.id)
+            .eq('status','planned');
+          if(result.error)throw result.error;
+          expandedExercises.add(first.id);
+        }
+      }
+    }
     await load(true);
   }
 
@@ -1873,7 +1902,7 @@
   }
 
   function timelineBlock(session){
-    if(!isFitx(session))return '';
+    if(!isFitx(session)||!session?.gymArrivedAt)return '';
     return '<div class="sport-timeline-v573">'+TIMELINE_STEPS.map(([prop,column,label],index)=>{
       const value=session[prop];
       return '<button type="button" class="'+(value?'is-done':'')+'" data-sport-timeline="'+esc(session.id)+'" data-column="'+column+'" '+(value?'disabled':'')+'>'+
