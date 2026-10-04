@@ -1,9 +1,9 @@
-/* V728 · SPORT · atomic active strength set advance */
+/* V729 · SPORT · separate FitX visit and training lifecycle */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V728';
+  const VERSION='V729';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -922,13 +922,31 @@
   function fitxArrivalGate(session){
     if(!isFitx(session)||session?.gymArrivedAt)return '';
     return '<section class="sport-fitx-arrival-gate-v720">'+
-      '<div><span>FITX · NOCH NICHT GESTARTET</span><h2>Erst Ankunft, dann Training</h2><small>Die Trainingszeit und die erste Übung starten erst mit deiner bestätigten Ankunft.</small></div>'+
+      '<div><span>FITX · ANKUNFT</span><h2>Erst ankommen, dann Training starten</h2><small>Hier wird nur deine Ankunft bei FitX erfasst. Training und erste Übung startest du danach separat.</small></div>'+
       '<button type="button" data-sport-timeline="'+esc(session.id)+'" data-column="gym_arrived_at">Bei FitX angekommen</button>'+
+    '</section>';
+  }
+
+  function fitxTrainingStartGate(session){
+    if(!isFitx(session)||!session?.gymArrivedAt||session?.trainingStartedAt||session?.trainingEndedAt)return '';
+    return '<section class="sport-fitx-arrival-gate-v720">'+
+      '<div><span>FITX · ANGEKOMMEN</span><h2>Bereit fürs Training?</h2><small>Umziehen und Quatschen zählen zur FitX-Zeit, aber das eigentliche Training startet erst hier.</small></div>'+
+      '<button type="button" data-sport-start-plan="'+esc(session.id)+'">Training starten</button>'+
+    '</section>';
+  }
+
+  function fitxDepartureGate(session){
+    if(!isFitx(session)||!session?.trainingEndedAt||session?.gymLeftAt)return '';
+    return '<section class="sport-fitx-arrival-gate-v720">'+
+      '<div><span>TRAINING ABGESCHLOSSEN</span><h2>Noch bei FitX</h2><small>Umziehen, quatschen, duschen oder noch dekorativ herumstehen. Erst beim Rausgehen beendest du den FitX-Aufenthalt.</small></div>'+
+      '<button type="button" data-sport-timeline="'+esc(session.id)+'" data-column="gym_left_at">FitX verlassen</button>'+
     '</section>';
   }
 
   function activeExerciseFocus(session){
     if(isFitx(session)&&!session?.gymArrivedAt)return fitxArrivalGate(session);
+    if(isFitx(session)&&session?.trainingEndedAt&&!session?.gymLeftAt)return fitxDepartureGate(session);
+    if(isFitx(session)&&!session?.trainingStartedAt)return fitxTrainingStartGate(session);
     const ordered=[...(session?.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder);
     const exercise=ordered.find(item=>item.status==='running')||null;
     const next=ordered.find(item=>item.status==='planned')||null;
@@ -986,6 +1004,11 @@
       const clockSub=start
         ?(fitx?'bei FitX seit '+esc(startedLabel)+' Uhr':'Training seit '+esc(startedLabel)+' Uhr')
         :(fitx?'Noch keine Ankunft gespeichert · Zeit startet erst dann':'Training läuft');
+      const completionAction=active.isTest
+        ?'<div class="sport-active-actions-v627"><button type="button" data-sport-complete-session="'+esc(active.id)+'">Testlauf beenden & verwerfen</button></div>'
+        :((fitx&&(!active.trainingStartedAt||active.trainingEndedAt))
+          ?''
+          :'<div class="sport-active-actions-v627"><button type="button" data-sport-complete-session="'+esc(active.id)+'">Training abschließen</button></div>');
 
       return '<section class="sport-panel-v510 sport-panel-v512 '+(active.isTest?'sport-test-session-v717':'')+'" data-sport-panel-v568="overview">'+wave()+
         '<div class="sport-hero-v510 sport-active-hero-v623 sport-active-hero-v719"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · '+(active.isTest?'TESTEINHEIT':'LAUFENDE EINHEIT')+' '+statusBadge()+'</div>'+
@@ -1001,7 +1024,7 @@
           plannedTestCourseHtml+
           courseHtml+
           '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>WEITERER ABLAUF</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="'+esc(active.id)+'">+ Übung hinzufügen</button></div>'+workoutLists(active,{hideRunning:true})+'</section>'+
-          '<div class="sport-active-actions-v627"><button type="button" data-sport-complete-session="'+esc(active.id)+'">'+(active.isTest?'Testlauf beenden & verwerfen':'Training abschließen')+'</button></div>'+
+          completionAction+
           errorNote()+
         '</div></section>';
     }
@@ -1092,9 +1115,14 @@
 
     const {supabase}=await sportUser();
     const stamp=new Date().toISOString();
-    const fitx=isFitx(session);
+    const fitx=isFitx(session)||session.legacyAutoFitx;
     const patch={session_status:'running'};
-    if(!fitx&&!session.startedAt)patch.started_at=stamp;
+    if(fitx){
+      if(!session.gymArrivedAt)throw new Error('Bestätige zuerst „Bei FitX angekommen“.');
+      patch.training_started_at=session.trainingStartedAt||stamp;
+    }else if(!session.startedAt){
+      patch.started_at=stamp;
+    }
     if(session.legacyAutoFitx){
       patch.title='Training';
       patch.venue='FitX';
@@ -1127,40 +1155,19 @@
     const patch={[column]:stamp};
 
     if(column==='gym_arrived_at'){
-      patch.session_status='running';
       patch.started_at=stamp;
     }
 
     if(column==='gym_left_at'){
+      if(!session.trainingEndedAt)throw new Error('Schließe zuerst das Training ab.');
       const start=validDate(session?.gymArrivedAt);
+      patch.session_status='completed';
       patch.ended_at=stamp;
       if(start)patch.duration_minutes=Math.max(0,Math.round((new Date(stamp)-start)/60000));
     }
 
-    let result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId).select('id').single();
+    const result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId).select('id').single();
     if(result.error)throw result.error;
-
-    if(column==='gym_arrived_at'){
-      const running=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='running');
-      if(running){
-        result=await supabase.from('sport_session_exercises')
-          .update({started_at:stamp})
-          .eq('id',running.id)
-          .eq('status','running');
-        if(result.error)throw result.error;
-        expandedExercises.add(running.id);
-      }else{
-        const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
-        if(first){
-          result=await supabase.from('sport_session_exercises')
-            .update({status:'running',started_at:stamp})
-            .eq('id',first.id)
-            .eq('status','planned');
-          if(result.error)throw result.error;
-          expandedExercises.add(first.id);
-        }
-      }
-    }
     await load(true);
   }
 
@@ -1257,30 +1264,14 @@
     if(arrived&&left&&new Date(left)<new Date(arrived))throw new Error('Die Abfahrt muss nach der Ankunft liegen.');
     const session=state.sessions.find(item=>String(item.id)===String(sessionId));
     const patch={gym_arrived_at:arrived,gym_left_at:left};
-    if(arrived){
-      patch.session_status='running';
-      patch.started_at=arrived;
-    }
-    if(left)patch.ended_at=left;
+    if(arrived)patch.started_at=arrived;
+    patch.ended_at=left;
     if(arrived&&left)patch.duration_minutes=Math.max(0,Math.round((new Date(left)-new Date(arrived))/60000));
-    const {supabase}=await sportUser();
-    let result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
-    if(result.error)throw result.error;
+    if(left&&(session?.trainingEndedAt||session?.status==='completed'))patch.session_status='completed';
 
-    if(arrived&&session){
-      const running=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='running');
-      if(running){
-        result=await supabase.from('sport_session_exercises').update({started_at:arrived}).eq('id',running.id).eq('status','running');
-        if(result.error)throw result.error;
-      }else{
-        const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
-        if(first){
-          result=await supabase.from('sport_session_exercises').update({status:'running',started_at:arrived}).eq('id',first.id).eq('status','planned');
-          if(result.error)throw result.error;
-          expandedExercises.add(first.id);
-        }
-      }
-    }
+    const {supabase}=await sportUser();
+    const result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
+    if(result.error)throw result.error;
     await load(true);
   }
 
@@ -1311,27 +1302,33 @@
 
     let start=null;
     let end=now;
-    const patch={session_status:'completed'};
+    const patch={};
 
     if(fitx){
-      start=validDate(session.gymArrivedAt);
-      end=validDate(session.gymLeftAt)||now;
-      patch.ended_at=end.toISOString();
-      patch.gym_left_at=session.gymLeftAt||end.toISOString();
+      patch.training_ended_at=now.toISOString();
+      if(session.gymLeftAt){
+        start=validDate(session.gymArrivedAt);
+        end=validDate(session.gymLeftAt)||now;
+        patch.session_status='completed';
+        patch.ended_at=end.toISOString();
+        if(start&&end>=start)patch.duration_minutes=Math.round(((end-start)/60000)*100)/100;
+      }else{
+        patch.session_status='running';
+      }
     }else{
       const circuitStart=onlyCircuit?validDate(session.circuitRun?.startedAt):null;
       const circuitEnd=onlyCircuit?validDate(session.circuitRun?.endedAt):null;
       start=circuitStart||validDate(session.startedAt);
       end=circuitEnd||now;
+      patch.session_status='completed';
       if(circuitStart)patch.started_at=circuitStart.toISOString();
       patch.ended_at=end.toISOString();
       patch.gym_arrived_at=null;
       patch.gym_left_at=null;
       patch.training_started_at=null;
       patch.training_ended_at=null;
+      if(start&&end>=start)patch.duration_minutes=Math.round(((end-start)/60000)*100)/100;
     }
-
-    if(start&&end>=start)patch.duration_minutes=Math.round(((end-start)/60000)*100)/100;
 
     const {supabase}=await sportUser();
     const result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
@@ -1989,8 +1986,11 @@
     if(!isFitx(session)||!session?.gymArrivedAt)return '';
     return '<div class="sport-timeline-v573">'+TIMELINE_STEPS.map(([prop,column,label],index)=>{
       const value=session[prop];
-      return '<button type="button" class="'+(value?'is-done':'')+'" data-sport-timeline="'+esc(session.id)+'" data-column="'+column+'" '+(value?'disabled':'')+'>'+
-        '<i>'+(index+1)+'</i><span><strong>'+esc(label)+'</strong><small>'+(value?esc(clock(value)):'antippen = jetzt')+'</small></span>'+
+      const waitsForTrainingEnd=column==='gym_left_at'&&!value&&!session?.trainingEndedAt;
+      const disabled=Boolean(value)||waitsForTrainingEnd;
+      const hint=value?esc(clock(value)):(waitsForTrainingEnd?'erst Training abschließen':'antippen = jetzt');
+      return '<button type="button" class="'+(value?'is-done':'')+'" data-sport-timeline="'+esc(session.id)+'" data-column="'+column+'" '+(disabled?'disabled':'')+'>'+
+        '<i>'+(index+1)+'</i><span><strong>'+esc(label)+'</strong><small>'+hint+'</small></span>'+
       '</button>';
     }).join('')+'</div>';
   }
@@ -2162,7 +2162,9 @@
       (current&&isSessionActive(current)?'<div class="sport-plan-running-v612">Diese Einheit läuft bereits. Unter „Aktiv“ siehst du den aktuellen Ablauf.</div>':'')+
       '<div class="sport-plan-footer-actions-v632">'+
         (current&&current.status==='planned'
-          ?'<button class="sport-plan-start-v632" type="button" data-sport-start-plan="'+esc(current.id)+'">'+(current.isTest?'Testtraining starten':'Training starten')+'</button><button class="sport-plan-danger-v632" type="button" data-sport-delete-day-plan="'+esc(current.id)+'">'+(current.isTest?'Testplan löschen':'Tagesplan löschen')+'</button>'
+          ?((isFitx(current)&&!current.gymArrivedAt)
+            ?'<button class="sport-plan-start-v632" type="button" data-sport-timeline="'+esc(current.id)+'" data-column="gym_arrived_at">Bei FitX angekommen</button><button class="sport-plan-danger-v632" type="button" data-sport-delete-day-plan="'+esc(current.id)+'">'+(current.isTest?'Testplan löschen':'Tagesplan löschen')+'</button>'
+            :'<button class="sport-plan-start-v632" type="button" data-sport-start-plan="'+esc(current.id)+'">'+(current.isTest?'Testtraining starten':'Training starten')+'</button><button class="sport-plan-danger-v632" type="button" data-sport-delete-day-plan="'+esc(current.id)+'">'+(current.isTest?'Testplan löschen':'Tagesplan löschen')+'</button>')
           :(!current?'<button class="sport-plan-action-v632" type="button" data-sport-create-plan="'+esc(planDate)+'">'+(planTestMode?'Testplan anlegen':'Plan anlegen')+'</button>':''))+
       '</div>';
 
@@ -2563,7 +2565,10 @@
 
     root.querySelectorAll('[data-sport-timeline]').forEach(button=>button.addEventListener('click',event=>{
       const target=event.currentTarget;
-      handle(target,()=>markTimeline(target.dataset.sportTimeline,target.dataset.column));
+      handle(target,async()=>{
+        await markTimeline(target.dataset.sportTimeline,target.dataset.column);
+        if(target.dataset.column==='gym_left_at')setTab('sessions',{animate:true,persist:true});
+      });
     }));
 
     root.querySelectorAll('[data-sport-participant-form]').forEach(form=>form.addEventListener('submit',event=>{
@@ -2621,7 +2626,11 @@
       const session=sessionById(target.dataset.sportCompleteSession);
       const question=session?.isTest?'Testlauf beenden und alle Testdaten verwerfen?':'Training wirklich abschließen?';
       if(!window.confirm(question))return;
-      handle(target,async()=>{await completeTrainingSession(target.dataset.sportCompleteSession);setTab(session?.isTest?'overview':'sessions',{animate:true,persist:true});});
+      handle(target,async()=>{
+        await completeTrainingSession(target.dataset.sportCompleteSession);
+        const keepFitxOpen=!session?.isTest&&isFitx(session)&&!session?.gymLeftAt;
+        setTab(session?.isTest||keepFitxOpen?'overview':'sessions',{animate:true,persist:true});
+      });
     }));
 
     root.querySelectorAll('[data-sport-open-catalog]').forEach(button=>button.addEventListener('click',event=>{
