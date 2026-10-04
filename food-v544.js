@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V739';
+  const VERSION='V740';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1114,6 +1114,7 @@
       return '<div class="food-thaw-entry-v739 '+(thawing?'is-thawing-v739':'is-frozen-v739')+'">'
         +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
         +'<button type="button" class="food-thaw-start-v739 '+(thawing?'is-active-v739':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" '+(thawing?'disabled':'')+'>Auftauen läuft</button>'
+        +(thawing?'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span>':'')
         +'</div>';
     }).join('');
 
