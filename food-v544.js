@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V708';
+  const VERSION='V731';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -196,6 +196,8 @@
   const NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser']);
   const isNonShoppingIngredient=name=>NON_SHOPPING_INGREDIENTS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
   const SHOPPING_DATE_OVERRIDES={'2026-10-03':'2026-10-02','2026-10-17':'2026-10-16'};
+  const SHOPPING_OVERDUE_LOOKBACK_DAYS=7;
+  const recentPlanningStartIso=()=>plusDays(todayIso(),-SHOPPING_OVERDUE_LOOKBACK_DAYS);
   const regularShoppingDate=(iso,mealType='')=>{
     const day=new Date(String(iso)+'T12:00:00Z').getUTCDay();
     let offset=0;
@@ -267,32 +269,21 @@
     if(/(?:^|\s)(?:frisch|frische|frischer|frisches)(?:\s|$)/.test(text))return 'fresh';
     return 'neutral';
   };
-  const inventoryFamilyStockInfo=(name,targetUnit,rows=state?.inventory||[])=>{
-    const families=new Map();
-    (rows||[]).forEach(item=>{
-      if(item?.is_active===false||!item?.family_name)return;
-      const key=familyText(item.family_name);
-      if(!families.has(key))families.set(key,{name:item.family_name,rows:[]});
-      families.get(key).rows.push(item);
-    });
-
-    let selected=null;
-    for(const family of families.values()){
-      const match=familyNeedMatch(name,family.name);
-      if(match){selected={...family,match};break;}
-    }
-    if(!selected)return {available:0,converted:false,unitMismatch:false,family:false,rows:[]};
-
-    let matches=selected.rows;
-    if(selected.match.mode==='fresh'){
+  const familyNeedModeFromName=name=>{
+    const text=' '+familyText(name)+' ';
+    if(/\s(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\s/.test(text))return 'frozen';
+    if(/\s(?:frisch|frische|frischer|frisches|bio)\s/.test(text))return 'fresh';
+    return 'generic';
+  };
+  const inventoryFamilyRowsInfo=(familyName,targetUnit,rows=state?.inventory||[],mode='generic')=>{
+    let matches=(rows||[]).filter(item=>
+      item?.is_active!==false&&item?.family_name&&familyText(item.family_name)===familyText(familyName)
+    );
+    if(mode==='fresh'){
       const explicitFresh=matches.filter(item=>familyRowMode(item)==='fresh');
       matches=explicitFresh.length?explicitFresh:matches.filter(item=>familyRowMode(item)!=='frozen');
-    }else if(selected.match.mode==='frozen'){
+    }else if(mode==='frozen'){
       matches=matches.filter(item=>familyRowMode(item)==='frozen');
-    }else{
-      const frozen=matches.filter(item=>familyRowMode(item)==='frozen');
-      const nonFrozen=matches.filter(item=>familyRowMode(item)!=='frozen');
-      if(frozen.length&&nonFrozen.length)matches=nonFrozen;
     }
 
     let available=0;
@@ -311,23 +302,47 @@
       converted,
       unitMismatch:matches.length>0&&compatible===0,
       family:true,
-      familyName:selected.name,
-      familyMode:selected.match.mode,
+      familyName,
+      familyMode:mode,
       rows:matches
     };
   };
+  const inventoryFamilyStockInfo=(name,targetUnit,rows=state?.inventory||[])=>{
+    const families=new Map();
+    (rows||[]).forEach(item=>{
+      if(item?.is_active===false||!item?.family_name)return;
+      const key=familyText(item.family_name);
+      if(!families.has(key))families.set(key,{name:item.family_name,rows:[]});
+      families.get(key).rows.push(item);
+    });
+
+    let selected=null;
+    for(const family of families.values()){
+      const match=familyNeedMatch(name,family.name);
+      if(match){selected={...family,match};break;}
+    }
+    if(!selected)return {available:0,converted:false,unitMismatch:false,family:false,rows:[]};
+    return inventoryFamilyRowsInfo(selected.name,targetUnit,rows,selected.match.mode);
+  };
   const ingredientStockInfo=(item,inventoryRows,inventoryById,inventoryByName)=>{
     const unit=String(item?.unit||'').trim();
+    const name=ingredientName(item);
     if(item?.inventory_id){
       const stock=inventoryById.get(item.inventory_id)||null;
+      if(stock?.family_name){
+        return {...inventoryFamilyRowsInfo(stock.family_name,unit,inventoryRows,familyNeedModeFromName(name)),stock:null};
+      }
       return {...inventoryQuantityInUnit(stock,unit),stock,family:false,rows:stock?[stock]:[]};
     }
-    const name=ingredientName(item);
     const exact=inventoryByName.get(normalizedIngredient(name,unit))||null;
+    if(exact?.family_name){
+      return {...inventoryFamilyRowsInfo(exact.family_name,unit,inventoryRows,familyNeedModeFromName(name)),stock:null};
+    }
     if(exact)return {...inventoryQuantityInUnit(exact,unit),stock:exact,family:false,rows:[exact]};
     const familyInfo=inventoryFamilyStockInfo(name,unit,inventoryRows);
     return {...familyInfo,stock:null};
   };
+
 
   const recipeInstructions=recipe=>String(recipe?.instructions||'').split(/\s*\|\s*|\n+/).map(line=>line.trim().replace(/^\s*(?:\d+[.)]|[-•])\s*/,'' )).filter(Boolean);
   const mealTypeOptions=selected=>['breakfast','snack','lunch','dinner'].map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(MEAL_LABELS[type])+'</option>').join('');
@@ -527,13 +542,18 @@
 
   function familyAllocationProductLabel(stock){
     const product=(state?.products||[]).find(row=>String(row.inventory_id||'')===String(stock?.id||''))||null;
-    const brand=String(product?.brand||'').trim();
-    const name=String(product?.product_name||stock?.name||'Produkt').trim();
-    const variant=String(product?.variant||stock?.variant_label||'').trim();
-    let label=[brand,name].filter(Boolean).join(' ').trim()||String(stock?.name||'Produkt').trim();
-    if(variant&&!familyText(label).includes(familyText(variant)))label+=' · '+variant;
-    return label;
+    if(product){
+      const brand=String(product.brand||'').trim();
+      const name=String(product.product_name||stock?.name||'Produkt').trim();
+      const variant=String(product.variant||'').trim();
+      let label=name||String(stock?.name||'Produkt').trim();
+      if(brand&&!familyText(label).includes(familyText(brand)))label=brand+' '+label;
+      if(variant&&!familyText(label).includes(familyText(variant)))label+=' · '+variant;
+      return label;
+    }
+    return String(stock?.variant_label||stock?.name||'Produkt').trim();
   }
+
 
   function familyAllocationLotDate(inventoryId){
     const dates=(state?.lots||[])
@@ -554,17 +574,23 @@
 
     if(item?.inventory_id){
       const pinned=(inventoryRows||[]).find(row=>String(row.id)===String(item.inventory_id));
-      if(!pinned?.family_name||familyText(name)!==familyText(pinned.family_name))return [];
-      info=inventoryFamilyStockInfo(pinned.family_name,unit,inventoryRows);
+      if(!pinned?.family_name)return [];
+      info=inventoryFamilyRowsInfo(pinned.family_name,unit,inventoryRows,familyNeedModeFromName(name));
     }else{
-      info=inventoryFamilyStockInfo(name,unit,inventoryRows);
+      const exact=(inventoryRows||[]).find(row=>normalizedIngredient(row.name,row.unit)===normalizedIngredient(name,unit));
+      if(exact?.family_name)info=inventoryFamilyRowsInfo(exact.family_name,unit,inventoryRows,familyNeedModeFromName(name));
+      else info=inventoryFamilyStockInfo(name,unit,inventoryRows);
     }
 
     if(!info?.family)return [];
+    const generic=info.familyMode==='generic';
     return (info.rows||[])
       .map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
       .filter(entry=>!entry.info.unitMismatch&&Number(entry.info.available)>0)
       .sort((a,b)=>{
+        const pa=generic&&familyRowMode(a.stock)==='frozen'?1:0;
+        const pb=generic&&familyRowMode(b.stock)==='frozen'?1:0;
+        if(pa!==pb)return pa-pb;
         const da=familyAllocationLotDate(a.stock.id);
         const db=familyAllocationLotDate(b.stock.id);
         return da.localeCompare(db)||
@@ -572,6 +598,7 @@
           String(a.stock.id||'').localeCompare(String(b.stock.id||''));
       });
   }
+
 
   function familyAllocationForItem(item,quantities=null){
     const q=num(item?.quantity);
@@ -645,7 +672,7 @@
     const maps=new Map();
     const today=todayIso();
     const meals=[...(state?.meals||[])]
-      .filter(meal=>String(meal.meal_date||'')>=today)
+      .filter(meal=>String(meal.meal_date||'')>=recentPlanningStartIso())
       .sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||
         Number(a.sort_order||0)-Number(b.sort_order||0)||
         String(a.id||'').localeCompare(String(b.id||'')));
@@ -675,7 +702,7 @@
       html+='<div class="food-ingredient-allocation-line-v712"><span>↳ '+esc(part.label)+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
     });
     if(Number(allocation.remaining)>0.0001){
-      html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ noch nicht aus Vorrat zugeordnet</span><b>'+esc(fmtQty(allocation.remaining,item?.unit))+'</b></div>';
+      html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ fehlt im Vorrat</span><b>'+esc(fmtQty(allocation.remaining,item?.unit))+'</b></div>';
     }
     return html+'</div>';
   }
@@ -1140,7 +1167,7 @@
   function deriveShopping(data){
     const needs=new Map();
     data.meals
-      .filter(meal=>meal.meal_date>=todayIso()&&meal.meal_date<=planningHorizonIso()&&normalizedStatus(meal.status)==='planned')
+      .filter(meal=>meal.meal_date>=recentPlanningStartIso()&&meal.meal_date<=planningHorizonIso()&&normalizedStatus(meal.status)==='planned')
       .forEach(meal=>(meal.ingredients||[]).forEach(item=>{
         const quantity=num(item.quantity);
         if(quantity===null||quantity<=0)return;
@@ -1216,6 +1243,7 @@
         remaining=Math.max(0,remaining-window.required);
         const missing=Math.max(0,window.required-available);
         if(missing<=0)return;
+        const actualShortageDate=shortageDateFor({uses:window.uses},available);
 
         gaps.push({
           ...need,
@@ -1228,12 +1256,21 @@
           label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
           convertedStock:stockInfo.converted,
-          shortageDate:window.shortageDate,
+          shortageDate:actualShortageDate||window.shortageDate,
           buyFrom:window.buyFrom
         });
       });
     });
     return gaps;
+  }
+
+  function shoppingUsageTimeline(uses,unit){
+    const byDate=new Map();
+    (uses||[]).forEach(use=>byDate.set(use.date,(byDate.get(use.date)||0)+(Number(use.quantity)||0)));
+    return [...byDate.entries()]
+      .sort((a,b)=>String(a[0]).localeCompare(String(b[0])))
+      .map(([date,quantity])=>fmtShortDate(date)+' '+fmtQty(quantity,unit))
+      .join(' · ');
   }
 
   function shoppingView(data){
@@ -1261,11 +1298,17 @@
       const stockUnit=item.garlic?item.purchaseUnit:item.unit;
       const stockId=item.garlic?item.purchaseInventoryId:item.inventory_id;
       const delayed=Boolean(item.buyFrom&&item.buyFrom>today);
+      const usePlan=shoppingUsageTimeline(item.uses,item.unit);
       const timing=item.shortageDate
-        ?(delayed?'Noch nicht kaufen · ab '+fmtShortDate(item.buyFrom)+' · gebraucht '+fmtShortDate(item.shortageDate):'Gebraucht ab '+fmtShortDate(item.shortageDate))
-        :'';
+        ?(delayed?'Kaufen ab '+fmtShortDate(item.buyFrom)+' · fehlt ab '+fmtShortDate(item.shortageDate):'Fehlt ab '+fmtShortDate(item.shortageDate))
+        :(delayed?'Kaufen ab '+fmtShortDate(item.buyFrom):'');
+      const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
+      const windowAvailable=Math.max(0,Number(item.available)||0);
+      const stockText=currentAvailable>windowAvailable+.0001
+        ?'Aktuell '+fmtQty(currentAvailable,item.unit)+' · davon '+fmtQty(windowAvailable,item.unit)+' für dieses Einkaufsfenster verfügbar'
+        :'Aktuell '+fmtQty(currentAvailable,item.unit);
       const conversion=item.convertedStock?'<em>Vorrat passend umgerechnet</em>':'';
-      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>Benötigt '+esc(fmtQty(item.required,item.unit))+' · Vorrat '+esc(fmtQty(item.available,item.unit))+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
+      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>'+esc(stockText)+(usePlan?' · Bedarf '+esc(usePlan):'')+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
       pushRow(inCart?cartRows:(delayed?laterRows:nowRows),{label:item.label||'',html});
     });
 

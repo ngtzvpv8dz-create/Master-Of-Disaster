@@ -1,4 +1,4 @@
-/* V702 · SHOPPING / FAMILY-AWARE STOCK
+/* V731 · SHOPPING / FAMILY-AWARE STOCK
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V702';
+  const VERSION='V731';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -259,32 +259,21 @@
     if(/(?:^|\s)(?:frisch|frische|frischer|frisches)(?:\s|$)/.test(text))return 'fresh';
     return 'neutral';
   };
-  function inventoryFamilyStockInfo(name,targetUnit,rows){
-    const families=new Map();
-    (rows||[]).forEach(item=>{
-      if(item?.is_active===false||!item?.family_name)return;
-      const key=familyText(item.family_name);
-      if(!families.has(key))families.set(key,{name:item.family_name,rows:[]});
-      families.get(key).rows.push(item);
-    });
-
-    let selected=null;
-    for(const family of families.values()){
-      const match=familyNeedMatch(name,family.name);
-      if(match){selected={...family,match};break;}
-    }
-    if(!selected)return {available:0,converted:false,unitMismatch:false,family:false,rows:[]};
-
-    let matches=selected.rows;
-    if(selected.match.mode==='fresh'){
+  const familyNeedModeFromName=name=>{
+    const text=' '+familyText(name)+' ';
+    if(/\s(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\s/.test(text))return 'frozen';
+    if(/\s(?:frisch|frische|frischer|frisches|bio)\s/.test(text))return 'fresh';
+    return 'generic';
+  };
+  function inventoryFamilyRowsInfo(familyName,targetUnit,rows,mode='generic'){
+    let matches=(rows||[]).filter(item=>
+      item?.is_active!==false&&item?.family_name&&familyText(item.family_name)===familyText(familyName)
+    );
+    if(mode==='fresh'){
       const explicitFresh=matches.filter(item=>familyRowMode(item)==='fresh');
       matches=explicitFresh.length?explicitFresh:matches.filter(item=>familyRowMode(item)!=='frozen');
-    }else if(selected.match.mode==='frozen'){
+    }else if(mode==='frozen'){
       matches=matches.filter(item=>familyRowMode(item)==='frozen');
-    }else{
-      const frozen=matches.filter(item=>familyRowMode(item)==='frozen');
-      const nonFrozen=matches.filter(item=>familyRowMode(item)!=='frozen');
-      if(frozen.length&&nonFrozen.length)matches=nonFrozen;
     }
 
     let available=0;
@@ -303,14 +292,46 @@
       converted,
       unitMismatch:matches.length>0&&compatible===0,
       family:true,
+      familyName,
+      familyMode:mode,
       rows:matches
     };
   }
+  function inventoryFamilyStockInfo(name,targetUnit,rows){
+    const families=new Map();
+    (rows||[]).forEach(item=>{
+      if(item?.is_active===false||!item?.family_name)return;
+      const key=familyText(item.family_name);
+      if(!families.has(key))families.set(key,{name:item.family_name,rows:[]});
+      families.get(key).rows.push(item);
+    });
+
+    let selected=null;
+    for(const family of families.values()){
+      const match=familyNeedMatch(name,family.name);
+      if(match){selected={...family,match};break;}
+    }
+    if(!selected)return {available:0,converted:false,unitMismatch:false,family:false,rows:[]};
+    return inventoryFamilyRowsInfo(selected.name,targetUnit,rows,selected.match.mode);
+  }
   function ingredientStockInfo(name,unit,inventory,inventoryByName){
     const exact=inventoryByName.get(normalizedIngredient(name,unit))||null;
+    if(exact?.family_name){
+      return {...inventoryFamilyRowsInfo(exact.family_name,unit,inventory,familyNeedModeFromName(name)),stock:null};
+    }
     if(exact)return {...inventoryQuantityInUnit(exact,unit),stock:exact,family:false,rows:[exact]};
     const familyInfo=inventoryFamilyStockInfo(name,unit,inventory);
     return {...familyInfo,stock:null};
+  }
+
+
+  function foodUsageTimeline(uses,unit){
+    const byDate=new Map();
+    (uses||[]).forEach(use=>byDate.set(use.date,(byDate.get(use.date)||0)+(Number(use.quantity)||0)));
+    return [...byDate.entries()]
+      .sort((a,b)=>String(a[0]).localeCompare(String(b[0])))
+      .map(([date,quantity])=>fmtDate(date)+' '+fmtQty(quantity,unit))
+      .join(' · ');
   }
 
   function buildRows(){
@@ -335,15 +356,21 @@
       const buyQuantity=item.garlic?item.purchaseQuantity:item.missing;
       const buyUnit=item.garlic?item.purchaseUnit:item.unit;
       derivedKeys.add(normalizedIngredient(item.label,item.unit)+'|'+String(item.unit||'').toLocaleLowerCase('de-DE'));
+      const usePlan=foodUsageTimeline(item.uses,item.unit);
+      const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
+      const windowAvailable=Math.max(0,Number(item.available)||0);
+      const reservedNote=currentAvailable>windowAvailable+.0001
+        ?' · davon '+fmtQty(windowAvailable,item.unit)+' für diesen Einkaufsblock verfügbar'
+        :'';
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:item.label||'Lebensmittel',
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
-        currentStock:'Aktuell gebucht '+fmtQty(item.currentAvailable??item.available,item.unit),
-        secondary:delayed
-          ?'Am '+fmtDate(item.buyFrom)+' voraussichtlich '+fmtQty(item.available,item.unit)+' · Bedarf '+fmtQty(item.required,item.unit)
-          :'Heute verfügbar '+fmtQty(item.available,item.unit)+' · Bedarf '+fmtQty(item.required,item.unit),
-        timing:item.shortageDate?'Gebraucht '+fmtDate(item.shortageDate):'',
+        currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
+        secondary:(usePlan?'Bedarf: '+usePlan:'Planbedarf '+fmtQty(item.required,item.unit))+reservedNote,
+        timing:item.shortageDate
+          ?((delayed?'Kaufen ab '+fmtDate(item.buyFrom)+' · ':'')+'Fehlt ab '+fmtDate(item.shortageDate))
+          :(delayed?'Kaufen ab '+fmtDate(item.buyFrom):''),
         buyFrom:item.buyFrom||null,neededDate:item.shortageDate||null,
         category:'Lebensmittel',
         foodAction:{
