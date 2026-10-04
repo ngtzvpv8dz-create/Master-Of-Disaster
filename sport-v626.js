@@ -1785,10 +1785,6 @@
     if(!(phaseMinutes>0))return {phases,meta:null};
 
     const durationMatches=totalDuration===null||Math.abs(phaseMinutes-totalDuration)<=0.25;
-    if(!durationMatches)return {
-      phases,
-      meta:{estimated:false,reason:'phase_duration_mismatch',phase_minutes:roundCardioEstimate(phaseMinutes,2),total_minutes:totalDuration}
-    };
 
     const name=String(current?.name||'').toLowerCase();
     const isTreadmill=name.includes('laufband');
@@ -1844,7 +1840,10 @@
         estimated:true,
         distance_method:totalDistance!==null?distanceMethod:null,
         calorie_method:totalCalories!==null?calorieMethod:null,
-        calibrated_to_measured_totals:true
+        calibrated_to_measured_totals:true,
+        duration_mismatch:!durationMatches,
+        phase_minutes:roundCardioEstimate(phaseMinutes,2),
+        total_minutes:totalDuration
       }
     };
   }
