@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V735';
+  const VERSION='V736';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -482,7 +482,7 @@
 
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
-      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
+      safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -592,29 +592,42 @@
     return familyAllocationConvertQuantity(total,stockUnit,targetUnit);
   }
 
+  const frozenFirstStock=stock=>/(hähnchen|hackfleisch|fleisch|fisch|lachs)/i.test(
+    String(stock?.name||'')+' '+String(stock?.family_name||'')+' '+String(stock?.catalog_family_name||'')
+  );
+
   function familyAllocationStockParts(stock,targetUnit,take,consumedBefore=0){
     const total=Number(inventoryQuantityInUnit(stock,targetUnit).available)||0;
     if(total<=0||take<=0)return [];
 
+    const preferFrozen=frozenFirstStock(stock);
     const lots=(state?.lots||[])
       .filter(lot=>String(lot.inventory_id||'')===String(stock?.id||''))
       .map(lot=>({lot,quantity:familyAllocationLotQuantity(lot,stock,targetUnit)}))
       .filter(entry=>entry.quantity!==null&&entry.quantity>0)
-      .sort((a,b)=>
-        String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
-        String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
-        String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))||
-        String(a.lot.id||'').localeCompare(String(b.lot.id||''))
-      );
+      .sort((a,b)=>{
+        const af=frozenStorageLocation(a.lot.storage_location)?0:1;
+        const bf=frozenStorageLocation(b.lot.storage_location)?0:1;
+        if(preferFrozen&&af!==bf)return af-bf;
+        return String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
+          String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
+          String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))||
+          String(a.lot.id||'').localeCompare(String(b.lot.id||''));
+      });
 
     const tracked=lots.reduce((sum,entry)=>sum+entry.quantity,0);
     const segments=[];
     const untracked=Math.max(0,total-tracked);
-    if(untracked>0)segments.push({quantity:untracked,label:familyAllocationProductLabel(stock)});
+    if(untracked>0)segments.push({quantity:untracked,label:familyAllocationProductLabel(stock),frozen:false,storageLocation:null});
 
     for(const entry of lots){
       const product=(state?.products||[]).find(row=>String(row.id||'')===String(entry.lot.product_id||''))||null;
-      segments.push({quantity:entry.quantity,label:familyAllocationProductText(product,stock)});
+      segments.push({
+        quantity:entry.quantity,
+        label:familyAllocationProductText(product,stock),
+        frozen:frozenStorageLocation(entry.lot.storage_location),
+        storageLocation:String(entry.lot.storage_location||'').trim()||null
+      });
     }
 
     let skip=Math.max(0,Number(consumedBefore)||0);
@@ -629,20 +642,19 @@
       const quantity=Math.min(available,remaining);
       if(quantity<=0)continue;
       const previous=parts[parts.length-1];
-      if(previous&&previous.label===segment.label)previous.quantity+=quantity;
-      else parts.push({label:segment.label,quantity});
+      if(previous&&previous.label===segment.label&&previous.frozen===segment.frozen)previous.quantity+=quantity;
+      else parts.push({label:segment.label,quantity,frozen:segment.frozen,storageLocation:segment.storageLocation});
       remaining-=quantity;
     }
 
     if(remaining>0.0001){
       const label=familyAllocationProductLabel(stock);
       const previous=parts[parts.length-1];
-      if(previous&&previous.label===label)previous.quantity+=remaining;
-      else parts.push({label,quantity:remaining});
+      if(previous&&previous.label===label&&!previous.frozen)previous.quantity+=remaining;
+      else parts.push({label,quantity:remaining,frozen:false,storageLocation:null});
     }
     return parts;
   }
-
 
   function familyAllocationLotDate(inventoryId){
     const dates=(state?.lots||[])
@@ -715,7 +727,9 @@
           inventoryId:String(entry.stock.id),
           label:part.label,
           quantity:part.quantity,
-          unit:item?.unit||unit
+          unit:item?.unit||unit,
+          frozen:part.frozen===true,
+          storageLocation:part.storageLocation||null
         }));
       }else{
         allocations.push({
@@ -770,7 +784,9 @@
           inventoryId:String(stock.id),
           label:part.label,
           quantity:part.quantity,
-          unit:item?.unit||unit
+          unit:item?.unit||unit,
+          frozen:part.frozen===true,
+          storageLocation:part.storageLocation||null
         }))
       :(take>0?[{
           inventoryId:String(stock.id),
@@ -862,7 +878,8 @@
     parts.forEach(part=>{
       const rawLabel=String(part.label||'').trim();
       const detailLabel=!rawLabel||familyText(rawLabel)===generic?'Produkt nicht genauer erfasst':rawLabel;
-      html+='<div class="food-ingredient-allocation-line-v712"><span>↳ '+esc(detailLabel)+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
+      const frozen=part.frozen===true;
+      html+='<div class="food-ingredient-allocation-line-v712 '+(frozen?'is-frozen-v736':'')+'"><span>↳ '+esc(detailLabel)+(frozen?' · eingefroren':'')+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
     });
     if(missing>0.0001){
       html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ fehlt im Vorrat</span><b>'+esc(fmtQty(missing,item?.unit))+'</b></div>';
