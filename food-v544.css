@@ -1840,17 +1840,17 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 }
 .food-thaw-start-v739{
   appearance:none;
-  border:1px solid rgba(75,139,165,.26);
+  border:1px solid rgba(75,139,165,.16);
   border-radius:999px;
-  padding:6px 8px;
-  background:rgba(247,252,254,.82);
-  color:#4e8093;
-  font:800 8px/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  letter-spacing:.02em;
+  padding:4px 6px;
+  background:rgba(248,252,253,.54);
+  color:rgba(78,128,147,.82);
+  font:780 7px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:.015em;
   white-space:nowrap;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.84);
+  box-shadow:none;
   cursor:pointer;
-  transition:background .35s ease,color .35s ease,border-color .35s ease,box-shadow .35s ease,transform .15s ease;
+  transition:background .35s ease,color .35s ease,border-color .35s ease,box-shadow .35s ease,transform .15s ease,opacity .35s ease;
 }
 .food-thaw-start-v739:active:not(:disabled){
   transform:scale(.97);
@@ -1883,15 +1883,66 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 }
 .food-thaw-start-v739.is-active-v739,
 .food-thaw-start-v739:disabled{
-  border-color:rgba(192,152,79,.25);
-  background:
-    linear-gradient(135deg,rgba(235,247,250,.92),rgba(247,227,181,.88));
-  color:#76755f;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.82),
-    0 0 0 1px rgba(255,255,255,.28);
-  opacity:1;
+  margin-right:20px;
+  border-color:rgba(190,153,83,.14);
+  background:rgba(250,244,225,.46);
+  color:rgba(111,108,82,.78);
+  box-shadow:none;
+  opacity:.86;
   cursor:default;
+}
+
+.food-thaw-thermometer-v740{
+  position:absolute;
+  z-index:2;
+  right:9px;
+  bottom:7px;
+  width:7px;
+  height:18px;
+  border:1px solid rgba(126,137,131,.38);
+  border-radius:5px 5px 4px 4px;
+  background:rgba(255,255,255,.48);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.32),
+    0 1px 4px rgba(120,116,96,.08);
+  opacity:.88;
+  pointer-events:none;
+}
+.food-thaw-thermometer-v740::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:-4px;
+  width:9px;
+  height:9px;
+  transform:translateX(-50%);
+  border:1px solid rgba(126,137,131,.34);
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 42% 36%,rgba(255,219,191,.9) 0 1px,transparent 2px),
+    linear-gradient(145deg,#e98d68,#c85f50);
+  box-shadow:0 1px 4px rgba(164,89,69,.14);
+}
+.food-thaw-thermometer-v740::after{
+  content:"";
+  position:absolute;
+  left:2px;
+  top:2px;
+  width:1px;
+  height:5px;
+  border-radius:999px;
+  background:rgba(255,255,255,.62);
+}
+.food-thaw-thermometer-v740 i{
+  position:absolute;
+  left:50%;
+  bottom:2px;
+  width:2px;
+  height:9px;
+  transform:translateX(-50%);
+  border-radius:999px 999px 2px 2px;
+  background:linear-gradient(to top,#c85f50 0%,#df785d 62%,#efaa76 100%);
+  box-shadow:0 0 4px rgba(213,104,78,.16);
 }
 @media(max-width:430px){
   .food-thaw-entry-v739{
@@ -1900,6 +1951,10 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   }
   .food-thaw-start-v739{
     justify-self:start;
+  }
+  .food-thaw-start-v739.is-active-v739,
+  .food-thaw-start-v739:disabled{
+    margin-right:0;
   }
 }
 @media(prefers-reduced-motion:reduce){
