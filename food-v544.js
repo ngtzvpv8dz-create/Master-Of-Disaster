@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V740';
+  const VERSION='V741';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -882,15 +882,28 @@
     if(!parts.length&&missing<=0.0001)return '';
 
     const generic=familyText(ingredientName(item));
+    const needed=Math.max(0,Number(item?.quantity)||0);
+    const singleComplete=parts.length===1&&missing<=0.0001&&Math.abs((Number(parts[0]?.quantity)||0)-needed)<=0.0001;
+    const thawing=Boolean(item?.thaw_started_at);
     let html='<div class="food-ingredient-allocation-v712">';
     parts.forEach(part=>{
       const rawLabel=String(part.label||'').trim();
       const detailLabel=!rawLabel||familyText(rawLabel)===generic?'Produkt nicht genauer erfasst':rawLabel;
       const frozen=part.frozen===true;
-      html+='<div class="food-ingredient-allocation-line-v712 '+(frozen?'is-frozen-v736':'')+'"><span>↳ '+esc(detailLabel)+(frozen?' · eingefroren':'')+'</span><b>'+esc(fmtQty(part.quantity,part.unit))+'</b></div>';
+      const thawClass=frozen&&thawing?' is-thawing-v741':'';
+      const status=frozen?(thawing?' · Auftauen läuft':' · eingefroren'):'';
+      html+='<div class="food-ingredient-allocation-line-v712 '+(frozen?'is-frozen-v736':'')+thawClass+(singleComplete?' is-single-source-v741':'')+'">'
+        +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
+        +'<span class="food-allocation-copy-v741">'+esc(detailLabel)+status+'</span>'
+        +(singleComplete?'':'<b>'+esc(fmtQty(part.quantity,part.unit))+'</b>')
+        +'</div>';
     });
     if(missing>0.0001){
-      html+='<div class="food-ingredient-allocation-line-v712 is-missing"><span>↳ fehlt im Vorrat</span><b>'+esc(fmtQty(missing,item?.unit))+'</b></div>';
+      html+='<div class="food-ingredient-allocation-line-v712 is-missing">'
+        +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
+        +'<span class="food-allocation-copy-v741">fehlt im Vorrat</span>'
+        +'<b>'+esc(fmtQty(missing,item?.unit))+'</b>'
+        +'</div>';
     }
     return html+'</div>';
   }
@@ -900,8 +913,11 @@
       const q=num(item.quantity);
       const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||familyAllocationForItem(item)||specificAllocationForItem(item);
       const allocationHtml=allocationMarkup(allocation,item);
+      const quantityHtml=q===null||Number.isNaN(q)
+        ?''
+        :'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">'+esc(fmtQty(q,item.unit))+'</b>';
       return '<li class="'+(allocationHtml?'food-ingredient-has-allocation-v712':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
-        (q===null||Number.isNaN(q)?'':'<b>'+esc(fmtQty(q,item.unit))+'</b>')+
+        quantityHtml+
         allocationHtml+'</li>';
     }).join('')+'</ul>';
   }
@@ -1084,7 +1100,7 @@
       if(task.thawStartedAt){
         const date=new Date(task.thawStartedAt);
         const time=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(date);
-        return time?'Aufgetaut · bestätigt '+time+' Uhr':'Aufgetaut';
+        return time?'Auftauen läuft · seit '+time+' Uhr':'Auftauen läuft';
       }
       if(task.targetDate===today){
         if(task.targetType==='dinner'){
@@ -1113,7 +1129,7 @@
       const thawing=Boolean(task.thawStartedAt);
       return '<div class="food-thaw-entry-v739 '+(thawing?'is-thawing-v739':'is-frozen-v739')+'">'
         +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
-        +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawing?'Aufgetaut':'Als aufgetaut markieren')+'" title="'+(thawing?'Aufgetaut':'Als aufgetaut markieren')+'" '+(thawing?'disabled':'')+'>'
+        +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawing?'Auftauen läuft':'Auftauen starten')+'" title="'+(thawing?'Auftauen läuft':'Auftauen starten')+'" '+(thawing?'disabled':'')+'>'
           +'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span>'
         +'</button>'
         +'</div>';
