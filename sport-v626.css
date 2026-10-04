@@ -2302,3 +2302,51 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   .sport-active-exercise-actions-v719{grid-template-columns:1fr}
   .sport-active-exercise-actions-v719 button{width:100%}
 }
+
+
+/* V720 · FitX arrival gate */
+.sport-fitx-arrival-gate-v720{
+  display:grid;
+  gap:10px;
+  padding:12px;
+  border:1px solid rgba(111,228,234,.18);
+  border-radius:14px;
+  background:linear-gradient(150deg,rgba(6,38,43,.78),rgba(2,16,19,.82));
+}
+.sport-fitx-arrival-gate-v720>div{
+  display:grid;
+  gap:3px;
+}
+.sport-fitx-arrival-gate-v720 span{
+  color:#7bd6dc;
+  font-size:.49rem;
+  font-weight:900;
+  letter-spacing:.09em;
+}
+.sport-fitx-arrival-gate-v720 h2{
+  margin:0;
+  color:#effcfc;
+  font-size:1rem;
+  line-height:1.12;
+}
+.sport-fitx-arrival-gate-v720 small{
+  color:#86a8ab;
+  font-size:.53rem;
+  line-height:1.4;
+}
+.sport-fitx-arrival-gate-v720 button{
+  min-height:43px;
+  border:1px solid rgba(111,228,234,.20);
+  border-radius:10px;
+  background:rgba(21,99,106,.52);
+  color:#effcfc;
+  font:inherit;
+  font-size:.58rem;
+  font-weight:900;
+}
+.sport-active-time-row-v719.is-waiting-v720{
+  opacity:.88;
+}
+.sport-active-time-row-v719.is-waiting-v720 strong{
+  color:#6f8e92;
+}
