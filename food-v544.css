@@ -1593,3 +1593,16 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   color:#dde7ed;
   font-size:.56rem;
 }
+
+
+.food-inventory-family-v736{padding:11px}
+.food-inventory-family-v736 .food-inventory-family-head-v694{margin-bottom:8px}
+.food-inventory-family-v736 .food-inventory-family-head-v694 strong{color:#3f6247;font-size:14px;font-weight:950;letter-spacing:.025em}
+.food-inventory-subgroup-v736{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 2px 7px;padding:5px 7px;border-radius:9px;background:rgba(97,137,101,.07)}
+.food-inventory-subgroup-v736 strong{color:#58735b;font-size:10px;font-weight:900;letter-spacing:.045em;text-transform:uppercase}
+.food-inventory-subgroup-v736 span{color:#869388;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.045em}
+.food-stock-variant-v736{padding:11px 12px;border-radius:15px}
+.food-stock-variant-v736 .food-stock-top-v544{align-items:flex-start}
+.food-stock-variant-v736 h4{color:#54735a!important;font-size:11.5px!important;font-weight:900!important;line-height:1.2!important}
+.food-stock-variant-v736 .food-stock-top-v544 strong{display:block;margin-top:3px;color:#668264!important;font-family:inherit!important;font-size:12.5px!important;font-weight:850!important}
+.food-stock-pack-summary-v736{display:block;margin-top:3px;color:#778579;font-size:8.5px;font-weight:720;line-height:1.3}
