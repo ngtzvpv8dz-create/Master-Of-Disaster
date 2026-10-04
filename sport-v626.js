@@ -1,9 +1,9 @@
-/* V729 · SPORT · separate FitX visit and training lifecycle */
+/* V730 · SPORT · separate FitX visit and training lifecycle */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V729';
+  const VERSION='V730';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
