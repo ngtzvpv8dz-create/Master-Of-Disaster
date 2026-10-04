@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V733';
+  const VERSION='V734';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -540,18 +540,107 @@
       '<div class="food-content-v544"><div class="food-loading-v544">FOOD wird gedeckt …</div></div>';
   }
 
+  function familyAllocationProductText(product,stock){
+    if(!product)return String(stock?.variant_label||stock?.name||'Produkt').trim();
+    const brand=String(product.brand||'').trim();
+    const name=String(product.product_name||stock?.name||'Produkt').trim();
+    const variant=String(product.variant||'').trim();
+    let label=name||String(stock?.name||'Produkt').trim();
+    if(brand&&!familyText(label).includes(familyText(brand)))label=brand+' '+label;
+    if(variant&&!familyText(label).includes(familyText(variant)))label+=' · '+variant;
+    return label;
+  }
+
   function familyAllocationProductLabel(stock){
-    const product=(state?.products||[]).find(row=>String(row.inventory_id||'')===String(stock?.id||''))||null;
-    if(product){
-      const brand=String(product.brand||'').trim();
-      const name=String(product.product_name||stock?.name||'Produkt').trim();
-      const variant=String(product.variant||'').trim();
-      let label=name||String(stock?.name||'Produkt').trim();
-      if(brand&&!familyText(label).includes(familyText(brand)))label=brand+' '+label;
-      if(variant&&!familyText(label).includes(familyText(variant)))label+=' · '+variant;
-      return label;
-    }
+    const activeLots=(state?.lots||[])
+      .filter(lot=>String(lot.inventory_id||'')===String(stock?.id||''))
+      .filter(lot=>Number(lot.unopened_packages||0)>0||Number(lot.opened_remaining_quantity||0)>0)
+      .sort((a,b)=>
+        String(a.best_before_date||'9999-12-31').localeCompare(String(b.best_before_date||'9999-12-31'))||
+        String(a.purchased_on||'9999-12-31').localeCompare(String(b.purchased_on||'9999-12-31'))||
+        String(a.created_at||'').localeCompare(String(b.created_at||''))||
+        String(a.id||'').localeCompare(String(b.id||''))
+      );
+    const lotProduct=activeLots.map(lot=>(state?.products||[]).find(product=>String(product.id||'')===String(lot.product_id||''))).find(Boolean)||null;
+    if(lotProduct)return familyAllocationProductText(lotProduct,stock);
+
+    const products=(state?.products||[]).filter(row=>String(row.inventory_id||'')===String(stock?.id||''));
+    if(products.length===1)return familyAllocationProductText(products[0],stock);
     return String(stock?.variant_label||stock?.name||'Produkt').trim();
+  }
+
+  function familyAllocationConvertQuantity(value,sourceUnit,targetUnit){
+    const q=Number(value)||0;
+    const source=String(sourceUnit||'').trim();
+    const target=String(targetUnit||'').trim();
+    if(source===target)return q;
+    if(source==='kg'&&target==='g')return q*1000;
+    if(source==='g'&&target==='kg')return q/1000;
+    if(source==='l'&&target==='ml')return q*1000;
+    if(source==='ml'&&target==='l')return q/1000;
+    return null;
+  }
+
+  function familyAllocationLotQuantity(lot,stock,targetUnit){
+    const stockUnit=String(stock?.unit||'').trim();
+    let total=0;
+    const packageQty=Number(lot?.package_quantity)||0;
+    const unopened=Math.max(0,Number(lot?.unopened_packages)||0);
+    if(packageQty>0&&unopened>0&&String(lot?.package_unit||'').trim()===stockUnit)total+=packageQty*unopened;
+    const openedQty=Math.max(0,Number(lot?.opened_remaining_quantity)||0);
+    if(openedQty>0&&String(lot?.opened_remaining_unit||'').trim()===stockUnit)total+=openedQty;
+    return familyAllocationConvertQuantity(total,stockUnit,targetUnit);
+  }
+
+  function familyAllocationStockParts(stock,targetUnit,take,consumedBefore=0){
+    const total=Number(inventoryQuantityInUnit(stock,targetUnit).available)||0;
+    if(total<=0||take<=0)return [];
+
+    const lots=(state?.lots||[])
+      .filter(lot=>String(lot.inventory_id||'')===String(stock?.id||''))
+      .map(lot=>({lot,quantity:familyAllocationLotQuantity(lot,stock,targetUnit)}))
+      .filter(entry=>entry.quantity!==null&&entry.quantity>0)
+      .sort((a,b)=>
+        String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
+        String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
+        String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))||
+        String(a.lot.id||'').localeCompare(String(b.lot.id||''))
+      );
+
+    const tracked=lots.reduce((sum,entry)=>sum+entry.quantity,0);
+    const segments=[];
+    const untracked=Math.max(0,total-tracked);
+    if(untracked>0)segments.push({quantity:untracked,label:String(stock?.variant_label||stock?.name||'Produkt').trim()});
+
+    for(const entry of lots){
+      const product=(state?.products||[]).find(row=>String(row.id||'')===String(entry.lot.product_id||''))||null;
+      segments.push({quantity:entry.quantity,label:familyAllocationProductText(product,stock)});
+    }
+
+    let skip=Math.max(0,Number(consumedBefore)||0);
+    let remaining=Math.max(0,Number(take)||0);
+    const parts=[];
+    for(const segment of segments){
+      if(remaining<=0.0001)break;
+      const segmentQty=Math.max(0,Number(segment.quantity)||0);
+      if(skip>=segmentQty-.0001){skip=Math.max(0,skip-segmentQty);continue;}
+      const available=Math.max(0,segmentQty-skip);
+      skip=0;
+      const quantity=Math.min(available,remaining);
+      if(quantity<=0)continue;
+      const previous=parts[parts.length-1];
+      if(previous&&previous.label===segment.label)previous.quantity+=quantity;
+      else parts.push({label:segment.label,quantity});
+      remaining-=quantity;
+    }
+
+    if(remaining>0.0001){
+      const label=familyAllocationProductLabel(stock);
+      const previous=parts[parts.length-1];
+      if(previous&&previous.label===label)previous.quantity+=remaining;
+      else parts.push({label,quantity:remaining});
+    }
+    return parts;
   }
 
 
@@ -618,12 +707,24 @@
       }
       if(available<=0)continue;
       const take=Math.min(available,remaining);
-      allocations.push({
-        inventoryId:String(entry.stock.id),
-        label:familyAllocationProductLabel(entry.stock),
-        quantity:take,
-        unit:item?.unit||unit
-      });
+      const baseAvailable=Number(entry.info.available)||0;
+      const consumedBefore=Math.max(0,baseAvailable-available);
+      const parts=familyAllocationStockParts(entry.stock,unit,take,consumedBefore);
+      if(parts.length){
+        parts.forEach(part=>allocations.push({
+          inventoryId:String(entry.stock.id),
+          label:part.label,
+          quantity:part.quantity,
+          unit:item?.unit||unit
+        }));
+      }else{
+        allocations.push({
+          inventoryId:String(entry.stock.id),
+          label:familyAllocationProductLabel(entry.stock),
+          quantity:take,
+          unit:item?.unit||unit
+        });
+      }
       remaining-=take;
     }
     return allocations.length?{allocations,remaining:Math.max(0,remaining)}:null;
@@ -1940,9 +2041,16 @@
     }));
   }
 
+  const recipeInventoryOptionLabel=item=>{
+    const family=String(item?.family_name||'').trim();
+    if(!family)return String(item?.name||'Vorrat').trim();
+    const variant=String(item?.variant_label||item?.name||'Variante').trim();
+    return family+' → '+variant;
+  };
+
   function recipeIngredientRow(index){
     const options=sourceIsReal('inventory')
-      ?(state?.inventory||[]).filter(item=>item.is_active!==false).map(item=>'<option value="'+esc(item.id)+'">'+esc(item.name)+'</option>').join('')
+      ?(state?.inventory||[]).filter(item=>item.is_active!==false).map(item=>'<option value="'+esc(item.id)+'">'+esc(recipeInventoryOptionLabel(item))+'</option>').join('')
       :'';
     return '<div class="food-recipe-ingredient-row-v549" data-food-recipe-row>'+
       '<div class="food-recipe-row-head-v549"><strong>Zutat '+(index+1)+'</strong><button type="button" data-food-recipe-remove aria-label="Zutat entfernen">×</button></div>'+
@@ -1959,7 +2067,7 @@
     const sync=()=>{
       const item=(state?.inventory||[]).find(entry=>entry.id===select?.value);
       if(item){
-        name.value=item.name;
+        name.value=String(item.family_name||'').trim()||item.name;
         name.readOnly=true;
         if(item.unit)unit.value=item.unit;
         unit.readOnly=true;
@@ -2013,7 +2121,9 @@
         if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
         if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
         if(inventoryId&&!inventoryItem)throw new Error('Die ausgewählte Vorratszutat ist nicht mehr verfügbar.');
-        return {user_id:user.id,inventory_id:inventoryId,name,label:fmtQty(quantity,unit)+' '+name,quantity,unit,sort_order:index+1};
+        const family=String(inventoryItem?.family_name||'').trim();
+        const storedName=family||name;
+        return {user_id:user.id,inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit,sort_order:index+1};
       });
 
       let recipe=null;
@@ -2110,7 +2220,9 @@
         if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
         if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
         if(inventoryId&&!inventoryItem)throw new Error('Die ausgewählte Vorratszutat ist nicht mehr verfügbar.');
-        return {inventory_id:inventoryId,name,label:fmtQty(quantity,unit)+' '+name,quantity,unit};
+        const family=String(inventoryItem?.family_name||'').trim();
+        const storedName=family||name;
+        return {inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit};
       });
 
       const result=await withTimeout(
