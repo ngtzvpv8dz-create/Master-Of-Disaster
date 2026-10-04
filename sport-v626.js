@@ -1,9 +1,9 @@
-/* V718 · SPORT · sequential active workout + isolated test sessions */
+/* V719 · SPORT · active exercise focus + sequential workout */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V718';
+  const VERSION='V719';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -818,9 +818,9 @@
     if(session.isTest)return {date:session.date,venue:session.venue||'Ort offen',sessions:[session]};
     return groupSessions(rows).find(group=>(group.sessions||[]).some(item=>item.id===session.id))||{date:session.date,venue:session.venue||'Ort offen',sessions:[session]};
   }
-  function workoutLists(session){
+  function workoutLists(session,{hideRunning=false}={}){
     const items=(session?.workout||[]);
-    const open=items.filter(item=>item.status==='planned'||item.status==='running');
+    const open=items.filter(item=>(item.status==='planned'||item.status==='running')&&!(hideRunning&&item.status==='running'));
     const done=items.filter(item=>item.status==='completed');
     const skipped=items.filter(item=>item.status==='skipped');
     const showOpenTitle=done.length||skipped.length;
@@ -864,6 +864,93 @@
     activeClockTimer=setInterval(paint,1000);
   }
 
+  function activeExerciseTitle(exercise){
+    if(!exercise)return '';
+    const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
+    const number=exercise.equipmentNumber||catalog?.equipment_number||'';
+    return (number?number+' ':'')+exercise.name;
+  }
+
+  function savedSetSummary(set,loadMode){
+    if(!set)return '';
+    const parts=[];
+    if(set.weightKg!==null)parts.push((loadMode==='assistance'?'Unterstützung ':'')+set.weightKg+' kg');
+    if(set.repetitions!==null)parts.push(set.repetitions+' Wdh.');
+    if(set.rir!==null)parts.push('RIR '+set.rir+(set.rirPlus?'+':''));
+    return parts.join(' · ')||'gespeichert';
+  }
+
+  function activeStrengthEditor(exercise){
+    const count=strengthSetCount(exercise);
+    const setMap=new Map((exercise.sets||[]).map(set=>[set.setNumber,set]));
+    const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
+    const loadMode=exercise.loadMode||catalog?.load_mode||'weight';
+    const kgLabel=loadMode==='assistance'?'Unterstützung kg':'kg';
+    const previous=previousWorkoutValue(exercise);
+    let nextNo=null;
+    for(let no=1;no<=count;no++){
+      const set=setMap.get(no);
+      if(!set?.id){nextNo=no;break;}
+    }
+    const saved=[...setMap.values()].filter(set=>set?.id).sort((a,b)=>a.setNumber-b.setNumber);
+    const savedHtml=saved.length
+      ?'<details class="sport-active-saved-sets-v719"><summary>Gespeicherte Sätze · '+saved.length+'</summary><div>'+saved.map(set=>'<span><b>S'+set.setNumber+'</b><em>'+esc(savedSetSummary(set,loadMode))+'</em></span>').join('')+'</div></details>'
+      :'';
+
+    if(nextNo===null){
+      return '<div class="sport-active-strength-v719">'+
+        '<div class="sport-active-all-sets-v719"><strong>Alle '+count+' Sätze gespeichert</strong><span>Du kannst die Übung jetzt abschließen oder noch einen Satz ergänzen.</span></div>'+
+        savedHtml+
+        '<button type="button" class="sport-active-add-set-v719" data-sport-add-set="'+esc(exercise.id)+'">+ Satz</button>'+
+      '</div>';
+    }
+
+    const set=setMap.get(nextNo)||{};
+    const rirValue=set.rir===null||set.rir===undefined?'0':String(set.rir)+(set.rirPlus?'+':'');
+    return '<div class="sport-active-strength-v719">'+
+      savedHtml+
+      '<form class="sport-active-set-form-v719 sport-set-row-v573 sport-set-row-v613" data-sport-set-form data-exercise-id="'+esc(exercise.id)+'" data-set-number="'+nextNo+'">'+
+        '<div class="sport-active-set-head-v719"><span>AKTUELLER SATZ</span><strong>Satz '+nextNo+' von '+count+'</strong></div>'+
+        '<label><span>'+esc(kgLabel)+'</span><input name="weight_kg" type="number" min="0" step="0.5" inputmode="decimal" value="'+esc(set.weightKg??'')+'"></label>'+
+        '<label><span>Wdh.</span><input name="repetitions" type="number" min="0" step="1" inputmode="numeric" value="'+esc(set.repetitions??'')+'"></label>'+
+        '<label><span>RIR</span>'+rirStepper(rirValue)+'</label>'+
+        '<small class="sport-set-last-v612 sport-set-last-v613">'+esc(previousSetText(previous,nextNo,loadMode))+'</small>'+
+        '<button type="submit" class="sport-set-save-v613">'+(nextNo<count?'Satz speichern · weiter zu Satz '+(nextNo+1):'Satz speichern · dann Übung fertig')+'</button>'+
+      '</form>'+
+    '</div>';
+  }
+
+  function activeExerciseFocus(session){
+    const ordered=[...(session?.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder);
+    const exercise=ordered.find(item=>item.status==='running')||null;
+    const next=ordered.find(item=>item.status==='planned')||null;
+    if(!exercise){
+      if(next){
+        return '<section class="sport-active-exercise-focus-v719 is-waiting"><div class="sport-active-exercise-head-v719"><div><span>NÄCHSTE ÜBUNG</span><h2>'+esc(activeExerciseTitle(next))+'</h2></div><button type="button" data-sport-exercise-status="'+esc(next.id)+'" data-status="running">Jetzt starten</button></div></section>';
+      }
+      return '<section class="sport-active-exercise-focus-v719 is-empty"><strong>Freies Training erledigt</strong><span>Keine weitere Übung oder kein Gerät mehr offen.</span></section>';
+    }
+
+    const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
+    const type=catalog?.item_type||(exercise.kind==='cardio'?'cardio_machine':'free_exercise');
+    const meta=catalog?.category||catalog?.muscle_group||(exercise.kind==='cardio'?'Cardio':'Kraft');
+    const settings=exercise.settingsText||catalog?.settings_text||'';
+    return '<section class="sport-active-exercise-focus-v719">'+
+      '<div class="sport-active-exercise-head-v719">'+
+        '<div><span>JETZT · '+esc(itemTypeLabel(type))+' · '+esc(meta)+'</span><h2>'+esc(activeExerciseTitle(exercise))+'</h2>'+(settings?'<small>'+esc(settings)+'</small>':'')+'</div>'+
+        executionHelpButton(catalog)+
+      '</div>'+
+      '<div class="sport-active-exercise-editor-v719">'+
+        workoutHistory(exercise)+
+        (exercise.kind==='cardio'?cardioEditor(exercise):activeStrengthEditor(exercise))+
+      '</div>'+
+      '<div class="sport-active-exercise-actions-v719">'+
+        '<button type="button" class="primary" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="completed">Übung fertig</button>'+
+        '<button type="button" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="skipped">Überspringen</button>'+
+      '</div>'+
+    '</section>';
+  }
+
   function fitxPanel(rows){
     const active=activeTrainingSession();
     if(active){
@@ -893,11 +980,11 @@
         :(fitx?'FitX-Zeit startet mit der Ankunft':'Training läuft');
 
       return '<section class="sport-panel-v510 sport-panel-v512 '+(active.isTest?'sport-test-session-v717':'')+'" data-sport-panel-v568="overview">'+wave()+
-        '<div class="sport-hero-v510 sport-active-hero-v623"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · '+(active.isTest?'TESTEINHEIT':'LAUFENDE EINHEIT')+' '+statusBadge()+'</div>'+
+        '<div class="sport-hero-v510 sport-active-hero-v623 sport-active-hero-v719"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIV · '+(active.isTest?'TESTEINHEIT':'LAUFENDE EINHEIT')+' '+statusBadge()+'</div>'+
         '<p class="sport-date-v510">'+esc(dateLabel(active.date))+' · '+esc(location)+'</p>'+
-        '<div class="sport-active-clock-v623" data-sport-active-elapsed data-start-ms="'+startMs+'">'+esc(elapsedClockText(start))+'</div>'+
-        '<div class="sport-active-clock-sub-v623">'+clockSub+'</div>'+
-        '<p class="sport-active-slogan-v674" data-sport-active-slogan>'+(active.isTest?'Testmodus: alles darf knirschen, Statistik bleibt sauber.':'Jetzt nicht nachdenken. Machen reicht völlig.')+'</p></div>'+
+        activeExerciseFocus(active)+
+        '<div class="sport-active-time-row-v719"><span>'+esc(clockSub)+'</span><strong data-sport-active-elapsed data-start-ms="'+startMs+'">'+esc(elapsedClockText(start))+'</strong></div>'+
+        '<p class="sport-active-slogan-v674" data-sport-active-slogan>'+(active.isTest?'Testmodus: alles darf knirschen, Statistik bleibt sauber.':'Aktuelle Übung zuerst. Der Rest darf kurz die Klappe halten.')+'</p></div>'+
         '<div class="sport-content-v510">'+
           (active.isTest?'<div class="sport-test-banner-v717"><strong>TESTMODUS</strong><span>Diese Einheit wird nicht in Einheiten, Statistik oder „Letztes Mal“ übernommen. Beim Beenden werden die Testdaten verworfen.</span></div>':'')+
           '<div class="sport-active-circuit-slot-v634" data-sport-active-circuit-slot></div>'+
@@ -905,7 +992,7 @@
           participantsBlock(active)+
           plannedTestCourseHtml+
           courseHtml+
-          '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>AKTUELLE EINHEIT</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="'+esc(active.id)+'">+ Übung hinzufügen</button></div>'+workoutLists(active)+'</section>'+
+          '<section class="sport-x-block-v573"><div class="sport-x-block-head-v573"><div><span>WEITERER ABLAUF</span><strong>Übungen</strong></div><button type="button" data-sport-open-catalog data-session-id="'+esc(active.id)+'">+ Übung hinzufügen</button></div>'+workoutLists(active,{hideRunning:true})+'</section>'+
           '<div class="sport-active-actions-v627"><button type="button" data-sport-complete-session="'+esc(active.id)+'">'+(active.isTest?'Testlauf beenden & verwerfen':'Training abschließen')+'</button></div>'+
           errorNote()+
         '</div></section>';
