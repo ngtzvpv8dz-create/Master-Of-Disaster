@@ -1767,3 +1767,146 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   .food-stock-products-v736{padding:6px}
   .food-stock-product-row-v736{padding:6px}
 }
+
+
+/* V739 · Auftauen läuft: Frost bleibt, Wärme zieht dezent ein */
+.food-thaw-panel-v739{
+  gap:8px;
+}
+.food-thaw-entry-v739{
+  position:relative;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:9px 10px;
+  border:1px solid rgba(82,151,179,.18);
+  border-radius:11px;
+  background:
+    radial-gradient(circle at 94% 10%,rgba(255,255,255,.72) 0 2px,transparent 3px),
+    linear-gradient(135deg,rgba(244,251,254,.94),rgba(219,240,248,.84));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.78);
+  transition:background .45s ease,border-color .45s ease,box-shadow .45s ease;
+}
+.food-thaw-entry-v739::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  pointer-events:none;
+  width:122px;
+  height:122px;
+  right:-91px;
+  top:-91px;
+  border-radius:50%;
+  border:1px solid transparent;
+  opacity:0;
+  transform:scale(.82);
+  transition:opacity .5s ease,transform .5s ease,box-shadow .5s ease,border-color .5s ease;
+}
+.food-thaw-entry-v739::after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  pointer-events:none;
+  inset:0;
+  opacity:.24;
+  background:
+    linear-gradient(118deg,transparent 0 64%,rgba(255,255,255,.7) 64.5% 65%,transparent 65.5%),
+    radial-gradient(circle at 14% 80%,rgba(255,255,255,.46) 0 1px,transparent 2px);
+  transition:opacity .5s ease;
+}
+.food-thaw-copy-v739,
+.food-thaw-start-v739{
+  position:relative;
+  z-index:1;
+}
+.food-thaw-copy-v739{
+  display:grid;
+  gap:2px;
+  min-width:0;
+}
+.food-thaw-copy-v739 b{
+  color:#4a7c90;
+  font-size:9px;
+  font-weight:900;
+  line-height:1.35;
+}
+.food-thaw-copy-v739 span{
+  color:#5d7f8d;
+  font-size:9px;
+  font-weight:730;
+  line-height:1.4;
+}
+.food-thaw-start-v739{
+  appearance:none;
+  border:1px solid rgba(75,139,165,.26);
+  border-radius:999px;
+  padding:6px 8px;
+  background:rgba(247,252,254,.82);
+  color:#4e8093;
+  font:800 8px/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:.02em;
+  white-space:nowrap;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.84);
+  cursor:pointer;
+  transition:background .35s ease,color .35s ease,border-color .35s ease,box-shadow .35s ease,transform .15s ease;
+}
+.food-thaw-start-v739:active:not(:disabled){
+  transform:scale(.97);
+}
+.food-thaw-entry-v739.is-thawing-v739{
+  border-color:rgba(196,158,91,.24);
+  background:
+    radial-gradient(circle at 100% 0%,rgba(255,221,149,.40) 0,rgba(255,231,178,.20) 22%,transparent 46%),
+    linear-gradient(135deg,rgba(238,249,253,.95) 0%,rgba(220,240,246,.90) 48%,rgba(242,236,210,.86) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.84),
+    0 5px 14px rgba(121,150,143,.08);
+}
+.food-thaw-entry-v739.is-thawing-v739::before{
+  opacity:1;
+  transform:scale(1);
+  border-color:rgba(226,180,93,.42);
+  box-shadow:
+    0 0 0 8px rgba(245,210,139,.07),
+    0 0 24px 14px rgba(244,197,108,.16);
+}
+.food-thaw-entry-v739.is-thawing-v739::after{
+  opacity:.10;
+}
+.food-thaw-entry-v739.is-thawing-v739 .food-thaw-copy-v739 b{
+  color:#6e7b72;
+}
+.food-thaw-entry-v739.is-thawing-v739 .food-thaw-copy-v739 span{
+  color:#697f80;
+}
+.food-thaw-start-v739.is-active-v739,
+.food-thaw-start-v739:disabled{
+  border-color:rgba(192,152,79,.25);
+  background:
+    linear-gradient(135deg,rgba(235,247,250,.92),rgba(247,227,181,.88));
+  color:#76755f;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    0 0 0 1px rgba(255,255,255,.28);
+  opacity:1;
+  cursor:default;
+}
+@media(max-width:430px){
+  .food-thaw-entry-v739{
+    grid-template-columns:1fr;
+    gap:7px;
+  }
+  .food-thaw-start-v739{
+    justify-self:start;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .food-thaw-entry-v739,
+  .food-thaw-entry-v739::before,
+  .food-thaw-entry-v739::after,
+  .food-thaw-start-v739{
+    transition:none!important;
+  }
+}
