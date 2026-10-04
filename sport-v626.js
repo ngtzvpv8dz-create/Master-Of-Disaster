@@ -1770,6 +1770,85 @@
     if(reload)await load(true);
   }
 
+  function roundCardioEstimate(value,digits){
+    if(!Number.isFinite(value))return null;
+    const factor=10**digits;
+    return Math.round(value*factor)/factor;
+  }
+
+  function cardioPhaseEstimates(current,phases,totals){
+    if(!Array.isArray(phases)||!phases.length)return {phases:[],meta:null};
+    const totalDistance=numberOrNull(totals?.distance_km);
+    const totalCalories=numberOrNull(totals?.calories_kcal);
+    const totalDuration=numberOrNull(totals?.duration_minutes);
+    const phaseMinutes=phases.reduce((sum,phase)=>sum+(Number(phase.duration_minutes)||0),0);
+    if(!(phaseMinutes>0))return {phases,meta:null};
+
+    const durationMatches=totalDuration===null||Math.abs(phaseMinutes-totalDuration)<=0.25;
+    if(!durationMatches)return {
+      phases,
+      meta:{estimated:false,reason:'phase_duration_mismatch',phase_minutes:roundCardioEstimate(phaseMinutes,2),total_minutes:totalDuration}
+    };
+
+    const name=String(current?.name||'').toLowerCase();
+    const isTreadmill=name.includes('laufband');
+    const durations=phases.map(phase=>Math.max(0,Number(phase.duration_minutes)||0));
+
+    let distanceMethod='time_share';
+    let distanceWeights=[...durations];
+    if(isTreadmill&&phases.every((phase,index)=>durations[index]>0&&numberOrNull(phase.speed_kmh)!==null)){
+      const theoretical=phases.map((phase,index)=>(numberOrNull(phase.speed_kmh)||0)*durations[index]/60);
+      if(theoretical.reduce((sum,value)=>sum+value,0)>0){
+        distanceWeights=theoretical;
+        distanceMethod='speed_x_time_calibrated_to_total';
+      }
+    }
+
+    let calorieMethod='time_share';
+    let calorieWeights=[...durations];
+    if(isTreadmill&&phases.every((phase,index)=>durations[index]>0&&numberOrNull(phase.speed_kmh)!==null)){
+      calorieWeights=phases.map((phase,index)=>{
+        const speed=Math.max(0,numberOrNull(phase.speed_kmh)||0);
+        const incline=Math.max(0,numberOrNull(phase.incline_percent)||0)/100;
+        const metersPerMinute=speed*1000/60;
+        const vo2=speed>=6.5
+          ?0.2*metersPerMinute+0.9*metersPerMinute*incline+3.5
+          :0.1*metersPerMinute+1.8*metersPerMinute*incline+3.5;
+        return Math.max(0,vo2)*durations[index];
+      });
+      calorieMethod='treadmill_intensity_calibrated_to_total';
+    }else{
+      const levels=phases.map(phase=>numberOrNull(phase.resistance_level));
+      if(levels.some(level=>level!==null&&level>0)){
+        calorieWeights=durations.map((minutes,index)=>minutes*Math.max(0.5,levels[index]||1));
+        calorieMethod='duration_x_resistance_calibrated_to_total';
+      }
+    }
+
+    const distanceWeightSum=distanceWeights.reduce((sum,value)=>sum+value,0);
+    const calorieWeightSum=calorieWeights.reduce((sum,value)=>sum+value,0);
+    const estimated=phases.map((phase,index)=>{
+      const next={...phase};
+      if(totalDistance!==null&&distanceWeightSum>0){
+        next.distance_km_estimated=roundCardioEstimate(totalDistance*distanceWeights[index]/distanceWeightSum,3);
+      }
+      if(totalCalories!==null&&calorieWeightSum>0){
+        next.calories_kcal_estimated=roundCardioEstimate(totalCalories*calorieWeights[index]/calorieWeightSum,1);
+      }
+      return next;
+    });
+
+    return {
+      phases:estimated,
+      meta:{
+        estimated:true,
+        distance_method:totalDistance!==null?distanceMethod:null,
+        calorie_method:totalCalories!==null?calorieMethod:null,
+        calibrated_to_measured_totals:true
+      }
+    };
+  }
+
   async function saveCardioValues(id,values){
     const current=state.sessions.flatMap(session=>session.workout||[]).find(item=>item.id===id);
     const metricValues={...(current?.metricValues||{})};
@@ -1778,17 +1857,25 @@
       if(raw!==null&&raw!==undefined&&String(raw).trim()!=='')metricValues[key]=key==='resistance_level'?String(raw).trim():numberOrNull(raw);
       else delete metricValues[key];
     }
-    const phases=Array.isArray(values.phases)?values.phases.map(phase=>({
+    const rawPhases=Array.isArray(values.phases)?values.phases.map(phase=>({
       duration_minutes:numberOrNull(phase.duration_minutes),
       resistance_level:String(phase.resistance_level||'').trim()||null,
       speed_kmh:numberOrNull(phase.speed_kmh),
       incline_percent:numberOrNull(phase.incline_percent)
     })).filter(phase=>phase.duration_minutes!==null||phase.resistance_level!==null||phase.speed_kmh!==null||phase.incline_percent!==null):[];
-    metricValues.phases=phases;
-    const phaseMinutes=phases.reduce((sum,phase)=>sum+(Number(phase.duration_minutes)||0),0);
+    const phaseMinutes=rawPhases.reduce((sum,phase)=>sum+(Number(phase.duration_minutes)||0),0);
     const explicitDuration=numberOrNull(values.duration_minutes);
+    const effectiveDuration=explicitDuration!==null?explicitDuration:(rawPhases.length?phaseMinutes:null);
+    const estimates=cardioPhaseEstimates(current,rawPhases,{
+      duration_minutes:effectiveDuration,
+      distance_km:numberOrNull(values.distance_km),
+      calories_kcal:numberOrNull(values.calories_kcal)
+    });
+    metricValues.phases=estimates.phases;
+    if(estimates.meta)metricValues.phase_estimation=estimates.meta;
+    else delete metricValues.phase_estimation;
     return updateSessionExercise(id,{
-      duration_minutes:explicitDuration!==null?explicitDuration:(phases.length?phaseMinutes:null),
+      duration_minutes:effectiveDuration,
       distance_km:numberOrNull(values.distance_km),
       resistance_level:String(values.resistance_level||'').trim()||null,
       speed_kmh:numberOrNull(values.speed_kmh),
