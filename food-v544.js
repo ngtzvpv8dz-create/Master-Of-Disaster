@@ -1261,31 +1261,67 @@
 
   function inventoryCurrentProductMarkup(item,data=state){
     const productsById=new Map((data?.products||[]).map(product=>[String(product.id||''),product]));
-    const groups=new Map();
+    const rows=[];
     let tracked=0;
     for(const lot of (data?.lots||[])){
       if(String(lot.inventory_id||'')!==String(item?.id||''))continue;
       const quantity=lotQuantityForInventory(lot,item);
-      if(quantity===null||quantity<=0||!lot.product_id)continue;
-      const product=productsById.get(String(lot.product_id));
-      if(!product)continue;
-      const id=String(product.id);
-      const current=groups.get(id)||{product,quantity:0};
-      current.quantity+=quantity;
+      if(quantity===null||quantity<=0)continue;
+      const product=productsById.get(String(lot.product_id||''))||null;
+      const label=product
+        ?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
+        :String(lot.package_label||'Produkt nicht genauer erfasst');
+      rows.push({
+        label,
+        quantity,
+        frozen:frozenStorageLocation(lot.storage_location),
+        mhd:String(lot.best_before_date||'').trim()
+      });
       tracked+=quantity;
-      groups.set(id,current);
     }
-    if(!groups.size)return '';
+
     const aggregate=num(item?.quantity);
-    const complete=aggregate!==null&&Math.abs(tracked-aggregate)<=.05;
-    const title=complete
-      ?(groups.size===1?'Aktuelles Produkt':'Aktuelle Produkte')
-      :'Erfasste Charge';
-    const rows=[...groups.values()].map(entry=>{
-      const label=[entry.product.brand,entry.product.product_name,entry.product.variant].filter(Boolean).join(' · ')||entry.product.product_name||'Produkt';
-      return '<div><span>'+esc(label)+'</span><b>'+esc(fmtQty(entry.quantity,item.unit))+'</b></div>';
-    }).join('');
-    return '<div class="food-stock-products-v733"><small>'+esc(title)+'</small>'+rows+'</div>';
+    if(aggregate!==null&&aggregate-tracked>.05){
+      rows.push({label:'Produkt nicht genauer erfasst',quantity:aggregate-tracked,frozen:false,mhd:''});
+    }
+    if(!rows.length)return '';
+
+    const html=rows.map(entry=>
+      '<div class="food-stock-product-row-v736 '+(entry.frozen?'is-frozen-v736':'')+'">'
+        +'<span><strong>'+esc(entry.label)+'</strong><small>'
+          +esc(fmtQty(entry.quantity,item.unit))
+          +(entry.frozen?' · eingefroren':'')
+          +(entry.mhd?' · MHD '+esc(fmtDate(entry.mhd)):'')
+        +'</small></span>'
+      +'</div>'
+    ).join('');
+    return '<div class="food-stock-products-v733 food-stock-products-v736"><small>'+(rows.length===1?'PRODUKT':'PRODUKTE / CHARGEN')+'</small>'+html+'</div>';
+  }
+
+  function inventoryVariantPackSummary(item,data=state){
+    const lots=(data?.lots||[]).filter(lot=>String(lot.inventory_id||'')===String(item?.id||''));
+    if(!lots.length)return '';
+    const parts=[];
+    let opened=0;
+    const unopened=new Map();
+    for(const lot of lots){
+      const openedQty=num(lot.opened_remaining_quantity);
+      const openedUnit=String(lot.opened_remaining_unit||lot.package_unit||'').trim();
+      if(openedQty!==null&&openedQty>0&&openedUnit===String(item.unit||''))opened+=openedQty;
+
+      const count=Math.max(0,Number(lot.unopened_packages)||0);
+      const packQty=num(lot.package_quantity);
+      const packUnit=String(lot.package_unit||'').trim();
+      if(count>0&&packQty!==null&&packQty>0&&packUnit===String(item.unit||'')){
+        const key=String(packQty)+'|'+packUnit;
+        const current=unopened.get(key)||{count:0,quantity:packQty,unit:packUnit};
+        current.count+=count;
+        unopened.set(key,current);
+      }
+    }
+    if(opened>0)parts.push(fmtQty(opened,item.unit)+' offen');
+    for(const entry of unopened.values())parts.push(entry.count+' × '+fmtQty(entry.quantity,entry.unit)+' ungeöffnet');
+    return parts.join(' + ');
   }
 
   function inventoryCard(item){
@@ -1316,13 +1352,15 @@
       :'';
     const weighAction=pending?'<button type="button" data-food-weigh="'+esc(item.id)+'">Jetzt abwiegen</button>':'';
     const status=empty?'leer':(item.opened?'angebrochen':'unangebrochen');
-    const displayName=String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):item.name;
+    const displayName=String(item.catalog_variant_label||item.variant_label||item.name||'Variante').trim()||item.name;
+    const packSummary=empty?'':inventoryVariantPackSummary(item);
+    const quantityDisplay=pending?quantity:(quantity+(known!==null&&known>0?' gesamt':''));
     const details=item.note&&expanded?'<div class="food-stock-details-v697">'+inventoryNoteHtml(item.note)+'</div>':'';
     const mhd=empty?'':inventoryMhdMarkup(item);
     const currentProduct=empty?'':inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
     const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantityDisplay)+'</strong>'+(packSummary?'<small class="food-stock-pack-summary-v736">'+esc(packSummary)+'</small>':'')+'</div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
