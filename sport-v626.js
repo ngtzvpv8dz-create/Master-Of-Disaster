@@ -1,9 +1,9 @@
-/* V717 · SPORT · sequential active workout + isolated test sessions */
+/* V718 · SPORT · sequential active workout + isolated test sessions */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V717';
+  const VERSION='V718';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
