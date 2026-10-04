@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V735';
+  const VERSION='V737';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -21,6 +21,10 @@
   let loadPromise=null;
   let renderSerial=0;
   let state=null;
+  let plannedAllocationCacheState=null;
+  let plannedAllocationCache=null;
+  let plannedThawCacheState=null;
+  let plannedThawCache=null;
   const REQUEST_TIMEOUT_MS=3500;
   const SOURCE_KEYS=['meals','inventory','lots','recipes','shopping','cart','leftovers','products'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
@@ -839,9 +843,10 @@
   }
 
   function plannedFamilyAllocationMaps(){
+    if(plannedAllocationCacheState===state&&plannedAllocationCache)return plannedAllocationCache;
+
     const quantities=new Map((state?.inventory||[]).map(stock=>[String(stock.id),Math.max(0,num(stock.quantity)||0)]));
     const maps=new Map();
-    const today=todayIso();
     const meals=[...(state?.meals||[])]
       .filter(meal=>String(meal.meal_date||'')>=recentPlanningStartIso())
       .sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||
@@ -863,6 +868,9 @@
         }
       }
     }
+
+    plannedAllocationCacheState=state;
+    plannedAllocationCache=maps;
     return maps;
   }
 
@@ -1018,33 +1026,18 @@
   }
 
   function plannedThawTasks(){
+    if(plannedThawCacheState===state&&plannedThawCache)return plannedThawCache;
+
+    const today=todayIso();
     const meals=[...(state?.meals||[])]
-      .filter(meal=>normalizedStatus(meal.status)==='planned'&&!meal.inventory_booked_at)
+      .filter(meal=>
+        normalizedStatus(meal.status)==='planned'&&
+        !meal.inventory_booked_at&&
+        String(meal.meal_date||'')>=today
+      )
       .sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||Number(a.sort_order||0)-Number(b.sort_order||0));
     const allocationMaps=plannedFamilyAllocationMaps();
     const tasks=[];
-
-    const reminderSlot=target=>{
-      const all=[...(state?.meals||[])].sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||Number(a.sort_order||0)-Number(b.sort_order||0));
-      const sameDate=all.filter(meal=>meal.meal_date===target.meal_date);
-      const previousDate=plusDays(target.meal_date,-1);
-      const previous=all.filter(meal=>meal.meal_date===previousDate);
-      const lastPrevious=previous.slice().sort((a,b)=>Number(b.sort_order||0)-Number(a.sort_order||0))[0]||null;
-      if(target.meal_type==='dinner'){
-        return sameDate.find(meal=>meal.meal_type==='breakfast')||
-          sameDate.find(meal=>meal.meal_type==='lunch')||
-          lastPrevious||target;
-      }
-      if(target.meal_type==='lunch'){
-        return previous.find(meal=>meal.meal_type==='dinner')||lastPrevious||
-          sameDate.find(meal=>meal.meal_type==='breakfast')||target;
-      }
-      if(target.meal_type==='breakfast'){
-        return previous.find(meal=>meal.meal_type==='dinner')||lastPrevious||target;
-      }
-      return sameDate.find(meal=>meal.meal_type==='breakfast')||
-        previous.find(meal=>meal.meal_type==='dinner')||lastPrevious||target;
-    };
 
     for(const target of meals){
       const map=allocationMaps.get(String(target.id||''))||new Map();
@@ -1054,11 +1047,10 @@
         if(!frozen.length)continue;
         const quantity=frozen.reduce((sum,part)=>sum+(Number(part.quantity)||0),0);
         if(quantity<=0)continue;
-        const reminder=reminderSlot(target);
         tasks.push({
           targetMealId:String(target.id||''),
-          reminderMealId:String(reminder?.id||target.id||''),
-          targetDate:target.meal_date,
+          targetDate:String(target.meal_date||''),
+          dueDate:String(target.meal_date||'')===today?today:plusDays(String(target.meal_date||''),-1),
           targetType:target.meal_type,
           targetTitle:target.title||'Mahlzeit',
           ingredient:ingredientName(item),
@@ -1067,23 +1059,49 @@
         });
       }
     }
+
+    plannedThawCacheState=state;
+    plannedThawCache=tasks;
     return tasks;
   }
 
-  function thawReminderMarkupForMeal(meal){
-    const tasks=plannedThawTasks().filter(task=>task.reminderMealId===String(meal?.id||''));
-    if(!tasks.length)return '';
-    return '<div class="food-thaw-reminder-v736"><strong>Auftauen</strong>'+
-      tasks.map(task=>'<span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' im Kühlschrank auftauen · für '+(MEAL_LABELS[task.targetType]||task.targetType)+' „'+task.targetTitle+'“')+'</span>').join('')+
-      '</div>';
+  function thawReminderMarkupForMeal(){
+    return '';
   }
 
   function thawTodayAlertsMarkup(){
     const today=todayIso();
-    const tasks=plannedThawTasks().filter(task=>task.targetDate===today);
+    const tomorrow=plusDays(today,1);
+    const hour=new Date().getHours();
+    const tasks=plannedThawTasks().filter(task=>task.dueDate===today);
     if(!tasks.length)return '';
-    return '<section class="food-thaw-today-v736"><strong>Heute rechtzeitig auftauen</strong>'+
-      tasks.map(task=>'<span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+(MEAL_LABELS[task.targetType]||task.targetType)+' „'+task.targetTitle+'“')+'</span>').join('')+
+
+    const timing=task=>{
+      if(task.targetDate===today){
+        if(task.targetType==='dinner'){
+          if(hour<11)return 'Heute Vormittag in den Kühlschrank legen';
+          if(hour<14)return 'Jetzt in den Kühlschrank legen · spätestens mittags';
+          return 'Jetzt in den Kühlschrank legen';
+        }
+        return 'Jetzt in den Kühlschrank legen';
+      }
+      if(task.targetDate===tomorrow){
+        return task.targetType==='dinner'
+          ?'Heute Abend in den Kühlschrank legen · spätestens morgen früh'
+          :'Heute Abend in den Kühlschrank legen';
+      }
+      return 'Heute Abend in den Kühlschrank legen';
+    };
+
+    const targetLabel=task=>{
+      const meal=MEAL_LABELS[task.targetType]||task.targetType||'Mahlzeit';
+      if(task.targetDate===today)return 'heute · '+meal;
+      if(task.targetDate===tomorrow)return 'morgen · '+meal;
+      return fmtDate(task.targetDate)+' · '+meal;
+    };
+
+    return '<section class="food-thaw-today-v736"><strong>Auftauen · heute dran</strong>'+
+      tasks.map(task=>'<span><b>'+esc(timing(task))+'</b> · '+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span>').join('')+
       '</section>';
   }
 
@@ -1108,7 +1126,6 @@
     const action=status==='completed'
       ?''
       :'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isMealPrep?'Als gegessen markieren':'Als zubereitet markieren')+'</button>';
-    const thawReminder=thawReminderMarkupForMeal(meal);
     const statusMeta=status==='completed'
       ?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at))
       :'Geplant';
@@ -1131,7 +1148,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em>'+(extrasSummary?'<small class="food-meal-extras-summary-v703">'+esc(extrasSummary)+'</small>':'')+'</span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
-        +thawReminder+details
+        +details
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +action
         +'</article>';
@@ -1152,7 +1169,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
-        +thawReminder+freezeHint+view.details+planNote
+        +freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
         +'</article>';
@@ -1178,7 +1195,7 @@
         +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta+' · '+statusMeta)+'</em></span>'
         +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
       +'</button>'
-      +thawReminder+details+action
+      +details+action
       +'</article>';
   }
 
@@ -1305,51 +1322,79 @@
       ?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
       :'Produkt nicht genauer erfasst';
 
-    const lotSummary=lot=>{
-      const parts=[];
+    const groupKey=lot=>{
+      const frozen=frozenStorageLocation(lot.storage_location);
+      return String(lot.product_id||'unknown')+'|'+(frozen?'frozen':'fresh');
+    };
+    const groups=new Map();
+    let tracked=0;
+
+    for(const lot of lots){
+      const quantity=Math.max(0,Number(lotQuantityForInventory(lot,item))||0);
+      tracked+=quantity;
+      const key=groupKey(lot);
+      if(!groups.has(key)){
+        groups.set(key,{
+          product:productsById.get(String(lot.product_id||''))||null,
+          frozen:frozenStorageLocation(lot.storage_location),
+          opened:new Map(),
+          unopened:new Map(),
+          quantity:0
+        });
+      }
+      const group=groups.get(key);
+      group.quantity+=quantity;
+
       const opened=Math.max(0,Number(lot.opened_remaining_quantity)||0);
       const openedUnit=String(lot.opened_remaining_unit||lot.package_unit||item.unit||'').trim();
-      if(opened>0)parts.push(fmtQty(opened,openedUnit)+' offen');
+      if(opened>0&&openedUnit){
+        group.opened.set(openedUnit,(group.opened.get(openedUnit)||0)+opened);
+      }
+
       const unopened=Math.max(0,Number(lot.unopened_packages)||0);
       const packQty=Math.max(0,Number(lot.package_quantity)||0);
       const packUnit=String(lot.package_unit||item.unit||'').trim();
       if(unopened>0){
-        parts.push(packQty>0
-          ?unopened+' × '+fmtQty(packQty,packUnit)+' ungeöffnet'
-          :unopened+' '+(unopened===1?'Packung':'Packungen')+' ungeöffnet');
+        const packKey=packQty+'|'+packUnit;
+        const current=group.unopened.get(packKey)||{count:0,quantity:packQty,unit:packUnit};
+        current.count+=unopened;
+        group.unopened.set(packKey,current);
       }
-      return parts.join(' + ')||fmtQty(lotQuantityForInventory(lot,item)||0,item.unit);
-    };
-
-    const rows=[];
-    let tracked=0;
-    for(const lot of lots){
-      const quantity=lotQuantityForInventory(lot,item);
-      tracked+=Math.max(0,Number(quantity)||0);
-      const product=productsById.get(String(lot.product_id||''))||null;
-      rows.push({
-        label:productLabel(product),
-        summary:lotSummary(lot),
-        frozen:frozenStorageLocation(lot.storage_location)
-      });
     }
+
+    const rows=[...groups.values()].map(group=>{
+      const parts=[];
+      for(const [unit,quantity] of group.opened){
+        parts.push(unit==='Stück'
+          ?fmtQty(quantity,unit)+' in angebrochener Packung'
+          :fmtQty(quantity,unit)+' offen');
+      }
+      for(const pack of group.unopened.values()){
+        parts.push(pack.quantity>0
+          ?pack.count+' × '+fmtQty(pack.quantity,pack.unit)+' ungeöffnet'
+          :pack.count+' '+(pack.count===1?'Packung':'Packungen')+' ungeöffnet');
+      }
+      return {
+        label:productLabel(group.product),
+        summary:parts.join(' + ')||fmtQty(group.quantity,item.unit),
+        frozen:group.frozen
+      };
+    });
 
     const aggregate=Math.max(0,Number(item?.quantity)||0);
     const untracked=Math.max(0,aggregate-tracked);
     if(untracked>.05){
-      const product=products.length===1?products[0]:null;
       rows.unshift({
-        label:productLabel(product),
-        summary:fmtQty(untracked,item.unit)+' Bestand · Charge nicht getrennt erfasst',
+        label:lots.length?'Älterer Bestand':(products.length===1?productLabel(products[0]):'Bestand'),
+        summary:fmtQty(untracked,item.unit)+(lots.length?' · noch nicht einer Charge zugeordnet':' · ohne Chargenaufteilung'),
         frozen:false
       });
     }
 
     if(!rows.length&&aggregate>0){
-      const product=products.length===1?products[0]:null;
       rows.push({
-        label:productLabel(product),
-        summary:fmtQty(aggregate,item.unit)+' Bestand · Charge nicht getrennt erfasst',
+        label:products.length===1?productLabel(products[0]):'Bestand',
+        summary:fmtQty(aggregate,item.unit)+' · ohne Chargenaufteilung',
         frozen:false
       });
     }
@@ -1358,7 +1403,7 @@
     const html=rows.map(row=>
       '<div class="food-stock-product-row-v736 '+(row.frozen?'is-frozen-v736':'')+'"><span><b>'+esc(row.label)+'</b><small>'+esc(row.summary+(row.frozen?' · eingefroren':''))+'</small></span></div>'
     ).join('');
-    return '<div class="food-stock-products-v736"><small>'+(rows.length===1?'Aktuelles Produkt':'Aktuelle Produkte')+'</small>'+html+'</div>';
+    return '<div class="food-stock-products-v736"><small>'+(rows.length===1?'Aktuelles Produkt':'Bestand nach Produkt / Charge')+'</small>'+html+'</div>';
   }
 
   function inventoryCard(item){
