@@ -1,9 +1,9 @@
-/* V726 · SPORT · active slogan only in empty state */
+/* V727 · SPORT · enforce single running exercise */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V726';
+  const VERSION='V727';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -1615,8 +1615,21 @@
 
     const {supabase}=await sportUser();
     const stamp=new Date().toISOString();
+
+    if(status==='running'){
+      const otherRunning=(session.workout||[]).filter(item=>item.status==='running'&&String(item.id)!==String(id));
+      for(const other of otherRunning){
+        const reset=await supabase.from('sport_session_exercises')
+          .update({status:'planned',started_at:null,ended_at:null})
+          .eq('id',other.id)
+          .eq('status','running');
+        if(reset.error)throw reset.error;
+        expandedExercises.delete(other.id);
+      }
+    }
+
     const patch={status};
-    if(status==='running')patch.started_at=exercise.startedAt||stamp;
+    if(status==='running')patch.started_at=stamp;
     if(status==='completed'||status==='skipped')patch.ended_at=stamp;
     if(status==='planned'){patch.started_at=null;patch.ended_at=null;}
 
@@ -1629,10 +1642,11 @@
       expandedExercises.delete(id);
       const ordered=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder);
       const index=ordered.findIndex(item=>String(item.id)===String(id));
+      const anotherRunning=ordered.find(item=>String(item.id)!==String(id)&&item.status==='running');
       const next=ordered.slice(Math.max(0,index+1)).find(item=>item.status==='planned');
-      if(next&&session.status==='running'){
+      if(!anotherRunning&&next&&session.status==='running'){
         result=await supabase.from('sport_session_exercises')
-          .update({status:'running',started_at:next.startedAt||stamp})
+          .update({status:'running',started_at:stamp,ended_at:null})
           .eq('id',next.id)
           .eq('status','planned');
         if(result.error)throw result.error;
