@@ -52,14 +52,14 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=738-chicken-thaw-fix',
+      './food-v544.js?v=739-thaw-running',
       './food-nutrition-v711.js?v=713-inventory-view-fix'
     ],
     shopping:[
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=738-chicken-thaw-fix',
+      './food-v544.js?v=739-thaw-running',
       './food-nutrition-v711.js?v=713-inventory-view-fix',
       './shopping-v678.js?v=732-overdue-warning'
     ],
@@ -142,9 +142,9 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=730-fitx-lifecycle','./sport-circuit-v682.js?v=682-home-focus'],
-    food:['./food-v544.js?v=738-chicken-thaw-fix',
+    food:['./food-v544.js?v=739-thaw-running',
       './food-nutrition-v711.js?v=713-inventory-view-fix'],
-    shopping:['./food-v544.js?v=738-chicken-thaw-fix',
+    shopping:['./food-v544.js?v=739-thaw-running',
       './food-nutrition-v711.js?v=713-inventory-view-fix','./shopping-v678.js?v=732-overdue-warning'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
