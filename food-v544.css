@@ -1557,3 +1557,39 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 @media(max-width:430px){
   .food-planned-qty-controls-v729{justify-content:flex-start}
 }
+
+
+/* V733 · aktuelles konkretes Produkt aus aktiven Chargen */
+.food-stock-products-v733{
+  display:grid;
+  gap:4px;
+  margin-top:7px;
+  padding:7px 8px;
+  border:1px solid rgba(143,178,201,.12);
+  border-radius:10px;
+  background:rgba(143,178,201,.045);
+}
+.food-stock-products-v733>small{
+  color:#8fa8b8;
+  font-size:.48rem;
+  font-weight:900;
+  letter-spacing:.055em;
+  text-transform:uppercase;
+}
+.food-stock-products-v733>div{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:9px;
+}
+.food-stock-products-v733 span{
+  min-width:0;
+  color:#c7d6df;
+  font-size:.56rem;
+  line-height:1.3;
+}
+.food-stock-products-v733 b{
+  flex:none;
+  color:#dde7ed;
+  font-size:.56rem;
+}

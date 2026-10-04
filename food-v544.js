@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V732';
+  const VERSION='V733';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1036,6 +1036,35 @@
     return '<span class="food-stock-mhd-v707">'+label+' '+esc(fmtDate(dates[0]))+'</span>';
   }
 
+  function inventoryCurrentProductMarkup(item,data=state){
+    const productsById=new Map((data?.products||[]).map(product=>[String(product.id||''),product]));
+    const groups=new Map();
+    let tracked=0;
+    for(const lot of (data?.lots||[])){
+      if(String(lot.inventory_id||'')!==String(item?.id||''))continue;
+      const quantity=lotQuantityForInventory(lot,item);
+      if(quantity===null||quantity<=0||!lot.product_id)continue;
+      const product=productsById.get(String(lot.product_id));
+      if(!product)continue;
+      const id=String(product.id);
+      const current=groups.get(id)||{product,quantity:0};
+      current.quantity+=quantity;
+      tracked+=quantity;
+      groups.set(id,current);
+    }
+    if(!groups.size)return '';
+    const aggregate=num(item?.quantity);
+    const complete=aggregate!==null&&Math.abs(tracked-aggregate)<=.05;
+    const title=complete
+      ?(groups.size===1?'Aktuelles Produkt':'Aktuelle Produkte')
+      :'Erfasste Charge';
+    const rows=[...groups.values()].map(entry=>{
+      const label=[entry.product.brand,entry.product.product_name,entry.product.variant].filter(Boolean).join(' · ')||entry.product.product_name||'Produkt';
+      return '<div><span>'+esc(label)+'</span><b>'+esc(fmtQty(entry.quantity,item.unit))+'</b></div>';
+    }).join('');
+    return '<div class="food-stock-products-v733"><small>'+esc(title)+'</small>'+rows+'</div>';
+  }
+
   function inventoryCard(item){
     const expanded=expandedInventory.has(String(item.id));
     const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):(item.quantity_label||fmtQty(item.quantity,item.unit));
@@ -1067,9 +1096,10 @@
     const displayName=String(item.family_name||'').trim()?(String(item.variant_label||item.name||'').trim()||item.name):item.name;
     const details=item.note&&expanded?'<div class="food-stock-details-v697">'+inventoryNoteHtml(item.note)+'</div>':'';
     const mhd=empty?'':inventoryMhdMarkup(item);
+    const currentProduct=empty?'':inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
     const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    return '<article class="food-stock-card-v544 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
