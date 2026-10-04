@@ -2072,3 +2072,233 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 @media(max-width:520px){
   .sport-test-course-list-v717>form{grid-template-columns:1fr}
 }
+
+
+/* V719 · active exercise focus */
+.sport-active-hero-v719{
+  display:grid;
+  gap:8px;
+}
+.sport-active-exercise-focus-v719{
+  display:grid;
+  gap:9px;
+  margin-top:4px;
+  padding:11px;
+  border:1px solid rgba(111,228,234,.15);
+  border-radius:14px;
+  background:linear-gradient(150deg,rgba(3,25,29,.78),rgba(1,11,14,.74));
+  box-shadow:0 12px 30px rgba(0,0,0,.24),inset 0 0 0 1px rgba(255,255,255,.018);
+}
+.sport-active-exercise-focus-v719.is-waiting{
+  border-color:rgba(236,194,93,.18);
+}
+.sport-active-exercise-focus-v719.is-empty{
+  gap:3px;
+  color:#789a9e;
+}
+.sport-active-exercise-focus-v719.is-empty strong{
+  color:#b3d2d4;
+  font-size:.65rem;
+}
+.sport-active-exercise-focus-v719.is-empty span{
+  font-size:.54rem;
+}
+.sport-active-exercise-head-v719{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+}
+.sport-active-exercise-head-v719>div{
+  display:grid;
+  gap:2px;
+  min-width:0;
+}
+.sport-active-exercise-head-v719 span{
+  color:#77cbd0;
+  font-size:.49rem;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+.sport-active-exercise-head-v719 h2{
+  margin:0;
+  color:#edf9f9;
+  font-size:1.02rem;
+  line-height:1.12;
+}
+.sport-active-exercise-head-v719 small{
+  color:#87a9ac;
+  font-size:.53rem;
+  line-height:1.35;
+}
+.sport-active-exercise-head-v719>button{
+  flex:0 0 auto;
+  min-height:30px;
+  padding:6px 9px;
+  border:1px solid rgba(111,228,234,.14);
+  border-radius:9px;
+  background:rgba(11,56,61,.46);
+  color:#c7eff1;
+  font:inherit;
+  font-size:.51rem;
+  font-weight:900;
+}
+.sport-active-exercise-editor-v719{
+  display:grid;
+  gap:8px;
+}
+.sport-active-exercise-focus-v719 .sport-cardio-form-v613{
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+.sport-active-exercise-focus-v719 .sport-cardio-totals-v613{
+  gap:6px;
+}
+.sport-active-exercise-focus-v719 .sport-cardio-total-title-v613{
+  margin-bottom:2px;
+}
+.sport-active-exercise-focus-v719 .sport-cardio-save-v613{
+  min-height:36px;
+}
+.sport-active-strength-v719{
+  display:grid;
+  gap:8px;
+}
+.sport-active-set-form-v719{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px;
+  padding:9px;
+  border:1px solid rgba(111,228,234,.10);
+  border-radius:11px;
+  background:rgba(0,0,0,.16);
+}
+.sport-active-set-head-v719{
+  grid-column:1/-1;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+}
+.sport-active-set-head-v719 span{
+  color:#6faeb3;
+  font-size:.47rem;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+.sport-active-set-head-v719 strong{
+  color:#daf2f3;
+  font-size:.66rem;
+}
+.sport-active-set-form-v719 .sport-set-last-v613{
+  grid-column:1/-1;
+}
+.sport-active-set-form-v719 .sport-set-save-v613{
+  grid-column:1/-1;
+  min-height:38px;
+  font-size:.55rem;
+}
+.sport-active-saved-sets-v719{
+  border:1px solid rgba(111,228,234,.07);
+  border-radius:9px;
+  background:rgba(0,0,0,.12);
+}
+.sport-active-saved-sets-v719>summary{
+  padding:7px 8px;
+  color:#8fb3b6;
+  font-size:.51rem;
+  font-weight:800;
+  cursor:pointer;
+}
+.sport-active-saved-sets-v719>div{
+  display:grid;
+  gap:4px;
+  padding:0 8px 8px;
+}
+.sport-active-saved-sets-v719 span{
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  gap:6px;
+  align-items:center;
+  font-size:.50rem;
+}
+.sport-active-saved-sets-v719 b{
+  color:#9dd8dc;
+}
+.sport-active-saved-sets-v719 em{
+  color:#768f92;
+  font-style:normal;
+}
+.sport-active-all-sets-v719{
+  display:grid;
+  gap:3px;
+  padding:8px 9px;
+  border-radius:9px;
+  background:rgba(20,77,59,.18);
+}
+.sport-active-all-sets-v719 strong{
+  color:#bfe6d3;
+  font-size:.59rem;
+}
+.sport-active-all-sets-v719 span{
+  color:#7fa493;
+  font-size:.51rem;
+}
+.sport-active-add-set-v719{
+  min-height:34px;
+  border:1px solid rgba(111,228,234,.10);
+  border-radius:9px;
+  background:rgba(5,37,41,.44);
+  color:#a9dadd;
+  font:inherit;
+  font-size:.52rem;
+  font-weight:900;
+}
+.sport-active-exercise-actions-v719{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+}
+.sport-active-exercise-actions-v719 button{
+  min-height:39px;
+  padding:8px 10px;
+  border:1px solid rgba(111,228,234,.11);
+  border-radius:10px;
+  background:rgba(7,42,46,.50);
+  color:#bfe7e9;
+  font:inherit;
+  font-size:.55rem;
+  font-weight:900;
+}
+.sport-active-exercise-actions-v719 button.primary{
+  border-color:rgba(111,228,234,.20);
+  background:rgba(18,91,97,.48);
+  color:#e5fbfc;
+}
+.sport-active-time-row-v719{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:0 2px;
+  color:#6f8e92;
+}
+.sport-active-time-row-v719 span{
+  min-width:0;
+  font-size:.49rem;
+}
+.sport-active-time-row-v719 strong{
+  flex:0 0 auto;
+  color:#96b8bb;
+  font-size:.63rem;
+  letter-spacing:.04em;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:480px){
+  .sport-active-exercise-focus-v719{padding:9px}
+  .sport-active-set-form-v719{grid-template-columns:1fr 1fr}
+  .sport-active-set-form-v719>label:nth-of-type(3){grid-column:1/-1}
+  .sport-active-exercise-actions-v719{grid-template-columns:1fr}
+  .sport-active-exercise-actions-v719 button{width:100%}
+}
