@@ -481,3 +481,70 @@
   width:100%;
   font-weight:800;
 }
+
+
+/* V732 · auffälliger Hinweis für überfällige offene Mahlzeiten */
+.shopping-overdue-warning-v732{
+  display:grid;
+  gap:9px;
+  margin:0 0 11px;
+  padding:11px;
+  border:1px solid rgba(239,154,82,.42);
+  border-radius:14px;
+  background:linear-gradient(135deg,rgba(239,154,82,.13),rgba(183,76,65,.08));
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+}
+.shopping-overdue-warning-head-v732{
+  display:grid;
+  grid-template-columns:34px minmax(0,1fr);
+  gap:9px;
+  align-items:start;
+}
+.shopping-overdue-warning-head-v732>span{
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  background:rgba(239,154,82,.18);
+  color:#ffd0a6;
+  font-weight:950;
+  font-size:1rem;
+}
+.shopping-overdue-warning-head-v732 strong{
+  display:block;
+  color:#ffe1c4;
+  font-size:.72rem;
+  letter-spacing:.015em;
+}
+.shopping-overdue-warning-head-v732 p{
+  margin:3px 0 0;
+  color:#cdb8aa;
+  font-size:.56rem;
+  line-height:1.4;
+}
+.shopping-overdue-warning-v732 ul{
+  display:grid;
+  gap:5px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.shopping-overdue-warning-v732 li{
+  display:grid;
+  gap:2px;
+  padding:7px 8px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:9px;
+  background:rgba(16,21,28,.42);
+}
+.shopping-overdue-warning-v732 li strong{
+  color:#f2c79f;
+  font-size:.55rem;
+}
+.shopping-overdue-warning-v732 li span,
+.shopping-overdue-warning-v732>small{
+  color:#bfae9f;
+  font-size:.53rem;
+  line-height:1.3;
+}

@@ -1,4 +1,4 @@
-/* V731 · SHOPPING / FAMILY-AWARE STOCK
+/* V732 · SHOPPING / FAMILY-AWARE STOCK
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V731';
+  const VERSION='V732';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -359,8 +359,9 @@
       const usePlan=foodUsageTimeline(item.uses,item.unit);
       const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
       const windowAvailable=Math.max(0,Number(item.available)||0);
+      const preWindowPlanned=Math.max(0,currentAvailable-windowAvailable);
       const reservedNote=currentAvailable>windowAvailable+.0001
-        ?' · davon '+fmtQty(windowAvailable,item.unit)+' für diesen Einkaufsblock verfügbar'
+        ?' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' für diesen Einkaufsblock übrig'
         :'';
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:item.label||'Lebensmittel',
@@ -673,6 +674,23 @@
       +'</div></section>';
   }
 
+  function overdueFoodWarningMarkup(){
+    const overdue=Array.isArray(state.food?.overdueMeals)?state.food.overdueMeals:[];
+    if(!overdue.length)return '';
+    const labels={breakfast:'Frühstück',lunch:'Mittagessen',snack:'Snack',dinner:'Abendessen'};
+    const visible=overdue.slice(0,5);
+    const rows=visible.map(meal=>{
+      const count=Math.max(0,Number(meal.ingredient_count)||0);
+      const ingredients=count?count+' '+(count===1?'Zutat':'Zutaten'):'Zutaten nicht hinterlegt';
+      return '<li><strong>'+esc(fmtDate(meal.meal_date))+' · '+esc(labels[meal.meal_type]||'Mahlzeit')+'</strong><span>'+esc(meal.title||'Mahlzeit')+' · '+esc(ingredients)+'</span></li>';
+    }).join('');
+    const more=overdue.length>visible.length?'<small>+ '+(overdue.length-visible.length)+' weitere offene Mahlzeit'+(overdue.length-visible.length===1?'':'en')+'</small>':'';
+    return '<section class="shopping-overdue-warning-v732" role="status">'
+      +'<div class="shopping-overdue-warning-head-v732"><span aria-hidden="true">!</span><div><strong>Achtung: noch nicht abgeschlossene Mahlzeiten</strong><p>Diese Mahlzeiten liegen in der Vergangenheit. Die Zutaten könnten bereits verbraucht sein, ohne dass der Vorrat gebucht wurde. Die Einkaufsliste reserviert sie deshalb vorsichtshalber weiter. Bitte im Food-Bereich prüfen und abschließen.</p></div></div>'
+      +'<ul>'+rows+'</ul>'+more
+      +'</section>';
+  }
+
   function shell(){
     const rows=buildRows();
     const now=rows.filter(row=>row.section==='now');
@@ -687,6 +705,7 @@
     return '<div class="shopping-hero-v643"><div><span>SHOPPING CONTROL</span><h2>EINKAUFSLISTE</h2></div></div>'
       +'<div class="shopping-summary-v643"><div><strong>'+now.length+'</strong><span>Einkaufen</span></div><div><strong>'+later.length+'</strong><span>Später</span></div><div><strong>'+cart.length+'</strong><span>Im Wagen</span></div><div><strong>'+reviewCount+'</strong><span>Prüfen</span></div></div>'
       +warning
+      +overdueFoodWarningMarkup()
       +'<div class="shopping-sections-v643">'
       +sectionMarkup('now','PHASE 1 · EINKAUFEN','jetzt relevant',now,addEntryActionMarkup())
       +laterSectionMarkup(later)

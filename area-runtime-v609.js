@@ -52,16 +52,16 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=731-shopping-plan-fix',
+      './food-v544.js?v=732-overdue-warning',
       './food-nutrition-v711.js?v=713-inventory-view-fix'
     ],
     shopping:[
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=731-shopping-plan-fix',
+      './food-v544.js?v=732-overdue-warning',
       './food-nutrition-v711.js?v=713-inventory-view-fix',
-      './shopping-v678.js?v=731-shopping-plan-fix'
+      './shopping-v678.js?v=732-overdue-warning'
     ],
     kistology:[
       SUPABASE,
@@ -142,10 +142,10 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=730-fitx-lifecycle','./sport-circuit-v682.js?v=682-home-focus'],
-    food:['./food-v544.js?v=731-shopping-plan-fix',
+    food:['./food-v544.js?v=732-overdue-warning',
       './food-nutrition-v711.js?v=713-inventory-view-fix'],
-    shopping:['./food-v544.js?v=731-shopping-plan-fix',
-      './food-nutrition-v711.js?v=713-inventory-view-fix','./shopping-v678.js?v=731-shopping-plan-fix'],
+    shopping:['./food-v544.js?v=732-overdue-warning',
+      './food-nutrition-v711.js?v=713-inventory-view-fix','./shopping-v678.js?v=732-overdue-warning'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
     denkfabrik:['./denkfabrik-v635.js?v=635-refresh'],

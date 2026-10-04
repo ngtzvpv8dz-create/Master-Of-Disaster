@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V731';
+  const VERSION='V732';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1304,8 +1304,9 @@
         :(delayed?'Kaufen ab '+fmtShortDate(item.buyFrom):'');
       const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
       const windowAvailable=Math.max(0,Number(item.available)||0);
+      const preWindowPlanned=Math.max(0,currentAvailable-windowAvailable);
       const stockText=currentAvailable>windowAvailable+.0001
-        ?'Aktuell '+fmtQty(currentAvailable,item.unit)+' · davon '+fmtQty(windowAvailable,item.unit)+' für dieses Einkaufsfenster verfügbar'
+        ?'Aktuell '+fmtQty(currentAvailable,item.unit)+' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' übrig'
         :'Aktuell '+fmtQty(currentAvailable,item.unit);
       const conversion=item.convertedStock?'<em>Vorrat passend umgerechnet</em>':'';
       const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>'+esc(stockText)+(usePlan?' · Bedarf '+esc(usePlan):'')+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
@@ -2504,11 +2505,22 @@
     const gaps=deriveShopping(data);
     const manualFood=(data.shopping||[]).filter(item=>!item.checked);
     const cartKeys=(data.cart||[]).map(item=>String(item.shopping_key||'')).filter(Boolean);
+    const overdueMeals=(data.meals||[])
+      .filter(meal=>normalizedStatus(meal.status)==='planned'&&String(meal.meal_date||'')<todayIso())
+      .sort((a,b)=>String(a.meal_date||'').localeCompare(String(b.meal_date||''))||Number(a.sort_order||0)-Number(b.sort_order||0))
+      .map(meal=>({
+        id:String(meal.id||''),
+        meal_date:meal.meal_date||null,
+        meal_type:meal.meal_type||null,
+        title:meal.title||'Mahlzeit',
+        ingredient_count:Array.isArray(meal.ingredients)?meal.ingredients.length:0
+      }));
     return {
       gaps:gaps.map(item=>({...item,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
-      inventory:(data.inventory||[]).map(item=>({...item}))
+      inventory:(data.inventory||[]).map(item=>({...item})),
+      overdueMeals
     };
   }
 
