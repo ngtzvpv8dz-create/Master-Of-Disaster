@@ -13,6 +13,7 @@ begin
     elsif v_text ~ '(^|[[:space:]])orange([[:space:]]|$)' then v_color:='Orange';
     elsif v_text ~ '(^|[[:space:]])grün(e|er|es|en)?([[:space:]]|$)' then v_color:='Grün';
     end if;
+
     if nullif(trim(new.catalog_family_name),'') is null
        or lower(trim(new.catalog_family_name)) like 'paprika %' then
       new.catalog_family_name:='Paprika';

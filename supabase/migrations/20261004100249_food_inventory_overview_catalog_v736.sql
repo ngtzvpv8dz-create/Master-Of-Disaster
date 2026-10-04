@@ -1,1 +1,24 @@
-create or replace view public.food_inventory_overview as select user_id,name,quantity_label,forecast_label,tone,note,sort_order,id,quantity,unit,is_active,opened,use_priority,pending_weighing,shopping_excluded,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label from public.food_inventory where is_active=true;
+create or replace view public.food_inventory_overview as
+select
+  user_id,
+  name,
+  quantity_label,
+  forecast_label,
+  tone,
+  note,
+  sort_order,
+  id,
+  quantity,
+  unit,
+  is_active,
+  opened,
+  use_priority,
+  pending_weighing,
+  shopping_excluded,
+  family_name,
+  variant_label,
+  catalog_family_name,
+  catalog_group_label,
+  catalog_variant_label
+from public.food_inventory
+where is_active=true;
