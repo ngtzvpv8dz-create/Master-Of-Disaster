@@ -1965,3 +1965,122 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
     transition:none!important;
   }
 }
+
+
+/* V740 · Thermometer ist die einzige Auftau-Bedienung */
+.food-thaw-entry-v739{
+  grid-template-columns:minmax(0,1fr)!important;
+  padding-right:42px!important;
+}
+.food-thaw-thermometer-button-v740{
+  position:absolute;
+  z-index:3;
+  right:7px;
+  bottom:6px;
+  width:30px;
+  height:34px;
+  padding:0;
+  border:0;
+  border-radius:12px;
+  background:transparent;
+  box-shadow:none;
+  cursor:pointer;
+  opacity:.82;
+  -webkit-tap-highlight-color:transparent;
+  transition:opacity .22s ease,transform .15s ease,filter .28s ease;
+}
+.food-thaw-thermometer-button-v740:hover:not(:disabled){
+  opacity:1;
+}
+.food-thaw-thermometer-button-v740:active:not(:disabled){
+  transform:scale(.94);
+}
+.food-thaw-thermometer-button-v740:focus-visible{
+  outline:2px solid rgba(84,145,170,.34);
+  outline-offset:2px;
+}
+.food-thaw-thermometer-button-v740:disabled{
+  cursor:default;
+  opacity:.92;
+}
+.food-thaw-thermometer-button-v740 .food-thaw-thermometer-v740{
+  position:absolute;
+  left:50%;
+  top:5px;
+  width:8px;
+  height:18px;
+  transform:translateX(-50%);
+  border:1px solid rgba(83,128,146,.42);
+  border-radius:6px 6px 5px 5px;
+  background:rgba(247,253,255,.68);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.42),
+    0 1px 5px rgba(71,120,142,.10);
+  opacity:1;
+  pointer-events:none;
+}
+.food-thaw-thermometer-button-v740 .food-thaw-thermometer-v740::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:-5px;
+  width:10px;
+  height:10px;
+  transform:translateX(-50%);
+  border:1px solid rgba(112,126,130,.34);
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 40% 32%,rgba(255,221,198,.78) 0 1px,transparent 2px),
+    linear-gradient(145deg,#e98769,#c95b50);
+  box-shadow:0 1px 5px rgba(168,86,70,.15);
+}
+.food-thaw-thermometer-button-v740 .food-thaw-thermometer-v740::after{
+  content:"";
+  position:absolute;
+  left:2px;
+  top:2px;
+  width:1px;
+  height:5px;
+  border-radius:999px;
+  background:rgba(255,255,255,.68);
+}
+.food-thaw-thermometer-button-v740 .food-thaw-thermometer-v740 i{
+  position:absolute;
+  left:50%;
+  bottom:2px;
+  width:2px;
+  height:5px;
+  transform:translateX(-50%);
+  border-radius:999px 999px 2px 2px;
+  background:linear-gradient(to top,#ca5a4e 0%,#df7560 72%,#eca078 100%);
+  box-shadow:0 0 4px rgba(210,95,76,.13);
+  transition:height .45s ease,box-shadow .45s ease,background .45s ease;
+}
+.food-thaw-thermometer-button-v740.is-active-v740{
+  filter:drop-shadow(0 0 5px rgba(222,167,88,.16));
+}
+.food-thaw-thermometer-button-v740.is-active-v740 .food-thaw-thermometer-v740{
+  border-color:rgba(170,134,80,.44);
+  background:rgba(255,250,238,.72);
+}
+.food-thaw-thermometer-button-v740.is-active-v740 .food-thaw-thermometer-v740 i{
+  height:13px;
+  background:linear-gradient(to top,#c8574c 0%,#e2765d 50%,#f0ae75 100%);
+  box-shadow:
+    0 0 4px rgba(210,95,76,.16),
+    0 0 8px rgba(231,171,83,.13);
+}
+.food-thaw-entry-v739.is-thawing-v739 .food-thaw-thermometer-button-v740::before{
+  content:"";
+  position:absolute;
+  inset:-5px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(247,196,106,.12),transparent 68%);
+  pointer-events:none;
+}
+@media(max-width:430px){
+  .food-thaw-entry-v739{
+    grid-template-columns:minmax(0,1fr)!important;
+    padding-right:42px!important;
+  }
+}
