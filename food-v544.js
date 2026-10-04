@@ -1281,6 +1281,7 @@
   }
 
   function inventoryCurrentProductMarkup(item,data=state){
+    const products=(data?.products||[]).filter(product=>String(product.inventory_id||'')===String(item?.id||''));
     const productsById=new Map((data?.products||[]).map(product=>[String(product.id||''),product]));
     const lots=(data?.lots||[])
       .filter(lot=>String(lot.inventory_id||'')===String(item?.id||''))
@@ -1293,7 +1294,10 @@
           String(a.purchased_on||'9999-12-31').localeCompare(String(b.purchased_on||'9999-12-31'))||
           String(a.created_at||'').localeCompare(String(b.created_at||''));
       });
-    if(!lots.length)return '';
+
+    const productLabel=product=>product
+      ?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
+      :'Produkt nicht genauer erfasst';
 
     const lotSummary=lot=>{
       const parts=[];
@@ -1311,16 +1315,44 @@
       return parts.join(' + ')||fmtQty(lotQuantityForInventory(lot,item)||0,item.unit);
     };
 
-    const rows=lots.map(lot=>{
+    const rows=[];
+    let tracked=0;
+    for(const lot of lots){
+      const quantity=lotQuantityForInventory(lot,item);
+      tracked+=Math.max(0,Number(quantity)||0);
       const product=productsById.get(String(lot.product_id||''))||null;
-      const label=product
-        ?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
-        :'Produkt nicht genauer erfasst';
-      const frozen=frozenStorageLocation(lot.storage_location);
-      return '<div class="food-stock-product-row-v736 '+(frozen?'is-frozen-v736':'')+'"><span><b>'+esc(label)+'</b><small>'+esc(lotSummary(lot)+(frozen?' · eingefroren':''))+'</small></span></div>';
-    }).join('');
+      rows.push({
+        label:productLabel(product),
+        summary:lotSummary(lot),
+        frozen:frozenStorageLocation(lot.storage_location)
+      });
+    }
 
-    return '<div class="food-stock-products-v736"><small>'+(lots.length===1?'Aktuelles Produkt':'Aktuelle Produkte')+'</small>'+rows+'</div>';
+    const aggregate=Math.max(0,Number(item?.quantity)||0);
+    const untracked=Math.max(0,aggregate-tracked);
+    if(untracked>.05){
+      const product=products.length===1?products[0]:null;
+      rows.unshift({
+        label:productLabel(product),
+        summary:fmtQty(untracked,item.unit)+' Bestand · Charge nicht getrennt erfasst',
+        frozen:false
+      });
+    }
+
+    if(!rows.length&&aggregate>0){
+      const product=products.length===1?products[0]:null;
+      rows.push({
+        label:productLabel(product),
+        summary:fmtQty(aggregate,item.unit)+' Bestand · Charge nicht getrennt erfasst',
+        frozen:false
+      });
+    }
+    if(!rows.length)return '';
+
+    const html=rows.map(row=>
+      '<div class="food-stock-product-row-v736 '+(row.frozen?'is-frozen-v736':'')+'"><span><b>'+esc(row.label)+'</b><small>'+esc(row.summary+(row.frozen?' · eingefroren':''))+'</small></span></div>'
+    ).join('');
+    return '<div class="food-stock-products-v736"><small>'+(rows.length===1?'Aktuelles Produkt':'Aktuelle Produkte')+'</small>'+html+'</div>';
   }
 
   function inventoryCard(item){
