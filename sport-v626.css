@@ -2400,3 +2400,56 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
     column-gap:8px!important;
   }
 }
+
+
+/* V724 · direct RIR buttons */
+.sport-rir-choice-v724{
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:repeat(7,minmax(0,1fr))!important;
+  align-items:stretch!important;
+  gap:4px!important;
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  min-height:40px!important;
+  padding:4px!important;
+  overflow:visible!important;
+  border:1px solid rgba(111,228,234,.13)!important;
+  border-radius:10px!important;
+  background:rgba(0,10,13,.58)!important;
+}
+.sport-set-row-v573 .sport-rir-choice-v724 button{
+  display:grid!important;
+  place-items:center!important;
+  min-width:0!important;
+  width:auto!important;
+  height:34px!important;
+  margin:0!important;
+  padding:0 2px!important;
+  border:1px solid rgba(111,228,234,.08)!important;
+  border-radius:7px!important;
+  background:rgba(8,39,43,.42)!important;
+  color:#73999c!important;
+  font-size:.58rem!important;
+  font-weight:850!important;
+  line-height:1!important;
+  cursor:pointer!important;
+}
+.sport-set-row-v573 .sport-rir-choice-v724 button:first-child,
+.sport-set-row-v573 .sport-rir-choice-v724 button:last-child{
+  border:1px solid rgba(111,228,234,.08)!important;
+}
+.sport-set-row-v573 .sport-rir-choice-v724 button.is-selected{
+  border-color:rgba(111,228,234,.46)!important;
+  background:rgba(20,111,120,.70)!important;
+  color:#f1feff!important;
+  box-shadow:0 0 0 1px rgba(111,228,234,.08),0 0 14px rgba(52,197,207,.14)!important;
+}
+.sport-active-set-form-v719 .sport-rir-choice-v724{
+  min-height:44px!important;
+}
+@media(max-width:390px){
+  .sport-rir-choice-v724{gap:3px!important;padding:3px!important}
+  .sport-set-row-v573 .sport-rir-choice-v724 button{height:32px!important;font-size:.54rem!important}
+}

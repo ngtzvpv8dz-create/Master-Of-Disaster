@@ -1,9 +1,9 @@
-/* V723 · SPORT · active strength actions auto-save current set */
+/* V724 · SPORT · direct RIR choice buttons */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V723';
+  const VERSION='V724';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -210,12 +210,11 @@
   function rirStepper(value){
     const sequence=['0','1','2','3','4','5','5+'];
     const clean=sequence.includes(String(value||''))?String(value):'0';
-    const index=sequence.indexOf(clean);
-    return '<div class="sport-rir-stepper-v613 sport-rir-stepper-v614" data-sport-rir-stepper>'+
-      '<button type="button" data-sport-rir-step="down" '+(index<=0?'disabled':'')+' aria-label="RIR verringern">−</button>'+
-      '<output data-sport-rir-output>'+esc(clean)+'</output>'+
+    return '<div class="sport-rir-stepper-v613 sport-rir-stepper-v614 sport-rir-choice-v724" data-sport-rir-stepper>'+
+      sequence.map(option=>
+        '<button type="button" data-sport-rir-value="'+esc(option)+'" class="'+(option===clean?'is-selected':'')+'" aria-pressed="'+(option===clean?'true':'false')+'">'+esc(option)+'</button>'
+      ).join('')+
       '<input type="hidden" name="rir" value="'+esc(clean)+'">'+
-      '<button type="button" data-sport-rir-step="up" '+(index>=sequence.length-1?'disabled':'')+' aria-label="RIR erhöhen">+</button>'+
     '</div>';
   }
 
@@ -2419,21 +2418,18 @@
     if(root.dataset.sportDelegatedV613!=='1'){
       root.dataset.sportDelegatedV613='1';
       root.addEventListener('click',event=>{
-        const rirButton=event.target.closest('[data-sport-rir-step]');
+        const rirButton=event.target.closest('[data-sport-rir-value]');
         if(rirButton){
           const wrap=rirButton.closest('[data-sport-rir-stepper]');
           const input=wrap?.querySelector('input[name="rir"]');
-          const output=wrap?.querySelector('[data-sport-rir-output]');
-          if(!input||!output)return;
-          const sequence=['0','1','2','3','4','5','5+'];
-          let index=sequence.indexOf(input.value);
-          if(index<0)index=0;
-          index+=rirButton.dataset.sportRirStep==='up'?1:-1;
-          index=Math.max(0,Math.min(sequence.length-1,index));
-          input.value=sequence[index];
-          output.textContent=sequence[index];
-          wrap.querySelector('[data-sport-rir-step="down"]').disabled=index===0;
-          wrap.querySelector('[data-sport-rir-step="up"]').disabled=index===sequence.length-1;
+          if(!input)return;
+          const value=String(rirButton.dataset.sportRirValue||'0');
+          input.value=value;
+          wrap.querySelectorAll('[data-sport-rir-value]').forEach(button=>{
+            const selected=button===rirButton;
+            button.classList.toggle('is-selected',selected);
+            button.setAttribute('aria-pressed',selected?'true':'false');
+          });
           return;
         }
         const phaseButton=event.target.closest('[data-sport-phase-action],[data-sport-add-phase]');
