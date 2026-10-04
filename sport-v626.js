@@ -1,9 +1,9 @@
-/* V724 · SPORT · direct RIR choice buttons */
+/* V725 · SPORT · strength flow without redundant skip choice */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V724';
+  const VERSION='V725';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -954,7 +954,7 @@
       '</div>'+
       '<div class="sport-active-exercise-actions-v719">'+
         '<button type="button" class="primary" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="completed">Übung fertig</button>'+
-        '<button type="button" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="skipped">Überspringen</button>'+
+        (exercise.kind==='cardio'?'<button type="button" data-sport-exercise-status="'+esc(exercise.id)+'" data-status="skipped">Überspringen</button>':'')+
       '</div>'+
     '</section>';
   }
