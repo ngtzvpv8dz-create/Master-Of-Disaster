@@ -1256,12 +1256,32 @@
     const arrived=localDateTimeIso(dateKey,data.get('gym_arrived_at'));
     const left=localDateTimeIso(dateKey,data.get('gym_left_at'));
     if(arrived&&left&&new Date(left)<new Date(arrived))throw new Error('Die Abfahrt muss nach der Ankunft liegen.');
+    const session=state.sessions.find(item=>String(item.id)===String(sessionId));
     const patch={gym_arrived_at:arrived,gym_left_at:left};
+    if(arrived){
+      patch.session_status='running';
+      patch.started_at=arrived;
+    }
     if(left)patch.ended_at=left;
     if(arrived&&left)patch.duration_minutes=Math.max(0,Math.round((new Date(left)-new Date(arrived))/60000));
     const {supabase}=await sportUser();
-    const result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
+    let result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
     if(result.error)throw result.error;
+
+    if(arrived&&session){
+      const running=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='running');
+      if(running){
+        result=await supabase.from('sport_session_exercises').update({started_at:arrived}).eq('id',running.id).eq('status','running');
+        if(result.error)throw result.error;
+      }else{
+        const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
+        if(first){
+          result=await supabase.from('sport_session_exercises').update({status:'running',started_at:arrived}).eq('id',first.id).eq('status','planned');
+          if(result.error)throw result.error;
+          expandedExercises.add(first.id);
+        }
+      }
+    }
     await load(true);
   }
 
