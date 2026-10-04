@@ -269,6 +269,10 @@
     if(/(?:^|\s)(?:frisch|frische|frischer|frisches)(?:\s|$)/.test(text))return 'fresh';
     return 'neutral';
   };
+  const familyFrozenFirstFor=item=>{
+    const text=familyText((item?.name||'')+' '+(item?.family_name||'')+' '+(item?.catalog_family_name||''));
+    return /(?:^|\s)(?:hähnchen|huhn|hackfleisch|hack|rind|schwein|pute|fleisch)(?:\s|$|-)/.test(text);
+  };
   const familyNeedModeFromName=name=>{
     const text=' '+familyText(name)+' ';
     if(/\s(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\s/.test(text))return 'frozen';
@@ -601,8 +605,9 @@
       .map(lot=>({lot,quantity:familyAllocationLotQuantity(lot,stock,targetUnit)}))
       .filter(entry=>entry.quantity!==null&&entry.quantity>0)
       .sort((a,b)=>{
-        const fa=frozenStorageLocation(a.lot.storage_location)?1:0;
-        const fb=frozenStorageLocation(b.lot.storage_location)?1:0;
+        const frozenFirst=familyFrozenFirstFor(stock);
+        const fa=frozenStorageLocation(a.lot.storage_location)?(frozenFirst?0:1):(frozenFirst?1:0);
+        const fb=frozenStorageLocation(b.lot.storage_location)?(frozenFirst?0:1):(frozenFirst?1:0);
         if(fa!==fb)return fa-fb;
         return String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
           String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
@@ -679,12 +684,13 @@
 
     if(!info?.family)return [];
     const generic=info.familyMode==='generic';
+    const frozenFirst=familyFrozenFirstFor({name,family_name:info.familyName});
     return (info.rows||[])
       .map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
       .filter(entry=>!entry.info.unitMismatch&&Number(entry.info.available)>0)
       .sort((a,b)=>{
-        const pa=generic&&familyRowMode(a.stock)==='frozen'?1:0;
-        const pb=generic&&familyRowMode(b.stock)==='frozen'?1:0;
+        const pa=generic?(familyRowMode(a.stock)==='frozen'?(frozenFirst?0:1):(frozenFirst?1:0)):0;
+        const pb=generic?(familyRowMode(b.stock)==='frozen'?(frozenFirst?0:1):(frozenFirst?1:0)):0;
         if(pa!==pb)return pa-pb;
         const da=familyAllocationLotDate(a.stock.id);
         const db=familyAllocationLotDate(b.stock.id);
