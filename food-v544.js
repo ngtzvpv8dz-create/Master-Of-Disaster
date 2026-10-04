@@ -870,7 +870,7 @@
       const freezeHint=freezeInstructionMarkup(meal.note);
       const quantityAction=status==='completed'
         ?''
-        :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Mengen ändern</button>';
+        :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Zutaten &amp; Mengen ändern</button>';
       return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
@@ -1803,44 +1803,67 @@
     if(!meal.recipe_id){alert('Diese Mahlzeit stammt nicht aus einem Rezept.');return;}
     if(normalizedStatus(meal.status)==='completed'){alert('Bereits gebuchte Mahlzeiten werden nicht nachträglich verändert.');return;}
 
-    const items=(meal.ingredients||[]).filter(item=>num(item.quantity)!==null);
-    if(!items.length){alert('Für diese Mahlzeit sind keine änderbaren Mengen hinterlegt.');return;}
+    const items=meal.ingredients||[];
+    if(!items.length){alert('Für diese Mahlzeit sind keine Zutaten hinterlegt.');return;}
 
     let modal;
-    const rows=items.map((item,index)=>
-      '<label class="food-planned-qty-row-v630" data-food-planned-qty-row data-ingredient-id="'+esc(item.id)+'">'
-        +'<span><strong>'+esc(ingredientName(item))+'</strong><small>Nur diese Einplanung</small></span>'
-        +'<span><input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(item.quantity)+'" required><b>'+esc(item.unit||'')+'</b></span>'
-      +'</label>'
-    ).join('');
+    const rows=items.map((item,index)=>{
+      const quantity=num(item.quantity);
+      const value=quantity===null||Number.isNaN(quantity)?'':String(quantity);
+      return '<div class="food-planned-qty-row-v630" data-food-planned-qty-row data-ingredient-id="'+esc(item.id)+'" data-food-planned-removed="false">'
+        +'<span><strong>'+esc(ingredientName(item))+'</strong><small data-food-planned-qty-note>Nur diese Einplanung</small></span>'
+        +'<span class="food-planned-qty-controls-v729"><input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(value)+'" '+(value?'':'placeholder="offen"')+'><b>'+esc(item.unit||'')+'</b><button type="button" class="food-planned-remove-v729" data-food-planned-remove aria-pressed="false">Entfernen</button></span>'
+      +'</div>';
+    }).join('');
 
     const body='<form class="food-recipe-form-v549">'
-      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Hier änderst du nur die Mengen dieser geplanten Mahlzeit. Das Grundrezept bleibt unverändert. Ein mahlzeitspezifischer Kalorienwert wird bei einer neuen Mengenänderung verworfen und anschließend mit den tatsächlichen Zutaten neu gesetzt.</p>'
+      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Hier änderst du Mengen oder entfernst Zutaten nur aus dieser geplanten Mahlzeit. Das Grundrezept bleibt unverändert. Entfernte Zutaten werden erst mit „Änderungen speichern“ wirklich gelöscht. Ein mahlzeitspezifischer Kalorienwert wird anschließend mit den tatsächlichen Zutaten neu gesetzt.</p>'
       +'<div class="food-planned-qty-list-v630">'+rows+'</div>'
-      +'<button class="food-action-v544" type="submit">Mengen speichern</button>'
+      +'<button class="food-action-v544" type="submit">Änderungen speichern</button>'
       +'</form>';
 
-    modal=addModal('Mengen dieser Mahlzeit ändern',body,async()=>{
+    modal=addModal('Zutaten & Mengen dieser Mahlzeit ändern',body,async()=>{
       if(!sourceIsReal('meals'))throw new Error('Die Mahlzeitdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst neu laden.');
-      const quantities=[...modal.querySelectorAll('[data-food-planned-qty-row]')].map((row,index)=>{
+      const changes=[...modal.querySelectorAll('[data-food-planned-qty-row]')].map((row,index)=>{
         const id=String(row.dataset.ingredientId||'');
-        const input=row.querySelector('input');
-        const quantity=Number(input?.value);
         if(!id)throw new Error('Zutat '+(index+1)+' konnte nicht zugeordnet werden.');
+
+        if(row.dataset.foodPlannedRemoved==='true')return {id,remove:true};
+
+        const input=row.querySelector('input');
+        const raw=String(input?.value??'').trim();
+        if(!raw)return null;
+        const quantity=Number(raw);
         if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' ist die Menge ungültig.');
         return {id,quantity};
-      });
+      }).filter(Boolean);
+
+      if(!changes.length)throw new Error('Es gibt keine Änderung zum Speichern.');
 
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
       const result=await withTimeout(
-        supabase.rpc('update_food_planned_meal_quantities',{p_meal_id:meal.id,p_quantities:quantities}),
-        'Mengen aktualisieren',
+        supabase.rpc('update_food_planned_meal_quantities',{p_meal_id:meal.id,p_quantities:changes}),
+        'Mahlzeit aktualisieren',
         10000
       );
       if(result.error)throw result.error;
       expandedMeals.add(String(meal.id));
       await mutate(()=>result.data);
     });
+
+    modal.querySelectorAll('[data-food-planned-remove]').forEach(button=>button.addEventListener('click',()=>{
+      const row=button.closest('[data-food-planned-qty-row]');
+      if(!row)return;
+      const removeNext=row.dataset.foodPlannedRemoved!=='true';
+      row.dataset.foodPlannedRemoved=removeNext?'true':'false';
+      row.classList.toggle('is-removed-v729',removeNext);
+      const input=row.querySelector('input');
+      if(input)input.disabled=removeNext;
+      const note=row.querySelector('[data-food-planned-qty-note]');
+      if(note)note.textContent=removeNext?'Wird beim Speichern entfernt':'Nur diese Einplanung';
+      button.textContent=removeNext?'Zurückholen':'Entfernen';
+      button.setAttribute('aria-pressed',removeNext?'true':'false');
+    }));
   }
 
   function recipeIngredientRow(index){
