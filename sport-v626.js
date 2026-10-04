@@ -1,9 +1,9 @@
-/* V721 · SPORT · FitX arrival gate + active workout recovery */
+/* V723 · SPORT · active strength actions auto-save current set */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V721';
+  const VERSION='V723';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -915,7 +915,7 @@
         '<label><span>Wdh.</span><input name="repetitions" type="number" min="0" step="1" inputmode="numeric" value="'+esc(set.repetitions??'')+'"></label>'+
         '<label><span>RIR</span>'+rirStepper(rirValue)+'</label>'+
         '<small class="sport-set-last-v612 sport-set-last-v613">'+esc(previousSetText(previous,nextNo,loadMode))+'</small>'+
-        '<button type="submit" class="sport-set-save-v613">'+(nextNo<count?'Satz speichern · weiter zu Satz '+(nextNo+1):'Satz speichern · dann Übung fertig')+'</button>'+
+        '<button type="button" class="sport-set-save-v613" data-sport-active-next-set="'+esc(exercise.id)+'">+ Satz</button>'+
       '</form>'+
     '</div>';
   }
@@ -1686,6 +1686,49 @@
     const result=await supabase.from('sport_exercise_sets').upsert(payload,{onConflict:'session_exercise_id,set_number'});
     if(result.error)throw result.error;
     await load(true);
+  }
+
+  function activeStrengthFormFor(root,exerciseId){
+    return [...(root?.querySelectorAll?.('[data-sport-set-form]')||[])].find(form=>
+      String(form.dataset.exerciseId)===String(exerciseId)&&
+      Boolean(form.closest('.sport-active-exercise-focus-v719'))
+    )||null;
+  }
+
+  function strengthValuesFromForm(form){
+    const data=new FormData(form);
+    return {
+      weight_kg:data.get('weight_kg'),
+      repetitions:data.get('repetitions'),
+      rir:data.get('rir')
+    };
+  }
+
+  function hasEnteredStrengthValues(values){
+    const weight=String(values?.weight_kg??'').trim();
+    const reps=String(values?.repetitions??'').trim();
+    const rir=String(values?.rir??'').trim();
+    return Boolean(weight||reps||(rir&&rir!=='0'));
+  }
+
+  async function saveActiveStrengthSet(root,exerciseId,{force=false}={}){
+    const form=activeStrengthFormFor(root,exerciseId);
+    if(!form)return {saved:false,setNumber:null};
+    const values=strengthValuesFromForm(form);
+    if(!force&&!hasEnteredStrengthValues(values))return {saved:false,setNumber:Number(form.dataset.setNumber)||null};
+    const setNumber=Number(form.dataset.setNumber);
+    if(!Number.isInteger(setNumber)||setNumber<1)throw new Error('Aktiver Satz konnte nicht bestimmt werden.');
+    await saveStrengthSet(exerciseId,setNumber,values);
+    return {saved:true,setNumber};
+  }
+
+  async function saveActiveStrengthSetAndAdvance(root,exerciseId){
+    const exercise=state.sessions.flatMap(session=>session.workout||[]).find(item=>String(item.id)===String(exerciseId));
+    if(!exercise)throw new Error('Trainingselement nicht gefunden.');
+    const countBefore=strengthSetCount(exercise);
+    const saved=await saveActiveStrengthSet(root,exerciseId,{force:true});
+    if(!saved.setNumber)throw new Error('Aktiver Satz konnte nicht gefunden werden.');
+    if(saved.setNumber>=countBefore)await changeStrengthSetCount(exerciseId,'up');
   }
 
   function strengthSetCount(exercise){
@@ -2610,7 +2653,12 @@
 
     root.querySelectorAll('[data-sport-exercise-status]').forEach(button=>button.addEventListener('click',event=>{
       const target=event.currentTarget;
-      handle(target,()=>setExerciseStatus(target.dataset.sportExerciseStatus,target.dataset.status));
+      handle(target,async()=>{
+        const exerciseId=target.dataset.sportExerciseStatus;
+        const status=target.dataset.status;
+        if(status==='completed')await saveActiveStrengthSet(root,exerciseId,{force:false});
+        await setExerciseStatus(exerciseId,status);
+      });
     }));
 
     root.querySelectorAll('[data-sport-remove-exercise]').forEach(button=>button.addEventListener('click',event=>{
@@ -2663,6 +2711,11 @@
           rir:data.get('rir')
         }
       ));
+    }));
+
+    root.querySelectorAll('[data-sport-active-next-set]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>saveActiveStrengthSetAndAdvance(root,target.dataset.sportActiveNextSet));
     }));
 
     root.querySelectorAll('[data-sport-add-set]').forEach(button=>button.addEventListener('click',event=>{
