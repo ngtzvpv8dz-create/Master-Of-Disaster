@@ -426,14 +426,30 @@
     const overview=root.querySelector('[data-sport-panel-v568="overview"] .sport-content-v510')||(root.dataset.sportTabV568==='overview'?root.querySelector('.sport-panel-v510 .sport-content-v510'):null);
     if(overview){
       const html=liveHtml();
+      const circuitIsActive=Boolean(runtime||runningDbRun());
       const empty=overview.querySelector('[data-sport-active-empty]');
       const slogan=root.querySelector('[data-sport-active-slogan]');
       if(empty)empty.hidden=Boolean(html);
       if(slogan)slogan.textContent=html?'Jetzt nicht nachdenken. Machen reicht völlig.':'Hier läuft gerade nichts. Nicht mal du.';
+
+      const panel=overview.closest('[data-sport-panel-v568="overview"]');
+      const hero=panel?.querySelector('.sport-active-hero-v719');
+      const freeFocus=hero?.querySelector('.sport-active-exercise-focus-v719,.sport-fitx-arrival-gate-v720');
+      const freeClock=hero?.querySelector('.sport-active-time-row-v719');
+      if(freeFocus)freeFocus.hidden=circuitIsActive;
+      if(freeClock)freeClock.hidden=circuitIsActive;
+
       if(html&&!document.getElementById(CARD_LIVE)){
-        const slot=overview.querySelector('[data-sport-active-circuit-slot]');
-        if(slot)slot.insertAdjacentHTML('afterbegin',html);
-        else overview.insertAdjacentHTML('afterbegin',html);
+        if(circuitIsActive&&hero){
+          // The thing that is actually running owns the top position.
+          const date=hero.querySelector('.sport-date-v510');
+          if(date)date.insertAdjacentHTML('afterend',html);
+          else hero.insertAdjacentHTML('beforeend',html);
+        }else{
+          const slot=overview.querySelector('[data-sport-active-circuit-slot]');
+          if(slot)slot.insertAdjacentHTML('afterbegin',html);
+          else overview.insertAdjacentHTML('afterbegin',html);
+        }
       }
     }
 
@@ -502,7 +518,7 @@
       if(result.error)throw result.error;
       editingPlanId=planId;
       variantDraft=null;
-      try{await window.__modSportV568?.refresh?.();}catch(_){ }
+      // Circuit state can refresh locally. Avoid a second full SPORT render, which made variant selection jump.
       await loadData({seed:false});
     }catch(error){
       alert(error?.message||'Zirkelvariante konnte nicht eingeplant werden.');
@@ -824,8 +840,9 @@
       };
 
       await acquireWakeLock();
-      try{await window.__modSportV568?.refresh?.();}catch(_){}
-      try{window.__modSportTabsV512?.setTab?.('overview',{animate:true,persist:true});}catch(_){}
+      // Keep the current DOM stable while the circuit takes ownership of the active area.
+      // A full SPORT refresh here caused the visible tab/card jumping on iOS.
+      try{window.__modSportTabsV512?.setTab?.('overview',{animate:false,persist:true});}catch(_){}
       scheduleMount();
       enterCountdown();
     }catch(error){
