@@ -1,4 +1,4 @@
-/* V732 · SHOPPING / FAMILY-AWARE STOCK
+/* V746 · SHOPPING / CENTRAL STOCK RESOLVER
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V732';
+  const VERSION='V746';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -315,6 +315,13 @@
     return inventoryFamilyRowsInfo(selected.name,targetUnit,rows,selected.match.mode);
   }
   function ingredientStockInfo(name,unit,inventory,inventoryByName){
+    const central=window.__modFoodV544?.resolveIngredientStock?.({
+      name,
+      unit,
+      inventoryRows:inventory,
+      inventoryAliases:state.food?.inventoryAliases||[]
+    });
+    if(central)return central;
     const exact=inventoryByName.get(normalizedIngredient(name,unit))||null;
     if(exact?.family_name){
       return {...inventoryFamilyRowsInfo(exact.family_name,unit,inventory,familyNeedModeFromName(name)),stock:null};
