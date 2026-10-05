@@ -52,16 +52,18 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=741-ingredient-allocation',
+      './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
+      './food-v544.js?v=746-systemic-stock-resolver',
       './food-nutrition-v711.js?v=713-inventory-view-fix'
     ],
     shopping:[
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './food-v544.js?v=741-ingredient-allocation',
+      './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
+      './food-v544.js?v=746-systemic-stock-resolver',
       './food-nutrition-v711.js?v=713-inventory-view-fix',
-      './shopping-v678.js?v=732-overdue-warning'
+      './shopping-v678.js?v=746-systemic-stock-resolver'
     ],
     kistology:[
       SUPABASE,
