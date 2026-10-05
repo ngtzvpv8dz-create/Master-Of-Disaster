@@ -952,9 +952,10 @@
     const next=ordered.find(item=>item.status==='planned')||null;
     if(!exercise){
       if(next){
-        return '<section class="sport-active-exercise-focus-v719 is-waiting"><div class="sport-active-exercise-head-v719"><div><span>NÄCHSTE ÜBUNG</span><h2>'+esc(activeExerciseTitle(next))+'</h2></div><button type="button" data-sport-exercise-status="'+esc(next.id)+'" data-status="running">Jetzt starten</button></div></section>';
+        const hasCompleted=ordered.some(item=>item.status==='completed'||item.status==='skipped');
+        return '<section class="sport-active-exercise-focus-v719 is-waiting"><div class="sport-active-exercise-head-v719"><div><span>'+(hasCompleted?'FREIES TRAINING · PAUSIERT':'NÄCHSTE ÜBUNG')+'</span><h2>'+esc(activeExerciseTitle(next))+'</h2></div><button type="button" data-sport-exercise-status="'+esc(next.id)+'" data-status="running">'+(hasCompleted?'Training fortsetzen':'Jetzt starten')+'</button></div></section>';
       }
-      return '<section class="sport-active-exercise-focus-v719 is-empty"><strong>Freies Training erledigt</strong><span>Keine weitere Übung oder kein Gerät mehr offen.</span></section>';
+      return '<section class="sport-active-exercise-focus-v719 is-empty"><strong>Keine offene Übung</strong><span>Freies Training ist erst erledigt, wenn du das Training ausdrücklich abschließt.</span></section>';
     }
 
     const catalog=state.catalogExercises.find(item=>String(item.id)===String(exercise.exerciseId));
@@ -1120,8 +1121,9 @@
     if(fitx){
       if(!session.gymArrivedAt)throw new Error('Bestätige zuerst „Bei FitX angekommen“.');
       patch.training_started_at=session.trainingStartedAt||stamp;
-    }else if(!session.startedAt){
-      patch.started_at=stamp;
+    }else{
+      // Home: activating the day only opens the session. The clock starts with the actual activity.
+      // Circuit owns its own start time; free training starts when an exercise is explicitly started.
     }
     if(session.legacyAutoFitx){
       patch.title='Training';
@@ -1131,17 +1133,6 @@
     let result=await supabase.from('sport_sessions').update(patch).eq('id',sessionId);
     if(result.error)throw result.error;
 
-    if(!fitx){
-      const first=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder).find(item=>item.status==='planned');
-      if(first){
-        result=await supabase.from('sport_session_exercises')
-          .update({status:'running',started_at:first.startedAt||stamp})
-          .eq('id',first.id)
-          .eq('status','planned');
-        if(result.error)throw result.error;
-        expandedExercises.add(first.id);
-      }
-    }
     await load(true);
   }
 
@@ -1634,21 +1625,17 @@
     if(result.error)throw result.error;
 
     if(status==='running'){
+      if(session&&!session.startedAt&&!isFitx(session)){
+        const sessionStart=await supabase.from('sport_sessions').update({started_at:stamp}).eq('id',session.id).is('started_at',null);
+        if(sessionStart.error)throw sessionStart.error;
+      }
       expandedExercises.add(id);
     }else if(status==='completed'||status==='skipped'){
       expandedExercises.delete(id);
       const ordered=[...(session.workout||[])].sort((a,b)=>a.sortOrder-b.sortOrder);
       const index=ordered.findIndex(item=>String(item.id)===String(id));
-      const anotherRunning=ordered.find(item=>String(item.id)!==String(id)&&item.status==='running');
-      const next=ordered.slice(Math.max(0,index+1)).find(item=>item.status==='planned');
-      if(!anotherRunning&&next&&session.status==='running'){
-        result=await supabase.from('sport_session_exercises')
-          .update({status:'running',started_at:stamp,ended_at:null})
-          .eq('id',next.id)
-          .eq('status','planned');
-        if(result.error)throw result.error;
-        expandedExercises.add(next.id);
-      }
+      // Do not auto-start the next exercise. Between exercises free training is paused,
+      // so a course or circuit can become the active block without competing timers.
     }
 
     await load(true);
