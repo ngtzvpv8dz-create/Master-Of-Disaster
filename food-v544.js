@@ -1,4 +1,4 @@
-/* V544 · FOOD
+/* V746 · FOOD
    Bedienung: Geplant/Erledigt, belastbare Bestandsbuchung, Monats-Stichtag-Plan,
    editierbarer Vorrat, Einkaufslücken und einplanbare Rezepte.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V741';
+  const VERSION='V746';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -26,7 +26,7 @@
   let plannedThawCacheState=null;
   let plannedThawCache=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','lots','recipes','shopping','cart','leftovers','products'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -335,6 +335,14 @@
     return inventoryFamilyRowsInfo(selected.name,targetUnit,rows,selected.match.mode);
   };
   const ingredientStockInfo=(item,inventoryRows,inventoryById,inventoryByName)=>{
+    const shared=window.__modFoodStockResolverV746;
+    if(shared?.resolve){
+      return shared.resolve({
+        item,
+        inventoryRows,
+        inventoryAliases:state?.aliases||[]
+      });
+    }
     const unit=String(item?.unit||'').trim();
     const name=ingredientName(item);
     if(item?.inventory_id){
@@ -404,6 +412,7 @@
       {id:'mince',name:'Hackfleisch gemischt',quantity:800,unit:'g',quantity_label:'800 g',forecast_label:null,tone:'stock',note:null,opened:false,use_priority:'later',is_active:true},
       {id:'pepsi',name:'Pepsi Zero Cherry',quantity:7.5,unit:'l',quantity_label:'6 × 1,25 l',forecast_label:null,tone:'stock',note:'Getränkevorrat',opened:false,use_priority:'later',is_active:true}
     ],
+    aliases:[],
     recipes:[],
     shopping:[],
     cart:[],
@@ -493,6 +502,7 @@
     const results=await Promise.all([
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
+      safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
@@ -516,12 +526,13 @@
     return {
       meals:take('meals',0,flattenMeals),
       inventory:take('inventory',1,rows=>rows),
-      lots:take('lots',2,rows=>rows),
-      recipes:take('recipes',3,rows=>rows),
-      shopping:take('shopping',4,rows=>rows),
-      cart:take('cart',5,rows=>rows),
-      leftovers:take('leftovers',6,rows=>rows),
-      products:take('products',7,rows=>rows)
+      aliases:take('aliases',2,rows=>rows),
+      lots:take('lots',3,rows=>rows),
+      recipes:take('recipes',4,rows=>rows),
+      shopping:take('shopping',5,rows=>rows),
+      cart:take('cart',6,rows=>rows),
+      leftovers:take('leftovers',7,rows=>rows),
+      products:take('products',8,rows=>rows)
     };
   }
 
@@ -3002,6 +3013,7 @@
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
       inventory:(data.inventory||[]).map(item=>({...item})),
+      inventoryAliases:(data.aliases||[]).map(item=>({...item})),
       overdueMeals
     };
   }
@@ -3022,6 +3034,21 @@
     return modal||null;
   }
 
+  function resolveIngredientStock(details={}){
+    const shared=window.__modFoodStockResolverV746;
+    if(!shared?.resolve)return null;
+    return shared.resolve({
+      item:{
+        inventory_id:details.inventory_id||details.inventoryId||null,
+        name:details.name||details.label||'',
+        label:details.label||details.name||'',
+        unit:details.unit||''
+      },
+      inventoryRows:Array.isArray(details.inventoryRows)?details.inventoryRows:(state?.inventory||[]),
+      inventoryAliases:Array.isArray(details.inventoryAliases)?details.inventoryAliases:(state?.aliases||[])
+    });
+  }
+
   const api={
     version:VERSION,open,close,render,
     reload(){loadPromise=null;return render();},
@@ -3029,6 +3056,7 @@
     getDataSources(){return {...sourceState};},
     getCloudIssues(){return [...cloudIssues];},
     getShoppingSnapshot,
+    resolveIngredientStock,
     toggleShoppingCart,
     openShoppingStockModal,
     checkShopping
