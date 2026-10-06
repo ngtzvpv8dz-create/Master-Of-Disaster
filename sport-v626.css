@@ -2453,3 +2453,26 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   .sport-rir-choice-v724{gap:3px!important;padding:3px!important}
   .sport-set-row-v573 .sport-rir-choice-v724 button{height:32px!important;font-size:.54rem!important}
 }
+
+
+/* V748 · chronological unit history */
+.sport-history-flow-v748{display:flex;flex-direction:column;gap:14px;margin-top:2px}
+.sport-history-flow-step-v748{display:grid;grid-template-columns:50px minmax(0,1fr);gap:10px;position:relative}
+.sport-history-flow-rail-v748{position:relative;display:flex;flex-direction:column;align-items:center;min-height:100%}
+.sport-history-flow-rail-v748 span{font-size:.66rem;font-weight:900;letter-spacing:.04em;line-height:1.1;padding-top:4px;white-space:nowrap;color:rgba(220,247,249,.86)}
+.sport-history-flow-rail-v748 i{width:8px;height:8px;border-radius:50%;margin-top:8px;background:#6fe4ea;box-shadow:0 0 0 4px rgba(111,228,234,.10),0 0 12px rgba(111,228,234,.24)}
+.sport-history-flow-rail-v748:after{content:"";position:absolute;top:34px;bottom:-18px;width:1px;background:linear-gradient(to bottom,rgba(111,228,234,.35),rgba(111,228,234,.08))}
+.sport-history-flow-step-v748:last-child .sport-history-flow-rail-v748:after{display:none}
+.sport-history-flow-content-v748{min-width:0}
+.sport-history-flow-label-v748{display:inline-flex;align-items:center;min-height:22px;padding:4px 8px;margin:0 0 7px;border-radius:999px;border:1px solid rgba(111,228,234,.16);background:rgba(111,228,234,.06);font-size:.58rem;font-weight:950;letter-spacing:.09em;color:#a9f3f6}
+.sport-history-flow-head-v748{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.sport-history-flow-head-v748>small{font-size:.64rem;font-weight:800;color:rgba(218,233,235,.65)}
+.sport-history-workout-step-v748{display:grid;gap:5px}
+.sport-history-workout-step-v748>small{font-size:.62rem;font-weight:850;color:rgba(218,233,235,.62);padding-left:3px}
+.sport-history-workout-step-v748+.sport-history-workout-step-v748{margin-top:9px}
+.sport-history-flow-content-v748>.sport-course-card-v568,
+.sport-history-flow-content-v748>.sport-circuit-history-v675{margin-top:0}
+@media(max-width:520px){
+  .sport-history-flow-step-v748{grid-template-columns:44px minmax(0,1fr);gap:8px}
+  .sport-history-flow-rail-v748 span{font-size:.6rem}
+}
