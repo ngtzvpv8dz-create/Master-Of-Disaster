@@ -1,9 +1,9 @@
-/* V730 · SPORT · separate FitX visit and training lifecycle */
+/* V748 · SPORT · current-day planning + chronological history */
 (function(){
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V730';
+  const VERSION='V748';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -536,7 +536,17 @@
     });
     return [...groups.values()];
   }
-  function groupActivities(group){return (group?.sessions||[]).flatMap(session=>session.activities||[]);}
+  function groupActivities(group){
+    return (group?.sessions||[])
+      .flatMap(session=>session.activities||[])
+      .sort((a,b)=>{
+        const at=validDate(a?.startedAt)?.getTime();
+        const bt=validDate(b?.startedAt)?.getTime();
+        if(Number.isFinite(at)&&Number.isFinite(bt)&&at!==bt)return at-bt;
+        if(Number.isFinite(at)!==Number.isFinite(bt))return Number.isFinite(at)?-1:1;
+        return Number(a?.sortOrder??999)-Number(b?.sortOrder??999)||byName(a?.name||'',b?.name||'');
+      });
+  }
   function groupWorkout(group){return (group?.sessions||[]).flatMap(session=>session.workout||[]).filter(item=>item.status!=='skipped');}
   function groupCircuits(group){return (group?.sessions||[]).filter(session=>session.circuitRun);}
   function groupParticipants(group){
@@ -567,6 +577,132 @@
     const starts=sessions.map(session=>validDate(session.startedAt)).filter(Boolean).sort((a,b)=>a-b);
     const ends=sessions.map(session=>validDate(session.endedAt)).filter(Boolean).sort((a,b)=>a-b);
     return starts.length&&ends.length?clock(starts[0])+'–'+clock(ends[ends.length-1]):'Zeit nicht vollständig dokumentiert';
+  }
+
+  const historyTimestamp=value=>{
+    const d=validDate(value);
+    return d?d.getTime():null;
+  };
+  const historyRange=(startAt,endAt)=>{
+    const start=validDate(startAt),end=validDate(endAt);
+    if(start&&end){
+      const a=clock(startAt),b=clock(endAt);
+      return a===b?a:a+'–'+b;
+    }
+    if(start)return 'ab '+clock(startAt);
+    if(end)return 'bis '+clock(endAt);
+    return 'Zeit offen';
+  };
+  function groupChronology(group){
+    const events=[];
+    (group?.sessions||[]).forEach(session=>{
+      (session.activities||[]).forEach(activity=>{
+        if(activity?.type==='test_course_plan')return;
+        const startMs=historyTimestamp(activity?.startedAt);
+        const endMs=historyTimestamp(activity?.endedAt);
+        events.push({
+          kind:'course',item:activity,
+          startAt:activity?.startedAt||null,endAt:activity?.endedAt||null,
+          startMs,endMs,order:Number(activity?.sortOrder??999)
+        });
+      });
+      (session.workout||[]).filter(item=>item?.status!=='skipped').forEach(exercise=>{
+        const startMs=historyTimestamp(exercise?.startedAt);
+        const endMs=historyTimestamp(exercise?.endedAt);
+        events.push({
+          kind:'workout',item:exercise,
+          startAt:exercise?.startedAt||null,endAt:exercise?.endedAt||null,
+          startMs,endMs,order:Number(exercise?.sortOrder??999)
+        });
+      });
+      const run=session?.circuitRun;
+      if(run){
+        const startAt=run.startedAt||session.startedAt||null;
+        const endAt=run.endedAt||session.endedAt||null;
+        events.push({
+          kind:'circuit',item:session,
+          startAt,endAt,startMs:historyTimestamp(startAt),endMs:historyTimestamp(endAt),order:999
+        });
+      }
+    });
+
+    const sortMoment=event=>event.startMs??event.endMs??Number.MAX_SAFE_INTEGER;
+    const typeOrder={workout:0,course:1,circuit:2};
+    events.sort((a,b)=>
+      sortMoment(a)-sortMoment(b)
+      ||(a.endMs??Number.MAX_SAFE_INTEGER)-(b.endMs??Number.MAX_SAFE_INTEGER)
+      ||(typeOrder[a.kind]??9)-(typeOrder[b.kind]??9)
+      ||a.order-b.order
+    );
+
+    const timeline=[];
+    let freeSegmentIndex=0;
+    events.forEach(event=>{
+      if(event.kind!=='workout'){
+        timeline.push(event);
+        return;
+      }
+      const previous=timeline[timeline.length-1];
+      if(previous?.kind==='workout'){
+        previous.items.push(event.item);
+        if(previous.startMs===null||previous.startMs===undefined){
+          previous.startMs=event.startMs;
+          previous.startAt=event.startAt;
+        }
+        if(event.endMs!==null&&event.endMs!==undefined&&(previous.endMs===null||previous.endMs===undefined||event.endMs>previous.endMs)){
+          previous.endMs=event.endMs;
+          previous.endAt=event.endAt;
+        }
+        return;
+      }
+      freeSegmentIndex+=1;
+      timeline.push({
+        kind:'workout',
+        items:[event.item],
+        startAt:event.startAt,endAt:event.endAt,startMs:event.startMs,endMs:event.endMs,
+        segmentIndex:freeSegmentIndex
+      });
+    });
+    const freeSegments=timeline.filter(event=>event.kind==='workout').length;
+    timeline.forEach(event=>{if(event.kind==='workout')event.totalSegments=freeSegments;});
+    return timeline;
+  }
+
+  function workoutTimelineCard(exercise){
+    return '<div class="sport-history-workout-step-v748">'+
+      '<small>'+esc(historyRange(exercise?.startedAt,exercise?.endedAt))+'</small>'+
+      workoutSummaryCard(exercise)+
+    '</div>';
+  }
+
+  function historyChronologyMarkup(group){
+    const timeline=groupChronology(group);
+    if(!timeline.length)return '';
+    return '<div class="sport-history-flow-v748">'+timeline.map((event,index)=>{
+      const railTime=event.startAt?clock(event.startAt):(event.endAt?clock(event.endAt):'–');
+      if(event.kind==='course'){
+        return '<div class="sport-history-flow-step-v748 is-course">'+
+          '<div class="sport-history-flow-rail-v748"><span>'+esc(railTime)+'</span><i></i></div>'+
+          '<section class="sport-history-flow-content-v748"><b class="sport-history-flow-label-v748">KURS</b>'+courseCard(event.item,index,false)+'</section>'+
+        '</div>';
+      }
+      if(event.kind==='circuit'){
+        return '<div class="sport-history-flow-step-v748 is-circuit">'+
+          '<div class="sport-history-flow-rail-v748"><span>'+esc(railTime)+'</span><i></i></div>'+
+          '<section class="sport-history-flow-content-v748"><b class="sport-history-flow-label-v748">ZIRKELTRAINING</b>'+circuitRunCard(event.item)+'</section>'+
+        '</div>';
+      }
+      const label=event.totalSegments>1
+        ?(event.segmentIndex===1?'FREIES TRAINING · START':'FREIES TRAINING · FORTGESETZT')
+        :'FREIES TRAINING';
+      return '<div class="sport-history-flow-step-v748 is-workout">'+
+        '<div class="sport-history-flow-rail-v748"><span>'+esc(railTime)+'</span><i></i></div>'+
+        '<section class="sport-history-flow-content-v748">'+
+          '<div class="sport-history-flow-head-v748"><b class="sport-history-flow-label-v748">'+esc(label)+'</b><small>'+esc(historyRange(event.startAt,event.endAt))+'</small></div>'+
+          '<div class="sport-history-workout-v574">'+event.items.map(workoutTimelineCard).join('')+'</div>'+
+        '</section>'+
+      '</div>';
+    }).join('')+'</div>';
   }
 
   function workoutType(item){
@@ -785,9 +921,11 @@
             :'<button type="button" data-sport-edit-session="'+esc(targetSession.id)+'">Training bearbeiten</button>')+
         '</div>':'')+
         (editing&&targetSession?historyMetaEditor(targetSession):'')+
-        (courses.length?'<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">'+courses.map((course,courseIndex)=>courseCard(course,courseIndex,Boolean(editing))).join('')+'</div>':'')+
-        (workout.length?(editing?'<div class="sport-section-title-v568">Freies Training</div><div class="sport-workout-list-v573 sport-history-edit-list-v613">'+(targetSession.workout||[]).map(workoutExerciseCard).join('')+'</div>':'<div class="sport-section-title-v568">Freies Training</div><div class="sport-history-workout-v574">'+workout.map(workoutSummaryCard).join('')+'</div>'):'')+
-        (circuits.length?'<div class="sport-section-title-v568">Zirkeltraining</div><div class="sport-circuit-history-list-v675">'+circuits.map(circuitRunCard).join('')+'</div>':'')+
+        (editing
+          ?((courses.length?'<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">'+courses.map((course,courseIndex)=>courseCard(course,courseIndex,true)).join('')+'</div>':'')
+            +(workout.length?'<div class="sport-section-title-v568">Freies Training</div><div class="sport-workout-list-v573 sport-history-edit-list-v613">'+(targetSession.workout||[]).map(workoutExerciseCard).join('')+'</div>':'')
+            +(circuits.length?'<div class="sport-section-title-v568">Zirkeltraining</div><div class="sport-circuit-history-list-v675">'+circuits.map(circuitRunCard).join('')+'</div>':''))
+          :historyChronologyMarkup(group))+
       '</div></details>';
   }
 
@@ -2564,12 +2702,12 @@
       const value=event.currentTarget.value;
       if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return;
       planDate=value;
-      try{localStorage.setItem(PLAN_DATE_KEY,planDate);}catch(_){}
+      coursePickerDate=null;
       render({animate:false});
     });
     root.querySelectorAll('[data-sport-select-plan]').forEach(button=>button.addEventListener('click',event=>{
       planDate=event.currentTarget.dataset.sportSelectPlan||todayIso();
-      try{localStorage.setItem(PLAN_DATE_KEY,planDate);}catch(_){}
+      coursePickerDate=null;
       render({animate:true});
     }));
     root.querySelectorAll('[data-sport-plan-venue]').forEach(form=>form.addEventListener('submit',event=>{
@@ -2889,7 +3027,17 @@
     return true;
   }
 
-  function setTab(id,{animate=true,persist=true}={}){const migrated={fitx:'overview',xtraining:'planning',activities:'sessions'}[id]||id;activeTab=TABS.some(t=>t.id===migrated)?migrated:'overview';if(persist)try{localStorage.setItem(TAB_KEY,activeTab);}catch(_){ }render({animate});return activeTab;}
+  function setTab(id,{animate=true,persist=true}={}){
+    const migrated={fitx:'overview',xtraining:'planning',activities:'sessions'}[id]||id;
+    activeTab=TABS.some(t=>t.id===migrated)?migrated:'overview';
+    if(activeTab==='planning'){
+      planDate=todayIso();
+      coursePickerDate=null;
+    }
+    if(persist)try{localStorage.setItem(TAB_KEY,activeTab);}catch(_){ }
+    render({animate});
+    return activeTab;
+  }
   function currentMode(){return document.body.classList.contains('mod-sport-mode-v510')?'sport':'todo';}
   function setMode(mode,{persist=true,animate=true}={}){
     mode=mode==='sport'?'sport':'todo';
@@ -2912,11 +3060,9 @@
     }else{
       state={...state,sessions:readCache()};
     }
-    try{
-      activeTab='overview';
-      const savedPlanDate=localStorage.getItem(PLAN_DATE_KEY);
-      planDate=/^\d{4}-\d{2}-\d{2}$/.test(savedPlanDate||'')?savedPlanDate:todayIso();
-    }catch(_){activeTab='overview';planDate=todayIso();}
+    activeTab='overview';
+    planDate=todayIso();
+    try{localStorage.removeItem(PLAN_DATE_KEY);}catch(_){ }
     ensureRoot();render();
     ensureChrome();
     /* V603: Module preload must never switch the visible surface by itself. */
