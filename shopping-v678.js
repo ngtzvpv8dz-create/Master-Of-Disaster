@@ -1,4 +1,4 @@
-/* V746 · SHOPPING / CENTRAL STOCK RESOLVER
+/* V747 · SHOPPING / EXTRA WISHLIST
    Planning, cart, purchase confirmation, receipt linking and product review are separate steps.
    MHD belongs to the concrete purchase lot, never to the reusable product master.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V746';
+  const VERSION='V747';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -426,7 +426,7 @@
     });
 
     (state.general||[]).forEach(item=>{
-      const section=item.status==='cart'?'cart':item.status==='later'?'later':'now';
+      const section=item.status==='cart'?'cart':item.status==='later'?'later':item.status==='extra'?'extra':'now';
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
       const secondary=isStockup
@@ -475,7 +475,7 @@
           ?'<button type="button" data-shopping-food-complete="'+esc(row.id)+'">Vorrat korrigieren</button>'
           :'<button type="button" data-shopping-food-check="'+esc(row.id)+'">✓ Abhaken</button>';
 
-    const postpone=row.source==='general'&&row.section!=='cart'
+    const postpone=row.source==='general'&&row.section!=='cart'&&row.section!=='extra'
       ?'<button type="button" data-shopping-later="'+esc(row.id)+'">'+(row.section==='later'?'Heute':'Später')+'</button>'
       :'';
 
@@ -483,7 +483,7 @@
       ?'<button type="button" class="is-quiet" data-shopping-delete="'+esc(row.id)+'">Entfernen</button>'
       :'';
 
-    const substituteAction=row.section!=='later'
+    const substituteAction=row.section!=='later'&&row.section!=='extra'
       ?'<button type="button" class="'+(row.substitution?'is-substitute-v698':'')+'" data-shopping-substitute="'+esc(row.id)+'">'+(row.substitution?'Ersatz ändern':'Ersatz')+'</button>'
       :'';
 
@@ -701,6 +701,7 @@
   function shell(){
     const rows=buildRows();
     const now=rows.filter(row=>row.section==='now');
+    const extra=rows.filter(row=>row.section==='extra');
     const later=rows.filter(row=>row.section==='later');
     const cart=rows.filter(row=>row.section==='cart');
     const reviewCount=(state.reviews||[]).length;
@@ -715,6 +716,7 @@
       +overdueFoodWarningMarkup()
       +'<div class="shopping-sections-v643">'
       +sectionMarkup('now','PHASE 1 · EINKAUFEN','jetzt relevant',now,addEntryActionMarkup())
+      +sectionMarkup('extra','EXTRAS · OHNE KAUFTERMIN','Nicht Food · dauerhaft gesammelt',extra,addEntryActionMarkup())
       +laterSectionMarkup(later)
       +sectionMarkup('cart','PHASE 2 · IM EINKAUFSWAGEN','liegt schon drin',cart,cart.length?checkoutActionMarkup():'')
       +'</div>'
@@ -747,13 +749,18 @@
       +'<form data-shopping-add-form><label>Artikel<input name="label" required placeholder="z. B. Duschgel, Waschmittel, Batterien" autocomplete="off"></label>'
       +'<div class="shopping-form-grid-v643"><label>Menge<input name="quantity" type="number" min="0" step="0.01" inputmode="decimal"></label><label>Einheit<input name="unit" placeholder="Stück, Packung, ml …"></label></div>'
       +'<div class="shopping-form-grid-v643"><label>Kategorie<select name="category">'+CATEGORIES.map(cat=>'<option '+(cat==='Sonstiges'?'selected':'')+'>'+esc(cat)+'</option>').join('')+'</select></label><label>Benötigt bis<input name="needed_by" type="date"></label></div>'
-      +'<small class="shopping-add-hint-v681">Ohne „Erst später“ landet der Eintrag direkt bei EINKAUFEN.</small>'
+      +'<small class="shopping-add-hint-v681">Normal = Phase 1. „Extra“ bleibt dauerhaft ohne Kauftermin zwischen Phase 1 und Später.</small>'
       +'<label>Notiz<input name="notes" placeholder="optional"></label>'
+      +'<label class="shopping-later-check-v643"><input name="extra" type="checkbox"> Extra · ohne Kauftermin</label>'
       +'<label class="shopping-later-check-v643"><input name="later" type="checkbox"> Erst später einkaufen</label>'
       +'<button type="submit" class="shopping-submit-v643">Zur Einkaufsliste</button></form></div>';
     document.body.appendChild(root);
     root.querySelector('[data-shopping-modal-close]')?.addEventListener('click',()=>root.remove());
     root.addEventListener('click',event=>{if(event.target===root)root.remove();});
+    const extraCheck=root.querySelector('input[name="extra"]');
+    const laterCheck=root.querySelector('input[name="later"]');
+    extraCheck?.addEventListener('change',()=>{if(extraCheck.checked&&laterCheck)laterCheck.checked=false;});
+    laterCheck?.addEventListener('change',()=>{if(laterCheck.checked&&extraCheck)extraCheck.checked=false;});
     root.querySelector('[data-shopping-add-form]')?.addEventListener('submit',async event=>{
       event.preventDefault();
       const form=new FormData(event.currentTarget);
@@ -764,11 +771,12 @@
       const category=String(form.get('category')||'Sonstiges').trim()||'Sonstiges';
       const neededBy=String(form.get('needed_by')||'').trim()||null;
       const notes=String(form.get('notes')||'').trim()||null;
+      const extra=form.get('extra')==='on';
       const later=form.get('later')==='on';
       if(!label)return;
       if(quantity!==null&&(!Number.isFinite(quantity)||quantity<0))return;
       try{
-        await addGeneral({label,quantity,unit,category,needed_by:neededBy,notes,status:later?'later':'now'});
+        await addGeneral({label,quantity,unit,category,needed_by:extra?null:neededBy,notes,status:extra?'extra':later?'later':'now'});
         root.remove();
       }catch(error){
         alert(error?.message||'Eintrag konnte nicht gespeichert werden.');
@@ -1498,7 +1506,7 @@
       if(row.inCart){
         await updateGeneral(item.id,{status:item.return_status||'now',return_status:null});
       }else{
-        const returnStatus=item.status==='later'?'later':'now';
+        const returnStatus=item.status==='later'?'later':item.status==='extra'?'extra':'now';
         await updateGeneral(item.id,{status:'cart',return_status:returnStatus});
       }
       return;
