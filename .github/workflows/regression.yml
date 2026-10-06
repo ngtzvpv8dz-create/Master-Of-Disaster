@@ -444,12 +444,12 @@ jobs:
                 mode:window.__modAreaRuntimeV609?.preloadMode||null,
                 percent:window.__modAreaRuntimeV609?.progress?.percent||0,
                 legacyCache:keys.includes('master-of-disaster-v606-static'),
-                currentCache:keys.includes('master-of-disaster-v611-static'),
+                currentCache:keys.includes('master-of-disaster-v612-static'),
                 executed:window.__modAreaRuntimeV609?.executedCount,
                 reloadAuthority:window.__modWorkerGateV611?.reloadAuthority||null
               };
             });
-            if(topNavigations!==1||upgradeState.controllerVersion!=='V611'||upgradeState.gate!=='V611'||upgradeState.mode!=='worker-warm-staged-heavy-execution'||upgradeState.percent!==100||upgradeState.legacyCache||!upgradeState.currentCache||upgradeState.executed!==0||upgradeState.reloadAuthority!=='none')throw new Error('V609 staged-runtime upgrade regression '+JSON.stringify({topNavigations,upgradeState}));
+            if(topNavigations!==1||upgradeState.controllerVersion!=='V612'||upgradeState.gate!=='V612'||upgradeState.mode!=='worker-warm-staged-heavy-execution'||upgradeState.percent!==100||upgradeState.legacyCache||!upgradeState.currentCache||upgradeState.executed!==0||upgradeState.reloadAuthority!=='none')throw new Error('V609 staged-runtime upgrade regression '+JSON.stringify({topNavigations,upgradeState}));
             await upgrade.close();
             await upgradeContext.close();
 
