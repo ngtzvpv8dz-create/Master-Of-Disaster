@@ -45,7 +45,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v626.js?v=745-active-priority',
+      './sport-v626.js?v=748-today-timeline',
       './sport-circuit-v682.js?v=683-active-priority'
     ],
     food:[
@@ -143,7 +143,7 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v626.js?v=745-active-priority','./sport-circuit-v682.js?v=683-active-priority'],
+    sport:['./sport-v626.js?v=748-today-timeline','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-v544.js?v=741-ingredient-allocation',
       './food-nutrition-v711.js?v=713-inventory-view-fix'],
     shopping:['./food-v544.js?v=741-ingredient-allocation',
