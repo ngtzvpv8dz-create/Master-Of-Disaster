@@ -1,4 +1,4 @@
-/* V746 · FOOD
+/* V749 · FOOD
    Bedienung: Geplant/Erledigt, belastbare Bestandsbuchung, Monats-Stichtag-Plan,
    editierbarer Vorrat, Einkaufslücken und einplanbare Rezepte.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V746';
+  const VERSION='V749';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -500,7 +500,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
@@ -855,6 +855,40 @@
     }
   }
 
+  function manualAllocationForItem(item){
+    const raw=Array.isArray(item?.allocation_override)?item.allocation_override:[];
+    if(!raw.length)return null;
+    const allocations=raw.map((part,index)=>{
+      const inventoryId=String(part?.inventory_id||'').trim();
+      const stock=(state?.inventory||[]).find(row=>String(row.id)===inventoryId)||null;
+      const quantity=Math.max(0,Number(part?.quantity)||0);
+      const unit=String(part?.unit||item?.unit||stock?.unit||'').trim();
+      if(!inventoryId||quantity<=0)return null;
+      const label=String(part?.label||'').trim()||(stock?familyAllocationProductLabel(stock):'Vorratsquelle '+(index+1));
+      const frozen=part?.frozen===true||(stock&&familyRowMode(stock)==='frozen');
+      return {inventoryId,label,quantity,unit,frozen,manual:true};
+    }).filter(Boolean);
+    if(!allocations.length)return null;
+    return {allocations,remaining:0,manual:true};
+  }
+
+  function mealIngredientContext(ingredientId){
+    const id=String(ingredientId||'');
+    for(const meal of (state?.meals||[])){
+      const ingredient=(meal.ingredients||[]).find(item=>String(item.id)===id);
+      if(ingredient)return {meal,ingredient};
+    }
+    return null;
+  }
+
+  function editableAllocationContext(item){
+    if(!item?.id)return null;
+    const context=mealIngredientContext(item.id);
+    if(!context)return null;
+    if(normalizedStatus(context.meal.status)==='completed'||context.meal.inventory_booked_at)return null;
+    return context;
+  }
+
   function plannedFamilyAllocationMaps(){
     if(plannedAllocationCacheState===state&&plannedAllocationCache)return plannedAllocationCache;
 
@@ -872,7 +906,7 @@
       if(normalizedStatus(meal.status)==='completed'||meal.inventory_booked_at)continue;
       const items=[...(meal.ingredients||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
       for(const item of items){
-        const allocation=familyAllocationForItem(item,quantities)||specificAllocationForItem(item,quantities);
+        const allocation=manualAllocationForItem(item)||familyAllocationForItem(item,quantities)||specificAllocationForItem(item,quantities);
         if(allocation){
           if(item?.id)perMeal.set(String(item.id),allocation);
           reserveFamilyAllocation(allocation,quantities);
@@ -894,19 +928,25 @@
 
     const generic=familyText(ingredientName(item));
     const needed=Math.max(0,Number(item?.quantity)||0);
+    const editable=editableAllocationContext(item);
+    const sourceEditAllowed=Boolean(editable)&&missing<=0.0001;
     const singleComplete=parts.length===1&&missing<=0.0001&&Math.abs((Number(parts[0]?.quantity)||0)-needed)<=0.0001;
     const thawing=Boolean(item?.thaw_started_at);
     let html='<div class="food-ingredient-allocation-v712">';
-    parts.forEach(part=>{
+    parts.forEach((part,index)=>{
       const rawLabel=String(part.label||'').trim();
       const detailLabel=!rawLabel||familyText(rawLabel)===generic?'Produkt nicht genauer erfasst':rawLabel;
       const frozen=part.frozen===true;
       const thawClass=frozen&&thawing?' is-thawing-v741':'';
       const status=frozen?(thawing?' · Auftauen läuft':' · eingefroren'):'';
-      html+='<div class="food-ingredient-allocation-line-v712 '+(frozen?'is-frozen-v736':'')+thawClass+(singleComplete?' is-single-source-v741':'')+'">'
+      const canEdit=sourceEditAllowed&&Boolean(part.inventoryId);
+      const amount=canEdit
+        ?'<button type="button" class="food-allocation-qty-edit-v749" data-food-allocation-edit="'+esc(item.id)+'" data-food-allocation-index="'+index+'" aria-label="Menge von '+esc(detailLabel)+' ändern">'+esc(fmtQty(part.quantity,part.unit))+'</button>'
+        :((singleComplete&&!canEdit)?'':'<b>'+esc(fmtQty(part.quantity,part.unit))+'</b>');
+      html+='<div class="food-ingredient-allocation-line-v712 '+(frozen?'is-frozen-v736 ':'')+thawClass+(singleComplete&&!canEdit?' is-single-source-v741':'')+(canEdit?' is-editable-v749':'')+'">'
         +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
         +'<span class="food-allocation-copy-v741">'+esc(detailLabel)+status+'</span>'
-        +(singleComplete?'':'<b>'+esc(fmtQty(part.quantity,part.unit))+'</b>')
+        +amount
         +'</div>';
     });
     if(missing>0.0001){
@@ -922,7 +962,7 @@
   function ingredientListMarkup(items,allocationMap=null){
     return '<ul>'+items.map(item=>{
       const q=num(item.quantity);
-      const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||familyAllocationForItem(item)||specificAllocationForItem(item);
+      const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item);
       const allocationHtml=allocationMarkup(allocation,item);
       const quantityHtml=q===null||Number.isNaN(q)
         ?''
@@ -2316,6 +2356,77 @@
     });
   }
 
+  function allocationQuantityModal(ingredientId,sourceIndex){
+    const context=mealIngredientContext(ingredientId);
+    if(!context){alert('Zutat nicht gefunden.');return;}
+    const {meal,ingredient}=context;
+    if(normalizedStatus(meal.status)==='completed'||meal.inventory_booked_at){
+      alert('Bereits gebuchte Mahlzeiten werden nicht nachträglich verändert.');
+      return;
+    }
+
+    const plannedMap=plannedFamilyAllocationMaps().get(String(meal.id));
+    const allocation=plannedMap?.get?.(String(ingredient.id))
+      ||manualAllocationForItem(ingredient)
+      ||familyAllocationForItem(ingredient)
+      ||specificAllocationForItem(ingredient);
+    const parts=Array.isArray(allocation?.allocations)?allocation.allocations:[];
+    const missing=Math.max(0,Number(allocation?.remaining)||0);
+    const index=Number(sourceIndex);
+    const target=parts[index];
+
+    if(!target||!target.inventoryId){alert('Diese Vorratsquelle konnte nicht eindeutig zugeordnet werden.');return;}
+    if(missing>0.0001){alert('Die Quellenmenge kann erst geändert werden, wenn die Zutat vollständig aus vorhandenem Vorrat aufgeteilt ist.');return;}
+
+    const originalTotal=parts.reduce((sum,part)=>sum+(Number(part.quantity)||0),0);
+    const unit=String(target.unit||ingredient.unit||'').trim();
+    let modal;
+    const body='<form>'
+      +'<p class="food-modal-copy-v544"><strong>'+esc(target.label||ingredientName(ingredient))+'</strong><br>Du änderst nur diese Vorratsquelle für diese Mahlzeit. Die Gesamtmenge von <strong>'+esc(ingredientName(ingredient))+'</strong> wird automatisch aus allen Quellen neu berechnet.</p>'
+      +'<label>Neue Menge ('+esc(unit)+')<input name="quantity" type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(Number(target.quantity)||0)+'" required autofocus></label>'
+      +'<div class="food-allocation-total-preview-v749"><span>Gesamt danach</span><strong data-food-allocation-total-preview>'+esc(fmtQty(originalTotal,ingredient.unit))+'</strong></div>'
+      +'<button class="food-action-v544" type="submit">Quellenmenge speichern</button>'
+      +'</form>';
+
+    modal=addModal('Quellenmenge ändern',body,async form=>{
+      const next=Number(form.get('quantity'));
+      if(!Number.isFinite(next)||next<0)throw new Error('Bitte eine gültige Menge ab 0 eingeben.');
+
+      const allocations=parts.map((part,partIndex)=>({
+        inventory_id:String(part.inventoryId||''),
+        quantity:partIndex===index?next:Number(part.quantity)||0,
+        unit:String(part.unit||ingredient.unit||''),
+        label:String(part.label||''),
+        frozen:part.frozen===true
+      })).filter(part=>part.inventory_id&&part.quantity>0);
+
+      if(!allocations.length)throw new Error('Mindestens eine Vorratsquelle muss eine Menge größer als 0 behalten.');
+
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await withTimeout(
+        supabase.rpc('set_food_meal_ingredient_allocation',{
+          p_ingredient_id:ingredient.id,
+          p_allocations:allocations
+        }),
+        'Quellenmenge speichern',
+        10000
+      );
+      if(result.error)throw result.error;
+      expandedMeals.add(String(meal.id));
+      await mutate(()=>result.data);
+    });
+
+    const input=modal?.querySelector('[name="quantity"]');
+    const preview=modal?.querySelector('[data-food-allocation-total-preview]');
+    const sync=()=>{
+      const next=Math.max(0,Number(input?.value)||0);
+      const total=parts.reduce((sum,part,partIndex)=>sum+(partIndex===index?next:(Number(part.quantity)||0)),0);
+      if(preview)preview.textContent=fmtQty(total,ingredient.unit);
+    };
+    input?.addEventListener('input',sync);
+    sync();
+  }
+
   function editPlannedMealQuantitiesModal(mealId){
     const meal=(state?.meals||[]).find(item=>String(item.id)===String(mealId));
     if(!meal){alert('Mahlzeit nicht gefunden.');return;}
@@ -2873,6 +2984,10 @@
     }));
     root.querySelectorAll('[data-food-edit-free-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editFreeMealModal(button.dataset.foodEditFreeMeal);}));
     root.querySelectorAll('[data-food-edit-planned-meal]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editPlannedMealQuantitiesModal(button.dataset.foodEditPlannedMeal);}));
+    root.querySelectorAll('[data-food-allocation-edit]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();
+      allocationQuantityModal(button.dataset.foodAllocationEdit,button.dataset.foodAllocationIndex);
+    }));
     root.querySelectorAll('[data-food-rate-recipe]').forEach(button=>button.addEventListener('click',async event=>{
       event.stopPropagation();
       button.disabled=true;
