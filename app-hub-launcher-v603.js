@@ -39,6 +39,26 @@
   function isReady(){return runtime()?.ready===true;}
 
   function iconMarkup(item){
+    if(item.id==='denkfabrik'){
+      return '<svg class="mod-hub-app-denk-art-v752" viewBox="0 0 192 192" aria-hidden="true">'
+        +'<defs>'
+          +'<linearGradient id="hubDenkBg752" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#294d67"/><stop offset=".5" stop-color="#183247"/><stop offset="1" stop-color="#0e2231"/></linearGradient>'
+          +'<linearGradient id="hubDenkRim752" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0d6a5"/><stop offset=".5" stop-color="#92b5cc"/><stop offset="1" stop-color="#b07b45"/></linearGradient>'
+          +'<radialGradient id="hubDenkBrain752" cx=".38" cy=".28" r=".8"><stop offset="0" stop-color="#fff8e8"/><stop offset=".68" stop-color="#eadcc5"/><stop offset="1" stop-color="#bda98d"/></radialGradient>'
+        +'</defs>'
+        +'<rect x="6" y="6" width="180" height="180" rx="40" fill="url(#hubDenkBg752)" stroke="url(#hubDenkRim752)" stroke-width="5"/>'
+        +'<g opacity=".9" fill="none" stroke="#c89b61" stroke-width="4" stroke-linecap="round"><path d="M26 80h26l14 12"/><path d="M24 116h31l13-11"/><path d="M166 76h-27l-13 13"/><path d="M168 120h-31l-12-12"/></g>'
+        +'<g fill="#e8c995" stroke="#8d6338" stroke-width="3"><circle cx="25" cy="80" r="7"/><circle cx="23" cy="116" r="7"/><circle cx="167" cy="76" r="7"/><circle cx="169" cy="120" r="7"/></g>'
+        +'<g transform="translate(96 97)">'
+          +'<path d="M0-65 13-62 18-49 31-43 42-49 52-38 48-25 55-13 68-10 69 4 57 10 52 23 57 35 47 46 34 42 22 50 18 64 3 66-4 54-18 50-30 57-42 47-38 33-46 22-60 18-61 3-49-4-45-18-52-29-41-41-28-37-17-46-13-60Z" fill="#7da1ba" stroke="#e3c48f" stroke-width="4"/>'
+          +'<circle cx="4" cy="1" r="47" fill="#132b3e" stroke="#9bb8ca" stroke-width="3"/>'
+          +'<path d="M3-37c-15-14-37-2-33 16-14 6-13 28 4 32-6 17 10 31 26 23V-37Z" fill="url(#hubDenkBrain752)" stroke="#8d7b66" stroke-width="3"/>'
+          +'<path d="M5-37c15-14 37-2 33 16 14 6 13 28-4 32 6 17-10 31-26 23V-37Z" fill="url(#hubDenkBrain752)" stroke="#8d7b66" stroke-width="3"/>'
+          +'<g fill="none" stroke="#a4937c" stroke-width="3" stroke-linecap="round"><path d="M-8-27c-11 4-12 14-5 21"/><path d="M-28-13c11 2 15 11 10 20"/><path d="M-22 16c8-7 17-6 22 1"/><path d="M16-27c11 4 12 14 5 21"/><path d="M36-13c-11 2-15 11-10 20"/><path d="M30 16c-8-7-17-6-22 1"/></g>'
+          +'<path d="M4-38v76" stroke="#8a7359" stroke-width="3"/>'
+        +'</g>'
+        +'</svg>';
+    }
     if(item.id==='shopping'){
       return '<svg class="mod-hub-app-shopping-art-v647" viewBox="0 0 192 192" aria-hidden="true">'
         +'<defs>'
@@ -145,7 +165,7 @@
 
   const api={
     version:VERSION,render,sources:{...SOURCES},modules:MODULES.map(item=>({...item})),
-    updateProgress,homescreenStyle:true,nineTileGrid:true,denkfabrikTileV634:true,shoppingActiveV643:true,realBootstrapProgress:true,legacyLoadersRemoved:true
+    updateProgress,homescreenStyle:true,nineTileGrid:true,denkfabrikTileV634:true,denkfabrikVectorV752:true,shoppingActiveV643:true,realBootstrapProgress:true,legacyLoadersRemoved:true
   };
   window.__modHubLauncherV603=api;
   /* Namespace aliases keep existing feature modules/tests pointed at the one current launcher. */
