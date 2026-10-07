@@ -1402,7 +1402,9 @@
       quantity:item.quantity,unit:item.unit,source:item.source,
       planned_quantity:item.plannedQuantity,planned_unit:item.plannedUnit,
       inventory_id:item.inventoryId||null,product_id:item.productId||null,
-      best_before_date:item.bestBefore||null,package_count:item.packageCount||null,note:item.note||null,
+      best_before_date:item.bestBefore||null,
+      best_before_status:(item.bestBefore||(item.lots||[]).some(lot=>lot.bestBefore))?'date':'unknown',
+      package_count:item.packageCount||null,purchase_data:{},note:item.note||null,
       substitution_id:item.substitutionId||null,original_label:item.originalLabel||null,
       original_quantity:item.originalQuantity??null,original_unit:item.originalUnit||null
     }));
