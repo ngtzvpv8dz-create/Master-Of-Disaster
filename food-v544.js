@@ -1,4 +1,4 @@
-/* V750 · FOOD
+/* V751 · FOOD
    Bedienung: Geplant/Erledigt, belastbare Bestandsbuchung, Monats-Stichtag-Plan,
    editierbarer Vorrat, Einkaufslücken und einplanbare Rezepte.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V750';
+  const VERSION='V751';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -964,11 +964,17 @@
       const q=num(item.quantity);
       const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item);
       const allocationHtml=allocationMarkup(allocation,item);
+      const editable=editableAllocationContext(item);
+      const canRemove=Boolean(editable);
       const quantityHtml=q===null||Number.isNaN(q)
         ?''
         :'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">'+esc(fmtQty(q,item.unit))+'</b>';
-      return '<li class="'+(allocationHtml?'food-ingredient-has-allocation-v712':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
+      const removeHtml=canRemove
+        ?'<button type="button" class="food-ingredient-remove-v751" data-food-remove-meal-ingredient="'+esc(item.id)+'" aria-label="'+esc(ingredientName(item))+' nur aus dieser Mahlzeit entfernen" title="Nur aus dieser Mahlzeit entfernen">×</button>'
+        :'';
+      return '<li class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
         quantityHtml+
+        removeHtml+
         allocationHtml+'</li>';
     }).join('')+'</ul>';
   }
@@ -2475,6 +2481,83 @@
     return saved;
   }
 
+  async function removeMealIngredient(ingredientId){
+    const context=mealIngredientContext(ingredientId);
+    if(!context)throw new Error('Zutat nicht gefunden.');
+    const {meal,ingredient}=context;
+    if(normalizedStatus(meal.status)==='completed'||meal.inventory_booked_at){
+      throw new Error('Bereits gebuchte Mahlzeiten werden nicht nachträglich verändert.');
+    }
+    if(!confirm('„'+ingredientName(ingredient)+'“ nur aus dieser Mahlzeit entfernen? Das Rezept selbst bleibt unverändert.'))return false;
+    if(!sourceIsReal('meals'))throw new Error('Die Mahlzeit ist gerade nicht sicher mit der Cloud synchronisiert. Bitte FOOD einmal neu laden.');
+
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+
+    const clearMeal=await withTimeout(
+      supabase.from('food_meals')
+        .update({calories_kcal_per_serving_override:null})
+        .eq('id',meal.id)
+        .select('id')
+        .single(),
+      'Mahlzeit vorbereiten',
+      12000
+    );
+    if(clearMeal?.error)throw clearMeal.error;
+
+    let removed=false;
+    let lastError=null;
+    for(let attempt=0;attempt<2&&!removed;attempt+=1){
+      if(attempt)await new Promise(resolve=>setTimeout(resolve,500));
+      try{
+        const result=await withTimeout(
+          supabase.from('food_meal_ingredients')
+            .delete()
+            .eq('id',ingredient.id)
+            .eq('meal_id',meal.id)
+            .select('id')
+            .maybeSingle(),
+          attempt?'Zutat erneut entfernen':'Zutat entfernen',
+          12000
+        );
+        if(!result?.error&&result?.data?.id)removed=true;
+        else if(result?.error)lastError=result.error;
+      }catch(error){
+        lastError=error;
+      }
+    }
+
+    if(!removed){
+      try{
+        const check=await withTimeout(
+          supabase.from('food_meal_ingredients')
+            .select('id')
+            .eq('id',ingredient.id)
+            .eq('meal_id',meal.id)
+            .maybeSingle(),
+          'Entfernung prüfen',
+          8000
+        );
+        if(!check?.error&&!check?.data)removed=true;
+        else if(check?.error)lastError=check.error;
+      }catch(error){
+        lastError=error;
+      }
+    }
+
+    if(!removed)throw lastError||new Error('Die Zutat konnte nicht entfernt werden.');
+
+    meal.ingredients=(meal.ingredients||[]).filter(item=>String(item.id)!==String(ingredient.id));
+    meal.calories_kcal_per_serving_override=null;
+    plannedAllocationCacheState=null;
+    plannedAllocationCache=null;
+    plannedThawCacheState=null;
+    plannedThawCache=null;
+    sourceState.meals='cloud';
+    expandedMeals.add(String(meal.id));
+    renderState();
+    return true;
+  }
+
   function allocationQuantityModal(ingredientId,sourceIndex){
     const context=mealIngredientContext(ingredientId);
     if(!context){alert('Zutat nicht gefunden.');return;}
@@ -3095,6 +3178,12 @@
     root.querySelectorAll('[data-food-allocation-edit]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();
       allocationQuantityModal(button.dataset.foodAllocationEdit,button.dataset.foodAllocationIndex);
+    }));
+    root.querySelectorAll('[data-food-remove-meal-ingredient]').forEach(button=>button.addEventListener('click',async event=>{
+      event.stopPropagation();
+      button.disabled=true;
+      try{await removeMealIngredient(button.dataset.foodRemoveMealIngredient);}
+      catch(error){alert(error?.message||'Zutat konnte nicht entfernt werden.');button.disabled=false;}
     }));
     root.querySelectorAll('[data-food-rate-recipe]').forEach(button=>button.addEventListener('click',async event=>{
       event.stopPropagation();
