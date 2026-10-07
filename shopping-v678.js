@@ -497,7 +497,7 @@
       +'<div class="shopping-item-main-v643"><strong>'+esc(row.label)+'</strong><b>'+esc(row.primary||'')+'</b></div>'
       +substitution
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
-      +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701':'')+'">'
+      +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701 has-stock-lines-v755':'')+'">'
       +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
       +'<span>'+esc(row.secondary||row.timing||'')+'</span>'
       +(row.secondary&&row.timing?'<em>'+esc(row.timing)+'</em>':'')
