@@ -1,4 +1,4 @@
-/* V749 · FOOD
+/* V750 · FOOD
    Bedienung: Geplant/Erledigt, belastbare Bestandsbuchung, Monats-Stichtag-Plan,
    editierbarer Vorrat, Einkaufslücken und einplanbare Rezepte.
 */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V749';
+  const VERSION='V750';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -2356,6 +2356,125 @@
     });
   }
 
+  const sameAllocationOverride=(left,right)=>{
+    const normalize=value=>(Array.isArray(value)?value:[])
+      .map(part=>({
+        inventory_id:String(part?.inventory_id||''),
+        quantity:Number(part?.quantity)||0,
+        unit:String(part?.unit||''),
+        label:String(part?.label||''),
+        frozen:part?.frozen===true
+      }))
+      .filter(part=>part.inventory_id&&part.quantity>0)
+      .sort((a,b)=>a.inventory_id.localeCompare(b.inventory_id)||a.quantity-b.quantity);
+    return JSON.stringify(normalize(left))===JSON.stringify(normalize(right));
+  };
+
+  async function saveMealIngredientAllocationDirect(meal,ingredient,allocations){
+    if(!sourceIsReal('meals')||!sourceIsReal('inventory')){
+      throw new Error('Mahlzeit oder Vorrat sind gerade nicht sicher mit der Cloud synchronisiert. Bitte FOOD einmal neu laden.');
+    }
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+
+    const normalized=(allocations||[]).map(part=>({
+      inventory_id:String(part?.inventory_id||'').trim(),
+      quantity:Math.round((Number(part?.quantity)||0)*1000)/1000,
+      unit:String(part?.unit||ingredient?.unit||'').trim(),
+      label:String(part?.label||'').trim(),
+      frozen:part?.frozen===true
+    })).filter(part=>part.inventory_id&&part.quantity>0);
+
+    if(!normalized.length)throw new Error('Mindestens eine Vorratsquelle muss eine Menge größer als 0 behalten.');
+
+    const byInventory=new Map();
+    normalized.forEach(part=>byInventory.set(part.inventory_id,(byInventory.get(part.inventory_id)||0)+part.quantity));
+    for(const [inventoryId,quantity] of byInventory){
+      const stock=(state?.inventory||[]).find(row=>String(row.id)===inventoryId);
+      if(!stock||stock.is_active===false)throw new Error('Eine Vorratsquelle ist nicht mehr verfügbar.');
+      const availability=inventoryQuantityInUnit(stock,ingredient.unit);
+      if(availability.unitMismatch)throw new Error('Die Einheit von „'+String(stock.name||'Vorratsquelle')+'“ passt nicht zur Zutat.');
+      if(quantity>Number(availability.available)+0.0001){
+        throw new Error('Nicht genug „'+String(stock.name||'Vorratsquelle')+'“ vorhanden.');
+      }
+    }
+
+    const total=Math.round(normalized.reduce((sum,part)=>sum+part.quantity,0)*1000)/1000;
+    const payload={
+      quantity:total,
+      quantity_confirmed:true,
+      label:fmtQty(total,ingredient.unit)+' '+String(ingredient.name||'Zutat'),
+      allocation_override:normalized
+    };
+
+    const clearMeal=await withTimeout(
+      supabase.from('food_meals')
+        .update({calories_kcal_per_serving_override:null})
+        .eq('id',meal.id)
+        .select('id,calories_kcal_per_serving_override')
+        .single(),
+      'Mahlzeit vorbereiten',
+      12000
+    );
+    if(clearMeal?.error)throw clearMeal.error;
+
+    let saved=null;
+    let lastError=null;
+    for(let attempt=0;attempt<2&&!saved;attempt+=1){
+      if(attempt)await new Promise(resolve=>setTimeout(resolve,500));
+      try{
+        const result=await withTimeout(
+          supabase.from('food_meal_ingredients')
+            .update(payload)
+            .eq('id',ingredient.id)
+            .eq('meal_id',meal.id)
+            .select('id,quantity,unit,label,quantity_confirmed,allocation_override')
+            .single(),
+          attempt?'Quellenmenge erneut speichern':'Quellenmenge speichern',
+          12000
+        );
+        if(!result?.error&&result?.data)saved=result.data;
+        else lastError=result?.error||new Error('Die Cloud hat die Quellenmenge nicht bestätigt.');
+      }catch(error){
+        lastError=error;
+      }
+    }
+
+    if(!saved){
+      try{
+        const check=await withTimeout(
+          supabase.from('food_meal_ingredients')
+            .select('id,quantity,unit,label,quantity_confirmed,allocation_override')
+            .eq('id',ingredient.id)
+            .eq('meal_id',meal.id)
+            .single(),
+          'Gespeicherte Quellenmenge prüfen',
+          8000
+        );
+        const quantityMatches=Math.abs((Number(check?.data?.quantity)||0)-total)<=0.0001;
+        if(!check?.error&&check?.data&&quantityMatches&&sameAllocationOverride(check.data.allocation_override,normalized)){
+          saved=check.data;
+        }else if(check?.error){
+          lastError=check.error;
+        }
+      }catch(error){
+        lastError=error;
+      }
+    }
+
+    if(!saved)throw lastError||new Error('Die Quellenmenge konnte nicht gespeichert werden.');
+
+    Object.assign(ingredient,saved);
+    meal.calories_kcal_per_serving_override=null;
+    plannedAllocationCacheState=null;
+    plannedAllocationCache=null;
+    plannedThawCacheState=null;
+    plannedThawCache=null;
+    sourceState.meals='cloud';
+    expandedMeals.add(String(meal.id));
+    renderState();
+    return saved;
+  }
+
   function allocationQuantityModal(ingredientId,sourceIndex){
     const context=mealIngredientContext(ingredientId);
     if(!context){alert('Zutat nicht gefunden.');return;}
@@ -2402,18 +2521,7 @@
 
       if(!allocations.length)throw new Error('Mindestens eine Vorratsquelle muss eine Menge größer als 0 behalten.');
 
-      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
-      const result=await withTimeout(
-        supabase.rpc('set_food_meal_ingredient_allocation',{
-          p_ingredient_id:ingredient.id,
-          p_allocations:allocations
-        }),
-        'Quellenmenge speichern',
-        10000
-      );
-      if(result.error)throw result.error;
-      expandedMeals.add(String(meal.id));
-      await mutate(()=>result.data);
+      await saveMealIngredientAllocationDirect(meal,ingredient,allocations);
     });
 
     const input=modal?.querySelector('[name="quantity"]');
