@@ -2208,3 +2208,51 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 }
 .food-ingredient-remove-v751:active{transform:translateY(1px)}
 .food-ingredient-remove-v751:disabled{opacity:.45;cursor:default}
+
+
+/* V758 · Zutaten aus Vorrat ergänzen */
+.food-planned-add-list-v758{
+  display:grid;
+  gap:8px;
+}
+.food-planned-add-row-v758{
+  display:grid;
+  gap:8px;
+  padding:10px 11px;
+  border:1px solid rgba(65,98,69,.14);
+  border-radius:12px;
+  background:rgba(242,248,240,.86);
+}
+.food-planned-add-row-v758>span strong{
+  display:block;
+  color:#405845;
+  font-size:11px;
+}
+.food-planned-add-row-v758>span small{
+  display:block;
+  margin-top:2px;
+  color:#7a877c;
+  font-size:8px;
+}
+.food-planned-add-controls-v758{
+  display:grid;
+  grid-template-columns:minmax(0,1.6fr) 88px 92px auto;
+  gap:7px;
+  align-items:center;
+}
+.food-planned-add-controls-v758 select,
+.food-planned-add-controls-v758 input{
+  min-width:0;
+  width:100%;
+}
+.food-planned-add-button-v758{
+  justify-self:start;
+}
+@media(max-width:620px){
+  .food-planned-add-controls-v758{
+    grid-template-columns:1fr 1fr;
+  }
+  .food-planned-add-controls-v758 select{
+    grid-column:1/-1;
+  }
+}
