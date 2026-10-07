@@ -567,3 +567,174 @@
   text-overflow:clip;
   overflow-wrap:break-word;
 }
+
+
+/* V756 · Phase 4 Kaufdetails */
+.shopping-review-purchase-v756{
+  display:block;
+  margin-top:4px;
+  padding:5px 7px;
+  border-radius:8px;
+  border:1px solid rgba(143,178,201,.12);
+  background:rgba(143,178,201,.045);
+  color:#a9bdca;
+  font-size:.52rem;
+  line-height:1.35;
+  font-weight:760;
+}
+.shopping-review-purchase-v756.is-ready-v756{
+  border-color:rgba(126,166,149,.24);
+  background:rgba(126,166,149,.08);
+  color:#add0bd;
+}
+.shopping-review-purchase-v756.is-open-v756{
+  border-color:rgba(239,154,82,.28);
+  background:rgba(239,154,82,.075);
+  color:#e2bc98;
+}
+.shopping-review-actions-v644 [data-review-details]{
+  border-color:rgba(143,178,201,.22);
+  background:rgba(143,178,201,.08);
+  color:#c1d5e1;
+}
+.shopping-purchase-card-v756{
+  width:min(100%,620px);
+  display:grid;
+  gap:12px;
+}
+.shopping-purchase-product-v756,
+.shopping-purchase-structure-v756{
+  display:grid;
+  gap:3px;
+  padding:10px;
+  border:1px solid rgba(143,178,201,.13);
+  border-radius:11px;
+  background:rgba(143,178,201,.045);
+}
+.shopping-purchase-product-v756>span,
+.shopping-purchase-structure-v756>span{
+  color:#90a9b8;
+  font-size:.48rem;
+  font-weight:900;
+  letter-spacing:.07em;
+}
+.shopping-purchase-product-v756>strong,
+.shopping-purchase-structure-v756>strong{
+  color:#ece8e1;
+  font-size:.7rem;
+  line-height:1.3;
+}
+.shopping-purchase-product-v756>small,
+.shopping-purchase-structure-v756>small{
+  color:#8797a3;
+  font-size:.52rem;
+  line-height:1.35;
+}
+.shopping-purchase-card-v756 form{
+  display:grid;
+  gap:11px;
+}
+.shopping-purchase-grid-v756{
+  display:grid;
+  grid-template-columns:1.2fr 1fr 1fr;
+  gap:8px;
+}
+.shopping-purchase-grid-v756 label,
+.shopping-purchase-mhd-v756,
+.shopping-purchase-weight-v756{
+  min-width:0;
+}
+.shopping-purchase-grid-v756 label,
+.shopping-purchase-mhd-v756 legend,
+.shopping-purchase-weight-v756 legend{
+  color:#92a4b1;
+  font-size:.5rem;
+  font-weight:850;
+}
+.shopping-purchase-grid-v756 input,
+.shopping-purchase-mhd-v756>input[type="date"]{
+  box-sizing:border-box;
+  width:100%;
+  min-height:40px;
+  margin-top:4px;
+  padding:0 9px;
+  border:1px solid rgba(143,178,201,.15);
+  border-radius:9px;
+  background:#111823;
+  color:#eeeae4;
+  font:inherit;
+  font-size:.62rem;
+}
+.shopping-purchase-weight-v756,
+.shopping-purchase-mhd-v756{
+  display:grid;
+  gap:8px;
+  margin:0;
+  padding:10px;
+  border:1px solid rgba(143,178,201,.12);
+  border-radius:11px;
+  background:rgba(17,24,35,.5);
+}
+.shopping-purchase-weight-v756>div{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.shopping-purchase-weight-v756 label,
+.shopping-purchase-mhd-choice-v756{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:38px;
+  padding:7px 9px;
+  border:1px solid rgba(143,178,201,.13);
+  border-radius:9px;
+  background:rgba(143,178,201,.045);
+  color:#c2d0d9;
+  font-size:.58rem;
+  font-weight:780;
+}
+.shopping-purchase-weight-v756 input,
+.shopping-purchase-mhd-choice-v756 input{
+  width:17px;
+  height:17px;
+  margin:0;
+  flex:none;
+}
+.shopping-purchase-mhd-v756 .is-open-v756{
+  color:#d8ad87;
+  font-size:.52rem;
+  line-height:1.35;
+}
+.shopping-purchase-actions-v756{
+  display:grid;
+  grid-template-columns:1fr 1.35fr;
+  gap:8px;
+}
+.shopping-purchase-actions-v756 button{
+  min-height:42px;
+  border:1px solid rgba(143,178,201,.2);
+  border-radius:10px;
+  background:rgba(143,178,201,.08);
+  color:#dbe6ec;
+  font:inherit;
+  font-size:.6rem;
+  font-weight:900;
+}
+.shopping-purchase-actions-v756 button[type="submit"]{
+  border-color:rgba(126,166,149,.3);
+  background:rgba(126,166,149,.12);
+  color:#bfe0cd;
+}
+.shopping-purchase-actions-v756 .is-quiet{
+  background:rgba(255,255,255,.025);
+  color:#94a2ad;
+}
+.shopping-purchase-actions-v756 button:disabled{
+  opacity:.48;
+}
+@media(max-width:520px){
+  .shopping-purchase-grid-v756{grid-template-columns:1fr 1fr}
+  .shopping-purchase-grid-v756 label:first-child{grid-column:1/-1}
+  .shopping-purchase-actions-v756{grid-template-columns:1fr}
+}
