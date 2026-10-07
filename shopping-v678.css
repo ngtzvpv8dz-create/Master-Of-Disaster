@@ -557,7 +557,8 @@
   align-items:start;
   gap:2px;
 }
-.shopping-item-meta-v643.has-stock-lines-v755>span{
+.shopping-item-meta-v643.has-stock-lines-v755>span,
+.shopping-item-meta-v643.has-stock-lines-v755>em{
   display:block;
   min-width:0;
   max-width:100%;
