@@ -426,6 +426,8 @@
     });
 
     (state.general||[]).forEach(item=>{
+      // Food demand is derived live from meals + inventory. Audit snapshots must never become a second shopping source.
+      if(item.source==='food-audit')return;
       const section=item.status==='cart'?'cart':item.status==='later'?'later':item.status==='extra'?'extra':'now';
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
@@ -437,7 +439,7 @@
         :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
       rows.push({
         id:'general:'+item.id,key:'general:'+item.id,source:'general',label:item.label,
-        section,inCart:section==='cart',primary:quantity||item.category||'Manueller Eintrag',
+        section,inCart:section==='cart',primary:section==='extra'?(quantity||item.category||'Wunsch'):(quantity?('Kaufen '+quantity):'Kaufen'),
         secondary,timing,
         buyFrom:item.status==='later'?(item.needed_by||null):null,neededDate:item.needed_by||null,
         category:item.category||'Sonstiges',general:item,flags:{stockup:isStockup}
