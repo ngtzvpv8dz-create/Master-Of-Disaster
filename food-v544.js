@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V751';
+  const VERSION='V758';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -2618,6 +2618,37 @@
     sync();
   }
 
+  function plannedMealInventoryOptions(selectedId=''){
+    const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
+    const rows=[...(state?.inventory||[])]
+      .filter(item=>item?.is_active!==false)
+      .sort((a,b)=>{
+        const aq=Math.max(0,Number(a?.quantity)||0);
+        const bq=Math.max(0,Number(b?.quantity)||0);
+        return (bq>0?1:0)-(aq>0?1:0)||collator.compare(String(a?.catalog_family_name||a?.family_name||a?.name||''),String(b?.catalog_family_name||b?.family_name||b?.name||''))||collator.compare(String(a?.name||''),String(b?.name||''));
+      });
+    return '<option value="">Vorratszutat auswählen</option>'+rows.map(item=>{
+      const available=String(item.quantity_label||'').trim();
+      const family=String(item.catalog_family_name||item.family_name||'').trim();
+      const variant=String(item.catalog_variant_label||item.variant_label||'').trim();
+      const parts=[family&&family!==item.name?family:null,variant&&variant!==item.name?variant:null,item.name].filter(Boolean);
+      const label=[...new Set(parts)].join(' · ')+(available?' · '+available:'');
+      return '<option value="'+esc(item.id)+'" data-unit="'+esc(item.unit||'')+'" '+(String(item.id)===String(selectedId||'')?'selected':'')+'>'+esc(label)+'</option>';
+    }).join('');
+  }
+
+  function plannedMealAddedIngredientRow(){
+    return '<div class="food-planned-add-row-v758" data-food-planned-add-row>'
+      +'<span><strong>Neue Zutat</strong><small>Nur diese eingeplante Mahlzeit</small></span>'
+      +'<div class="food-planned-add-controls-v758">'
+        +'<select data-food-planned-add-inventory>'+plannedMealInventoryOptions()+'</select>'
+        +'<input data-food-planned-add-quantity type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Menge">'
+        +'<input data-food-planned-add-unit placeholder="g, ml, Stück …">'
+        +'<button type="button" class="food-planned-remove-v729" data-food-planned-add-remove>Entfernen</button>'
+      +'</div>'
+    +'</div>';
+  }
+
   function editPlannedMealQuantitiesModal(mealId){
     const meal=(state?.meals||[]).find(item=>String(item.id)===String(mealId));
     if(!meal){alert('Mahlzeit nicht gefunden.');return;}
@@ -2638,17 +2669,19 @@
     }).join('');
 
     const body='<form class="food-recipe-form-v549">'
-      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Hier änderst du Mengen oder entfernst Zutaten nur aus dieser geplanten Mahlzeit. Das Grundrezept bleibt unverändert. Entfernte Zutaten werden erst mit „Änderungen speichern“ wirklich gelöscht. Ein mahlzeitspezifischer Kalorienwert wird anschließend mit den tatsächlichen Zutaten neu gesetzt.</p>'
+      +'<p class="food-modal-copy-v544"><strong>'+esc(meal.title)+'</strong><br>Hier änderst du Mengen, entfernst Zutaten oder fügst etwas aus deinem Vorrat hinzu. Alles gilt nur für diese geplante Mahlzeit. Das Grundrezept bleibt unverändert.</p>'
       +'<div class="food-planned-qty-list-v630">'+rows+'</div>'
+      +'<div class="food-planned-add-list-v758" data-food-planned-add-list></div>'
+      +'<button type="button" class="food-action-v544 compact food-planned-add-button-v758" data-food-planned-add>+ Zutat aus Vorrat hinzufügen</button>'
       +'<button class="food-action-v544" type="submit">Änderungen speichern</button>'
       +'</form>';
 
     modal=addModal('Zutaten & Mengen dieser Mahlzeit ändern',body,async()=>{
       if(!sourceIsReal('meals'))throw new Error('Die Mahlzeitdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst neu laden.');
-      const changes=[...modal.querySelectorAll('[data-food-planned-qty-row]')].map((row,index)=>{
+
+      const existingChanges=[...modal.querySelectorAll('[data-food-planned-qty-row]')].map((row,index)=>{
         const id=String(row.dataset.ingredientId||'');
         if(!id)throw new Error('Zutat '+(index+1)+' konnte nicht zugeordnet werden.');
-
         if(row.dataset.foodPlannedRemoved==='true')return {id,remove:true};
 
         const input=row.querySelector('input');
@@ -2659,6 +2692,19 @@
         return {id,quantity};
       }).filter(Boolean);
 
+      const addChanges=[...modal.querySelectorAll('[data-food-planned-add-row]')].map((row,index)=>{
+        const inventoryId=String(row.querySelector('[data-food-planned-add-inventory]')?.value||'').trim();
+        const raw=String(row.querySelector('[data-food-planned-add-quantity]')?.value||'').trim();
+        const unit=String(row.querySelector('[data-food-planned-add-unit]')?.value||'').trim();
+        if(!inventoryId&&!raw&&!unit)return null;
+        if(!inventoryId)throw new Error('Bei neuer Zutat '+(index+1)+' fehlt die Auswahl aus dem Vorrat.');
+        const quantity=Number(raw);
+        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei neuer Zutat '+(index+1)+' fehlt eine gültige Menge.');
+        if(!unit)throw new Error('Bei neuer Zutat '+(index+1)+' fehlt die Einheit.');
+        return {add:true,inventory_id:inventoryId,quantity,unit};
+      }).filter(Boolean);
+
+      const changes=[...existingChanges,...addChanges];
       if(!changes.length)throw new Error('Es gibt keine Änderung zum Speichern.');
 
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
@@ -2685,6 +2731,22 @@
       button.textContent=removeNext?'Zurückholen':'Entfernen';
       button.setAttribute('aria-pressed',removeNext?'true':'false');
     }));
+
+    const addList=modal.querySelector('[data-food-planned-add-list]');
+    const wireAddedRow=row=>{
+      const select=row.querySelector('[data-food-planned-add-inventory]');
+      const unit=row.querySelector('[data-food-planned-add-unit]');
+      select?.addEventListener('change',()=>{
+        const inventory=(state?.inventory||[]).find(item=>String(item.id)===String(select.value));
+        if(unit&&!unit.value)unit.value=inventory?.unit||select.selectedOptions?.[0]?.dataset?.unit||'';
+      });
+      row.querySelector('[data-food-planned-add-remove]')?.addEventListener('click',()=>row.remove());
+    };
+    modal.querySelector('[data-food-planned-add]')?.addEventListener('click',()=>{
+      addList?.insertAdjacentHTML('beforeend',plannedMealAddedIngredientRow());
+      const row=addList?.lastElementChild;
+      if(row){wireAddedRow(row);row.querySelector('select')?.focus();}
+    });
   }
 
   const recipeInventoryOptionLabel=item=>{
