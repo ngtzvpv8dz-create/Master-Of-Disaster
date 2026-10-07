@@ -550,36 +550,19 @@
 }
 
 
-/* V754 · Einkaufszeilen vollständig lesbar */
-.shopping-item-main-v643{
-  align-items:flex-start;
-  flex-wrap:wrap;
+/* V755 · nur Food-Bedarfsdetails sauber untereinander, Restlayout unverändert */
+.shopping-item-meta-v643.has-stock-lines-v755{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  align-items:start;
+  gap:2px;
 }
-.shopping-item-main-v643 strong{
-  flex:1 1 150px;
-  min-width:0;
-  white-space:normal;
-  overflow:visible;
-  text-overflow:clip;
-  overflow-wrap:anywhere;
-}
-.shopping-item-main-v643 b{
-  margin-left:auto;
-  max-width:48%;
-  white-space:normal;
-  text-align:right;
-  overflow-wrap:anywhere;
-}
-.shopping-item-meta-v643{
-  align-items:flex-start;
-  flex-wrap:wrap;
-}
-.shopping-item-meta-v643 span{
-  flex:1 1 100%;
+.shopping-item-meta-v643.has-stock-lines-v755>span{
+  display:block;
   min-width:0;
   max-width:100%;
   white-space:normal;
   overflow:visible;
   text-overflow:clip;
-  overflow-wrap:anywhere;
+  overflow-wrap:break-word;
 }
