@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V747';
+  const VERSION='V756';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -168,7 +168,7 @@
       const checkoutIds=state.checkouts.map(item=>item.id);
       if(checkoutIds.length){
         const checkoutItemsResult=await supabase.from('shopping_checkout_items')
-          .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at')
+          .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,best_before_status,package_count,purchase_data,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at')
           .in('checkout_id',checkoutIds)
           .order('created_at',{ascending:true});
         if(checkoutItemsResult.error)throw checkoutItemsResult.error;
@@ -624,6 +624,166 @@
     return (state.financeItems||[]).find(item=>String(item.id)===String(review?.finance_item_id))||null;
   }
 
+  function checkoutItemForReview(review){
+    if(!review?.checkout_item_id)return null;
+    return (state.checkoutItems||[]).find(item=>String(item.id)===String(review.checkout_item_id))||null;
+  }
+
+  function tracksFoodInventory(product){
+    if(!product)return false;
+    if(product.inventory_id)return true;
+    if(String(product.product_data?.inventory_scope||'').toLocaleLowerCase('de-DE')==='food')return true;
+    return !['haushalt','drogerie','technik','sonstiges','dienstleistung'].includes(String(product.category||'').toLocaleLowerCase('de-DE'));
+  }
+
+  function purchaseDetailsForReview(review,candidate){
+    const item=checkoutItemForReview(review);
+    const productData=candidate?.product_data||{};
+    const purchaseData=item?.purchase_data&&typeof item.purchase_data==='object'?item.purchase_data:{};
+    const status=String(item?.best_before_status||(item?.best_before_date?'date':'unknown'));
+    const innerCount=Number(productData.inner_units_total)||0;
+    const innerQty=Number(productData.inner_unit_quantity_g||candidate?.serving_quantity)||0;
+    const innerUnit=String(candidate?.serving_unit||candidate?.package_unit||'g');
+    const parts=[];
+    if(innerCount>1&&innerQty>0)parts.push(innerCount+' × '+fmtQty(innerQty,innerUnit)+' = '+fmtQty(innerCount*innerQty,innerUnit));
+    else if(item?.quantity!==null&&item?.quantity!==undefined)parts.push('Menge '+fmtQty(item.quantity,item.unit||''));
+    if(purchaseData.weight_class)parts.push('Gewichtsklasse '+purchaseData.weight_class);
+    if(status==='date'&&item?.best_before_date)parts.push('MHD '+fmtDate(item.best_before_date));
+    else if(status==='none')parts.push('kein MHD vorhanden');
+    else if(tracksFoodInventory(candidate))parts.push('MHD offen');
+    return {
+      item,purchaseData,status,innerCount,innerQty,innerUnit,
+      ready:!tracksFoodInventory(candidate)||status==='date'||status==='none',
+      summary:parts.join(' · ')
+    };
+  }
+
+  async function savePurchaseDetails(reviewId,productId,payload){
+    const {supabase}=await currentUser();
+    const result=await supabase.rpc('set_shopping_review_purchase_details',{
+      p_review_id:reviewId,
+      p_product_id:productId,
+      p_quantity:payload.quantity,
+      p_unit:payload.unit,
+      p_package_count:payload.packageCount,
+      p_best_before_status:payload.bestBeforeStatus,
+      p_best_before_date:payload.bestBeforeDate,
+      p_purchase_data:payload.purchaseData||{}
+    });
+    if(result.error)throw result.error;
+    await reload({refreshFood:false});
+    return result.data;
+  }
+
+  function openPurchaseDetails(reviewId,forcedProductId=null){
+    const review=(state.reviews||[]).find(item=>String(item.id)===String(reviewId));
+    if(!review)return;
+    const candidate=forcedProductId
+      ?(state.products||[]).find(product=>String(product.id)===String(forcedProductId))
+      :reviewCandidate(review);
+    if(!candidate){openProductPicker(reviewId);return;}
+
+    document.getElementById('shoppingPurchaseDetailsV756')?.remove();
+    const existing=checkoutItemForReview(review);
+    const finance=financeItemForReview(review);
+    const productData=candidate.product_data||{};
+    const oldPurchase=existing?.purchase_data&&typeof existing.purchase_data==='object'?existing.purchase_data:{};
+    const receiptCount=Math.max(1,Number(finance?.quantity)||1);
+    const innerCount=Math.max(0,Number(productData.inner_units_total)||0);
+    const innerQty=Math.max(0,Number(productData.inner_unit_quantity_g||candidate.serving_quantity)||0);
+    const innerUnit=String(candidate.serving_unit||candidate.package_unit||'g');
+    const autoQuantity=candidate.package_quantity?Number(candidate.package_quantity)*receiptCount:null;
+    const quantity=Number(existing?.quantity)>0?Number(existing.quantity):(autoQuantity||Number(finance?.quantity)||1);
+    const unit=String(existing?.unit||candidate.package_unit||finance?.unit||'Stück');
+    const packageCount=Number(existing?.package_count)>0
+      ?Number(existing.package_count)
+      :(innerCount>1?Math.max(1,Math.round(innerCount*receiptCount)):Math.max(1,Math.round(receiptCount)));
+    const mhdStatus=String(existing?.best_before_status||(existing?.best_before_date?'date':'unknown'));
+    const mhdDate=existing?.best_before_date?String(existing.best_before_date).slice(0,10):'';
+    const pieceWeights=productData.piece_weights_g&&typeof productData.piece_weights_g==='object'?productData.piece_weights_g:null;
+    const weightKeys=pieceWeights?Object.keys(pieceWeights):[];
+    const selectedWeight=String(oldPurchase.weight_class||'');
+
+    const structure=innerCount>1&&innerQty>0
+      ?'<div class="shopping-purchase-structure-v756"><span>PACKUNGSAUFTEILUNG</span><strong>'+esc(receiptCount+' Verkaufspackung'+(receiptCount===1?'':'en')+' · '+(innerCount*receiptCount)+' Einzelbecher × '+fmtQty(innerQty,innerUnit)+' = '+fmtQty(innerCount*innerQty*receiptCount,innerUnit))+'</strong><small>Die Einzelbecher werden im Vorrat getrennt zählbar geführt.</small></div>'
+      :'';
+
+    const weight=weightKeys.length
+      ?'<fieldset class="shopping-purchase-weight-v756"><legend>Gewichtsklasse</legend><div>'+weightKeys.map(key=>'<label><input type="radio" name="purchaseWeightClass" value="'+esc(key)+'" '+(key===selectedWeight?'checked':'')+'><span>'+esc(key)+' · '+esc(fmtQty(pieceWeights[key],'g'))+' je Ei</span></label>').join('')+'</div></fieldset>'
+      :'';
+
+    const modal=document.createElement('div');
+    modal.id='shoppingPurchaseDetailsV756';
+    modal.className='shopping-modal-v643 shopping-purchase-modal-v756';
+    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-purchase-card-v756">'
+      +'<div class="shopping-modal-head-v643"><div><span>PHASE 4 · KAUFDETAILS</span><strong>'+esc(review.receipt_label||'Bonposition')+'</strong></div><button type="button" data-purchase-close>✕</button></div>'
+      +'<div class="shopping-purchase-product-v756"><span>ZUGEORDNETES PRODUKT</span><strong>'+esc(productLabel(candidate))+'</strong><small>'+esc(review.retailer||'Händler')+' · diese Händler-/Bon-Zuordnung wird beim Bestätigen gelernt.</small></div>'
+      +structure
+      +'<form data-purchase-form-v756>'
+      +'<div class="shopping-purchase-grid-v756">'
+        +'<label>Gekaufte Menge<input data-purchase-qty type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(quantity)+'"></label>'
+        +'<label>Einheit<input data-purchase-unit value="'+esc(unit)+'"></label>'
+        +'<label>Einzelpackungen<input data-purchase-packages type="number" min="1" step="1" inputmode="numeric" value="'+esc(packageCount)+'"></label>'
+      +'</div>'
+      +weight
+      +'<fieldset class="shopping-purchase-mhd-v756"><legend>MHD</legend>'
+        +'<label class="shopping-purchase-mhd-choice-v756"><input type="radio" name="purchaseMhdMode" value="date" '+(mhdStatus==='date'?'checked':'')+'><span>MHD vorhanden</span></label>'
+        +'<input data-purchase-mhd-date type="date" value="'+esc(mhdDate)+'">'
+        +'<label class="shopping-purchase-mhd-choice-v756"><input type="radio" name="purchaseMhdMode" value="none" '+(mhdStatus==='none'?'checked':'')+'><span>Kein MHD vorhanden</span></label>'
+        +(mhdStatus==='unknown'?'<small class="is-open-v756">Bitte einmal festlegen, bevor der Bestand gebucht wird.</small>':'')
+      +'</fieldset>'
+      +'<div class="shopping-purchase-actions-v756"><button type="button" class="is-quiet" data-purchase-change-product>Produkt ändern</button><button type="submit">Kaufdetails speichern</button></div>'
+      +'</form></div>';
+    document.body.appendChild(modal);
+
+    const close=()=>modal.remove();
+    modal.querySelector('[data-purchase-close]')?.addEventListener('click',close);
+    modal.addEventListener('click',event=>{if(event.target===modal)close();});
+    modal.querySelector('[data-purchase-change-product]')?.addEventListener('click',()=>{close();openProductPicker(review.id);});
+    modal.querySelector('[data-purchase-form-v756]')?.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const submit=form.querySelector('button[type="submit"]');
+      if(submit)submit.disabled=true;
+      try{
+        const q=Number(form.querySelector('[data-purchase-qty]')?.value);
+        const u=String(form.querySelector('[data-purchase-unit]')?.value||'').trim();
+        const pc=Number(form.querySelector('[data-purchase-packages]')?.value);
+        const mode=String(form.querySelector('input[name="purchaseMhdMode"]:checked')?.value||'');
+        const date=String(form.querySelector('[data-purchase-mhd-date]')?.value||'').trim()||null;
+        if(!Number.isFinite(q)||q<=0)throw new Error('Bitte eine gekaufte Menge größer 0 eintragen.');
+        if(!u)throw new Error('Bitte eine Einheit eintragen.');
+        if(!Number.isInteger(pc)||pc<=0)throw new Error('Bitte die Zahl der Einzelpackungen als ganze Zahl angeben.');
+        if(!mode)throw new Error('Bitte MHD eintragen oder „Kein MHD vorhanden“ wählen.');
+        if(mode==='date'&&!date)throw new Error('Bitte das MHD-Datum eintragen.');
+
+        const purchaseData={...oldPurchase};
+        if(weightKeys.length){
+          const selected=form.querySelector('input[name="purchaseWeightClass"]:checked')?.value||'';
+          if(!selected)throw new Error('Bitte die Gewichtsklasse auswählen.');
+          purchaseData.weight_class=selected;
+          purchaseData.piece_weight_g=Number(pieceWeights[selected])||null;
+        }
+        if(innerCount>1&&innerQty>0){
+          purchaseData.outer_package_count=receiptCount;
+          purchaseData.inner_units_total=innerCount*receiptCount;
+          purchaseData.inner_unit_quantity=innerQty;
+          purchaseData.inner_unit_unit=innerUnit;
+          purchaseData.inner_units_openable=productData.inner_units_openable!==false;
+        }
+        await savePurchaseDetails(review.id,candidate.id,{
+          quantity:q,unit:u,packageCount:pc,
+          bestBeforeStatus:mode,bestBeforeDate:mode==='date'?date:null,
+          purchaseData
+        });
+        close();
+      }catch(error){
+        if(submit)submit.disabled=false;
+        alert(error?.message||'Kaufdetails konnten nicht gespeichert werden.');
+      }
+    });
+  }
+
   function money(value){
     const n=Number(value);
     return Number.isFinite(n)?new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(n):'';
@@ -673,7 +833,11 @@
             :candidate
               ?'<span>Vorschlag: '+esc(productLabel(candidate))+'</span>'
               :'<span>Noch kein eindeutiger Produktvorschlag</span>')
+          +(candidate&&!pending
+            ?'<span class="shopping-review-purchase-v756 '+(purchaseDetailsForReview(review,candidate).ready?'is-ready-v756':'is-open-v756')+'">'+esc(purchaseDetailsForReview(review,candidate).summary||'Kaufdetails prüfen')+'</span>'
+            :'')
           +'</div><div class="shopping-review-actions-v644">'
+          +(candidate&&!pending?'<button type="button" data-review-details="'+esc(review.id)+'">'+(purchaseDetailsForReview(review,candidate).ready?'Kaufdetails':'Kaufdetails ergänzen')+'</button>':'')
           +(candidate&&!pending?'<button type="button" data-review-confirm="'+esc(review.id)+'">✓ Passt & buchen</button>':'')
           +'<button type="button" data-review-choose="'+esc(review.id)+'">Produkt ändern</button>'
           +'<button type="button" data-review-pending="'+esc(review.id)+'">Fotos / Daten kommen noch</button>'
@@ -1243,7 +1407,7 @@
       original_quantity:item.originalQuantity??null,original_unit:item.originalUnit||null
     }));
     const snap=await supabase.from('shopping_checkout_items').insert(snapshotRows)
-      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at');
+      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,best_before_status,package_count,purchase_data,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at');
     if(snap.error)throw snap.error;
     const inserted=Array.isArray(snap.data)?snap.data:[];
 
@@ -1345,7 +1509,7 @@
     }
 
     const itemsResult=await supabase.from('shopping_checkout_items')
-      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,package_count,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at')
+      .select('id,checkout_id,shopping_key,label,quantity,unit,source,planned_quantity,planned_unit,inventory_id,product_id,best_before_date,best_before_status,package_count,purchase_data,inventory_applied_at,note,substitution_id,original_label,original_quantity,original_unit,created_at')
       .eq('checkout_id',checkoutId)
       .order('created_at',{ascending:true});
     if(itemsResult.error)throw itemsResult.error;
@@ -1386,8 +1550,15 @@
   }
 
   async function confirmReview(reviewId,productId){
+    const review=(state.reviews||[]).find(item=>String(item.id)===String(reviewId));
+    const product=(state.products||[]).find(item=>String(item.id)===String(productId));
+    const details=purchaseDetailsForReview(review,product);
+    if(tracksFoodInventory(product)&&!details.ready){
+      openPurchaseDetails(reviewId,productId);
+      return {needs_purchase_details:true};
+    }
     const {supabase}=await currentUser();
-    const result=await supabase.rpc('confirm_shopping_receipt_review',{
+    const result=await supabase.rpc('confirm_shopping_receipt_review_v756',{
       p_review_id:reviewId,
       p_product_id:productId
     });
@@ -1459,13 +1630,14 @@
       const oldText=button.innerHTML;
       button.innerHTML='<span>WIRD ÜBERNOMMEN</span><strong>'+esc(button.dataset.productName||'Produkt')+'</strong>';
       try{
-        await confirmReview(review.id,button.dataset.productChoice);
+        const chosenId=button.dataset.productChoice;
         modal.remove();
+        openPurchaseDetails(review.id,chosenId);
       }catch(error){
         modal.querySelectorAll('[data-product-choice]').forEach(item=>item.disabled=false);
         button.classList.remove('is-saving-v651');
         button.innerHTML=oldText;
-        alert(error?.message||'Produkt konnte nicht zugeordnet werden.');
+        alert(error?.message||'Produkt konnte nicht ausgewählt werden.');
       }
     }));
     modal.querySelector('[data-product-new-pending]')?.addEventListener('click',async()=>{
@@ -1590,6 +1762,7 @@
       const row=rowMap.get(button.dataset.shoppingFoodCheck);if(!row)return;
       try{await completeFood(row);}catch(error){alert(error?.message||'Food-Eintrag konnte nicht abgehakt werden.');}
     }));
+    root.querySelectorAll('[data-review-details]').forEach(button=>button.addEventListener('click',()=>openPurchaseDetails(button.dataset.reviewDetails)));
     root.querySelectorAll('[data-review-confirm]').forEach(button=>button.addEventListener('click',async()=>{
       const review=(state.reviews||[]).find(item=>String(item.id)===String(button.dataset.reviewConfirm));
       const candidate=reviewCandidate(review);
@@ -1621,6 +1794,7 @@
     if(root){root.hidden=true;root.setAttribute('aria-hidden','true');}
     document.getElementById('shoppingModalV643')?.remove();
     document.getElementById('shoppingProductPickerV644')?.remove();
+    document.getElementById('shoppingPurchaseDetailsV756')?.remove();
     document.getElementById('shoppingCheckoutV645')?.remove();
     document.getElementById('shoppingReceiptAttachV678')?.remove();
     return true;
