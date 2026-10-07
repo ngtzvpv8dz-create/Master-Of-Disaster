@@ -1,0 +1,357 @@
+/* V752 · DENKFABRIK DASHBOARD + HOMESCREEN ICON */
+body.mod-denkfabrik-v634 #modDenkfabrikV634{
+  --denk-bg:#0d1720;
+  --denk-bg-2:#142638;
+  --denk-panel:#172b3a;
+  --denk-panel-2:#203a4d;
+  --denk-ivory:#f4ead8;
+  --denk-muted:#a6b5bf;
+  --denk-blue:#8fb2c9;
+  --denk-blue-bright:#afd0e3;
+  --denk-brass:#d7b37a;
+  --denk-brass-2:#bd8650;
+  --denk-pinky:#d991aa;
+  --denk-green:#9fc4aa;
+  --denk-border:rgba(170,198,216,.17);
+}
+html.mod-denkfabrik-surface-v634,
+body.mod-denkfabrik-v634{
+  background:
+    radial-gradient(circle at 15% 5%,rgba(88,142,178,.13),transparent 28%),
+    radial-gradient(circle at 88% 24%,rgba(215,179,122,.09),transparent 24%),
+    linear-gradient(165deg,#0b141c 0%,#101d27 48%,#0a131b 100%)!important;
+}
+.mod-denkfabrik-root-v752{width:min(100%,860px);padding-top:10px}
+.denk-hero-v752{
+  position:relative;
+  overflow:hidden;
+  min-height:122px;
+  border-color:rgba(215,179,122,.35);
+  background:
+    radial-gradient(circle at 82% 18%,rgba(143,178,201,.22),transparent 28%),
+    radial-gradient(circle at 18% 95%,rgba(215,179,122,.10),transparent 34%),
+    linear-gradient(145deg,#24435a 0%,#182f41 55%,#112536 100%);
+}
+.denk-hero-v752::after{
+  content:"";
+  position:absolute;
+  inset:auto -42px -70px auto;
+  width:190px;
+  height:190px;
+  border:1px solid rgba(215,179,122,.10);
+  border-radius:50%;
+  box-shadow:0 0 0 22px rgba(143,178,201,.025),0 0 0 44px rgba(215,179,122,.02);
+  pointer-events:none;
+}
+.denk-hero-icon-v752{
+  position:relative;
+  z-index:1;
+  flex:none;
+  width:88px;
+  height:88px;
+  filter:drop-shadow(0 12px 18px rgba(0,0,0,.28));
+}
+.denk-icon-art-v752{display:block;width:100%;height:100%}
+.denk-hero-meta-v752{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.denk-hero-meta-v752 span{
+  padding:5px 8px;
+  border:1px solid rgba(215,179,122,.18);
+  border-radius:999px;
+  background:rgba(9,22,31,.36);
+  color:#c8d4db;
+  font-size:.58rem;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.denk-stats-v752{margin-bottom:17px}
+.denk-stat-done-v634 strong{color:#a8cdb0}
+.denk-focus-v752{margin:0 0 18px}
+.denk-focus-list-v752{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.denk-focus-list-v752 button{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:3px 10px;
+  align-items:center;
+  min-width:0;
+  padding:11px 12px;
+  border:1px solid rgba(215,179,122,.18);
+  border-radius:15px;
+  background:
+    linear-gradient(135deg,rgba(215,179,122,.08),transparent 45%),
+    #162a38;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+}
+.denk-focus-list-v752 button span{
+  grid-column:1;
+  color:var(--denk-brass);
+  font-size:.54rem;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.denk-focus-list-v752 button strong{
+  grid-column:1;
+  overflow:hidden;
+  color:#e6e1d7;
+  font-size:.70rem;
+  line-height:1.28;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.denk-focus-list-v752 button em{
+  grid-column:2;
+  grid-row:1/3;
+  min-width:34px;
+  padding:6px 5px;
+  border-radius:10px;
+  background:rgba(215,179,122,.12);
+  color:#f0c98f;
+  font-size:.62rem;
+  font-style:normal;
+  font-weight:900;
+  text-align:center;
+}
+.denk-dashboard-v752{margin-bottom:18px}
+.denk-area-block-list-v752{display:grid;gap:8px}
+.denk-area-block-v752{
+  overflow:hidden;
+  border:1px solid var(--denk-border);
+  border-radius:18px;
+  background:
+    linear-gradient(180deg,rgba(39,67,85,.72),rgba(20,39,52,.92));
+  box-shadow:0 10px 24px rgba(0,0,0,.12);
+}
+.denk-area-block-v752[open]{
+  border-color:rgba(215,179,122,.30);
+  box-shadow:0 14px 30px rgba(0,0,0,.18),0 0 22px rgba(122,174,205,.05);
+}
+.denk-area-block-v752>summary{
+  list-style:none;
+  display:grid;
+  grid-template-columns:38px minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  min-height:58px;
+  padding:10px 11px;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.denk-area-block-v752>summary::-webkit-details-marker{display:none}
+.denk-area-symbol-v752{
+  display:grid;
+  place-items:center;
+  width:36px;
+  height:36px;
+  border:1px solid rgba(215,179,122,.26);
+  border-radius:12px;
+  background:linear-gradient(145deg,#2c5069,#183449);
+  color:#f0dfc1;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  font-size:.78rem;
+  font-weight:950;
+}
+.denk-area-block-copy-v752{display:block;min-width:0}
+.denk-area-block-copy-v752 strong{
+  display:block;
+  color:#eee7dc;
+  font-size:.77rem;
+  line-height:1.15;
+}
+.denk-area-block-copy-v752 small{
+  display:block;
+  margin-top:4px;
+  overflow:hidden;
+  color:#91a5b2;
+  font-size:.57rem;
+  line-height:1.2;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.denk-area-block-side-v752{display:flex;align-items:center;gap:6px}
+.denk-area-block-side-v752 em{
+  padding:5px 6px;
+  border-radius:8px;
+  background:rgba(215,179,122,.10);
+  color:#d9b67f;
+  font-size:.52rem;
+  font-style:normal;
+  font-weight:900;
+}
+.denk-area-block-side-v752 b{
+  display:grid;
+  place-items:center;
+  min-width:26px;
+  height:26px;
+  padding:0 4px;
+  border-radius:9px;
+  background:#28465a;
+  color:#bdd1dd;
+  font-size:.62rem;
+}
+.denk-area-block-side-v752 i,
+.denk-completed-side-v752 i,
+.denk-done-area-v752>summary i,
+.denk-explorer-v752>summary i{
+  display:grid;
+  place-items:center;
+  width:24px;
+  height:24px;
+  color:#9bb0bd;
+  font-size:1rem;
+  font-style:normal;
+  transition:transform .16s ease,color .16s ease;
+}
+.denk-area-block-v752[open]>.denk-area-block-side-v752 i{transform:rotate(45deg)}
+.denk-area-block-v752[open]>summary .denk-area-block-side-v752 i{transform:rotate(45deg);color:var(--denk-brass)}
+.denk-area-block-body-v752{
+  padding:0 9px 9px;
+  border-top:1px solid rgba(184,202,214,.08);
+  background:rgba(8,21,29,.20);
+}
+.denk-area-block-body-v752>.denk-entry-v752:first-child{margin-top:9px}
+.denk-entry-v752{background:linear-gradient(180deg,#172b39,#132531)}
+.denk-entry-v752 summary{padding-right:10px}
+.denk-priority-v752{
+  min-width:0;
+  padding-inline:6px;
+  background:rgba(215,179,122,.10);
+  color:#d8bc91;
+}
+.denk-priority-v752.p5{background:rgba(224,91,83,.16);color:#ffb2aa}
+.denk-priority-v752.p4{background:rgba(223,151,66,.15);color:#efc58c}
+.denk-priority-v752.p3{background:rgba(215,179,122,.12);color:#ddc399}
+.denk-priority-v752.p2{background:rgba(121,163,190,.12);color:#a8c0d0}
+.denk-priority-v752.p1{background:rgba(121,163,190,.08);color:#8fa8b8}
+.denk-completed-v752,
+.denk-explorer-v752{
+  overflow:hidden;
+  margin:0 0 18px;
+  border:1px solid var(--denk-border);
+  border-radius:20px;
+  background:rgba(19,37,50,.82);
+}
+.denk-completed-v752>summary,
+.denk-explorer-v752>summary{
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 15px;
+  cursor:pointer;
+}
+.denk-completed-v752>summary::-webkit-details-marker,
+.denk-explorer-v752>summary::-webkit-details-marker{display:none}
+.denk-completed-v752>summary>span:first-child,
+.denk-explorer-v752>summary>span:first-child{min-width:0}
+.denk-completed-v752>summary small,
+.denk-explorer-v752>summary small{
+  display:block;
+  margin-bottom:4px;
+  color:var(--denk-brass);
+  font-size:.54rem;
+  font-weight:900;
+  letter-spacing:.12em;
+}
+.denk-completed-v752>summary strong,
+.denk-explorer-v752>summary strong{
+  display:block;
+  color:#e5e1d8;
+  font-size:.79rem;
+}
+.denk-completed-side-v752{display:flex;align-items:center;gap:7px}
+.denk-completed-side-v752 b{
+  display:grid;
+  place-items:center;
+  min-width:30px;
+  height:28px;
+  padding:0 6px;
+  border-radius:9px;
+  background:rgba(126,174,139,.13);
+  color:#a8c9b0;
+  font-size:.66rem;
+}
+.denk-completed-v752[open] .denk-completed-side-v752 i,
+.denk-explorer-v752[open]>summary i{transform:rotate(45deg);color:var(--denk-brass)}
+.denk-completed-body-v752,
+.denk-explorer-body-v752{
+  padding:0 10px 10px;
+  border-top:1px solid rgba(184,202,214,.08);
+}
+.denk-done-area-v752{
+  margin-top:8px;
+  overflow:hidden;
+  border:1px solid rgba(160,190,174,.12);
+  border-radius:14px;
+  background:rgba(17,35,42,.72);
+}
+.denk-done-area-v752>summary{
+  list-style:none;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 11px;
+  cursor:pointer;
+  color:#c2d0c7;
+  font-size:.69rem;
+  font-weight:800;
+}
+.denk-done-area-v752>summary::-webkit-details-marker{display:none}
+.denk-done-area-v752>summary span{flex:1}
+.denk-done-area-v752>summary b{
+  display:grid;
+  place-items:center;
+  min-width:24px;
+  height:23px;
+  border-radius:8px;
+  background:rgba(126,174,139,.10);
+  color:#9fc4aa;
+  font-size:.59rem;
+}
+.denk-done-area-v752[open]>summary i{transform:rotate(45deg);color:#a9c7b0}
+.denk-done-area-v752>div{padding:0 8px 8px}
+.denk-done-area-v752>div>.denk-entry-v752:first-child{margin-top:2px}
+.denk-explorer-v752 .denk-controls-v634{margin:10px 0}
+.denk-explorer-v752 .denk-results-count-v634{margin-top:4px}
+.mod-hub-app-slot-denkfabrik-v517{
+  grid-column:auto!important;
+  justify-self:stretch!important;
+}
+.mod-hub-app-denk-art-v752{
+  display:block;
+  width:100%;
+  height:100%;
+  border-radius:inherit;
+  overflow:visible;
+}
+.mod-hub-app-button-denkfabrik-v517 .mod-hub-app-face-v517{
+  overflow:visible;
+  background:transparent;
+}
+@media(max-width:520px){
+  .denk-focus-list-v752{grid-template-columns:1fr}
+  .denk-hero-icon-v752{width:78px;height:78px}
+  .denk-area-block-v752>summary{grid-template-columns:34px minmax(0,1fr) auto;gap:8px}
+  .denk-area-symbol-v752{width:32px;height:32px;border-radius:10px}
+  .denk-area-block-copy-v752 small{font-size:.54rem}
+  .denk-area-block-side-v752 em{display:none}
+}
+@media(max-width:390px){
+  .denk-hero-v752{align-items:flex-start}
+  .denk-hero-icon-v752{width:68px;height:68px}
+  .denk-hero-meta-v752 span{font-size:.54rem}
+  .denk-priority-v752{font-size:.47rem}
+}
+@media(prefers-reduced-motion:reduce){
+  .denk-area-block-side-v752 i,
+  .denk-completed-side-v752 i,
+  .denk-done-area-v752>summary i,
+  .denk-explorer-v752>summary i{transition:none}
+}
