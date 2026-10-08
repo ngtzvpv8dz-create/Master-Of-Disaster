@@ -1,11 +1,11 @@
-/* V752 · DENKFABRIK / PROJECT BRAIN DASHBOARD
+/* V759 · DENKFABRIK / PROJECT BRAIN DASHBOARD
    Bereichs-Dashboard mit aktuellem Projektgedaechtnis, Dringlichkeit und Erledigt-Historie.
 */
 (function(){
   'use strict';
   if(window.__modDenkfabrikV752)return;
 
-  const VERSION='V752';
+  const VERSION='V759';
   const ROOT_ID='modDenkfabrikV634';
   const BODY_CLASS='mod-denkfabrik-v634';
   const SURFACE_CLASS='mod-denkfabrik-surface-v634';
@@ -81,6 +81,10 @@
   const statusMeta=status=>STATUS_META[status]||{label:String(status||'Unbekannt'),short:String(status||'?').toUpperCase()};
   const currentRows=()=>rows.filter(row=>CURRENT_STATUSES.has(row.status));
   const doneRows=()=>rows.filter(row=>row.status==='done');
+  const refNumber=row=>{
+    const n=Number(row?.reference_number);
+    return Number.isSafeInteger(n)&&n>0?'#'+String(n).padStart(3,'0'):'#?';
+  };
   const priorityValue=row=>{
     const value=Number(row?.priority);
     return Number.isFinite(value)&&value>0?Math.max(1,Math.min(5,Math.round(value))):0;
@@ -182,7 +186,7 @@
       const session=await supabase.auth.getSession();
       const user=session?.data?.session?.user;
       if(session?.error||!user?.id)throw new Error('Cloud-Sitzung ist nicht verfügbar.');
-      const fields='brain_key,area,kind,status,title,details,effective_date,source_date,source_chat_nos,source_file,supersedes_note,priority,tags,needs_verification,verified_at,resolved_at,metadata,updated_at';
+      const fields='reference_number,brain_key,area,kind,status,title,details,effective_date,source_date,source_chat_nos,source_file,supersedes_note,priority,tags,needs_verification,verified_at,resolved_at,metadata,updated_at';
       const result=await Promise.all([
         supabase.from('project_brain_current').select(fields),
         supabase.from('project_brain').select(fields).eq('status','done')
@@ -239,12 +243,14 @@
 
   function filteredRows(){
     const q=searchQuery.trim().toLocaleLowerCase('de-DE');
+    const refMatch=q.match(/^(?:#|df[-\s]?|nr\.?\s*)?(\d+)$/);
     return rows.filter(row=>{
+      if(refMatch)return Number(row.reference_number)===Number(refMatch[1]);
       if(activeArea!=='all'&&normalizeArea(row.area)!==activeArea)return false;
       if(activeStatus==='current'&&!CURRENT_STATUSES.has(row.status))return false;
       if(activeStatus!=='all'&&activeStatus!=='current'&&row.status!==activeStatus)return false;
       if(!q)return true;
-      const hay=[row.brain_key,row.area,row.kind,row.status,row.title,row.details,...(row.tags||[])].join(' ').toLocaleLowerCase('de-DE');
+      const hay=[refNumber(row),row.brain_key,row.area,row.kind,row.status,row.title,row.details,...(row.tags||[])].join(' ').toLocaleLowerCase('de-DE');
       return hay.includes(q);
     });
   }
@@ -280,7 +286,7 @@
     const tags=Array.isArray(row.tags)?row.tags:[];
     const verify=row.needs_verification?'<span class="denk-verify-v634">PRÜFEN</span>':'';
     return '<details class="denk-entry-v634 denk-entry-v752 status-'+esc(row.status)+'" data-denk-key="'+esc(row.brain_key)+'">'
-      +'<summary><span class="denk-entry-main-v634"><small>'+esc(kindLabel(row.kind))+' · '+esc(row.brain_key)+'</small><strong>'+esc(row.title)+'</strong></span><span class="denk-entry-side-v634"><span class="denk-status-v634">'+esc(meta.short)+'</span>'+priorityMarkup(row)+verify+'<b aria-hidden="true">+</b></span></summary>'
+      +'<summary><span class="denk-entry-main-v634"><small><span class="denk-ref-v759" title="Feste Referenznummer">'+esc(refNumber(row))+'</span>'+esc(kindLabel(row.kind))+' · '+esc(row.brain_key)+'</small><strong>'+esc(row.title)+'</strong></span><span class="denk-entry-side-v634"><span class="denk-status-v634">'+esc(meta.short)+'</span>'+priorityMarkup(row)+verify+'<b aria-hidden="true">+</b></span></summary>'
       +'<div class="denk-entry-body-v634"><p>'+esc(row.details)+'</p>'
       +(row.supersedes_note?'<div class="denk-note-v634"><strong>Ersetzt / ersetzt durch</strong><span>'+esc(row.supersedes_note)+'</span></div>':'')
       +sourceMarkup(row)
@@ -293,7 +299,7 @@
     if(!focus.length)return '';
     const p5=currentRows().filter(row=>priorityValue(row)===5).length;
     const p4=currentRows().filter(row=>priorityValue(row)===4).length;
-    return '<section class="denk-focus-v752"><div class="denk-section-head-v634"><div><span>RADAR</span><h3>Gerade besonders wichtig</h3></div><small>'+p5+' × 5/5 · '+p4+' × 4/5</small></div><div class="denk-focus-list-v752">'+focus.map(row=>'<button type="button" data-denk-jump-area="'+esc(normalizeArea(row.area))+'"><span>'+esc(areaLabel(row.area))+'</span><strong>'+esc(row.title)+'</strong><em>'+priorityValue(row)+'/5</em></button>').join('')+'</div></section>';
+    return '<section class="denk-focus-v752"><div class="denk-section-head-v634"><div><span>RADAR</span><h3>Gerade besonders wichtig</h3></div><small>'+p5+' × 5/5 · '+p4+' × 4/5</small></div><div class="denk-focus-list-v752">'+focus.map(row=>'<button type="button" data-denk-jump-area="'+esc(normalizeArea(row.area))+'"><span><b class="denk-focus-ref-v759">'+esc(refNumber(row))+'</b> · '+esc(areaLabel(row.area))+'</span><strong>'+esc(row.title)+'</strong><em>'+priorityValue(row)+'/5</em></button>').join('')+'</div></section>';
   }
 
   function currentBlocksMarkup(){
@@ -342,7 +348,7 @@
 
   function explorerMarkup(){
     const open=Boolean(searchQuery||activeArea!=='all'||activeStatus!=='current');
-    return '<details class="denk-explorer-v752" '+(open?'open':'')+'><summary><span><small>WERKZEUGKISTE</small><strong>Alles durchsuchen & filtern</strong></span><i aria-hidden="true">+</i></summary><div class="denk-explorer-body-v752"><section class="denk-controls-v634"><label class="denk-search-v634"><span>Suche</span><input type="search" value="'+esc(searchQuery)+'" placeholder="Idee, Regel, Baustelle …" data-denk-search autocomplete="off"></label>'+statusFilters()+areaFilters()+'</section>'+listMarkup()+'</div></details>';
+    return '<details class="denk-explorer-v752" '+(open?'open':'')+'><summary><span><small>WERKZEUGKISTE</small><strong>Alles durchsuchen & filtern</strong></span><i aria-hidden="true">+</i></summary><div class="denk-explorer-body-v752"><section class="denk-controls-v634"><label class="denk-search-v634"><span>Suche</span><input type="search" value="'+esc(searchQuery)+'" placeholder="Nummer (#023), Idee, Regel …" data-denk-search autocomplete="off"></label>'+statusFilters()+areaFilters()+'</section>'+listMarkup()+'</div></details>';
   }
 
   function heroMarkup(){
@@ -353,7 +359,7 @@
   function shell(){
     if(loadState==='error')return '<div class="denk-hero-v634"><div><span class="denk-kicker-v634">PROJECT BRAIN</span><h2>DENKFABRIK</h2><p>Mind the Pinky · Das Brain behind the Disaster</p></div></div><div class="denk-error-v634"><strong>Denkfabrik gerade nicht erreichbar.</strong><span>'+esc(loadError)+'</span><button type="button" data-denk-retry>Erneut laden</button></div>';
     if(loadState!=='ready')return '<div class="denk-hero-v634"><div><span class="denk-kicker-v634">PROJECT BRAIN</span><h2>DENKFABRIK</h2><p>Mind the Pinky · Das Brain behind the Disaster</p></div></div><div class="denk-loading-v634"><span></span><strong>Gedanken werden sortiert …</strong></div>';
-    return heroMarkup()+statMarkup()+focusMarkup()+currentBlocksMarkup()+completedMarkup()+explorerMarkup();
+    return heroMarkup()+statMarkup()+'<p class="denk-ref-tip-v759">Jeder Eintrag hat eine feste Nummer. Sag einfach: „Nimm #023“.</p>'+focusMarkup()+currentBlocksMarkup()+completedMarkup()+explorerMarkup();
   }
 
   function bind(root){
@@ -465,6 +471,7 @@
     readOnly:true,
     dashboard:true,
     completedHistory:true,
+    stableReferenceNumbers:true,
     getRows:()=>rows.map(row=>({...row})),
     getCounts:counts
   };
