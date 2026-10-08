@@ -1,11 +1,11 @@
-/* V759 · DENKFABRIK / PROJECT BRAIN DASHBOARD
+/* V760 · DENKFABRIK / PROJECT BRAIN DASHBOARD
    Bereichs-Dashboard mit aktuellem Projektgedaechtnis, Dringlichkeit und Erledigt-Historie.
 */
 (function(){
   'use strict';
   if(window.__modDenkfabrikV752)return;
 
-  const VERSION='V759';
+  const VERSION='V760';
   const ROOT_ID='modDenkfabrikV634';
   const BODY_CLASS='mod-denkfabrik-v634';
   const SURFACE_CLASS='mod-denkfabrik-surface-v634';
@@ -55,6 +55,7 @@
   let loadError='';
   let activeArea='all';
   let activeStatus='current';
+  let activeRole='all';
   let searchQuery='';
   let loadPromise=null;
   let hubPatched=false;
@@ -79,6 +80,38 @@
     return new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(date);
   };
   const statusMeta=status=>STATUS_META[status]||{label:String(status||'Unbekannt'),short:String(status||'?').toUpperCase()};
+  const roleOf=row=>['reference','task','idea'].includes(row?.record_role)?row.record_role:'task';
+  const roleLabel=row=>({reference:'Regel / Beschluss',task:'Aufgabe / Fehler',idea:'Idee'})[roleOf(row)];
+  function entryState(row){
+    const status=row.status,role=roleOf(row);
+    if(status==='done'||status==='superseded'||status==='historical')return statusMeta(status);
+    if(status==='parked')return {label:'Für später vorgemerkt',short:'GEPA RKT'.replace(' ','')};
+    if(role==='reference'){
+      if(status==='active')return {label:'Regel, Entscheidung oder Konzept ist festgelegt, nicht automatisch technisch verifiziert',short:'FESTGELEGT'};
+      if(status==='review')return {label:'Vorgabe noch abstimmen',short:'ABSTIMMEN'};
+      return {label:'Regel oder Entscheidung noch klären',short:'ZU KLÄREN'};
+    }
+    if(role==='idea'){
+      if(status==='active')return {label:'Idee aufgenommen; keine automatische Umsetzungsfreigabe',short:'IDEE AKTUELL'};
+      return {label:'Idee noch offen',short:'IDEE OFFEN'};
+    }
+    if(status==='open')return {label:'Noch zu bearbeiten',short:'OFFEN'};
+    if(status==='review')return {label:'Umsetzung oder Verhalten noch prüfen',short:'TEST / PRÜFEN'};
+    switch(row.implementation_state){
+      case 'not_started':return {label:'Ausdrücklich noch nicht umgesetzt',short:'NOCH OFFEN'};
+      case 'in_progress':return {label:'Technische Umsetzung läuft',short:'IN ARBEIT'};
+      case 'implemented_unverified':return {label:'Umgesetzt, Bestätigung/Test steht aus',short:'TEST OFFEN'};
+      case 'verified':return {label:'Technisch bestätigt',short:'BESTÄTIGT'};
+      default:return {label:'Unklar, ob technisch umgesetzt und getestet; nicht als erledigt werten',short:'STAND KLÄREN'};
+    }
+  }
+  function statusExplanation(row){
+    if(row.status==='done')return '';
+    if(roleOf(row)==='reference'&&row.status==='active')return 'Gültige Festlegung im Projekt. Das ist kein Nachweis, dass eine dazugehörige App-Funktion bereits programmiert oder getestet ist.';
+    if(roleOf(row)==='idea'&&row.status==='active')return 'Idee ist aufgenommen. Ob und wann sie umgesetzt wird, ist noch offen.';
+    if(roleOf(row)==='task'&&row.status==='active'&&!row.implementation_state)return 'Bisheriger Altstatus „Aktiv“: Ein verlässlicher Umsetzungs- oder Testnachweis ist hier noch nicht zugeordnet.';
+    return '';
+  }
   const currentRows=()=>rows.filter(row=>CURRENT_STATUSES.has(row.status));
   const doneRows=()=>rows.filter(row=>row.status==='done');
   const refNumber=row=>{
@@ -186,7 +219,7 @@
       const session=await supabase.auth.getSession();
       const user=session?.data?.session?.user;
       if(session?.error||!user?.id)throw new Error('Cloud-Sitzung ist nicht verfügbar.');
-      const fields='reference_number,brain_key,area,kind,status,title,details,effective_date,source_date,source_chat_nos,source_file,supersedes_note,priority,tags,needs_verification,verified_at,resolved_at,metadata,updated_at';
+      const fields='reference_number,record_role,implementation_state,brain_key,area,kind,status,title,details,effective_date,source_date,source_chat_nos,source_file,supersedes_note,priority,tags,needs_verification,verified_at,resolved_at,metadata,updated_at';
       const result=await Promise.all([
         supabase.from('project_brain_current').select(fields),
         supabase.from('project_brain').select(fields).eq('status','done')
@@ -247,6 +280,7 @@
     return rows.filter(row=>{
       if(refMatch)return Number(row.reference_number)===Number(refMatch[1]);
       if(activeArea!=='all'&&normalizeArea(row.area)!==activeArea)return false;
+      if(activeRole!=='all'&&roleOf(row)!==activeRole)return false;
       if(activeStatus==='current'&&!CURRENT_STATUSES.has(row.status))return false;
       if(activeStatus!=='all'&&activeStatus!=='current'&&row.status!==activeStatus)return false;
       if(!q)return true;
@@ -282,44 +316,53 @@
   }
 
   function entryMarkup(row){
-    const meta=statusMeta(row.status);
+    const meta=entryState(row),role=roleOf(row);
     const tags=Array.isArray(row.tags)?row.tags:[];
     const verify=row.needs_verification?'<span class="denk-verify-v634">PRÜFEN</span>':'';
-    return '<details class="denk-entry-v634 denk-entry-v752 status-'+esc(row.status)+'" data-denk-key="'+esc(row.brain_key)+'">'
-      +'<summary><span class="denk-entry-main-v634"><small><span class="denk-ref-v759" title="Feste Referenznummer">'+esc(refNumber(row))+'</span>'+esc(kindLabel(row.kind))+' · '+esc(row.brain_key)+'</small><strong>'+esc(row.title)+'</strong></span><span class="denk-entry-side-v634"><span class="denk-status-v634">'+esc(meta.short)+'</span>'+priorityMarkup(row)+verify+'<b aria-hidden="true">+</b></span></summary>'
-      +'<div class="denk-entry-body-v634"><p>'+esc(row.details)+'</p>'
+    const explanation=statusExplanation(row);
+    return '<details class="denk-entry-v634 denk-entry-v752 denk-role-'+role+'-v760 status-'+esc(row.status)+'" data-denk-key="'+esc(row.brain_key)+'">'
+      +'<summary><span class="denk-entry-main-v634"><small><span class="denk-ref-v759" title="Feste Referenznummer">'+esc(refNumber(row))+'</span><span class="denk-role-tag-v760">'+esc(roleLabel(row))+'</span> · '+esc(kindLabel(row.kind))+' · '+esc(row.brain_key)+'</small><strong>'+esc(row.title)+'</strong></span><span class="denk-entry-side-v634"><span class="denk-status-v634 denk-state-v760 role-'+role+'" title="'+esc(meta.label)+'">'+esc(meta.short)+'</span>'+priorityMarkup(row)+verify+'<b aria-hidden="true">+</b></span></summary>'
+      +'<div class="denk-entry-body-v634">'+(explanation?'<p class="denk-state-note-v760">'+esc(explanation)+'</p>':'')+'<p>'+esc(row.details)+'</p>'
       +(row.supersedes_note?'<div class="denk-note-v634"><strong>Ersetzt / ersetzt durch</strong><span>'+esc(row.supersedes_note)+'</span></div>':'')
       +sourceMarkup(row)
       +(tags.length?'<div class="denk-tags-v634">'+tags.map(tag=>'<span>#'+esc(tag)+'</span>').join('')+'</div>':'')
       +'</div></details>';
   }
-
   function focusMarkup(){
-    const focus=sortEntries(currentRows().filter(row=>priorityValue(row)>=4)).slice(0,6);
+    const eligible=currentRows().filter(row=>roleOf(row)==='task'&&priorityValue(row)>=4);
+    const focus=sortEntries(eligible).slice(0,6);
     if(!focus.length)return '';
-    const p5=currentRows().filter(row=>priorityValue(row)===5).length;
-    const p4=currentRows().filter(row=>priorityValue(row)===4).length;
-    return '<section class="denk-focus-v752"><div class="denk-section-head-v634"><div><span>RADAR</span><h3>Gerade besonders wichtig</h3></div><small>'+p5+' × 5/5 · '+p4+' × 4/5</small></div><div class="denk-focus-list-v752">'+focus.map(row=>'<button type="button" data-denk-jump-area="'+esc(normalizeArea(row.area))+'"><span><b class="denk-focus-ref-v759">'+esc(refNumber(row))+'</b> · '+esc(areaLabel(row.area))+'</span><strong>'+esc(row.title)+'</strong><em>'+priorityValue(row)+'/5</em></button>').join('')+'</div></section>';
+    const p5=eligible.filter(row=>priorityValue(row)===5).length;
+    const p4=eligible.filter(row=>priorityValue(row)===4).length;
+    return '<section class="denk-focus-v752"><div class="denk-section-head-v634"><div><span>RADAR</span><h3>Wichtige Aufgaben & Prüfungen</h3></div><small>'+p5+' × 5/5 · '+p4+' × 4/5</small></div><div class="denk-focus-list-v752">'+focus.map(row=>'<button type="button" data-denk-jump-area="'+esc(normalizeArea(row.area))+'"><span><b class="denk-focus-ref-v759">'+esc(refNumber(row))+'</b> · '+esc(areaLabel(row.area))+'</span><strong>'+esc(row.title)+'</strong><em>'+priorityValue(row)+'/5</em></button>').join('')+'</div></section>';
   }
-
   function currentBlocksMarkup(){
-    const currentGroups=grouped(currentRows());
-    const doneMap=new Map(grouped(doneRows()).map(group=>[group.area,group.rows]));
-    if(!currentGroups.length)return '';
-    return '<section class="denk-dashboard-v752"><div class="denk-section-head-v634"><div><span>AKTUELL</span><h3>Baustellen nach Bereich</h3></div><small>'+currentRows().length+' Punkte</small></div><div class="denk-area-block-list-v752">'+currentGroups.map(group=>{
-      const done=(doneMap.get(group.area)||[]).length;
-      const total=group.rows.length+done;
-      const maxPriority=Math.max(0,...group.rows.map(priorityValue));
-      const open=group.rows.filter(row=>row.status==='open').length;
-      const review=group.rows.filter(row=>row.status==='review').length;
-      return '<details class="denk-area-block-v752" data-denk-area-block="'+esc(group.area)+'"><summary>'
-        +'<span class="denk-area-symbol-v752" aria-hidden="true">'+esc(areaLabel(group.area).slice(0,1).toUpperCase())+'</span>'
-        +'<span class="denk-area-block-copy-v752"><strong>'+esc(areaLabel(group.area))+'</strong><small>'+group.rows.length+' aktuell · '+done+' erledigt · '+total+' gesamt'+(open?' · '+open+' offen':'')+(review?' · '+review+' prüfen':'')+'</small></span>'
-        +'<span class="denk-area-block-side-v752">'+(maxPriority?'<em>D '+maxPriority+'/5</em>':'')+'<b>'+group.rows.length+'</b><i aria-hidden="true">+</i></span>'
-        +'</summary><div class="denk-area-block-body-v752">'+group.rows.map(entryMarkup).join('')+'</div></details>';
-    }).join('')+'</div></section>';
+    const specs=[
+      {role:'task',kicker:'ZU BEARBEITEN',title:'Aufgaben, Fehler & Prüfungen',hint:'Bei technischen Alt-Einträgen heißt „Stand klären“: noch kein sicherer Umsetzungsnachweis.'},
+      {role:'idea',kicker:'IDEEN',title:'Ideen & Zukunftspläne',hint:'Aufgenommen bedeutet nicht automatisch beauftragt oder umgesetzt.'},
+      {role:'reference',kicker:'GÜLTIGE FESTLEGUNGEN',title:'Regeln, Entscheidungen & Konzepte',hint:'Hier steht, was gelten soll. Das ist nicht automatisch ein technischer Funktionstest.'}
+    ];
+    return specs.map(spec=>{
+      const list=currentRows().filter(row=>roleOf(row)===spec.role);
+      const groups=grouped(list);
+      if(!groups.length)return '';
+      const doneMap=new Map(grouped(doneRows().filter(row=>roleOf(row)===spec.role)).map(group=>[group.area,group.rows]));
+      return '<section class="denk-dashboard-v752 denk-role-section-v760 role-'+spec.role+'"><div class="denk-section-head-v634"><div><span>'+spec.kicker+'</span><h3>'+spec.title+'</h3></div><small>'+list.length+' Punkte</small></div>'
+        +'<p class="denk-role-hint-v760">'+spec.hint+'</p>'
+        +'<div class="denk-area-block-list-v752">'+groups.map(group=>{
+          const done=(doneMap.get(group.area)||[]).length;
+          const total=group.rows.length+done;
+          const maxPriority=Math.max(0,...group.rows.map(priorityValue));
+          const open=group.rows.filter(row=>row.status==='open').length;
+          const review=group.rows.filter(row=>row.status==='review').length;
+          return '<details class="denk-area-block-v752" data-denk-area-block="'+esc(group.area)+'"><summary>'
+            +'<span class="denk-area-symbol-v752" aria-hidden="true">'+esc(areaLabel(group.area).slice(0,1).toUpperCase())+'</span>'
+            +'<span class="denk-area-block-copy-v752"><strong>'+esc(areaLabel(group.area))+'</strong><small>'+group.rows.length+' aktuell · '+done+' erledigt · '+total+' gesamt'+(open?' · '+open+' offen':'')+(review?' · '+review+' prüfen':'')+'</small></span>'
+            +'<span class="denk-area-block-side-v752">'+(maxPriority?'<em>D '+maxPriority+'/5</em>':'')+'<b>'+group.rows.length+'</b><i aria-hidden="true">+</i></span>'
+            +'</summary><div class="denk-area-block-body-v752">'+group.rows.map(entryMarkup).join('')+'</div></details>';
+        }).join('')+'</div></section>';
+    }).join('');
   }
-
   function completedMarkup(){
     const done=doneRows();
     if(!done.length)return '';
@@ -332,6 +375,11 @@
   function statusFilters(){
     const filters=[['current','Aktuell'],['open','Offen'],['active','Aktiv'],['parked','Geparkt'],['review','Prüfen'],['done','Erledigt'],['all','Alle']];
     return '<div class="denk-filter-row-v634" role="group" aria-label="Status filtern">'+filters.map(([value,label])=>'<button type="button" data-denk-status="'+value+'" class="'+(activeStatus===value?'is-active':'')+'">'+label+'</button>').join('')+'</div>';
+  }
+
+  function roleFilters(){
+    const filters=[['all','Alle Arten'],['task','Aufgaben & Fehler'],['idea','Ideen'],['reference','Regeln & Beschlüsse']];
+    return '<div class="denk-area-row-v634" role="group" aria-label="Eintragstyp filtern">'+filters.map(([value,label])=>'<button type="button" data-denk-role="'+value+'" class="'+(activeRole===value?'is-active':'')+'">'+label+'</button>').join('')+'</div>';
   }
 
   function areaFilters(){
@@ -347,8 +395,8 @@
   }
 
   function explorerMarkup(){
-    const open=Boolean(searchQuery||activeArea!=='all'||activeStatus!=='current');
-    return '<details class="denk-explorer-v752" '+(open?'open':'')+'><summary><span><small>WERKZEUGKISTE</small><strong>Alles durchsuchen & filtern</strong></span><i aria-hidden="true">+</i></summary><div class="denk-explorer-body-v752"><section class="denk-controls-v634"><label class="denk-search-v634"><span>Suche</span><input type="search" value="'+esc(searchQuery)+'" placeholder="Nummer (#023), Idee, Regel …" data-denk-search autocomplete="off"></label>'+statusFilters()+areaFilters()+'</section>'+listMarkup()+'</div></details>';
+    const open=Boolean(searchQuery||activeArea!=='all'||activeStatus!=='current'||activeRole!=='all');
+    return '<details class="denk-explorer-v752" '+(open?'open':'')+'><summary><span><small>WERKZEUGKISTE</small><strong>Alles durchsuchen & filtern</strong></span><i aria-hidden="true">+</i></summary><div class="denk-explorer-body-v752"><section class="denk-controls-v634"><label class="denk-search-v634"><span>Suche</span><input type="search" value="'+esc(searchQuery)+'" placeholder="Nummer (#023), Idee, Regel …" data-denk-search autocomplete="off"></label>'+roleFilters()+statusFilters()+areaFilters()+'</section>'+listMarkup()+'</div></details>';
   }
 
   function heroMarkup(){
@@ -374,6 +422,10 @@
     });
     root.querySelectorAll('[data-denk-status]').forEach(button=>button.addEventListener('click',()=>{
       activeStatus=button.dataset.denkStatus||'current';
+      render();
+    }));
+    root.querySelectorAll('[data-denk-role]').forEach(button=>button.addEventListener('click',()=>{
+      activeRole=button.dataset.denkRole||'all';
       render();
     }));
     root.querySelectorAll('[data-denk-area]').forEach(button=>button.addEventListener('click',()=>{
@@ -469,6 +521,7 @@
     render,
     reload(){loadState='idle';rows=[];return fetchRows();},
     readOnly:true,
+    roleSeparation:true,
     dashboard:true,
     completedHistory:true,
     stableReferenceNumbers:true,
