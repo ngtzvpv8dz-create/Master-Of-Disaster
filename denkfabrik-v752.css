@@ -379,3 +379,22 @@ body.mod-denkfabrik-v634{
   font-size:.66rem;
   line-height:1.4;
 }
+
+/* V760 · sauber getrennte Regel-, Aufgaben- und Ideenverwaltung */
+.denk-role-section-v760{margin-bottom:19px}
+.denk-role-section-v760.role-reference{border-top:1px solid rgba(142,186,215,.14);padding-top:17px}
+.denk-role-section-v760.role-idea{border-top:1px solid rgba(215,179,122,.12);padding-top:17px}
+.denk-role-hint-v760{margin:-2px 2px 11px;color:#9bb0bd;font-size:.66rem;line-height:1.45}
+.denk-role-tag-v760{color:#a9bfcb;font-size:.56rem;font-weight:850}
+.denk-role-reference-v760 .denk-role-tag-v760{color:#c6bda4}
+.denk-state-v760{white-space:normal;max-width:99px;min-height:26px;line-height:1.15;text-align:center;justify-content:center;padding:5px 7px;letter-spacing:0}
+.denk-state-v760.role-reference{background:rgba(127,170,205,.14);color:#b8d3e6}
+.denk-state-v760.role-idea{background:rgba(205,170,116,.14);color:#e3c79f}
+.denk-state-v760.role-task{background:rgba(223,151,66,.15);color:#f1c18b}
+.status-done .denk-state-v760{background:rgba(113,151,123,.15);color:#acd1b5}
+.denk-entry-body-v634 .denk-state-note-v760{margin:11px 0 8px;padding:8px 10px;border-left:2px solid #b99a68;border-radius:3px;background:rgba(215,179,122,.06);color:#d3bea0;font-size:.67rem;line-height:1.5}
+@media(max-width:420px){
+  .denk-entry-v752 summary{align-items:flex-start}
+  .denk-entry-v752 .denk-entry-side-v634{flex-wrap:wrap;justify-content:flex-end;max-width:125px}
+  .denk-state-v760{font-size:.48rem;max-width:86px}
+}
