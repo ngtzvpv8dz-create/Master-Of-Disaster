@@ -355,3 +355,27 @@ body.mod-denkfabrik-v634{
   .denk-done-area-v752>summary i,
   .denk-explorer-v752>summary i{transition:none}
 }
+/* V759 · feste, gut lesbare Referenznummern */
+.denk-ref-v759{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:44px;
+  margin:0 7px 3px 0;
+  padding:4px 7px;
+  border:1px solid rgba(215,179,122,.38);
+  border-radius:8px;
+  background:rgba(215,179,122,.14);
+  color:#f5d4a1;
+  font-size:.66rem;
+  font-weight:950;
+  letter-spacing:.015em;
+  font-variant-numeric:tabular-nums;
+}
+.denk-focus-ref-v759{color:#f3cf92;font-size:.65rem;letter-spacing:.035em}
+.denk-ref-tip-v759{
+  margin:-7px 2px 16px;
+  color:#a6bbc9;
+  font-size:.66rem;
+  line-height:1.4;
+}
