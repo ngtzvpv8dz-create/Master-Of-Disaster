@@ -1129,6 +1129,8 @@
   }
 
   function visibleMealNote(note,{suppressGenericMealPrep=false,completed=false}={}){
+    // Ein alter Auftau-Auftrag ist nach dem Verbrauch kein Mahlzeitenkommentar.
+    if(completed&&/^\s*Auftauen\s*:/i.test(String(note||'')))return '';
     const parts=noteSentences(note)
       .filter(part=>!/einfrier/i.test(part)&&(!completed||!/auftau/i.test(part)))
       .map(part=>part.replace(/^Meal Prep:\s*/i,'').trim())
