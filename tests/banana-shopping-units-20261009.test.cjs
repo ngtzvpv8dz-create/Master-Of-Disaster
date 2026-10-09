@@ -35,6 +35,9 @@ const context={
 vm.createContext(context);
 vm.runInContext(source.slice(begin,end)+'\nthis.deriveShopping=deriveShopping;',context);
 const banana={id:stockId,name:'Bananen',quantity:5,unit:'Stück',is_active:true};
+const bananaProduct={inventory_id:stockId,product_data:{edible_weight_per_piece_g:118}};
+assert.equal(183-65,118,'Measured banana standard must be 118 g edible portion');
+assert.equal(banana.quantity*bananaProduct.product_data.edible_weight_per_piece_g,590);
 const plan=[
   ['2026-10-10',100,'g'],
   ['2026-10-11',1,'Stück'],
@@ -47,13 +50,24 @@ const meals=plan.map(([date,quantity,unit])=>({
   meal_date:date,meal_type:'snack',status:'planned',
   ingredients:[{inventory_id:stockId,name:'Bananen',quantity,unit}]
 }));
-const gaps=context.deriveShopping({inventory:[banana],meals:meals.slice(0,3)});
+const gaps=context.deriveShopping({inventory:[banana],products:[bananaProduct],meals:meals.slice(0,3)});
 assert.equal(gaps.length,0,'Five bananas cover the gram recipe and next two banana snacks');
 
-const future=context.deriveShopping({inventory:[banana],meals});
+const future=context.deriveShopping({inventory:[banana],products:[bananaProduct],meals});
 assert.equal(future.length,1,'Six portions need exactly one additional banana');
 assert.equal(future[0].unit,'Stück','Purchases must use stock unit');
 assert.equal(future[0].missing,1);
 assert.equal(future[0].buyFrom,'2026-10-21','Do not buy a banana on October 10 for the October 22 snack');
 assert.equal(future[0].currentAvailable,5);
-console.log('PASS: banana gram and piece demand shares the same inventory and shopping windows');
+const gramsMeal=quantity=>({
+  meal_date:'2026-10-10',meal_type:'lunch',status:'planned',
+  ingredients:[{inventory_id:stockId,name:'Bananen',quantity,unit:'g'}]
+});
+assert.equal(context.deriveShopping({inventory:[banana],products:[bananaProduct],meals:[gramsMeal(500)]}).length,0,
+  'Five bananas represent 590 g edible and cover a 500 g recipe');
+const oneFruitShort=context.deriveShopping({inventory:[banana],products:[bananaProduct],meals:[gramsMeal(591)]});
+assert.equal(oneFruitShort[0].missing,1,'Buy a whole banana if even a small edible weight gap remains');
+const modifiedProduct={inventory_id:stockId,product_data:{edible_weight_per_piece_g:80}};
+const overridden=context.deriveShopping({inventory:[banana],products:[modifiedProduct],meals:[gramsMeal(500)]});
+assert.equal(overridden[0].missing,2,'Shopping conversion must read the product standard, not hard-code 118 g');
+console.log('PASS: measured 118 g edible weight controls gram/piece banana stock and whole-fruit purchases');
