@@ -1229,6 +1229,9 @@
         .eq('user_id',user.id)
         .eq('plan_date',session.date);
       if(courseResult.error)throw courseResult.error;
+      const occurrencesResult=await supabase.from('sport_course_occurrences')
+        .delete().eq('user_id',user.id).eq('plan_date',session.date).eq('status','planned');
+      if(occurrencesResult.error)throw occurrencesResult.error;
     }
 
     const result=await supabase.from('sport_sessions')
@@ -2480,7 +2483,8 @@
     const hasCourseAttendance=planTestMode
       ?(current?.activities||[]).some(activity=>activity.type==='course'&&String(activity.note||'').startsWith('test-course-attendance|'))
       :(state.courseCatalog||[]).some(course=>Boolean(attendanceForCourse(course,planDate)));
-    const hasBaseContent=hasFree||hasCoursePlan||hasCourseAttendance;
+    const hasNewCourseBookings=!planTestMode&&occurrencesForDay(planDate).length>0;
+    const hasBaseContent=hasFree||hasCoursePlan||hasCourseAttendance||hasNewCourseBookings;
 
     const modeSwitch=
       '<section class="sport-plan-mode-v717" aria-label="Planmodus">'+
