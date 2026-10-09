@@ -2476,3 +2476,26 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   .sport-history-flow-step-v748{grid-template-columns:44px minmax(0,1fr);gap:8px}
   .sport-history-flow-rail-v748 span{font-size:.6rem}
 }
+
+
+/* V762 · recurrent weekly slots and one-off special sessions */
+.sport-weekly-block-v762{min-width:0}
+.sport-weekly-picker-v762{display:flex;flex-direction:column;gap:11px;margin-top:12px;padding:12px;border:1px solid rgba(111,228,234,.2);background:rgba(9,32,37,.5);border-radius:13px}
+.sport-weekly-title-v762{font-size:.72rem;letter-spacing:.08em;font-weight:900;text-transform:uppercase;color:#b2eef2}
+.sport-weekly-course-v762{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.045)}
+.sport-weekly-course-v762>strong{font-weight:850;font-size:.83rem;min-width:0}
+.sport-weekly-times-v762{display:flex;flex-wrap:wrap;gap:7px}
+.sport-weekly-times-v762 button,.sport-special-form-v762>button{appearance:none;min-height:40px;border:1px solid rgba(111,228,234,.42);color:#dcfcff;background:rgba(14,84,94,.60);padding:8px 12px;border-radius:9px;font-size:.75rem;font-weight:800;cursor:pointer}
+.sport-weekly-times-v762 button:active,.sport-special-form-v762>button:active{background:rgba(32,143,152,.7)}
+.sport-weekly-empty-v762{margin:0;font-size:.8rem;color:#bacfd0}
+.sport-special-v762{margin-top:8px;border-top:1px solid rgba(255,255,255,.12);padding-top:10px}
+.sport-special-v762>summary{list-style-position:inside;cursor:pointer;color:#b2eef2;font-weight:850;font-size:.83rem}
+.sport-special-form-v762{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.sport-special-form-v762 label{display:flex;flex-direction:column;gap:5px;font-size:.71rem;font-weight:800;color:#bdd5d8}
+.sport-special-form-v762 input{width:100%;min-height:43px;border:1px solid rgba(111,228,234,.25);border-radius:9px;background:#15262b;color:#fff;padding:9px 10px;font-size:16px;box-sizing:border-box}
+.sport-special-grid-v762{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sport-special-form-v762>button{align-self:flex-start}
+.sport-course-booking-v762{flex-wrap:wrap;gap:8px}
+.sport-course-booking-v762>div{min-width:140px}
+.sport-course-booking-v762 input{min-width:125px;max-width:100%;font-size:16px}
+@media(max-width:420px){.sport-weekly-course-v762{align-items:stretch;flex-direction:column}.sport-weekly-times-v762 button{flex:1}.sport-course-booking-v762>div{flex:1 1 100%}}
