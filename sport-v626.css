@@ -2499,3 +2499,11 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 .sport-course-booking-v762>div{min-width:140px}
 .sport-course-booking-v762 input{min-width:125px;max-width:100%;font-size:16px}
 @media(max-width:420px){.sport-weekly-course-v762{align-items:stretch;flex-direction:column}.sport-weekly-times-v762 button{flex:1}.sport-course-booking-v762>div{flex:1 1 100%}}
+
+/* V762b · responsive booking actions */
+.sport-course-booking-v762{display:flex!important;align-items:center;flex-wrap:wrap;gap:8px}
+.sport-course-booking-v762>div{flex:1 1 145px;min-width:120px}
+.sport-course-booking-v762>input{flex:1 1 135px;min-width:115px;grid-column:auto!important;grid-row:auto!important}
+.sport-course-booking-v762>button{flex:0 0 auto;max-width:100%;white-space:normal}
+.sport-course-booking-v762>[data-sport-save-people]{background:rgba(255,255,255,.07);font-size:.68rem}
+@media(max-width:420px){.sport-course-booking-v762>div,.sport-course-booking-v762>input{flex:1 1 100%;max-width:100%}.sport-course-booking-v762>button[type=submit]{flex:1}}
