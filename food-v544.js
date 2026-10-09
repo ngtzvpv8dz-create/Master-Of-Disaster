@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V758';
+  const VERSION='V761';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -500,7 +500,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
@@ -959,6 +959,49 @@
     return html+'</div>';
   }
 
+  // Verbrauchsbuchungen sind ein unveraenderlicher Mahlzeitenstand; niemals gegen
+  // aktuellen Vorrat oder heutige Lagerorte neu aufloesen.
+  function preparedIngredientListMarkup(meal){
+    const snapshot=meal?.prepared_sources_snapshot;
+    const sources=Array.isArray(snapshot?.sources)
+      ?snapshot.sources.filter(row=>row&&Number(row.quantity)>0):[];
+    const original=Array.isArray(snapshot?.ingredients)
+      ?snapshot.ingredients:(meal?.ingredients||[]);
+    if(!sources.length&&!original.length)return '';
+
+    const ranking=source=>{
+      const names=[source?.name,source?.label].map(familyText).filter(Boolean);
+      const index=original.findIndex(item=>{
+        const key=familyText(ingredientName(item));
+        return key&&names.some(name=>name===key||name.includes(key)||key.includes(name));
+      });
+      return index<0?9999:index;
+    };
+    const ordered=sources.map((source,index)=>({source,index}))
+      .sort((a,b)=>ranking(a.source)-ranking(b.source)||a.index-b.index)
+      .map(entry=>entry.source);
+
+    const rows=ordered.length
+      ?ordered.map(source=>{
+        const wasFrozen=source.frozen===true;
+        let label=String(source.label||source.name||'Vorratszutat').trim();
+        // "frisch" auf einem historischen Kaufetikett darf nach Auftauen
+        // nicht mit der tatsaechlichen Verwendung verwechselt werden.
+        if(wasFrozen)label=label.replace(/\s*[·,-]\s*frisch\s*$/i,'').trim();
+        if(wasFrozen)label+=' · aufgetaut (TK)';
+        return '<li><span>'+esc(label)+'</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b></li>';
+      })
+      :original.map(item=>
+        '<li><span>'+esc(ingredientName(item))+'</span><b>'+
+        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+
+        '</b></li>'
+      );
+
+    return '<div class="food-recipe-detail-block-v572 food-prepared-ingredients-v761">'
+      +'<strong>Zubereitet mit</strong><ul>'+rows.join('')+'</ul>'
+      +'</div>';
+  }
+
   function ingredientListMarkup(items,allocationMap=null){
     return '<ul>'+items.map(item=>{
       const q=num(item.quantity);
@@ -999,7 +1042,7 @@
     return {prep,fresh};
   }
 
-  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null){
+  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
     const instructions=recipeInstructions(recipe);
@@ -1007,7 +1050,7 @@
       num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
       num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
     ].filter(Boolean).join(' · ');
-    const ingredientBlocks='<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items,allocationMap)+'</div>';
+    const ingredientBlocks=preparedMeal?preparedIngredientListMarkup(preparedMeal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items,allocationMap)+'</div>';
     const details=expanded
       ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
       :'';
@@ -1085,9 +1128,9 @@
     return sentence.replace(/^Meal Prep:\s*/i,'').replace(/[.!?]+$/,'');
   }
 
-  function visibleMealNote(note,{suppressGenericMealPrep=false}={}){
+  function visibleMealNote(note,{suppressGenericMealPrep=false,completed=false}={}){
     const parts=noteSentences(note)
-      .filter(part=>!/einfrier/i.test(part))
+      .filter(part=>!/einfrier/i.test(part)&&(!completed||!/auftau/i.test(part)))
       .map(part=>part.replace(/^Meal Prep:\s*/i,'').trim())
       .filter(Boolean);
     const text=parts.join(' ');
@@ -1257,14 +1300,14 @@
     if(isMealPrep){
       const title=meal.title||recipe?.title||'Meal Prep';
       const extras=meal.ingredients||[];
-      const detailNote=visibleMealNote(meal.note,{suppressGenericMealPrep:true});
+      const detailNote=visibleMealNote(meal.note,{suppressGenericMealPrep:true,completed:status==='completed'});
       const extrasSummary=extras.length
         ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
         :'';
       const details=expanded
         ?'<div class="food-recipe-details-v572">'
           +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
-          +(extras.length?'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>':'')
+          +(extras.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
         +'</div>'
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
@@ -1281,10 +1324,10 @@
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
       const allocationMap=plannedFamilyAllocationMaps().get(String(meal.id))||null;
-      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap);
-      const note=visibleMealNote(meal.note);
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null);
+      const note=visibleMealNote(meal.note,{completed:status==='completed'});
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
-      const freezeHint=freezeInstructionMarkup(meal.note);
+      const freezeHint=status==='completed'?'':freezeInstructionMarkup(meal.note);
       const quantityAction=status==='completed'
         ?''
         :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Zutaten &amp; Mengen ändern</button>';
@@ -1304,11 +1347,11 @@
     const editAction=status==='completed'
       ?''
       :'<button type="button" class="food-action-v544 compact" data-food-edit-free-meal="'+esc(meal.id)+'">Zutaten bearbeiten</button>';
-    const note=visibleMealNote(meal.note);
+    const note=visibleMealNote(meal.note,{completed:status==='completed'});
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
-        +(items.length?'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong>'+ingredientListMarkup(items,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>':'')
-        +freezeInstructionMarkup(meal.note)
+        +(items.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong>'+ingredientListMarkup(items,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
+        +(status==='completed'?'':freezeInstructionMarkup(meal.note))
         +(note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'')
         +(!items.length&&!note&&!freezeInstruction(meal.note)?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
         +(expanded&&editAction?'<div class="food-meal-edit-actions-v618">'+editAction+'</div>':'')
