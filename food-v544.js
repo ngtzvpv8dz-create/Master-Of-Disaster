@@ -1740,11 +1740,21 @@
         const name=ingredientName(item);
         if(isNonShoppingIngredient(name))return;
         const unit=String(item.unit||'').trim();
-        const canonical=normalizedIngredient(name,unit);
-        const key=item.inventory_id?'stock|'+item.inventory_id+'|'+unit:'free|'+canonical+'|'+unit.toLocaleLowerCase('de-DE');
-        const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,canonical,unit,required:0,uses:[]};
-        current.required+=quantity;
-        current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity});
+        // One banana is planned as approximately 100 g edible portion. Normalize
+        // both recipe units before grouping needs, otherwise the same five bananas
+        // are independently counted for gram and piece requirements.
+        const linkedStock=item.inventory_id
+          ?(data.inventory||[]).find(stock=>stock.id===item.inventory_id)
+          :null;
+        const bananaGrams=unit==='g'&&linkedStock?.unit==='Stück'
+          &&normalizedIngredient(linkedStock.name)==='bananen';
+        const shoppingUnit=bananaGrams?'Stück':unit;
+        const shoppingQuantity=bananaGrams?quantity/100:quantity;
+        const canonical=normalizedIngredient(name,shoppingUnit);
+        const key=item.inventory_id?'stock|'+item.inventory_id+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE');
+        const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,canonical,unit:shoppingUnit,required:0,uses:[]};
+        current.required+=shoppingQuantity;
+        current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
         if(current.canonical==='knoblauchzehen')current.label='Knoblauchzehen';
         needs.set(key,current);
