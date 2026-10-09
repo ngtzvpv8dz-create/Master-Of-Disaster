@@ -53,7 +53,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
-      './food-v544.js?v=758-add-planned-inventory-ingredient',
+      './food-v544.js?v=761-prepared-sources-snapshot',
       './food-nutrition-v711.js?v=713-inventory-view-fix'
     ],
     shopping:[
@@ -61,7 +61,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
-      './food-v544.js?v=758-add-planned-inventory-ingredient',
+      './food-v544.js?v=761-prepared-sources-snapshot',
       './food-nutrition-v711.js?v=713-inventory-view-fix',
       './shopping-v678.js?v=756-phase4-purchase-details'
     ],
@@ -144,9 +144,9 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=748-today-timeline','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=758-add-planned-inventory-ingredient',
+    food:['./food-v544.js?v=761-prepared-sources-snapshot',
       './food-nutrition-v711.js?v=713-inventory-view-fix'],
-    shopping:['./food-v544.js?v=758-add-planned-inventory-ingredient',
+    shopping:['./food-v544.js?v=761-prepared-sources-snapshot',
       './food-nutrition-v711.js?v=713-inventory-view-fix','./shopping-v678.js?v=756-phase4-purchase-details'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
