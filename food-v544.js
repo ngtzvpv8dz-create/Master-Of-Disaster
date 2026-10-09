@@ -508,7 +508,7 @@
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false})),
-      safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active').eq('active',true))
+      safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data').eq('active',true))
     ]);
 
     cloudIssues=[];
@@ -1732,6 +1732,8 @@
 
   function deriveShopping(data){
     const needs=new Map();
+    const inventoryByIdForShopping=new Map((data.inventory||[]).map(stock=>[stock.id,stock]));
+    const productsByInventoryId=new Map((data.products||[]).filter(product=>product.inventory_id).map(product=>[product.inventory_id,product]));
     data.meals
       .filter(meal=>meal.meal_date>=recentPlanningStartIso()&&meal.meal_date<=planningHorizonIso()&&normalizedStatus(meal.status)==='planned')
       .forEach(meal=>(meal.ingredients||[]).forEach(item=>{
@@ -1740,16 +1742,16 @@
         const name=ingredientName(item);
         if(isNonShoppingIngredient(name))return;
         const unit=String(item.unit||'').trim();
-        // One banana is planned as approximately 100 g edible portion. Normalize
-        // both recipe units before grouping needs, otherwise the same five bananas
-        // are independently counted for gram and piece requirements.
-        const linkedStock=item.inventory_id
-          ?(data.inventory||[]).find(stock=>stock.id===item.inventory_id)
-          :null;
+        // The agreed standard is 118 g edible portion per banana (183 g with
+        // peel - 65 g peel, measured on 04.10.2026), NOT 100 g: that is only
+        // the unit of the nutrition label. Prefer the saved product standard.
+        const linkedStock=inventoryByIdForShopping.get(item.inventory_id)||null;
         const bananaGrams=unit==='g'&&linkedStock?.unit==='Stück'
           &&normalizedIngredient(linkedStock.name)==='bananen';
+        const savedPieceGrams=Number(productsByInventoryId.get(item.inventory_id)?.product_data?.edible_weight_per_piece_g);
+        const edibleGramsPerBanana=savedPieceGrams>0?savedPieceGrams:118;
         const shoppingUnit=bananaGrams?'Stück':unit;
-        const shoppingQuantity=bananaGrams?quantity/100:quantity;
+        const shoppingQuantity=bananaGrams?quantity/edibleGramsPerBanana:quantity;
         const canonical=normalizedIngredient(name,shoppingUnit);
         const key=item.inventory_id?'stock|'+item.inventory_id+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE');
         const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,canonical,unit:shoppingUnit,required:0,uses:[]};
@@ -1818,7 +1820,11 @@
         const available=Math.min(remaining,window.required);
         remaining=Math.max(0,remaining-window.required);
         const missing=Math.max(0,window.required-available);
-        if(missing<=0)return;
+        if(missing<=1e-8)return;
+        // Whole loose bananas are purchased as pieces, even if a recipe
+        // only needs part of the edible fruit.
+        const purchaseMissing=normalizedNeed==='bananen'&&need.unit==='Stück'
+          ?Math.ceil(missing-1e-8):missing;
         const actualShortageDate=shortageDateFor({uses:window.uses},available);
 
         gaps.push({
@@ -1828,7 +1834,7 @@
           inventory_id:stockInfo.family?null:(need.inventory_id||stock?.id||null),
           available,
           currentAvailable:Math.max(0,stockInfo.available||0),
-          missing,
+          missing:purchaseMissing,
           label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
           convertedStock:stockInfo.converted,
