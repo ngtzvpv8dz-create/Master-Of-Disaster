@@ -1563,6 +1563,14 @@
     if(result.error)throw result.error;
     await load(true);
   }
+  async function saveCoursePeople(id,names){
+    const {supabase,user}=await sportUser();
+    const response=await supabase.from('sport_course_occurrences')
+      .update({participants:parseCoursePeople(names),updated_at:new Date().toISOString()})
+      .eq('id',id).eq('user_id',user.id).eq('status','planned');
+    if(response.error)throw response.error;
+    await load(true);
+  }
   async function completeCourseOccurrence(id,participantText){
     const {supabase}=await sportUser();
     const result=await supabase.rpc('complete_sport_course_occurrence',{
@@ -2435,7 +2443,7 @@
       const suffix=item.kind==='special'?' · Special':'';
       const names=(item.participants||[]).join(', ');
       if(item.status==='completed')return '<div class="sport-course-plan-row-v619 is-done"><div><strong>'+esc(item.name)+'</strong><small>'+esc(time+suffix+(names?' · mit '+names:''))+'</small></div><span>✓ Teilgenommen</span></div>';
-      return '<form class="sport-course-plan-row-v619 sport-course-booking-v762" data-sport-complete-occurrence="'+esc(item.id)+'"><div><strong>'+esc(item.name)+'</strong><small>'+esc(time+suffix)+'</small></div><input name="participants" list="'+peopleListId+'" value="'+esc(names)+'" placeholder="Mit wem?"><button type="submit">Teilgenommen</button><button type="button" class="sport-course-remove-v619" data-sport-remove-occurrence="'+esc(item.id)+'" aria-label="Geplanten Kurstermin entfernen">×</button></form>';
+      return '<form class="sport-course-plan-row-v619 sport-course-booking-v762" data-sport-complete-occurrence="'+esc(item.id)+'"><div><strong>'+esc(item.name)+'</strong><small>'+esc(time+suffix)+'</small></div><input name="participants" list="'+peopleListId+'" value="'+esc(names)+'" placeholder="Mit wem?"><button type="submit">Teilgenommen</button><button type="button" data-sport-save-people="'+esc(item.id)+'">Mit wem speichern</button><button type="button" class="sport-course-remove-v619" data-sport-remove-occurrence="'+esc(item.id)+'" aria-label="Geplanten Kurstermin entfernen">×</button></form>';
     }).join('');
 
     const available=slots.filter(slot=>!reservedSlotIds.has(String(slot.id))&&!oldDone.some(x=>
@@ -2901,6 +2909,11 @@
     root.querySelectorAll('[data-sport-remove-occurrence]').forEach(button=>button.addEventListener('click',event=>{
       event.preventDefault();const target=event.currentTarget;
       handle(target,()=>removeCourseOccurrence(target.dataset.sportRemoveOccurrence));
+    }));
+    root.querySelectorAll('[data-sport-save-people]').forEach(button=>button.addEventListener('click',event=>{
+      const el=event.currentTarget;
+      const form=el.closest('[data-sport-complete-occurrence]');
+      handle(el,()=>saveCoursePeople(el.dataset.sportSavePeople,new FormData(form).get('participants')));
     }));
     root.querySelectorAll('[data-sport-complete-occurrence]').forEach(form=>form.addEventListener('submit',event=>{
       event.preventDefault();const target=event.currentTarget,submit=target.querySelector('button[type="submit"]');
