@@ -3,7 +3,7 @@
   'use strict';
   if(window.__modSportV568)return;
 
-  const VERSION='V748';
+  const VERSION='V762';
   const ROOT_ID='sportRootV510';
   const MODE_KEY='masterOfDisasterAppModeV510';
   const TAB_KEY='masterOfDisasterSportTabV568';
@@ -60,7 +60,7 @@
   let activeTab='overview';
   let planDate='';
   let planTestMode=false;
-  let state={loaded:false,loading:false,error:null,source:'cache',sessions:[],courseCatalog:[],coursePlans:[],catalogExercises:[],equipment:[],sessionParticipants:[],exerciseParticipants:[],sessionExercises:[],exerciseSets:[]};
+  let state={loaded:false,loading:false,error:null,source:'cache',sessions:[],courseCatalog:[],coursePlans:[],weeklySlots:[],courseOccurrences:[],catalogExercises:[],equipment:[],sessionParticipants:[],exerciseParticipants:[],sessionExercises:[],exerciseSets:[]};
   let loadPromise=null;
   let renderSerial=0;
   let catalogTargetSessionId=null;
@@ -400,6 +400,8 @@
       supabase.from('sport_session_participants').select('id,session_id,participant_name').eq('user_id',user.id).limit(5000),
       supabase.from('sport_course_catalog').select('id,name,venue,start_time,end_time,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_course_plans').select('id,course_id,plan_date,created_at').eq('user_id',user.id).order('plan_date',{ascending:false}).limit(1000),
+      supabase.from('sport_course_weekly_slots').select('id,course_id,weekday,start_time,end_time,venue,active').eq('user_id',user.id).eq('active',true).order('weekday').order('start_time').limit(1000),
+      supabase.from('sport_course_occurrences').select('id,course_id,slot_id,kind,name,venue,plan_date,start_time,end_time,participants,status,session_id').eq('user_id',user.id).order('plan_date',{ascending:false}).limit(2000),
       supabase.from('sport_exercise_catalog').select('id,name,kind,item_type,equipment_number,category,muscle_group,settings_text,load_mode,metric_config,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_equipment_catalog').select('id,name,equipment_number,category,settings_text,active,sort_order').eq('user_id',user.id).eq('active',true).order('sort_order').order('name'),
       supabase.from('sport_session_exercises').select('id,session_id,exercise_id,equipment_id,name_snapshot,kind,status,sort_order,started_at,ended_at,duration_minutes,distance_km,resistance_level,speed_kmh,incline_percent,equipment_number_snapshot,settings_snapshot,load_mode_snapshot,calories_kcal,metric_values,created_at').eq('user_id',user.id).order('created_at',{ascending:false}).limit(5000),
@@ -408,10 +410,10 @@
       supabase.from('sport_circuit_runs').select('id,session_id,name_snapshot,planned_rounds,work_seconds,rest_seconds,round_break_seconds,status,completed_rounds,current_round,current_exercise_index,current_elapsed_seconds,total_active_seconds,started_at,ended_at').eq('user_id',user.id).order('started_at',{ascending:false}).limit(500),
       supabase.from('sport_circuit_run_exercises').select('id,run_id,name_snapshot,settings_snapshot,sort_order').eq('user_id',user.id).order('sort_order').limit(10000)
     ];
-    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Kurskatalog','Kursplan','Übungskatalog','Gerätekatalog','Übungen & Geräte','Übungs-Teilnehmer','Sätze','Zirkel-Läufe','Zirkel-Übungen'];
+    const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Kurskatalog','Kursplan','Wochenkurse','Kursbuchungen','Übungskatalog','Gerätekatalog','Übungen & Geräte','Übungs-Teilnehmer','Sätze','Zirkel-Läufe','Zirkel-Übungen'];
     const results=await Promise.all(queries.map((query,index)=>withTimeout(query,labels[index],6500)));
     for(const result of results)if(result?.error)throw result.error;
-    const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,courseResult,coursePlansResult,catalogResult,equipmentResult,workoutResult,exercisePeopleResult,setsResult,circuitRunsResult,circuitExercisesResult]=results;
+    const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,courseResult,coursePlansResult,weeklyResult,occurrenceResult,catalogResult,equipmentResult,workoutResult,exercisePeopleResult,setsResult,circuitRunsResult,circuitExercisesResult]=results;
 
     const peopleByActivity=new Map();
     (participantsResult.data||[]).forEach(row=>{
@@ -473,6 +475,8 @@
     state={...state,
       courseCatalog:(courseResult.data||[]),
       coursePlans:(coursePlansResult.data||[]),
+      weeklySlots:(weeklyResult.data||[]),
+      courseOccurrences:(occurrenceResult.data||[]),
       catalogExercises:(catalogResult.data||[]),
       equipment:(equipmentResult.data||[]),
       sessionParticipants:(sessionPeopleResult.data||[]),
@@ -1500,6 +1504,71 @@
     '</form>'+chips;
   }
 
+
+  // V762: recurrent week slots and isolated booked/attended occurrences.
+  function planWeekday(dateKey){
+    const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey||''));
+    return m?new Date(Date.UTC(Number(m[1]),Number(m[2])-1,Number(m[3]),12)).getUTCDay()||7:0;
+  }
+  function slotForDay(slot,dateKey){return Number(slot.weekday)===planWeekday(dateKey);}
+  function slotTime(value){return String(value||'').slice(0,5);}
+  function occurrencesForDay(dateKey){return (state.courseOccurrences||[]).filter(item=>String(item.plan_date)===String(dateKey));}
+  function parseCoursePeople(value){
+    return [...new Set(String(value||'').split(/[,;+\n]/).map(item=>item.trim()).filter(Boolean))];
+  }
+  async function bookWeeklyCourse(slotId,dateKey){
+    const slot=(state.weeklySlots||[]).find(item=>String(item.id)===String(slotId));
+    const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(slot?.course_id));
+    if(!slot||!course||!slotForDay(slot,dateKey))throw new Error('Für diesen Tag ist der Kurstermin nicht vorgesehen.');
+    if(occurrencesForDay(dateKey).some(item=>String(item.slot_id)===String(slotId)))return;
+    const {supabase,user}=await sportUser();
+    const result=await supabase.from('sport_course_occurrences').insert({
+      user_id:user.id,slot_id:slot.id,course_id:course.id,kind:'regular',
+      name:course.name,venue:'FitX',plan_date:dateKey,
+      start_time:slotTime(slot.start_time),end_time:slotTime(slot.end_time),
+      status:'planned'
+    });
+    if(result.error)throw result.error;
+    coursePickerDate=null;
+    await load(true);
+  }
+  async function bookSpecialCourse(dateKey,formData){
+    const name=String(formData.get('name')||'').trim();
+    const start=String(formData.get('start')||'').trim();
+    const duration=Number(formData.get('duration'));
+    const participants=parseCoursePeople(formData.get('participants'));
+    const venue=String(formData.get('venue')||'FitX').trim()||'FitX';
+    if(!name||name.length>120)throw new Error('Bitte einen Kursnamen mit maximal 120 Zeichen eingeben.');
+    if(!/^\d{2}:\d{2}$/.test(start)||!Number.isInteger(duration)||duration<5||duration>720)throw new Error('Bitte gültige Startzeit und Dauer (5–720 Minuten) angeben.');
+    const startMinutes=Number(start.slice(0,2))*60+Number(start.slice(3));
+    if(startMinutes+duration>=1440)throw new Error('Specials, die über Mitternacht gehen, bitte aufteilen.');
+    const endMinutes=startMinutes+duration;
+    const end=String(Math.floor(endMinutes/60)).padStart(2,'0')+':'+String(endMinutes%60).padStart(2,'0');
+    const {supabase,user}=await sportUser();
+    const result=await supabase.from('sport_course_occurrences').insert({
+      user_id:user.id,kind:'special',name,venue,plan_date:dateKey,
+      start_time:start,end_time:end,participants,status:'planned'
+    });
+    if(result.error)throw result.error;
+    coursePickerDate=null;
+    await load(true);
+  }
+  async function removeCourseOccurrence(id){
+    const {supabase,user}=await sportUser();
+    const result=await supabase.from('sport_course_occurrences').delete()
+      .eq('id',id).eq('user_id',user.id).eq('status','planned');
+    if(result.error)throw result.error;
+    await load(true);
+  }
+  async function completeCourseOccurrence(id,participantText){
+    const {supabase}=await sportUser();
+    const result=await supabase.rpc('complete_sport_course_occurrence',{
+      p_occurrence_id:id,p_participants:parseCoursePeople(participantText)
+    });
+    if(result.error)throw result.error;
+    await load(true);
+  }
+
   async function addCoursePlan(courseId,dateKey){
     const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(courseId));
     if(!course)throw new Error('Kurs nicht gefunden.');
@@ -2246,7 +2315,7 @@
     return (state.coursePlans||[]).find(plan=>String(plan.course_id)===String(courseId)&&String(plan.plan_date)===String(dateKey))||null;
   }
 
-  function courseAttendanceBlock(dateKey,session=null,testMode=Boolean(session?.isTest||planTestMode)){
+  function legacyCourseAttendanceBlock(dateKey,session=null,testMode=Boolean(session?.isTest||planTestMode)){
     const courses=(state.courseCatalog||[]).filter(course=>course.active!==false);
     const courseById=new Map(courses.map(course=>[String(course.id),course]));
     const people=knownSportParticipants();
@@ -2330,6 +2399,71 @@
       +(rows?'<div class="sport-course-plan-list-v619">'+rows+'</div>':'')
       +picker
       +'</section>';
+  }
+
+
+  function courseAttendanceBlock(dateKey,session=null,testMode=Boolean(session?.isTest||planTestMode)){
+    if(testMode)return legacyCourseAttendanceBlock(dateKey,session,true);
+    const courses=(state.courseCatalog||[]).filter(item=>item.active!==false);
+    const courseById=new Map(courses.map(item=>[String(item.id),item]));
+    const slots=(state.weeklySlots||[]).filter(slot=>slot.active!==false&&slotForDay(slot,dateKey));
+    const bookings=occurrencesForDay(dateKey);
+    const reservedSlotIds=new Set(bookings.map(item=>String(item.slot_id||'')));
+    const oldPlans=(state.coursePlans||[]).filter(plan=>String(plan.plan_date)===String(dateKey));
+    const oldDone=courses.map(course=>({course,attendance:attendanceForCourse(course,dateKey)})).filter(x=>x.attendance);
+    const key='real|'+String(dateKey);
+    const open=String(coursePickerDate||'')===key;
+    const people=knownSportParticipants();
+    const peopleListId='sport-people-v762';
+    const datalist=people.length?'<datalist id="'+peopleListId+'">'+people.map(name=>'<option value="'+esc(name)+'"></option>').join('')+'</datalist>':'';
+
+    const completedLegacy=oldDone.map(({course,attendance})=>{
+      const a=attendance.activity;
+      return '<div class="sport-course-plan-row-v619 is-done"><div><strong>'+esc(course.name)+'</strong><small>'+esc(a?.startedAt?clock(a.startedAt):slotTime(course.start_time))+'–'+esc(a?.endedAt?clock(a.endedAt):slotTime(course.end_time))+' · Historischer Eintrag</small></div><span>✓ Teilgenommen</span></div>';
+    }).join('');
+    const plannedLegacy=oldPlans.filter(p=>!oldDone.some(x=>String(x.course.id)===String(p.course_id))).map(plan=>{
+      const course=courseById.get(String(plan.course_id));
+      if(!course)return '';
+      return '<form class="sport-course-plan-row-v619" data-sport-course-attendance="'+esc(course.id)+'" data-course-date="'+esc(dateKey)+'"><div><strong>'+esc(course.name)+'</strong><small>Alte Kursplanung · Standardzeit '+esc(slotTime(course.start_time))+'–'+esc(slotTime(course.end_time))+'</small></div><input name="participants" list="'+peopleListId+'" placeholder="Mit wem?"><button type="submit">Teilgenommen</button><button type="button" class="sport-course-remove-v619" data-sport-remove-course-plan="'+esc(plan.id)+'">×</button></form>';
+    }).join('');
+
+    const rows=bookings.map(item=>{
+      const time=slotTime(item.start_time)+'–'+slotTime(item.end_time);
+      const suffix=item.kind==='special'?' · Special':'';
+      const names=(item.participants||[]).join(', ');
+      if(item.status==='completed')return '<div class="sport-course-plan-row-v619 is-done"><div><strong>'+esc(item.name)+'</strong><small>'+esc(time+suffix+(names?' · mit '+names:''))+'</small></div><span>✓ Teilgenommen</span></div>';
+      return '<form class="sport-course-plan-row-v619 sport-course-booking-v762" data-sport-complete-occurrence="'+esc(item.id)+'"><div><strong>'+esc(item.name)+'</strong><small>'+esc(time+suffix)+'</small></div><input name="participants" list="'+peopleListId+'" value="'+esc(names)+'" placeholder="Mit wem?"><button type="submit">Teilgenommen</button><button type="button" class="sport-course-remove-v619" data-sport-remove-occurrence="'+esc(item.id)+'" aria-label="Geplanten Kurstermin entfernen">×</button></form>';
+    }).join('');
+
+    const available=slots.filter(slot=>!reservedSlotIds.has(String(slot.id))&&!oldDone.some(x=>
+      String(x.course.id)===String(slot.course_id)&&x.attendance.activity?.startedAt&&clock(x.attendance.activity.startedAt)===slotTime(slot.start_time)
+    ));
+    const grouped=new Map();
+    available.forEach(slot=>{const course=courseById.get(String(slot.course_id));if(!course)return;
+      const group=grouped.get(String(course.id))||{course,slots:[]};group.slots.push(slot);grouped.set(String(course.id),group);
+    });
+    const weeklyPicker=[...grouped.values()].sort((a,b)=>byName(a.course.name,b.course.name)).map(group=>
+      '<div class="sport-weekly-course-v762"><strong>'+esc(group.course.name)+'</strong><div class="sport-weekly-times-v762">'+group.slots.sort((a,b)=>slotTime(a.start_time).localeCompare(slotTime(b.start_time))).map(slot=>
+      '<button type="button" data-sport-book-weekly="'+esc(slot.id)+'" data-course-date="'+esc(dateKey)+'">'+esc(slotTime(slot.start_time)+'–'+slotTime(slot.end_time))+'</button>').join('')+'</div></div>'
+    ).join('');
+    const dayTitle=new Intl.DateTimeFormat('de-DE',{weekday:'long',timeZone:'UTC'}).format(new Date(dateKey+'T12:00:00Z'));
+    const picker=open?'<div class="sport-weekly-picker-v762">'+
+      '<div class="sport-weekly-title-v762">Reguläre Kurse · '+esc(dayTitle)+'</div>'+
+      (weeklyPicker||'<p class="sport-weekly-empty-v762">Für diesen Tag keine weiteren regulären Kurstermine.</p>')+
+      '<details class="sport-special-v762"><summary>+ Special-Kurs / Event</summary>'+
+      '<form data-sport-book-special="'+esc(dateKey)+'" class="sport-special-form-v762">'+
+        '<label>Kurs / Event<input name="name" maxlength="120" placeholder="z. B. Special Ride" required></label>'+
+        '<div class="sport-special-grid-v762"><label>Start<input name="start" type="time" required></label>'+
+        '<label>Dauer (Min.)<input name="duration" type="number" min="5" max="720" step="5" value="50" required></label></div>'+
+        '<label>Ort<input name="venue" value="FitX" placeholder="FitX"></label>'+
+        '<label>Mit wem?<input name="participants" list="'+peopleListId+'" placeholder="z. B. Merle, Erik"></label>'+
+        '<button type="submit">Special einplanen</button>'+
+      '</form></details>'+
+    '</div>':'';
+    return '<section class="sport-course-plan-v619 sport-weekly-block-v762">'+
+       '<div class="sport-course-plan-head-v619"><strong>Kurse · Wochenplan</strong><button class="sport-plan-action-v632" type="button" data-sport-toggle-course-picker="'+esc(dateKey)+'" data-course-picker-key="'+esc(key)+'">'+(open?'Schließen':'+ Kurs hinzufügen')+'</button></div>'+
+       datalist+(rows||completedLegacy||plannedLegacy?'<div class="sport-course-plan-list-v619">'+rows+completedLegacy+plannedLegacy+'</div>':'')+
+       picker+'</section>';
   }
 
   function planningPanel(){
@@ -2749,6 +2883,24 @@
     root.querySelectorAll('[data-sport-remove-test-course-plan]').forEach(button=>button.addEventListener('click',event=>{
       const target=event.currentTarget;
       handle(target,()=>removeTestCoursePlan(target.dataset.sportRemoveTestCoursePlan));
+    }));
+
+
+    root.querySelectorAll('[data-sport-book-weekly]').forEach(button=>button.addEventListener('click',event=>{
+      const target=event.currentTarget;
+      handle(target,()=>bookWeeklyCourse(target.dataset.sportBookWeekly,target.dataset.courseDate));
+    }));
+    root.querySelectorAll('[data-sport-book-special]').forEach(form=>form.addEventListener('submit',event=>{
+      event.preventDefault();const target=event.currentTarget,submit=target.querySelector('button[type="submit"]');
+      handle(submit,()=>bookSpecialCourse(target.dataset.sportBookSpecial,new FormData(target)));
+    }));
+    root.querySelectorAll('[data-sport-remove-occurrence]').forEach(button=>button.addEventListener('click',event=>{
+      event.preventDefault();const target=event.currentTarget;
+      handle(target,()=>removeCourseOccurrence(target.dataset.sportRemoveOccurrence));
+    }));
+    root.querySelectorAll('[data-sport-complete-occurrence]').forEach(form=>form.addEventListener('submit',event=>{
+      event.preventDefault();const target=event.currentTarget,submit=target.querySelector('button[type="submit"]');
+      handle(submit,()=>completeCourseOccurrence(target.dataset.sportCompleteOccurrence,new FormData(target).get('participants')));
     }));
 
     root.querySelectorAll('[data-sport-course-attendance]').forEach(form=>form.addEventListener('submit',event=>{
