@@ -507,8 +507,8 @@
         if(!product)return {...entry,reason:'Die aktuelle Vorratscharge hat keinen gültigen Produktstamm-Eintrag.'};
         const n=nutritionOf(product);
         const absent=[n.kcal===null?'Kalorien':null,n.protein===null?'Protein':null].filter(Boolean);
+        const productLabel=[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ');
         if(absent.length){
-          const productLabel=[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ');
           return {...entry,reason:'Bei '+(productLabel||stock.name)+' fehlen '+absent.join(' und ')+' je 100 g/ml.'};
         }
         if(product.product_data?.nutrition_provisional===true||product.product_data?.nutrition_requires_packaging_check===true){
