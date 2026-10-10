@@ -91,7 +91,7 @@ jobs:
           grep -q 'monthlyPlanningCutoff' food-v544.js
           grep -q 'food-plan-day-v685' food-v544.js
           grep -q 'food-plan-day-v685' food-v544.css
-          grep -q 'food-v544.css?v=758-add-planned-inventory-ingredient' index.html
+          grep -q 'food-v544.css?v=793-today-thaw-style' index.html
           grep -q 'food-v544.js?v=794-fruit-piece-standard' area-runtime-v609.js
           grep -Fq ".lte('meal_date',planningHorizonIso())" food-v544.js
           grep -Fq "meal.meal_date<=planningHorizonIso()" food-v544.js
