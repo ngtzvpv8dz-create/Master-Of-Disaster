@@ -63,7 +63,7 @@
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
       './food-v544.js?v=790-compact-freezer-thaw',
       './food-nutrition-v711.js?v=780-salt-zero-calories',
-      './shopping-v678.js?v=788-general-freezer-advice'
+      './shopping-v678.js?v=792-auto-freezer-on-booking'
     ],
     kistology:[
       SUPABASE,
@@ -147,7 +147,7 @@
     food:['./food-v544.js?v=790-compact-freezer-thaw',
       './food-nutrition-v711.js?v=780-salt-zero-calories'],
     shopping:['./food-v544.js?v=790-compact-freezer-thaw',
-      './food-nutrition-v711.js?v=780-salt-zero-calories','./shopping-v678.js?v=788-general-freezer-advice'],
+      './food-nutrition-v711.js?v=780-salt-zero-calories','./shopping-v678.js?v=792-auto-freezer-on-booking'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
