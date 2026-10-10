@@ -1859,53 +1859,94 @@
       });
   }
 
-  function freezerBoardMarkup(data,mode){
-    const tasks=data.freezer||[];
-    const lots=(data.lots||[]).filter(lot=>freezerLotQuantity(lot));
-    const frozenLots=lots.filter(lot=>frozenStorageLocation(lot.storage_location));
-    const planned=tasks.filter(task=>task.status==='planned');
-    const living=tasks.filter(task=>['frozen','thawing'].includes(task.status)
-      &&(data.lots||[]).some(lot=>String(lot.id)===String(task.frozen_lot_id)&&!!freezerLotQuantity(lot)));
+  // V790: Checkout purchases awaiting stock confirmation are a preview, never an
+  // actionable freezer lot. This deliberately does not book any quantity.
+  function pendingFreezerPreviewMarkup(data){
+    if(!sourceIsReal('pendingCheckout')||!sourceIsReal('meals'))return [];
     const now=todayIso();
-    const due=living.filter(task=>task.status==='thawing'||(task.needed_on&&task.needed_on<=now))
-      .sort((a,b)=>(a.status==='thawing'?-1:0)-(b.status==='thawing'?-1:0)
-        ||String(a.needed_on||'').localeCompare(String(b.needed_on||'')));
-    const later=living.filter(task=>!due.some(x=>x.id===task.id))
-      .sort((a,b)=>String(a.needed_on||'9999-12-31').localeCompare(String(b.needed_on||'9999-12-31')));
-    const section=(title,count,content,empty)=>'<section class="food-freezer-section-v784"><header><strong>'+esc(title)+'</strong><span>'+count+'</span></header>'
-      +(content||'<p class="food-freezer-empty-v784">'+esc(empty)+'</p>')+'</section>';
-    if(mode==='tk'){
-      return section('❄️ Noch einzufrieren',planned.length,
-        planned.map(p=>freezerTaskMarkup(p,'freeze')).join(''),'Aktuell keine offenen Einfrierportionen.')
-        +section('🧊 Bereits eingefroren',frozenLots.length,
-          frozenLots.map(freezerLotMarkup).join(''),'Aktuell kein chargengenau erfasster TK-Bestand.');
+    const result=[];
+    for(const purchase of (data.pendingCheckout||[])){
+      const name=String(purchase.label||'').trim();
+      if(!/(hähnchen|hühnchen|hackfleisch|pute|rindfleisch|schweinefleisch|fischfilet|brot|brötchen|baguette|toast|wrap|beeren|brokkoli|spinat)/i.test(name))continue;
+      if(String(purchase.unit||'').toLowerCase()!=='g'||Number(purchase.quantity)<=0)continue;
+      if((data.lots||[]).some(lot=>String(lot.inventory_id)===String(purchase.inventory_id)
+        &&String(lot.batch_data?.checkout_id||'')===String(purchase.checkout_id)))continue;
+      const amount=Number(purchase.quantity);
+      let left=amount, freshToday=0;
+      const uses=(data.meals||[]).filter(m=>normalizedStatus(m.status)==='planned'&&String(m.meal_date)>=now)
+        .sort((a,b)=>String(a.meal_date).localeCompare(String(b.meal_date))||Number(a.sort_order||0)-Number(b.sort_order||0))
+        .flatMap(meal=>(meal.ingredients||[]).filter(i=>String(i.inventory_id||'')===String(purchase.inventory_id)
+          &&String(i.unit||'').toLowerCase()==='g'&&Number(i.quantity)>0)
+          .map(i=>({date:meal.meal_date,quantity:Number(i.quantity)})));
+      for(const use of uses){
+        if(use.date!==now)continue;
+        if(use.quantity<=left){freshToday+=use.quantity;left-=use.quantity;}
+      }
+      const freezer=left;
+      const parts=[];
+      for(const use of uses){
+        if(use.date===now||use.quantity>left)continue;
+        parts.push(fmtQty(use.quantity,'g')+' für '+fmtDate(use.date));
+        left-=use.quantity;
+      }
+      if(left>0)parts.push(fmtQty(left,'g')+' Reserve');
+      if(freezer<=0)continue;
+      result.push('<article class="food-freezer-line-v784 food-freezer-compact-v790 is-checkout-preview-v790">'
+        +'<div class="food-freezer-copy-v790"><strong>'+esc(name)+' · '+esc(fmtQty(freezer,'g'))+' TK vorgesehen</strong>'
+        +'<small>Vorschau aus dem Einkauf · noch nicht als Vorrat gebucht</small>'
+        +'<small>'+esc(parts.join(' · '))+(freshToday?' · '+esc(fmtQty(freshToday,'g'))+' heute frisch lassen':'')+'</small>'
+        +'<small>Erst nach Bonabschluss lassen sich die Portionen einzeln bestätigen.</small></div></article>');
     }
-    const hints=sourceIsReal('meals')&&sourceIsReal('lots')?plannedThawTasks():[];
-    const ingredientStockIds=new Map((data.meals||[])
-      .flatMap(meal=>meal.ingredients||[])
-      .filter(item=>item.id&&item.inventory_id)
-      .map(item=>[String(item.id),String(item.inventory_id)]));
-    const relevantHints=hints.filter(hint=>ingredientStockIds.has(String(hint.ingredientId))
-      &&!(tasks||[]).some(task=>
-        String(task.meal_ingredient_id||'')===String(hint.ingredientId)
-        &&['frozen','thawing','thawed'].includes(task.status)));
-    const hintedStockIds=new Set(relevantHints.map(hint=>ingredientStockIds.get(String(hint.ingredientId))));
-    // The TK tab lists physical stock. The Auftauen tab avoids repeating that same
-    // physical lot once a dated meal-plan hint already offers an assignment action.
-    const legacy=frozenLots.filter(lot=>!tasks.some(task=>String(task.frozen_lot_id)===String(lot.id))
-      &&!hintedStockIds.has(String(lot.inventory_id)));
-    const hintNow=relevantHints.filter(hint=>hint.dueDate<=now||hint.thawStartedAt);
-    const hintLater=relevantHints.filter(hint=>hint.dueDate>now&&!hint.thawStartedAt);
-    return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length+hintNow.length,
-      due.map(p=>freezerTaskMarkup(p,p.status==='thawing'?'finish_thaw':'start_thaw')).join('')
-      +hintNow.map(p=>freezerPlanHintMarkup(p,data)).join(''),'Gerade kein Auftauvorgang fällig.')
-      +section('📅 Später auftauen',later.length+legacy.length+hintLater.length,
-        later.map(p=>freezerTaskMarkup(p)).join('')
-        +hintLater.map(p=>freezerPlanHintMarkup(p,data)).join('')
-        +legacy.map(freezerLotMarkup).join(''),
-        'Noch keine späteren Auftauportionen geplant.');
+    return result;
   }
 
+  function freezerBoardMarkup(data,mode){
+    const portions=data.freezer||[];
+    const lots=(data.lots||[]).filter(lot=>freezerLotQuantity(lot));
+    const frozenLots=lots.filter(lot=>frozenStorageLocation(lot.storage_location));
+    const planned=portions.filter(portion=>portion.status==='planned');
+    const previews=pendingFreezerPreviewMarkup(data);
+    const living=portions.filter(portion=>['frozen','thawing','thawed'].includes(portion.status)
+      &&(data.lots||[]).some(lot=>String(lot.id)===String(portion.frozen_lot_id)&&!!freezerLotQuantity(lot)));
+    const now=todayIso();
+    const due=living.filter(portion=>portion.status==='thawing'
+      ||(portion.status==='frozen'&&portion.needed_on&&portion.needed_on<=now)
+      ||(portion.status==='thawed'&&portion.thawed_at
+        &&new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(portion.thawed_at))===now))
+      .sort((a,b)=>(a.status==='thawing'?-1:0)-(b.status==='thawing'?-1:0)
+        ||String(a.needed_on||'').localeCompare(String(b.needed_on||'')));
+    const later=living.filter(portion=>portion.status==='frozen'&&portion.needed_on&&portion.needed_on>now)
+      .sort((a,b)=>String(a.needed_on).localeCompare(String(b.needed_on)));
+    const section=(title,count,content,empty)=>'<section class="food-freezer-section-v784">'
+      +'<header><strong>'+esc(title)+'</strong><span>'+count+'</span></header>'
+      +(content||'<p class="food-freezer-empty-v784">'+esc(empty)+'</p>')+'</section>';
+    if(mode==='tk'){
+      return section('❄️ Noch einzufrieren',planned.length+previews.length,
+        planned.map(portion=>freezerTaskMarkup(portion,'freeze')).join('')+previews.join(''),
+        'Keine offenen Einfrieraufgaben.')
+        +section('🧊 Bereits eingefroren',frozenLots.length,
+          frozenLots.map(freezerLotMarkup).join(''),'Aktuell kein TK-Bestand.');
+    }
+    const mealHints=sourceIsReal('meals')&&sourceIsReal('lots')?plannedThawTasks():[];
+    const ingredientStockIds=new Map((data.meals||[])
+      .flatMap(meal=>meal.ingredients||[])
+      .filter(ingredient=>ingredient.id&&ingredient.inventory_id)
+      .map(ingredient=>[String(ingredient.id),String(ingredient.inventory_id)]));
+    const hints=mealHints.filter(hint=>ingredientStockIds.has(String(hint.ingredientId))
+      &&!portions.some(portion=>String(portion.meal_ingredient_id||'')===String(hint.ingredientId)
+        &&['frozen','thawing','thawed'].includes(portion.status)));
+    const hintNow=hints.filter(hint=>hint.dueDate<=now||hint.thawStartedAt);
+    const hintLater=hints.filter(hint=>hint.dueDate>now&&!hint.thawStartedAt);
+    return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length+hintNow.length,
+       due.map(portion=>freezerTaskMarkup(portion,portion.status==='thawing'?'finish_thaw':
+         portion.status==='frozen'?'start_thaw':'')).join('')
+       +hintNow.map(hint=>freezerPlanHintMarkup(hint,data)).join(''),
+       'Aktuell kein Auftauen fällig.')
+      +section('📅 Später auftauen',later.length+hintLater.length,
+        later.map(portion=>freezerTaskMarkup(portion)).join('')
+        +hintLater.map(hint=>freezerPlanHintMarkup(hint,data)).join(''),
+        'Keine weiteren Auftautermine geplant.');
+  }
 
   function freezerPlanModal(){
     if(!sourceIsReal('lots')||!sourceIsReal('freezer')||!sourceIsReal('inventory'))
