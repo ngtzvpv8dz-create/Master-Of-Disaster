@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V778';
+  const VERSION='V784';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -26,7 +26,7 @@
   let plannedThawCacheState=null;
   let plannedThawCache=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -37,6 +37,7 @@
   const expandedInventory=new Set();
   let unavailableInventoryOpen=false;
   let inventorySearch='';
+  let inventoryLocationTab='alle';
 
   function frostSvgMarkup(variant){
     const shapes=[
@@ -509,7 +510,8 @@
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false})),
       safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data').eq('active',true)),
-      safeQuery('Kreatin-Einnahmen',supabase.from('food_creatine_intakes').select('id,intake_date,inventory_id,inventory_name,variant_label,quantity_g,creatine_g,confirmed_at').gte('intake_date',plusDays(todayIso(),-180)).lte('intake_date',planningHorizonIso()).order('intake_date',{ascending:false}))
+      safeQuery('Kreatin-Einnahmen',supabase.from('food_creatine_intakes').select('id,intake_date,inventory_id,inventory_name,variant_label,quantity_g,creatine_g,confirmed_at').gte('intake_date',plusDays(todayIso(),-180)).lte('intake_date',planningHorizonIso()).order('intake_date',{ascending:false})),
+      safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false}))
     ]);
 
     cloudIssues=[];
@@ -534,7 +536,8 @@
       cart:take('cart',6,rows=>rows),
       leftovers:take('leftovers',7,rows=>rows),
       products:take('products',8,rows=>rows),
-      intakes:take('intakes',9,rows=>rows)
+      intakes:take('intakes',9,rows=>rows),
+      freezer:take('freezer',10,rows=>rows)
     };
   }
 
@@ -3487,6 +3490,7 @@
     expandedPlanDays.clear();
     expandedInventory.clear();
     inventorySearch='';
+    inventoryLocationTab='alle';
     window.__modAppHubV515?.hide?.();
     document.body.classList.remove('mod-backstage-v530');
     setSurface(true);
