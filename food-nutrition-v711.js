@@ -511,6 +511,9 @@
           const productLabel=[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ');
           return {...entry,reason:'Bei '+(productLabel||stock.name)+' fehlen '+absent.join(' und ')+' je 100 g/ml.'};
         }
+        if(product.product_data?.nutrition_provisional===true||product.product_data?.nutrition_requires_packaging_check===true){
+          return {...entry,provisional:true,reason:'Bei '+(productLabel||stock.name)+' sind die Nährwerte nur vorläufig eingetragen. Bitte mit der Verpackung abgleichen.'};
+        }
       }
     }
     const generic=genericFamilyNutrition(item,data,allocationOverride);
@@ -536,9 +539,12 @@
   }
   function mealNutritionWarningMarkup(warnings){
     const count=warnings.reduce((sum,meal)=>sum+meal.issues.length,0);
-    return '<section class="food-nutrition-alarm-inner-v795" role="alert" aria-label="Fehlende Nährwerte">'
+    const incomplete=warnings.some(meal=>meal.issues.some(issue=>!issue.provisional));
+    const headline=incomplete?'WICHTIG: NÄHRWERTE FEHLEN':'WICHTIG: NÄHRWERTE UNBESTÄTIGT';
+    const message=incomplete?'Bitte Produktdaten nachtragen. Der Tageswert ist unvollständig.':'Vorläufige Produktwerte bitte anhand der Packung bestätigen.';
+    return '<section class="food-nutrition-alarm-inner-v795" role="alert" aria-label="Nährwerte prüfen">'
       +'<div class="food-nutrition-alarm-head-v795"><span class="food-nutrition-alarm-flame-v795" aria-hidden="true">🔥</span>'
-      +'<div><strong>WICHTIG: NÄHRWERTE FEHLEN</strong><small>Bitte Produktdaten prüfen und ergänzen. Der Tageswert ist unvollständig.</small></div>'
+      +'<div><strong>'+headline+'</strong><small>'+message+'</small></div>'
       +'<span class="food-nutrition-alarm-count-v795">'+count+'</span></div>'
       +'<div class="food-nutrition-alarm-list-v795">'
       +warnings.map(meal=>'<button type="button" class="food-nutrition-alarm-link-v795" data-food-nutrition-goto="'+alarmEscape(meal.id)+'">'
@@ -830,7 +836,7 @@
           const missing=[...new Set(n?.missing||[])];
           for(const reason of missing)issues.push({id:'',name:reason,reason:'Für diese Zutat sind die Nährwerte oder die Produktzuordnung nicht vollständig.'});
         }
-        if(issues.length&&n?.complete){
+        if(issues.some(issue=>!issue.provisional)&&n?.complete){
           n={complete:false,missing:issues.map(issue=>issue.name)};
         }
         patchMealNutritionProblems(card,issues);
