@@ -2742,5 +2742,5 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795>span,
 .food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795>b{color:#9b3026!important;font-weight:900}
 .food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795 .food-ingredient-allocation-v712{flex-basis:100%}
-.food-nutrition-ingredient-hint-v795{display:block;flex-basis:100%;width:100%;margin-top:4px;color:#ac3d2d;font-size:9px;font-weight:720;line-height:1.4;overflow-wrap:anywhere}
+ .food-nutrition-ingredient-hint-v795{display:block;flex-basis:100%;width:100%;grid-column:1/-1;margin-top:4px;color:#ac3d2d;font-size:9px;font-weight:720;line-height:1.4;overflow-wrap:anywhere}
 @media(max-width:390px){.food-nutrition-alarm-inner-v795{padding:9px}.food-nutrition-alarm-head-v795 strong{font-size:10px}.food-nutrition-alarm-head-v795 small{font-size:9px}}
