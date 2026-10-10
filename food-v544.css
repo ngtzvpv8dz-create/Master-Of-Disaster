@@ -2658,3 +2658,50 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   .food-freezer-section-v784{padding:9px}
   .food-freezer-section-v784 .food-freezer-compact-v790 strong{font-size:11px}
 }
+
+/* V793: same sunlight / frost treatment as the Heute thaw card */
+.food-freezer-section-v784.is-thaw-v790{
+  position:relative;
+  overflow:hidden;
+  border-color:rgba(92,164,193,.26);
+  background:
+    radial-gradient(circle at 94% 16%,rgba(255,255,255,.82) 0 2px,transparent 3px),
+    linear-gradient(135deg,rgba(239,249,253,.97),rgba(213,238,248,.90));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 5px 12px rgba(79,145,171,.07);
+}
+.food-freezer-section-v784.is-thaw-v790>header strong{
+  color:#4e7f92;
+}
+.food-freezer-section-v784.is-thaw-v790>header span{
+  color:#4e7f92;
+  background:rgba(244,251,254,.80);
+  border-color:rgba(92,164,193,.18);
+}
+.food-freezer-section-v784.is-thaw-v790 .food-thaw-entry-v739.food-stock-thaw-v793{
+  box-sizing:border-box;
+  width:100%;
+  margin:0;
+  grid-template-columns:minmax(0,1fr)!important;
+  padding:9px 42px 9px 10px!important;
+  border-radius:11px;
+}
+.food-freezer-section-v784.is-thaw-v790 .food-stock-thaw-v793 .food-thaw-copy-v739{
+  min-width:0;
+}
+.food-freezer-section-v784.is-thaw-v790 .food-stock-thaw-v793 .food-thaw-copy-v739 b,
+.food-freezer-section-v784.is-thaw-v790 .food-stock-thaw-v793 .food-thaw-copy-v739 span{
+  overflow-wrap:anywhere;
+}
+.food-freezer-section-v784.is-thaw-v790 .food-stock-thaw-v793
+.food-thaw-thermometer-button-v740{
+  display:block;
+  position:absolute;
+  right:7px;
+  bottom:6px;
+  min-width:30px;
+  min-height:34px;
+  padding:0;
+  background:transparent;
+  border:0;
+  box-shadow:none;
+}
