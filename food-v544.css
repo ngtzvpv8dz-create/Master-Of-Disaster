@@ -2258,7 +2258,24 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 }
 
 
-/* V769: Kompakter, leuchtend gelber Kreatin-Hinweis; keine Rezeptzutat. */
-.food-creatine-reminder-v768{position:relative;z-index:1;display:flex;flex-direction:column;gap:2px;margin:0 10px 7px;padding:6px 9px;border:1px solid #d7ad00;border-radius:9px;background:#ffe500;color:#25210a;font-size:10px;line-height:1.3}
-.food-creatine-reminder-v768 strong{font-weight:800;font-size:10px;line-height:1.25}
+/* V770: Kompakter Kreatin-Hinweis im pastelligen Food-Frost-Stil mit lebhaft gelbem Verlauf. */
+.food-creatine-reminder-v768{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  margin:0 10px 7px;
+  padding:6px 9px;
+  border:1px solid rgba(225,181,49,.56);
+  border-radius:10px;
+  background:
+    radial-gradient(circle at 88% 10%,rgba(255,255,255,.79),transparent 43%),
+    linear-gradient(135deg,#fffce1 0%,#fff2a2 45%,#ffdf65 100%);
+  box-shadow:0 3px 9px rgba(151,119,24,.09),inset 0 1px 0 rgba(255,255,255,.7);
+  color:#473715;
+  font-size:10px;
+  line-height:1.3;
+}
+.food-creatine-reminder-v768 strong{font-weight:800;font-size:10px;line-height:1.25;color:#4a360a}
 .food-creatine-reminder-v768 span{font-weight:500}
