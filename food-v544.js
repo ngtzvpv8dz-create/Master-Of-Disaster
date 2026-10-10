@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V786';
+  const VERSION='V787';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1759,13 +1759,15 @@
     if(task&&['frozen','thawing','thawed'].includes(task.status)&&task.status!=='frozen')return '';
     const name=freezerLotLabel(lot);
     const when=task?.frozen_at
-      ?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(task.frozen_at))
-      :String(lot.purchased_on||'').slice(0,10);
+      ?'eingefroren '+new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(task.frozen_at))
+      :(lot.purchased_on?'gekauft '+fmtDate(String(lot.purchased_on).slice(0,10)):'Datum nicht erfasst');
     const action='<button type="button" data-food-freezer-split="'+esc(lot.id)+'">Portion auftauen</button>'
       +(task?'<button type="button" class="quiet" data-food-freezer-due="'+esc(task.id)+'">📅 Termin</button>':'');
     return '<article class="food-freezer-line-v784">'
       +'<div><strong>'+esc(name)+' · '+esc(fmtQty(q.quantity,q.unit))+'</strong>'
-      +'<small>❄️ Tiefkühler'+(when?' · '+esc(when):'')+'</small></div>'
+      +'<small>❄️ Tiefkühler · '+esc(when)
+      +(lot.best_before_date?' · ursprüngliches MHD '+esc(fmtDate(lot.best_before_date)):'')
+      +'</small></div>'
       +'<div class="food-freezer-actions-v784">'+action+'</div></article>';
   }
 
@@ -1862,11 +1864,20 @@
         +section('🧊 Bereits eingefroren',frozenLots.length,
           frozenLots.map(freezerLotMarkup).join(''),'Aktuell kein chargengenau erfasster TK-Bestand.');
     }
-    const legacy=frozenLots.filter(lot=>!tasks.some(task=>String(task.frozen_lot_id)===String(lot.id)));
     const hints=sourceIsReal('meals')&&sourceIsReal('lots')?plannedThawTasks():[];
-    const relevantHints=hints.filter(hint=>!(tasks||[]).some(task=>
-      String(task.meal_ingredient_id||'')===String(hint.ingredientId)
-      &&['frozen','thawing','thawed'].includes(task.status)));
+    const ingredientStockIds=new Map((data.meals||[])
+      .flatMap(meal=>meal.ingredients||[])
+      .filter(item=>item.id&&item.inventory_id)
+      .map(item=>[String(item.id),String(item.inventory_id)]));
+    const relevantHints=hints.filter(hint=>ingredientStockIds.has(String(hint.ingredientId))
+      &&!(tasks||[]).some(task=>
+        String(task.meal_ingredient_id||'')===String(hint.ingredientId)
+        &&['frozen','thawing','thawed'].includes(task.status)));
+    const hintedStockIds=new Set(relevantHints.map(hint=>ingredientStockIds.get(String(hint.ingredientId))));
+    // The TK tab lists physical stock. The Auftauen tab avoids repeating that same
+    // physical lot once a dated meal-plan hint already offers an assignment action.
+    const legacy=frozenLots.filter(lot=>!tasks.some(task=>String(task.frozen_lot_id)===String(lot.id))
+      &&!hintedStockIds.has(String(lot.inventory_id)));
     const hintNow=relevantHints.filter(hint=>hint.dueDate<=now||hint.thawStartedAt);
     const hintLater=relevantHints.filter(hint=>hint.dueDate>now&&!hint.thawStartedAt);
     return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length+hintNow.length,
