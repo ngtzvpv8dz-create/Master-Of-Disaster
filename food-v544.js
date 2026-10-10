@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V790';
+  const VERSION='V793';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1742,11 +1742,53 @@
     return brand||stock?.name||lot.package_label||'Vorratsportion';
   }
 
+  // V793: render Vorrat thaw cards with the same markup and CSS as
+  // "Heute > Auftauen · heute dran". One shared visual language and thermometer.
+  function freezerThawCardMarkup({headline,description,extra='',status='frozen',action='',id=''}) {
+    const warming=status==='thawing'||status==='thawed';
+    const actionData=action==='start_thaw'||action==='finish_thaw'
+      ?' data-food-freezer-action="'+esc(action)+'" data-freezer-id="'+esc(id)+'"'
+      :action==='plan-hint'
+        ?' data-food-freezer-plan-hint="'+esc(id)+'"':'';
+    const aria=action==='finish_thaw'?'Aufgetaut bestätigen'
+      :action?'Auftauen starten':status==='thawed'?'Aufgetaut':'Auftauen geplant';
+    return '<div class="food-thaw-entry-v739 '+(warming?'is-thawing-v739':'is-frozen-v739')+' food-stock-thaw-v793">'
+      +'<div class="food-thaw-copy-v739"><b>'+esc(headline)+'</b>'
+      +'<span>'+esc(description)+'</span>'
+      +(extra?'<span>'+esc(extra)+'</span>':'')+'</div>'
+      +'<button type="button" class="food-thaw-thermometer-button-v740 '+(warming?'is-active-v740':'')+'"'
+      +actionData+' title="'+esc(aria)+'" aria-label="'+esc(aria)+'" aria-pressed="'+warming+'"'
+      +(action?'':' disabled')+'>'
+      +'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span></button>'
+      +'</div>';
+  }
+
   function freezerTaskMarkup(portion,action=''){
     const stock=(state?.inventory||[]).find(item=>String(item.id)===String(portion.inventory_id));
     const lot=(state?.lots||[]).find(item=>String(item.id)===String(portion.frozen_lot_id||portion.source_lot_id));
     const label=stock?.name||portion.label||'Lebensmittel';
     const amount=Number(portion.quantity)||0;
+    if(portion.status!=='planned'){
+      const target=(state?.meals||[]).find(meal=>(meal.ingredients||[]).some(ing=>
+        String(ing.id||'')===String(portion.meal_ingredient_id||'')&&portion.meal_ingredient_id));
+      const time=portion.thaw_started_at
+        ?new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(portion.thaw_started_at))
+        :null;
+      const targetText=target?' · für '+(MEAL_LABELS[target.meal_type]||target.meal_type||'Mahlzeit')+' „'+target.title+'“':'';
+      const heading=portion.status==='thawing'
+        ?'Auftauen läuft'+(time?' · seit '+time+' Uhr':'')
+        :portion.status==='thawed'?'Aufgetaut'
+        :'Auftauen am '+(portion.needed_on?fmtDate(portion.needed_on):'geplanten Tag');
+      const description=fmtQty(amount,portion.unit)+' '+label+targetText;
+      const frozenOn=portion.frozen_at
+        ?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(portion.frozen_at))
+        :lot?.batch_data?.frozen_on?fmtDate(String(lot.batch_data.frozen_on)):null;
+      const extra=portion.status==='thawed'&&portion.thawed_at
+        ?'Aufgetaut am '+new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(portion.thawed_at))
+        :frozenOn?'Eingefroren am '+frozenOn:'';
+      return freezerThawCardMarkup({headline:heading,description,extra,status:portion.status,
+        action,id:portion.id});
+    }
     const stamp=timestamp=>new Intl.DateTimeFormat('de-DE',{
       day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'
     }).format(new Date(timestamp));
@@ -1806,18 +1848,20 @@
           &&qty.unit.toLowerCase()===String(task.unit||'').toLowerCase();
       });
     const started=task.thawStartedAt
-      ?'Auftauen läuft seit '+new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(task.thawStartedAt))+' Uhr'
-      :'';
-    const timeInfo=started||'Auftauen am '+fmtDate(task.dueDate);
-    const action=due&&!started&&eligible
-      ?'<button type="button" class="food-freezer-icon-button-v790" data-food-freezer-plan-hint="'+esc(task.ingredientId)+'" title="Auftauen starten" aria-label="Auftauen starten">🌡️</button>'
-      :'';
-    const warning=started?' · Status aus dem Essensplan':
-      !eligible&&due?' · TK-Portion muss geprüft werden':'';
-    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 is-plan-hint-v786">'
-      +'<div class="food-freezer-copy-v790"><strong>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient)+'</strong>'
-      +'<small>'+esc(timeInfo+' · für '+task.targetTitle+warning)+'</small></div>'
-      +(action?'<div class="food-freezer-actions-v784">'+action+'</div>':'')+'</article>';
+      ?new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(task.thawStartedAt))
+      :null;
+    const headline=started?'Auftauen läuft · seit '+started+' Uhr'
+      :due?'Jetzt in den Kühlschrank legen'
+      :'Auftauen am '+fmtDate(task.dueDate);
+    const target=task.targetType?(MEAL_LABELS[task.targetType]||task.targetType)+' ':'';
+    const description=fmtQty(task.quantity,task.unit)+' '+task.ingredient
+      +' · für '+target+'„'+task.targetTitle+'“';
+    const extra=started?'Im Essensplan als begonnen erfasst'
+      :due&&!eligible?'Keine passende einzelne TK-Portion festgestellt':'';
+    return freezerThawCardMarkup({headline,description,extra,
+      status:started?'thawing':'frozen',
+      action:due&&!started&&eligible?'plan-hint':'',
+      id:task.ingredientId});
   }
 
   function freezerPlanHintModal(ingredientId){
