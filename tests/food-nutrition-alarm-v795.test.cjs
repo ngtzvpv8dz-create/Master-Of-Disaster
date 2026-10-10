@@ -50,6 +50,15 @@ assert.match(html,/data-food-nutrition-goto="meal-1"/);
 // Updating nutrition MUST clear the warning on the next refresh.
 data.products=[oldProduct,{...newProduct,nutrition_per_100:{energy_kcal:46,protein_g:1.6}}];
 assert.equal(context.audit(ingredient,data),null,'Known complete product must stop alarming');
+// Provisional product nutrition still triggers a visible warning, without
+// treating an estimated energy total as a missing numeric value.
+data.products=[oldProduct,{...newProduct,nutrition_per_100:{energy_kcal:46,protein_g:1.6},
+  product_data:{nutrition_provisional:true,nutrition_requires_packaging_check:true}}];
+const provisional=context.audit(ingredient,data);
+assert.equal(provisional.provisional,true);
+assert.match(provisional.reason,/vorläufig/);
+assert.match(context.warningMarkup([{id:'meal-1',type:'dinner',title:'Hähnchen-Reis-Wokpfanne',issues:[provisional]}]),/NÄHRWERTE UNBESTÄTIGT/);
+
 
 const missingProtein={...newProduct,nutrition_per_100:{energy_kcal:46}};
 data.products=[oldProduct,missingProtein];
