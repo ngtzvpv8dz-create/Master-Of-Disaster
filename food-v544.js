@@ -3502,6 +3502,24 @@
   }
 
   function wire(root){
+    root.querySelectorAll('[data-food-inventory-mode]').forEach(button=>button.addEventListener('click',()=>{
+      inventoryLocationTab=String(button.dataset.foodInventoryMode||'alle');
+      renderState();
+    }));
+    root.querySelector('[data-food-freezer-add]')?.addEventListener('click',freezerPlanModal);
+    root.querySelectorAll('[data-food-freezer-due]').forEach(button=>button.addEventListener('click',()=>freezerDueModal(button.dataset.foodFreezerDue)));
+    root.querySelectorAll('[data-food-freezer-track]').forEach(button=>button.addEventListener('click',async()=>{
+      button.disabled=true;
+      try{await freezerTrackLot(button.dataset.foodFreezerTrack);}
+      catch(error){alert(error?.message||'Die TK-Charge konnte nicht übernommen werden.');button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-freezer-action]').forEach(button=>button.addEventListener('click',async()=>{
+      const action=String(button.dataset.foodFreezerAction||'');
+      const id=String(button.dataset.freezerId||'');
+      button.disabled=true;
+      try{await freezerTransition(id,action);}
+      catch(error){alert(error?.message||'Die Aktion konnte nicht gespeichert werden.');button.disabled=false;}
+    }));
     root.querySelector('[data-food-inventory-search]')?.addEventListener('input',event=>{
       inventorySearch=String(event.currentTarget.value||'');
       renderState();
