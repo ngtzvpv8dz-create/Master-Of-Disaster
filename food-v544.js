@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V784';
+  const VERSION='V785';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1768,8 +1768,8 @@
     const when=task?.frozen_at
       ?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(task.frozen_at))
       :String(lot.purchased_on||'').slice(0,10);
-    const action=task?'<button type="button" data-food-freezer-due="'+esc(task.id)+'">📅 Auftau-Termin</button>'
-      :'<button type="button" data-food-freezer-track="'+esc(lot.id)+'">Auftauen verwalten</button>';
+    const action='<button type="button" data-food-freezer-split="'+esc(lot.id)+'">Portion auftauen</button>'
+      +(task?'<button type="button" class="quiet" data-food-freezer-due="'+esc(task.id)+'">📅 Termin</button>':'');
     return '<article class="food-freezer-line-v784">'
       +'<div><strong>'+esc(name)+' · '+esc(fmtQty(q.quantity,q.unit))+'</strong>'
       +'<small>❄️ Tiefkühler'+(when?' · '+esc(when):'')+'</small></div>'
@@ -1835,6 +1835,31 @@
         await render();
       });
     return modal;
+  }
+
+
+  function freezerPrepareModal(lotId){
+    if(!sourceIsReal('freezer')||!sourceIsReal('lots'))return alert('Bitte zuerst den Cloud-Vorrat synchronisieren.');
+    const lot=(state?.lots||[]).find(row=>String(row.id)===String(lotId));
+    const info=freezerLotQuantity(lot);
+    if(!lot||!info||!frozenStorageLocation(lot.storage_location))return alert('Diese TK-Portion ist nicht mehr verfügbar.');
+    const source=freezerLotLabel(lot);
+    return addModal('❄️ Einzelportion auftauen',
+      '<form><p class="food-modal-copy-v544">'+esc(source)+' · im TK '+esc(fmtQty(info.quantity,info.unit))+'</p>'
+      +'<label>Wie viel möchtest du auftauen? ('+esc(info.unit)+')<input type="number" name="quantity" min="0.01" max="'+esc(info.quantity)+'" step="0.01" inputmode="decimal" value="'+esc(info.quantity)+'" required></label>'
+      +'<label>Auftauen beginnen am (optional)<input type="date" name="needed_on"></label>'
+      +'<p class="food-modal-copy-v544">Die ausgewählte Teilportion bleibt bis zum tatsächlichen Auftau-Start eingefroren. Der übrige TK-Bestand bleibt unverändert.</p>'
+      +'<button type="submit" class="food-action-v544">Portion vormerken</button></form>',
+      async form=>{
+        const amount=Number(form.get('quantity'));
+        if(!Number.isFinite(amount)||amount<=0||amount>info.quantity)throw new Error('Die gewählte Menge ist nicht verfügbar.');
+        const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+        const result=await supabase.rpc('prepare_food_frozen_portion',{
+          p_lot_id:lot.id,p_quantity:amount,p_needed_on:String(form.get('needed_on')||'')||null
+        });
+        if(result.error)throw result.error;
+        loadPromise=null;await render();
+      });
   }
 
   function freezerDueModal(id){
@@ -3508,6 +3533,9 @@
     }));
     root.querySelector('[data-food-freezer-add]')?.addEventListener('click',freezerPlanModal);
     root.querySelectorAll('[data-food-freezer-due]').forEach(button=>button.addEventListener('click',()=>freezerDueModal(button.dataset.foodFreezerDue)));
+    root.querySelectorAll('[data-food-freezer-split]').forEach(button=>button.addEventListener('click',()=>{
+      freezerPrepareModal(button.dataset.foodFreezerSplit);
+    }));
     root.querySelectorAll('[data-food-freezer-track]').forEach(button=>button.addEventListener('click',async()=>{
       button.disabled=true;
       try{await freezerTrackLot(button.dataset.foodFreezerTrack);}
