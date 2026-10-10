@@ -1665,6 +1665,112 @@
     if(done.error)throw done.error;
   }
 
+
+  // V792: after a receipt actually books inventory, convert its freezer hint into
+  // real PLANNED tasks. Neither this code nor an open TK tab freezes anything.
+  // Only precise, booked inventory lots qualify. Previously planned lots are
+  // skipped, so returning to the receipt cannot double the reserve.
+  async function autoPlanFreezerAfterBooking(supabase,review,product){
+    if(!review?.checkout_item_id||!product?.inventory_id)return;
+    const itemResult=await supabase.from('shopping_checkout_items')
+      .select('id,label,inventory_id,quantity,unit,inventory_applied_at')
+      .eq('id',review.checkout_item_id).maybeSingle();
+    if(itemResult.error)throw itemResult.error;
+    const item=itemResult.data;
+    if(!item?.inventory_applied_at||!item.inventory_id)return;
+    const kind=freezerTypeForItem(item,product);
+    if(!kind)return;
+    const [lotsResult,plansResult,mealsResult]=await Promise.all([
+      supabase.from('food_inventory_lots')
+        .select('id,inventory_id,checkout_item_id,source,package_quantity,package_unit,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,storage_location,purchased_on')
+        .eq('checkout_item_id',item.id),
+      supabase.from('food_freezer_portions')
+        .select('id,source_lot_id,meal_ingredient_id,quantity,unit,status')
+        .eq('inventory_id',item.inventory_id),
+      supabase.from('food_meals')
+        .select('id,meal_date,status,sort_order,inventory_booked_at,title,food_meal_ingredients(id,inventory_id,quantity,unit,sort_order)')
+        .gte('meal_date',new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()))
+        .order('meal_date').order('sort_order')
+    ]);
+    for(const response of [lotsResult,plansResult,mealsResult])if(response.error)throw response.error;
+    const existing=plansResult.data||[];
+    const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const addDays=(iso,days)=>{
+      const value=new Date(iso+'T12:00:00Z');
+      value.setUTCDate(value.getUTCDate()+days);
+      return value.toISOString().slice(0,10);
+    };
+    const freshDays={fleisch:1,backwaren:2,obst:6,gemuese:3,sonstige:2}[kind]??2;
+    const sourceUnits={
+      g:{type:'weight',factor:1},kg:{type:'weight',factor:1000},
+      'stück':{type:'count',factor:1},'stk':{type:'count',factor:1},
+      'scheibe':{type:'slices',factor:1},'scheiben':{type:'slices',factor:1}
+    };
+    const unitInfo=value=>sourceUnits[String(value||'').trim().toLocaleLowerCase('de-DE')];
+    const demand=(mealsResult.data||[])
+      .filter(meal=>meal.status==='planned'&&!meal.inventory_booked_at)
+      .flatMap(meal=>(meal.food_meal_ingredients||[])
+        .filter(ing=>String(ing.inventory_id)===String(item.inventory_id)&&Number(ing.quantity)>0)
+        .map(ing=>({ing,meal})))
+      .sort((a,b)=>String(a.meal.meal_date).localeCompare(String(b.meal.meal_date))
+        ||Number(a.meal.sort_order||0)-Number(b.meal.sort_order||0));
+    for(const lot of lotsResult.data||[]){
+      if(lot.source!=='shopping_checkout'
+         ||String(lot.inventory_id)!==String(item.inventory_id)
+         ||/tiefkühl|gefrier|freezer|frozen/i.test(String(lot.storage_location||'')))continue;
+      if(existing.some(p=>String(p.source_lot_id||'')===String(lot.id)))continue;
+      if(Number(lot.unopened_packages)>1||Number(lot.opened_packages)>1)continue;
+      const unopened=Number(lot.unopened_packages)||0;
+      const opened=Number(lot.opened_remaining_quantity)||0;
+      if(unopened&&opened)continue;
+      const unit=opened?lot.opened_remaining_unit:lot.package_unit;
+      const unitType=unitInfo(unit);
+      if(!unitType)continue;
+      let left=unopened*(Number(lot.package_quantity)||0)+opened;
+      if(!(left>0))continue;
+      const purchaseDate=String(lot.purchased_on||today)>today?String(lot.purchased_on):today;
+      const horizon=addDays(purchaseDate,21);
+      const suggestions=[];
+      let freshKept=0;
+      for(const {ing,meal} of demand){
+        if(meal.meal_date<purchaseDate||meal.meal_date>horizon)continue;
+        const ingredientUnit=unitInfo(ing.unit);
+        if(!ingredientUnit||ingredientUnit.type!==unitType.type)continue;
+        const rawNeed=Number(ing.quantity)*ingredientUnit.factor/unitType.factor;
+        const reserved=existing.filter(p=>String(p.meal_ingredient_id||'')===String(ing.id)
+          &&['planned','frozen','thawing','thawed'].includes(p.status))
+          .reduce((sum,p)=>{
+            const reservedUnit=unitInfo(p.unit);
+            return sum+(reservedUnit?.type===unitType.type?Number(p.quantity)*reservedUnit.factor/unitType.factor:0);
+          },0);
+        const needed=Math.max(0,rawNeed-reserved);
+        if(!(needed>0)||needed>left)continue;
+        if(meal.meal_date<=addDays(purchaseDate,freshDays)){
+          freshKept+=needed;
+        }else{
+          suggestions.push({
+            quantity:needed,unit,needed_on:addDays(meal.meal_date,kind==='backwaren'?0:-1),
+            meal_ingredient_id:ing.id,note:'Für '+meal.title+' am '+meal.meal_date
+          });
+        }
+        left-=needed;
+      }
+      // Fruit and vegetables are not automatically designated as freezer reserve
+      // without an actual meal need; meat is more time-critical.
+      if(left>0&&(kind==='fleisch'||suggestions.length||product?.product_data?.freezer_suitable===true))
+        suggestions.push({quantity:left,unit,needed_on:null,meal_ingredient_id:null,
+          note:'Reserve · '+freshKept+' '+unit+' für kurzfristige Mahlzeiten frisch lassen'});
+      for(const proposed of suggestions){
+        const booked=await supabase.rpc('plan_food_freezer_portion',{
+          p_source_lot_id:lot.id,p_quantity:proposed.quantity,p_unit:proposed.unit,
+          p_needed_on:proposed.needed_on,p_note:proposed.note,
+          p_meal_ingredient_id:proposed.meal_ingredient_id
+        });
+        if(booked.error)throw booked.error;
+      }
+    }
+  }
+
   async function confirmReview(reviewId,productId){
     const review=(state.reviews||[]).find(item=>String(item.id)===String(reviewId));
     const product=(state.products||[]).find(item=>String(item.id)===String(productId));
@@ -1679,6 +1785,13 @@
       p_product_id:productId
     });
     if(result.error)throw result.error;
+    try{
+      await autoPlanFreezerAfterBooking(supabase,review,product);
+    }catch(error){
+      console.warn('Einfrieraufgaben nach Bestandsbuchung noch nicht vollständig vorgemerkt:',error);
+      // Receipt booking was successful regardless. Never imply a failed freezer
+      // planning step reverses the actual purchase, and never freeze silently.
+    }
     await reload();
     return result.data;
   }
