@@ -1245,37 +1245,30 @@
     return '<section class="food-thaw-today-v736 food-thaw-panel-v739"><strong>Auftauen · heute dran</strong>'+rows+'</section>';
   }
 
+
   async function startThawing(ingredientId){
     if(!sourceIsReal('meals'))throw new Error('Die Mahlzeitdaten sind gerade nicht sicher mit der Cloud synchronisiert.');
     const id=String(ingredientId||'');
     if(!id)throw new Error('Auftau-Zutat nicht gefunden.');
-
     let localItem=null;
     for(const meal of state?.meals||[]){
       const found=(meal.ingredients||[]).find(item=>String(item.id||'')===id);
       if(found){localItem=found;break;}
     }
     if(!localItem)throw new Error('Auftau-Zutat nicht gefunden.');
-    if(localItem.thaw_started_at)return localItem.thaw_started_at;
-
-    const startedAt=new Date().toISOString();
     const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    // One atomic server action also starts all concrete linked freezer portions.
+    // Legacy ingredients without a portion retain their previous date-only behavior.
     const result=await withTimeout(
-      supabase.from('food_meal_ingredients')
-        .update({thaw_started_at:startedAt})
-        .eq('id',id)
-        .select('id,thaw_started_at')
-        .single(),
-      'Auftaustatus speichern',
-      8000
+      supabase.rpc('start_food_ingredient_freezer_thaw',{p_meal_ingredient_id:id}),
+      'Auftauen und Vorrat synchronisieren',12000
     );
     if(result?.error)throw result.error;
-
-    localItem.thaw_started_at=result.data?.thaw_started_at||startedAt;
+    localItem.thaw_started_at=result.data?.thaw_started_at||new Date().toISOString();
     plannedThawCacheState=null;
     plannedThawCache=null;
-    sourceState.meals='cloud';
-    renderState();
+    loadPromise=null;
+    await render();
     return localItem.thaw_started_at;
   }
 
@@ -1805,6 +1798,7 @@
         'Noch keine späteren Auftauportionen geplant.');
   }
 
+
   function freezerPlanModal(){
     if(!sourceIsReal('lots')||!sourceIsReal('freezer')||!sourceIsReal('inventory'))
       return alert('Bitte zuerst den echten Cloud-Vorrat laden.');
@@ -1814,29 +1808,76 @@
       const q=freezerLotQuantity(lot);
       return '<option value="'+esc(lot.id)+'">'+esc(freezerLotLabel(lot))+' · '+esc(fmtQty(q.quantity,q.unit))+'</option>';
     }).join('');
+    const mealTargets=sourceIsReal('meals')?(state.meals||[])
+      .filter(meal=>normalizedStatus(meal.status)==='planned'&&String(meal.meal_date)>=todayIso())
+      .flatMap(meal=>(meal.ingredients||[]).filter(ing=>ing.inventory_id&&Number(ing.quantity)>0)
+        .map(ing=>({
+          id:String(ing.id),inventoryId:String(ing.inventory_id),
+          date:String(meal.meal_date),title:String(meal.title||'Mahlzeit'),
+          quantity:Number(ing.quantity),unit:String(ing.unit||'')
+        }))):[];
+    const mealOptions='<option value="">Noch keiner Mahlzeit zuordnen</option>'
+      +mealTargets.map(use=>'<option data-meal-inventory="'+esc(use.inventoryId)+'" value="'+esc(use.id)+'">'
+        +esc(fmtDate(use.date))+' · '+esc(use.title)+' · '+esc(fmtQty(use.quantity,use.unit))
+        +'</option>').join('');
     const modal=addModal('❄️ Portion zum Einfrieren vormerken',
       '<form><p class="food-modal-copy-v544">Hier nur planen. Der Bestand ändert sich erst beim Klick auf „Eingefroren“ im TK-Tab.</p>'
       +'<label>Vorratscharge<select name="lot">'+options+'</select></label>'
       +'<label>Menge<input name="quantity" type="number" min="0.01" step="0.01" required inputmode="decimal"></label>'
-      +'<label>Zum Auftauen vorsehen (optional)<input name="needed_on" type="date"></label>'
+      +'<label>Geplante Verwendung<select name="meal_ingredient_id">'+mealOptions+'</select></label>'
+      +'<label>Auftauen beginnen am (optional)<input name="needed_on" type="date"></label>'
+      +'<p class="food-modal-copy-v544">Als Termin wird bei Fleisch und Fisch zunächst der Vortag vorgeschlagen; bei Brot der Verwendungstag. Größere Stücke benötigen gegebenenfalls früheres Auftauen im Kühlschrank.</p>'
       +'<button class="food-action-v544" type="submit">Portion vormerken</button></form>',
       async form=>{
         const lot=lots.find(row=>String(row.id)===String(form.get('lot')));
         const q=freezerLotQuantity(lot);
         const amount=Number(form.get('quantity'));
-        if(!q||!Number.isFinite(amount)||amount<=0||amount>q.quantity)throw new Error('Die Menge passt nicht zur ausgewählten Charge.');
-        const supabase=client();
+        if(!q||!Number.isFinite(amount)||amount<=0||amount>q.quantity)
+          throw new Error('Die Menge passt nicht zur ausgewählten Charge.');
+        const mealId=String(form.get('meal_ingredient_id')||'');
+        if(mealId&&(!sourceIsReal('meals')||!mealTargets.some(t=>t.id===mealId&&t.inventoryId===String(lot.inventory_id))))
+          throw new Error('Diese Mahlzeit passt nicht zur Vorratscharge.');
+        const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
         const result=await supabase.rpc('plan_food_freezer_portion',{
           p_source_lot_id:lot.id,p_quantity:amount,p_unit:q.unit,
-          p_needed_on:String(form.get('needed_on')||'')||null,p_note:null,p_meal_ingredient_id:null
+          p_needed_on:String(form.get('needed_on')||'')||null,
+          p_note:null,p_meal_ingredient_id:mealId||null
         });
         if(result.error)throw result.error;
-        loadPromise=null;
-        await render();
+        loadPromise=null;await render();
       });
+    const lotField=modal?.querySelector('[name="lot"]');
+    const mealField=modal?.querySelector('[name="meal_ingredient_id"]');
+    const dateField=modal?.querySelector('[name="needed_on"]');
+    const quantityField=modal?.querySelector('[name="quantity"]');
+    const refreshTargets=()=>{
+      const chosen=lots.find(lot=>String(lot.id)===String(lotField?.value));
+      [...(mealField?.options||[])].forEach((option,index)=>{
+        if(index===0)return;
+        option.disabled=String(option.dataset.mealInventory||'')!==String(chosen?.inventory_id||'');
+      });
+      if(mealField)mealField.value='';
+    };
+    lotField?.addEventListener('change',refreshTargets);
+    mealField?.addEventListener('change',()=>{
+      const use=mealTargets.find(t=>t.id===String(mealField.value));
+      const lot=lots.find(l=>String(l.id)===String(lotField?.value));
+      if(!use||!lot)return;
+      const kind=String(freezerLotLabel(lot)).toLocaleLowerCase('de-DE');
+      const early=/(hähnchen|hack|fleisch|pute|rind|schwein|lachs|fisch)/.test(kind);
+      if(dateField)dateField.value=plusDays(use.date,early?-1:0);
+      const q=freezerLotQuantity(lot);
+      if(!q||!quantityField)return;
+      const unitA=String(use.unit).trim().toLowerCase(),unitB=String(q.unit).trim().toLowerCase();
+      let inferred=null;
+      if(unitA===unitB)inferred=use.quantity;
+      else if(unitA==='kg'&&unitB==='g')inferred=use.quantity*1000;
+      else if(unitA==='g'&&unitB==='kg')inferred=use.quantity/1000;
+      if(inferred>0&&inferred<=q.quantity)quantityField.value=String(inferred);
+    });
+    refreshTargets();
     return modal;
   }
-
 
   function freezerPrepareModal(lotId){
     if(!sourceIsReal('freezer')||!sourceIsReal('lots'))return alert('Bitte zuerst den Cloud-Vorrat synchronisieren.');
