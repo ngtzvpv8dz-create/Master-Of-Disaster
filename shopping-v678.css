@@ -738,3 +738,36 @@
   .shopping-purchase-grid-v756 label:first-child{grid-column:1/-1}
   .shopping-purchase-actions-v756{grid-template-columns:1fr}
 }
+
+/* V781: distinct product variants and searchable product picker */
+.shopping-product-filter-v781{
+  display:grid;
+  gap:7px;
+  margin:10px 0 12px;
+  color:#c6d5de;
+  font-size:.64rem;
+  font-weight:750;
+}
+.shopping-product-filter-v781 input{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  min-height:43px;
+  padding:10px 13px;
+  border:1px solid rgba(143,178,201,.34);
+  border-radius:11px;
+  background:rgba(25,50,65,.65);
+  color:#e8f1f6;
+  font:inherit;
+  font-size:.75rem;
+}
+.shopping-product-filter-v781 input::placeholder{
+  color:#a0b1bc;
+}
+.shopping-product-filter-v781 input:focus-visible{
+  outline:2px solid rgba(138,186,196,.7);
+  outline-offset:2px;
+}
+.shopping-product-options-v644 [data-product-choice][hidden]{
+  display:none!important;
+}
