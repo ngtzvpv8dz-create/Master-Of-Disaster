@@ -1742,6 +1742,7 @@
     const date=portion.needed_on?fmtDate(portion.needed_on):'Noch kein Auftautermin';
     const stamp=portion.frozen_at?' · eingefroren '+new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(portion.frozen_at)):'';
     const button=action==='freeze'?'<button type="button" data-food-freezer-action="freeze" data-freezer-id="'+esc(portion.id)+'">✓ Eingefroren</button>'
+      +'<button type="button" class="quiet" data-food-freezer-action="cancel" data-freezer-id="'+esc(portion.id)+'">Verwerfen</button>'
       :action==='start_thaw'?'<button type="button" data-food-freezer-action="start_thaw" data-freezer-id="'+esc(portion.id)+'">Auftauen starten</button>'
       :action==='finish_thaw'?'<button type="button" data-food-freezer-action="finish_thaw" data-freezer-id="'+esc(portion.id)+'">✓ Aufgetaut</button>':'';
     const changeDate=portion.status==='frozen'||portion.status==='planned'
@@ -2145,7 +2146,9 @@
     const contentBody=special?freezerBoardMarkup(data,inventoryLocationTab)
       :tools+(content||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>'+esc(emptyCopy)+'</h4></div></div>');
     const actions=special
-      ?'<button type="button" class="food-action-v544 compact" data-food-freezer-add>+ Portion planen</button>'
+      ?(inventoryLocationTab==='tk'
+        ?'<button type="button" class="food-action-v544 compact" data-food-freezer-add>+ Einfrieren planen</button>'
+        :'')
       :'<button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button>';
     return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div>'+actions+'</div>'
       +filterBar+contentBody;
