@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V778';
+  const VERSION='V779';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -190,21 +190,73 @@
     };
   }
 
+  // Nährwerte richten sich nach geplanten Gramm/Millilitern, nicht nach
+  // momentan verfügbarem Vorrat. Der FIFO-Vorrat bestimmt nur, welches
+  // konkrete Produkt bei generischen Familien zuerst verwendet werden soll.
   function genericFamilyNutrition(item,data,allocationOverride=null){
-    const allocation=allocationOverride||genericFamilyAllocation(item,data);
-    if(!allocation)return null;
-    if(!allocation.complete)return {complete:false,missing:allocation.missing||[itemName(item)]};
+    const name=itemName(item);
+    const unit=text(item?.unit);
+    if(!['g','kg','ml','l'].includes(unit))return null;
+    const pinned=item?.inventory_id
+      ?(data?.inventory||[]).find(row=>String(row.id)===String(item.inventory_id))
+      :null;
+    if(item?.inventory_id&&(!pinned||!pinned.family_name||text(name)!==text(pinned.family_name)))return null;
 
-    let kcal=0;
-    let protein=0;
-    for(const part of allocation.allocations||[]){
-      const stock=part.stock||(data?.inventory||[]).find(row=>String(row.id)===String(part.inventoryId||''));
+    const familyStocks=(data?.inventory||[])
+      .filter(row=>row?.is_active!==false)
+      .filter(row=>familyMatch(name,row.family_name)==='generic')
+      .filter(row=>stockAmountInBaseUnit({...row,quantity:1},unit)!==null)
+      .sort((a,b)=>{
+        const firstLot=id=>(data?.lots||[])
+          .filter(lot=>String(lot.inventory_id||'')===String(id))
+          .map(lot=>String(lot.purchased_on||'')).filter(Boolean).sort()[0]||'9999-12-31';
+        return firstLot(a.id).localeCompare(firstLot(b.id))||
+          Number(a.sort_order||0)-Number(b.sort_order||0)||
+          String(a.id).localeCompare(String(b.id));
+      });
+    if(!familyStocks.length)return null;
+
+    const requested=number(item?.quantity);
+    if(requested===null||requested<0)return {complete:false,missing:[name+' (Menge)']};
+    if(requested===0)return {complete:true,kcal:0,protein:0,missing:[]};
+
+    // Die tatsächlich belegten FIFO-Teilmengen für unterschiedliche Produkte
+    // berücksichtigen. Für eine noch fehlende Menge das zuletzt ausgewählte
+    // Familienprodukt fortschreiben, nicht kcal=0 oder "Vorrat reicht nicht".
+    const allocation=allocationOverride||genericFamilyAllocation(item,data);
+    const parts=(allocation?.allocations||[]).filter(part=>number(part.take)>0);
+    let kcal=0,protein=0,used=0,lastProduct=null;
+    for(const part of parts){
+      const stock=part.stock||familyStocks.find(row=>String(row.id)===String(part.inventoryId||''));
       const product=productForStock(stock,data);
-      if(!product)return {complete:false,missing:[stock?.name||itemName(item)]};
-      const nutrition=nutritionOf(product);
-      if(nutrition.kcal===null||nutrition.protein===null)return {complete:false,missing:[part.stock?.name||itemName(item)]};
-      kcal+=nutrition.kcal*part.take/100;
-      protein+=nutrition.protein*part.take/100;
+      if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
+      const nut=nutritionOf(product);
+      if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
+      const amount=basisAmount({quantity:part.take,unit:item.unit},{product,stock});
+      if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
+      kcal+=nut.kcal*amount/100;
+      protein+=nut.protein*amount/100;
+      used+=Number(part.take);
+      lastProduct=product;
+    }
+    const remaining=Math.max(0,requested-used);
+    if(remaining>0.0001){
+      // Ohne vorhandene Portion anhand der bekannten Familienprodukte eine
+      // stabile Produktannahme wählen. Einkaufslücken bleiben getrennt sichtbar.
+      let product=lastProduct;
+      if(!product){
+        for(const row of familyStocks){
+          product=productForStock(row,data);
+          if(product)break;
+        }
+      }
+      if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
+      const nut=nutritionOf(product);
+      if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
+      const amount=basisAmount({quantity:remaining,unit:item.unit},{product,stock:pinned});
+      if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
+      kcal+=nut.kcal*amount/100;
+      protein+=nut.protein*amount/100;
     }
     return {complete:true,kcal,protein,missing:[]};
   }
@@ -525,20 +577,20 @@
   }
 
   function ensureDailyTotalStyle(){
-    if(document.getElementById('food-day-summary-style-v778'))return;
+    if(document.getElementById('food-day-summary-style-v779'))return;
     const style=document.createElement('style');
-    style.id='food-day-summary-style-v778';
+    style.id='food-day-summary-style-v779';
     style.textContent=
-      '.food-day-summary-v778{box-sizing:border-box;max-width:100%;min-width:0;display:flex;align-items:center;gap:6px;margin:1px 0 10px;padding:8px 10px;border:1px solid rgba(66,147,190,.22);border-radius:10px;background:rgba(220,241,250,.48);color:#35586d;line-height:1.25;white-space:nowrap;overflow:hidden;font-size:11px}'+
-      '.food-day-summary-title-v778{flex:none;color:#557b95;font-size:10px;font-weight:700;letter-spacing:0}'+
-      '.food-day-summary-value-v778{min-width:0;flex:none;font-size:11px;font-weight:780;color:#236a8d;font-variant-numeric:tabular-nums}'+
-      '.food-day-summary-separator-v778{flex:none;color:#88b6c9;font-weight:500}'+
-      '.food-day-summary-note-v778{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:680;color:#9b3759}'+
+      '.food-day-summary-v778{box-sizing:border-box;max-width:100%;min-width:0;display:flex;align-items:center;gap:6px;margin:1px 0 10px;padding:8px 10px;border:1px solid rgba(145,117,177,.26);border-radius:10px;background:linear-gradient(105deg,rgba(241,227,249,.92),rgba(226,246,231,.90));color:#514763;line-height:1.25;white-space:nowrap;overflow:hidden;font-size:11px}'+
+      '.food-day-summary-title-v778{flex:none;color:#685578;font-size:10px;font-weight:720;letter-spacing:0}'+
+      '.food-day-summary-value-v778{min-width:0;flex:none;font-size:11px;font-weight:790;color:#60427f;font-variant-numeric:tabular-nums}'+
+      '.food-day-summary-value-v778[data-food-day-protein]{color:#287453}'+
+      '.food-day-summary-separator-v778{flex:none;color:#887b94;font-weight:500}'+
+      '.food-day-summary-note-v778{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:680;color:#874d7b}'+
       '.food-day-summary-note-v778:empty{display:none}'+
-      '.food-day-summary-v778.is-incomplete-v778{border-color:rgba(125,165,190,.3);background:rgba(222,240,249,.55)}'+
-      '.food-day-summary-v778.is-incomplete-v778 .food-day-summary-value-v778{color:#236a8d}'+
-      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778{display:block;margin-top:4px;color:#337394;font-size:10px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}'+
-      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778.is-incomplete-v778{color:#8b4262}'+
+      '.food-day-summary-v778.is-incomplete-v778{border-color:rgba(145,117,177,.31);background:linear-gradient(105deg,rgba(241,227,249,.94),rgba(226,246,231,.91))}'+
+      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778{display:block;margin-top:4px;color:#67517f;font-size:10px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}'+
+      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778.is-incomplete-v778{color:#874d7b}'+
       '@media(max-width:390px){.food-day-summary-v778{gap:4px;padding:7px 8px;font-size:10px}.food-day-summary-title-v778{font-size:9px}.food-day-summary-value-v778{font-size:10px}.food-day-summary-note-v778{font-size:9px}}';
     document.head.appendChild(style);
   }
