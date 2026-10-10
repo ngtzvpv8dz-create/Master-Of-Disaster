@@ -378,8 +378,13 @@
         product=chooseProduct(currentProducts);
       }
     }else{
+      // Ein explizit eingeplantes Produkt darf auch nach Ausverkauf/Archivierung
+      // des Vorratselements anhand seiner gespeicherten Produkt-ID berechenbar sein.
+      if(item?.inventory_id){
+        product=chooseProduct(products.filter(row=>String(row.inventory_id||'')===String(item.inventory_id)));
+      }
       const familyRows=inventory.filter(row=>familyMatch(name,row.family_name));
-      if(familyRows.length){
+      if(!product&&familyRows.length){
         const requested=familyMatch(name,familyRows[0].family_name);
         let related=familyRows;
         if(requested==='fresh')related=related.filter(row=>rowMode(row)!=='frozen');
