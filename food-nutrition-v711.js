@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V780';
+  const VERSION='V795';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -469,6 +469,128 @@
     return {complete:true,kcal:kcal/div,protein:protein/div,missing:[]};
   }
 
+
+  // Nährwert-Qualitätsprüfung zusätzlich zur Kalorienrechnung. Es reicht
+  // nicht, wenn eine alte Packung des gleichen Vorrats Werte hatte: jede
+  // aktive, aktuell verwendbare Packung muss eigene Nährwerte besitzen.
+  function nutritionProblem(item,data,allocationOverride=null){
+    if(!item||ZERO_NAMES.has(text(itemName(item))))return null;
+    const name=itemName(item);
+    const qty=number(item.quantity);
+    const entry={id:String(item.id||''),name,reason:''};
+    if(qty===null||qty<0)return {...entry,reason:'Die Zutatenmenge ist ungültig oder fehlt.'};
+    if(qty===0)return null;
+    const inventory=data.inventory||[];
+    const products=data.products||[];
+    const lots=data.lots||[];
+    let stocks=[];
+    if(item.inventory_id){
+      const stock=inventory.find(row=>String(row.id)===String(item.inventory_id));
+      if(stock)stocks=[stock];
+    }else{
+      const allocation=allocationOverride||genericFamilyAllocation(item,data);
+      if(allocation?.allocations?.length){
+        stocks=allocation.allocations.map(part=>part.stock||inventory.find(row=>String(row.id)===String(part.inventoryId||''))).filter(Boolean);
+      }else{
+        stocks=inventory.filter(row=>key(row.name)===key(name));
+      }
+    }
+    const seen=new Set();
+    for(const stock of stocks){
+      if(seen.has(String(stock.id)))continue;
+      seen.add(String(stock.id));
+      const liveLots=lots.filter(lot=>String(lot.inventory_id||'')===String(stock.id))
+        .filter(lot=>number(lot.unopened_packages)>0||number(lot.opened_remaining_quantity)>0);
+      for(const lot of liveLots){
+        if(!lot.product_id)continue;
+        const product=products.find(row=>String(row.id)===String(lot.product_id));
+        if(!product)return {...entry,reason:'Die aktuelle Vorratscharge hat keinen gültigen Produktstamm-Eintrag.'};
+        const n=nutritionOf(product);
+        const absent=[n.kcal===null?'Kalorien':null,n.protein===null?'Protein':null].filter(Boolean);
+        if(absent.length){
+          const productLabel=[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ');
+          return {...entry,reason:'Bei '+(productLabel||stock.name)+' fehlen '+absent.join(' und ')+' je 100 g/ml.'};
+        }
+      }
+    }
+    const generic=genericFamilyNutrition(item,data,allocationOverride);
+    if(generic?.complete)return null;
+    if(generic&&!generic.complete){
+      return {...entry,reason:'Für diese Zutatenfamilie sind die Nährwerte nicht vollständig zugeordnet.'};
+    }
+    const source=sourceFor(item,data);
+    if(!source)return {...entry,reason:'Kein passender Nährwert-Datensatz im Produktstamm gefunden.'};
+    if(source.nutrition.kcal===null||source.nutrition.protein===null){
+      const absent=[source.nutrition.kcal===null?'Kalorien':null,source.nutrition.protein===null?'Protein':null].filter(Boolean);
+      return {...entry,reason:absent.join(' und ')+' je 100 g/ml fehlen im Produktstamm.'};
+    }
+    if(basisAmount(item,source)===null){
+      return {...entry,reason:'Für die Einheit '+String(item.unit||'')+' fehlt ein verlässliches Stückgewicht bzw. eine Umrechnung.'};
+    }
+    return null;
+  }
+
+  const alarmEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function mealTypeForAlarm(type){
+    return ({breakfast:'Frühstück',lunch:'Mittagessen',snack:'Snack',dinner:'Abendessen'})[type]||String(type||'Mahlzeit');
+  }
+  function mealNutritionWarningMarkup(warnings){
+    const count=warnings.reduce((sum,meal)=>sum+meal.issues.length,0);
+    return '<section class="food-nutrition-alarm-inner-v795" role="alert" aria-label="Fehlende Nährwerte">'
+      +'<div class="food-nutrition-alarm-head-v795"><span class="food-nutrition-alarm-flame-v795" aria-hidden="true">🔥</span>'
+      +'<div><strong>WICHTIG: NÄHRWERTE FEHLEN</strong><small>Bitte Produktdaten prüfen und ergänzen. Der Tageswert ist unvollständig.</small></div>'
+      +'<span class="food-nutrition-alarm-count-v795">'+count+'</span></div>'
+      +'<div class="food-nutrition-alarm-list-v795">'
+      +warnings.map(meal=>'<button type="button" class="food-nutrition-alarm-link-v795" data-food-nutrition-goto="'+alarmEscape(meal.id)+'">'
+        +'<span class="food-nutrition-alarm-meal-v795">'+alarmEscape(mealTypeForAlarm(meal.type))+' · '+alarmEscape(meal.title)+'</span>'
+        +'<span class="food-nutrition-alarm-issue-v795">'+meal.issues.map(issue=>'⚠ '+alarmEscape(issue.name)+': '+alarmEscape(issue.reason)).join('<span class="food-nutrition-alarm-break-v795"></span>')+'</span>'
+        +'<span class="food-nutrition-alarm-arrow-v795" aria-hidden="true">↗</span>'
+        +'</button>').join('')
+      +'</div></section>';
+  }
+  function patchNutritionAlarm(root,warnings){
+    const panel=root.querySelector('[data-food-nutrition-alarm]');
+    if(!panel)return;
+    if(!warnings.length){panel.hidden=true;if(panel.innerHTML)panel.innerHTML='';return;}
+    const html=mealNutritionWarningMarkup(warnings);
+    if(panel.innerHTML!==html)panel.innerHTML=html;
+    panel.hidden=false;
+  }
+  function patchMealNutritionProblems(card,issues){
+    const ids=new Set(issues.map(issue=>issue.id).filter(Boolean));
+    const names=new Set(issues.map(issue=>key(issue.name)));
+    card.querySelectorAll('[data-food-ingredient-id]').forEach(li=>{
+      const selected=ids.has(String(li.dataset.foodIngredientId||''));
+      li.classList.toggle('food-nutrition-ingredient-bad-v795',selected);
+      const existing=li.querySelector('[data-food-nutrition-ingredient-hint]');
+      const issue=selected?issues.find(row=>row.id===li.dataset.foodIngredientId):null;
+      const reason=issue?.reason||'';
+      if(issue){
+        if(!existing){
+          const hint=document.createElement('small');
+          hint.className='food-nutrition-ingredient-hint-v795';
+          hint.setAttribute('data-food-nutrition-ingredient-hint','');
+          hint.textContent='⚠ '+reason;
+          li.appendChild(hint);
+        }else if(existing.textContent!=='⚠ '+reason)existing.textContent='⚠ '+reason;
+      }else if(existing)existing.remove();
+    });
+    // Bei zugeklappten Mahlzeiten ist die fehlerhafte Zutat trotzdem sichtbar.
+    let note=card.querySelector('[data-food-nutrition-card-warning]');
+    if(!issues.length){card.classList.remove('food-nutrition-meal-bad-v795');if(note)note.remove();return;}
+    card.classList.add('food-nutrition-meal-bad-v795');
+    const summary='⚠ Nährwerte prüfen: '+[...names].map(name=>issues.find(issue=>key(issue.name)===name)?.name||name).join(', ');
+    if(!note){
+      note=document.createElement('div');
+      note.className='food-nutrition-card-warning-v795';
+      note.setAttribute('data-food-nutrition-card-warning','');
+      const toggle=card.querySelector('[data-food-meal-toggle]');
+      if(toggle)toggle.insertAdjacentElement('afterend',note);
+      else card.prepend(note);
+    }
+    if(note.textContent!==summary)note.textContent=summary;
+  }
+
   const zeroNutrition=()=>({complete:true,kcal:0,protein:0,missing:[]});
   const combine=(a,b)=>a?.complete&&b?.complete
     ?{complete:true,kcal:a.kcal+b.kcal,protein:a.protein+b.protein,missing:[]}
@@ -654,6 +776,7 @@
       const planState=plannedMealAllocationState(data);
       let dynamicRecipes=0,dynamicMeals=0,allocationRows=0;
       const dailyTotals=new Map();
+      const todayWarnings=[];
 
       root.querySelectorAll('[data-food-recipe-card]').forEach(card=>{
         const recipe=recipeMap.get(String(card.dataset.foodRecipeCard||''));
@@ -684,12 +807,43 @@
           n=calculate(items,meal.prepared_servings||meal.eaten_servings||1,mealContext,mealAllocations);
         }
         allocationRows+=patchIngredientAllocations(card,items,mealContext,mealAllocations,{show:text(meal.status)!=='completed'});
+        const isBooked=text(meal.status)==='completed'||Boolean(meal.inventory_booked_at);
+        const issueItems=[...items];
+        if(meal.leftover_id||meal.source_meal_id){
+          const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
+          if(source)issueItems.push(...(source.food_meal_ingredients||[]));
+          else if(meal.recipe_id){
+            const baseRecipe=recipeMap.get(String(meal.recipe_id));
+            if(baseRecipe)issueItems.push(...(baseRecipe.food_recipe_ingredients||[]));
+          }
+        }
+        const issues=[];
+        for(const item of issueItems){
+          const allocation=mealAllocations?.get?.(String(item.id||''))||null;
+          // Aktuelle Chargen sind für noch geplante Mahlzeiten maßgeblich.
+          // Abgeschlossene Mahlzeiten nie wegen späterer Einkäufe umbuchen.
+          if(isBooked&&n?.complete)continue;
+          const problem=nutritionProblem(item,mealContext,allocation);
+          if(problem&&!issues.some(issue=>issue.id===problem.id&&issue.name===problem.name))issues.push(problem);
+        }
+        if(!n?.complete&&!issues.length){
+          const missing=[...new Set(n?.missing||[])];
+          for(const reason of missing)issues.push({id:'',name:reason,reason:'Für diese Zutat sind die Nährwerte oder die Produktzuordnung nicht vollständig.'});
+        }
+        if(issues.length&&n?.complete){
+          n={complete:false,missing:issues.map(issue=>issue.name)};
+        }
+        patchMealNutritionProblems(card,issues);
+        if(String(meal.meal_date)===todayIso()&&issues.length){
+          todayWarnings.push({id:String(meal.id),title:String(meal.title||'Mahlzeit'),type:String(meal.meal_type||''),issues});
+        }
         recordDailyNutrition(dailyTotals,meal,n);
         if(patchMeta(card,n))dynamicMeals++;
         else unresolvedMeals.push({id:meal.id,title:meal.title,missing:n?.missing||[]});
       });
 
       ensureDailyTotalStyle();
+      patchNutritionAlarm(root,todayWarnings);
       patchDailyTotals(root,dailyTotals);
       lastStatus={
         dayTotals:[...dailyTotals].map(([date,day])=>({date,...day})),
@@ -700,6 +854,7 @@
         allocationRows,
         unresolvedRecipes,
         unresolvedMeals,
+        nutritionAlarmMeals:todayWarnings,
         refreshedAt:new Date().toISOString()
       };
     }catch(error){
@@ -722,6 +877,21 @@
   observer.observe(document.documentElement,{subtree:true,childList:true});
 
   document.addEventListener('click',event=>{
+    const target=event.target?.closest?.('[data-food-nutrition-goto]');
+    if(target){
+      const id=String(target.dataset.foodNutritionGoto||'');
+      const root=document.getElementById(ROOT_ID);
+      const findCard=()=>[...(root?.querySelectorAll('[data-food-meal-card]')||[])]
+        .find(card=>String(card.dataset.foodMealCard)===id);
+      const card=findCard();
+      const toggle=card?.querySelector('[data-food-meal-toggle]');
+      if(toggle?.getAttribute('aria-expanded')==='false')toggle.click();
+      requestAnimationFrame(()=>{
+        const current=findCard();
+        current?.scrollIntoView?.({behavior:'smooth',block:'center'});
+        current?.querySelector('[data-food-meal-toggle]')?.focus?.({preventScroll:true});
+      });
+    }
     if(event.target?.closest?.('[data-food-tab],[data-food-edit-recipe],[data-food-edit-planned-meal],[data-food-edit-free-meal]'))schedule(450);
   },true);
 
