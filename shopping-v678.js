@@ -572,7 +572,7 @@
     if(/(hähnchen|hühnchen|putenbrust|hackfleisch|rindfleisch|schweinefleisch|schweinefilet|rinderfilet|fleischfilet|lachsfilet|fischfilet|geflügel)/i.test(subject))return 'fleisch';
     if(/(brot|brötchen|baguette|toast|wrap|tortilla|pita|fladenbrot|semmel|ciabatta|croissant|muffin|kuchen)/i.test(subject))return 'backwaren';
     if(/(himbeer|heidelbeer|erdbeer|brombeer|johannisbeer|blaubeer|banane|mango|ananas)/i.test(subject))return 'obst';
-    if(/(brokkoli|blumenkohl|spinat|zucchini|paprika|erbsen|bohnen|karotten|möhren|kürbis|lauch)/i.test(subject))return 'gemuese';
+    if(/(brokkoli|blumenkohl|spinat|zucchini|paprika|erbsen|bohnen|karotten|möhren|kürbis|lauch|gemüsepfanne|asiagemüse|asia-gemüse|gemüsemix)/i.test(subject))return 'gemuese';
     if(flag===true)return 'sonstige';
     return '';
   }
@@ -613,10 +613,24 @@
       .map(use=>{
         const dimensions=freezerUnit(use.unit);
         return {date:String(use.meal_date||''),title:String(use.meal_title||'Geplante Mahlzeit'),
-          quantity:Number(use.quantity||0)*(dimensions?.factor||1),sameUnit:dimensions?.type===unit.type};
+          quantity:Number(use.quantity||0)*(dimensions?.factor||1),
+          rawQuantity:Number(use.quantity||0),rawUnit:String(use.unit||''),
+          sameUnit:dimensions?.type===unit.type};
       }).filter(use=>use.quantity>0)
       .sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'de'));
     const incompatible=planned.some(use=>!use.sameUnit);
+    if(incompatible){
+      const rows=planned.filter(use=>!use.sameUnit).slice(0,6).map(use=>
+        '<li><strong>'+esc(fmtQty(use.rawQuantity,use.rawUnit))+'</strong><span>'
+        +esc(fmtDate(use.date))+' · '+esc(use.title)+'</span></li>').join('');
+      return '<details class="shopping-freezer-v782" '+(open?'open':'')+'>'
+        +'<summary>❄️ Einfriermenge prüfen · unterschiedliche Einheiten</summary>'
+        +'<div class="shopping-freezer-content-v782"><p>'+esc(fmtQty(total,unit.label))
+        +' gekauft, aber die Mahlzeiten benötigen teilweise Scheiben oder Stück. Erst das Einzelgewicht ermitteln.</p>'
+        +(rows?'<ul>'+rows+'</ul>':'')
+        +'<small>Bis die Einheiten zueinander passen, wird bewusst keine konkrete Einfriermenge empfohlen.</small>'
+        +'<small>'+esc(safety)+'</small></div></details>';
+    }
     const matched=planned.filter(use=>use.sameUnit);
     let remaining=total, freshToday=0, lastUsed=0;
     const portions=[];
