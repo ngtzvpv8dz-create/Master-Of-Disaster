@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V768';
+  const VERSION='V771';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1297,7 +1297,7 @@
     const reminder=available
       ?dosage+' separat einnehmen, direkt oder mit Wasser. Nicht in die Frühstückszutaten mischen.'
       :'1 ESN Kreatin-Stick separat einnehmen. Achtung: Vorrat prüfen, derzeit kein verfügbarer ESN-Kreatin-Stick erfasst.';
-    return '<div class="food-creatine-reminder-v768" role="note"><strong>🍊 Kreatin nicht vergessen</strong><span>'+esc(reminder)+'</span></div>';
+    return '<div class="food-creatine-reminder-v768" role="note"><strong>💪 Kreatin nicht vergessen</strong><span>'+esc(reminder)+'</span></div>';
   }
 
   function mealCard(meal){
