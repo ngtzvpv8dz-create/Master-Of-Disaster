@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V771';
+  const VERSION='V772';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -26,7 +26,7 @@
   let plannedThawCacheState=null;
   let plannedThawCache=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -508,7 +508,8 @@
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false})),
-      safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data').eq('active',true))
+      safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data').eq('active',true)),
+      safeQuery('Kreatin-Einnahmen',supabase.from('food_creatine_intakes').select('id,intake_date,inventory_id,inventory_name,variant_label,quantity_g,creatine_g,confirmed_at').gte('intake_date',plusDays(todayIso(),-180)).lte('intake_date',planningHorizonIso()).order('intake_date',{ascending:false}))
     ]);
 
     cloudIssues=[];
@@ -532,7 +533,8 @@
       shopping:take('shopping',5,rows=>rows),
       cart:take('cart',6,rows=>rows),
       leftovers:take('leftovers',7,rows=>rows),
-      products:take('products',8,rows=>rows)
+      products:take('products',8,rows=>rows),
+      intakes:take('intakes',9,rows=>rows)
     };
   }
 
@@ -1284,20 +1286,70 @@
     return portionLabel(eaten);
   }
 
-  // V768: Dauerhafter Frühstückshinweis. Kein Rezeptbestandteil und keine automatische Vorratsbuchung.
-  function dailyCreatineReminderMarkup(meal){
-    if(String(meal?.meal_type||'')!=='breakfast'||String(meal?.meal_date||'')<'2026-10-11')return '';
-    const available=(state?.inventory||[]).find(item=>
-      item.is_active!==false&&Number(item.quantity)>0&&
-      /ESN/i.test(String(item.name||''))&&
-      /creatine|kreatin/i.test(String(item.name||''))
+  // V772: Einnahme und Vorratsbuchung sind von Rezept und Mahlzeiten-Abschluss unabhängig.
+  function creatineStockChoices(){
+    return (state?.inventory||[]).filter(item=>
+      item.is_active!==false &&
+      Number(item.quantity)>=4 &&
+      String(item.unit||'').toLowerCase()==='g' &&
+      /^esn .* (?:creatine|kreatin).*sticks/i.test(String(item.name||''))
+    ).sort((a,b)=>
+      (Number(Boolean(b.opened))-Number(Boolean(a.opened))) ||
+      String(a.name||'').localeCompare(String(b.name||''),'de')
     );
-    const variant=available?.variant_label||'';
-    const dosage='1 ESN Ultrapure Creatine Stick'+(variant?' ('+variant+')':'');
-    const reminder=available
-      ?dosage+' separat einnehmen, direkt oder mit Wasser. Nicht in die Frühstückszutaten mischen.'
-      :'1 ESN Kreatin-Stick separat einnehmen. Achtung: Vorrat prüfen, derzeit kein verfügbarer ESN-Kreatin-Stick erfasst.';
-    return '<div class="food-creatine-reminder-v768" role="note"><strong>💪 Kreatin nicht vergessen</strong><span>'+esc(reminder)+'</span></div>';
+  }
+
+  function dailyCreatineReminderMarkup(meal){
+    const date=String(meal?.meal_date||'');
+    if(String(meal?.meal_type||'')!=='breakfast'||date<'2026-10-11')return '';
+
+    const intake=(state?.intakes||[]).find(row=>row.intake_date===date && row.confirmed_at);
+    if(intake){
+      const variant=String(intake.variant_label||intake.inventory_name||'ESN Kreatin').trim();
+      return '<div class="food-creatine-reminder-v768 is-confirmed-v772" role="status">'
+        +'<strong>✓ Kreatin eingenommen</strong>'
+        +'<span>'+esc('1 Stick ('+variant+') · 4 g aus Vorrat gebucht')+'</span>'
+        +'</div>';
+    }
+
+    const choices=creatineStockChoices();
+    const first=choices[0]||null;
+    const variant=first?.variant_label||'';
+    const ready=sourceState.intakes==='cloud' && sourceState.inventory==='cloud';
+    const reached=date<=todayIso();
+    const hint=first
+      ?'1 ESN Ultrapure Creatine Stick'+(variant?' ('+variant+')':'')+' separat einnehmen, direkt oder mit Wasser.'
+      :'1 ESN Kreatin-Stick separat einnehmen. Kein verfügbarer Stick im Vorrat.';
+    const selector=ready&&reached&&choices.length>1
+      ?'<label class="food-creatine-choose-v772">Sorte <select data-food-creatine-choice>'
+        +choices.map(stock=>'<option value="'+esc(stock.id)+'">'+esc((stock.variant_label||stock.name)+' · '+Math.floor(Number(stock.quantity)/4)+' Sticks')+'</option>').join('')
+        +'</select></label>'
+      :'';
+    const action=ready&&reached&&first
+      ?'<button type="button" class="food-creatine-confirm-v772" data-food-creatine-confirm="'+esc(date)+'" data-food-creatine-inventory="'+esc(first.id)+'">✓ Eingenommen · 1 Stick buchen</button>'
+      :'';
+    const status=!ready
+      ?'<small>Einnahmestatus nicht synchronisiert. Bestätigung derzeit gesperrt.</small>'
+      :!reached?'<small>Am jeweiligen Tag bestätigen, erst dann wird abgebucht.</small>'
+      :!first?'<small>Bitte zuerst den Kreatin-Vorrat ergänzen.</small>'
+      :'';
+    return '<div class="food-creatine-reminder-v768" role="note">'
+      +'<strong>💪 Kreatin nicht vergessen</strong><span>'+esc(hint)+'</span>'
+      +selector+action+status+'</div>';
+  }
+
+  async function confirmCreatineIntake(date,inventoryId){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date||'')))throw new Error('Ungültiges Tagesdatum');
+    if(date<'2026-10-11'||date>todayIso())throw new Error('Einnahme ist für diesen Tag noch nicht möglich');
+    if(sourceState.intakes!=='cloud'||sourceState.inventory!=='cloud')throw new Error('Einnahme und Vorrat müssen mit der Cloud synchronisiert sein');
+    const supabase=client();
+    if(!supabase)throw new Error('Cloud-Verbindung fehlt');
+    const res=await withTimeout(supabase.rpc('confirm_daily_creatine_intake',{
+      p_intake_date:date,p_inventory_id:inventoryId
+    }),'Kreatin-Buchung',15000);
+    if(res?.error)throw res.error;
+    await mutate(()=>res.data);
+    return res.data;
   }
 
   function mealCard(meal){
@@ -3284,6 +3336,22 @@
       if(day.open)expandedPlanDays.add(date);else expandedPlanDays.delete(date);
     }));
     root.querySelectorAll('[data-food-weigh]').forEach(button=>button.addEventListener('click',()=>weighPendingModal(button.dataset.foodWeigh)));
+    root.querySelectorAll('[data-food-creatine-confirm]').forEach(button=>button.addEventListener('click',async event=>{
+      event.stopPropagation();
+      const date=String(button.dataset.foodCreatineConfirm||'');
+      const choice=button.closest('.food-creatine-reminder-v768')?.querySelector('[data-food-creatine-choice]');
+      const inventoryId=String(choice?.value||button.dataset.foodCreatineInventory||'');
+      root.querySelectorAll('[data-food-creatine-confirm]').forEach(btn=>{
+        if(btn.dataset.foodCreatineConfirm===date)btn.disabled=true;
+      });
+      button.textContent='Wird gebucht …';
+      try{await confirmCreatineIntake(date,inventoryId);}
+      catch(error){
+        alert(error?.message||'Kreatin konnte nicht gebucht werden.');
+        loadPromise=null;
+        await render();
+      }
+    }));
     root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
     root.querySelectorAll('[data-food-meal-card]').forEach(card=>card.addEventListener('click',event=>{
       if(event.target?.closest?.('button,input,select,textarea,label'))return;
