@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V776';
+  const VERSION='V777';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -465,84 +465,81 @@
     return Boolean(nutrition?.complete);
   }
 
-  // Tageswerte entstehen ausschließlich aus den nach Zutaten dynamisch berechneten Mahlzeiten.
-  // Prepared Servings ist der Divisor einer Rezeptcharge, nicht die täglich gegessene Anzahl.
+  // Je Mahlzeit: dynamische Nährwerte pro Portion * an diesem Tag gegessene Portionen.
+  // Für Meal Prep bleibt die zubereitete Gesamtmenge der Divisor, niemals die Tagessumme.
   function recordDailyNutrition(totals,meal,nutrition){
     const date=String(meal?.meal_date||'');
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
-    const day=totals.get(date)||{kcal:0,meals:0,unresolved:0};
+    const day=totals.get(date)||{kcal:0,protein:0,meals:0,unresolved:0};
     day.meals++;
     if(nutrition?.complete){
       const eaten=number(meal?.eaten_servings);
       const portions=eaten!==null&&eaten>0?eaten:1;
       day.kcal+=nutrition.kcal*portions;
+      day.protein+=nutrition.protein*portions;
     }else day.unresolved++;
     totals.set(date,day);
   }
 
-  function dailyTotalText(day){
-    if(!day||!day.meals)return 'Noch keine Mahlzeiten';
-    const amount=formatNumber(Math.round(day.kcal),0)+' kcal';
-    if(day.unresolved){
-      const label=day.unresolved===1?'1 Mahlzeit offen':day.unresolved+' Mahlzeiten offen';
-      return (day.meals===day.unresolved?'Kalorien noch offen':amount+' bisher erfasst')+' · '+label;
-    }
-    return amount;
+  function dailySummary(day){
+    if(!day||!day.meals)return {
+      kcal:'0 kcal',protein:'0 g',note:'Noch keine Mahlzeiten eingeplant.',incomplete:false
+    };
+    const incomplete=day.unresolved>0;
+    const allMissing=day.unresolved===day.meals;
+    const suffix=incomplete?' bisher':'';
+    return {
+      kcal:allMissing?'kcal offen':formatNumber(Math.round(day.kcal),0)+' kcal'+suffix,
+      protein:allMissing?'Protein offen':formatNumber(day.protein,1)+' g'+suffix,
+      note:incomplete
+        ?day.unresolved+' '+(day.unresolved===1?'Mahlzeit ohne vollständige Nährwerte':'Mahlzeiten ohne vollständige Nährwerte')
+        :day.meals+' '+(day.meals===1?'Mahlzeit':'Mahlzeiten')+' im Tagesplan',
+      incomplete
+    };
+  }
+
+  function setText(el,value){
+    if(el&&el.textContent!==value)el.textContent=value;
   }
 
   function patchDailyTotals(root,totals){
-    const head=root.querySelector('.food-section-head-v544');
-    const active=String(head?.querySelector('div>span')?.textContent||'').trim().toLocaleUpperCase('de-DE');
-    // Heute: Gesamtkalorien direkt am Anfang der Tagesübersicht.
-    const existing=root.querySelector('[data-food-day-total-today]');
-    if(active==='HEUTE'){
-      const day=totals.get(todayIso());
-      const value=dailyTotalText(day);
-      const incomplete=Boolean(day?.unresolved);
-      const el=existing||document.createElement('div');
-      if(!existing){
-        el.setAttribute('data-food-day-total-today','');
-        el.className='food-day-calories-v775';
-        el.innerHTML='<span>Kalorien · ganzer Tag</span><strong></strong><small></small>';
-        head?.insertAdjacentElement('afterend',el);
-      }
-      const title=el.querySelector('strong');
-      if(title&&title.textContent!==value)title.textContent=value;
-      const hint=el.querySelector('small');
-      const note=incomplete?'Unvollständig: fehlende Produktwerte oder nicht umrechenbare Zutaten.':(day?.meals||0)+' Mahlzeiten im Tagesplan';
-      if(hint&&hint.textContent!==note)hint.textContent=note;
-      el.classList.toggle('is-incomplete-v775',incomplete);
-    }else existing?.remove();
+    // Die beiden festen Anzeigeplätze werden bereits beim Erstellen der Tageskarte
+    // erzeugt. Kein Suchen nach "HEUTE", denn die FOOD-Ansicht entfernt diese Überschrift.
+    const todayPanel=root.querySelector('[data-food-day-summary-today]');
+    if(todayPanel){
+      const day=dailySummary(totals.get(todayIso()));
+      setText(todayPanel.querySelector('[data-food-day-kcal]'),day.kcal);
+      setText(todayPanel.querySelector('[data-food-day-protein]'),day.protein);
+      setText(todayPanel.querySelector('[data-food-day-summary-note]'),day.note);
+      todayPanel.classList.toggle('is-incomplete-v777',day.incomplete);
+    }
 
-    // Planung: jeder aufgeklappte oder zugeklappte Tag zeigt seine aktuelle Summe.
+    // Alle im Plan angezeigten Tage, auch zugeklappte, erhalten denselben Stand.
     root.querySelectorAll('[data-food-plan-day]').forEach(group=>{
-      const date=String(group.dataset.foodPlanDay||'');
-      const title=group.querySelector('.food-plan-day-title-v685');
-      if(!title)return;
-      let line=title.querySelector('[data-food-day-total-planned]');
-      if(!line){
-        line=document.createElement('span');
-        line.setAttribute('data-food-day-total-planned','');
-        line.className='food-plan-day-calories-v775';
-        title.appendChild(line);
-      }
-      const value='Gesamt: '+dailyTotalText(totals.get(date));
-      if(line.textContent!==value)line.textContent=value;
-      line.classList.toggle('is-incomplete-v775',Boolean(totals.get(date)?.unresolved));
+      const line=group.querySelector('[data-food-day-summary-plan]');
+      if(!line)return;
+      const day=dailySummary(totals.get(String(group.dataset.foodPlanDay||'')));
+      setText(line,day.kcal+' · '+day.protein+(day.incomplete?' · unvollständig':''));
+      line.classList.toggle('is-incomplete-v777',day.incomplete);
     });
   }
 
   function ensureDailyTotalStyle(){
-    if(document.getElementById('food-day-calories-style-v775'))return;
+    if(document.getElementById('food-day-summary-style-v777'))return;
     const style=document.createElement('style');
-    style.id='food-day-calories-style-v775';
+    style.id='food-day-summary-style-v777';
     style.textContent=
-      '.food-day-calories-v775{display:flex;flex-direction:column;gap:3px;margin:10px 0 13px;padding:12px 14px;border:1px solid rgba(106,185,218,.32);border-radius:13px;background:rgba(57,126,159,.09);box-sizing:border-box;max-width:100%;min-width:0}'+
-      '.food-day-calories-v775>span{color:#9bbdcb;font-size:11px;font-weight:700;letter-spacing:.03em}'+
-      '.food-day-calories-v775>strong{color:inherit;font-size:21px;line-height:1.25;overflow-wrap:anywhere}'+
-      '.food-day-calories-v775>small{color:#9badb7;font-size:11px}'+
-      '.food-plan-day-calories-v775{display:block;margin-top:4px;color:#a7cfd9;font-size:12px;font-weight:750;overflow-wrap:anywhere}'+
-      '.food-day-calories-v775.is-incomplete-v775>strong,.food-plan-day-calories-v775.is-incomplete-v775{color:#d5af87}';
+      '.food-day-summary-v777{box-sizing:border-box;max-width:100%;min-width:0;display:grid;gap:9px;margin:4px 0 14px;padding:13px 14px;border:1px solid rgba(54,93,67,.16);border-radius:17px;background:linear-gradient(135deg,rgba(246,250,240,.97),rgba(225,236,222,.95));box-shadow:0 8px 18px rgba(43,72,48,.05);color:#263c2b}'+
+      '.food-day-summary-title-v777{color:#57765b;font-size:10px;font-weight:850;letter-spacing:.11em}'+
+      '.food-day-summary-values-v777{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'+
+      '.food-day-stat-v777{min-width:0;padding:10px 11px;border:1px solid rgba(58,100,70,.1);border-radius:12px;background:rgba(255,255,255,.78)}'+
+      '.food-day-stat-v777 small{display:block;margin-bottom:5px;color:#677c6c;font-size:10px;font-weight:700}'+
+      '.food-day-stat-v777 strong{display:block;color:#234d36;font-size:clamp(15px,4.5vw,22px);font-weight:850;line-height:1.2;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}'+
+      '.food-day-summary-note-v777{color:#6a7d6d;font-size:10px;line-height:1.4}'+
+      '.food-day-summary-v777.is-incomplete-v777 .food-day-stat-v777 strong{color:#a46b37}'+
+      '.food-day-summary-v777.is-incomplete-v777 .food-day-summary-note-v777{color:#946733}'+
+      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v777{display:block;margin-top:5px;color:#356344;font-size:11px;font-weight:800;line-height:1.4;overflow-wrap:anywhere}'+
+      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v777.is-incomplete-v777{color:#9d7138}';
     document.head.appendChild(style);
   }
 
