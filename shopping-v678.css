@@ -771,3 +771,16 @@
 .shopping-product-options-v644 [data-product-choice][hidden]{
   display:none!important;
 }
+
+.shopping-freezer-v782{display:block;min-width:0;max-width:100%;margin:8px 0;padding:9px 10px;border:1px solid rgba(129,180,177,.25);border-radius:10px;background:rgba(116,166,161,.07);color:#d8e5e9;font-size:.65rem;overflow-wrap:anywhere}
+.shopping-freezer-v782>summary{cursor:pointer;font-weight:800;line-height:1.4}
+.shopping-freezer-content-v782{margin-top:8px;padding-top:8px;border-top:1px solid rgba(129,180,177,.16)}
+.shopping-freezer-content-v782 p{margin:2px 0 8px;color:#bfced5}
+.shopping-freezer-content-v782 ul{display:grid;gap:6px;list-style:none;margin:6px 0 9px;padding:0}
+.shopping-freezer-content-v782 li{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px;line-height:1.4}
+.shopping-freezer-content-v782 li strong{color:#c2e2dc}
+.shopping-freezer-content-v782 li span{color:#d1dae1}
+.shopping-freezer-content-v782 small{display:block;margin:7px 0 0;color:#a6b9c5;font-size:.57rem;line-height:1.45}
+.shopping-purchased-row-v647>.shopping-freezer-v782{grid-column:1/-1;width:100%;box-sizing:border-box}
+.shopping-review-copy-v644>.shopping-freezer-v782{margin-top:10px}
+[data-freezer-advice-host-v782]:empty{display:none}
