@@ -60,7 +60,7 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=612-network-first-code' index.html
-          grep -q 'area-runtime-v609.js?v=767-banana-118g-standard' index.html
+          grep -q 'area-runtime-v609.js?v=794-fruit-piece-standard' index.html
           grep -q 'sport-circuit-v682.js?v=683-active-priority' area-runtime-v609.js
           ! grep -q 'sport-audio-test-v652.js?v=657-beep-cues' area-runtime-v609.js
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
@@ -73,8 +73,8 @@ jobs:
           ! grep -q 'denkfabrik-v634-192.jpg?v=634' index.html
           grep -q 'shopping-v643.css?v=' index.html
           grep -q 'food-stock-resolver-v746.js?v=746-systemic-stock-resolver' area-runtime-v609.js
-          grep -q 'food-v544.js?v=767-banana-118g-standard' area-runtime-v609.js
-          grep -q 'shopping-v678.js?v=756-phase4-purchase-details' area-runtime-v609.js
+          grep -q 'food-v544.js?v=794-fruit-piece-standard' area-runtime-v609.js
+          grep -q 'shopping-v678.js?v=792-auto-freezer-on-booking' area-runtime-v609.js
           grep -q "shopping:'Einkaufsliste'" area-runtime-v609.js
           grep -q '__modShoppingV651' shopping-v651.js
           grep -q 'shopping_receipt_reviews' shopping-v651.js
@@ -92,7 +92,7 @@ jobs:
           grep -q 'food-plan-day-v685' food-v544.js
           grep -q 'food-plan-day-v685' food-v544.css
           grep -q 'food-v544.css?v=758-add-planned-inventory-ingredient' index.html
-          grep -q 'food-v544.js?v=767-banana-118g-standard' area-runtime-v609.js
+          grep -q 'food-v544.js?v=794-fruit-piece-standard' area-runtime-v609.js
           grep -Fq ".lte('meal_date',planningHorizonIso())" food-v544.js
           grep -Fq "meal.meal_date<=planningHorizonIso()" food-v544.js
           ! grep -Fq ".lte('meal_date',plusDays(todayIso(),14))" food-v544.js
