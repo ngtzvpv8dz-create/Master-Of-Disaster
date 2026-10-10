@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V756';
+  const VERSION='V781';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -1600,30 +1600,46 @@
     if(!review)return;
     document.getElementById('shoppingProductPickerV644')?.remove();
     const retailer=String(review.retailer||'').trim().toLocaleLowerCase('de-DE');
+    const currentCandidate=reviewCandidate(review);
+    const soughtWords=normalizeMatchText(review.receipt_label).split(' ').filter(word=>word.length>=3);
+    const productRank=product=>{
+      const name=normalizeMatchText(productLabel(product));
+      return soughtWords.reduce((score,word)=>score+(name.includes(word)?1:0),0);
+    };
     const products=[...(state.products||[])].sort((a,b)=>{
+      const rankDifference=productRank(b)-productRank(a);
+      const suggestedDifference=Number(String(b.id)===String(currentCandidate?.id))-Number(String(a.id)===String(currentCandidate?.id));
       const ar=String(a.retailer||'').trim().toLocaleLowerCase('de-DE')===retailer?0:1;
       const br=String(b.retailer||'').trim().toLocaleLowerCase('de-DE')===retailer?0:1;
-      return ar-br||String(productLabel(a)).localeCompare(String(productLabel(b)),'de');
+      return rankDifference||suggestedDifference||ar-br||String(productLabel(a)).localeCompare(String(productLabel(b)),'de');
     });
     const modal=document.createElement('div');
     modal.id='shoppingProductPickerV644';
     modal.className='shopping-modal-v643 shopping-product-picker-v644';
     modal.innerHTML='<div class="shopping-modal-card-v643"><div class="shopping-modal-head-v643"><div><span>PRODUKT ZUORDNEN</span><strong>'+esc(review.receipt_label)+'</strong></div><button type="button" data-product-picker-close>✕</button></div>'
       +(products.length
-        ?'<div class="shopping-product-options-v644">'+products.map(product=>{
-          const candidate=reviewCandidate(review);
-          const suggested=candidate&&String(candidate.id)===String(product.id);
+        ?'<label class="shopping-product-filter-v781">Produkt, Geschmack oder Barcode suchen<input type="search" data-product-filter-v781 autocomplete="off" placeholder="z. B. Pepsi Cherry, 1,25 l"></label>'
+          +'<div class="shopping-product-options-v644">'+products.map(product=>{
+          const suggested=currentCandidate&&String(currentCandidate.id)===String(product.id);
           const pack=product.package_quantity!==null&&product.package_quantity!==undefined?fmtQty(product.package_quantity,product.package_unit||''):'';
-          const meta=[product.brand,product.retailer,pack].filter(Boolean).join(' · ');
-          return '<button type="button" data-product-choice="'+esc(product.id)+'" data-product-name="'+esc(product.product_name||'Produkt')+'" class="'+(suggested?'is-suggested-v651':'')+'">'
+          const title=[product.product_name||'Produkt',product.variant,pack].filter(Boolean).join(' · ');
+          const meta=[product.brand,product.retailer,product.barcode?'EAN '+product.barcode:null].filter(Boolean).join(' · ');
+          const searchText=normalizeMatchText([title,meta].join(' '));
+          return '<button type="button" data-product-choice="'+esc(product.id)+'" data-product-search-v781="'+esc(searchText)+'" data-product-name="'+esc(title)+'" class="'+(suggested?'is-suggested-v651':'')+'">'
             +'<span>'+(suggested?'VORSCHLAG · ':'')+esc(meta||'Bekanntes Produkt')+'</span>'
-            +'<strong>'+esc(product.product_name||productLabel(product))+'</strong>'
+            +'<strong>'+esc(title)+'</strong>'
             +'</button>';
         }).join('')+'</div>'
         :'<div class="shopping-review-empty-v644">Noch keine bekannten Produkte im Produktstamm.</div>')
       +'<button type="button" class="shopping-product-new-v644" data-product-new-pending>Anderes Produkt · Fotos / Daten kommen noch</button></div>';
     document.body.appendChild(modal);
     modal.querySelector('[data-product-picker-close]')?.addEventListener('click',()=>modal.remove());
+    modal.querySelector('[data-product-filter-v781]')?.addEventListener('input',event=>{
+      const requested=normalizeMatchText(event.target.value);
+      modal.querySelectorAll('[data-product-choice]').forEach(button=>{
+        button.hidden=!!requested&&!String(button.dataset.productSearchV781||'').includes(requested);
+      });
+    });
     modal.addEventListener('click',event=>{if(event.target===modal)modal.remove();});
     modal.querySelectorAll('[data-product-choice]').forEach(button=>button.addEventListener('click',async()=>{
       if(button.disabled)return;
