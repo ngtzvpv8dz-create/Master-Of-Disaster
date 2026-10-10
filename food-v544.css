@@ -2360,3 +2360,114 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   grid-row:auto;
   margin-top:1px;
 }
+
+/* V784: Vorrat filters and freezer/thaw workflow, vertical-only responsive. */
+.food-freezer-tabs-v784{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:5px;
+  margin:8px 0 14px;
+}
+.food-freezer-tabs-v784 button{
+  min-width:0;
+  min-height:39px;
+  border:1px solid rgba(112,154,176,.2);
+  border-radius:10px;
+  background:rgba(102,132,150,.07);
+  color:#d6e3e9;
+  font:inherit;
+  font-size:.66rem;
+  font-weight:850;
+  padding:8px 4px;
+  overflow-wrap:anywhere;
+}
+.food-freezer-tabs-v784 button.active{
+  background:rgba(121,167,188,.19);
+  border-color:rgba(121,167,188,.52);
+  color:#d6f0f8;
+}
+.food-freezer-section-v784{
+  display:grid;
+  gap:9px;
+  margin:10px 0 16px;
+  padding:12px;
+  border:1px solid rgba(127,169,192,.2);
+  border-radius:14px;
+  background:rgba(112,151,171,.05);
+  min-width:0;
+}
+.food-freezer-section-v784>header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.food-freezer-section-v784>header strong{
+  color:#dceaf3;
+  font-size:.88rem;
+}
+.food-freezer-section-v784>header span{
+  padding:3px 7px;
+  border-radius:999px;
+  background:rgba(148,189,202,.14);
+  color:#bcd9df;
+  font-size:.65rem;
+  font-weight:850;
+}
+.food-freezer-line-v784{
+  min-width:0;
+  display:grid;
+  gap:8px;
+  padding:10px;
+  border:1px solid rgba(153,178,196,.14);
+  border-radius:10px;
+  background:rgba(22,38,50,.64);
+}
+.food-freezer-line-v784>div:first-child{
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+.food-freezer-line-v784 strong{
+  color:#edf4f5;
+  font-size:.77rem;
+  overflow-wrap:anywhere;
+}
+.food-freezer-line-v784 small{
+  color:#acbfce;
+  font-size:.62rem;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.food-freezer-actions-v784{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.food-freezer-actions-v784 button{
+  min-height:34px;
+  padding:7px 10px;
+  border-radius:9px;
+  border:1px solid rgba(127,171,169,.38);
+  background:rgba(110,164,159,.13);
+  color:#d0ede5;
+  font:inherit;
+  font-weight:800;
+  font-size:.68rem;
+  cursor:pointer;
+}
+.food-freezer-actions-v784 button.quiet{
+  border-color:rgba(162,177,192,.18);
+  background:rgba(136,146,161,.08);
+  color:#b4c5ce;
+}
+.food-freezer-actions-v784 button:disabled{opacity:.5}
+.food-freezer-empty-v784{
+  margin:0;
+  padding:7px 0;
+  color:#a7b6c1;
+  font-size:.69rem;
+}
+@media(max-width:370px){
+ .food-freezer-tabs-v784 button{font-size:.57rem;padding:7px 2px}
+}
