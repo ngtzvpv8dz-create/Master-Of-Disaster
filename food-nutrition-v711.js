@@ -102,8 +102,8 @@
       .filter(Boolean)
       .sort();
     if(dates.length)return dates[0];
-    const stock=(data?.inventory||[]).find(row=>String(row.id)===String(inventoryId||''));
-    return '9999-12-31';
+    // Mirror SQL's legacy-first consumption for untracked older stock.
+    return '0001-01-01';
   }
 
   function stockAmountInBaseUnit(stock,targetUnit){
@@ -212,7 +212,7 @@
       .sort((a,b)=>{
         const firstLot=id=>(data?.lots||[])
           .filter(lot=>String(lot.inventory_id||'')===String(id))
-          .map(lot=>String(lot.purchased_on||'')).filter(Boolean).sort()[0]||'9999-12-31';
+          .map(lot=>String(lot.purchased_on||'')).filter(Boolean).sort()[0]||'0001-01-01';
         return firstLot(a.id).localeCompare(firstLot(b.id))||
           Number(a.sort_order||0)-Number(b.sort_order||0)||
           String(a.id).localeCompare(String(b.id));
