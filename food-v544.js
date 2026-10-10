@@ -2274,16 +2274,16 @@
         const name=ingredientName(item);
         if(isNonShoppingIngredient(name))return;
         const unit=String(item.unit||'').trim();
-        // The agreed standard is 118 g edible portion per banana (183 g with
-        // peel - 65 g peel, measured on 04.10.2026), NOT 100 g: that is only
-        // the unit of the nutrition label. Prefer the saved product standard.
+        // Use the product's saved edible weight per piece. This applies to
+        // bananas, Granny Smith apples and every other piece-counted product
+        // with a verified weight; nutrition per 100 g remains independent.
         const linkedStock=inventoryByIdForShopping.get(item.inventory_id)||null;
-        const bananaGrams=unit==='g'&&linkedStock?.unit==='Stück'
-          &&normalizedIngredient(linkedStock.name)==='bananen';
-        const savedPieceGrams=Number(productsByInventoryId.get(item.inventory_id)?.product_data?.edible_weight_per_piece_g);
-        const edibleGramsPerBanana=savedPieceGrams>0?savedPieceGrams:118;
-        const shoppingUnit=bananaGrams?'Stück':unit;
-        const shoppingQuantity=bananaGrams?quantity/edibleGramsPerBanana:quantity;
+        const pieceData=productsByInventoryId.get(item.inventory_id)?.product_data||{};
+        const pieceWeight=Number(pieceData.edible_weight_per_piece_g||pieceData.piece_weight_g);
+        const gramsToPieces=unit==='g'&&linkedStock?.unit==='Stück'
+          &&Number.isFinite(pieceWeight)&&pieceWeight>0;
+        const shoppingUnit=gramsToPieces?'Stück':unit;
+        const shoppingQuantity=gramsToPieces?quantity/pieceWeight:quantity;
         const canonical=normalizedIngredient(name,shoppingUnit);
         const key=item.inventory_id?'stock|'+item.inventory_id+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE');
         const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,canonical,unit:shoppingUnit,required:0,uses:[]};
@@ -2353,9 +2353,11 @@
         remaining=Math.max(0,remaining-window.required);
         const missing=Math.max(0,window.required-available);
         if(missing<=1e-8)return;
-        // Whole loose bananas are purchased as pieces, even if a recipe
-        // only needs part of the edible fruit.
-        const purchaseMissing=normalizedNeed==='bananen'&&need.unit==='Stück'
+        // Piece-counted produce is purchased as whole fruit, even when a
+        // gram-based recipe needs only a fraction of the standard piece.
+        const productData=productsByInventoryId.get(need.inventory_id)?.product_data||{};
+        const knownPieceWeight=Number(productData.edible_weight_per_piece_g||productData.piece_weight_g);
+        const purchaseMissing=need.unit==='Stück'&&knownPieceWeight>0
           ?Math.ceil(missing-1e-8):missing;
         const actualShortageDate=shortageDateFor({uses:window.uses},available);
 
