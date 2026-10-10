@@ -53,16 +53,16 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
-      './food-v544.js?v=793-today-thaw-style',
-      './food-nutrition-v711.js?v=780-salt-zero-calories'
+      './food-v544.js?v=794-fruit-piece-standard',
+      './food-nutrition-v711.js?v=794-fruit-piece-standard'
     ],
     shopping:[
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
-      './food-v544.js?v=793-today-thaw-style',
-      './food-nutrition-v711.js?v=780-salt-zero-calories',
+      './food-v544.js?v=794-fruit-piece-standard',
+      './food-nutrition-v711.js?v=794-fruit-piece-standard',
       './shopping-v678.js?v=792-auto-freezer-on-booking'
     ],
     kistology:[
@@ -144,10 +144,10 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=762-weekly-course-picker','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=793-today-thaw-style',
-      './food-nutrition-v711.js?v=780-salt-zero-calories'],
-    shopping:['./food-v544.js?v=793-today-thaw-style',
-      './food-nutrition-v711.js?v=780-salt-zero-calories','./shopping-v678.js?v=792-auto-freezer-on-booking'],
+    food:['./food-v544.js?v=794-fruit-piece-standard',
+      './food-nutrition-v711.js?v=794-fruit-piece-standard'],
+    shopping:['./food-v544.js?v=794-fruit-piece-standard',
+      './food-nutrition-v711.js?v=794-fruit-piece-standard','./shopping-v678.js?v=792-auto-freezer-on-booking'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
