@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V787';
+  const VERSION='V790';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -26,7 +26,7 @@
   let plannedThawCacheState=null;
   let plannedThawCache=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','pendingCheckout'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -511,7 +511,8 @@
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false})),
       safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data').eq('active',true)),
       safeQuery('Kreatin-Einnahmen',supabase.from('food_creatine_intakes').select('id,intake_date,inventory_id,inventory_name,variant_label,quantity_g,creatine_g,confirmed_at').gte('intake_date',plusDays(todayIso(),-180)).lte('intake_date',planningHorizonIso()).order('intake_date',{ascending:false})),
-      safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false}))
+      safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false})),
+      safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3)))
     ]);
 
     cloudIssues=[];
@@ -537,7 +538,8 @@
       leftovers:take('leftovers',7,rows=>rows),
       products:take('products',8,rows=>rows),
       intakes:take('intakes',9,rows=>rows),
-      freezer:take('freezer',10,rows=>rows)
+      freezer:take('freezer',10,rows=>rows),
+      pendingCheckout:take('pendingCheckout',11,rows=>rows)
     };
   }
 
@@ -1169,8 +1171,13 @@
       for(const item of (target.ingredients||[])){
         const allocation=item?.id?map.get(String(item.id)):null;
         const frozen=(allocation?.allocations||[]).filter(part=>part.frozen===true);
-        if(!frozen.length)continue;
-        const quantity=frozen.reduce((sum,part)=>sum+(Number(part.quantity)||0),0);
+        const linked=(state?.freezer||[]).find(portion=>
+          String(portion.meal_ingredient_id||'')===String(item.id||'') &&
+          ['frozen','thawing','thawed'].includes(String(portion.status||'')) &&
+          (state?.lots||[]).some(lot=>String(lot.id)===String(portion.frozen_lot_id)));
+        if(!frozen.length&&!linked)continue;
+        const quantity=linked?Number(linked.quantity):
+          frozen.reduce((sum,part)=>sum+(Number(part.quantity)||0),0);
         if(quantity<=0)continue;
         tasks.push({
           targetMealId:String(target.id||''),
@@ -1182,7 +1189,9 @@
           ingredient:ingredientName(item),
           quantity,
           unit:item.unit,
-          thawStartedAt:item.thaw_started_at||null
+          thawStartedAt:linked?.thaw_started_at||item.thaw_started_at||null,
+          thawedAt:linked?.status==='thawed'?linked.thawed_at||true:null,
+          freezerPortionId:linked?.id||null
         });
       }
     }
@@ -1204,6 +1213,7 @@
     if(!tasks.length)return '';
 
     const timing=task=>{
+      if(task.thawedAt)return 'Aufgetaut · im Vorrat bestätigt';
       if(task.thawStartedAt){
         const date=new Date(task.thawStartedAt);
         const time=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(date);
@@ -1233,6 +1243,7 @@
     };
 
     const rows=tasks.map(task=>{
+      const thawed=Boolean(task.thawedAt);
       const thawing=Boolean(task.thawStartedAt);
       return '<div class="food-thaw-entry-v739 '+(thawing?'is-thawing-v739':'is-frozen-v739')+'">'
         +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
