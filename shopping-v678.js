@@ -607,11 +607,11 @@
     const reserve=remaining>0
       ?'<li><strong>'+esc(fmtQty(remaining,'g'))+'</strong><span>Reserve · separat einfrieren, solange kein passender geplanter Bedarf vorliegt</span></li>'
       :'';
-    const shortfall=planned.find(use=>use.grams>total-allocated);
+    const shortfall=planned.length>portions.length;
     const headline='❄️ Portionieren: '+fmtQty(chilledToday,'g')+' heute frisch · '+fmtQty(frozenAmount,'g')+' einfrieren';
     return '<details class="shopping-freezer-v782" '+(open?'open':'')+'>'
       +'<summary>'+esc(headline)+'</summary>'
-      +'<div class="shopping-freezer-content-v782"><p>'+esc(fmtQty(total,'g'))+' gekauft · Portionen anhand deiner geplanten Mahlzeiten.</p>'
+      +'<div class="shopping-freezer-content-v782"><p>'+esc(fmtQty(total,'g'))+' eingetragen · Portionen anhand deiner geplanten Mahlzeiten.</p>'
       +(portionsMarkup||reserve?'<ul>'+portionsMarkup+reserve+'</ul>':'<p>Keine genaue Aufteilung aus dem Essensplan verfügbar. In beschrifteten, passenden Einzelportionen einfrieren.</p>')
       +(shortfall?'<small>Weitere geplante Mahlzeiten können zusätzliches Fleisch benötigen. Dieser Vorschlag verteilt nur diese Packung.</small>':'')
       +'<small>Rohes Fleisch nach dem Aufteilen sofort gut verpackt einfrieren. Nur die heute benötigte Menge gekühlt lassen; übrige Portionen vor der Zubereitung im Kühlschrank auftauen.</small>'
