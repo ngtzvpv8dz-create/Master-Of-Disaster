@@ -1245,9 +1245,9 @@
     const rows=tasks.map(task=>{
       const thawed=Boolean(task.thawedAt);
       const thawing=Boolean(task.thawStartedAt);
-      return '<div class="food-thaw-entry-v739 '+(thawing?'is-thawing-v739':'is-frozen-v739')+'">'
+      return '<div class="food-thaw-entry-v739 '+(thawed?'is-thawing-v739':thawing?'is-thawing-v739':'is-frozen-v739')+'">'
         +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
-        +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawing?'Auftauen läuft':'Auftauen starten')+'" title="'+(thawing?'Auftauen läuft':'Auftauen starten')+'" '+(thawing?'disabled':'')+'>'
+        +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" title="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" '+(thawing||thawed?'disabled':'')+'>'
           +'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span>'
         +'</button>'
         +'</div>';
@@ -1843,8 +1843,8 @@
       '<form><p class="food-modal-copy-v544"><strong>'+esc(fmtQty(hint.quantity,hint.unit)+' '+hint.ingredient)+'</strong> für '
       +esc(hint.targetTitle)+' · Auftauen ab '+esc(fmtDate(hint.dueDate))+'</p>'
       +'<label>Welche tatsächliche TK-Charge?<select name="lot">'+choices+'</select></label>'
-      +'<p class="food-modal-copy-v544">Die geplante Menge wird als eigene Portion reserviert. Eingefroren bleibt sie bis zu deiner Bestätigung „Auftauen starten“.</p>'
-      +'<button type="submit" class="food-action-v544">Portion zuordnen</button></form>',
+      +'<p class="food-modal-copy-v544">Bitte nur bestätigen, wenn du diese Menge tatsächlich zum Auftauen in den Kühlschrank legst.</p>'
+      +'<button type="submit" class="food-action-v544">🌡️ Auftauen gestartet</button></form>',
       async form=>{
         const lot=lots.find(item=>String(item.id)===String(form.get('lot')));
         if(!lot)throw new Error('Bitte eine der angezeigten Chargen auswählen.');
@@ -1856,6 +1856,12 @@
           p_meal_ingredient_id:ingredientId
         });
         if(result.error)throw result.error;
+        const thaw=await supabase.rpc('start_food_ingredient_freezer_thaw',{p_meal_ingredient_id:ingredientId});
+        if(thaw.error){
+          loadPromise=null;
+          await render();
+          throw new Error('TK-Portion zugeordnet, aber Auftau-Start nicht bestätigt: '+thaw.error.message);
+        }
         loadPromise=null;await render();
       });
   }
