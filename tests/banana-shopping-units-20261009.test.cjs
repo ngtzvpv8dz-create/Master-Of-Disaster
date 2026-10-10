@@ -70,4 +70,35 @@ assert.equal(oneFruitShort[0].missing,1,'Buy a whole banana if even a small edib
 const modifiedProduct={inventory_id:stockId,product_data:{edible_weight_per_piece_g:80}};
 const overridden=context.deriveShopping({inventory:[banana],products:[modifiedProduct],meals:[gramsMeal(500)]});
 assert.equal(overridden[0].missing,2,'Shopping conversion must read the product standard, not hard-code 118 g');
-console.log('PASS: measured 118 g edible weight controls gram/piece banana stock and whole-fruit purchases');
+// Apples use their OWN saved average: Granny Smith 150 g, never the banana weight.
+const appleId='apple-inventory';
+const apple={id:appleId,name:'Granny Smith',quantity:1,unit:'Stück',is_active:true};
+const appleProduct={inventory_id:appleId,product_data:{piece_weight_g:150}};
+const appleMeal=grams=>({
+  meal_date:'2026-10-10',meal_type:'snack',status:'planned',
+  ingredients:[{inventory_id:appleId,name:'Granny Smith',quantity:grams,unit:'g'}]
+});
+assert.equal(context.deriveShopping({inventory:[apple],products:[appleProduct],meals:[appleMeal(120)]}).length,0,
+  'A 150 g Granny Smith must cover a 120 g plan');
+const appleShort=context.deriveShopping({inventory:[apple],products:[appleProduct],meals:[appleMeal(151)]});
+assert.equal(appleShort.length,1);
+assert.equal(appleShort[0].unit,'Stück');
+assert.equal(appleShort[0].missing,1,'Shopping must round apple purchase up to one whole apple');
+
+const nutritionSource=fs.readFileSync(path.join(__dirname,'..','food-nutrition-v711.js'),'utf8');
+const basisStart=nutritionSource.indexOf('  function basisAmount(item,source){');
+const basisEnd=nutritionSource.indexOf('\n  function calculate(',basisStart);
+assert(basisStart>=0&&basisEnd>basisStart);
+const nctx={
+  number:value=>{const n=Number(value);return Number.isFinite(n)?n:null;},
+  text:value=>String(value||'').trim().toLocaleLowerCase('de-DE')
+};
+vm.createContext(nctx);
+vm.runInContext(nutritionSource.slice(basisStart,basisEnd)+'\nthis.basisAmount=basisAmount;',nctx);
+assert.equal(nctx.basisAmount({quantity:1,unit:'Stück'},{product:{product_data:{edible_weight_per_piece_g:118}}}),118,
+  'One banana must contribute 118 g to per-100g nutrition');
+assert.equal(nctx.basisAmount({quantity:2.5,unit:'Stück'},{product:{product_data:{edible_weight_per_piece_g:118}}}),295,
+  'Two and a half bananas must contribute 295 g');
+assert.equal(nctx.basisAmount({quantity:1,unit:'Stück'},{product:{product_data:{piece_weight_g:150}}}),150,
+  'One Granny Smith contributes 150 g');
+console.log('PASS: fruit piece standards drive both nutrition and shopping (banana 118 g, Granny Smith 150 g)');
