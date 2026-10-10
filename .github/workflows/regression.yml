@@ -44,6 +44,7 @@ jobs:
           node tests/v746-food-stock-resolver.test.cjs
           node tests/banana-shopping-units-20261009.test.cjs
           node tests/food-nutrition-alarm-v795.test.cjs
+          node tests/asia-vegetable-family-v796.test.cjs
           node --check food-nutrition-v711.js
           node --check shopping-v678.js
           node --check finance-data-v553.js
