@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V761';
+  const VERSION='V768';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1284,6 +1284,22 @@
     return portionLabel(eaten);
   }
 
+  // V768: Dauerhafter Frühstückshinweis. Kein Rezeptbestandteil und keine automatische Vorratsbuchung.
+  function dailyCreatineReminderMarkup(meal){
+    if(String(meal?.meal_type||'')!=='breakfast'||String(meal?.meal_date||'')<'2026-10-11')return '';
+    const available=(state?.inventory||[]).find(item=>
+      item.is_active!==false&&Number(item.quantity)>0&&
+      /ESN/i.test(String(item.name||''))&&
+      /creatine|kreatin/i.test(String(item.name||''))
+    );
+    const variant=available?.variant_label||'';
+    const dosage='1 ESN Ultrapure Creatine Stick'+(variant?' ('+variant+')':'');
+    const reminder=available
+      ?dosage+' separat einnehmen, direkt oder mit Wasser. Nicht in die Frühstückszutaten mischen.'
+      :'1 ESN Kreatin-Stick separat einnehmen. Achtung: Vorrat prüfen, derzeit kein verfügbarer ESN-Kreatin-Stick erfasst.';
+    return '<div class="food-creatine-reminder-v768" role="note"><strong>🍊 Kreatin nicht vergessen</strong><span>'+esc(reminder)+'</span></div>';
+  }
+
   function mealCard(meal){
     const status=normalizedStatus(meal.status);
     const expanded=expandedMeals.has(String(meal.id));
@@ -1317,6 +1333,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em>'+(extrasSummary?'<small class="food-meal-extras-summary-v703">'+esc(extrasSummary)+'</small>':'')+'</span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
+        +dailyCreatineReminderMarkup(meal)
         +details
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +action
@@ -1338,6 +1355,7 @@
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
+        +dailyCreatineReminderMarkup(meal)
         +freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
@@ -1364,6 +1382,7 @@
         +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(meal.title)+'</h4><em>'+esc(portionMeta+' · '+statusMeta)+'</em></span>'
         +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
       +'</button>'
+      +dailyCreatineReminderMarkup(meal)
       +details+action
       +'</article>';
   }
