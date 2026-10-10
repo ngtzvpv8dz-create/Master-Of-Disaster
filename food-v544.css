@@ -2256,3 +2256,9 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
     grid-column:1/-1;
   }
 }
+
+
+/* V768: Kreatin-Erinnerung als separater Hinweis, niemals als Rezeptzutat. */
+.food-creatine-reminder-v768{position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;margin:0 12px 10px;padding:10px 12px;border:1px solid rgba(84,122,86,.22);border-radius:12px;background:rgba(232,244,225,.95);color:#27492c;font-size:12px;line-height:1.45}
+.food-creatine-reminder-v768 strong{font-weight:800;font-size:12px}
+.food-creatine-reminder-v768 span{font-weight:500}
