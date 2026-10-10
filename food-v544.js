@@ -1448,6 +1448,13 @@
   function todayView(data){
     const meals=data.meals.filter(meal=>meal.meal_date===todayIso()).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     return '<div class="food-section-head-v544"><div><span>HEUTE</span><h3>Dein Tagesplan</h3></div><small>'+meals.length+' Mahlzeiten</small></div>'+
+      '<section class="food-day-summary-v777" data-food-day-summary-today aria-label="Kalorien und Protein des Tages">'+
+        '<span class="food-day-summary-title-v777">TAGESGESAMT · GEPLANT</span>'+
+        '<div class="food-day-summary-values-v777">'+
+          '<div class="food-day-stat-v777"><small>Kalorien</small><strong data-food-day-kcal>Berechnung …</strong></div>'+
+          '<div class="food-day-stat-v777"><small>Protein</small><strong data-food-day-protein>Berechnung …</strong></div>'+
+        '</div><small class="food-day-summary-note-v777" data-food-day-summary-note>Wird aus deinen Zutaten berechnet.</small>'+
+      '</section>'+
       thawTodayAlertsMarkup()+
       (meals.length?'<div class="food-meal-list-v544">'+meals.map(mealCard).join('')+'</div>':'<div class="food-empty-card-v544"><h4>Heute ist noch nichts eingeplant.</h4><p>Ein Rezept kann direkt aus dem Rezeptgarten eingeplant werden.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezepte öffnen</button></div>');
   }
@@ -1466,7 +1473,7 @@
     return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Geplant bis '+esc(fmtDate(horizon))+'</h3></div><small>Heute bleibt bei Heute</small></div>'+
       '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
       leftoverBlock+
-      (groups.length?'<div class="food-plan-days-v685">'+groups.map(group=>'<details class="food-day-group-v544 food-plan-day-v685" data-food-plan-day="'+esc(group.date)+'" '+(expandedPlanDays.has(group.date)?'open':'')+'><summary class="food-day-label-v544"><span class="food-plan-day-title-v685"><strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em></span><b class="food-plan-day-count-v685">'+esc(group.meals.length)+'</b></summary><div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></div></details>').join('')+'</div>':'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
+      (groups.length?'<div class="food-plan-days-v685">'+groups.map(group=>'<details class="food-day-group-v544 food-plan-day-v685" data-food-plan-day="'+esc(group.date)+'" '+(expandedPlanDays.has(group.date)?'open':'')+'><summary class="food-day-label-v544"><span class="food-plan-day-title-v685"><strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em><span class="food-plan-day-summary-v777" data-food-day-summary-plan>Kalorien &amp; Protein werden berechnet …</span></span><b class="food-plan-day-count-v685">'+esc(group.meals.length)+'</b></summary><div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></div></details>').join('')+'</div>':'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
   }
 
   function historyView(data){
