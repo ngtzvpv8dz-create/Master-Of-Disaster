@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V782';
+  const VERSION='V785';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -562,62 +562,84 @@
       +'</div></section>';
   }
 
-  // V782: package-specific freezer portions from already planned meal ingredients.
-  // Purely informational: never changes inventory, MHD lots or the meal plan.
+
+  // V785: freezer hints are optional planning previews, never stock bookings.
+  function freezerTypeForItem(item,product){
+    const flag=product?.product_data?.freezer_suitable;
+    if(flag===false)return '';
+    const subject=[item?.label,product?.product_name,product?.variant].filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
+    if(/(tiefgekühl|tiefkühl|\btk\b|gefriergetrocknet|eiswürfel)/i.test(subject))return '';
+    if(/(hähnchen|hühnchen|putenbrust|hackfleisch|rindfleisch|schweinefleisch|schweinefilet|rinderfilet|fleischfilet|lachsfilet|fischfilet|geflügel)/i.test(subject))return 'fleisch';
+    if(/(brot|brötchen|baguette|toast|wrap|tortilla|pita|fladenbrot|semmel|ciabatta|croissant|muffin|kuchen)/i.test(subject))return 'backwaren';
+    if(/(himbeer|heidelbeer|erdbeer|brombeer|johannisbeer|blaubeer|banane|mango|ananas)/i.test(subject))return 'obst';
+    if(/(brokkoli|blumenkohl|spinat|zucchini|paprika|erbsen|bohnen|karotten|möhren|kürbis|lauch)/i.test(subject))return 'gemuese';
+    if(flag===true)return 'sonstige';
+    return '';
+  }
+  function freezerUnit(unit){
+    const norm=String(unit||'').trim().toLocaleLowerCase('de-DE');
+    if(norm==='kg'||norm==='g')return {type:'weight',factor:norm==='kg'?1000:1,label:'g'};
+    if(['stück','stück(e)','stk','stk.'].includes(norm))return {type:'count',factor:1,label:'Stück'};
+    if(['scheibe','scheiben'].includes(norm))return {type:'slices',factor:1,label:'Scheiben'};
+    return null;
+  }
   function freezerAdviceMarkup(item,{open=false}={}){
     if(!item)return '';
     const inventoryId=String(item.inventoryId||item.inventory_id||'');
     const productId=String(item.productId||item.product_id||'');
     const product=(state.products||[]).find(p=>String(p.id)===productId);
-    const text=[item.label,product?.product_name,product?.variant,product?.category].filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
-    if(!/(hähnchen|hühnchen|putenbrust|pute|hackfleisch|rindfleisch|schweinefleisch|schweinefilet|rinderfilet|fleischfilet|lachsfilet|fischfilet|frischer fisch|geflügel)/i.test(text)
-      ||/(tiefgekühlt|tiefkühl|\\btk\\b|gegart|gekocht|wurst|aufschnitt|schinken|geräuchert)/i.test(text))return '';
-    const unit=String(item.unit||item.plannedUnit||'').trim().toLocaleLowerCase('de-DE');
+    const foodType=freezerTypeForItem(item,product);
+    if(!foodType)return '';
     const amount=Number(item.quantity??item.plannedQuantity);
-    if(!inventoryId||!(amount>0)||!['g','kg'].includes(unit))return '';
-    const total=Math.round(amount*(unit==='kg'?1000:1));
-    if(!(total>0))return '';
-    if(state.food?.mealPlanVerified!==true){
-      return '<div class="shopping-freezer-v782">❄️ Frisches Fleisch portionsweise einfrieren. Essensplan gerade nicht zuverlässig geladen, daher keine geschätzten Portionsgrößen.</div>';
-    }
+    const unit=freezerUnit(item.unit||item.plannedUnit);
+    if(!inventoryId||!(amount>0))return '';
+    const safety={
+      fleisch:'Rohes Fleisch gut verpackt sofort portionsweise einfrieren. Im Kühlschrank auftauen und hygienisch verarbeiten.',
+      backwaren:'Brot und Backwaren möglichst vor dem Einfrieren in Scheiben oder Mahlzeitenportionen trennen.',
+      obst:'Obst nur in geeigneter Vorbereitung einfrieren; Beeren möglichst einzeln vorfrieren, Bananen geschält.',
+      gemuese:'Gemüse je nach Sorte waschen, schneiden und bei Bedarf blanchieren. Nicht jede Rohkost behält nach dem Auftauen ihre Konsistenz.',
+      sonstige:'Ob das Produkt für Tiefkühlung geeignet ist, vor dem Einfrieren anhand der Verpackungsangaben prüfen.'
+    }[foodType];
+    const heading='❄️ Einfrierplanung';
+    if(state.food?.mealPlanVerified!==true)
+      return '<div class="shopping-freezer-v782">'+heading+' · Essensplan gerade nicht sicher geladen. Keine Mengen geraten.</div>';
+    if(!unit)return '<details class="shopping-freezer-v782" '+(open?'open':'')+'>'
+      +'<summary>'+heading+' · Portionsgröße prüfen</summary>'
+      +'<p>Die Einkaufseinheit ist nicht eindeutig in Gramm, Stück oder Scheiben umrechenbar. Portionsaufteilung später im Vorrat bestätigen.</p>'
+      +'<small>'+esc(safety)+'</small></details>';
+    const total=amount*unit.factor;
     const planned=(state.food?.plannedIngredientUses||[])
       .filter(use=>String(use.inventory_id||'')===inventoryId)
-      .map(use=>({
-        date:String(use.meal_date||''),
-        title:String(use.meal_title||'Geplante Mahlzeit'),
-        grams:Math.round((Number(use.quantity)||0)*(String(use.unit||'').toLocaleLowerCase('de-DE')==='kg'?1000:1))
-      }))
-      .filter(use=>use.grams>0)
+      .map(use=>{
+        const dimensions=freezerUnit(use.unit);
+        return {date:String(use.meal_date||''),title:String(use.meal_title||'Geplante Mahlzeit'),
+          quantity:Number(use.quantity||0)*(dimensions?.factor||1),sameUnit:dimensions?.type===unit.type};
+      }).filter(use=>use.quantity>0)
       .sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'de'));
-    let remaining=total;
-    let chilledToday=0;
-    let allocated=0;
+    const incompatible=planned.some(use=>!use.sameUnit);
+    const matched=planned.filter(use=>use.sameUnit);
+    let remaining=total, freshToday=0, lastUsed=0;
     const portions=[];
-    for(const use of planned){
-      if(use.grams>remaining)break; // Never pretend a partial pack covers a full recipe.
-      portions.push(use);
-      allocated+=use.grams;
-      remaining-=use.grams;
-      if(use.date===todayIso())chilledToday+=use.grams;
-      if(!remaining)break;
+    for(const use of matched){
+      if(use.quantity>remaining)continue;
+      portions.push(use);remaining-=use.quantity;
+      if(use.date===todayIso())freshToday+=use.quantity;
+      lastUsed+=1;
     }
-    const frozenAmount=Math.max(0,total-chilledToday);
-    const portionsMarkup=portions.map(use=>
-      '<li><strong>'+esc(fmtQty(use.grams,'g'))+'</strong><span>'
+    const toFreeze=Math.max(0,total-freshToday);
+    const showCount=x=>fmtQty(x,unit.label);
+    const hint=incompatible?'<small>Achtung: Im Plan stehen auch andere Einheiten (z. B. Scheiben statt Gramm). Diese wurden nicht in Gramm umgerechnet. Erst Stückgewicht festlegen.</small>':'';
+    const shortage=matched.length>lastUsed?'<small>Weitere Mahlzeiten benötigen zusätzlich Bestand. Vorschlag verteilt nur die aktuelle Einkaufsmenge.</small>':'';
+    const pieces=portions.map(use=>'<li><strong>'+esc(showCount(use.quantity))+'</strong><span>'
       +esc(fmtDate(use.date))+' · '+esc(use.title)
-      +(use.date===todayIso()?' · heute frisch lassen':' · getrennt einfrieren')
+      +(use.date===todayIso()?' · frisch verwenden':' · getrennt einfrieren')
       +'</span></li>').join('');
-    const reserve=remaining>0
-      ?'<li><strong>'+esc(fmtQty(remaining,'g'))+'</strong><span>Reserve · separat einfrieren, solange kein passender geplanter Bedarf vorliegt</span></li>'
-      :'';
-    const shortfall=planned.length>portions.length;
-    const headline='❄️ Portionieren: '+fmtQty(chilledToday,'g')+' heute frisch · '+fmtQty(frozenAmount,'g')+' einfrieren';
+    const rest=remaining>0?'<li><strong>'+esc(showCount(remaining))+'</strong><span>Rest / Reserve · bei Eignung getrennt einfrieren</span></li>':'';
     return '<details class="shopping-freezer-v782" '+(open?'open':'')+'>'
-      +'<summary>'+esc(headline)+'</summary>'
-      +'<div class="shopping-freezer-content-v782"><p>'+esc(fmtQty(total,'g'))+' eingetragen · Portionen anhand deiner geplanten Mahlzeiten.</p>'
-      +(portionsMarkup||reserve?'<ul>'+portionsMarkup+reserve+'</ul>':'<p>Keine genaue Aufteilung aus dem Essensplan verfügbar. In beschrifteten, passenden Einzelportionen einfrieren.</p>')
-      +(shortfall?'<small>Weitere geplante Mahlzeiten können zusätzliches Fleisch benötigen. Dieser Vorschlag verteilt nur diese Packung.</small>':'')
-      +'<small>Rohes Fleisch nach dem Aufteilen sofort gut verpackt einfrieren. Nur die heute benötigte Menge gekühlt lassen; übrige Portionen vor der Zubereitung im Kühlschrank auftauen.</small>'
+      +'<summary>'+heading+': '+esc(showCount(freshToday))+' heute · '+esc(showCount(toFreeze))+' ggf. TK</summary>'
+      +'<div class="shopping-freezer-content-v782"><p>'+esc(showCount(total))+' eingetragen · Vorschlag nach geplantem Verbrauch, noch nicht gebucht.</p>'
+      +(pieces||rest?'<ul>'+pieces+rest+'</ul>':'<p>Keine sicheren Planportionen ableitbar.</p>')
+      +hint+shortage+'<small>'+esc(safety)+'</small>'
       +'</div></details>';
   }
 
