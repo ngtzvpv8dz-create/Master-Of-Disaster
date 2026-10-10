@@ -432,20 +432,104 @@
   }
 
   function patchMeta(card,nutrition){
-    if(!nutrition?.complete)return false;
     const em=card.querySelector('button[data-food-recipe-toggle] em,button[data-food-meal-toggle] em');
     if(!em)return false;
     const parts=String(em.textContent||'').split(/\s*·\s*/).filter(Boolean)
-      .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part));
-    const nutritionParts=nutritionText(nutrition).split(/\s*·\s*/);
+      .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part)&&!/^(kcal|Nährwerte) offen$/i.test(part));
+    const nutritionParts=nutrition?.complete
+      ?nutritionText(nutrition).split(/\s*·\s*/)
+      :['kcal offen'];
     let insertAt=parts.findIndex(part=>/zubereitet|geplant|erledigt|vorbereitet|gegessen/i.test(part));
     if(insertAt<0)insertAt=parts.findIndex(part=>/Portion(?:en)?\s+zubereitet/i.test(part));
     if(insertAt<0)insertAt=parts.length;
     parts.splice(insertAt,0,...nutritionParts);
     const next=parts.join(' · ');
     if(em.textContent!==next)em.textContent=next;
-    card.dataset.foodNutritionV711='dynamic';
-    return true;
+    card.dataset.foodNutritionV711=nutrition?.complete?'dynamic':'unresolved';
+    if(nutrition?.complete)em.removeAttribute('title');
+    else em.title='Noch keine vollständigen Nährwerte: '+[...new Set(nutrition?.missing||[])].join(', ');
+    return Boolean(nutrition?.complete);
+  }
+
+  // Tageswerte entstehen ausschließlich aus den nach Zutaten dynamisch berechneten Mahlzeiten.
+  // Prepared Servings ist der Divisor einer Rezeptcharge, nicht die täglich gegessene Anzahl.
+  function recordDailyNutrition(totals,meal,nutrition){
+    const date=String(meal?.meal_date||'');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+    const day=totals.get(date)||{kcal:0,meals:0,unresolved:0};
+    day.meals++;
+    if(nutrition?.complete){
+      const eaten=number(meal?.eaten_servings);
+      const portions=eaten!==null&&eaten>0?eaten:1;
+      day.kcal+=nutrition.kcal*portions;
+    }else day.unresolved++;
+    totals.set(date,day);
+  }
+
+  function dailyTotalText(day){
+    if(!day||!day.meals)return 'Noch keine Mahlzeiten';
+    const amount=formatNumber(Math.round(day.kcal),0)+' kcal';
+    if(day.unresolved){
+      const label=day.unresolved===1?'1 Mahlzeit offen':day.unresolved+' Mahlzeiten offen';
+      return (day.meals===day.unresolved?'Kalorien noch offen':amount+' bisher erfasst')+' · '+label;
+    }
+    return amount;
+  }
+
+  function patchDailyTotals(root,totals){
+    const head=root.querySelector('.food-section-head-v544');
+    const active=String(head?.querySelector('div>span')?.textContent||'').trim().toLocaleUpperCase('de-DE');
+    // Heute: Gesamtkalorien direkt am Anfang der Tagesübersicht.
+    const existing=root.querySelector('[data-food-day-total-today]');
+    if(active==='HEUTE'){
+      const day=totals.get(todayIso());
+      const value=dailyTotalText(day);
+      const incomplete=Boolean(day?.unresolved);
+      const el=existing||document.createElement('div');
+      if(!existing){
+        el.setAttribute('data-food-day-total-today','');
+        el.className='food-day-calories-v775';
+        el.innerHTML='<span>Kalorien · ganzer Tag</span><strong></strong><small></small>';
+        head?.insertAdjacentElement('afterend',el);
+      }
+      const title=el.querySelector('strong');
+      if(title&&title.textContent!==value)title.textContent=value;
+      const hint=el.querySelector('small');
+      const note=incomplete?'Unvollständig: fehlende Produktwerte oder nicht umrechenbare Zutaten.':(day?.meals||0)+' Mahlzeiten im Tagesplan';
+      if(hint&&hint.textContent!==note)hint.textContent=note;
+      el.classList.toggle('is-incomplete-v775',incomplete);
+    }else existing?.remove();
+
+    // Planung: jeder aufgeklappte oder zugeklappte Tag zeigt seine aktuelle Summe.
+    root.querySelectorAll('[data-food-plan-day]').forEach(group=>{
+      const date=String(group.dataset.foodPlanDay||'');
+      const title=group.querySelector('.food-plan-day-title-v685');
+      if(!title)return;
+      let line=title.querySelector('[data-food-day-total-planned]');
+      if(!line){
+        line=document.createElement('span');
+        line.setAttribute('data-food-day-total-planned','');
+        line.className='food-plan-day-calories-v775';
+        title.appendChild(line);
+      }
+      const value='Gesamt: '+dailyTotalText(totals.get(date));
+      if(line.textContent!==value)line.textContent=value;
+      line.classList.toggle('is-incomplete-v775',Boolean(totals.get(date)?.unresolved));
+    });
+  }
+
+  function ensureDailyTotalStyle(){
+    if(document.getElementById('food-day-calories-style-v775'))return;
+    const style=document.createElement('style');
+    style.id='food-day-calories-style-v775';
+    style.textContent=
+      '.food-day-calories-v775{display:flex;flex-direction:column;gap:3px;margin:10px 0 13px;padding:12px 14px;border:1px solid rgba(106,185,218,.32);border-radius:13px;background:rgba(57,126,159,.09);box-sizing:border-box;max-width:100%;min-width:0}'+
+      '.food-day-calories-v775>span{color:#9bbdcb;font-size:11px;font-weight:700;letter-spacing:.03em}'+
+      '.food-day-calories-v775>strong{color:inherit;font-size:21px;line-height:1.25;overflow-wrap:anywhere}'+
+      '.food-day-calories-v775>small{color:#9badb7;font-size:11px}'+
+      '.food-plan-day-calories-v775{display:block;margin-top:4px;color:#a7cfd9;font-size:12px;font-weight:750;overflow-wrap:anywhere}'+
+      '.food-day-calories-v775.is-incomplete-v775>strong,.food-plan-day-calories-v775.is-incomplete-v775{color:#d5af87}';
+    document.head.appendChild(style);
   }
 
   function plusDays(iso,days){
@@ -494,6 +578,7 @@
       const unresolvedMeals=[];
       const planState=plannedMealAllocationState(data);
       let dynamicRecipes=0,dynamicMeals=0,allocationRows=0;
+      const dailyTotals=new Map();
 
       root.querySelectorAll('[data-food-recipe-card]').forEach(card=>{
         const recipe=recipeMap.get(String(card.dataset.foodRecipeCard||''));
@@ -524,11 +609,15 @@
           n=calculate(items,meal.prepared_servings||meal.eaten_servings||1,mealContext,mealAllocations);
         }
         allocationRows+=patchIngredientAllocations(card,items,mealContext,mealAllocations,{show:text(meal.status)!=='completed'});
+        recordDailyNutrition(dailyTotals,meal,n);
         if(patchMeta(card,n))dynamicMeals++;
         else unresolvedMeals.push({id:meal.id,title:meal.title,missing:n?.missing||[]});
       });
 
+      ensureDailyTotalStyle();
+      patchDailyTotals(root,dailyTotals);
       lastStatus={
+        dayTotals:[...dailyTotals].map(([date,day])=>({date,...day})),
         recipes:data.recipes.length,
         meals:data.meals.length,
         dynamicRecipes,
