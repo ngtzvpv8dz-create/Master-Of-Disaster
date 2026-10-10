@@ -577,6 +577,9 @@
     if(!inventoryId||!(amount>0)||!['g','kg'].includes(unit))return '';
     const total=Math.round(amount*(unit==='kg'?1000:1));
     if(!(total>0))return '';
+    if(state.food?.mealPlanVerified!==true){
+      return '<div class="shopping-freezer-v782">❄️ Frisches Fleisch portionsweise einfrieren. Essensplan gerade nicht zuverlässig geladen, daher keine geschätzten Portionsgrößen.</div>';
+    }
     const planned=(state.food?.plannedIngredientUses||[])
       .filter(use=>String(use.inventory_id||'')===inventoryId)
       .map(use=>({
