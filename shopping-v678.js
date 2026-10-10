@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V781';
+  const VERSION='V782';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -562,6 +562,62 @@
       +'</div></section>';
   }
 
+  // V782: package-specific freezer portions from already planned meal ingredients.
+  // Purely informational: never changes inventory, MHD lots or the meal plan.
+  function freezerAdviceMarkup(item,{open=false}={}){
+    if(!item)return '';
+    const inventoryId=String(item.inventoryId||item.inventory_id||'');
+    const productId=String(item.productId||item.product_id||'');
+    const product=(state.products||[]).find(p=>String(p.id)===productId);
+    const text=[item.label,product?.product_name,product?.variant,product?.category].filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
+    if(!/(hähnchen|hühnchen|putenbrust|pute|hackfleisch|rindfleisch|schweinefleisch|schweinefilet|rinderfilet|fleischfilet|lachsfilet|fischfilet|frischer fisch|geflügel)/i.test(text)
+      ||/(tiefgekühlt|tiefkühl|\\btk\\b|gegart|gekocht|wurst|aufschnitt|schinken|geräuchert)/i.test(text))return '';
+    const unit=String(item.unit||item.plannedUnit||'').trim().toLocaleLowerCase('de-DE');
+    const amount=Number(item.quantity??item.plannedQuantity);
+    if(!inventoryId||!(amount>0)||!['g','kg'].includes(unit))return '';
+    const total=Math.round(amount*(unit==='kg'?1000:1));
+    if(!(total>0))return '';
+    const planned=(state.food?.plannedIngredientUses||[])
+      .filter(use=>String(use.inventory_id||'')===inventoryId)
+      .map(use=>({
+        date:String(use.meal_date||''),
+        title:String(use.meal_title||'Geplante Mahlzeit'),
+        grams:Math.round((Number(use.quantity)||0)*(String(use.unit||'').toLocaleLowerCase('de-DE')==='kg'?1000:1))
+      }))
+      .filter(use=>use.grams>0)
+      .sort((a,b)=>a.date.localeCompare(b.date)||a.title.localeCompare(b.title,'de'));
+    let remaining=total;
+    let chilledToday=0;
+    let allocated=0;
+    const portions=[];
+    for(const use of planned){
+      if(use.grams>remaining)break; // Never pretend a partial pack covers a full recipe.
+      portions.push(use);
+      allocated+=use.grams;
+      remaining-=use.grams;
+      if(use.date===todayIso())chilledToday+=use.grams;
+      if(!remaining)break;
+    }
+    const frozenAmount=Math.max(0,total-chilledToday);
+    const portionsMarkup=portions.map(use=>
+      '<li><strong>'+esc(fmtQty(use.grams,'g'))+'</strong><span>'
+      +esc(fmtDate(use.date))+' · '+esc(use.title)
+      +(use.date===todayIso()?' · heute frisch lassen':' · getrennt einfrieren')
+      +'</span></li>').join('');
+    const reserve=remaining>0
+      ?'<li><strong>'+esc(fmtQty(remaining,'g'))+'</strong><span>Reserve · separat einfrieren, solange kein passender geplanter Bedarf vorliegt</span></li>'
+      :'';
+    const shortfall=planned.find(use=>use.grams>total-allocated);
+    const headline='❄️ Portionieren: '+fmtQty(chilledToday,'g')+' heute frisch · '+fmtQty(frozenAmount,'g')+' einfrieren';
+    return '<details class="shopping-freezer-v782" '+(open?'open':'')+'>'
+      +'<summary>'+esc(headline)+'</summary>'
+      +'<div class="shopping-freezer-content-v782"><p>'+esc(fmtQty(total,'g'))+' gekauft · Portionen anhand deiner geplanten Mahlzeiten.</p>'
+      +(portionsMarkup||reserve?'<ul>'+portionsMarkup+reserve+'</ul>':'<p>Keine genaue Aufteilung aus dem Essensplan verfügbar. In beschrifteten, passenden Einzelportionen einfrieren.</p>')
+      +(shortfall?'<small>Weitere geplante Mahlzeiten können zusätzliches Fleisch benötigen. Dieser Vorschlag verteilt nur diese Packung.</small>':'')
+      +'<small>Rohes Fleisch nach dem Aufteilen sofort gut verpackt einfrieren. Nur die heute benötigte Menge gekühlt lassen; übrige Portionen vor der Zubereitung im Kühlschrank auftauen.</small>'
+      +'</div></details>';
+  }
+
   function purchasedMarkup(){
     const checkouts=state.checkouts||[];
     const money=value=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(value)||0);
@@ -589,6 +645,8 @@
           +'<b>'+(checkout.total_amount===null||checkout.total_amount===undefined?'—':esc(money(checkout.total_amount)))+'</b>'
           +'<span>'+esc(stateText)+'</span>'
           +'<button type="button" data-checkout-attach-receipt="'+esc(checkout.id)+'">'+(receiptCount?'BONS ERGÄNZEN':'BONS ZUORDNEN')+'</button>'
+          +(state.checkoutItems||[]).filter(item=>String(item.checkout_id||'')===String(checkout.id))
+            .map(item=>freezerAdviceMarkup(item)).filter(Boolean).join('')
           +'</article>';
       }).join('')
       +'</div></section>';
@@ -836,6 +894,7 @@
           +(candidate&&!pending
             ?'<span class="shopping-review-purchase-v756 '+(purchaseDetailsForReview(review,candidate).ready?'is-ready-v756':'is-open-v756')+'">'+esc(purchaseDetailsForReview(review,candidate).summary||'Kaufdetails prüfen')+'</span>'
             :'')
+          +freezerAdviceMarkup(checkoutItemForReview(review))
           +'</div><div class="shopping-review-actions-v644">'
           +(candidate&&!pending?'<button type="button" data-review-details="'+esc(review.id)+'">'+(purchaseDetailsForReview(review,candidate).ready?'Kaufdetails':'Kaufdetails ergänzen')+'</button>':'')
           +(candidate&&!pending?'<button type="button" data-review-confirm="'+esc(review.id)+'">✓ Passt & buchen</button>':'')
@@ -1185,6 +1244,7 @@
               +'</div></div></div>'
             :'')
           +'<label class="shopping-checkout-product-v678">Produktstamm<select data-checkout-product>'+productOptions(item.productId,item.inventoryId)+'</select></label>'
+          +'<div data-freezer-advice-host-v782>'+freezerAdviceMarkup({label:item.label,inventoryId:item.inventoryId,productId:item.productId,quantity:item.plannedQuantity,unit:item.plannedUnit})+'</div>'
           +'</article>';
       }).join('')
       +'</div>'
@@ -1193,6 +1253,21 @@
       +'</form></div>';
     document.body.appendChild(modal);
     modal.querySelector('[data-checkout-close]')?.addEventListener('click',()=>modal.remove());
+    // Reflect the quantity actually entered without waiting for receipt confirmation.
+    modal.querySelectorAll('[data-checkout-index]').forEach(article=>{
+      const updateFreezer=()=>{
+        const base=cart[Number(article.dataset.checkoutIndex)];
+        const host=article.querySelector('[data-freezer-advice-host-v782]');
+        if(!base||!host)return;
+        const quantity=Number(article.querySelector('[data-checkout-qty]')?.value);
+        const unit=String(article.querySelector('[data-checkout-unit]')?.value||base.plannedUnit);
+        const chosen=article.querySelector('[data-checkout-product]')?.value||base.productId;
+        host.innerHTML=freezerAdviceMarkup({label:base.label,inventoryId:base.inventoryId,productId:chosen,quantity,unit},{open:true});
+      };
+      article.querySelector('[data-checkout-qty]')?.addEventListener('input',updateFreezer);
+      article.querySelector('[data-checkout-unit]')?.addEventListener('change',updateFreezer);
+      article.querySelector('[data-checkout-product]')?.addEventListener('change',updateFreezer);
+    });
     modal.addEventListener('click',event=>{
       if(event.target===modal){modal.remove();return;}
       const add=event.target?.closest?.('[data-checkout-add-lot]');
