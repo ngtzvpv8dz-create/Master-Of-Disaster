@@ -1901,8 +1901,18 @@
       const quantity=num(item.quantity);
       return item.pending_weighing!==true&&quantity!==null&&quantity<=0;
     };
-    const availableRows=regular.filter(item=>!isActuallyEmpty(item));
-    const emptyRows=regular.filter(isActuallyEmpty);
+    const allAvailable=regular.filter(item=>!isActuallyEmpty(item));
+    const availableRows=inventoryLocationTab==='frisch'
+      ?allAvailable.filter(item=>{
+        const lots=(data.lots||[]).filter(lot=>String(lot.inventory_id)===String(item.id));
+        if(!lots.length)return true; // legacy stock without lots stays visible
+        const totalTracked=lots.reduce((sum,lot)=>sum+(freezerLotQuantity(lot)?.quantity||0),0);
+        const freshTracked=lots.filter(lot=>!frozenStorageLocation(lot.storage_location))
+          .reduce((sum,lot)=>sum+(freezerLotQuantity(lot)?.quantity||0),0);
+        return freshTracked>0||Number(item.quantity||0)-totalTracked>.001;
+      })
+      :allAvailable;
+    const emptyRows=inventoryLocationTab==='alle'?regular.filter(isActuallyEmpty):[];
     const isDrink=item=>(productsByInventoryId.get(String(item.id))||[]).some(product=>
       String(product?.category||'').trim().toLocaleLowerCase('de-DE')==='getränke'
     );
@@ -1969,7 +1979,18 @@
     const tools='<div class="food-inventory-tools-v697"><label><span>Vorrat durchsuchen</span><input type="search" data-food-inventory-search value="'+esc(inventorySearch)+'" placeholder="Familie, Variante, Marke, Produkt, Barcode …" autocomplete="off"></label><small>Sortierung: A–Z nach Familie, Gruppe und Variante</small></div>';
     const emptyCopy=needle?'Keine passenden Vorräte gefunden.':'Der Vorrat ist leer.';
     const content=availableGroups+unavailable;
-    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div><button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button></div>'+tools+(content||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>'+esc(emptyCopy)+'</h4></div></div>');
+    const freezerModes=[['alle','Alle'],['frisch','Frisch'],['tk','❄️ TK'],['auftauen','Auftauen']];
+    const filterBar='<nav class="food-freezer-tabs-v784" aria-label="Vorrat nach Lagerzustand">'
+      +freezerModes.map(([id,label])=>'<button type="button" data-food-inventory-mode="'+id+'" aria-pressed="'+(inventoryLocationTab===id)+'" class="'+(inventoryLocationTab===id?'active':'')+'">'+esc(label)+'</button>').join('')
+      +'</nav>';
+    const special=inventoryLocationTab==='tk'||inventoryLocationTab==='auftauen';
+    const contentBody=special?freezerBoardMarkup(data,inventoryLocationTab)
+      :tools+(content||'<div class="food-inventory-grid-v544"><div class="food-empty-card-v544"><h4>'+esc(emptyCopy)+'</h4></div></div>');
+    const actions=special
+      ?'<button type="button" class="food-action-v544 compact" data-food-freezer-add>+ Portion planen</button>'
+      :'<button type="button" class="food-action-v544 compact" data-food-add-inventory>+ Vorrat</button>';
+    return '<div class="food-section-head-v544"><div><span>VORRAT</span><h3>Was wirklich da ist</h3></div>'+actions+'</div>'
+      +filterBar+contentBody;
   }
 
   function deriveShopping(data){
