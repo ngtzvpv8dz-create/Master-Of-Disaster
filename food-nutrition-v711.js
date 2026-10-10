@@ -1,4 +1,4 @@
-/* V711 · Dynamic FOOD nutrition + visible FIFO product allocation.
+/* V776 · Dynamic FOOD nutrition with active-lot product identity.
    Rechnet Rezept- und Mahlzeitenwerte aus den aktuellen Zutatenmengen.
    Generische Zutatenfamilien werden sichtbar und planreihenfolge-bewusst
    auf konkrete Vorratsprodukte aufgeteilt. */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V711';
+  const VERSION='V776';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
