@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V772';
+  const VERSION='V773';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1301,41 +1301,47 @@
 
   function dailyCreatineReminderMarkup(meal){
     const date=String(meal?.meal_date||'');
-    if(String(meal?.meal_type||'')!=='breakfast'||date<'2026-10-11')return '';
-
-    const intake=(state?.intakes||[]).find(row=>row.intake_date===date && row.confirmed_at);
-    if(intake){
-      const variant=String(intake.variant_label||intake.inventory_name||'ESN Kreatin').trim();
-      return '<div class="food-creatine-reminder-v768 is-confirmed-v772" role="status">'
-        +'<strong>✓ Kreatin eingenommen</strong>'
-        +'<span>'+esc('1 Stick ('+variant+') · 4 g aus Vorrat gebucht')+'</span>'
-        +'</div>';
-    }
+    if(String(meal?.meal_type||'')!=='breakfast'||date<'2026-10-10')return '';
 
     const choices=creatineStockChoices();
     const first=choices[0]||null;
-    const variant=first?.variant_label||'';
-    const ready=sourceState.intakes==='cloud' && sourceState.inventory==='cloud';
+    const variant=first?.variant_label||'ESN';
+    const isPreview=date==='2026-10-10';
+    const intake=(state?.intakes||[]).find(row=>row.intake_date===date && row.confirmed_at);
+    const main=(text,description)=>'<div class="food-creatine-main-v773"><strong>'+esc(text)+'</strong><span>'+esc(description)+'</span></div>';
+
+    // 10.10. wurde vom Nutzer bereits genommen und der Bestand manuell korrigiert.
+    // Den Button nur zur Layoutvorschau zeigen, aber NIE erneut buchen.
+    if(isPreview){
+      return '<div class="food-creatine-reminder-v768 is-preview-v773" role="note">'
+        +main('💪 Kreatin','1 Stick · '+variant)
+        +'<button type="button" class="food-creatine-confirm-v772 is-preview-button-v773" disabled title="Heute bereits genommen und im Vorrat manuell verbucht">✓ Eingenommen</button>'
+        +'<small class="food-creatine-status-v773">Heute schon genommen · nur Vorschau, keine Abbuchung</small>'
+        +'</div>';
+    }
+
+    if(intake){
+      const selected=String(intake.variant_label||intake.inventory_name||'ESN').trim();
+      return '<div class="food-creatine-reminder-v768 is-confirmed-v772" role="status">'
+        +main('💪 Kreatin','1 Stick · '+selected+' · 4 g gebucht')
+        +'<span class="food-creatine-done-v773">✓ Eingenommen</span>'
+        +'</div>';
+    }
+
+    const ready=sourceState.intakes==='cloud'&&sourceState.inventory==='cloud';
     const reached=date<=todayIso();
-    const hint=first
-      ?'1 ESN Ultrapure Creatine Stick'+(variant?' ('+variant+')':'')+' separat einnehmen, direkt oder mit Wasser.'
-      :'1 ESN Kreatin-Stick separat einnehmen. Kein verfügbarer Stick im Vorrat.';
-    const selector=ready&&reached&&choices.length>1
+    const selection=ready&&reached&&choices.length>1
       ?'<label class="food-creatine-choose-v772">Sorte <select data-food-creatine-choice>'
         +choices.map(stock=>'<option value="'+esc(stock.id)+'">'+esc((stock.variant_label||stock.name)+' · '+Math.floor(Number(stock.quantity)/4)+' Sticks')+'</option>').join('')
         +'</select></label>'
       :'';
     const action=ready&&reached&&first
-      ?'<button type="button" class="food-creatine-confirm-v772" data-food-creatine-confirm="'+esc(date)+'" data-food-creatine-inventory="'+esc(first.id)+'">✓ Eingenommen · 1 Stick buchen</button>'
-      :'';
-    const status=!ready
-      ?'<small>Einnahmestatus nicht synchronisiert. Bestätigung derzeit gesperrt.</small>'
-      :!reached?'<small>Am jeweiligen Tag bestätigen, erst dann wird abgebucht.</small>'
-      :!first?'<small>Bitte zuerst den Kreatin-Vorrat ergänzen.</small>'
-      :'';
+      ?'<button type="button" class="food-creatine-confirm-v772" data-food-creatine-confirm="'+esc(date)+'" data-food-creatine-inventory="'+esc(first.id)+'" title="Nur nach Einnahme bestätigen: 4 g aus Vorrat buchen">✓ Eingenommen</button>'
+      :'<span class="food-creatine-pending-v773">'+esc(!ready?'Cloud prüfen':!reached?'Noch nicht fällig':'Vorrat leer')+'</span>';
+
     return '<div class="food-creatine-reminder-v768" role="note">'
-      +'<strong>💪 Kreatin nicht vergessen</strong><span>'+esc(hint)+'</span>'
-      +selector+action+status+'</div>';
+      +main('💪 Kreatin',first?'1 Stick · '+variant:'1 Stick · kein Vorrat')
+      +action+selection+'</div>';
   }
 
   async function confirmCreatineIntake(date,inventoryId){
