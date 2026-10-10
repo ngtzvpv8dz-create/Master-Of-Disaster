@@ -504,7 +504,7 @@
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
-      safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,created_at').order('created_at')),
+      safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
@@ -1746,43 +1746,47 @@
     const stock=(state?.inventory||[]).find(item=>String(item.id)===String(portion.inventory_id));
     const lot=(state?.lots||[]).find(item=>String(item.id)===String(portion.frozen_lot_id||portion.source_lot_id));
     const label=stock?.name||portion.label||'Lebensmittel';
-    const q=freezerLotQuantity(lot);
-    const amount=(portion.status==='planned'?null:q)?.quantity??Number(portion.quantity);
-    const quantity=fmtQty(amount,portion.unit);
-    const name=portion.status==='planned'?'Einzufrieren':portion.status==='thawing'?'Auftauen läuft':'Eingefroren';
-    const date=portion.needed_on?fmtDate(portion.needed_on):'Noch kein Auftautermin';
-    const stamp=portion.frozen_at?' · eingefroren '+new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(portion.frozen_at)):'';
-    const button=action==='freeze'?'<button type="button" data-food-freezer-action="freeze" data-freezer-id="'+esc(portion.id)+'">✓ Eingefroren</button>'
-      +'<button type="button" class="quiet" data-food-freezer-action="cancel" data-freezer-id="'+esc(portion.id)+'">Verwerfen</button>'
-      :action==='start_thaw'?'<button type="button" data-food-freezer-action="start_thaw" data-freezer-id="'+esc(portion.id)+'">Auftauen starten</button>'
-      :action==='finish_thaw'?'<button type="button" data-food-freezer-action="finish_thaw" data-freezer-id="'+esc(portion.id)+'">✓ Aufgetaut</button>':'';
-    const changeDate=portion.status==='frozen'||portion.status==='planned'
-      ?'<button type="button" class="quiet" data-food-freezer-due="'+esc(portion.id)+'">📅 Termin</button>':'';
-    return '<article class="food-freezer-line-v784">'
-      +'<div><strong>'+esc(label)+' · '+esc(quantity)+'</strong><small>'+esc(name)+' · '+esc(date)+esc(stamp)+'</small></div>'
-      +'<div class="food-freezer-actions-v784">'+button+changeDate+'</div>'
-      +'</article>';
+    const amount=Number(portion.quantity)||0;
+    const stamp=timestamp=>new Intl.DateTimeFormat('de-DE',{
+      day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'
+    }).format(new Date(timestamp));
+    const needed=portion.needed_on?'Auftauen ab '+fmtDate(portion.needed_on):'Noch kein Auftautermin';
+    const freezeOn=portion.frozen_at?'Eingefroren am '+stamp(portion.frozen_at)
+      :lot?.batch_data?.frozen_on?'Eingefroren am '+fmtDate(String(lot.batch_data.frozen_on)):'';
+    const thawing=portion.status==='thawing'&&portion.thaw_started_at?'Auftauen läuft seit '+stamp(portion.thaw_started_at):'';
+    const thawed=portion.status==='thawed'&&portion.thawed_at?'Aufgetaut am '+stamp(portion.thawed_at):'';
+    const detail=portion.status==='planned'
+      ?[portion.note,needed].filter(Boolean).join(' · ')
+      :[thawing,thawed,freezeOn,needed].filter(Boolean).join(' · ');
+    const button=action==='freeze'
+      ?'<button type="button" class="food-freezer-icon-button-v790" data-food-freezer-action="freeze" data-freezer-id="'+esc(portion.id)+'" title="Eingefroren bestätigen" aria-label="'+esc(fmtQty(amount,portion.unit)+' '+label)+' eingefroren bestätigen">🧊</button>'
+      :action==='start_thaw'
+      ?'<button type="button" class="food-freezer-icon-button-v790" data-food-freezer-action="start_thaw" data-freezer-id="'+esc(portion.id)+'" title="Auftauen starten" aria-label="Auftauen starten">🌡️</button>'
+      :action==='finish_thaw'
+      ?'<button type="button" class="food-freezer-icon-button-v790" data-food-freezer-action="finish_thaw" data-freezer-id="'+esc(portion.id)+'" title="Aufgetaut bestätigen" aria-label="Aufgetaut bestätigen">✓</button>':'';
+    const cancel=portion.status==='planned'
+      ?'<button type="button" class="food-freezer-secondary-v790" data-food-freezer-action="cancel" data-freezer-id="'+esc(portion.id)+'" title="Planung verwerfen" aria-label="Planung verwerfen">×</button>':'';
+    return '<article class="food-freezer-line-v784 food-freezer-compact-v790">'
+      +'<div class="food-freezer-copy-v790"><strong>'+esc(fmtQty(amount,portion.unit)+' '+label)+'</strong>'
+      +(portion.status==='planned'?'<small>Zum Einfrieren vorgesehen</small>':'')
+      +(detail?'<small>'+esc(detail)+'</small>':'')
+      +'</div><div class="food-freezer-actions-v784">'+button+cancel+'</div></article>';
   }
 
   function freezerLotMarkup(lot){
     const q=freezerLotQuantity(lot);if(!q)return '';
-    const portions=(state?.freezer||[]);
-    const task=portions.find(p=>String(p.frozen_lot_id||'')===String(lot.id));
-    if(task&&['frozen','thawing','thawed'].includes(task.status)&&task.status!=='frozen')return '';
-    const name=freezerLotLabel(lot);
-    const when=task?.frozen_at
-      ?'eingefroren '+new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(task.frozen_at))
-      :(lot.purchased_on?'gekauft '+fmtDate(String(lot.purchased_on).slice(0,10)):'Datum nicht erfasst');
-    const action='<button type="button" data-food-freezer-split="'+esc(lot.id)+'">Portion auftauen</button>'
-      +(task?'<button type="button" class="quiet" data-food-freezer-due="'+esc(task.id)+'">📅 Termin</button>':'');
-    return '<article class="food-freezer-line-v784">'
-      +'<div><strong>'+esc(name)+' · '+esc(fmtQty(q.quantity,q.unit))+'</strong>'
-      +'<small>❄️ Tiefkühler · '+esc(when)
-      +(lot.best_before_date?' · ursprüngliches MHD '+esc(fmtDate(lot.best_before_date)):'')
-      +'</small></div>'
-      +'<div class="food-freezer-actions-v784">'+action+'</div></article>';
+    const task=(state?.freezer||[]).find(portion=>String(portion.frozen_lot_id||'')===String(lot.id));
+    if(task&&task.status!=='frozen')return '';
+    const freezeDate=task?.frozen_at
+      ?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(task.frozen_at))
+      :lot.batch_data?.frozen_on?fmtDate(String(lot.batch_data.frozen_on)):null;
+    const status=freezeDate?'Eingefroren am '+freezeDate:'Einfrierdatum nicht erfasst';
+    const original=lot.best_before_date?' · ursprüngliches MHD '+fmtDate(lot.best_before_date):'';
+    const purchase=lot.purchased_on?' · gekauft '+fmtDate(String(lot.purchased_on).slice(0,10)):'';
+    return '<article class="food-freezer-line-v784 food-freezer-compact-v790">'
+      +'<div class="food-freezer-copy-v790"><strong>'+esc(freezerLotLabel(lot))+' · '+esc(fmtQty(q.quantity,q.unit))+'</strong>'
+      +'<small>❄️ '+esc(status+purchase+original)+'</small></div></article>';
   }
-
 
   // V786: use the same food-plan thaw allocations, but never move inventory automatically.
   function freezerPlanHintMarkup(task,data=state){
