@@ -1022,7 +1022,7 @@
       const removeHtml=canRemove
         ?'<button type="button" class="food-ingredient-remove-v751" data-food-remove-meal-ingredient="'+esc(item.id)+'" aria-label="'+esc(ingredientName(item))+' nur aus dieser Mahlzeit entfernen" title="Nur aus dieser Mahlzeit entfernen">×</button>'
         :'';
-      return '<li class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
+      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
         quantityHtml+
         removeHtml+
         allocationHtml+'</li>';
@@ -1455,6 +1455,7 @@
   function todayView(data){
     const meals=data.meals.filter(meal=>meal.meal_date===todayIso()).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     return '<div class="food-section-head-v544"><div><span>HEUTE</span><h3>Dein Tagesplan</h3></div><small>'+meals.length+' Mahlzeiten</small></div>'+
+      '<div class="food-nutrition-alarm-v795" data-food-nutrition-alarm aria-live="polite" hidden></div>'+
       '<div class="food-day-summary-v778" data-food-day-summary-today aria-label="Kalorien und Protein des Tages">'+
         '<span class="food-day-summary-title-v778" data-food-day-summary-label>Tag gesamt</span>'+
         '<strong class="food-day-summary-value-v778" data-food-day-kcal>… kcal</strong>'+
