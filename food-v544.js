@@ -687,8 +687,9 @@
       .filter(Boolean)
       .sort();
     if(dates.length)return dates[0];
-    const stock=(state?.inventory||[]).find(row=>String(row.id)===String(inventoryId||''));
-    return '9999-12-31';
+    // Legacy residual quantity has no lot. The database consumes legacy stock
+    // before newly recorded purchases, so the UI must use the same priority.
+    return '0001-01-01';
   }
 
   function familyAllocationCandidates(item,inventoryRows=state?.inventory||[]){
