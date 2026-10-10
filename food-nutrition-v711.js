@@ -1,4 +1,4 @@
-/* V776 · Dynamic FOOD nutrition with active-lot product identity.
+/* V780 · FOOD nutrition: planned quantities independent of stock; salt zero-kcal.
    Rechnet Rezept- und Mahlzeitenwerte aus den aktuellen Zutatenmengen.
    Generische Zutatenfamilien werden sichtbar und planreihenfolge-bewusst
    auf konkrete Vorratsprodukte aufgeteilt. */
@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V779';
+  const VERSION='V780';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -195,6 +195,9 @@
   // konkrete Produkt bei generischen Familien zuerst verwendet werden soll.
   function genericFamilyNutrition(item,data,allocationOverride=null){
     const name=itemName(item);
+    // Salz und Wasser bleiben null-kcal, auch wenn ein Vorratseintrag
+    // oder eine Vorratsfamilie mit genau diesem Namen existiert.
+    if(ZERO_NAMES.has(text(name)))return null;
     const unit=text(item?.unit);
     if(!['g','kg','ml','l'].includes(unit))return null;
     const pinned=item?.inventory_id
@@ -442,6 +445,9 @@
     let kcal=0,protein=0;
     const missing=[];
     for(const item of rows){
+      // Nährwertfreie Grundzutaten niemals per Familien-/FIFO-Produktlookup
+      // auflösen. Fehlende Herstellerdaten dürfen Salz nicht blockieren.
+      if(ZERO_NAMES.has(text(itemName(item))))continue;
       const allocationOverride=item?.id&&allocationMap?.get?.(String(item.id))||null;
       const familyNutrition=genericFamilyNutrition(item,data,allocationOverride);
       if(familyNutrition){
