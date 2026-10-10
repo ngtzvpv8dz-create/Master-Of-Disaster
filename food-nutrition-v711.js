@@ -415,6 +415,7 @@
     const packageUnit=text(product.package_unit);
     const servingUnit=text(product.serving_unit);
     const values=[
+      unit==='stück'?productData.edible_weight_per_piece_g:null,
       productData.piece_weight_g,
       productData.unit_weight_g,
       productData.slice_weight_g,
