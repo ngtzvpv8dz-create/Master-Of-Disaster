@@ -1751,6 +1751,7 @@
       :action==='plan-hint'
         ?' data-food-freezer-plan-hint="'+esc(id)+'"':'';
     const aria=action==='finish_thaw'?'Aufgetaut bestätigen'
+      :action==='plan-hint'?'Passende TK-Portion auswählen'
       :action?'Auftauen starten':status==='thawed'?'Aufgetaut':'Auftauen geplant';
     return '<div class="food-thaw-entry-v739 '+(warming?'is-thawing-v739':'is-frozen-v739')+' food-stock-thaw-v793">'
       +'<div class="food-thaw-copy-v739"><b>'+esc(headline)+'</b>'
