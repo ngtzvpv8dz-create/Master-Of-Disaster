@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V777';
+  const VERSION='V778';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -449,10 +449,11 @@
     const em=card.querySelector('button[data-food-recipe-toggle] em,button[data-food-meal-toggle] em');
     if(!em)return false;
     const parts=String(em.textContent||'').split(/\s*·\s*/).filter(Boolean)
-      .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part)&&!/^(kcal|Nährwerte) offen$/i.test(part));
+      .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part)&&!/^(kcal|Nährwerte) offen$/i.test(part)&&!/^Nährwert(e)? prüfen:/i.test(part));
+    const reasons=[...new Set(nutrition?.missing||[])];
     const nutritionParts=nutrition?.complete
       ?nutritionText(nutrition).split(/\s*·\s*/)
-      :['kcal offen'];
+      :['kcal offen',...(reasons.length?['Nährwerte prüfen: '+reasons.slice(0,2).join(', ')+(reasons.length>2?' …':'')]:[])];
     let insertAt=parts.findIndex(part=>/zubereitet|geplant|erledigt|vorbereitet|gegessen/i.test(part));
     if(insertAt<0)insertAt=parts.findIndex(part=>/Portion(?:en)?\s+zubereitet/i.test(part));
     if(insertAt<0)insertAt=parts.length;
@@ -483,17 +484,15 @@
 
   function dailySummary(day){
     if(!day||!day.meals)return {
-      kcal:'0 kcal',protein:'0 g',note:'Noch keine Mahlzeiten eingeplant.',incomplete:false
+      kcal:'0 kcal',protein:'0 g Protein',note:'',label:'Tag gesamt',incomplete:false
     };
     const incomplete=day.unresolved>0;
     const allMissing=day.unresolved===day.meals;
-    const suffix=incomplete?' bisher':'';
     return {
-      kcal:allMissing?'kcal offen':formatNumber(Math.round(day.kcal),0)+' kcal'+suffix,
-      protein:allMissing?'Protein offen':formatNumber(day.protein,1)+' g'+suffix,
-      note:incomplete
-        ?day.unresolved+' '+(day.unresolved===1?'Mahlzeit ohne vollständige Nährwerte':'Mahlzeiten ohne vollständige Nährwerte')
-        :day.meals+' '+(day.meals===1?'Mahlzeit':'Mahlzeiten')+' im Tagesplan',
+      kcal:allMissing?'kcal offen':formatNumber(Math.round(day.kcal),0)+' kcal',
+      protein:allMissing?'Protein offen':formatNumber(day.protein,1)+' g Protein',
+      note:incomplete?'⚠ '+day.unresolved+' offen':'',
+      label:incomplete?'Teilsumme':'Tag gesamt',
       incomplete
     };
   }
@@ -511,7 +510,8 @@
       setText(todayPanel.querySelector('[data-food-day-kcal]'),day.kcal);
       setText(todayPanel.querySelector('[data-food-day-protein]'),day.protein);
       setText(todayPanel.querySelector('[data-food-day-summary-note]'),day.note);
-      todayPanel.classList.toggle('is-incomplete-v777',day.incomplete);
+      setText(todayPanel.querySelector('[data-food-day-summary-label]'),day.label);
+      todayPanel.classList.toggle('is-incomplete-v778',day.incomplete);
     }
 
     // Alle im Plan angezeigten Tage, auch zugeklappte, erhalten denselben Stand.
@@ -519,27 +519,27 @@
       const line=group.querySelector('[data-food-day-summary-plan]');
       if(!line)return;
       const day=dailySummary(totals.get(String(group.dataset.foodPlanDay||'')));
-      setText(line,day.kcal+' · '+day.protein+(day.incomplete?' · unvollständig':''));
-      line.classList.toggle('is-incomplete-v777',day.incomplete);
+      setText(line,day.kcal+' · '+day.protein+(day.incomplete?' · '+day.note:''));
+      line.classList.toggle('is-incomplete-v778',day.incomplete);
     });
   }
 
   function ensureDailyTotalStyle(){
-    if(document.getElementById('food-day-summary-style-v777'))return;
+    if(document.getElementById('food-day-summary-style-v778'))return;
     const style=document.createElement('style');
-    style.id='food-day-summary-style-v777';
+    style.id='food-day-summary-style-v778';
     style.textContent=
-      '.food-day-summary-v777{box-sizing:border-box;max-width:100%;min-width:0;display:grid;gap:9px;margin:4px 0 14px;padding:13px 14px;border:1px solid rgba(54,93,67,.16);border-radius:17px;background:linear-gradient(135deg,rgba(246,250,240,.97),rgba(225,236,222,.95));box-shadow:0 8px 18px rgba(43,72,48,.05);color:#263c2b}'+
-      '.food-day-summary-title-v777{color:#57765b;font-size:10px;font-weight:850;letter-spacing:.11em}'+
-      '.food-day-summary-values-v777{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'+
-      '.food-day-stat-v777{min-width:0;padding:10px 11px;border:1px solid rgba(58,100,70,.1);border-radius:12px;background:rgba(255,255,255,.78)}'+
-      '.food-day-stat-v777 small{display:block;margin-bottom:5px;color:#677c6c;font-size:10px;font-weight:700}'+
-      '.food-day-stat-v777 strong{display:block;color:#234d36;font-size:clamp(15px,4.5vw,22px);font-weight:850;line-height:1.2;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}'+
-      '.food-day-summary-note-v777{color:#6a7d6d;font-size:10px;line-height:1.4}'+
-      '.food-day-summary-v777.is-incomplete-v777 .food-day-stat-v777 strong{color:#a46b37}'+
-      '.food-day-summary-v777.is-incomplete-v777 .food-day-summary-note-v777{color:#946733}'+
-      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v777{display:block;margin-top:5px;color:#356344;font-size:11px;font-weight:800;line-height:1.4;overflow-wrap:anywhere}'+
-      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v777.is-incomplete-v777{color:#9d7138}';
+      '.food-day-summary-v778{box-sizing:border-box;max-width:100%;min-width:0;display:flex;align-items:center;gap:6px;margin:1px 0 10px;padding:8px 10px;border:1px solid rgba(66,147,190,.22);border-radius:10px;background:rgba(220,241,250,.48);color:#35586d;line-height:1.25;white-space:nowrap;overflow:hidden;font-size:11px}'+
+      '.food-day-summary-title-v778{flex:none;color:#557b95;font-size:10px;font-weight:700;letter-spacing:0}'+
+      '.food-day-summary-value-v778{min-width:0;flex:none;font-size:11px;font-weight:780;color:#236a8d;font-variant-numeric:tabular-nums}'+
+      '.food-day-summary-separator-v778{flex:none;color:#88b6c9;font-weight:500}'+
+      '.food-day-summary-note-v778{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:680;color:#9b3759}'+
+      '.food-day-summary-note-v778:empty{display:none}'+
+      '.food-day-summary-v778.is-incomplete-v778{border-color:rgba(125,165,190,.3);background:rgba(222,240,249,.55)}'+
+      '.food-day-summary-v778.is-incomplete-v778 .food-day-summary-value-v778{color:#236a8d}'+
+      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778{display:block;margin-top:4px;color:#337394;font-size:10px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}'+
+      '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778.is-incomplete-v778{color:#8b4262}'+
+      '@media(max-width:390px){.food-day-summary-v778{gap:4px;padding:7px 8px;font-size:10px}.food-day-summary-title-v778{font-size:9px}.food-day-summary-value-v778{font-size:10px}.food-day-summary-note-v778{font-size:9px}}';
     document.head.appendChild(style);
   }
 
