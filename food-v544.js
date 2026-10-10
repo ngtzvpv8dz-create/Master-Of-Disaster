@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V785';
+  const VERSION='V786';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1769,6 +1769,78 @@
       +'<div class="food-freezer-actions-v784">'+action+'</div></article>';
   }
 
+
+  // V786: use the same food-plan thaw allocations, but never move inventory automatically.
+  function freezerPlanHintMarkup(task,data=state){
+    const ingredient=(data.meals||[]).flatMap(meal=>meal.ingredients||[])
+      .find(item=>String(item.id)===String(task.ingredientId));
+    if(!ingredient?.inventory_id)return '';
+    const label=String(task.ingredient||'Zutat');
+    const due=task.dueDate?fmtDate(task.dueDate):'Termin offen';
+    const name=String(task.targetTitle||'Geplante Mahlzeit');
+    const tracked=(data.freezer||[]).some(portion=>String(portion.meal_ingredient_id||'')===String(task.ingredientId)
+      &&['frozen','thawing','thawed'].includes(portion.status));
+    if(tracked)return '';
+    const eligible=(data.lots||[]).filter(lot=>String(lot.inventory_id)===String(ingredient.inventory_id)
+      &&frozenStorageLocation(lot.storage_location))
+      .filter(lot=>{
+        const q=freezerLotQuantity(lot);
+        return q&&q.unit.toLocaleLowerCase('de-DE')===String(task.unit||'').toLocaleLowerCase('de-DE')
+          &&q.quantity>=Number(task.quantity);
+      });
+    const action=eligible.length
+      ?'<button type="button" data-food-freezer-plan-hint="'+esc(task.ingredientId)+'">Passende Portion zuordnen</button>'
+      :'';
+    return '<article class="food-freezer-line-v784 is-plan-hint-v786"><div><strong>'
+      +esc(fmtQty(task.quantity,task.unit))+' '+esc(label)+'</strong><small>'
+      +'Auftauen am '+esc(due)+' · für '+esc(name)
+      +(task.thawStartedAt?' · im Essensplan bereits als gestartet markiert':'')
+      +'</small><small>Aus dem Essensplan · noch keiner konkreten TK-Portion fest zugeordnet</small></div>'
+      +(action?'<div class="food-freezer-actions-v784">'+action+'</div>'
+        :'<small>Keine einzelne passende TK-Charge gefunden. Teilmengen/Chargen bitte prüfen.</small>')
+      +'</article>';
+  }
+
+  function freezerPlanHintModal(ingredientId){
+    if(!sourceIsReal('meals')||!sourceIsReal('lots')||!sourceIsReal('freezer'))
+      return alert('Essensplan und Vorrat müssen aktuell aus der Cloud geladen sein.');
+    const hint=plannedThawTasks().find(item=>String(item.ingredientId)===String(ingredientId));
+    const ingredient=(state?.meals||[]).flatMap(meal=>meal.ingredients||[])
+      .find(item=>String(item.id)===String(ingredientId));
+    if(!hint||!ingredient?.inventory_id)return alert('Geplante Zutat nicht mehr vorhanden.');
+    const lots=(state?.lots||[]).filter(lot=>String(lot.inventory_id)===String(ingredient.inventory_id)
+      &&frozenStorageLocation(lot.storage_location))
+      .filter(lot=>{
+        const q=freezerLotQuantity(lot);
+        return q&&String(q.unit).toLowerCase()===String(hint.unit||'').toLowerCase()
+          &&q.quantity>=Number(hint.quantity);
+      });
+    if(!lots.length)return alert('Keine einzelne TK-Portion deckt diese Mahlzeit vollständig. Bitte Vorratschargen prüfen.');
+    const choices=lots.map(lot=>{
+      const info=freezerLotQuantity(lot);
+      return '<option value="'+esc(lot.id)+'">'+esc(freezerLotLabel(lot))+' · '+esc(fmtQty(info.quantity,info.unit))+'</option>';
+    }).join('');
+    return addModal('❄️ TK-Portion für Mahlzeit zuordnen',
+      '<form><p class="food-modal-copy-v544"><strong>'+esc(fmtQty(hint.quantity,hint.unit)+' '+hint.ingredient)+'</strong> für '
+      +esc(hint.targetTitle)+' · Auftauen ab '+esc(fmtDate(hint.dueDate))+'</p>'
+      +'<label>Welche tatsächliche TK-Charge?<select name="lot">'+choices+'</select></label>'
+      +'<p class="food-modal-copy-v544">Die geplante Menge wird als eigene Portion reserviert. Eingefroren bleibt sie bis zu deiner Bestätigung „Auftauen starten“.</p>'
+      +'<button type="submit" class="food-action-v544">Portion zuordnen</button></form>',
+      async form=>{
+        const lot=lots.find(item=>String(item.id)===String(form.get('lot')));
+        if(!lot)throw new Error('Bitte eine der angezeigten Chargen auswählen.');
+        const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+        const result=await supabase.rpc('prepare_food_frozen_for_meal',{
+          p_lot_id:lot.id,
+          p_quantity:Number(hint.quantity),
+          p_needed_on:hint.dueDate,
+          p_meal_ingredient_id:ingredientId
+        });
+        if(result.error)throw result.error;
+        loadPromise=null;await render();
+      });
+  }
+
   function freezerBoardMarkup(data,mode){
     const tasks=data.freezer||[];
     const lots=(data.lots||[]).filter(lot=>freezerLotQuantity(lot));
@@ -1791,10 +1863,19 @@
           frozenLots.map(freezerLotMarkup).join(''),'Aktuell kein chargengenau erfasster TK-Bestand.');
     }
     const legacy=frozenLots.filter(lot=>!tasks.some(task=>String(task.frozen_lot_id)===String(lot.id)));
-    return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length,
-      due.map(p=>freezerTaskMarkup(p,p.status==='thawing'?'finish_thaw':'start_thaw')).join(''),'Gerade kein Auftauvorgang fällig.')
-      +section('📅 Später auftauen',later.length+legacy.length,
-        later.map(p=>freezerTaskMarkup(p)).join('')+legacy.map(freezerLotMarkup).join(''),
+    const hints=sourceIsReal('meals')&&sourceIsReal('lots')?plannedThawTasks():[];
+    const relevantHints=hints.filter(hint=>!(tasks||[]).some(task=>
+      String(task.meal_ingredient_id||'')===String(hint.ingredientId)
+      &&['frozen','thawing','thawed'].includes(task.status)));
+    const hintNow=relevantHints.filter(hint=>hint.dueDate<=now||hint.thawStartedAt);
+    const hintLater=relevantHints.filter(hint=>hint.dueDate>now&&!hint.thawStartedAt);
+    return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length+hintNow.length,
+      due.map(p=>freezerTaskMarkup(p,p.status==='thawing'?'finish_thaw':'start_thaw')).join('')
+      +hintNow.map(p=>freezerPlanHintMarkup(p,data)).join(''),'Gerade kein Auftauvorgang fällig.')
+      +section('📅 Später auftauen',later.length+legacy.length+hintLater.length,
+        later.map(p=>freezerTaskMarkup(p)).join('')
+        +hintLater.map(p=>freezerPlanHintMarkup(p,data)).join('')
+        +legacy.map(freezerLotMarkup).join(''),
         'Noch keine späteren Auftauportionen geplant.');
   }
 
@@ -3574,6 +3655,9 @@
     }));
     root.querySelector('[data-food-freezer-add]')?.addEventListener('click',freezerPlanModal);
     root.querySelectorAll('[data-food-freezer-due]').forEach(button=>button.addEventListener('click',()=>freezerDueModal(button.dataset.foodFreezerDue)));
+    root.querySelectorAll('[data-food-freezer-plan-hint]').forEach(button=>button.addEventListener('click',()=>{
+      freezerPlanHintModal(button.dataset.foodFreezerPlanHint);
+    }));
     root.querySelectorAll('[data-food-freezer-split]').forEach(button=>button.addEventListener('click',()=>{
       freezerPrepareModal(button.dataset.foodFreezerSplit);
     }));
