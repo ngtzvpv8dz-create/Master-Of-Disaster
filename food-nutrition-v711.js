@@ -59,6 +59,21 @@
     return new Set(usable.map(signature)).size===1?usable[0]:null;
   }
 
+  // Bei mehreren historischen Marken im Produktstamm gilt die tatsächlich
+  // vorhandene Charge. Unterschiedliche aktive Chargen bleiben ggf. offen.
+  function productForStock(stock,data){
+    if(!stock?.id)return null;
+    const id=String(stock.id);
+    const products=(data?.products||[]).filter(p=>String(p.inventory_id||'')===id);
+    if(!products.length)return null;
+    const liveIds=new Set((data?.lots||[])
+      .filter(lot=>String(lot.inventory_id||'')===id)
+      .filter(lot=>number(lot.unopened_packages)>0||number(lot.opened_remaining_quantity)>0)
+      .map(lot=>String(lot.product_id||'')).filter(Boolean));
+    return chooseProduct(liveIds.size
+      ?products.filter(product=>liveIds.has(String(product.id))):products);
+  }
+
   function rowMode(row){
     const value=text((row?.name||'')+' '+(row?.variant_label||''));
     if(/(?:^|\s)(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)(?:\s|$)/.test(value))return 'frozen';
@@ -105,9 +120,7 @@
   }
 
   function displayProductForStock(stock,data){
-    const rows=(data?.products||[]).filter(row=>String(row.inventory_id||'')===String(stock?.id||''));
-    if(rows.length===1)return rows[0];
-    return chooseProduct(rows)||rows[0]||null;
+    return productForStock(stock,data);
   }
 
   function concreteProductLabel(stock,data){
@@ -185,8 +198,9 @@
     let kcal=0;
     let protein=0;
     for(const part of allocation.allocations||[]){
-      const product=chooseProduct((data?.products||[]).filter(row=>String(row.inventory_id||'')===String(part.inventoryId||'')));
-      if(!product)return {complete:false,missing:[part.stock?.name||itemName(item)]};
+      const stock=part.stock||(data?.inventory||[]).find(row=>String(row.id)===String(part.inventoryId||''));
+      const product=productForStock(stock,data);
+      if(!product)return {complete:false,missing:[stock?.name||itemName(item)]};
       const nutrition=nutritionOf(product);
       if(nutrition.kcal===null||nutrition.protein===null)return {complete:false,missing:[part.stock?.name||itemName(item)]};
       kcal+=nutrition.kcal*part.take/100;
@@ -302,14 +316,14 @@
 
     let product=null;
     if(stock){
-      product=chooseProduct(products.filter(row=>String(row.inventory_id||'')===String(stock.id)));
+      product=productForStock(stock,data);
       if(!product&&stock.family_name){
         let related=inventory.filter(row=>text(row.family_name)===text(stock.family_name));
         const mode=rowMode(stock);
         if(mode==='fresh')related=related.filter(row=>rowMode(row)!=='frozen');
         if(mode==='frozen')related=related.filter(row=>rowMode(row)==='frozen');
-        const ids=new Set(related.map(row=>String(row.id)));
-        product=chooseProduct(products.filter(row=>ids.has(String(row.inventory_id||''))));
+        const currentProducts=related.map(row=>productForStock(row,data)).filter(Boolean);
+        product=chooseProduct(currentProducts);
       }
     }else{
       const familyRows=inventory.filter(row=>familyMatch(name,row.family_name));
@@ -318,10 +332,10 @@
         let related=familyRows;
         if(requested==='fresh')related=related.filter(row=>rowMode(row)!=='frozen');
         if(requested==='frozen')related=related.filter(row=>rowMode(row)==='frozen');
-        const ids=new Set(related.map(row=>String(row.id)));
-        product=chooseProduct(products.filter(row=>ids.has(String(row.inventory_id||''))));
+        const currentProducts=related.map(row=>productForStock(row,data)).filter(Boolean);
+        product=chooseProduct(currentProducts);
       }
-      if(!product)product=chooseProduct(products.filter(row=>key(row.product_name)===key(name)));
+      if(!product&&!familyRows.length)product=chooseProduct(products.filter(row=>key(row.product_name)===key(name)));
     }
 
     if(product)return {nutrition:nutritionOf(product),product,stock};
@@ -552,7 +566,7 @@
       supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
-      supabase.from('food_inventory_lots').select('id,inventory_id,purchased_on,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit')
+      supabase.from('food_inventory_lots').select('id,product_id,inventory_id,purchased_on,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit')
     ]);
     const bad=results.find(result=>result.error);
     if(bad?.error)throw bad.error;
