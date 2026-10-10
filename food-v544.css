@@ -2307,14 +2307,18 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-creatine-choose-v772 select{max-width:100%;min-width:0;padding:4px 5px;border:1px solid rgba(137,111,42,.35);border-radius:7px;background:rgba(255,255,255,.74);color:#463818;font-size:10px}
 
 
-/* V773: schlanke Kreatin-Zeile, Food-Pastellgelb bleibt erhalten. */
+/* V774: schlanke Kreatin-Zeile, jetzt exakt über die verfügbare Kartenbreite. */
 .food-creatine-reminder-v768{
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
   column-gap:8px;
   row-gap:3px;
-  margin:0 10px 6px;
+  box-sizing:border-box;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  margin:0 0 6px;
   padding:5px 8px;
   border-radius:10px;
 }
