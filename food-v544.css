@@ -2705,3 +2705,42 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   border:0;
   box-shadow:none;
 }
+
+
+/* V795 · Missing nutrition data: unmistakable daily alert + offending ingredient. */
+.food-nutrition-alarm-v795[hidden]{display:none!important}
+.food-nutrition-alarm-v795{box-sizing:border-box;margin:0 0 9px;max-width:100%;min-width:0}
+.food-nutrition-alarm-inner-v795{
+  position:relative;box-sizing:border-box;overflow:hidden;padding:10px 11px;
+  border:1px solid rgba(193,64,35,.62);border-radius:12px;
+  background:linear-gradient(115deg,#fff0da 0%,#ffe1cb 40%,#ffd6d3 100%);
+  box-shadow:0 3px 14px rgba(177,56,29,.14),inset 3px 0 0 #d94228;
+  color:#772c20
+}
+.food-nutrition-alarm-head-v795{display:flex;align-items:center;gap:9px;min-width:0}
+.food-nutrition-alarm-flame-v795{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:9px;background:rgba(222,63,27,.13);font-size:19px;line-height:1}
+.food-nutrition-alarm-head-v795>div{display:grid;gap:2px;min-width:0;flex:1}
+.food-nutrition-alarm-head-v795 strong{font-size:11px;line-height:1.2;letter-spacing:.045em;font-weight:920;color:#9e3021}
+.food-nutrition-alarm-head-v795 small{font-size:10px;line-height:1.3;color:#8c4831;font-weight:650}
+.food-nutrition-alarm-count-v795{display:grid;place-items:center;min-width:23px;height:23px;padding:0 5px;border-radius:7px;background:#b82c24;color:white;font-size:11px;font-weight:900}
+.food-nutrition-alarm-list-v795{display:grid;gap:5px;margin-top:9px}
+.food-nutrition-alarm-link-v795{position:relative;display:grid;gap:3px;min-width:0;width:100%;padding:8px 25px 8px 9px;border:1px solid rgba(181,69,48,.22);border-radius:8px;background:rgba(255,255,255,.7);text-align:left;color:#7a2b22;cursor:pointer}
+.food-nutrition-alarm-link-v795:active{background:#fff6ef}
+.food-nutrition-alarm-link-v795:focus-visible{outline:2px solid #c13b28;outline-offset:2px}
+.food-nutrition-alarm-meal-v795{font-size:10px;font-weight:900;line-height:1.3;overflow-wrap:anywhere}
+.food-nutrition-alarm-issue-v795{font-size:9.5px;font-weight:700;line-height:1.45;overflow-wrap:anywhere;color:#a33729}
+.food-nutrition-alarm-break-v795{display:block;height:3px}
+.food-nutrition-alarm-arrow-v795{position:absolute;right:10px;top:11px;font-size:15px;color:#b84530}
+.food-nutrition-meal-bad-v795{border-color:rgba(197,65,43,.52)!important;box-shadow:0 0 0 1px rgba(197,65,43,.08),0 6px 16px rgba(130,48,30,.08)}
+.food-nutrition-card-warning-v795{align-self:stretch;box-sizing:border-box;margin:8px 0 0;padding:6px 9px;border-left:3px solid #cb4c31;border-radius:6px;background:#fff0e8;color:#a43727;font-size:10px;font-weight:850;line-height:1.45;overflow-wrap:anywhere}
+.food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795{
+  display:flex;flex-wrap:wrap;align-items:center;
+  box-sizing:border-box;padding:7px 8px!important;border:1px solid rgba(209,57,43,.57);border-radius:9px;
+  background:linear-gradient(115deg,#fff2e8,#ffe0de)!important;color:#9b3026!important;
+  box-shadow:inset 3px 0 0 #d94232
+}
+.food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795>span,
+.food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795>b{color:#9b3026!important;font-weight:900}
+.food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795 .food-ingredient-allocation-v712{flex-basis:100%}
+ .food-nutrition-ingredient-hint-v795{display:block;flex-basis:100%;width:100%;grid-column:1/-1;margin-top:4px;color:#ac3d2d;font-size:9px;font-weight:720;line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:390px){.food-nutrition-alarm-inner-v795{padding:9px}.food-nutrition-alarm-head-v795 strong{font-size:10px}.food-nutrition-alarm-head-v795 small{font-size:9px}}
