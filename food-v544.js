@@ -3563,6 +3563,7 @@
         })));
     return {
       plannedIngredientUses,
+      mealPlanVerified:sourceIsReal('meals'),
       gaps:gaps.map(item=>({...item,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
