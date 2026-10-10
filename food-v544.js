@@ -3904,7 +3904,7 @@
         &&String(meal.meal_date||'')<=freezerWindowEnd)
       .flatMap(meal=>(meal.ingredients||[])
         .filter(ingredient=>ingredient.inventory_id&&Number(ingredient.quantity)>0
-          &&['g','kg'].includes(String(ingredient.unit||'').trim().toLocaleLowerCase('de-DE')))
+          &&['g','kg','stück','stk','stk.','scheibe','scheiben'].includes(String(ingredient.unit||'').trim().toLocaleLowerCase('de-DE')))
         .map(ingredient=>({
           inventory_id:String(ingredient.inventory_id),
           meal_date:String(meal.meal_date),
