@@ -3543,7 +3543,26 @@
         title:meal.title||'Mahlzeit',
         ingredient_count:Array.isArray(meal.ingredients)?meal.ingredients.length:0
       }));
+    // V782: lightweight, bounded-by-date meal demand for pack-specific freezer suggestions.
+    // Only planned meals and exact mass units qualify; no inventory is consumed here.
+    const freezerWindowStart=todayIso();
+    const freezerWindowEnd=plusDays(freezerWindowStart,21);
+    const plannedIngredientUses=(data.meals||[])
+      .filter(meal=>normalizedStatus(meal.status)==='planned'
+        &&String(meal.meal_date||'')>=freezerWindowStart
+        &&String(meal.meal_date||'')<=freezerWindowEnd)
+      .flatMap(meal=>(meal.ingredients||[])
+        .filter(ingredient=>ingredient.inventory_id&&Number(ingredient.quantity)>0
+          &&['g','kg'].includes(String(ingredient.unit||'').trim().toLocaleLowerCase('de-DE')))
+        .map(ingredient=>({
+          inventory_id:String(ingredient.inventory_id),
+          meal_date:String(meal.meal_date),
+          meal_title:String(meal.title||'Geplante Mahlzeit'),
+          quantity:Number(ingredient.quantity),
+          unit:String(ingredient.unit)
+        })));
     return {
+      plannedIngredientUses,
       gaps:gaps.map(item=>({...item,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
