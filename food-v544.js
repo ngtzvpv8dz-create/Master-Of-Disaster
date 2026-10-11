@@ -2048,14 +2048,37 @@
       +' data-servings="'+esc(amount)+'" title="Als eingefroren bestätigen" aria-label="Meal-Prep-Portionen als eingefroren bestätigen">🧊</button></div></article>';
   }
 
+  function bookedMealPrepFreezeMarkup(meal){
+    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 food-mealprep-freezer-v804">'
+      +'<div class="food-freezer-copy-v790"><strong>'+esc(portionLabel(meal.eaten_servings||1)+' '+String(meal.title||'Meal Prep').replace(/^TK-Rest:\\s*/i,''))+'</strong>'
+      +'<small>Für '+esc(fmtDate(meal.meal_date))+' eingeplant · TK-Status noch nicht bestätigt</small></div>'
+      +'<div class="food-freezer-actions-v784"><button type="button" class="food-freezer-icon-button-v790"'
+      +' data-food-mealprep-action="register" data-leftover-id="'+esc(meal.leftover_id)+'"'
+      +' data-mealprep-meal-id="'+esc(meal.id)+'"'
+      +' data-mealprep-needed-on="'+esc(plusDays(meal.meal_date,-1))+'"'
+      +' data-servings="'+esc(meal.eaten_servings||1)+'"'
+      +' title="Fertig zubereitete Portion als eingefroren bestätigen" aria-label="Als eingefroren bestätigen">🧊</button></div></article>';
+  }
+
   function freezerBoardMarkup(data,mode){
     const portions=data.freezer||[];
     const cooked=(data.mealPrepFreezer||[]).filter(portion=>['frozen','thawing','thawed'].includes(portion.status));
     const cookedFrozen=cooked.filter(portion=>portion.status==='frozen');
     const trackedByLeftover=new Map();
     for(const row of cooked)trackedByLeftover.set(String(row.leftover_id),(trackedByLeftover.get(String(row.leftover_id))||0)+Number(row.servings||0));
+    const bookedMealPrep=(sourceIsReal('meals')&&sourceIsReal('mealPrepFreezer')?(data.meals||[]):[])
+      .filter(meal=>normalizedStatus(meal.status)==='planned'&&meal.leftover_id
+        &&String(meal.meal_date||'')>=todayIso()
+        &&(data.meals||[]).some(source=>String(source.id)===String(meal.source_meal_id)&&normalizedStatus(source.status)==='completed')
+        &&!cooked.some(portion=>String(portion.meal_id||'')===String(meal.id)));
     const cookedToFreeze=(sourceIsReal('leftovers')&&sourceIsReal('mealPrepFreezer')?(data.leftovers||[]):[])
-      .map(leftover=>({leftover,amount:Math.max(0,Number(leftover.available_servings||0)-(trackedByLeftover.get(String(leftover.id))||0))}))
+      .map(leftover=>({
+        leftover,
+        amount:Math.max(0,Number(leftover.available_servings||0)
+          -(trackedByLeftover.get(String(leftover.id))||0)
+          -bookedMealPrep.filter(meal=>String(meal.leftover_id)===String(leftover.id))
+            .reduce((sum,meal)=>sum+Number(meal.eaten_servings||1),0))
+      }))
       .filter(row=>row.amount>0);
     const lots=(data.lots||[]).filter(lot=>freezerLotQuantity(lot));
     const frozenLots=lots.filter(lot=>frozenStorageLocation(lot.storage_location));
@@ -2087,9 +2110,11 @@
         +section('🧊 Bereits eingefroren',frozenLots.length+cookedFrozen.length,
           frozenLots.map(freezerLotMarkup).join('')+cookedFrozen.map(row=>mealprepFreezerMarkup(row)).join(''),
           'Aktuell kein TK-Bestand.')
-        +(cookedToFreeze.length?section('🍱 Fertige Restportionen · TK bestätigen',cookedToFreeze.length,
-          cookedToFreeze.map(row=>mealprepToFreezeMarkup(row.leftover,row.amount)).join(''),
-          'Keine neuen Restportionen.'):'');
+        +(cookedToFreeze.length+bookedMealPrep.length
+          ?section('🍱 Fertige Restportionen · TK bestätigen',cookedToFreeze.length+bookedMealPrep.length,
+             bookedMealPrep.map(bookedMealPrepFreezeMarkup).join('')
+             +cookedToFreeze.map(row=>mealprepToFreezeMarkup(row.leftover,row.amount)).join(''),
+             'Keine neuen Restportionen.'):'');
     }
     const mealHints=sourceIsReal('meals')&&sourceIsReal('lots')?plannedThawTasks():[];
     const ingredientStockIds=new Map((data.meals||[])
@@ -3967,7 +3992,7 @@
           ?await supabase.rpc('register_food_mealprep_frozen',{
               p_leftover_id:button.dataset.leftoverId,
               p_servings:Number(button.dataset.servings)||1,
-              p_meal_id:null,p_needed_on:null})
+              p_meal_id:button.dataset.mealprepMealId||null,p_needed_on:button.dataset.mealprepNeededOn||null})
           :await supabase.rpc('advance_food_mealprep_freezer',{
               p_portion_id:button.dataset.mealprepId,p_action:operation});
         if(response.error)throw response.error;
