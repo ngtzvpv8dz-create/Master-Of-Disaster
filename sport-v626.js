@@ -2182,6 +2182,11 @@
     }
     // Total calories include resting energy: only active kcal belong in this workout.
     delete metricValues.apple_fitness_total_kcal;
+    if(metricValues.calorie_source==='apple_fitness_manual'){
+      const enteredActive=numberOrNull(values.calories_kcal);
+      if(enteredActive===null)delete metricValues.apple_fitness_active_kcal;
+      else metricValues.apple_fitness_active_kcal=enteredActive;
+    }
     const rawPhases=Array.isArray(values.phases)?values.phases.map(phase=>({
       duration_minutes:numberOrNull(phase.duration_minutes),
       resistance_level:String(phase.resistance_level||'').trim()||null,
