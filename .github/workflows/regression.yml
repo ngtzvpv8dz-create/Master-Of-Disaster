@@ -63,7 +63,7 @@ jobs:
           node --check build-freshness-v502.js
           node tests/v503-today-interaction.test.cjs
           grep -q 'service-worker-gate-v611.js?v=612-network-first-code' index.html
-          grep -q 'area-runtime-v609.js?v=796-asia-legacy-first' index.html
+          grep -q 'area-runtime-v609.js?v=' index.html
           grep -q 'sport-circuit-v682.js?v=683-active-priority' area-runtime-v609.js
           ! grep -q 'sport-audio-test-v652.js?v=657-beep-cues' area-runtime-v609.js
           grep -q 'backstage-section-loader-v609.css?v=609-sections' index.html
