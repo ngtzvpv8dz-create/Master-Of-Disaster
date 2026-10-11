@@ -11,6 +11,7 @@
   const CACHE_KEY='masterOfDisasterSportSessionsV568Cache';
   const SPORT_DRAFT_PREFIX='masterOfDisasterSportDraftV763';
   const SPORT_DRAFT_TTL_MS=14*24*60*60*1000;
+  const DEFAULT_STRENGTH_SET_COUNT=3;
   const LEGACY_KEY='masterOfDisasterSportSessionsV510';
   const HEALTH_EVENT='mod:health-sync-request';
   const REQUEST_TIMEOUT_MS=4500;
@@ -1765,7 +1766,8 @@
       ended_at:stamp,
       equipment_number_snapshot:exercise.equipment_number||null,
       settings_snapshot:exercise.settings_text||null,
-      load_mode_snapshot:exercise.load_mode||'none'
+      load_mode_snapshot:exercise.load_mode||'none',
+      metric_values:exercise.kind==='strength'?{set_count:DEFAULT_STRENGTH_SET_COUNT}:{}
     });
     if(result.error)throw result.error;
     await load(true);
@@ -1795,7 +1797,8 @@
       ended_at:stamp,
       equipment_number_snapshot:exercise.equipment_number||null,
       settings_snapshot:exercise.settings_text||null,
-      load_mode_snapshot:exercise.load_mode||'none'
+      load_mode_snapshot:exercise.load_mode||'none',
+      metric_values:exercise.kind==='strength'?{set_count:DEFAULT_STRENGTH_SET_COUNT}:{}
     }));
     const result=await supabase.from('sport_session_exercises').insert(rows);
     if(result.error)throw result.error;
@@ -2029,7 +2032,7 @@
     const savedMax=Math.max(0,...sets.map(set=>Number(set.setNumber)||0));
     const configured=Number(exercise?.metricValues?.set_count);
     if(Number.isInteger(configured)&&configured>=1)return Math.max(savedMax,configured);
-    return savedMax>0?savedMax:3;
+    return savedMax>0?savedMax:DEFAULT_STRENGTH_SET_COUNT;
   }
 
   async function changeStrengthSetCount(sessionExerciseId,direction,{reload=true}={}){
