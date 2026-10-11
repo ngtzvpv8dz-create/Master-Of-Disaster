@@ -88,7 +88,7 @@ BEGIN
       UPDATE public.food_meals SET
         calories_kcal_per_serving_override=CASE WHEN v_base_calories IS NOT NULL
           THEN round(v_base_calories+v_portion_calorie_delta,2) ELSE NULL END,
-        note=concat_ws(chr(10),note,'TK-Wiegung: '+v_part.quantity::text+' auf '||
+        note=concat_ws(chr(10),note,'TK-Wiegung: '||v_part.quantity::text||' auf '||
           p_actual_quantity::text||' '||v_part.unit||
           '; spezifische Mahlzeit samt kcal/Protein angepasst, Grundrezept unveraendert.'),
         updated_at=now()
