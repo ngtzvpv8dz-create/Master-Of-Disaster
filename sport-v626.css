@@ -2546,3 +2546,26 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
   color:#e9ffff;font:inherit;font-size:.71rem;font-weight:900;cursor:pointer;
 }
 .sport-energy-summary-v763 small{font-size:.58rem;line-height:1.45;color:#7fb0b5}
+
+/* V798: Wide session cards and tidy cardio phases. */
+.sport-unit-detail-v635 .sport-unit-body-v610{padding-inline:5px}
+.sport-history-flow-v798{display:grid;gap:16px;min-width:0}
+.sport-history-flow-v798 .sport-history-flow-step-v798{display:block!important;width:100%;min-width:0}
+.sport-history-flow-v798 .sport-history-flow-content-v748{width:100%;min-width:0}
+.sport-history-flow-v798 .sport-history-workout-v574{display:grid;gap:10px;padding:0}
+.sport-history-flow-v798 .sport-summary-card-v574,
+.sport-history-flow-v798 .sport-course-card-v568{box-sizing:border-box;width:100%;max-width:none;min-width:0;margin:0}
+.sport-history-flow-v798 .sport-summary-card-v574{padding:12px;gap:8px}
+.sport-history-flow-v798 .sport-summary-card-v574 strong{font-size:.78rem}
+.sport-history-flow-v798 .sport-summary-card-v574>span{font-size:.64rem}
+.sport-history-flow-v798 .sport-history-workout-step-v798{display:grid;gap:5px}
+.sport-history-flow-v798 .sport-history-exercise-time-v798{font-size:.65rem;color:#a0c3c6}
+.sport-history-flow-v798 .sport-history-flow-head-v748{padding:0 1px 4px}
+.sport-history-flow-v798 .sport-cardio-facts-v798{display:flex;flex-wrap:wrap;gap:6px}
+.sport-history-flow-v798 .sport-cardio-facts-v798>span{padding:5px 8px;border-radius:7px;background:rgba(33,99,107,.17);font-size:.64rem;color:#bedee0}
+.sport-history-flow-v798 .sport-summary-phases-v798{display:grid;gap:0;margin-top:5px}
+.sport-history-flow-v798 .sport-phase-row-v798{display:grid;grid-template-columns:58px minmax(0,1fr);gap:9px;padding:9px 0;border-top:1px solid rgba(111,228,234,.1)}
+.sport-history-flow-v798 .sport-phase-row-v798>b{font-size:.61rem;color:#83d4da}
+.sport-history-flow-v798 .sport-phase-row-v798>div{display:grid;gap:3px;min-width:0}
+.sport-history-flow-v798 .sport-phase-row-v798 span{font-size:.64rem;color:#c4dee0;line-height:1.4}
+.sport-history-flow-v798 .sport-phase-row-v798 small{font-size:.6rem;color:#7fa3a7;line-height:1.4}
