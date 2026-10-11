@@ -3341,8 +3341,25 @@
   if(regressionRoute==='v512'&&!window.__modBuildVersionV512)window.__modBuildVersionV512={version:'V512'};
 
   window.addEventListener(HEALTH_EVENT,()=>load(true));
-  window.addEventListener('focus',()=>{if(currentMode()==='sport')load(true);});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&currentMode()==='sport')load(true);});
+  // iOS may emit a window focus/visibility event while opening the numeric
+  // keyboard. Refreshing at that moment replaces the form DOM and can yank
+  // the viewport to the bottom (and discard the focused keyboard field).
+  let sportResumeRefreshTimer=null;
+  function refreshSportOnResume(){
+    if(currentMode()!=='sport')return;
+    if(sportResumeRefreshTimer)clearTimeout(sportResumeRefreshTimer);
+    sportResumeRefreshTimer=setTimeout(()=>{
+      sportResumeRefreshTimer=null;
+      if(currentMode()!=='sport'||document.hidden)return;
+      const active=document.activeElement;
+      if(active?.closest?.('[data-sport-set-form],[data-sport-cardio-form]'))return;
+      load(true);
+    },250);
+  }
+  window.addEventListener('focus',refreshSportOnResume);
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden)refreshSportOnResume();
+  });
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
   window.addEventListener('load',()=>{if(!historicalRegression&&currentMode()==='sport')setTimeout(()=>load(true),180);},{once:true});
 })();
