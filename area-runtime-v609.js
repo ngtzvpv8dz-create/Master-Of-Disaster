@@ -45,7 +45,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
-      './sport-v626.js?v=799-cardio-line',
+      './sport-v626.js?v=800-equal-kcal-style',
       './sport-circuit-v682.js?v=683-active-priority'
     ],
     food:[
@@ -53,7 +53,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
-      './food-v544.js?v=796-asia-legacy-first',
+      './food-v544.js?v=800-stock-next-use',
       './food-nutrition-v711.js?v=796-asia-legacy-first'
     ],
     shopping:[
@@ -61,7 +61,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
-      './food-v544.js?v=796-asia-legacy-first',
+      './food-v544.js?v=800-stock-next-use',
       './food-nutrition-v711.js?v=796-asia-legacy-first',
       './shopping-v678.js?v=792-auto-freezer-on-booking'
     ],
@@ -143,10 +143,10 @@
       './ui.js?v=609',
       './todo-stability-v603.js?v=609-current'
     ],
-    sport:['./sport-v626.js?v=799-cardio-line','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=796-asia-legacy-first',
+    sport:['./sport-v626.js?v=800-equal-kcal-style','./sport-circuit-v682.js?v=683-active-priority'],
+    food:['./food-v544.js?v=800-stock-next-use',
       './food-nutrition-v711.js?v=796-asia-legacy-first'],
-    shopping:['./food-v544.js?v=796-asia-legacy-first',
+    shopping:['./food-v544.js?v=800-stock-next-use',
       './food-nutrition-v711.js?v=796-asia-legacy-first','./shopping-v678.js?v=792-auto-freezer-on-booking'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
