@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V804';
+  const VERSION='V806';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1647,7 +1647,7 @@
       for(const [unit,quantity] of group.opened){
         parts.push(unit==='Stück'
           ?fmtQty(quantity,unit)+' in angebrochener Packung'
-          :fmtQty(quantity,unit)+' offen');
+          :fmtQty(quantity,unit)+' · aus geöffneter Packung');
       }
       for(const pack of group.unopened.values()){
         parts.push(pack.quantity>0
@@ -1876,13 +1876,16 @@
       ?'<button type="button" class="food-freezer-icon-button-v790" data-food-freezer-action="start_thaw" data-freezer-id="'+esc(portion.id)+'" title="Auftauen starten" aria-label="Auftauen starten">🌡️</button>'
       :action==='finish_thaw'
       ?'<button type="button" class="food-freezer-icon-button-v790" data-food-freezer-action="finish_thaw" data-freezer-id="'+esc(portion.id)+'" title="Aufgetaut bestätigen" aria-label="Aufgetaut bestätigen">✓</button>':'';
+    const editWeight=portion.status==='planned'
+      ?'<button type="button" class="food-freezer-secondary-v790 food-freezer-weight-button-v806" data-food-freezer-weight="'+esc(portion.id)+'"'
+       +' title="Tatsächlich gewogene Menge und zugehörige Mahlzeit korrigieren" aria-label="Gewicht bearbeiten">✎</button>':'';
     const cancel=portion.status==='planned'
       ?'<button type="button" class="food-freezer-secondary-v790" data-food-freezer-action="cancel" data-freezer-id="'+esc(portion.id)+'" title="Planung verwerfen" aria-label="Planung verwerfen">×</button>':'';
     return '<article class="food-freezer-line-v784 food-freezer-compact-v790">'
       +'<div class="food-freezer-copy-v790"><strong>'+esc(fmtQty(amount,portion.unit)+' '+label)+'</strong>'
       +(portion.status==='planned'?'<small>Zum Einfrieren vorgesehen</small>':'')
       +(detail?'<small>'+esc(detail)+'</small>':'')
-      +'</div><div class="food-freezer-actions-v784">'+button+cancel+'</div></article>';
+      +'</div><div class="food-freezer-actions-v784">'+editWeight+button+cancel+'</div></article>';
   }
 
   function freezerLotMarkup(lot){
@@ -2208,6 +2211,91 @@
         if(result.error)throw result.error;
         loadPromise=null;await render();
       });
+  }
+
+
+  // V806: Eine physische Packungsabweichung ist etwas anderes als blosses Umportionieren.
+  // Die zugehörige Mahlzeit und ggf. das reale Gesamtgewicht müssen atomar korrigiert werden.
+  function freezerMeasuredQuantityModal(id){
+    if(!sourceIsReal('freezer')||!sourceIsReal('lots')||!sourceIsReal('meals')){
+      return alert('Bitte zuerst den aktuellen Vorrat und die Mahlzeiten synchronisieren.');
+    }
+    const part=(state?.freezer||[]).find(item=>String(item.id)===String(id));
+    if(!part||part.status!=='planned')return alert('Die Gefrierportion ist nicht mehr als offen geplant.');
+    const ingredientMeal=(state?.meals||[]).find(meal=>(meal.ingredients||[])
+      .some(ing=>String(ing.id)===String(part.meal_ingredient_id||'')&&part.meal_ingredient_id));
+    const ingredient=ingredientMeal?.ingredients?.find(ing=>String(ing.id)===String(part.meal_ingredient_id||''));
+    const stock=(state?.inventory||[]).find(item=>String(item.id)===String(part.inventory_id));
+    const oldAmount=Number(part.quantity);
+    const name=stock?.name||part.label||'Lebensmittel';
+    const mealLine=ingredientMeal
+      ?'<p class="food-modal-copy-v544"><b>Zugeordnet:</b> '+esc(ingredientMeal.title)
+       +' · '+esc(fmtDate(ingredientMeal.meal_date))+'<br>'
+       +'Aktuelle Zutat: '+esc(fmtQty(ingredient?.quantity,ingredient?.unit))
+       +'</p>'
+      :'<p class="food-modal-copy-v544">Diese Portion hat keine direkt verknüpfte Mahlzeitenzutat. Der Vorrat wird nur bei einer echten Gewichtsabweichung korrigiert.</p>';
+    const body='<form class="food-freezer-weigh-modal-v806">'
+      +'<p class="food-modal-copy-v544"><b>'+esc(name)+'</b><br>Geplant: '+esc(fmtQty(oldAmount,part.unit))
+      +' · Gesamtvorrat laut App: '+esc(fmtQty(stock?.quantity,stock?.unit))+'</p>'
+      +mealLine
+      +'<label>Tatsächlich abgewogen ('+esc(part.unit)+')'
+      +'<input name="measured" type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(oldAmount)+'" required></label>'
+      +'<label>Was ist der Grund für die Abweichung?'
+      +'<select name="reason">'
+      +'<option value="shortfall">Tatsächlich weniger/mehr in der Packung · auch Gesamtvorrat korrigieren</option>'
+      +'<option value="allocation">Nur anders portioniert · Gesamtvorrat bleibt unverändert</option>'
+      +'</select></label>'
+      +'<p data-food-freezer-weigh-summary class="food-modal-copy-v544"></p>'
+      +'<p class="food-modal-copy-v544">Speichert die TK-Sollmenge, die verknüpfte geplante Mahlzeit und deren Nährwerte zusammen. Nichts wird dabei als gegessen markiert oder automatisch eingefroren.</p>'
+      +'<button class="food-action-v544" type="submit">Gewicht und Planung übernehmen</button>'
+      +'</form>';
+    const modal=addModal('⚖️ TK-Portion abwiegen',body,async form=>{
+      const raw=String(form.get('measured')||'').trim().replace(',','.');
+      const measured=Number(raw);
+      if(!Number.isFinite(measured)||measured<=0)throw new Error('Bitte die gemessene Portionsmenge eintragen.');
+      if(measured===oldAmount)return false;
+      const correctStock=String(form.get('reason')||'')==='shortfall';
+      if(ingredientMeal&&ingredient){
+        const proposed=ingredientMeal.ingredients.map(row=>String(row.id)===String(ingredient.id)
+          ?{...row,quantity:Number(row.quantity)+(measured-oldAmount)}
+          :row);
+        if(!(await confirmDailyKcalChange(ingredientMeal,proposed)))return false;
+      }
+      const supabase=client();
+      if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await supabase.rpc('correct_food_freezer_portion_weight',{
+        p_portion_id:id,p_actual_quantity:measured,p_adjust_inventory:correctStock,
+        p_confirm_freezing:false
+      });
+      if(result.error){
+        const msg=String(result.error.message||'');
+        if(/PGRST202|Could not find the function|correct_food_freezer_portion_weight.*does not exist|not found in the schema cache/i.test(msg)){
+          throw new Error('Die serverseitige TK-Gewichtskorrektur ist noch nicht aktiviert. Es wurde nichts geändert.');
+        }
+        throw result.error;
+      }
+      loadPromise=null;
+      await render();
+    });
+    const input=modal?.querySelector('[name="measured"]');
+    const reason=modal?.querySelector('[name="reason"]');
+    const summary=modal?.querySelector('[data-food-freezer-weigh-summary]');
+    const refresh=()=>{
+      if(!summary)return;
+      const amount=Number(String(input?.value||'').replace(',','.'));
+      const delta=Number.isFinite(amount)?amount-oldAmount:0;
+      const physical=reason?.value==='shortfall';
+      const total=Number(stock?.quantity||0)+(physical?delta:0);
+      const mealQty=Number(ingredient?.quantity||0)+delta;
+      summary.textContent='Neue TK-Portion: '+fmtQty(amount,part.unit)
+       +(ingredient? ' · Mahlzeitenzutat: '+fmtQty(mealQty,ingredient.unit):'')
+       +' · Gesamtvorrat danach: '+fmtQty(total,stock?.unit||part.unit)
+       +(physical?' (echte Waagenkorrektur)':' (nur umportioniert)');
+    };
+    input?.addEventListener('input',refresh);
+    reason?.addEventListener('change',refresh);
+    refresh();
+    return modal;
   }
 
   function freezerDueModal(id){
@@ -3940,6 +4028,9 @@
       button.disabled=true;
       try{await freezerTrackLot(button.dataset.foodFreezerTrack);}
       catch(error){alert(error?.message||'Die TK-Charge konnte nicht übernommen werden.');button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-freezer-weight]').forEach(button=>button.addEventListener('click',()=>{
+      freezerMeasuredQuantityModal(String(button.dataset.foodFreezerWeight||''));
     }));
     root.querySelectorAll('[data-food-freezer-action]').forEach(button=>button.addEventListener('click',async()=>{
       const action=String(button.dataset.foodFreezerAction||'');
