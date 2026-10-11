@@ -23,6 +23,7 @@ jobs:
           node --check sport-v616.js
           node --check sport-circuit-v675.js
           node --check food-v544.js
+          node tests/food-open-first-allocations-v807.test.cjs
           node --check shopping-v678.js
           node --check kistology-v603.js
           node --check log-core-v603.js
