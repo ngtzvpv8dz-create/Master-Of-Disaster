@@ -30,8 +30,7 @@ function arrange(stock,lots,freezer=[]){
   };
   vm.createContext(ctx);
   vm.runInContext(source.slice(a,b)+'\nthis.split=familyAllocationStockParts;',ctx);
-  return (quantity,skipped=0)=>ctx.split(stock,'g',quantity,skipped)
-    .map(p=>({grams:p.quantity,label:p.label,wasFrozen:p.frozen}));
+  return (quantity,skipped=0)=>Array.from(ctx.split(stock,'g',quantity,skipped),p=>({grams:p.quantity,label:p.label,wasFrozen:p.frozen}));
 }
 
 test('actual thawing meat first, 100g frozen reserved for separate later meal',()=>{
