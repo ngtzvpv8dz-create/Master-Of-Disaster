@@ -1395,6 +1395,14 @@
       const extrasSummary=extras.length
         ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
         :'';
+      // V805: Keine pauschale TK-Zuordnung; erst nach ausdruecklicher Bestätigung.
+      const confirmFrozen=expanded&&status==='planned'&&meal.leftover_id&&!frozenPrep&&mealPrepReady&&sourceIsReal('mealPrepFreezer')
+        ?'<div class="food-mealprep-freeze-optional-v805"><small>Nur falls diese Portion wirklich eingefroren wurde:</small>'
+         +'<button type="button" class="food-action-v544 compact" data-food-mealprep-action="register"'
+         +' data-leftover-id="'+esc(meal.leftover_id)+'" data-mealprep-meal-id="'+esc(meal.id)+'"'
+         +' data-mealprep-needed-on="'+esc(plusDays(meal.meal_date,-1))+'"'
+         +' data-servings="'+esc(meal.eaten_servings||1)+'">🧊 Als eingefroren bestätigen</button></div>'
+        :'';
       const details=expanded
         ?'<div class="food-recipe-details-v572">'
           +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
@@ -1408,6 +1416,7 @@
         +'</button>'
         +dailyCreatineReminderMarkup(meal)
         +details
+        +confirmFrozen
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +action
         +'</article>';
@@ -1484,7 +1493,9 @@
     const assignedLeftoverIds=new Set((data.meals||[]).filter(meal=>meal.meal_date>=todayIso()&&meal.leftover_id).map(meal=>String(meal.leftover_id)));
     const leftovers=(data.leftovers||[]).filter(item=>Number(item.available_servings)>0&&!assignedLeftoverIds.has(String(item.id)));
     const leftoverBlock=leftovers.length
-      ?'<section class="food-leftovers-v572"><div class="food-leftovers-head-v572"><strong>Restportionen</strong><span>'+leftovers.length+' verfügbar</span></div><div class="food-leftovers-grid-v572">'+leftovers.map(item=>{const recipe=item.food_recipes||{};return '<article><div><small>'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||'RESTE')+'</small><strong>'+esc(recipe.title||'Restportion')+'</strong><span>'+esc(portionLabel(item.available_servings))+' verfügbar</span></div><button type="button" class="food-action-v544 compact" data-food-schedule-leftover="'+esc(item.id)+'">Einplanen</button></article>';}).join('')+'</div></section>'
+      ?'<section class="food-leftovers-v572"><div class="food-leftovers-head-v572"><strong>Restportionen</strong><span>'+leftovers.length+' verfügbar</span></div><div class="food-leftovers-grid-v572">'+leftovers.map(item=>{const recipe=item.food_recipes||{};return '<article><div><small>'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||'RESTE')+'</small><strong>'+esc(recipe.title||'Restportion')+'</strong><span>'+esc(portionLabel(item.available_servings))+' verfügbar</span></div><button type="button" class="food-action-v544 compact" data-food-schedule-leftover="'+esc(item.id)+'">Einplanen</button>'
+        +'<button type="button" class="food-action-v544 compact" data-food-mealprep-action="register"'
+        +' data-leftover-id="'+esc(item.id)+'" data-servings="1" title="Nur bei tatsächlich eingefrorener Portion">🧊 1 Portion eingefroren bestätigen</button></article>';}).join('')+'</div></section>'
       :'';
     return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Geplant bis '+esc(fmtDate(horizon))+'</h3></div><small>Heute bleibt bei Heute</small></div>'+
       '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
@@ -2037,49 +2048,10 @@
       +(button?'<div class="food-freezer-actions-v784">'+button+'</div>':'')+'</article>';
   }
 
-  function mealprepToFreezeMarkup(leftover,amount){
-    const recipe=leftover.food_recipes||{};
-    const title=recipe.title||'Fertige Meal-Prep-Portion';
-    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 food-mealprep-freezer-v804">'
-      +'<div class="food-freezer-copy-v790"><strong>'+esc(portionLabel(amount)+' '+title)+'</strong>'
-      +'<small>Fertig zubereitet · Lagerort noch nicht als TK bestätigt</small></div>'
-      +'<div class="food-freezer-actions-v784"><button type="button" class="food-freezer-icon-button-v790"'
-      +' data-food-mealprep-action="register" data-leftover-id="'+esc(leftover.id)+'"'
-      +' data-servings="'+esc(amount)+'" title="Als eingefroren bestätigen" aria-label="Meal-Prep-Portionen als eingefroren bestätigen">🧊</button></div></article>';
-  }
-
-  function bookedMealPrepFreezeMarkup(meal){
-    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 food-mealprep-freezer-v804">'
-      +'<div class="food-freezer-copy-v790"><strong>'+esc(portionLabel(meal.eaten_servings||1)+' '+String(meal.title||'Meal Prep').replace(/^TK-Rest:\\s*/i,''))+'</strong>'
-      +'<small>Für '+esc(fmtDate(meal.meal_date))+' eingeplant · TK-Status noch nicht bestätigt</small></div>'
-      +'<div class="food-freezer-actions-v784"><button type="button" class="food-freezer-icon-button-v790"'
-      +' data-food-mealprep-action="register" data-leftover-id="'+esc(meal.leftover_id)+'"'
-      +' data-mealprep-meal-id="'+esc(meal.id)+'"'
-      +' data-mealprep-needed-on="'+esc(plusDays(meal.meal_date,-1))+'"'
-      +' data-servings="'+esc(meal.eaten_servings||1)+'"'
-      +' title="Fertig zubereitete Portion als eingefroren bestätigen" aria-label="Als eingefroren bestätigen">🧊</button></div></article>';
-  }
-
   function freezerBoardMarkup(data,mode){
     const portions=data.freezer||[];
     const cooked=(data.mealPrepFreezer||[]).filter(portion=>['frozen','thawing','thawed'].includes(portion.status));
     const cookedFrozen=cooked.filter(portion=>portion.status==='frozen');
-    const trackedByLeftover=new Map();
-    for(const row of cooked)trackedByLeftover.set(String(row.leftover_id),(trackedByLeftover.get(String(row.leftover_id))||0)+Number(row.servings||0));
-    const bookedMealPrep=(sourceIsReal('meals')&&sourceIsReal('mealPrepFreezer')?(data.meals||[]):[])
-      .filter(meal=>normalizedStatus(meal.status)==='planned'&&meal.leftover_id
-        &&String(meal.meal_date||'')>=todayIso()
-        &&(data.meals||[]).some(source=>String(source.id)===String(meal.source_meal_id)&&normalizedStatus(source.status)==='completed')
-        &&!cooked.some(portion=>String(portion.meal_id||'')===String(meal.id)));
-    const cookedToFreeze=(sourceIsReal('leftovers')&&sourceIsReal('mealPrepFreezer')?(data.leftovers||[]):[])
-      .map(leftover=>({
-        leftover,
-        amount:Math.max(0,Number(leftover.available_servings||0)
-          -(trackedByLeftover.get(String(leftover.id))||0)
-          -bookedMealPrep.filter(meal=>String(meal.leftover_id)===String(leftover.id))
-            .reduce((sum,meal)=>sum+Number(meal.eaten_servings||1),0))
-      }))
-      .filter(row=>row.amount>0);
     const lots=(data.lots||[]).filter(lot=>freezerLotQuantity(lot));
     const frozenLots=lots.filter(lot=>frozenStorageLocation(lot.storage_location));
     const planned=portions.filter(portion=>portion.status==='planned');
@@ -2109,12 +2081,7 @@
         'Keine offenen Einfrieraufgaben.')
         +section('🧊 Bereits eingefroren',frozenLots.length+cookedFrozen.length,
           frozenLots.map(freezerLotMarkup).join('')+cookedFrozen.map(row=>mealprepFreezerMarkup(row)).join(''),
-          'Aktuell kein TK-Bestand.')
-        +(cookedToFreeze.length+bookedMealPrep.length
-          ?section('🍱 Fertige Restportionen · TK bestätigen',cookedToFreeze.length+bookedMealPrep.length,
-             bookedMealPrep.map(bookedMealPrepFreezeMarkup).join('')
-             +cookedToFreeze.map(row=>mealprepToFreezeMarkup(row.leftover,row.amount)).join(''),
-             'Keine neuen Restportionen.'):'');
+          'Aktuell kein TK-Bestand.');
     }
     const mealHints=sourceIsReal('meals')&&sourceIsReal('lots')?plannedThawTasks():[];
     const ingredientStockIds=new Map((data.meals||[])
