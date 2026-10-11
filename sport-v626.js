@@ -365,6 +365,7 @@
       isTest:String(row.source||'').toLowerCase()==='test',
       sourceKey:row.source_key||row.sourceKey||null,
       note:row.notes||row.note||'',
+      strengthActiveKcal:numberOrNull(row.strength_active_kcal??row.strengthActiveKcal),
       participants:normalizeParticipants(row.sessionParticipants||row.participants||[]),
       workout,
       activities,
@@ -397,7 +398,7 @@
     if(!user?.id)throw new Error('Nicht angemeldet.');
 
     const queries=[
-      supabase.from('sport_sessions').select('id,session_date,title,venue,started_at,ended_at,duration_minutes,source,source_key,notes,session_kind,session_status,drive_started_at,gym_arrived_at,training_started_at,training_ended_at,gym_left_at,home_arrived_at').eq('user_id',user.id).order('session_date',{ascending:false}).limit(500),
+      supabase.from('sport_sessions').select('id,session_date,title,venue,started_at,ended_at,duration_minutes,source,source_key,notes,strength_active_kcal,session_kind,session_status,drive_started_at,gym_arrived_at,training_started_at,training_ended_at,gym_left_at,home_arrived_at').eq('user_id',user.id).order('session_date',{ascending:false}).limit(500),
       supabase.from('sport_activities').select('id,session_id,name,kind,started_at,ended_at,duration_minutes,sort_order,notes').eq('user_id',user.id).order('started_at',{ascending:false}).limit(2500),
       supabase.from('sport_activity_participants').select('activity_id,participant_name').eq('user_id',user.id).limit(5000),
       supabase.from('sport_session_participants').select('id,session_id,participant_name').eq('user_id',user.id).limit(5000),
@@ -826,6 +827,8 @@
 
     if(workout.length){
       rows.push('<span class="sport-unit-summary-main-v635">Freies Training</span>');
+      const groupKcal=(group.sessions||[]).filter(session=>session.kind==='xtraining').reduce((sum,session)=>sum+(Number(session.strengthActiveKcal)||0)+(session.workout||[]).filter(item=>item.kind==='cardio'&&item.status!=='skipped').reduce((sub,item)=>sub+(Number(item.caloriesKcal)||0),0),0);
+      if(groupKcal>0)rows.push('<small class="sport-unit-summary-child-v635">↳ '+esc(groupKcal)+' aktive kcal</small>');
       const breakdown=workoutBreakdownText(workout);
       if(breakdown)rows.push('<small class="sport-unit-summary-child-v635">↳ '+esc(breakdown)+'</small>');
     }
@@ -915,6 +918,39 @@
     '</article>';
   }
 
+  function strengthKcalEditor(session){
+    if(!session||session.isTest||!(session.workout||[]).some(item=>item.kind==='strength'))return '';
+    const strength=numberOrNull(session.strengthActiveKcal);
+    const cardio=(session.workout||[]).filter(item=>item.kind==='cardio'&&item.status!=='skipped')
+      .reduce((sum,item)=>sum+Math.max(0,Number(item.caloriesKcal)||0),0);
+    const total=cardio+(strength===null?0:strength);
+    return '<section class="sport-energy-summary-v763">'+
+      '<div class="sport-energy-heading-v763"><strong>Aktive Trainingskalorien</strong>'+
+      '<span>'+(strength!==null||cardio>0?esc(String(total).replace('.',','))+' kcal':'Optional')+'</span></div>'+
+      '<form data-sport-strength-kcal="'+esc(session.id)+'">'+
+        '<label><span>Funktionelles Krafttraining · gesamter Kraftblock</span>'+
+          '<input name="strength_active_kcal" type="number" min="0" step="1" inputmode="numeric" placeholder="Aktive kcal" value="'+esc(strength??'')+'">'+
+        '</label><button type="submit">Speichern</button>'+
+      '</form>'+
+      '<small>Kraftblock nur einmal zählen. Cardio separat: '+esc(String(cardio).replace('.',','))+' aktive kcal. Kein Essensbudget.</small>'+
+    '</section>';
+  }
+
+  async function saveStrengthKcal(sessionId,raw){
+    const session=state.sessions.find(item=>String(item.id)===String(sessionId));
+    if(!session||session.isTest)throw new Error('Trainingseinheit nicht gefunden.');
+    const value=String(raw??'').trim();
+    if(value!==''&&(!/^\\d+(?:[.,]\\d+)?$/.test(value)||Number(value.replace(',','.'))>10000))
+      throw new Error('Bitte gültige aktive kcal eingeben.');
+    const numeric=value===''?null:Number(value.replace(',','.'));
+    const {supabase,user}=await sportUser();
+    const updated=await supabase.from('sport_sessions')
+      .update({strength_active_kcal:numeric}).eq('id',sessionId).eq('user_id',user.id);
+    if(updated.error)throw updated.error;
+    dropSportDraft('strength',sessionId);
+    await load(true);
+  }
+
   function unitCard(group,index=0){
     const courses=groupActivities(group),workout=groupWorkout(group),circuits=groupCircuits(group);
     const targetSession=(group.sessions||[]).find(session=>session.kind==='xtraining'&&(session.workout||[]).length)||(group.sessions||[]).find(session=>session.kind==='xtraining')||null;
@@ -931,6 +967,7 @@
             ?'<button type="button" data-sport-open-catalog data-session-id="'+esc(targetSession.id)+'">+ Übung</button><button type="button" data-sport-stop-edit-session>Bearbeitung schließen</button>'
             :'<button type="button" data-sport-edit-session="'+esc(targetSession.id)+'">Training bearbeiten</button>')+
         '</div>':'')+
+        (targetSession?strengthKcalEditor(targetSession):'')+
         (editing&&targetSession?historyMetaEditor(targetSession):'')+
         (editing
           ?((courses.length?'<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">'+courses.map((course,courseIndex)=>courseCard(course,courseIndex,true)).join('')+'</div>':'')
@@ -1170,6 +1207,7 @@
           (active.isTest?'<div class="sport-test-banner-v717"><strong>TESTMODUS</strong><span>Diese Einheit wird nicht in Einheiten, Statistik oder „Letztes Mal“ übernommen. Beim Beenden werden die Testdaten verworfen.</span></div>':'')+
           '<div class="sport-active-circuit-slot-v634" data-sport-active-circuit-slot></div>'+
           timingHtml+
+          strengthKcalEditor(active)+
           participantsBlock(active)+
           plannedTestCourseHtml+
           courseHtml+
@@ -1897,11 +1935,12 @@
   function sportDraftKey(form){
     if(!form)return '';
     const strength=form.hasAttribute('data-sport-set-form');
-    const id=String(strength?form.dataset.exerciseId:form.dataset.sportCardioForm||'');
+    const block=form.hasAttribute('data-sport-strength-kcal');
+    const id=String(block?form.dataset.sportStrengthKcal:(strength?form.dataset.exerciseId:form.dataset.sportCardioForm||''));
     if(!/^[a-f0-9-]{36}$/i.test(id))return '';
     const number=strength?Number(form.dataset.setNumber):0;
     if(strength&&(!Number.isInteger(number)||number<1))return '';
-    return SPORT_DRAFT_PREFIX+':'+(strength?'set':'cardio')+':'+id+(strength?':'+number:'');
+    return SPORT_DRAFT_PREFIX+':'+(block?'strength':strength?'set':'cardio')+':'+id+(strength?':'+number:'');
   }
   function storeSportDraft(form){
     const key=sportDraftKey(form);
@@ -1921,7 +1960,7 @@
     try{localStorage.removeItem(key);}catch(_){}
   }
   function restoreSportDrafts(root){
-    root.querySelectorAll('[data-sport-set-form],[data-sport-cardio-form]').forEach(form=>{
+    root.querySelectorAll('[data-sport-set-form],[data-sport-cardio-form],[data-sport-strength-kcal]').forEach(form=>{
       const key=sportDraftKey(form);
       if(!key)return;
       let draft;
@@ -2879,7 +2918,7 @@
     if(root.dataset.sportDelegatedV613!=='1'){
       root.dataset.sportDelegatedV613='1';
       const rememberDraft=event=>{
-        const form=event.target?.closest?.('[data-sport-set-form],[data-sport-cardio-form]');
+        const form=event.target?.closest?.('[data-sport-set-form],[data-sport-cardio-form],[data-sport-strength-kcal]');
         if(form)storeSportDraft(form);
       };
       root.addEventListener('input',rememberDraft);
@@ -3227,6 +3266,11 @@
       handle(target,()=>changeStrengthSetCount(target.dataset.sportRemoveSet,'down'));
     }));
 
+    root.querySelectorAll('[data-sport-strength-kcal]').forEach(form=>form.addEventListener('submit',event=>{
+      event.preventDefault();
+      const submit=form.querySelector('button[type="submit"]');
+      handle(submit,()=>saveStrengthKcal(form.dataset.sportStrengthKcal,new FormData(form).get('strength_active_kcal')));
+    }));
     root.querySelectorAll('[data-sport-cardio-form]').forEach(form=>form.addEventListener('submit',event=>{
       event.preventDefault();
       const submit=form.querySelector('button[type="submit"]');
@@ -3357,7 +3401,7 @@
       sportResumeRefreshTimer=null;
       if(currentMode()!=='sport'||document.hidden)return;
       const active=document.activeElement;
-      if(active?.closest?.('[data-sport-set-form],[data-sport-cardio-form]'))return;
+      if(active?.closest?.('[data-sport-set-form],[data-sport-cardio-form],[data-sport-strength-kcal]'))return;
       load(true);
     },250);
   }
