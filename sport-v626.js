@@ -2406,7 +2406,7 @@
         :'';
       detailHtml='<div class="sport-cardio-facts-v798">'+
         (facts.length?facts.map(fact=>'<span>'+esc(fact)+'</span>').join(''):'<span>Keine Gerätewerte</span>')+
-        (exercise.caloriesKcal!==null?'<div class="sport-cardio-energy-line-v799"><span>'+esc(exercise.caloriesKcal)+' aktive kcal</span></div>':'')+
+        (exercise.caloriesKcal!==null?'<div class="sport-cardio-row-break-v800" aria-hidden="true"></div><span>'+esc(exercise.caloriesKcal)+' aktive kcal</span>':'')+
         '</div>'+phaseHtml;
     }else{
       const sets=(exercise.sets||[]).filter(set=>set.weightKg!==null||set.repetitions!==null||set.rir!==null);

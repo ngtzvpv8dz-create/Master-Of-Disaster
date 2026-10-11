@@ -1668,7 +1668,54 @@
     return '<div class="food-stock-products-v736"><small>'+(rows.length===1?'Aktuelles Produkt':'Bestand nach Produkt / Charge')+'</small>'+html+'</div>';
   }
 
-  function inventoryCard(item){
+  // V800: use the same future meal plan and stock allocation logic as Food
+  // shopping and the ingredient source breakdown. Purely informational:
+  // this index does not reserve inventory or modify the meal plan.
+  function inventoryNextUseDates(data){
+    const stocks=(data.inventory||[]).filter(item=>item.is_active!==false);
+    const byId=new Map(stocks.map(item=>[String(item.id),item]));
+    const byName=new Map(stocks.map(item=>[normalizedIngredient(item.name,item.unit),item]));
+    const allocations=plannedFamilyAllocationMaps();
+    const earliest=new Map();
+    const today=todayIso();
+    const horizon=planningHorizonIso();
+    const record=(id,date)=>{
+      const key=String(id||'');
+      if(!byId.has(key))return;
+      const prev=earliest.get(key);
+      if(!prev||date<prev)earliest.set(key,date);
+    };
+    const meals=(data.meals||[]).filter(meal=>
+      String(meal.meal_date||'')>=today&&String(meal.meal_date||'')<=horizon&&
+      normalizedStatus(meal.status)==='planned'&&!meal.inventory_booked_at
+    ).sort((a,b)=>String(a.meal_date).localeCompare(String(b.meal_date)));
+    for(const meal of meals){
+      const plan=allocations.get(String(meal.id))||new Map();
+      for(const ingredient of meal.ingredients||[]){
+        if(!(Number(ingredient.quantity)>0))continue;
+        const allocated=plan.get(String(ingredient.id))?.allocations||[];
+        const usedIds=[...new Set(allocated
+          .filter(part=>Number(part.quantity)>0)
+          .map(part=>String(part.inventoryId||'')))].filter(id=>byId.has(id));
+        if(usedIds.length){
+          usedIds.forEach(id=>record(id,meal.meal_date));
+          continue;
+        }
+        // In older meals the source is recorded only by inventory_id.
+        const direct=String(ingredient.inventory_id||'');
+        if(byId.has(direct)){
+          record(direct,meal.meal_date);
+          continue;
+        }
+        const info=ingredientStockInfo(ingredient,stocks,byId,byName);
+        if(info.stock?.id)record(info.stock.id,meal.meal_date);
+        else if(info.rows?.length===1)record(info.rows[0].id,meal.meal_date);
+      }
+    }
+    return earliest;
+  }
+
+  function inventoryCard(item,nextUses){
     const expanded=expandedInventory.has(String(item.id));
     const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):fmtQty(item.quantity,item.unit);
     const pending=item.pending_weighing===true;
@@ -1699,10 +1746,12 @@
     const displayName=String(item.catalog_variant_label||item.variant_label||item.name||'Variante').trim();
     const details=item.note&&expanded?'<div class="food-stock-details-v697">'+inventoryNoteHtml(item.note)+'</div>':'';
     const mhd=empty?'':inventoryMhdMarkup(item);
+    const nextUseDate=nextUses?.get(String(item.id))||null;
+    const nextUse='<div class="food-stock-next-use-v800"><span>Nächste Verwendung am</span><strong>'+esc(nextUseDate?fmtDate(nextUseDate):'Nicht eingeplant')+'</strong></div>';
     const currentProduct=empty?'':inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
     const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -2140,6 +2189,7 @@
   }
 
   function inventoryView(data){
+    const nextUses=inventoryNextUseDates(data);
     const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
     const productsByInventoryId=new Map();
     for(const product of (data.products||[])){
@@ -2191,7 +2241,7 @@
       group:String(item.catalog_group_label||'').trim(),
       variant:String(item.catalog_variant_label||item.variant_label||item.name||'').trim(),
       display:String(item.catalog_variant_label||item.variant_label||item.name||'').trim(),
-      html:inventoryCard(item)
+      html:inventoryCard(item,nextUses)
     });
 
     const foodCards=availableRows.filter(item=>!isDrink(item)).map(toCard);

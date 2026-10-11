@@ -2570,12 +2570,5 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 .sport-history-flow-v798 .sport-phase-row-v798 span{font-size:.64rem;color:#c4dee0;line-height:1.4}
 .sport-history-flow-v798 .sport-phase-row-v798 small{font-size:.6rem;color:#7fa3a7;line-height:1.4}
 
-/* V799 · Active calories consistently on their own second row in cardio cards. */
-.sport-history-flow-v798 .sport-cardio-energy-line-v799{
-  display:flex;flex:0 0 100%;width:100%;min-width:0;margin-top:3px;
-}
-.sport-history-flow-v798 .sport-cardio-energy-line-v799>span{
-  display:inline-flex;align-items:center;min-height:25px;padding:5px 9px;
-  background:rgba(32,113,120,.24);border:1px solid rgba(111,228,234,.17);
-  border-radius:8px;color:#91eff0;font-size:.67rem;font-weight:900;
-}
+/* V800: a layout break only; active kcal use the EXACT same pill styling as other values. */
+.sport-history-flow-v798 .sport-cardio-row-break-v800{flex:0 0 100%;height:0;padding:0;margin:0}

@@ -2744,3 +2744,11 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-recipe-detail-block-v572 ul li.food-nutrition-ingredient-bad-v795 .food-ingredient-allocation-v712{flex-basis:100%}
  .food-nutrition-ingredient-hint-v795{display:block;flex-basis:100%;width:100%;grid-column:1/-1;margin-top:4px;color:#ac3d2d;font-size:9px;font-weight:720;line-height:1.4;overflow-wrap:anywhere}
 @media(max-width:390px){.food-nutrition-alarm-inner-v795{padding:9px}.food-nutrition-alarm-head-v795 strong{font-size:10px}.food-nutrition-alarm-head-v795 small{font-size:9px}}
+
+/* V800: factual next-use row, visually consistent with inventory metadata. */
+.food-stock-next-use-v800{
+  position:relative;z-index:1;display:flex;align-items:baseline;
+  justify-content:space-between;flex-wrap:wrap;gap:3px 9px;
+  margin-top:8px;font-size:10px;line-height:1.45;color:#657267;
+}
+.food-stock-next-use-v800 strong{color:#3f5843;font-size:10px;font-weight:800}
