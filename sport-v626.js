@@ -1062,7 +1062,7 @@
         '<label><span>Wdh.</span><input name="repetitions" type="number" min="0" step="1" inputmode="numeric" value="'+esc(set.repetitions??'')+'"></label>'+
         '<label><span>RIR</span>'+rirStepper(rirValue)+'</label>'+
         '<small class="sport-set-last-v612 sport-set-last-v613">'+esc(previousSetText(previous,nextNo,loadMode))+'</small>'+
-        '<button type="button" class="sport-set-save-v613" data-sport-active-next-set="'+esc(exercise.id)+'">'+(nextNo<count?'+ Satz':'Satz speichern')+'</button>'+
+        '<button type="button" class="sport-set-save-v613" data-sport-active-next-set="'+esc(exercise.id)+'">+ Satz</button>'+
       '</form>'+
     '</div>';
   }
@@ -2017,9 +2017,10 @@
   async function saveActiveStrengthSetAndAdvance(root,exerciseId){
     const exercise=state.sessions.flatMap(session=>session.workout||[]).find(item=>String(item.id)===String(exerciseId));
     if(!exercise)throw new Error('Trainingselement nicht gefunden.');
+    const countBefore=strengthSetCount(exercise);
     const saved=await saveActiveStrengthSet(root,exerciseId,{force:true,reload:false});
     if(!saved.setNumber)throw new Error('Aktiver Satz konnte nicht gefunden werden.');
-    // Extra sets should only be created with the separate explicit + Satz action.
+    if(saved.setNumber>=countBefore)await changeStrengthSetCount(exerciseId,'up',{reload:false});
     await load(true);
   }
 
