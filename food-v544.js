@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V807';
+  const VERSION='V808';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1140,13 +1140,49 @@
     return String(note||'').trim().split(/[.!?]+(?:\s+|$)|\n+/).map(part=>part.trim()).filter(Boolean);
   }
 
-  function freezeInstruction(note){
-    const sentence=noteSentences(note).find(part=>/einfrier/i.test(part));
-    if(!sentence)return '';
-    const quantities=[...sentence.matchAll(/(\d+(?:[.,]\d+)?)\s*(g|kg|Portion(?:en)?|Stück)/gi)];
-    const last=quantities.length?quantities[quantities.length-1]:null;
-    if(last)return last[1]+' '+last[2]+' direkt nach der Zubereitung einfrieren';
-    return sentence.replace(/^Meal Prep:\s*/i,'').replace(/[.!?]+$/,'');
+  // V808: Decide storage from real follow-up dates and physical TK confirmation.
+  // Words like "nicht einfrieren" in notes must NEVER trigger a freeze order.
+  function mealPrepStorageAdvice(meal){
+    if(!meal?.id||meal.source_meal_id||meal.leftover_id)return null;
+    const leftovers=Math.max(0,Number(meal.prepared_servings||0)-Number(meal.eaten_servings||0));
+    if(leftovers<=0)return null;
+    const date=String(meal.meal_date||'');
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return null;
+    const start=Date.parse(date+'T12:00:00Z');
+    if(!Number.isFinite(start))return null;
+    const planned=(state?.meals||[])
+      .filter(row=>String(row.source_meal_id||'')===String(meal.id))
+      .filter(row=>normalizedStatus(row.status)!=='cancelled')
+      .map(row=>{
+        const when=Date.parse(String(row.meal_date||'')+'T12:00:00Z');
+        const days=Math.round((when-start)/86400000);
+        const storedFrozen=(state?.mealPrepFreezer||[]).some(part=>
+          String(part.meal_id||'')===String(row.id)&&
+          ['frozen','thawing','thawed'].includes(String(part.status||'')));
+        return {row,days,storedFrozen};
+      })
+      .filter(x=>Number.isFinite(x.days)&&x.days>=0)
+      .sort((a,b)=>a.days-b.days);
+    const soon=planned.filter(x=>x.days<=2&&!x.storedFrozen);
+    const later=planned.filter(x=>x.days>2&&!x.storedFrozen);
+    const frozen=planned.filter(x=>x.storedFrozen);
+    const assigned=planned.reduce((n,x)=>n+Number(x.row.eaten_servings||1),0);
+    const free=Math.max(0,leftovers-assigned);
+    const notes=[];
+    if(soon.length){
+      const dates=[...new Set(soon.map(x=>String(x.row.meal_date)))];
+      notes.push('Für '+dates.map(fmtDate).join(' und ')+': nach dem Kochen zügig abkühlen lassen, abgedeckt in den Kühlschrank stellen und beim Essen gründlich erhitzen. Nicht einfrieren.');
+    }
+    if(later.length){
+      const dates=[...new Set(later.map(x=>String(x.row.meal_date)))];
+      notes.push('Für '+dates.map(fmtDate).join(' und ')+': längere Lagerung nötig. Nach dem Abkühlen einfrieren, wenn die Portion wirklich in den Tiefkühler kommt. Erst dann als TK bestätigen.');
+    }
+    if(frozen.length)notes.push('Als tatsächlich eingefroren bestätigte Portionen behalten ihren TK-Status.');
+    if(free>0)notes.push('Für '+portionLabel(free)+' ohne Folgetermin die Lagerung festlegen. Nicht automatisch einfrieren.');
+    return notes.length?{
+      title:soon.length&&!later.length&&!free?'🥗 Kühlschrank · Meal Prep':'🍱 Meal-Prep-Lagerung',
+      text:notes.join(' ')
+    }:null;
   }
 
   function visibleMealNote(note,{suppressGenericMealPrep=false,completed=false}={}){
@@ -1161,9 +1197,9 @@
     return text;
   }
 
-  function freezeInstructionMarkup(note){
-    const text=freezeInstruction(note);
-    return text?'<div class="food-freeze-hint-v664"><div><strong>Einfrieren</strong><small>'+esc(text)+'</small></div></div>':'';
+  function mealPrepStorageMarkup(meal){
+    const advice=mealPrepStorageAdvice(meal);
+    return advice?'<div class="food-freeze-hint-v664"><div><strong>'+esc(advice.title)+'</strong><small>'+esc(advice.text)+'</small></div></div>':'';
   }
 
   function plannedThawTasks(){
@@ -1436,7 +1472,7 @@
       const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null,false);
       const note=visibleMealNote(meal.note,{completed:status==='completed'});
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
-      const freezeHint=status==='completed'?'':freezeInstructionMarkup(meal.note);
+      const freezeHint=status==='completed'?'':mealPrepStorageMarkup(meal);
       const quantityAction=status==='completed'
         ?''
         :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Zutaten &amp; Mengen ändern</button>';
@@ -1461,7 +1497,7 @@
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
         +(items.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong>'+ingredientListMarkup(items,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
-        +(status==='completed'?'':freezeInstructionMarkup(meal.note))
+        +(status==='completed'?'':mealPrepStorageMarkup(meal))
         +(note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'')
         +(!items.length&&!note&&!freezeInstruction(meal.note)?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
         +(expanded&&editAction?'<div class="food-meal-edit-actions-v618">'+editAction+'</div>':'')
