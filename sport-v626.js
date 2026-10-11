@@ -681,8 +681,15 @@
   }
 
   function workoutTimelineCard(exercise){
-    return '<div class="sport-history-workout-step-v748">'+
-      '<small>'+esc(historyRange(exercise?.startedAt,exercise?.endedAt))+'</small>'+
+    const start=validDate(exercise?.startedAt);
+    const end=validDate(exercise?.endedAt);
+    // Legacy workouts often contain only an end timestamp. Never label it as
+    // a start or synthesize a duration from the end of the preceding device.
+    const time=start&&end&&end>=start
+      ?historyRange(exercise.startedAt,exercise.endedAt)
+      :(end?'Ende '+clock(exercise.endedAt):(start?'Start '+clock(exercise.startedAt):''));
+    return '<div class="sport-history-workout-step-v748 sport-history-workout-step-v798">'+
+      (time?'<small class="sport-history-exercise-time-v798">'+esc(time)+'</small>':'')+
       workoutSummaryCard(exercise)+
     '</div>';
   }
@@ -690,28 +697,37 @@
   function historyChronologyMarkup(group){
     const timeline=groupChronology(group);
     if(!timeline.length)return '';
-    return '<div class="sport-history-flow-v748">'+timeline.map((event,index)=>{
-      const railTime=event.startAt?clock(event.startAt):(event.endAt?clock(event.endAt):'–');
+    return '<div class="sport-history-flow-v748 sport-history-flow-v798">'+timeline.map((event,index)=>{
       if(event.kind==='course'){
-        return '<div class="sport-history-flow-step-v748 is-course">'+
-          '<div class="sport-history-flow-rail-v748"><span>'+esc(railTime)+'</span><i></i></div>'+
-          '<section class="sport-history-flow-content-v748"><b class="sport-history-flow-label-v748">KURS</b>'+courseCard(event.item,index,false)+'</section>'+
-        '</div>';
+        // Course card already displays its start/end. No duplicate clock rail.
+        return '<div class="sport-history-flow-step-v748 sport-history-flow-step-v798 is-course">'+
+          '<section class="sport-history-flow-content-v748">'+
+            '<b class="sport-history-flow-label-v748">KURS</b>'+courseCard(event.item,index,false)+
+          '</section></div>';
       }
       if(event.kind==='circuit'){
-        return '<div class="sport-history-flow-step-v748 is-circuit">'+
-          '<div class="sport-history-flow-rail-v748"><span>'+esc(railTime)+'</span><i></i></div>'+
-          '<section class="sport-history-flow-content-v748"><b class="sport-history-flow-label-v748">ZIRKELTRAINING</b>'+circuitRunCard(event.item)+'</section>'+
-        '</div>';
+        return '<div class="sport-history-flow-step-v748 sport-history-flow-step-v798 is-circuit">'+
+          '<section class="sport-history-flow-content-v748">'+
+            '<b class="sport-history-flow-label-v748">ZIRKELTRAINING</b>'+circuitRunCard(event.item)+
+          '</section></div>';
       }
       const label=event.totalSegments>1
         ?(event.segmentIndex===1?'FREIES TRAINING · START':'FREIES TRAINING · FORTGESETZT')
         :'FREIES TRAINING';
-      return '<div class="sport-history-flow-step-v748 is-workout">'+
-        '<div class="sport-history-flow-rail-v748"><span>'+esc(railTime)+'</span><i></i></div>'+
+      const items=event.items||[];
+      // Only display the segment range when EVERY exercise has a reliable
+      // start/end pair. Otherwise old 2026-10-01 data would falsely render
+      // '20:53' as the start of exercises which actually ended by 19:14.
+      const complete=items.length>0&&items.every(item=>{
+        const start=validDate(item.startedAt),end=validDate(item.endedAt);
+        return Boolean(start&&end&&end>=start);
+      });
+      const segmentRange=complete?historyRange(items[0].startedAt,items[items.length-1].endedAt):'';
+      return '<div class="sport-history-flow-step-v748 sport-history-flow-step-v798 is-workout">'+
         '<section class="sport-history-flow-content-v748">'+
-          '<div class="sport-history-flow-head-v748"><b class="sport-history-flow-label-v748">'+esc(label)+'</b><small>'+esc(historyRange(event.startAt,event.endAt))+'</small></div>'+
-          '<div class="sport-history-workout-v574">'+event.items.map(workoutTimelineCard).join('')+'</div>'+
+          '<div class="sport-history-flow-head-v748"><b class="sport-history-flow-label-v748">'+esc(label)+'</b>'+
+            (segmentRange?'<small>'+esc(segmentRange)+'</small>':'')+'</div>'+
+          '<div class="sport-history-workout-v574">'+items.map(workoutTimelineCard).join('')+'</div>'+
         '</section>'+
       '</div>';
     }).join('')+'</div>';
@@ -967,7 +983,7 @@
             ?'<button type="button" data-sport-open-catalog data-session-id="'+esc(targetSession.id)+'">+ Übung</button><button type="button" data-sport-stop-edit-session>Bearbeitung schließen</button>'
             :'<button type="button" data-sport-edit-session="'+esc(targetSession.id)+'">Training bearbeiten</button>')+
         '</div>':'')+
-        (targetSession?strengthKcalEditor(targetSession):'')+
+        (editing&&targetSession?strengthKcalEditor(targetSession):'')+
         (editing&&targetSession?historyMetaEditor(targetSession):'')+
         (editing
           ?((courses.length?'<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">'+courses.map((course,courseIndex)=>courseCard(course,courseIndex,true)).join('')+'</div>':'')
@@ -2362,26 +2378,36 @@
     const title=(number?number+' ':'')+exercise.name;
     let detailHtml='';
     if(exercise.kind==='cardio'){
-      const detail=[
+      const floors=numberOrNull(exercise.metricValues?.floors_count);
+      const facts=[
         exercise.durationMinutes!==null?exercise.durationMinutes+' Min.':null,
         exercise.resistanceLevel?'Stufe '+exercise.resistanceLevel:null,
-        exercise.distanceKm!==null?exercise.distanceKm+' km':null,
-        exercise.speedKmh!==null?exercise.speedKmh+' km/h':null,
-        exercise.inclinePercent!==null?exercise.inclinePercent+' %':null,
-        exercise.caloriesKcal!==null?exercise.caloriesKcal+' kcal':null
-      ].filter(Boolean).join(' · ');
+        floors!==null?String(floors).replace('.',',')+' Etagen':null,
+        exercise.distanceKm!==null?String(exercise.distanceKm).replace('.',',')+' km':null,
+        exercise.speedKmh!==null?String(exercise.speedKmh).replace('.',',')+' km/h':null,
+        exercise.inclinePercent!==null&&Number(exercise.inclinePercent)!==0?exercise.inclinePercent+' % Steigung':null,
+        exercise.caloriesKcal!==null?exercise.caloriesKcal+' aktive kcal':null
+      ].filter(Boolean);
       const phases=normalizeCardioPhases(exercise);
-      const phaseHtml=phases.length?'<span class="sport-summary-sets-v610 sport-summary-phases-v613">'+phases.map((phase,index)=>{
-        const parts=[];
-        if(phase.duration_minutes!==null)parts.push(phase.duration_minutes+' Min.');
-        if(phase.resistance_level)parts.push('Stufe '+phase.resistance_level);
-        if(phase.speed_kmh!==null)parts.push(phase.speed_kmh+' km/h');
-        if(phase.incline_percent!==null)parts.push(phase.incline_percent+' %');
-        if(phase.distance_km_estimated!==null)parts.push('≈ '+String(Math.round(phase.distance_km_estimated*100)/100).replace('.',',')+' km');
-        if(phase.calories_kcal_estimated!==null)parts.push('≈ '+String(Math.round(phase.calories_kcal_estimated))+' kcal');
-        return '<i><b>Phase '+(index+1)+'</b><em>'+esc(parts.join(' · ')||'keine Werte')+'</em></i>';
-      }).join('')+'</span>':'';
-      detailHtml='<span>'+esc(detail||'keine Gesamtwerte')+'</span>'+phaseHtml;
+      const phaseHtml=phases.length
+        ?'<div class="sport-summary-sets-v610 sport-summary-phases-v613 sport-summary-phases-v798">'+phases.map((phase,index)=>{
+          const main=[];
+          const estimates=[];
+          if(phase.duration_minutes!==null)main.push(phase.duration_minutes+' Min.');
+          if(phase.resistance_level)main.push('Stufe '+phase.resistance_level);
+          if(phase.speed_kmh!==null)main.push(phase.speed_kmh+' km/h');
+          if(phase.incline_percent!==null&&Number(phase.incline_percent)!==0)main.push(phase.incline_percent+' %');
+          if(phase.distance_km_estimated!==null)estimates.push('≈ '+String(Math.round(phase.distance_km_estimated*100)/100).replace('.',',')+' km');
+          if(phase.calories_kcal_estimated!==null)estimates.push('≈ '+Math.round(phase.calories_kcal_estimated)+' kcal');
+          return '<div class="sport-phase-row-v798"><b>Phase '+(index+1)+'</b>'+
+            '<div><span>'+esc(main.join(' · ')||'Werte offen')+'</span>'+
+            (estimates.length?'<small>'+esc(estimates.join(' · '))+'</small>':'')+
+            '</div></div>';
+        }).join('')+'</div>'
+        :'';
+      detailHtml='<div class="sport-cardio-facts-v798">'+
+        (facts.length?facts.map(fact=>'<span>'+esc(fact)+'</span>').join(''):'<span>Keine Gerätewerte</span>')+
+        '</div>'+phaseHtml;
     }else{
       const sets=(exercise.sets||[]).filter(set=>set.weightKg!==null||set.repetitions!==null||set.rir!==null);
       detailHtml=sets.length?'<span class="sport-summary-sets-v610">'+sets.map(set=>{
