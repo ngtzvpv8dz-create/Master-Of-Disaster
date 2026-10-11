@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V806';
+  const VERSION='V807';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -628,12 +628,20 @@
 
     const lots=(state?.lots||[])
       .filter(lot=>String(lot.inventory_id||'')===String(stock?.id||''))
-      .map(lot=>({lot,quantity:familyAllocationLotQuantity(lot,stock,targetUnit)}))
+      .flatMap(lot=>{
+        const linked=(state?.freezer||[]).find(p=>String(p.frozen_lot_id||'')===String(lot.id));
+        const thaw=['thawing','thawed'].includes(linked?.status);
+        const reserved=linked?.status==='frozen'&&Boolean(linked.meal_ingredient_id);
+        const frozen=frozenStorageLocation(lot.storage_location);
+        const opened=familyAllocationConvertQuantity(Number(lot.opened_remaining_quantity)||0,lot.opened_remaining_unit||lot.package_unit||stock.unit,targetUnit);
+        const unopened=familyAllocationConvertQuantity((Number(lot.unopened_packages)||0)*(Number(lot.package_quantity)||0),lot.package_unit||stock.unit,targetUnit);
+        return [opened>0?{lot,quantity:opened,kind:'opened',thaw,reserved,frozen}:null,
+          unopened>0?{lot,quantity:unopened,kind:'new',thaw,reserved,frozen}:null].filter(Boolean);
+      })
       .filter(entry=>entry.quantity!==null&&entry.quantity>0)
       .sort((a,b)=>{
-        const frozenFirst=familyFrozenFirstFor(stock);
-        const fa=frozenStorageLocation(a.lot.storage_location)?(frozenFirst?0:1):(frozenFirst?1:0);
-        const fb=frozenStorageLocation(b.lot.storage_location)?(frozenFirst?0:1):(frozenFirst?1:0);
+        const rank=e=>e.thaw?0:e.reserved?6:!e.frozen&&e.kind==='opened'?1:e.frozen&&familyFrozenFirstFor(stock)?2:!e.frozen?3:4;
+        const fa=rank(a),fb=rank(b);
         if(fa!==fb)return fa-fb;
         return String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
           String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
@@ -650,8 +658,8 @@
       const product=(state?.products||[]).find(row=>String(row.id||'')===String(entry.lot.product_id||''))||null;
       segments.push({
         quantity:entry.quantity,
-        label:familyAllocationProductText(product,stock),
-        frozen:frozenStorageLocation(entry.lot.storage_location)
+        label:familyAllocationProductText(product,stock)+(entry.thaw?' · ältere TK-Portion':entry.frozen?' · TK-Portion':entry.kind==='opened'?' · angebrochene Packung':' · neue Packung'),
+        frozen:entry.frozen||entry.thaw
       });
     }
 
