@@ -768,6 +768,57 @@
     };
   }
 
+  // V802: preview a user's proposed meal edit using the EXACT existing
+  // dynamic nutrition calculator and meal-order-aware ingredient allocations.
+  // This is read-only. Nothing is booked or changed in Supabase.
+  function dayCaloriesWithProposedMeal(data,mealId,proposedIngredients){
+    const proposed=data.meals.map(meal=>String(meal.id)===String(mealId)
+      ?{...meal,food_meal_ingredients:proposedIngredients}
+      :meal);
+    const target=proposed.find(meal=>String(meal.id)===String(mealId));
+    if(!target)throw new Error('Mahlzeit für die Kalorienprüfung nicht gefunden.');
+    const testData={...data,meals:proposed};
+    const plan=plannedMealAllocationState(testData);
+    const recipeMap=new Map(data.recipes.map(recipe=>[String(recipe.id),recipe]));
+    const mealMap=new Map(proposed.map(meal=>[String(meal.id),meal]));
+    let total=0,complete=true;
+    const missing=[];
+    for(const meal of proposed.filter(row=>String(row.meal_date)===String(target.meal_date))){
+      const items=meal.food_meal_ingredients||[];
+      const context=plan.contexts.get(String(meal.id))||testData;
+      const allocations=plan.allocations.get(String(meal.id))||null;
+      let nutrition;
+      if(meal.leftover_id||meal.source_meal_id){
+        const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
+        const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
+        const base=source
+          ?calculate(source.food_meal_ingredients||[],source.prepared_servings||1,testData)
+          :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,testData):{complete:false,missing:['Meal-Prep-Basis']});
+        const extra=items.length?calculate(items,meal.eaten_servings||meal.prepared_servings||1,context,allocations):zeroNutrition();
+        nutrition=combine(base,extra);
+      }else{
+        nutrition=calculate(items,meal.prepared_servings||meal.eaten_servings||1,context,allocations);
+      }
+      if(!nutrition.complete){
+        complete=false;
+        missing.push(...(nutrition.missing||[]));
+      }else{
+        const eaten=number(meal.eaten_servings);
+        total+=nutrition.kcal*(eaten!==null&&eaten>0?eaten:1);
+      }
+    }
+    return {complete,kcal:complete?Math.round(total):null,missing:[...new Set(missing)],date:target.meal_date};
+  }
+
+  async function previewMealDayCalories(mealId,proposedIngredients){
+    const data=await fetchData();
+    const meal=data.meals.find(row=>String(row.id)===String(mealId));
+    if(!meal)throw new Error('Mahlzeit für die Kalorienkontrolle nicht gefunden.');
+    const before=dayCaloriesWithProposedMeal(data,mealId,meal.food_meal_ingredients||[]);
+    const after=dayCaloriesWithProposedMeal(data,mealId,proposedIngredients);
+    return {before,after};
+  }
+
   async function refresh(){
     if(running){rerun=true;return;}
     const root=document.getElementById(ROOT_ID);
@@ -904,7 +955,8 @@
   window.__modFoodNutritionV711={
     version:VERSION,
     refresh,
-    getStatus(){return structuredClone(lastStatus);}
+    getStatus(){return structuredClone(lastStatus);},
+    previewMealDayCalories
   };
   schedule(450);
 })();

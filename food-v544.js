@@ -2839,7 +2839,7 @@
       event.preventDefault();
       const submit=modal.querySelector('button[type="submit"]');
       if(submit)submit.disabled=true;
-      try{await onSubmit(new FormData(event.currentTarget));modal.remove();}catch(error){console.error(error);alert(error?.message||'Das konnte nicht gespeichert werden.');if(submit)submit.disabled=false;}
+      try{const saved=await onSubmit(new FormData(event.currentTarget));if(saved===false){if(submit)submit.disabled=false;}else modal.remove();}catch(error){console.error(error);alert(error?.message||'Das konnte nicht gespeichert werden.');if(submit)submit.disabled=false;}
     });
     return modal;
   }
@@ -2952,6 +2952,27 @@
     });
   }
 
+  // V802: Only user-initiated meal changes may exceed the goal,
+  // and only after an explicit confirmation. Never alter any ingredient here.
+  async function confirmDailyKcalChange(meal,proposedIngredients){
+    const api=window.__modFoodNutritionV711;
+    if(!api?.previewMealDayCalories)throw new Error('Die Kalorienkontrolle ist noch nicht geladen. Bitte FOOD einmal neu öffnen.');
+    const preview=await api.previewMealDayCalories(meal.id,proposedIngredients);
+    const before=preview?.before,after=preview?.after;
+    // A missing product nutritional profile is handled by the existing
+    // ingredient-nutrition alarm. Do not invent an extra confirmation prompt.
+    if(!after?.complete)return true;
+    if(after.kcal>1800&&(before?.complete!==true||after.kcal>(before.kcal||0)+0.5)){
+      const date=new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'})
+        .format(new Date(String(after.date)+'T12:00:00Z'));
+      return confirm('Kalorienziel überschritten\n\n'+date+': '+after.kcal+
+        ' kcal geplant, '+(after.kcal-1800)+' kcal über dem Ziel von 1.800 kcal.\n\n'+
+        'Trotzdem die tatsächlichen Mengen speichern?\n'+
+        'OK = Änderung übernehmen · Abbrechen = weiter bearbeiten');
+    }
+    return true;
+  }
+
   function editFreeMealModal(mealId){
     const meal=(state?.meals||[]).find(item=>String(item.id)===String(mealId));
     if(!meal){alert('Mahlzeit nicht gefunden.');return;}
@@ -2984,6 +3005,7 @@
         return {inventory_id:inventoryId,name,quantity,unit,quantity_confirmed:quantity!==null};
       });
 
+      if(!(await confirmDailyKcalChange(meal,ingredients)))return false;
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
       const result=await withTimeout(
         supabase.rpc('update_food_free_meal_ingredients',{p_meal_id:meal.id,p_ingredients:ingredients}),
@@ -3055,6 +3077,10 @@
     }
 
     const total=Math.round(normalized.reduce((sum,part)=>sum+part.quantity,0)*1000)/1000;
+    const proposed=(meal.ingredients||[]).map(row=>String(row.id)===String(ingredient.id)
+      ?{...row,quantity:total,allocation_override:normalized}:row);
+    if(!(await confirmDailyKcalChange(meal,proposed)))return false;
+
     const payload={
       quantity:total,
       quantity_confirmed:true,
@@ -3356,6 +3382,24 @@
 
       const changes=[...existingChanges,...addChanges];
       if(!changes.length)throw new Error('Es gibt keine Änderung zum Speichern.');
+
+      // Build exactly the form's proposed ingredient list, without changing
+      // the actual meal until the user approves the possible overrun.
+      const byId=new Map(existingChanges.filter(x=>!x.add).map(x=>[String(x.id),x]));
+      const proposed=(meal.ingredients||[]).flatMap(item=>{
+        const change=byId.get(String(item.id));
+        if(change?.remove)return [];
+        return [{...item,quantity:change?.quantity??item.quantity}];
+      });
+      addChanges.forEach((change,index)=>{
+        const stock=(state?.inventory||[]).find(row=>String(row.id)===String(change.inventory_id));
+        proposed.push({
+          id:'preview-added-'+index,inventory_id:change.inventory_id,
+          name:stock?.name||'Neue Zutat',quantity:change.quantity,unit:change.unit,
+          label:stock?.name||'Neue Zutat'
+        });
+      });
+      if(!(await confirmDailyKcalChange(meal,proposed)))return false;
 
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
       const result=await withTimeout(
