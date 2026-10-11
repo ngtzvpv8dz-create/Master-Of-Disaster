@@ -1050,14 +1050,17 @@
     return {prep,fresh};
   }
 
-  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null){
+  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
     const instructions=recipeInstructions(recipe);
-    const nutrition=[
+    // Stored recipe kcal are a historical catalog estimate. Meal cards use
+    // the current ingredient quantities/products from food-nutrition-v711.js.
+    // Avoid flashing outdated kcal before that authoritative calculation runs.
+    const nutrition=showStoredNutrition?[
       num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
       num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
-    ].filter(Boolean).join(' · ');
+    ].filter(Boolean).join(' · '):'';
     const ingredientBlocks=preparedMeal?preparedIngredientListMarkup(preparedMeal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items,allocationMap)+'</div>';
     const details=expanded
       ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
@@ -1409,7 +1412,7 @@
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
       const allocationMap=plannedFamilyAllocationMaps().get(String(meal.id))||null;
-      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null);
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null,false);
       const note=visibleMealNote(meal.note,{completed:status==='completed'});
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
       const freezeHint=status==='completed'?'':freezeInstructionMarkup(meal.note);
