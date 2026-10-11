@@ -2507,3 +2507,15 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 .sport-course-booking-v762>button{flex:0 0 auto;max-width:100%;white-space:normal}
 .sport-course-booking-v762>[data-sport-save-people]{background:rgba(255,255,255,.07);font-size:.68rem}
 @media(max-width:420px){.sport-course-booking-v762>div,.sport-course-booking-v762>input{flex:1 1 100%;max-width:100%}.sport-course-booking-v762>button[type=submit]{flex:1}}
+
+
+/* V763 · iOS/PWA: don't auto-zoom or misplace the keyboard focus on strength/cardio fields.
+   With <16 px number fields, WebKit may zoom/reposition the page on tap. */
+@supports (-webkit-touch-callout: none){
+  body.mod-sport-mode-v510 .sport-active-set-form-v719 input[type="number"],
+  body.mod-sport-mode-v510 .sport-set-row-v613 input[type="number"],
+  body.mod-sport-mode-v510 .sport-cardio-form-v613 input{
+    font-size:16px!important;
+    scroll-margin-top:90px;
+  }
+}
