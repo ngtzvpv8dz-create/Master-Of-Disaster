@@ -2385,8 +2385,7 @@
         floors!==null?String(floors).replace('.',',')+' Etagen':null,
         exercise.distanceKm!==null?String(exercise.distanceKm).replace('.',',')+' km':null,
         exercise.speedKmh!==null?String(exercise.speedKmh).replace('.',',')+' km/h':null,
-        exercise.inclinePercent!==null&&Number(exercise.inclinePercent)!==0?exercise.inclinePercent+' % Steigung':null,
-        exercise.caloriesKcal!==null?exercise.caloriesKcal+' aktive kcal':null
+        exercise.inclinePercent!==null?exercise.inclinePercent+' % Steigung':null
       ].filter(Boolean);
       const phases=normalizeCardioPhases(exercise);
       const phaseHtml=phases.length
@@ -2396,7 +2395,7 @@
           if(phase.duration_minutes!==null)main.push(phase.duration_minutes+' Min.');
           if(phase.resistance_level)main.push('Stufe '+phase.resistance_level);
           if(phase.speed_kmh!==null)main.push(phase.speed_kmh+' km/h');
-          if(phase.incline_percent!==null&&Number(phase.incline_percent)!==0)main.push(phase.incline_percent+' %');
+          if(phase.incline_percent!==null)main.push(phase.incline_percent+' % Steigung');
           if(phase.distance_km_estimated!==null)estimates.push('≈ '+String(Math.round(phase.distance_km_estimated*100)/100).replace('.',',')+' km');
           if(phase.calories_kcal_estimated!==null)estimates.push('≈ '+Math.round(phase.calories_kcal_estimated)+' kcal');
           return '<div class="sport-phase-row-v798"><b>Phase '+(index+1)+'</b>'+
@@ -2407,6 +2406,7 @@
         :'';
       detailHtml='<div class="sport-cardio-facts-v798">'+
         (facts.length?facts.map(fact=>'<span>'+esc(fact)+'</span>').join(''):'<span>Keine Gerätewerte</span>')+
+        (exercise.caloriesKcal!==null?'<div class="sport-cardio-energy-line-v799"><span>'+esc(exercise.caloriesKcal)+' aktive kcal</span></div>':'')+
         '</div>'+phaseHtml;
     }else{
       const sets=(exercise.sets||[]).filter(set=>set.weightKg!==null||set.repetitions!==null||set.rir!==null);
