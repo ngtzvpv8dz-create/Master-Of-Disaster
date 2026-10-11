@@ -2967,9 +2967,9 @@
     if(after.kcal>1800&&(before?.complete!==true||after.kcal>(before.kcal||0)+0.5)){
       const date=new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'})
         .format(new Date(String(after.date)+'T12:00:00Z'));
-      return confirm('Kalorienziel überschritten\\n\\n'+date+': '+after.kcal+
-        ' kcal geplant, '+(after.kcal-1800)+' kcal über dem Ziel von 1.800 kcal.\\n\\n'+
-        'Trotzdem die tatsächlichen Mengen speichern?\\n'+
+      return confirm('Kalorienziel überschritten\n\n'+date+': '+after.kcal+
+        ' kcal geplant, '+(after.kcal-1800)+' kcal über dem Ziel von 1.800 kcal.\n\n'+
+        'Trotzdem die tatsächlichen Mengen speichern?\n'+
         'OK = Änderung übernehmen · Abbrechen = weiter bearbeiten');
     }
     return true;
