@@ -2136,11 +2136,13 @@
   async function saveCardioValues(id,values){
     const current=state.sessions.flatMap(session=>session.workout||[]).find(item=>item.id===id);
     const metricValues={...(current?.metricValues||{})};
-    for(const key of ['duration_minutes','distance_km','resistance_level','speed_kmh','incline_percent','calories_kcal']){
+    for(const key of ['duration_minutes','distance_km','resistance_level','speed_kmh','incline_percent','calories_kcal','floors_count']){
       const raw=values[key];
       if(raw!==null&&raw!==undefined&&String(raw).trim()!=='')metricValues[key]=key==='resistance_level'?String(raw).trim():numberOrNull(raw);
       else delete metricValues[key];
     }
+    // Total calories include resting energy: only active kcal belong in this workout.
+    delete metricValues.apple_fitness_total_kcal;
     const rawPhases=Array.isArray(values.phases)?values.phases.map(phase=>({
       duration_minutes:numberOrNull(phase.duration_minutes),
       resistance_level:String(phase.resistance_level||'').trim()||null,
@@ -2200,6 +2202,7 @@
       item.durationMinutes!==null?formatMinutes(item.durationMinutes):null,
       item.distanceKm!==null?item.distanceKm+' km':null,
       item.resistanceLevel?'Stufe '+item.resistanceLevel:null,
+      item.metricValues?.floors_count!==undefined?'Etagen '+item.metricValues.floors_count:null,
       item.speedKmh!==null?item.speedKmh+' km/h':null,
       item.inclinePercent!==null?item.inclinePercent+' % Steigung':null,
       item.caloriesKcal!==null?item.caloriesKcal+' kcal':null
@@ -2254,9 +2257,10 @@
         field('duration_minutes','Dauer gesamt min','<input name="duration_minutes" type="number" min="0" step="0.1" inputmode="decimal" value="'+esc(exercise.durationMinutes??'')+'">')+
         field('distance_km','Strecke gesamt km','<input name="distance_km" type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(exercise.distanceKm??'')+'">')+
         field('resistance_level','Stufe / Ø optional','<input name="resistance_level" value="'+esc(exercise.resistanceLevel||'')+'">')+
+        field('floors_count','Etagen','<input name="floors_count" type="number" min="0" step="0.1" inputmode="decimal" value="'+esc(exercise.metricValues?.floors_count??'')+'">')+
         field('speed_kmh','km/h / Ø optional','<input name="speed_kmh" type="number" min="0" step="0.1" inputmode="decimal" value="'+esc(exercise.speedKmh??'')+'">')+
         field('incline_percent','Steigung / Ø %','<input name="incline_percent" type="number" min="0" step="0.1" inputmode="decimal" value="'+esc(exercise.inclinePercent??'')+'">')+
-        field('calories_kcal','kcal gesamt','<input name="calories_kcal" type="number" min="0" step="1" inputmode="numeric" value="'+esc(exercise.caloriesKcal??'')+'">')+
+        field('calories_kcal','Aktive kcal','<input name="calories_kcal" type="number" min="0" step="1" inputmode="numeric" value="'+esc(exercise.caloriesKcal??'')+'">')+
       '</div>'+
       '<div class="sport-cardio-phase-head-v613"><div><strong>Phasen</strong><small>Warm-up, Intervalle, Endspurt …</small></div><button type="button" data-sport-add-phase>+ Phase</button></div>'+
       '<div class="sport-cardio-phases-v613">'+phases.map((phase,index)=>cardioPhaseRow(phase,index,fields)).join('')+'</div>'+
@@ -3234,6 +3238,7 @@
         speed_kmh:data.get('speed_kmh'),
         incline_percent:data.get('incline_percent'),
         calories_kcal:data.get('calories_kcal'),
+        floors_count:data.get('floors_count'),
         phases:collectCardioPhases(form)
       }));
     }));
