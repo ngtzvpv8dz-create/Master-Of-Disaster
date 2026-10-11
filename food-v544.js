@@ -2959,11 +2959,9 @@
     if(!api?.previewMealDayCalories)throw new Error('Die Kalorienkontrolle ist noch nicht geladen. Bitte FOOD einmal neu öffnen.');
     const preview=await api.previewMealDayCalories(meal.id,proposedIngredients);
     const before=preview?.before,after=preview?.after;
-    if(!after?.complete){
-      const names=(after?.missing||[]).slice(0,2).join(', ');
-      return confirm('Die Tageskalorien können nicht vollständig geprüft werden.'+
-        (names?' Fehlende Nährwerte: '+names+'.':'')+' Trotzdem diese Änderung speichern?');
-    }
+    // A missing product nutritional profile is handled by the existing
+    // ingredient-nutrition alarm. Do not invent an extra confirmation prompt.
+    if(!after?.complete)return true;
     if(after.kcal>1800&&(before?.complete!==true||after.kcal>(before.kcal||0)+0.5)){
       const date=new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'})
         .format(new Date(String(after.date)+'T12:00:00Z'));
