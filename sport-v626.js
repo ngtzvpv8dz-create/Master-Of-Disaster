@@ -9,6 +9,8 @@
   const TAB_KEY='masterOfDisasterSportTabV568';
   const PLAN_DATE_KEY='masterOfDisasterSportPlanDateV612';
   const CACHE_KEY='masterOfDisasterSportSessionsV568Cache';
+  const SPORT_DRAFT_PREFIX='masterOfDisasterSportDraftV763';
+  const SPORT_DRAFT_TTL_MS=14*24*60*60*1000;
   const LEGACY_KEY='masterOfDisasterSportSessionsV510';
   const HEALTH_EVENT='mod:health-sync-request';
   const REQUEST_TIMEOUT_MS=4500;
@@ -499,7 +501,11 @@
       state={...state,loaded:true,loading:false,error:null,source:'cache',sessions:sortSessions([historicalSeed])};
       writeCache(state.sessions);render();return state.sessions;
     }
-    if(loadPromise)return loadPromise;
+    if(loadPromise){
+      if(!force)return loadPromise;
+      await loadPromise;
+      return load(true);
+    }
     state={...state,loading:true,error:null};render();
     const task=remoteData().then(rows=>{
       state={...state,loaded:true,loading:false,error:null,source:'supabase',sessions:rows};
@@ -1056,7 +1062,7 @@
         '<label><span>Wdh.</span><input name="repetitions" type="number" min="0" step="1" inputmode="numeric" value="'+esc(set.repetitions??'')+'"></label>'+
         '<label><span>RIR</span>'+rirStepper(rirValue)+'</label>'+
         '<small class="sport-set-last-v612 sport-set-last-v613">'+esc(previousSetText(previous,nextNo,loadMode))+'</small>'+
-        '<button type="button" class="sport-set-save-v613" data-sport-active-next-set="'+esc(exercise.id)+'">+ Satz</button>'+
+        '<button type="button" class="sport-set-save-v613" data-sport-active-next-set="'+esc(exercise.id)+'">'+(nextNo<count?'+ Satz':'Satz speichern')+'</button>'+
       '</form>'+
     '</div>';
   }
@@ -1883,6 +1889,76 @@
     await load(true);
   }
 
+
+  // Keep unfinished form values on this device, scoped to one exercise and set.
+  function sportDraftKey(form){
+    if(!form)return '';
+    const strength=form.hasAttribute('data-sport-set-form');
+    const id=String(strength?form.dataset.exerciseId:form.dataset.sportCardioForm||'');
+    if(!/^[a-f0-9-]{36}$/i.test(id))return '';
+    const number=strength?Number(form.dataset.setNumber):0;
+    if(strength&&(!Number.isInteger(number)||number<1))return '';
+    return SPORT_DRAFT_PREFIX+':'+(strength?'set':'cardio')+':'+id+(strength?':'+number:'');
+  }
+  function storeSportDraft(form){
+    const key=sportDraftKey(form);
+    if(!key)return;
+    const fields=[...form.querySelectorAll('input[name],select[name],textarea[name]')]
+      .filter(el=>!el.hasAttribute('data-phase-key'))
+      .map(el=>({name:el.name,value:el.value}));
+    const phases=[...form.querySelectorAll('[data-cardio-phase-row]')].map(row=>{
+      const data={};
+      row.querySelectorAll('[data-phase-key]').forEach(el=>{data[el.dataset.phaseKey]=el.value;});
+      return data;
+    });
+    try{localStorage.setItem(key,JSON.stringify({savedAt:Date.now(),fields,phases}));}catch(_){}
+  }
+  function dropSportDraft(kind,id,setNumber){
+    const key=SPORT_DRAFT_PREFIX+':'+kind+':'+id+(kind==='set'?':'+setNumber:'');
+    try{localStorage.removeItem(key);}catch(_){}
+  }
+  function restoreSportDrafts(root){
+    root.querySelectorAll('[data-sport-set-form],[data-sport-cardio-form]').forEach(form=>{
+      const key=sportDraftKey(form);
+      if(!key)return;
+      let draft;
+      try{draft=JSON.parse(localStorage.getItem(key)||'null');}catch(_){return;}
+      if(!draft)return;
+      if(!Number.isFinite(draft.savedAt)||Date.now()-draft.savedAt>SPORT_DRAFT_TTL_MS){
+        try{localStorage.removeItem(key);}catch(_){}
+        return;
+      }
+      // A confirmed database set takes precedence over an old local draft.
+      if(form.hasAttribute('data-sport-set-form')){
+        const item=state.sessions.flatMap(session=>session.workout||[])
+          .find(exercise=>String(exercise.id)===String(form.dataset.exerciseId));
+        if(item?.sets?.some(set=>set.id&&Number(set.setNumber)===Number(form.dataset.setNumber))){
+          try{localStorage.removeItem(key);}catch(_){}
+          return;
+        }
+      }
+      (draft.fields||[]).forEach(field=>{
+        const el=[...form.querySelectorAll('input[name],select[name],textarea[name]')]
+          .find(input=>!input.hasAttribute('data-phase-key')&&input.name===field.name);
+        if(!el)return;
+        el.value=String(field.value??'');
+        if(field.name==='rir'){
+          const wrap=el.closest('[data-sport-rir-stepper]');
+          wrap?.querySelectorAll('[data-sport-rir-value]').forEach(button=>{
+            const active=button.dataset.sportRirValue===el.value;
+            button.classList.toggle('is-selected',active);
+            button.setAttribute('aria-pressed',active?'true':'false');
+          });
+        }
+      });
+      if(form.hasAttribute('data-sport-cardio-form')&&Array.isArray(draft.phases)){
+        const list=form.querySelector('.sport-cardio-phases-v613');
+        const fields=String(form.dataset.phaseFields||'duration_minutes').split(',').filter(Boolean);
+        if(list)list.innerHTML=draft.phases.map((phase,index)=>cardioPhaseRow(phase,index,fields)).join('');
+      }
+    });
+  }
+
   async function saveStrengthSet(sessionExerciseId,setNumber,values,{reload=true}={}){
     const {supabase,user}=await sportUser();
     const rawRir=String(values.rir??'').trim();
@@ -1900,6 +1976,7 @@
     };
     const result=await supabase.from('sport_exercise_sets').upsert(payload,{onConflict:'session_exercise_id,set_number'});
     if(result.error)throw result.error;
+    dropSportDraft('set',sessionExerciseId,setNumber);
     if(reload)await load(true);
   }
 
@@ -1940,10 +2017,9 @@
   async function saveActiveStrengthSetAndAdvance(root,exerciseId){
     const exercise=state.sessions.flatMap(session=>session.workout||[]).find(item=>String(item.id)===String(exerciseId));
     if(!exercise)throw new Error('Trainingselement nicht gefunden.');
-    const countBefore=strengthSetCount(exercise);
     const saved=await saveActiveStrengthSet(root,exerciseId,{force:true,reload:false});
     if(!saved.setNumber)throw new Error('Aktiver Satz konnte nicht gefunden werden.');
-    if(saved.setNumber>=countBefore)await changeStrengthSetCount(exerciseId,'up',{reload:false});
+    // Extra sets should only be created with the separate explicit + Satz action.
     await load(true);
   }
 
@@ -2078,7 +2154,7 @@
     metricValues.phases=estimates.phases;
     if(estimates.meta)metricValues.phase_estimation=estimates.meta;
     else delete metricValues.phase_estimation;
-    return updateSessionExercise(id,{
+    const result=await updateSessionExercise(id,{
       duration_minutes:effectiveDuration,
       distance_km:numberOrNull(values.distance_km),
       resistance_level:String(values.resistance_level||'').trim()||null,
@@ -2087,6 +2163,8 @@
       calories_kcal:numberOrNull(values.calories_kcal),
       metric_values:metricValues
     });
+    dropSportDraft('cardio',id);
+    return result;
   }
 
   function sessionParticipantRows(sessionId){
@@ -2781,6 +2859,7 @@
     if(!root)return false;
     root.dataset.sportTabV568=activeTab;
     root.innerHTML=`<div class="sport-stage-v510 sport-stage-v512 sport-stage-v568">${tabRail()}${panel(state.sessions)}</div>`;
+    restoreSportDrafts(root);
     startActiveClock(root);
 
     const handle=async(button,task)=>{
@@ -2791,6 +2870,12 @@
 
     if(root.dataset.sportDelegatedV613!=='1'){
       root.dataset.sportDelegatedV613='1';
+      const rememberDraft=event=>{
+        const form=event.target?.closest?.('[data-sport-set-form],[data-sport-cardio-form]');
+        if(form)storeSportDraft(form);
+      };
+      root.addEventListener('input',rememberDraft);
+      root.addEventListener('change',rememberDraft);
       root.addEventListener('click',event=>{
         const rirButton=event.target.closest('[data-sport-rir-value]');
         if(rirButton){
@@ -2799,6 +2884,7 @@
           if(!input)return;
           const value=String(rirButton.dataset.sportRirValue||'0');
           input.value=value;
+          storeSportDraft(wrap.closest('[data-sport-set-form]'));
           wrap.querySelectorAll('[data-sport-rir-value]').forEach(button=>{
             const selected=button===rirButton;
             button.classList.toggle('is-selected',selected);
@@ -2815,6 +2901,7 @@
         if(phaseButton.hasAttribute('data-sport-add-phase')){
           list?.insertAdjacentHTML('beforeend',cardioPhaseRow({},list.querySelectorAll('[data-cardio-phase-row]').length,fields));
           renumberCardioPhaseRows(form);
+          storeSportDraft(form);
           return;
         }
         const row=phaseButton.closest('[data-cardio-phase-row]');
@@ -2828,6 +2915,7 @@
           list.insertBefore(clone,row.nextElementSibling);
         }
         renumberCardioPhaseRows(form);
+        storeSportDraft(form);
       });
     }
 
