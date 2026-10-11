@@ -2759,3 +2759,8 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-mealprep-freezer-v804 .food-freezer-copy-v790 small{overflow-wrap:anywhere;}
 .food-leftover-meal-v632.is-frozen-mealprep-v804{border:1px solid rgba(63,152,196,.58);box-shadow:inset 4px 0 rgba(63,152,196,.60);}
 .food-leftover-meal-v632.is-frozen-mealprep-v804 .food-recipe-type-v544{color:#196489;}
+
+/* V805: Die Entscheidung ueber TK erfolgt am geplanten Rest, nicht automatisch. */
+.food-mealprep-freeze-optional-v805{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 12px 12px;padding:9px 10px;border:1px dashed rgba(52,112,140,.35);border-radius:12px;background:rgba(225,240,246,.32)}
+.food-mealprep-freeze-optional-v805 small{font-size:.8rem;line-height:1.4;color:#48626f}
+.food-mealprep-freeze-optional-v805 .food-action-v544{font-size:.82rem}
