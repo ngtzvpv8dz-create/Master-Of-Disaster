@@ -2764,3 +2764,8 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-mealprep-freeze-optional-v805{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 12px 12px;padding:9px 10px;border:1px dashed rgba(52,112,140,.35);border-radius:12px;background:rgba(225,240,246,.32)}
 .food-mealprep-freeze-optional-v805 small{font-size:.8rem;line-height:1.4;color:#48626f}
 .food-mealprep-freeze-optional-v805 .food-action-v544{font-size:.82rem}
+
+/* V806 · TK-Portionsmengen-Korrektur */
+.food-freezer-weight-button-v806{font-size:1.08rem;font-weight:800;min-width:30px;min-height:32px}
+.food-freezer-weigh-modal-v806 [data-food-freezer-weigh-summary]{font-weight:700;line-height:1.5;padding:10px 12px;border-radius:10px;background:rgba(60,148,192,.10)}
+.food-freezer-weigh-modal-v806 select,.food-freezer-weigh-modal-v806 input{max-width:100%}
