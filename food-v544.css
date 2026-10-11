@@ -2752,3 +2752,10 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   margin-top:8px;font-size:10px;line-height:1.45;color:#657267;
 }
 .food-stock-next-use-v800 strong{color:#3f5843;font-size:10px;font-weight:800}
+
+/* V804 · Fertige, eingefrorene Meal-Prep-Portionen werden als TK sichtbar. */
+.food-mealprep-freezer-v804.is-frozen-mealprep-v804{border:1px solid rgba(67,156,199,.55);background:linear-gradient(110deg,rgba(207,236,248,.58),rgba(244,250,252,.9));}
+.food-mealprep-freezer-v804 .food-freezer-copy-v790 strong{color:#174c68;}
+.food-mealprep-freezer-v804 .food-freezer-copy-v790 small{overflow-wrap:anywhere;}
+.food-leftover-meal-v632.is-frozen-mealprep-v804{border:1px solid rgba(63,152,196,.58);box-shadow:inset 4px 0 rgba(63,152,196,.60);}
+.food-leftover-meal-v632.is-frozen-mealprep-v804 .food-recipe-type-v544{color:#196489;}
