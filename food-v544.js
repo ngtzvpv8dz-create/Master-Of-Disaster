@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V793';
+  const VERSION='V804';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -26,7 +26,7 @@
   let plannedThawCacheState=null;
   let plannedThawCache=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','pendingCheckout'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -512,6 +512,7 @@
       safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data').eq('active',true)),
       safeQuery('Kreatin-Einnahmen',supabase.from('food_creatine_intakes').select('id,intake_date,inventory_id,inventory_name,variant_label,quantity_g,creatine_g,confirmed_at').gte('intake_date',plusDays(todayIso(),-180)).lte('intake_date',planningHorizonIso()).order('intake_date',{ascending:false})),
       safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false})),
+      safeQuery('TK-Meal-Prep',supabase.from('food_mealprep_freezer_portions').select('id,leftover_id,meal_id,servings,status,frozen_on,needed_on,thaw_started_at,thawed_at,note,created_at').in('status',['frozen','thawing','thawed']).order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3)))
     ]);
 
@@ -539,7 +540,8 @@
       products:take('products',8,rows=>rows),
       intakes:take('intakes',9,rows=>rows),
       freezer:take('freezer',10,rows=>rows),
-      pendingCheckout:take('pendingCheckout',11,rows=>rows)
+      mealPrepFreezer:take('mealPrepFreezer',11,rows=>rows),
+      pendingCheckout:take('pendingCheckout',12,rows=>rows)
     };
   }
 
@@ -1376,6 +1378,8 @@
     const sourceMeal=mealPrepSource(meal);
     const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
     const sourceLabel=mealPrepSourceLabel(meal);
+    const frozenPrep=(state?.mealPrepFreezer||[]).find(item=>String(item.meal_id||'')===String(meal.id));
+    const prepStorage=frozenPrep?(frozenPrep.status==='thawing'?'🌡️ AUFTAUEN LÄUFT':frozenPrep.status==='thawed'?'✓ AUFGETAUT':'❄️ EINGEFROREN'):'';
     const mealPrepReady=Boolean(meal.leftover_id)||normalizedStatus(sourceMeal?.status)==='completed';
     const action=status==='completed'
       ?''
@@ -1397,9 +1401,9 @@
           +(extras.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
         +'</div>'
         :'';
-      return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
+      return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(frozenPrep?'is-frozen-mealprep-v804 ':'')+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-          +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em>'+(extrasSummary?'<small class="food-meal-extras-summary-v703">'+esc(extrasSummary)+'</small>':'')+'</span>'
+          +'<span><small class="food-recipe-type-v544">'+esc(String(MEAL_LABELS[meal.meal_type]||meal.meal_type||'Mahlzeit').toLocaleUpperCase('de-DE'))+' · MEAL PREP'+(prepStorage?' · '+esc(prepStorage):'')+(sourceLabel?' · vom '+esc(sourceLabel):'')+'</small><h4>'+esc(title)+'</h4><em>'+esc(portionLabel(meal.eaten_servings||meal.prepared_servings||1)+' · '+(mealPrepReady?'bereits vorbereitet':'wird vorher vorbereitet'))+'</em>'+(extrasSummary?'<small class="food-meal-extras-summary-v703">'+esc(extrasSummary)+'</small>':'')+'</span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +dailyCreatineReminderMarkup(meal)
@@ -2006,8 +2010,53 @@
     return result;
   }
 
+
+  // V804: Bereits zubereitete TK-Mahlzeiten sind keine Rohwarenchargen.
+  // Eine Meal-Prep-Portion besitzt einen eigenen Auftauzustand und ggf. ein Zielgericht.
+  function mealprepFreezerMarkup(portion,action=''){
+    const meal=(state?.meals||[]).find(row=>String(row.id)===String(portion.meal_id||''));
+    const leftover=(state?.leftovers||[]).find(row=>String(row.id)===String(portion.leftover_id));
+    const rawTitle=leftover?.food_recipes?.title||meal?.title||'Fertige Meal-Prep-Portion';
+    const title=String(rawTitle).replace(/^TK-Rest:\\s*/i,'');
+    const count=Number(portion.servings)||1;
+    const destination=meal?' · für '+fmtDate(meal.meal_date)+' ('+(MEAL_LABELS[meal.meal_type]||'Mahlzeit')+')':'';
+    const frozenDate=portion.frozen_on?' · eingefroren am '+fmtDate(portion.frozen_on):' · Einfrierdatum nicht bekannt';
+    const dateText=portion.needed_on?' · Auftauen ab '+fmtDate(portion.needed_on):' · noch kein Auftautermin';
+    const info=portion.status==='thawing'
+      ?'🌡️ Auftauen läuft'+(portion.thaw_started_at?' · seit '+new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(portion.thaw_started_at)):'')
+      :portion.status==='thawed'?'✓ Aufgetaut':'❄️ Eingefroren';
+    const actionLabel=action==='start_thaw'?'🌡️':action==='finish_thaw'?'✓':'';
+    const actionTitle=action==='start_thaw'?'Auftauen starten':action==='finish_thaw'?'Aufgetaut bestätigen':'';
+    const button=action
+      ?'<button type="button" class="food-freezer-icon-button-v790" data-food-mealprep-action="'+esc(action)+'" data-mealprep-id="'+esc(portion.id)+'" title="'+esc(actionTitle)+'" aria-label="'+esc(actionTitle)+'">'+actionLabel+'</button>'
+      :'';
+    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 food-mealprep-freezer-v804 '+(portion.status==='frozen'?'is-frozen-mealprep-v804':'')+'">'
+      +'<div class="food-freezer-copy-v790"><strong>'+esc(portionLabel(count)+' '+title)+'</strong>'
+      +'<small>'+esc(info+destination)+'</small>'
+      +'<small>'+esc(frozenDate+dateText)+'</small></div>'
+      +(button?'<div class="food-freezer-actions-v784">'+button+'</div>':'')+'</article>';
+  }
+
+  function mealprepToFreezeMarkup(leftover,amount){
+    const recipe=leftover.food_recipes||{};
+    const title=recipe.title||'Fertige Meal-Prep-Portion';
+    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 food-mealprep-freezer-v804">'
+      +'<div class="food-freezer-copy-v790"><strong>'+esc(portionLabel(amount)+' '+title)+'</strong>'
+      +'<small>Fertig zubereitet · Lagerort noch nicht als TK bestätigt</small></div>'
+      +'<div class="food-freezer-actions-v784"><button type="button" class="food-freezer-icon-button-v790"'
+      +' data-food-mealprep-action="register" data-leftover-id="'+esc(leftover.id)+'"'
+      +' data-servings="'+esc(amount)+'" title="Als eingefroren bestätigen" aria-label="Meal-Prep-Portionen als eingefroren bestätigen">🧊</button></div></article>';
+  }
+
   function freezerBoardMarkup(data,mode){
     const portions=data.freezer||[];
+    const cooked=(data.mealPrepFreezer||[]).filter(portion=>['frozen','thawing','thawed'].includes(portion.status));
+    const cookedFrozen=cooked.filter(portion=>portion.status==='frozen');
+    const trackedByLeftover=new Map();
+    for(const row of cooked)trackedByLeftover.set(String(row.leftover_id),(trackedByLeftover.get(String(row.leftover_id))||0)+Number(row.servings||0));
+    const cookedToFreeze=(sourceIsReal('leftovers')&&sourceIsReal('mealPrepFreezer')?(data.leftovers||[]):[])
+      .map(leftover=>({leftover,amount:Math.max(0,Number(leftover.available_servings||0)-(trackedByLeftover.get(String(leftover.id))||0))}))
+      .filter(row=>row.amount>0);
     const lots=(data.lots||[]).filter(lot=>freezerLotQuantity(lot));
     const frozenLots=lots.filter(lot=>frozenStorageLocation(lot.storage_location));
     const planned=portions.filter(portion=>portion.status==='planned');
@@ -2015,6 +2064,11 @@
     const living=portions.filter(portion=>['frozen','thawing','thawed'].includes(portion.status)
       &&(data.lots||[]).some(lot=>String(lot.id)===String(portion.frozen_lot_id)&&!!freezerLotQuantity(lot)));
     const now=todayIso();
+    const cookedDue=cooked.filter(portion=>portion.status==='thawing'
+      ||(portion.status==='frozen'&&portion.needed_on&&portion.needed_on<=now)
+      ||(portion.status==='thawed'&&portion.thawed_at
+        &&new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(portion.thawed_at))===now));
+    const cookedLater=cooked.filter(portion=>portion.status==='frozen'&&portion.needed_on&&portion.needed_on>now);
     const due=living.filter(portion=>portion.status==='thawing'
       ||(portion.status==='frozen'&&portion.needed_on&&portion.needed_on<=now)
       ||(portion.status==='thawed'&&portion.thawed_at
@@ -2030,8 +2084,12 @@
       return section('❄️ Noch einzufrieren',planned.length+previews.length,
         planned.map(portion=>freezerTaskMarkup(portion,'freeze')).join('')+previews.join(''),
         'Keine offenen Einfrieraufgaben.')
-        +section('🧊 Bereits eingefroren',frozenLots.length,
-          frozenLots.map(freezerLotMarkup).join(''),'Aktuell kein TK-Bestand.');
+        +section('🧊 Bereits eingefroren',frozenLots.length+cookedFrozen.length,
+          frozenLots.map(freezerLotMarkup).join('')+cookedFrozen.map(row=>mealprepFreezerMarkup(row)).join(''),
+          'Aktuell kein TK-Bestand.')
+        +(cookedToFreeze.length?section('🍱 Fertige Restportionen · TK bestätigen',cookedToFreeze.length,
+          cookedToFreeze.map(row=>mealprepToFreezeMarkup(row.leftover,row.amount)).join(''),
+          'Keine neuen Restportionen.'):'');
     }
     const mealHints=sourceIsReal('meals')&&sourceIsReal('lots')?plannedThawTasks():[];
     const ingredientStockIds=new Map((data.meals||[])
@@ -2043,14 +2101,16 @@
         &&['frozen','thawing','thawed'].includes(portion.status)));
     const hintNow=hints.filter(hint=>hint.dueDate<=now||hint.thawStartedAt);
     const hintLater=hints.filter(hint=>hint.dueDate>now&&!hint.thawStartedAt);
-    return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length+hintNow.length,
+    return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length+hintNow.length+cookedDue.length,
        due.map(portion=>freezerTaskMarkup(portion,portion.status==='thawing'?'finish_thaw':
          portion.status==='frozen'?'start_thaw':'')).join('')
-       +hintNow.map(hint=>freezerPlanHintMarkup(hint,data)).join(''),
+       +hintNow.map(hint=>freezerPlanHintMarkup(hint,data)).join('')
+       +cookedDue.map(row=>mealprepFreezerMarkup(row,row.status==='frozen'?'start_thaw':row.status==='thawing'?'finish_thaw':'')).join(''),
        'Aktuell kein Auftauen fällig.')
-      +section('📅 Später auftauen',later.length+hintLater.length,
+      +section('📅 Später auftauen',later.length+hintLater.length+cookedLater.length,
         later.map(portion=>freezerTaskMarkup(portion)).join('')
-        +hintLater.map(hint=>freezerPlanHintMarkup(hint,data)).join(''),
+        +hintLater.map(hint=>freezerPlanHintMarkup(hint,data)).join('')
+        +cookedLater.map(row=>mealprepFreezerMarkup(row)).join(''),
         'Keine weiteren Auftautermine geplant.');
   }
 
@@ -3895,6 +3955,24 @@
       button.disabled=true;
       try{await freezerTransition(id,action);}
       catch(error){alert(error?.message||'Die Aktion konnte nicht gespeichert werden.');button.disabled=false;}
+    }));
+
+    root.querySelectorAll('[data-food-mealprep-action]').forEach(button=>button.addEventListener('click',async()=>{
+      const operation=String(button.dataset.foodMealprepAction||'');
+      if(!sourceIsReal('mealPrepFreezer'))return alert('Bitte zuerst die aktuellen Meal-Prep-TK-Daten laden.');
+      button.disabled=true;
+      try{
+        const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+        const response=operation==='register'
+          ?await supabase.rpc('register_food_mealprep_frozen',{
+              p_leftover_id:button.dataset.leftoverId,
+              p_servings:Number(button.dataset.servings)||1,
+              p_meal_id:null,p_needed_on:null})
+          :await supabase.rpc('advance_food_mealprep_freezer',{
+              p_portion_id:button.dataset.mealprepId,p_action:operation});
+        if(response.error)throw response.error;
+        loadPromise=null;await render();
+      }catch(error){alert(error?.message||'Der Meal-Prep-TK-Status konnte nicht gespeichert werden.');button.disabled=false;}
     }));
     root.querySelector('[data-food-inventory-search]')?.addEventListener('input',event=>{
       inventorySearch=String(event.currentTarget.value||'');
