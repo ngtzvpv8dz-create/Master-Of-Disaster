@@ -940,7 +940,7 @@
     const session=state.sessions.find(item=>String(item.id)===String(sessionId));
     if(!session||session.isTest)throw new Error('Trainingseinheit nicht gefunden.');
     const value=String(raw??'').trim();
-    if(value!==''&&(!/^\\d+(?:[.,]\\d+)?$/.test(value)||Number(value.replace(',','.'))>10000))
+    if(value!==''&&(!/^\d+(?:[.,]\d+)?$/.test(value)||Number(value.replace(',','.'))>10000))
       throw new Error('Bitte gültige aktive kcal eingeben.');
     const numeric=value===''?null:Number(value.replace(',','.'));
     const {supabase,user}=await sportUser();
