@@ -54,7 +54,7 @@
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
       './food-v544.js?v=808-mealprep-fridge',
-      './food-nutrition-v711.js?v=802-daily-kcal-preview'
+      './food-nutrition-v711.js?v=809-extra-and-mixed-lots'
     ],
     shopping:[
       SUPABASE,
@@ -62,7 +62,7 @@
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=746-systemic-stock-resolver',
       './food-v544.js?v=808-mealprep-fridge',
-      './food-nutrition-v711.js?v=802-daily-kcal-preview',
+      './food-nutrition-v711.js?v=809-extra-and-mixed-lots',
       './shopping-v678.js?v=792-auto-freezer-on-booking'
     ],
     kistology:[
@@ -145,9 +145,9 @@
     ],
     sport:['./sport-v626.js?v=800-equal-kcal-style','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-v544.js?v=808-mealprep-fridge',
-      './food-nutrition-v711.js?v=802-daily-kcal-preview'],
+      './food-nutrition-v711.js?v=809-extra-and-mixed-lots'],
     shopping:['./food-v544.js?v=808-mealprep-fridge',
-      './food-nutrition-v711.js?v=802-daily-kcal-preview','./shopping-v678.js?v=792-auto-freezer-on-booking'],
+      './food-nutrition-v711.js?v=809-extra-and-mixed-lots','./shopping-v678.js?v=792-auto-freezer-on-booking'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=693-bank-reconcile'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
