@@ -439,6 +439,82 @@
     return null;
   }
 
+  // V809: Mixed physical batches in ONE inventory item have different real
+  // product values. Calculate the portion across actual lots, never guess a
+  // single arbitrary product. Inventory quantities can be reduced by earlier
+  // planned meals, so skip the already reserved amount before allocating.
+  function mixedLotNutrition(item,data){
+    const stocks=data?.inventory||[];
+    const name=itemName(item);
+    const stock=item?.inventory_id
+      ?stocks.find(row=>String(row.id)===String(item.inventory_id))
+      :(()=>{
+        const matches=stocks.filter(row=>key(row.name)===key(name));
+        return matches.length===1?matches[0]:null;
+      })();
+    if(!stock)return null;
+    const stockUnit=text(stock.unit),unit=text(item.unit);
+    const units=['g','kg','ml','l','stück'];
+    if(!units.includes(unit)||!units.includes(stockUnit))return null;
+    const conversion=source=>{
+      if(source===stockUnit)return 1;
+      if(source==='kg'&&stockUnit==='g')return 1000;
+      if(source==='g'&&stockUnit==='kg')return .001;
+      if(source==='l'&&stockUnit==='ml')return 1000;
+      if(source==='ml'&&stockUnit==='l')return .001;
+      return null;
+    };
+    const multiplier=conversion(unit);
+    if(multiplier===null)return null;
+    const lots=(data?.lots||[]).filter(l=>String(l.inventory_id)===String(stock.id));
+    const active=lots.map(l=>{
+      const open=text(l.opened_remaining_unit)===stockUnit?Math.max(0,number(l.opened_remaining_quantity)||0):0;
+      const unopened=text(l.package_unit)===stockUnit
+        ?Math.max(0,number(l.unopened_packages)||0)*Math.max(0,number(l.package_quantity)||0):0;
+      return {lot:l,amount:open+unopened,open};
+    }).filter(v=>v.amount>0&&v.lot.product_id);
+    if(new Set(active.map(v=>String(v.lot.product_id))).size<2)return null;
+    const quantity=number(item.quantity);
+    if(quantity===null||quantity<0)return {complete:false,missing:[name+' (Menge)']};
+    const required=quantity*multiplier;
+    if(required===0)return {complete:true,kcal:0,protein:0,missing:[]};
+    const total=active.reduce((sum,v)=>sum+v.amount,0);
+    const current=number(stock.quantity);
+    if(current===null||current>total+.001)return {complete:false,missing:[name+' (nicht zugeordneter Altbestand)']};
+    let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0;
+    const isFrozen=v=>/(gefrier|tiefkühl|freezer|frozen)/.test(text(v.lot.storage_location));
+    const rank=v=>v.open>0&&!isFrozen(v)?1:isFrozen(v)?4:3;
+    active.sort((a,b)=>rank(a)-rank(b)
+      ||String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))
+      ||String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))
+      ||String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))
+      ||String(a.lot.id||'').localeCompare(String(b.lot.id||'')));
+    for(const entry of active){
+      const usable=Math.max(0,entry.amount-skip);
+      skip=Math.max(0,skip-entry.amount);
+      if(!usable)continue;
+      const taken=Math.min(remaining,usable);
+      const product=(data?.products||[]).find(p=>String(p.id)===String(entry.lot.product_id));
+      if(!product)return {complete:false,missing:[name+' (Chargenprodukt fehlt)']};
+      const n=nutritionOf(product);
+      if(n.kcal===null||n.protein===null)return {complete:false,missing:[name+' (Chargennährwerte fehlen)']};
+      const grams=stockUnit==='kg'||stockUnit==='l'?taken*1000:taken;
+      if(stockUnit==='stück'){
+        const each=number(product.serving_quantity);
+        if(!each)return {complete:false,missing:[name+' (Stückgewicht fehlt)']};
+        kcal+=n.kcal*each*taken/100;
+        protein+=n.protein*each*taken/100;
+      }else{
+        kcal+=n.kcal*grams/100;
+        protein+=n.protein*grams/100;
+      }
+      remaining-=taken;
+      if(remaining<=.0001)break;
+    }
+    if(remaining>.0001)return {complete:false,missing:[name+' (Chargenzuordnung unvollständig)']};
+    return {complete:true,kcal,protein,missing:[]};
+  }
+
   function calculate(items,servings,data,allocationMap=null){
     const rows=Array.isArray(items)?items:[];
     if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
@@ -457,13 +533,26 @@
         protein+=familyNutrition.protein;
         continue;
       }
+      const mixed=mixedLotNutrition(item,data);
+      if(mixed){
+        if(!mixed.complete){missing.push(...(mixed.missing||[itemName(item)]));continue;}
+        kcal+=mixed.kcal;protein+=mixed.protein;continue;
+      }
       const source=sourceFor(item,data);
       if(!source){missing.push(itemName(item));continue;}
       const amount=basisAmount(item,source);
       if(amount===null){missing.push(itemName(item)+' ('+(item?.unit||'Einheit')+')');continue;}
       if(source.nutrition.kcal===null||source.nutrition.protein===null){missing.push(itemName(item));continue;}
-      kcal+=source.nutrition.kcal*amount/100;
-      protein+=source.nutrition.protein*amount/100;
+      // A factory-defined pizza portion uses the precise per-pizza figure.
+      // Per-100-g values are rounded and would incorrectly yield 805 vs 804 kcal.
+      const each=source.product?.product_data?.per_pizza;
+      if(text(item.unit)==='stück'&&each&&number(each.energy_kcal)!==null&&number(each.protein_g)!==null){
+        kcal+=number(each.energy_kcal)*number(item.quantity);
+        protein+=number(each.protein_g)*number(item.quantity);
+      }else{
+        kcal+=source.nutrition.kcal*amount/100;
+        protein+=source.nutrition.protein*amount/100;
+      }
     }
     if(missing.length)return {complete:false,missing:[...new Set(missing)]};
     return {complete:true,kcal:kcal/div,protein:protein/div,missing:[]};
@@ -516,6 +605,9 @@
         }
       }
     }
+    const mixed=mixedLotNutrition(item,data);
+    if(mixed?.complete)return null;
+    if(mixed&&!mixed.complete)return {...entry,reason:(mixed.missing||[name]).join(', ')};
     const generic=genericFamilyNutrition(item,data,allocationOverride);
     if(generic?.complete)return null;
     if(generic&&!generic.complete){
@@ -601,6 +693,35 @@
   const combine=(a,b)=>a?.complete&&b?.complete
     ?{complete:true,kcal:a.kcal+b.kcal,protein:a.protein+b.protein,missing:[]}
     :{complete:false,missing:[...(a?.missing||[]),...(b?.missing||[])]};
+
+  // V809: Product extras belong to the one meal actually eaten, never to
+  // the prepared batch from which later meal-prep servings are derived.
+  const preparedOnly=items=>(items||[]).filter(item=>item.eaten_only_extra!==true);
+  const eatenOnly=items=>(items||[]).filter(item=>item.eaten_only_extra===true);
+  function nutritionForMeal(meal,recipeMap,mealMap,data,context,allocations){
+    const items=meal.food_meal_ingredients||[];
+    let base;
+    if(meal.leftover_id||meal.source_meal_id){
+      const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
+      const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
+      const original=source
+        ?calculate(preparedOnly(source.food_meal_ingredients||[]),source.prepared_servings||1,data)
+        :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data):{complete:false,missing:['Meal-Prep-Basis']});
+      const extras=preparedOnly(items).length
+        ?calculate(preparedOnly(items),meal.eaten_servings||meal.prepared_servings||1,context,allocations)
+        :zeroNutrition();
+      base=combine(original,extras);
+    }else{
+      base=calculate(preparedOnly(items),meal.prepared_servings||meal.eaten_servings||1,context,allocations);
+    }
+    // One-off foods are divided only by the servings actually eaten TODAY.
+    const once=eatenOnly(items);
+    const addition=once.length?calculate(once,meal.eaten_servings||1,context,allocations):zeroNutrition();
+    const complete=combine(base,addition);
+    const exact=number(meal.calories_kcal_per_serving_override);
+    if(complete.complete&&exact!==null&&exact>=0)return {...complete,kcal:exact};
+    return complete;
+  }
 
   function formatNumber(value,max=1){
     return new Intl.NumberFormat('de-DE',{maximumFractionDigits:max}).format(value);
@@ -752,10 +873,10 @@
     const to=plusDays(todayIso(),60);
     const results=await Promise.all([
       supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
-      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').gte('meal_date',from).lte('meal_date',to),
+      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
-      supabase.from('food_inventory_lots').select('id,product_id,inventory_id,purchased_on,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit')
+      supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit')
     ]);
     const bad=results.find(result=>result.error);
     if(bad?.error)throw bad.error;
@@ -787,18 +908,7 @@
       const items=meal.food_meal_ingredients||[];
       const context=plan.contexts.get(String(meal.id))||testData;
       const allocations=plan.allocations.get(String(meal.id))||null;
-      let nutrition;
-      if(meal.leftover_id||meal.source_meal_id){
-        const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
-        const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
-        const base=source
-          ?calculate(source.food_meal_ingredients||[],source.prepared_servings||1,testData)
-          :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,testData):{complete:false,missing:['Meal-Prep-Basis']});
-        const extra=items.length?calculate(items,meal.eaten_servings||meal.prepared_servings||1,context,allocations):zeroNutrition();
-        nutrition=combine(base,extra);
-      }else{
-        nutrition=calculate(items,meal.prepared_servings||meal.eaten_servings||1,context,allocations);
-      }
+      const nutrition=nutritionForMeal(meal,recipeMap,mealMap,testData,context,allocations);
       if(!nutrition.complete){
         complete=false;
         missing.push(...(nutrition.missing||[]));
@@ -852,23 +962,13 @@
         const items=meal.food_meal_ingredients||[];
         const mealContext=planState.contexts.get(String(meal.id))||data;
         const mealAllocations=planState.allocations.get(String(meal.id))||null;
-        if(meal.leftover_id||meal.source_meal_id){
-          const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
-          const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
-          const base=source
-            ?calculate(source.food_meal_ingredients||[],source.prepared_servings||1,data)
-            :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data):{complete:false,missing:['Meal-Prep-Basis']});
-          const extras=items.length?calculate(items,meal.eaten_servings||meal.prepared_servings||1,mealContext,mealAllocations):zeroNutrition();
-          n=combine(base,extras);
-        }else{
-          n=calculate(items,meal.prepared_servings||meal.eaten_servings||1,mealContext,mealAllocations);
-        }
+        n=nutritionForMeal(meal,recipeMap,mealMap,data,mealContext,mealAllocations);
         allocationRows+=patchIngredientAllocations(card,items,mealContext,mealAllocations,{show:text(meal.status)!=='completed'});
         const isBooked=text(meal.status)==='completed'||Boolean(meal.inventory_booked_at);
         const issueItems=[...items];
         if(meal.leftover_id||meal.source_meal_id){
           const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
-          if(source)issueItems.push(...(source.food_meal_ingredients||[]));
+          if(source)issueItems.push(...preparedOnly(source.food_meal_ingredients||[]));
           else if(meal.recipe_id){
             const baseRecipe=recipeMap.get(String(meal.recipe_id));
             if(baseRecipe)issueItems.push(...(baseRecipe.food_recipe_ingredients||[]));
