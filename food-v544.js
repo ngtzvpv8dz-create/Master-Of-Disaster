@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V808';
+  const VERSION='V809';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -501,7 +501,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at').order('created_at')),
@@ -985,7 +985,8 @@
       ?snapshot.sources.filter(row=>row&&Number(row.quantity)>0):[];
     const original=Array.isArray(snapshot?.ingredients)
       ?snapshot.ingredients:(meal?.ingredients||[]);
-    if(!sources.length&&!original.length)return '';
+    const eatenExtras=(meal?.ingredients||[]).filter(row=>row.eaten_only_extra===true);
+    if(!sources.length&&!original.length&&!eatenExtras.length)return '';
 
     const ranking=source=>{
       const names=[source?.name,source?.label].map(familyText).filter(Boolean);
@@ -1015,9 +1016,14 @@
         '</b></li>'
       );
 
+    const extraMarkup=eatenExtras.length
+      ?'<div class="food-recipe-detail-block-v572 food-meal-eaten-extras-v809"><strong>Zusätzlich an diesem Tag gegessen (nicht Teil des Meal Prep)</strong><ul>'
+        +eatenExtras.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')
+        +'</ul></div>'
+      :'';
     return '<div class="food-recipe-detail-block-v572 food-prepared-ingredients-v761">'
       +'<strong>Zubereitet mit</strong><ul>'+rows.join('')+'</ul>'
-      +'</div>';
+      +'</div>'+extraMarkup;
   }
 
   function ingredientListMarkup(items,allocationMap=null){
