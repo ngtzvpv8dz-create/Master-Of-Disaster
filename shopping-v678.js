@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V813';
+  const VERSION='V814';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -1059,8 +1059,9 @@
         throw new Error('Bitte bei „'+({pieceCount:'Stückzahl',estimatedWeightG:'Gesamtgewicht',outerPackages:'Außenpackungen',innerPerOuter:'Innenpackungen je Außenpackung',innerQuantity:'Menge je Innenpackung'}[key]||key)+'“ eine positive '+(integer?'ganze Zahl':'Menge')+' eingeben.');
       return n;
     };
-    const pieces=read('pieceCount',true);
-    const weight=read('estimatedWeightG');
+    const measure=String(unit||'').trim().toLocaleLowerCase('de-DE');
+    const pieces=measure==='stück'&&quantity>0?Number(quantity):read('pieceCount',true);
+    const weight=measure==='g'||measure==='kg'?null:read('estimatedWeightG');
     const outer=read('outerPackages',true);
     const inner=read('innerPerOuter',true);
     const each=read('innerQuantity');
@@ -1093,9 +1094,9 @@
   function shoppingExtraFieldsHtml(data={}){
     const x=data||{};
     const field=(name,label,initial,step='1',placeholder='')=>
-      '<label>'+esc(label)+'<input name="'+esc(name)+'" type="number" min="0.01" step="'+esc(step)+'" inputmode="decimal" value="'+esc(initial??'')+'" placeholder="'+esc(placeholder)+'"></label>';
+      '<label'+(name==='pieceCount'?' data-shopping-piece-v814':name==='estimatedWeightG'?' data-shopping-weight-v814':'')+'>'+esc(label)+'<input name="'+esc(name)+'" type="number" min="'+(step==='1'?'1':'0.01')+'" step="'+esc(step)+'" inputmode="'+(step==='1'?'numeric':'decimal')+'" value="'+esc(initial??'')+'" placeholder="'+esc(placeholder)+'"></label>';
     return '<div class="shopping-form-grid-v643">'
-        +field('pieceCount','Stückzahl, falls zusätzlich benötigt',x.piece_count,'1','z. B. 6')
+        +field('pieceCount','Stückzahl nur bei Gewichtsangabe',x.piece_count,'1','z. B. 6')
         +field('estimatedWeightG','Gesamtgewicht ca. (g)',x.estimated_total_weight_g,'0.01','z. B. 1000')+'</div>'
       +'<div class="shopping-form-grid-v643">'
         +field('outerPackages','Außenpackungen',x.outer_package_count,'1','z. B. 1')
@@ -1109,6 +1110,27 @@
   function shoppingExtraInputValues(host){
     return Object.fromEntries(['pieceCount','estimatedWeightG','outerPackages','innerPerOuter','innerQuantity','innerUnit']
       .map(name=>[name,String(host?.querySelector('[name="'+name+'"]')?.value||'').trim()]));
+  }
+
+  // V814: Never ask for the same quantity twice in different fields.
+  function shoppingSyncExtraFields(host){
+    if(!host)return;
+    const input=host.querySelector('input[name="unit"],[data-checkout-unit]');
+    const unit=String(input?.value||'').trim().toLocaleLowerCase('de-DE');
+    const pieces=host.querySelector('[data-shopping-piece-v814]');
+    const weight=host.querySelector('[data-shopping-weight-v814]');
+    const isPieces=unit==='stück';
+    const isWeight=unit==='g'||unit==='kg';
+    if(pieces){
+      pieces.style.display=isPieces?'none':'';
+      pieces.style.gridColumn=isWeight?'1 / -1':'';
+      if(isPieces){const x=pieces.querySelector('input');if(x)x.value='';}
+    }
+    if(weight){
+      weight.style.display=isWeight?'none':'';
+      weight.style.gridColumn=isPieces?'1 / -1':'';
+      if(isWeight){const x=weight.querySelector('input');if(x)x.value='';}
+    }
   }
 
   function openModal(){
