@@ -1112,6 +1112,27 @@
       .map(name=>[name,String(host?.querySelector('[name="'+name+'"]')?.value||'').trim()]));
   }
 
+  // V814: Never ask for the same quantity twice in different fields.
+  function shoppingSyncExtraFields(host){
+    if(!host)return;
+    const input=host.querySelector('input[name="unit"],[data-checkout-unit]');
+    const unit=String(input?.value||'').trim().toLocaleLowerCase('de-DE');
+    const pieces=host.querySelector('[data-shopping-piece-v814]');
+    const weight=host.querySelector('[data-shopping-weight-v814]');
+    const isPieces=unit==='stück';
+    const isWeight=unit==='g'||unit==='kg';
+    if(pieces){
+      pieces.style.display=isPieces?'none':'';
+      pieces.style.gridColumn=isWeight?'1 / -1':'';
+      if(isPieces){const x=pieces.querySelector('input');if(x)x.value='';}
+    }
+    if(weight){
+      weight.style.display=isWeight?'none':'';
+      weight.style.gridColumn=isPieces?'1 / -1':'';
+      if(isWeight){const x=weight.querySelector('input');if(x)x.value='';}
+    }
+  }
+
   function openModal(){
     document.getElementById('shoppingModalV643')?.remove();
     const root=document.createElement('div');
