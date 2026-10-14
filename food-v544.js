@@ -1399,7 +1399,7 @@
         +'</select></label>'
       :'';
     const action=ready&&reached&&first
-      ?'<button type="button" class="food-creatine-confirm-v772" data-food-creatine-confirm="'+esc(date)+'" data-food-creatine-inventory="'+esc(first.id)+'" title="Nur nach Einnahme bestätigen: 4 g aus Vorrat buchen">✓ Eingenommen</button>'
+      ?'<button type="button" class="food-creatine-confirm-v772" data-food-creatine-confirm="'+esc(date)+'" data-food-creatine-inventory="'+esc(first.id)+'" title="Nur nach Einnahme bestätigen: 4 g aus Vorrat buchen">Einnehmen</button>'
       :'<span class="food-creatine-pending-v773">'+esc(!ready?'Cloud prüfen':!reached?'Noch nicht fällig':'Vorrat leer')+'</span>';
 
     return '<div class="food-creatine-reminder-v768" role="note">'
