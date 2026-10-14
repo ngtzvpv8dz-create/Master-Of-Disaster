@@ -761,7 +761,16 @@
   function patchMeta(card,nutrition){
     const em=card.querySelector('button[data-food-recipe-toggle] em,button[data-food-meal-toggle] em');
     if(!em)return false;
-    const parts=String(em.textContent||'').split(/\s*·\s*/).filter(Boolean)
+    // V816: Rebuild nutrition text from the pristine meal headline, not from
+    // the prior patched text. Product names can contain the ' · ' separator
+    // (e.g. "Rispentomaten aus Niedersachsen · Klasse I"). Splitting an
+    // already patched warning otherwise leaves orphaned "Klasse I" fragments,
+    // and repeated refreshes grow the meal header without bound.
+    if(!em.hasAttribute('data-food-nutrition-base-v816')){
+      em.setAttribute('data-food-nutrition-base-v816',String(em.textContent||''));
+    }
+    const pristine=String(em.getAttribute('data-food-nutrition-base-v816')||'');
+    const parts=pristine.split(/\s*·\s*/).filter(Boolean)
       .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part)&&!/^(kcal|Nährwerte) offen$/i.test(part)&&!/^Nährwert(e)? prüfen:/i.test(part));
     const reasons=[...new Set(nutrition?.missing||[])];
     const nutritionParts=nutrition?.complete
