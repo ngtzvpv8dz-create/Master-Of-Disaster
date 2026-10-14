@@ -2354,7 +2354,24 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   font-weight:750;
   white-space:nowrap;
 }
-.food-creatine-done-v773{color:#3f5b29}
+/* V810: Vorher Einnehmen, danach klarer grüner Bestätigungszustand.
+   Beide Flächen bleiben trotz unterschiedlicher Beschriftung gleich groß. */
+.food-creatine-reminder-v768 .food-creatine-confirm-v772,
+.food-creatine-reminder-v768 .food-creatine-done-v773{
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:108px;
+  min-height:30px;
+  text-align:center;
+}
+.food-creatine-done-v773{
+  color:#295a2e;
+  background:linear-gradient(135deg,#e5f5dc,#bee5b6);
+  border-color:rgba(80,136,68,.5);
+  font-weight:850;
+}
 .food-creatine-reminder-v768 .food-creatine-choose-v772{
   grid-column:1/-1;
   grid-row:auto;
