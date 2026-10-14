@@ -784,3 +784,12 @@
 .shopping-purchased-row-v647>.shopping-freezer-v782{grid-column:1/-1;width:100%;box-sizing:border-box}
 .shopping-review-copy-v644>.shopping-freezer-v782{margin-top:10px}
 [data-freezer-advice-host-v782]:empty{display:none}
+
+/* V815 mobile replacement alignment */
+@media(max-width:700px){
+.shopping-item-v643.has-substitution-v698 .shopping-substitute-v698{grid-template-columns:18px minmax(0,1fr);grid-template-areas:"arrow content" ". qty";row-gap:6px;align-items:start}
+.shopping-item-v643.has-substitution-v698 .shopping-substitute-v698>span{grid-area:arrow}
+.shopping-item-v643.has-substitution-v698 .shopping-substitute-v698>div{grid-area:content;overflow:hidden;min-width:0;display:flex;align-items:stretch;flex-direction:column;gap:4px}
+.shopping-item-v643.has-substitution-v698 .shopping-substitute-v698 strong{display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.3;min-width:0;max-width:100%}
+.shopping-item-v643.has-substitution-v698 .shopping-substitute-v698>b{grid-area:qty;justify-self:start;line-height:1.3;font-size:.66rem}
+}
