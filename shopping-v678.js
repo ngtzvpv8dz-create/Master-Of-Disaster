@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V811';
+  const VERSION='V813';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -104,7 +104,7 @@
       if(session?.error||!user?.id)throw new Error('Cloud-Sitzung ist nicht verfügbar.');
 
       const generalResult=await supabase.from('shopping_items')
-        .select('id,label,quantity,unit,category,status,return_status,source,source_key,needed_by,notes,sort_order,created_at,updated_at,completed_at')
+        .select('id,label,quantity,unit,category,status,return_status,source,source_key,needed_by,notes,sort_order,created_at,updated_at,completed_at,product_id,purchase_data')
         .neq('status','done')
         .order('sort_order',{ascending:true})
         .order('created_at',{ascending:true});
@@ -431,9 +431,10 @@
       const section=item.status==='cart'?'cart':item.status==='later'?'later':item.status==='extra'?'extra':'now';
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
+      const packageDetails=shoppingPackageSummary(item.purchase_data||{});
       const secondary=isStockup
         ?('Heute kaufen'+(item.needed_by?' · Bedarf '+fmtDate(item.needed_by):''))
-        :(item.notes||'');
+        :([item.notes,packageDetails].filter(Boolean).join(' · '));
       const timing=isStockup
         ?''
         :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
@@ -746,6 +747,7 @@
     else if(item?.quantity!==null&&item?.quantity!==undefined)parts.push('Menge '+fmtQty(item.quantity,item.unit||''));
     if(purchaseData.weight_class)parts.push('Gewichtsklasse '+purchaseData.weight_class);
     if(Number(purchaseData.piece_count)>0)parts.push(fmtQty(purchaseData.piece_count,'Stück'));
+    if(Number(purchaseData.inner_units_total)>0)parts.push(shoppingPackageSummary(purchaseData));
     if(Number(purchaseData.estimated_total_weight_g)>0)parts.push('ca. '+fmtQty(purchaseData.estimated_total_weight_g,'g'));
     if(status==='date'&&item?.best_before_date)parts.push('MHD '+fmtDate(item.best_before_date));
     else if(status==='none')parts.push('kein MHD vorhanden');
@@ -1006,49 +1008,225 @@
     return true;
   }
 
+
+  // V813: Product metadata and packaging observations are not additional inventory units.
+  function shoppingProductSearchKey(value){
+    return String(value||'').toLocaleLowerCase('de-DE').normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9äöüß]+/g,' ').trim().replace(/\s+/g,' ');
+  }
+
+  function matchingKnownShoppingProducts(query,limit=8){
+    const terms=shoppingProductSearchKey(query).split(' ').filter(Boolean);
+    if(!terms.length)return [];
+    return (state.products||[])
+      .filter(p=>p.active!==false)
+      .map(product=>{
+        const display=productLabel(product);
+        const search=shoppingProductSearchKey([product.product_name,product.brand,product.variant,display,product.barcode].filter(Boolean).join(' '));
+        if(!terms.every(term=>search.includes(term)))return null;
+        const nameKey=shoppingProductSearchKey(product.product_name);
+        const q=shoppingProductSearchKey(query);
+        const score=(nameKey===q?1000:nameKey.startsWith(q)?500:0)+(search.startsWith(q)?100:0);
+        return {product,display,score};
+      }).filter(Boolean)
+      .sort((a,b)=>b.score-a.score||a.display.localeCompare(b.display,'de'))
+      .slice(0,limit);
+  }
+
+  function shoppingPackageSummary(data){
+    const d=data&&typeof data==='object'?data:{};
+    const chunks=[];
+    if(Number(d.estimated_total_weight_g)>0)chunks.push('ca. '+fmtQty(d.estimated_total_weight_g,'g')+' Gesamtgewicht');
+    const outer=Number(d.outer_package_count)||0;
+    const inner=Number(d.inner_units_total)||0;
+    if(outer>0)chunks.push(outer+' Außenpackung'+(outer===1?'':'en'));
+    if(inner>0){
+      const each=Number(d.inner_unit_quantity);
+      chunks.push(inner+' Innenpackungen'+(each>0?' à '+fmtQty(each,d.inner_unit_unit||'g'):''));
+    }
+    if(Number(d.piece_count)>0&&!(outer>0||inner>0))chunks.push(fmtQty(d.piece_count,'Stück'));
+    return chunks.join(' · ');
+  }
+
+  function parseShoppingExtraData(values,quantity,unit,previous={}){
+    const d={...(previous&&typeof previous==='object'?previous:{})};
+    for(const key of ['piece_count','estimated_total_weight_g','outer_package_count','inner_units_per_outer','inner_units_total','inner_unit_quantity','inner_unit_unit','inner_units_openable'])delete d[key];
+    const read=(key,integer=false)=>{
+      const raw=String(values?.[key]??'').trim();
+      if(!raw)return null;
+      const n=Number(raw.replace(',','.'));
+      if(!Number.isFinite(n)||n<=0||(integer&&!Number.isSafeInteger(n)))
+        throw new Error('Bitte bei „'+({pieceCount:'Stückzahl',estimatedWeightG:'Gesamtgewicht',outerPackages:'Außenpackungen',innerPerOuter:'Innenpackungen je Außenpackung',innerQuantity:'Menge je Innenpackung'}[key]||key)+'“ eine positive '+(integer?'ganze Zahl':'Menge')+' eingeben.');
+      return n;
+    };
+    const pieces=read('pieceCount',true);
+    const weight=read('estimatedWeightG');
+    const outer=read('outerPackages',true);
+    const inner=read('innerPerOuter',true);
+    const each=read('innerQuantity');
+    const innerUnit=String(values?.innerUnit||'').trim();
+    if(pieces!==null&&String(unit||'').toLocaleLowerCase('de-DE')==='stück'&&quantity!==null&&Number(quantity)!==pieces)
+      throw new Error('Gekaufte Stückmenge und zusätzliche Stückzahl müssen übereinstimmen.');
+    if(each!==null&&inner===null)throw new Error('Bitte auch die Anzahl der Innenpackungen je Außenpackung eintragen.');
+    if(each!==null&&!innerUnit)throw new Error('Bitte die Einheit je Innenpackung eintragen, z. B. g.');
+    if(inner===null&&innerUnit)throw new Error('Für die Innenpackungs-Einheit fehlt die Anzahl der Innenpackungen.');
+    const outerTotal=outer??(inner===null?null:1);
+    const innerTotal=inner===null?null:outerTotal*inner;
+    if(innerTotal!==null&&!Number.isSafeInteger(innerTotal))throw new Error('Zu viele Innenpackungen.');
+    const normalizedUnit=String(unit||'').trim().toLocaleLowerCase('de-DE');
+    const normalizedInner=innerUnit.toLocaleLowerCase('de-DE');
+    if(innerTotal!==null&&each!==null&&quantity!==null&&normalizedUnit===normalizedInner
+       &&Math.abs(innerTotal*each-Number(quantity))>0.01)
+      throw new Error('Außenpackungen × Innenpackungen × Einzelmenge ergeben nicht die eingegebene Gesamtmenge.');
+    if(pieces!==null)d.piece_count=pieces;
+    if(weight!==null)d.estimated_total_weight_g=weight;
+    if(outerTotal!==null)d.outer_package_count=outerTotal;
+    if(inner!==null){
+      d.inner_units_per_outer=inner;
+      d.inner_units_total=innerTotal;
+      d.inner_units_openable=true;
+    }
+    if(each!==null){d.inner_unit_quantity=each;d.inner_unit_unit=innerUnit;}
+    return d;
+  }
+
+  function shoppingExtraFieldsHtml(data={}){
+    const x=data||{};
+    const field=(name,label,initial,step='1',placeholder='')=>
+      '<label>'+esc(label)+'<input name="'+esc(name)+'" type="number" min="0.01" step="'+esc(step)+'" inputmode="decimal" value="'+esc(initial??'')+'" placeholder="'+esc(placeholder)+'"></label>';
+    return '<div class="shopping-form-grid-v643">'
+        +field('pieceCount','Stückzahl, falls zusätzlich benötigt',x.piece_count,'1','z. B. 6')
+        +field('estimatedWeightG','Gesamtgewicht ca. (g)',x.estimated_total_weight_g,'0.01','z. B. 1000')+'</div>'
+      +'<div class="shopping-form-grid-v643">'
+        +field('outerPackages','Außenpackungen',x.outer_package_count,'1','z. B. 1')
+        +field('innerPerOuter','Innenpackungen je Außenpackung',x.inner_units_per_outer,'1','z. B. 4')+'</div>'
+      +'<div class="shopping-form-grid-v643">'
+        +field('innerQuantity','Menge je Innenpackung',x.inner_unit_quantity,'0.01','z. B. 150')
+        +'<label>Einheit je Innenpackung<input name="innerUnit" value="'+esc(x.inner_unit_unit||'')+'" placeholder="z. B. g"></label></div>'
+      +'<small>Beispiele: 6 Äpfel und ca. 1000 g oder 1 Reispaket mit 4 Innenbeuteln à 150 g. Nur die Hauptmenge wird in den Vorrat gebucht.</small>';
+  }
+
+  function shoppingExtraInputValues(host){
+    return Object.fromEntries(['pieceCount','estimatedWeightG','outerPackages','innerPerOuter','innerQuantity','innerUnit']
+      .map(name=>[name,String(host?.querySelector('[name="'+name+'"]')?.value||'').trim()]));
+  }
+
   function openModal(){
     document.getElementById('shoppingModalV643')?.remove();
     const root=document.createElement('div');
     root.id='shoppingModalV643';
-    root.className='shopping-modal-v643';
+    root.className='shopping-modal-v643 shopping-manual-modal-v813';
     root.innerHTML='<div class="shopping-modal-card-v643"><div class="shopping-modal-head-v643"><div><span>NEUER EINTRAG</span><strong>Was soll mit?</strong></div><button type="button" data-shopping-modal-close>✕</button></div>'
-      +'<form data-shopping-add-form><label>Artikel<input name="label" required placeholder="z. B. Duschgel, Waschmittel, Batterien" autocomplete="off"></label>'
+      +'<form data-shopping-add-form><label>Artikel<input name="label" data-shopping-product-query-v813 role="combobox" aria-autocomplete="list" aria-controls="shoppingProductSuggestionsV813" aria-expanded="false" required placeholder="Produkt suchen oder neu eintragen" autocomplete="off"></label>'
+      +'<div id="shoppingProductSuggestionsV813" class="shopping-product-suggest-v813" role="listbox" hidden></div>'
+      +'<small class="shopping-picked-product-v813" data-shopping-picked-v813>Tippe einen Namen ein und wähle bei Bedarf einen bekannten Artikel aus dem Produktstamm.</small>'
       +'<div class="shopping-form-grid-v643"><label>Menge<input name="quantity" type="number" min="0" step="0.01" inputmode="decimal"></label><label>Einheit<input name="unit" placeholder="Stück, Packung, ml …"></label></div>'
+      +'<details class="shopping-extra-details-v813"><summary>Stück, Gewicht & Verpackung (optional)</summary>'
+      +shoppingExtraFieldsHtml()+'</details>'
       +'<div class="shopping-form-grid-v643"><label>Kategorie<select name="category">'+CATEGORIES.map(cat=>'<option '+(cat==='Sonstiges'?'selected':'')+'>'+esc(cat)+'</option>').join('')+'</select></label><label>Benötigt bis<input name="needed_by" type="date"></label></div>'
       +'<small class="shopping-add-hint-v681">Normal = Phase 1. „Extra“ bleibt dauerhaft ohne Kauftermin zwischen Phase 1 und Später.</small>'
-      +'<label>Notiz<input name="notes" placeholder="optional"></label>'
+      +'<label>Notiz<input name="notes" placeholder="optional, z. B. eine gemeinsame Tüte"></label>'
       +'<label class="shopping-later-check-v643"><input name="extra" type="checkbox"> Extra · ohne Kauftermin</label>'
       +'<label class="shopping-later-check-v643"><input name="later" type="checkbox"> Erst später einkaufen</label>'
-      +'<button type="submit" class="shopping-submit-v643">Zur Einkaufsliste</button></form></div>';
+      +'<button type="submit" class="shopping-submit-v643">Zur Einkaufsliste</button></form></div>'
+      +'<style>.shopping-manual-modal-v813 .shopping-product-suggest-v813{border:1px solid #9997;border-radius:12px;max-height:200px;overflow-y:auto;margin:2px 0 7px;padding:4px}.shopping-manual-modal-v813 .shopping-product-suggest-v813[hidden]{display:none}.shopping-manual-modal-v813 .shopping-product-suggest-v813 button{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:8px;border:0;background:transparent;color:inherit;cursor:pointer}.shopping-manual-modal-v813 .shopping-product-suggest-v813 button:focus-visible,.shopping-manual-modal-v813 .shopping-product-suggest-v813 button:hover{background:#8883}.shopping-manual-modal-v813 .shopping-product-suggest-v813 button strong,.shopping-manual-modal-v813 .shopping-product-suggest-v813 button small{display:block}.shopping-manual-modal-v813 .shopping-product-suggest-v813 button small{opacity:.75}.shopping-manual-modal-v813 .shopping-picked-product-v813{display:block;margin-bottom:10px;opacity:.85}.shopping-manual-modal-v813 .shopping-extra-details-v813{padding:9px 0;margin:5px 0 10px;border-top:1px solid #9995;border-bottom:1px solid #9995}.shopping-manual-modal-v813 .shopping-extra-details-v813 summary{font-weight:650;cursor:pointer;padding:7px 0}.shopping-manual-modal-v813 .shopping-extra-details-v813>small{display:block;opacity:.82;padding-bottom:6px}</style>';
     document.body.appendChild(root);
+    const form=root.querySelector('[data-shopping-add-form]');
+    const input=form.querySelector('[data-shopping-product-query-v813]');
+    const suggestions=root.querySelector('#shoppingProductSuggestionsV813');
+    const picked=root.querySelector('[data-shopping-picked-v813]');
+    let chosenProductId=null;
+    const closeSuggestions=()=>{suggestions.hidden=true;suggestions.innerHTML='';input.setAttribute('aria-expanded','false');};
+    const chooseProduct=product=>{
+      chosenProductId=String(product.id);
+      input.value=String(product.product_name||productLabel(product));
+      const unit=form.elements.unit;
+      const amount=form.elements.quantity;
+      if(product.package_unit&&!String(unit.value||'').trim())unit.value=product.package_unit;
+      if(product.package_quantity!==null&&product.package_quantity!==undefined&&!String(amount.value||'').trim()
+          &&product.package_unit&&String(unit.value||'').trim().toLocaleLowerCase('de-DE')===String(product.package_unit).trim().toLocaleLowerCase('de-DE'))amount.value=product.package_quantity;
+      const category=form.elements.category;
+      const cat=String(product.category||'').trim();
+      if(product.inventory_id||product.product_data?.inventory_scope==='food')category.value='Lebensmittel';
+      else if(CATEGORIES.includes(cat))category.value=cat;
+      picked.textContent='✓ Bekanntes Produkt: '+productLabel(product)+' · mit Produktstamm verknüpft';
+      closeSuggestions();
+    };
+    const showSuggestions=()=>{
+      const matches=matchingKnownShoppingProducts(input.value);
+      if(!matches.length){closeSuggestions();return;}
+      suggestions.innerHTML=matches.map(({product,display})=>
+        '<button type="button" role="option" data-shopping-pick-product-v813="'+esc(product.id)+'"><strong>'+esc(display)+'</strong><small>Bekanntes Produkt'+(product.inventory_id?' · mit Vorrat verknüpft':'')+'</small></button>').join('');
+      suggestions.hidden=false;
+      input.setAttribute('aria-expanded','true');
+      suggestions.querySelectorAll('[data-shopping-pick-product-v813]').forEach(button=>{
+        button.addEventListener('click',()=>{
+          const product=(state.products||[]).find(p=>String(p.id)===String(button.dataset.shoppingPickProductV813));
+          if(product)chooseProduct(product);
+        });
+      });
+    };
+    input.addEventListener('input',()=>{
+      if(chosenProductId){
+        chosenProductId=null;
+        picked.textContent='Artikel geändert · wähle für eine Produktverknüpfung bitte erneut einen Vorschlag.';
+      }
+      showSuggestions();
+    });
+    input.addEventListener('keydown',event=>{
+      if(event.key==='Escape'){closeSuggestions();return;}
+      if(event.key==='ArrowDown'&&!suggestions.hidden){
+        event.preventDefault();suggestions.querySelector('button')?.focus();
+      }
+      if(event.key==='Enter'&&!suggestions.hidden){
+        const only=suggestions.querySelectorAll('button');
+        if(only.length===1){event.preventDefault();only[0].click();}
+      }
+    });
+    suggestions.addEventListener('keydown',event=>{
+      const buttons=[...suggestions.querySelectorAll('button')];
+      const index=buttons.indexOf(document.activeElement);
+      if(event.key==='Escape'){event.preventDefault();closeSuggestions();input.focus();}
+      else if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+        event.preventDefault();
+        const next=event.key==='ArrowDown'?Math.min(index+1,buttons.length-1):Math.max(index-1,0);
+        buttons[next]?.focus();
+      }
+    });
     root.querySelector('[data-shopping-modal-close]')?.addEventListener('click',()=>root.remove());
     root.addEventListener('click',event=>{if(event.target===root)root.remove();});
-    const extraCheck=root.querySelector('input[name="extra"]');
-    const laterCheck=root.querySelector('input[name="later"]');
+    const extraCheck=form.querySelector('input[name="extra"]');
+    const laterCheck=form.querySelector('input[name="later"]');
     extraCheck?.addEventListener('change',()=>{if(extraCheck.checked&&laterCheck)laterCheck.checked=false;});
     laterCheck?.addEventListener('change',()=>{if(laterCheck.checked&&extraCheck)extraCheck.checked=false;});
-    root.querySelector('[data-shopping-add-form]')?.addEventListener('submit',async event=>{
+    form.addEventListener('submit',async event=>{
       event.preventDefault();
-      const form=new FormData(event.currentTarget);
-      const label=String(form.get('label')||'').trim();
-      const rawQty=String(form.get('quantity')||'').trim();
-      const quantity=rawQty===''?null:Number(rawQty);
-      const unit=String(form.get('unit')||'').trim()||null;
-      const category=String(form.get('category')||'Sonstiges').trim()||'Sonstiges';
-      const neededBy=String(form.get('needed_by')||'').trim()||null;
-      const notes=String(form.get('notes')||'').trim()||null;
-      const extra=form.get('extra')==='on';
-      const later=form.get('later')==='on';
+      const data=new FormData(form);
+      const label=String(data.get('label')||'').trim();
+      const rawQty=String(data.get('quantity')||'').trim();
+      const quantity=rawQty===''?null:Number(rawQty.replace(',','.'));
+      const unit=String(data.get('unit')||'').trim()||null;
+      const category=String(data.get('category')||'Sonstiges').trim()||'Sonstiges';
+      const neededBy=String(data.get('needed_by')||'').trim()||null;
+      const notes=String(data.get('notes')||'').trim()||null;
+      const extra=data.get('extra')==='on';
+      const later=data.get('later')==='on';
       if(!label)return;
-      if(quantity!==null&&(!Number.isFinite(quantity)||quantity<0))return;
+      const submit=form.querySelector('button[type="submit"]');
+      if(submit)submit.disabled=true;
       try{
-        await addGeneral({label,quantity,unit,category,needed_by:extra?null:neededBy,notes,status:extra?'extra':later?'later':'now'});
+        if(quantity!==null&&(!Number.isFinite(quantity)||quantity<0))throw new Error('Bitte eine gültige Kaufmenge eintragen.');
+        const purchaseData=parseShoppingExtraData(shoppingExtraInputValues(form),quantity,unit);
+        await addGeneral({label,quantity,unit,category,needed_by:extra?null:neededBy,
+          notes,status:extra?'extra':later?'later':'now',
+          product_id:chosenProductId,purchase_data:purchaseData});
         root.remove();
       }catch(error){
+        if(submit)submit.disabled=false;
         alert(error?.message||'Eintrag konnte nicht gespeichert werden.');
       }
     });
-    setTimeout(()=>root.querySelector('input[name="label"]')?.focus(),50);
+    setTimeout(()=>input?.focus(),50);
   }
 
   async function currentUser(){
@@ -1228,9 +1406,12 @@
         ?(state.products||[]).find(p=>String(p.id)===String(substitution.replacement_product_id))
         :null;
       // A replacement must never inherit the original inventory or product ID.
+      const manualProduct=!substitution&&row.source==='general'&&row.general?.product_id
+        ?(state.products||[]).find(p=>String(p.id)===String(row.general.product_id))||null
+        :null;
       const inventoryId=substitution
         ?(replacementProduct?.inventory_id||substitution.replacement_inventory_id||null)
-        :(row.foodAction?.stockId||null);
+        :row.source==='general'?(manualProduct?.inventory_id||null):(row.foodAction?.stockId||null);
       const label=substitution?.replacement_label||row.label;
       const base={
         key:row.key,label,plannedQuantity,plannedUnit,source:row.source,inventoryId,category:row.category||null,
@@ -1238,10 +1419,14 @@
         originalLabel:substitution?row.label:null,
         originalQuantity:substitution?originalQuantity:null,
         originalUnit:substitution?originalUnit:null,
-        purchaseData:substitution?.purchase_data||{}
+        purchaseData:substitution?.purchase_data||(row.source==='general'?row.general?.purchase_data:null)||{},
+        note:row.source==='general'?(row.general?.notes||null):null
       };
-      const product=substitution?replacementProduct:defaultProductForCartItem(base);
-      return {...base,productId:product?.id||null,packageCount:defaultPackageCount(base,product)};
+      const product=substitution?replacementProduct:(manualProduct||defaultProductForCartItem(base));
+      const innerCount=Number(base.purchaseData?.inner_units_total)||0;
+      const outerCount=Number(base.purchaseData?.outer_package_count)||0;
+      const packageCount=innerCount>0?innerCount:outerCount>0?outerCount:defaultPackageCount(base,product);
+      return {...base,productId:product?.id||null,packageCount};
     });
   }
 
@@ -1296,8 +1481,8 @@
           +'<label>Gekauft<input data-checkout-qty type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(item.plannedQuantity??'')+'"></label>'
           +'<label>Einheit<input data-checkout-unit value="'+esc(item.plannedUnit||'')+'" placeholder="Stück, g, ml …"></label>'
           +'</div>'
-          +(item.substitutionId
-            ?'<div class="shopping-form-grid-v643"><label>Stückzahl (optional)<input data-checkout-pieces type="number" min="1" step="1" inputmode="numeric" value="'+esc(item.purchaseData?.piece_count??'')+'"></label><label>Gesamtgewicht ca. (g, optional)<input data-checkout-weight type="number" min="1" step="1" inputmode="numeric" value="'+esc(item.purchaseData?.estimated_total_weight_g??'')+'"></label></div>'
+          +(item.substitutionId||item.source==='general'
+            ?'<details class="shopping-extra-details-v813" '+(Object.keys(item.purchaseData||{}).length?'open':'')+'><summary>Zusätzliche Mengen & Verpackung</summary>'+shoppingExtraFieldsHtml(item.purchaseData||{})+'</details>'
             :'')
           +(item.category==='Lebensmittel'
             ?'<div class="shopping-checkout-lots-v678"><div class="shopping-checkout-lots-head-v678"><div><span>PACKUNGEN & MHD</span><small>Jedes MHD ist eine eigene Charge.</small></div><button type="button" data-checkout-add-lot>+ weiteres MHD</button></div>'
@@ -1367,7 +1552,7 @@
           const unit=String(node.querySelector('[data-checkout-unit]')?.value||'').trim()||null;
           const productId=String(node.querySelector('[data-checkout-product]')?.value||'').trim()||null;
           const product=productId?(state.products||[]).find(p=>String(p.id)===productId):null;
-          const inventoryId=product?.inventory_id||base.inventoryId||null;
+          const inventoryId=product?.inventory_id||((base.source==='general'||base.substitutionId)?null:base.inventoryId)||null;
           if(quantity===null||!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte für „'+base.label+'“ eine gekaufte Menge größer 0 eintragen.');
           if(!unit)throw new Error('Bitte für „'+base.label+'“ eine Einheit eintragen.');
 
@@ -1380,21 +1565,12 @@
           }).filter(lot=>lot.packageCount!==null);
           const packageCount=lots.length?lots.reduce((sum,lot)=>sum+lot.packageCount,0):null;
           const bestBefore=lots.length===1?lots[0].bestBefore:null;
-          const purchaseData={...(base.purchaseData||{})};
-          if(base.substitutionId){
-            const rawPieces=String(node.querySelector('[data-checkout-pieces]')?.value||'').trim();
-            const rawWeight=String(node.querySelector('[data-checkout-weight]')?.value||'').trim();
-            const pieces=rawPieces===''?null:Number(rawPieces);
-            const weightG=rawWeight===''?null:Number(rawWeight);
-            if(pieces!==null&&(!Number.isSafeInteger(pieces)||pieces<=0))throw new Error('Stückzahl für „'+base.label+'“ muss eine positive ganze Zahl sein.');
-            if(weightG!==null&&(!Number.isFinite(weightG)||weightG<=0))throw new Error('Gesamtgewicht für „'+base.label+'“ muss größer 0 sein.');
-            if(String(unit).toLocaleLowerCase('de-DE')==='stück'&&pieces!==null&&pieces!==quantity)throw new Error('Stückzahl und gekaufte Menge für „'+base.label+'“ müssen übereinstimmen.');
-            if(pieces!==null)purchaseData.piece_count=pieces;else delete purchaseData.piece_count;
-            if(weightG!==null)purchaseData.estimated_total_weight_g=weightG;else delete purchaseData.estimated_total_weight_g;
-          }
+          const purchaseData=(base.substitutionId||base.source==='general')
+            ?parseShoppingExtraData(shoppingExtraInputValues(node),quantity,unit,base.purchaseData||{})
+            :{...(base.purchaseData||{})};
           return {
             ...base,quantity,unit,packageCount,bestBefore,productId,inventoryId,lots,purchaseData,
-            note:lots.some(lot=>lot.bestBefore)?'MHD beim Kauf chargenbezogen bestätigt.':null
+            note:[base.note,lots.some(lot=>lot.bestBefore)?'MHD beim Kauf chargenbezogen bestätigt.':null].filter(Boolean).join(' · ')||null
           };
         });
         await completeCheckout(null,items);
