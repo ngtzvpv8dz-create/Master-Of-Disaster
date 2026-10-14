@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V814';
+  const VERSION='V815';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -431,7 +431,7 @@
       const section=item.status==='cart'?'cart':item.status==='later'?'later':item.status==='extra'?'extra':'now';
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
-      const packageDetails=shoppingPackageSummary(item.purchase_data||{});
+      const packageDetails=shoppingPackageSummary(item.purchase_data||{},item.unit);
       const secondary=isStockup
         ?('Heute kaufen'+(item.needed_by?' · Bedarf '+fmtDate(item.needed_by):''))
         :([item.notes,packageDetails].filter(Boolean).join(' · '));
@@ -1033,7 +1033,7 @@
       .slice(0,limit);
   }
 
-  function shoppingPackageSummary(data){
+  function shoppingPackageSummary(data,mainUnit=''){
     const d=data&&typeof data==='object'?data:{};
     const chunks=[];
     if(Number(d.estimated_total_weight_g)>0)chunks.push('ca. '+fmtQty(d.estimated_total_weight_g,'g')+' Gesamtgewicht');
@@ -1044,7 +1044,7 @@
       const each=Number(d.inner_unit_quantity);
       chunks.push(inner+' Innenpackungen'+(each>0?' à '+fmtQty(each,d.inner_unit_unit||'g'):''));
     }
-    if(Number(d.piece_count)>0&&!(outer>0||inner>0))chunks.push(fmtQty(d.piece_count,'Stück'));
+    if(Number(d.piece_count)>0&&String(mainUnit||'').toLocaleLowerCase('de-DE')!=='stück'&&!(outer>0||inner>0))chunks.push(fmtQty(d.piece_count,'Stück'));
     return chunks.join(' · ');
   }
 
@@ -1158,6 +1158,7 @@
     const suggestions=root.querySelector('#shoppingProductSuggestionsV813');
     const picked=root.querySelector('[data-shopping-picked-v813]');
     let chosenProductId=null;
+    const stableEntryId=window.crypto?.randomUUID?.()||null;
     const closeSuggestions=()=>{suggestions.hidden=true;suggestions.innerHTML='';input.setAttribute('aria-expanded','false');};
     const chooseProduct=product=>{
       chosenProductId=String(product.id);
@@ -1241,7 +1242,7 @@
         const purchaseData=parseShoppingExtraData(shoppingExtraInputValues(form),quantity,unit);
         await addGeneral({label,quantity,unit,category,needed_by:extra?null:neededBy,
           notes,status:extra?'extra':later?'later':'now',
-          product_id:chosenProductId,purchase_data:purchaseData});
+          product_id:chosenProductId,purchase_data:purchaseData},stableEntryId);
         root.remove();
       }catch(error){
         if(submit)submit.disabled=false;
@@ -2126,13 +2127,32 @@
     });
   }
 
-  async function addGeneral(payload){
+  // Reusing one ID per form protects against an uncertain network result:
+  // a retry cannot silently create a second shopping entry.
+  async function addGeneral(payload,stableId=null){
     const {supabase,user}=await currentUser();
     const maxSort=(state.general||[]).reduce((max,item)=>Math.max(max,Number(item.sort_order)||0),0);
-    const result=await supabase.from('shopping_items').insert({
-      user_id:user.id,...payload,source:'manual',sort_order:maxSort+1,updated_at:new Date().toISOString()
-    });
-    if(result.error)throw result.error;
+    let insertError=null;
+    try{
+      const result=await supabase.from('shopping_items').insert({
+        user_id:user.id,...payload,...(stableId?{id:stableId}:{}),
+        source:'manual',sort_order:maxSort+1,updated_at:new Date().toISOString()
+      });
+      if(result.error)throw result.error;
+    }catch(error){
+      insertError=error;
+    }
+    if(insertError){
+      if(!stableId)throw insertError;
+      // If the request was committed but its response was lost, check first.
+      let confirmed=false;
+      try{
+        const existing=await supabase.from('shopping_items').select('id')
+          .eq('id',stableId).eq('user_id',user.id).maybeSingle();
+        confirmed=!existing.error&&String(existing.data?.id||'')===String(stableId);
+      }catch(_){}
+      if(!confirmed)throw insertError;
+    }
     await reload({refreshFood:false});
   }
 
