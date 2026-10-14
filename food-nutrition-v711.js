@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V795';
+  const VERSION='V812';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -144,7 +144,7 @@
       const family=String(pinned?.family_name||'').trim();
       if(!family||text(name)!==text(family))return null;
     }
-    if(!['g','kg','ml','l'].includes(unit))return null;
+    if(!['g','kg','ml','l','stück'].includes(unit))return null;
 
     const inventory=(data?.inventory||[])
       .filter(row=>row?.is_active!==false)
@@ -199,7 +199,7 @@
     // oder eine Vorratsfamilie mit genau diesem Namen existiert.
     if(ZERO_NAMES.has(text(name)))return null;
     const unit=text(item?.unit);
-    if(!['g','kg','ml','l'].includes(unit))return null;
+    if(!['g','kg','ml','l','stück'].includes(unit))return null;
     const pinned=item?.inventory_id
       ?(data?.inventory||[]).find(row=>String(row.id)===String(item.inventory_id))
       :null;
