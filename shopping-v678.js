@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V792';
+  const VERSION='V811';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -133,7 +133,7 @@
       state.aliases=Array.isArray(aliasResult.data)?aliasResult.data:[];
 
       const substitutionResult=await supabase.from('shopping_substitutions')
-        .select('id,shopping_key,source,original_label,original_quantity,original_unit,replacement_label,replacement_quantity,replacement_unit,replacement_inventory_id,replacement_product_id,status,note,created_at,updated_at')
+        .select('id,shopping_key,source,original_label,original_quantity,original_unit,replacement_label,replacement_quantity,replacement_unit,replacement_inventory_id,replacement_product_id,status,note,purchase_data,created_at,updated_at')
         .in('status',['cart','purchased'])
         .order('created_at',{ascending:true});
       if(substitutionResult.error)throw substitutionResult.error;
@@ -745,6 +745,8 @@
     if(innerCount>1&&innerQty>0)parts.push(innerCount+' × '+fmtQty(innerQty,innerUnit)+' = '+fmtQty(innerCount*innerQty,innerUnit));
     else if(item?.quantity!==null&&item?.quantity!==undefined)parts.push('Menge '+fmtQty(item.quantity,item.unit||''));
     if(purchaseData.weight_class)parts.push('Gewichtsklasse '+purchaseData.weight_class);
+    if(Number(purchaseData.piece_count)>0)parts.push(fmtQty(purchaseData.piece_count,'Stück'));
+    if(Number(purchaseData.estimated_total_weight_g)>0)parts.push('ca. '+fmtQty(purchaseData.estimated_total_weight_g,'g'));
     if(status==='date'&&item?.best_before_date)parts.push('MHD '+fmtDate(item.best_before_date));
     else if(status==='none')parts.push('kein MHD vorhanden');
     else if(tracksFoodInventory(candidate))parts.push('MHD offen');
@@ -1106,7 +1108,8 @@
       replacement_inventory_id:payload.inventoryId||null,
       replacement_product_id:payload.productId||null,
       status:'cart',
-      note:'Ersatzartikel direkt beim Einkauf gewählt.',
+      note:'Anderes Produkt beim Einkauf gewählt.',
+      purchase_data:payload.purchaseData||{},
       updated_at:new Date().toISOString()
     },{onConflict:'user_id,shopping_key'})
       .select('id')
@@ -1137,12 +1140,15 @@
     const initialLabel=existing?.replacement_label||selectedProduct?.product_name||'';
     const initialQuantity=existing?.replacement_quantity??selectedProduct?.package_quantity??originalQuantity??'';
     const initialUnit=existing?.replacement_unit||selectedProduct?.package_unit||originalUnit;
+    const existingPurchaseData=existing?.purchase_data||{};
+    const initialPieces=existingPurchaseData.piece_count??(String(initialUnit).toLocaleLowerCase('de-DE')==='stück'?initialQuantity:'');
+    const initialWeight=existingPurchaseData.estimated_total_weight_g??'';
 
     const modal=document.createElement('div');
     modal.id='shoppingSubstitutionV698';
     modal.className='shopping-modal-v643 shopping-substitution-modal-v698';
     modal.innerHTML='<div class="shopping-modal-card-v643 shopping-substitution-card-v698"><div class="shopping-modal-head-v643"><div><span>ERSATZARTIKEL</span><strong>'+esc(row.label)+'</strong></div><button type="button" data-substitution-close>✕</button></div>'
-      +'<p class="shopping-checkout-copy-v645">Wenn der geplante Artikel nicht da ist, trägst du hier ein, was stattdessen im Wagen landet.</p>'
+      +'<p class="shopping-checkout-copy-v645">Wenn du etwas anderes mitnimmst, egal ob bewusst gewählt oder weil der geplante Artikel fehlt, erfasse hier den tatsächlich gekauften Artikel.</p>'
       +'<div class="shopping-substitution-preview-v698"><strong>'+esc(row.label)+'</strong><span>↳</span><b data-substitution-preview>'+esc(initialLabel||'Ersatz auswählen')+'</b></div>'
       +'<form data-substitution-form>'
       +'<label>Bekanntes Produkt<select data-substitution-product><option value="">Anderes / neues Produkt</option>'
@@ -1150,6 +1156,7 @@
       +'</select></label>'
       +'<label>Ersatzartikel<input data-substitution-label required value="'+esc(initialLabel)+'" placeholder="z. B. TK-Blattspinat"></label>'
       +'<div class="shopping-form-grid-v643"><label>Gekaufte Menge<input data-substitution-qty type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(initialQuantity)+'"></label><label>Einheit<input data-substitution-unit required value="'+esc(initialUnit)+'" placeholder="g, ml, Stück …"></label></div>'
+      +'<div class="shopping-form-grid-v643"><label>Stückzahl (optional)<input data-substitution-pieces type="number" min="1" step="1" inputmode="numeric" value="'+esc(initialPieces)+'" placeholder="z. B. 6"></label><label>Gesamtgewicht ca. (g, optional)<input data-substitution-weight type="number" min="1" step="1" inputmode="numeric" value="'+esc(initialWeight)+'" placeholder="z. B. 1000"></label></div>'
       +'<div class="shopping-substitution-actions-v698">'
       +(existing?'<button type="button" class="is-quiet" data-substitution-remove>Ersatz entfernen</button>':'')
       +'<button type="submit" class="shopping-submit-v643">Als Ersatz in den Wagen</button>'
@@ -1190,7 +1197,17 @@
         if(!unit)throw new Error('Bitte eine Einheit eintragen.');
         const productId=String(select?.value||'').trim()||null;
         const product=productId?(state.products||[]).find(p=>String(p.id)===productId):null;
-        await saveSubstitution(row,{label,quantity,unit,productId,inventoryId:product?.inventory_id||null});
+        const rawPieces=String(modal.querySelector('[data-substitution-pieces]')?.value||'').trim();
+        const rawWeight=String(modal.querySelector('[data-substitution-weight]')?.value||'').trim();
+        const pieceCount=rawPieces===''?null:Number(rawPieces);
+        const estimatedWeightG=rawWeight===''?null:Number(rawWeight);
+        if(pieceCount!==null&&(!Number.isSafeInteger(pieceCount)||pieceCount<=0))throw new Error('Stückzahl muss eine positive ganze Zahl sein.');
+        if(estimatedWeightG!==null&&(!Number.isFinite(estimatedWeightG)||estimatedWeightG<=0))throw new Error('Das ungefähre Gesamtgewicht muss größer 0 sein.');
+        if(String(unit).toLocaleLowerCase('de-DE')==='stück'&&pieceCount!==null&&pieceCount!==quantity)throw new Error('Stückzahl und gekaufte Stückmenge müssen übereinstimmen.');
+        const purchaseData={...existingPurchaseData};
+        if(pieceCount!==null)purchaseData.piece_count=pieceCount;else delete purchaseData.piece_count;
+        if(estimatedWeightG!==null)purchaseData.estimated_total_weight_g=estimatedWeightG;else delete purchaseData.estimated_total_weight_g;
+        await saveSubstitution(row,{label,quantity,unit,productId,inventoryId:product?.inventory_id||null,purchaseData});
         modal.remove();
       }catch(error){
         if(button)button.disabled=false;
@@ -1207,18 +1224,23 @@
       const substitution=row.substitution||null;
       const plannedQuantity=substitution?.replacement_quantity??originalQuantity;
       const plannedUnit=substitution?.replacement_unit??originalUnit;
-      const inventoryId=substitution?.replacement_inventory_id||row.foodAction?.stockId||null;
+      const replacementProduct=substitution?.replacement_product_id
+        ?(state.products||[]).find(p=>String(p.id)===String(substitution.replacement_product_id))
+        :null;
+      // A replacement must never inherit the original inventory or product ID.
+      const inventoryId=substitution
+        ?(replacementProduct?.inventory_id||substitution.replacement_inventory_id||null)
+        :(row.foodAction?.stockId||null);
       const label=substitution?.replacement_label||row.label;
       const base={
         key:row.key,label,plannedQuantity,plannedUnit,source:row.source,inventoryId,category:row.category||null,
         substitutionId:substitution?.id||null,
         originalLabel:substitution?row.label:null,
         originalQuantity:substitution?originalQuantity:null,
-        originalUnit:substitution?originalUnit:null
+        originalUnit:substitution?originalUnit:null,
+        purchaseData:substitution?.purchase_data||{}
       };
-      const product=substitution?.replacement_product_id
-        ?(state.products||[]).find(p=>String(p.id)===String(substitution.replacement_product_id))
-        :defaultProductForCartItem(base);
+      const product=substitution?replacementProduct:defaultProductForCartItem(base);
       return {...base,productId:product?.id||null,packageCount:defaultPackageCount(base,product)};
     });
   }
@@ -1274,6 +1296,9 @@
           +'<label>Gekauft<input data-checkout-qty type="number" min="0" step="0.01" inputmode="decimal" value="'+esc(item.plannedQuantity??'')+'"></label>'
           +'<label>Einheit<input data-checkout-unit value="'+esc(item.plannedUnit||'')+'" placeholder="Stück, g, ml …"></label>'
           +'</div>'
+          +(item.substitutionId
+            ?'<div class="shopping-form-grid-v643"><label>Stückzahl (optional)<input data-checkout-pieces type="number" min="1" step="1" inputmode="numeric" value="'+esc(item.purchaseData?.piece_count??'')+'"></label><label>Gesamtgewicht ca. (g, optional)<input data-checkout-weight type="number" min="1" step="1" inputmode="numeric" value="'+esc(item.purchaseData?.estimated_total_weight_g??'')+'"></label></div>'
+            :'')
           +(item.category==='Lebensmittel'
             ?'<div class="shopping-checkout-lots-v678"><div class="shopping-checkout-lots-head-v678"><div><span>PACKUNGEN & MHD</span><small>Jedes MHD ist eine eigene Charge.</small></div><button type="button" data-checkout-add-lot>+ weiteres MHD</button></div>'
               +'<div data-checkout-lots><div class="shopping-checkout-lot-row-v678" data-checkout-lot-row>'
@@ -1355,8 +1380,20 @@
           }).filter(lot=>lot.packageCount!==null);
           const packageCount=lots.length?lots.reduce((sum,lot)=>sum+lot.packageCount,0):null;
           const bestBefore=lots.length===1?lots[0].bestBefore:null;
+          const purchaseData={...(base.purchaseData||{})};
+          if(base.substitutionId){
+            const rawPieces=String(node.querySelector('[data-checkout-pieces]')?.value||'').trim();
+            const rawWeight=String(node.querySelector('[data-checkout-weight]')?.value||'').trim();
+            const pieces=rawPieces===''?null:Number(rawPieces);
+            const weightG=rawWeight===''?null:Number(rawWeight);
+            if(pieces!==null&&(!Number.isSafeInteger(pieces)||pieces<=0))throw new Error('Stückzahl für „'+base.label+'“ muss eine positive ganze Zahl sein.');
+            if(weightG!==null&&(!Number.isFinite(weightG)||weightG<=0))throw new Error('Gesamtgewicht für „'+base.label+'“ muss größer 0 sein.');
+            if(String(unit).toLocaleLowerCase('de-DE')==='stück'&&pieces!==null&&pieces!==quantity)throw new Error('Stückzahl und gekaufte Menge für „'+base.label+'“ müssen übereinstimmen.');
+            if(pieces!==null)purchaseData.piece_count=pieces;else delete purchaseData.piece_count;
+            if(weightG!==null)purchaseData.estimated_total_weight_g=weightG;else delete purchaseData.estimated_total_weight_g;
+          }
           return {
-            ...base,quantity,unit,packageCount,bestBefore,productId,inventoryId,lots,
+            ...base,quantity,unit,packageCount,bestBefore,productId,inventoryId,lots,purchaseData,
             note:lots.some(lot=>lot.bestBefore)?'MHD beim Kauf chargenbezogen bestätigt.':null
           };
         });
@@ -1518,7 +1555,7 @@
       inventory_id:item.inventoryId||null,product_id:item.productId||null,
       best_before_date:item.bestBefore||null,
       best_before_status:(item.bestBefore||(item.lots||[]).some(lot=>lot.bestBefore))?'date':'unknown',
-      package_count:item.packageCount||null,purchase_data:{},note:item.note||null,
+      package_count:item.packageCount||null,purchase_data:item.purchaseData||{},note:item.note||null,
       substitution_id:item.substitutionId||null,original_label:item.originalLabel||null,
       original_quantity:item.originalQuantity??null,original_unit:item.originalUnit||null
     }));
