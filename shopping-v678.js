@@ -1059,8 +1059,9 @@
         throw new Error('Bitte bei „'+({pieceCount:'Stückzahl',estimatedWeightG:'Gesamtgewicht',outerPackages:'Außenpackungen',innerPerOuter:'Innenpackungen je Außenpackung',innerQuantity:'Menge je Innenpackung'}[key]||key)+'“ eine positive '+(integer?'ganze Zahl':'Menge')+' eingeben.');
       return n;
     };
-    const pieces=read('pieceCount',true);
-    const weight=read('estimatedWeightG');
+    const measure=String(unit||'').trim().toLocaleLowerCase('de-DE');
+    const pieces=measure==='stück'&&quantity>0?Number(quantity):read('pieceCount',true);
+    const weight=measure==='g'||measure==='kg'?null:read('estimatedWeightG');
     const outer=read('outerPackages',true);
     const inner=read('innerPerOuter',true);
     const each=read('innerQuantity');
