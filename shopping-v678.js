@@ -1094,7 +1094,7 @@
   function shoppingExtraFieldsHtml(data={}){
     const x=data||{};
     const field=(name,label,initial,step='1',placeholder='')=>
-      '<label>'+esc(label)+'<input name="'+esc(name)+'" type="number" min="'+(step==='1'?'1':'0.01')+'" step="'+esc(step)+'" inputmode="'+(step==='1'?'numeric':'decimal')+'" value="'+esc(initial??'')+'" placeholder="'+esc(placeholder)+'"></label>';
+      '<label'+(name==='pieceCount'?' data-shopping-piece-v814':name==='estimatedWeightG'?' data-shopping-weight-v814':'')+'>'+esc(label)+'<input name="'+esc(name)+'" type="number" min="'+(step==='1'?'1':'0.01')+'" step="'+esc(step)+'" inputmode="'+(step==='1'?'numeric':'decimal')+'" value="'+esc(initial??'')+'" placeholder="'+esc(placeholder)+'"></label>';
     return '<div class="shopping-form-grid-v643">'
         +field('pieceCount','Stückzahl, falls zusätzlich benötigt',x.piece_count,'1','z. B. 6')
         +field('estimatedWeightG','Gesamtgewicht ca. (g)',x.estimated_total_weight_g,'0.01','z. B. 1000')+'</div>'
