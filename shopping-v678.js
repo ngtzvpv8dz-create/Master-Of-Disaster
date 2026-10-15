@@ -341,6 +341,50 @@
       .join(' · ');
   }
 
+  // V821: Display a realistic pack-size suggestion next to the precise
+  // deficit. This is advisory; never silently changes purchase quantities,
+  // picks a replacement, or books inventory.
+  function shoppingPackSuggestion(item){
+    if(!item||item.garlic)return '';
+    const missing=Number(item.missing)||0;
+    const unit=String(item.unit||'').trim();
+    if(missing<=0||!unit)return '';
+    const stocks=(state.food?.inventory||[]).filter(s=>s.is_active!==false);
+    const targetFamily=familyText(item.label||'');
+    const candidates=stocks.filter(stock=>item.inventory_id
+      ?String(stock.id||'')===String(item.inventory_id)
+      :familyText(stock.family_name||'')===targetFamily);
+    if(!candidates.length)return '';
+    const matches=[];
+    for(const stock of candidates){
+      for(const product of (state.products||[]).filter(p=>p.active!==false&&String(p.inventory_id||'')===String(stock.id))){
+        let perPack=0;
+        let displayUnit=unit;
+        if(String(product.package_unit||'').trim().toLocaleLowerCase('de-DE')===unit.toLocaleLowerCase('de-DE'))
+          perPack=Number(product.package_quantity)||0;
+        else if(unit==='Stück'){
+          perPack=Number(product.servings_per_package)||0;
+          displayUnit='Stück';
+        }
+        if(!Number.isFinite(perPack)||perPack<=0)continue;
+        matches.push({product,perPack,displayUnit,stockAmount:Number(stock.quantity)||0});
+      }
+    }
+    if(!matches.length)return '';
+    matches.sort((a,b)=>
+      (b.stockAmount>0?1:0)-(a.stockAmount>0?1:0)||
+      a.perPack-b.perPack||
+      String(a.product.product_name||'').localeCompare(String(b.product.product_name||''),'de'));
+    const pick=matches[0];
+    const count=Math.max(1,Math.ceil(missing/pick.perPack-1e-8));
+    const format=n=>Number.isInteger(n)?String(n):String(n).replace('.',',');
+    const description=String(pick.product.product_name||item.label||'').trim();
+    const flavor=String(pick.product.variant||'').trim();
+    const detail=flavor&&flavor.length<45?' · '+flavor:'';
+    return 'Packungsvorschlag: '+count+' × '+format(pick.perPack)+' '+pick.displayUnit
+      +(description?' ('+description+detail+')':'');
+  }
+
   function buildRows(){
     const rows=[];
     const food=state.food||{gaps:[],manualFood:[],cartKeys:[],inventory:[]};
@@ -370,12 +414,13 @@
       const reservedNote=currentAvailable>windowAvailable+.0001
         ?' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' für diesen Einkaufsblock übrig'
         :'';
+      const packSuggestion=shoppingPackSuggestion(item);
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:item.label||'Lebensmittel',
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
         currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
-        secondary:(usePlan?'Bedarf: '+usePlan:'Planbedarf '+fmtQty(item.required,item.unit))+reservedNote,
+        secondary:(usePlan?'Bedarf: '+usePlan:'Planbedarf '+fmtQty(item.required,item.unit))+reservedNote+(packSuggestion?' · '+packSuggestion:''),
         timing:(item.shortageDate
           ?((delayed?'Kaufen ab '+fmtDate(item.buyFrom)+' · ':'')+'Fehlt ab '+fmtDate(item.shortageDate))
           :(delayed?'Kaufen ab '+fmtDate(item.buyFrom):''))
