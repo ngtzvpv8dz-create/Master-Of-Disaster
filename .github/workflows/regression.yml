@@ -43,6 +43,7 @@ jobs:
           ! grep -Fq "supabase.rpc('set_food_meal_ingredient_allocation'" food-v544.js
           node tests/v746-food-stock-resolver.test.cjs
           node tests/banana-shopping-units-20261009.test.cjs
+          node tests/shopping-window-isoclear-wholewrap-oct15.test.cjs
           node tests/food-nutrition-alarm-v795.test.cjs
           node tests/asia-vegetable-family-v796.test.cjs
           node --check food-nutrition-v711.js
