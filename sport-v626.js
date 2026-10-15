@@ -251,8 +251,14 @@
   function courseMinutes(session){return (session?.activities||[]).reduce((sum,a)=>sum+activityMinutes(a),0);}
   function isFitx(session){return String(session?.area||'').toLowerCase()==='fitx'||String(session?.title||'').toLowerCase()==='fitx'||String(session?.venue||'').toLowerCase()==='fitx';}
 
+  function expandTeamErle(names){
+    return [...new Set((Array.isArray(names)?names:[])
+      .flatMap(value=>/^team\s+erle$/i.test(String(value||'').trim())?['Erik','Merle']:[String(value||'').trim()])
+      .filter(Boolean))].sort(byName);
+  }
   function normalizeParticipants(rows){
-    return [...new Set((Array.isArray(rows)?rows:[]).map(row=>typeof row==='string'?row:row?.participant_name).map(x=>String(x||'').trim()).filter(Boolean))].sort(byName);
+    return expandTeamErle((Array.isArray(rows)?rows:[])
+      .map(row=>typeof row==='string'?row:row?.participant_name));
   }
 
   function normalizeActivity(row){
@@ -1369,11 +1375,13 @@
   }
 
   async function addSessionParticipant(sessionId,name){
-    const clean=String(name||'').trim();
-    if(!clean)throw new Error('Name fehlt.');
+    const names=expandTeamErle([name]);
+    if(!names.length)throw new Error('Name fehlt.');
     const {supabase,user}=await sportUser();
-    const result=await supabase.from('sport_session_participants').insert({user_id:user.id,session_id:sessionId,participant_name:clean});
-    if(result.error&&result.error.code!=='23505')throw result.error;
+    for(const participant_name of names){
+      const result=await supabase.from('sport_session_participants').insert({user_id:user.id,session_id:sessionId,participant_name});
+      if(result.error&&result.error.code!=='23505')throw result.error;
+    }
     await load(true);
   }
 
@@ -1385,7 +1393,7 @@
   }
 
   function parseParticipantText(value){
-    return [...new Set(String(value||'').split(/[,;+\n]/).map(name=>name.trim()).filter(Boolean))].sort(byName);
+    return expandTeamErle(String(value||'').split(/[,;+\n]/).map(name=>name.trim()));
   }
 
   async function replaceExerciseParticipants(supabase,user,exerciseId,names){
