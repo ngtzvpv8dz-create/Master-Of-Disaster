@@ -55,6 +55,11 @@
     for(const need of needs){
       for(const family of families){
         if(need===family)return {matched:true,mode:'generic',alias:family};
+        // ESN Isoclear flavours are interchangeable for protein-shake
+        // availability. Keep each flavour's own nutrition and lot metadata.
+        if(family==='esn isoclear whey protein isolate'
+           && need.startsWith(family+' '))
+          return {matched:true,mode:'generic',alias:family};
       }
     }
 
