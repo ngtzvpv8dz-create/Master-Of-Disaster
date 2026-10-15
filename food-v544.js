@@ -226,7 +226,7 @@
   // acceptable FUTURE grocery date, not an actual purchase booking.
   const freshConsumptionWindowDays=(need,stock,products=[])=>{
     const name=String(stock?.name||need?.label||'').trim().toLocaleLowerCase('de-DE');
-    if(/(?:^|[\\s-])(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)(?:$|[\\s-])/.test(name))return null;
+    if(/(?:^|[\s-])(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)(?:$|[\s-])/.test(name))return null;
     const linked=products.filter(p=>stock?.id&&String(p.inventory_id||'')===String(stock.id));
     const frozenProduct=p=>{
       const data=p.product_data||{};
