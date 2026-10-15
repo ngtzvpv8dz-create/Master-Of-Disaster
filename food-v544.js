@@ -1819,7 +1819,11 @@
     const mhd=empty?'':inventoryMhdMarkup(item);
     const nextUseDate=nextUses?.get(String(item.id))||null;
     const nextUse='<div class="food-stock-next-use-v800"><span>Nächste Verwendung am</span><strong>'+esc(nextUseDate?fmtDate(nextUseDate):'Nicht eingeplant')+'</strong></div>';
-    const currentProduct=empty?'':inventoryCurrentProductMarkup(item);
+    // Isoclear already has a specific flavor variant. Avoid displaying a
+    // redundant 'Aktuelles Produkt' layer beneath Strawberry Lime / Fresh Cherry.
+    // Product IDs and batch data remain available for booking and history.
+    const isIsoclearFlavor=String(item.catalog_family_name||item.family_name||'').trim().toLocaleLowerCase('de-DE')==='esn isoclear whey protein isolate';
+    const currentProduct=empty||isIsoclearFlavor?'':inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
     const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
     return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
