@@ -219,6 +219,26 @@
     const normal=plusDays(iso,offset);
     return SHOPPING_DATE_OVERRIDES[normal]||normal;
   };
+  // V820: Fragile fresh berries and products with an explicit short fresh
+  // consumption window must be purchased near their planned use, not several
+  // days early at the normal Wednesday/Saturday grocery run.
+  // A missing purchase date is never fabricated; buyFrom is the earliest
+  // acceptable FUTURE grocery date, not an actual purchase booking.
+  const freshConsumptionWindowDays=(need,stock,products=[])=>{
+    const name=String(stock?.name||need?.label||'').trim().toLocaleLowerCase('de-DE');
+    if(/(?:^|[\\s-])(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)(?:$|[\\s-])/.test(name))return null;
+    const linked=products.filter(p=>stock?.id&&String(p.inventory_id||'')===String(stock.id));
+    const frozenProduct=p=>{
+      const data=p.product_data||{};
+      return /tiefkühl|tiefgekühlt|gefroren|frozen/.test(String([p.category,p.variant,data.state,data.storage].filter(Boolean).join(' ')).toLocaleLowerCase('de-DE'));
+    };
+    if(linked.length&&linked.every(frozenProduct))return null;
+    const explicit=linked.map(p=>Number(p.product_data?.fresh_use_within_days))
+      .find(n=>Number.isInteger(n)&&n>0&&n<=14);
+    if(explicit)return explicit;
+    if(/himbeer|erdbeer|brombeer|heidelbeer|blaubeer|johannisbeer|stachelbeer/.test(name))return 2;
+    return null;
+  };
   const fmtShortDate=iso=>iso?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00')):'';
   const inventoryQuantityInUnit=(stock,targetUnit)=>{
     if(!stock)return {available:0,unitMismatch:false,converted:false};
@@ -2625,9 +2645,15 @@
 
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
+      const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,data.products||[]);
 
       need.uses.forEach(use=>{
-        const buyFrom=regularShoppingDate(use.date,use.mealType);
+        const routineBuyFrom=regularShoppingDate(use.date,use.mealType);
+        const freshBuyFrom=shortFreshWindowDays?plusDays(use.date,-shortFreshWindowDays):null;
+        // For fresh berries planned beyond the normal shopping's freshness
+        // window, defer to the first suitable date. Buying on meal day
+        // before consumption is also valid (e.g. Wed morning snack shop).
+        const buyFrom=freshBuyFrom&&routineBuyFrom<freshBuyFrom?freshBuyFrom:routineBuyFrom;
         const current=windows.get(buyFrom)||{buyFrom,required:0,uses:[],shortageDate:use.date};
         current.required+=use.quantity;
         current.uses.push(use);
@@ -2662,7 +2688,8 @@
           unitMismatch:stockInfo.unitMismatch,
           convertedStock:stockInfo.converted,
           shortageDate:actualShortageDate||window.shortageDate,
-          buyFrom:window.buyFrom
+          buyFrom:window.buyFrom,
+          freshWindowDays:shortFreshWindowDays||null
         });
       });
     });
@@ -2707,6 +2734,9 @@
       const timing=item.shortageDate
         ?(delayed?'Kaufen ab '+fmtShortDate(item.buyFrom)+' · fehlt ab '+fmtShortDate(item.shortageDate):'Fehlt ab '+fmtShortDate(item.shortageDate))
         :(delayed?'Kaufen ab '+fmtShortDate(item.buyFrom):'');
+      const freshTiming=item.freshWindowDays&&item.shortageDate
+        ?' · Frischware: möglichst kurz vor Verzehr kaufen ('+fmtShortDate(item.buyFrom)+'–'+fmtShortDate(item.shortageDate)+'), innerhalb von '+item.freshWindowDays+' Tagen verbrauchen'
+        :'';
       const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
       const windowAvailable=Math.max(0,Number(item.available)||0);
       const preWindowPlanned=Math.max(0,currentAvailable-windowAvailable);
@@ -2714,7 +2744,7 @@
         ?'Aktuell '+fmtQty(currentAvailable,item.unit)+' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' übrig'
         :'Aktuell '+fmtQty(currentAvailable,item.unit);
       const conversion=item.convertedStock?'<em>Vorrat passend umgerechnet</em>':'';
-      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>'+esc(stockText)+(usePlan?' · Bedarf '+esc(usePlan):'')+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
+      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>'+esc(stockText)+(usePlan?' · Bedarf '+esc(usePlan):'')+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing+freshTiming)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
       pushRow(inCart?cartRows:(delayed?laterRows:nowRows),{label:item.label||'',html});
     });
 
