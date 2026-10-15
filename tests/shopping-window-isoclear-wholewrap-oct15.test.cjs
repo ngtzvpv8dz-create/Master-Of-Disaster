@@ -26,8 +26,8 @@ assert.equal(regularShoppingDate('2026-10-17','breakfast'),'2026-10-16',
   'Saturday breakfast must use the special Friday shopping window');
 assert.equal(regularShoppingDate('2026-10-17','dinner'),'2026-10-16',
   'The entire Saturday coverage uses the Friday shopping override');
-assert.equal(regularShoppingDate('2026-10-15','dinner'),'2026-10-15',
-  'Normal Thursday dinner is purchased Thursday');
+assert.equal(regularShoppingDate('2026-10-15','dinner'),'2026-10-14',
+  'Normal Thursday dinner belongs to Wednesday evening shopping');
 
 const begin=source.indexOf('  function deriveShopping(data){');
 const end=source.indexOf('\n  function shoppingUsageTimeline(',begin);
