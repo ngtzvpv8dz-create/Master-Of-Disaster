@@ -106,6 +106,30 @@
     return '0001-01-01';
   }
 
+  // Keep nutrition's product allocation in step with FOOD and SQL booking.
+  // Family membership is not itself permission to substitute incompatible types.
+  function familyStockOrder(a,b,data,name){
+    const meat=/(hähnchen|huhn|hackfleisch|rind|schwein|pute|fleisch)/.test(text(name));
+    const active=stock=>(data?.lots||[]).filter(lot=>String(lot.inventory_id)===String(stock.id))
+      .filter(lot=>Number(lot.unopened_packages||0)>0||Number(lot.opened_remaining_quantity||0)>0);
+    const pa=active(a),pb=active(b);
+    if(!meat){
+      // Existing suitable fresh vegetables before frozen replacements.
+      const modeA=rowMode(a)==='frozen'?1:0,modeB=rowMode(b)==='frozen'?1:0;
+      if(modeA!==modeB)return modeA-modeB;
+      const openedA=pa.some(l=>Number(l.opened_remaining_quantity)>0)?0:1;
+      const openedB=pb.some(l=>Number(l.opened_remaining_quantity)>0)?0:1;
+      if(openedA!==openedB)return openedA-openedB;
+      const expiry=lots=>lots.filter(l=>!/(gefrier|tiefkühl|freezer|frozen)/.test(text(l.storage_location)))
+        .map(l=>String(l.best_before_date||'')).filter(Boolean).sort()[0]||'9999-12-31';
+      const md=expiry(pa).localeCompare(expiry(pb));
+      if(md)return md;
+    }
+    return lotDateForInventory(a.id,data).localeCompare(lotDateForInventory(b.id,data))
+      ||Number(a.sort_order||0)-Number(b.sort_order||0)
+      ||String(a.id).localeCompare(String(b.id));
+  }
+
   function stockAmountInBaseUnit(stock,targetUnit){
     const quantity=number(stock?.quantity);
     if(quantity===null||quantity<=0)return 0;
@@ -156,11 +180,7 @@
     const compatible=inventory
       .map(stock=>({stock,available:stockAmountInBaseUnit(stock,unit)}))
       .filter(entry=>entry.available!==null&&entry.available>0)
-      .sort((a,b)=>{
-        const da=lotDateForInventory(a.stock.id,data);
-        const db=lotDateForInventory(b.stock.id,data);
-        return da.localeCompare(db)||Number(a.stock.sort_order||0)-Number(b.stock.sort_order||0)||String(a.stock.id).localeCompare(String(b.stock.id));
-      });
+      .sort((a,b)=>familyStockOrder(a.stock,b.stock,data,name));
 
     if(!compatible.length)return null;
 
@@ -209,14 +229,7 @@
       .filter(row=>row?.is_active!==false)
       .filter(row=>familyMatch(name,row.family_name)==='generic')
       .filter(row=>stockAmountInBaseUnit({...row,quantity:1},unit)!==null)
-      .sort((a,b)=>{
-        const firstLot=id=>(data?.lots||[])
-          .filter(lot=>String(lot.inventory_id||'')===String(id))
-          .map(lot=>String(lot.purchased_on||'')).filter(Boolean).sort()[0]||'0001-01-01';
-        return firstLot(a.id).localeCompare(firstLot(b.id))||
-          Number(a.sort_order||0)-Number(b.sort_order||0)||
-          String(a.id).localeCompare(String(b.id));
-      });
+      .sort((a,b)=>familyStockOrder(a,b,data,name));
     if(!familyStocks.length)return null;
 
     const requested=number(item?.quantity);
@@ -483,10 +496,14 @@
     if(current===null||current>total+.001)return {complete:false,missing:[name+' (nicht zugeordneter Altbestand)']};
     let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0;
     const isFrozen=v=>/(gefrier|tiefkühl|freezer|frozen)/.test(text(v.lot.storage_location));
-    const rank=v=>v.open>0&&!isFrozen(v)?1:isFrozen(v)?4:3;
+    const isMeat=/(hähnchen|huhn|hackfleisch|rind|schwein|pute|fleisch)/.test(text(stock.name));
+    const rank=v=>isMeat?0:v.open>0?0:isFrozen(v)?2:1;
+    const dateKey=v=>String(v.lot.purchased_on||String(v.lot.created_at||'').slice(0,10));
     active.sort((a,b)=>rank(a)-rank(b)
-      ||String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))
-      ||String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))
+      ||(isMeat
+        ?dateKey(a).localeCompare(dateKey(b))
+        :(isFrozen(a)?'9999-12-31':String(a.lot.best_before_date||'9999-12-31')).localeCompare(isFrozen(b)?'9999-12-31':String(b.lot.best_before_date||'9999-12-31'))
+          ||String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31')))
       ||String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))
       ||String(a.lot.id||'').localeCompare(String(b.lot.id||'')));
     for(const entry of active){
