@@ -376,9 +376,13 @@
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
         currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
         secondary:(usePlan?'Bedarf: '+usePlan:'Planbedarf '+fmtQty(item.required,item.unit))+reservedNote,
-        timing:item.shortageDate
+        timing:(item.shortageDate
           ?((delayed?'Kaufen ab '+fmtDate(item.buyFrom)+' · ':'')+'Fehlt ab '+fmtDate(item.shortageDate))
-          :(delayed?'Kaufen ab '+fmtDate(item.buyFrom):''),
+          :(delayed?'Kaufen ab '+fmtDate(item.buyFrom):''))
+          +(item.freshWindowDays&&item.shortageDate
+            ?' · Frischware: '+fmtDate(item.buyFrom)+' bis '+fmtDate(item.shortageDate)
+             +' vor Verzehr kaufen (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)'
+            :''),
         buyFrom:item.buyFrom||null,neededDate:item.shortageDate||null,
         category:'Lebensmittel',
         foodAction:{
