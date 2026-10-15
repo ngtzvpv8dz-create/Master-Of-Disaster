@@ -18,6 +18,9 @@ const context={
   nutritionOf:p=>({kcal:p?.nutrition_per_100?.energy_kcal??null,protein:p?.nutrition_per_100?.protein_g??null}),
   genericFamilyAllocation:()=>null,
   genericFamilyNutrition:()=>null,
+  // This regression isolates visible nutrition alarms, not mixed-lot
+  // nutrient-weighting, whose helper is outside the extracted test span.
+  mixedLotNutrition:()=>null,
   // Simulate an old catalogue product with valid nutrition, currently chosen
   // as fallback. A new package in the SAME inventory must still raise an alarm.
   sourceFor:()=>({nutrition:{kcal:63,protein:2.2},product:null,stock:null}),
