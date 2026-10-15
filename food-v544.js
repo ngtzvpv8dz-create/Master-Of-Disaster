@@ -744,6 +744,19 @@
         const pa=generic&&!meatPurchaseFirst&&familyRowMode(a.stock)==='frozen'?1:0;
         const pb=generic&&!meatPurchaseFirst&&familyRowMode(b.stock)==='frozen'?1:0;
         if(pa!==pb)return pa-pb;
+        if(!meatPurchaseFirst){
+          const active=stock=>(state?.lots||[])
+            .filter(lot=>String(lot.inventory_id||'')===String(stock.id))
+            .filter(lot=>Number(lot.unopened_packages||0)>0||Number(lot.opened_remaining_quantity||0)>0);
+          const al=active(a.stock),bl=active(b.stock);
+          const open=lots=>lots.some(lot=>Number(lot.opened_remaining_quantity||0)>0)?0:1;
+          if(open(al)!==open(bl))return open(al)-open(bl);
+          const expiry=lots=>lots
+            .filter(lot=>!frozenStorageLocation(lot.storage_location))
+            .map(lot=>String(lot.best_before_date||'')).filter(Boolean).sort()[0]||'9999-12-31';
+          const cmp=expiry(al).localeCompare(expiry(bl));
+          if(cmp)return cmp;
+        }
         const da=familyAllocationLotDate(a.stock.id);
         const db=familyAllocationLotDate(b.stock.id);
         return da.localeCompare(db)||
