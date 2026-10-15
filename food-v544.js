@@ -643,10 +643,22 @@
       })
       .filter(entry=>entry.quantity!==null&&entry.quantity>0)
       .sort((a,b)=>{
-        const rank=e=>e.thaw?0:e.reserved?6:!e.frozen&&e.kind==='opened'?1:e.frozen&&familyFrozenFirstFor(stock)?2:!e.frozen?3:4;
+        const meat=familyFrozenFirstFor(stock);
+        const rank=e=>e.reserved&&!e.thaw?9:meat?0:e.thaw?0:e.kind==='opened'?1:e.frozen?3:2;
         const fa=rank(a),fb=rank(b);
         if(fa!==fb)return fa-fb;
-        return String(a.lot.best_before_date||'9999-12-31').localeCompare(String(b.lot.best_before_date||'9999-12-31'))||
+        if(meat){
+          // Meat: older purchase first, regardless of freezer or fridge;
+          // original frozen-pack expiration is not a fresh use-by date.
+          const da=String(a.lot.purchased_on||String(a.lot.created_at||'').slice(0,10));
+          const db=String(b.lot.purchased_on||String(b.lot.created_at||'').slice(0,10));
+          return da.localeCompare(db)||
+            String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))||
+            String(a.lot.id||'').localeCompare(String(b.lot.id||''));
+        }
+        const ma=a.frozen?'9999-12-31':String(a.lot.best_before_date||'9999-12-31');
+        const mb=b.frozen?'9999-12-31':String(b.lot.best_before_date||'9999-12-31');
+        return ma.localeCompare(mb)||
           String(a.lot.purchased_on||'9999-12-31').localeCompare(String(b.lot.purchased_on||'9999-12-31'))||
           String(a.lot.created_at||'').localeCompare(String(b.lot.created_at||''))||
           String(a.lot.id||'').localeCompare(String(b.lot.id||''));
@@ -722,13 +734,15 @@
 
     if(!info?.family)return [];
     const generic=info.familyMode==='generic';
-    const frozenFirst=familyFrozenFirstFor({name,family_name:info.familyName});
+    const meatPurchaseFirst=familyFrozenFirstFor({name,family_name:info.familyName});
     return (info.rows||[])
       .map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
       .filter(entry=>!entry.info.unitMismatch&&Number(entry.info.available)>0)
       .sort((a,b)=>{
-        const pa=generic?(familyRowMode(a.stock)==='frozen'?(frozenFirst?0:1):(frozenFirst?1:0)):0;
-        const pb=generic?(familyRowMode(b.stock)==='frozen'?(frozenFirst?0:1):(frozenFirst?1:0)):0;
+        // Vegetables: matching fresh stock before TK. Meat: purchase age
+        // decides across storage modes, never a global frozen-first rank.
+        const pa=generic&&!meatPurchaseFirst&&familyRowMode(a.stock)==='frozen'?1:0;
+        const pb=generic&&!meatPurchaseFirst&&familyRowMode(b.stock)==='frozen'?1:0;
         if(pa!==pb)return pa-pb;
         const da=familyAllocationLotDate(a.stock.id);
         const db=familyAllocationLotDate(b.stock.id);
