@@ -204,6 +204,9 @@
   const SHOPPING_OVERDUE_LOOKBACK_DAYS=7;
   const recentPlanningStartIso=()=>plusDays(todayIso(),-SHOPPING_OVERDUE_LOOKBACK_DAYS);
   const regularShoppingDate=(iso,mealType='')=>{
+    // A specifically rescheduled shopping day must win over the normal
+    // Wednesday/Saturday window, including Saturday breakfast.
+    if(SHOPPING_DATE_OVERRIDES[iso])return SHOPPING_DATE_OVERRIDES[iso];
     const day=new Date(String(iso)+'T12:00:00Z').getUTCDay();
     let offset=0;
     if(day===0)offset=-1;
@@ -2529,9 +2532,17 @@
           &&Number.isFinite(pieceWeight)&&pieceWeight>0;
         const shoppingUnit=gramsToPieces?'Stück':unit;
         const shoppingQuantity=gramsToPieces?quantity/pieceWeight:quantity;
-        const canonical=normalizedIngredient(name,shoppingUnit);
-        const key=item.inventory_id?'stock|'+item.inventory_id+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE');
-        const current=needs.get(key)||{inventory_id:item.inventory_id||null,label:name,canonical,unit:shoppingUnit,required:0,uses:[]};
+        // Isoclear flavours share availability but not nutritional metadata.
+        // Count their combined stock ONCE and merge demand into one family key.
+        const isIsoclearFamily=String(linkedStock?.family_name||'').trim().toLocaleLowerCase('de-DE')
+          ==='esn isoclear whey protein isolate';
+        const shoppingName=isIsoclearFamily?linkedStock.family_name:name;
+        const stockId=isIsoclearFamily?null:(item.inventory_id||null);
+        const canonical=normalizedIngredient(shoppingName,shoppingUnit);
+        const key=isIsoclearFamily
+          ?'family|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE')
+          :(stockId?'stock|'+stockId+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE'));
+        const current=needs.get(key)||{inventory_id:stockId,label:shoppingName,canonical,unit:shoppingUnit,required:0,uses:[]};
         current.required+=shoppingQuantity;
         current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
@@ -2602,7 +2613,9 @@
         // gram-based recipe needs only a fraction of the standard piece.
         const productData=productsByInventoryId.get(need.inventory_id)?.product_data||{};
         const knownPieceWeight=Number(productData.edible_weight_per_piece_g||productData.piece_weight_g);
-        const purchaseMissing=need.unit==='Stück'&&knownPieceWeight>0
+        // Physical piece goods (wraps, eggs, fruit etc.) can only be
+        // purchased in whole units. Recipe portions remain a separate rule.
+        const purchaseMissing=need.unit==='Stück'
           ?Math.ceil(missing-1e-8):missing;
         const actualShortageDate=shortageDateFor({uses:window.uses},available);
 
