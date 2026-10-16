@@ -1332,8 +1332,10 @@
       if(task.thawingConfirmed&&!task.thawStartedAt)return 'Auftauen läuft · Startzeit nicht erfasst';
       if(task.thawStartedAt){
         const date=new Date(task.thawStartedAt);
-        const time=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(date);
-        return time?'Auftauen läuft · seit '+time+' Uhr':'Auftauen läuft';
+        const time=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('de-DE',{
+          day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'
+        }).format(date);
+        return time?'Auftauen läuft · seit '+time:'Auftauen läuft · Startzeit unbekannt';
       }
       if(task.targetDate===today){
         if(task.targetType==='dinner'){
