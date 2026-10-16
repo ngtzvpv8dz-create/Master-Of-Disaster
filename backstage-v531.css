@@ -130,3 +130,25 @@ body.mod-backstage-v530 #viewContainer > :first-child{margin-top:0!important}
   body.mod-backstage-v530 #viewContainer{padding:10px}
 }
 @media(prefers-reduced-motion:reduce){.mod-backstage-tab-v531{transition:none!important}}
+
+
+/* Backstage SYSTEM push management: compact full-width mobile layout */
+body.mod-backstage-v530 .mod-backstage-system-push-v531{
+  display:block;min-height:0;width:100%;box-sizing:border-box;padding:0;
+}
+.mod-backstage-push-panel-v531{
+  box-sizing:border-box;width:100%;min-width:0;max-width:100%;
+  padding:20px 17px;border:1px solid rgba(224,186,98,.34);
+  background:linear-gradient(145deg,rgba(224,186,98,.075),rgba(14,16,18,.96) 48%);
+  color:#eee8dc;overflow-wrap:anywhere;
+  clip-path:polygon(11px 0,100% 0,100% calc(100% - 11px),calc(100% - 11px) 100%,0 100%,0 11px);
+}
+.mod-backstage-push-kicker-v531{font-size:.63rem;letter-spacing:.18em;font-weight:900;color:#c5a75d;margin-bottom:10px}
+.mod-backstage-push-title-v531{margin:0 0 12px;color:#f7df9d;font-size:clamp(.98rem,4.4vw,1.25rem);font-weight:900;line-height:1.3;letter-spacing:.035em}
+.mod-backstage-push-description-v531{margin:0 0 17px;font-size:.84rem;line-height:1.55;color:#c6c3b9}
+.mod-backstage-push-status-v531{padding:12px 13px;border-left:3px solid #e0ba62;background:rgba(224,186,98,.075);font-size:.82rem;line-height:1.5;color:#f2e7c9;margin-bottom:15px}
+.mod-backstage-push-actions-v531{display:grid;grid-template-columns:1fr;gap:9px}
+.mod-backstage-push-button-v531{appearance:none;-webkit-appearance:none;display:block;box-sizing:border-box;width:100%;min-width:0;min-height:46px;padding:12px 14px;border:1px solid #e0ba62;border-radius:7px;background:#d7b567;color:#171715;font:inherit;font-size:.84rem;font-weight:800;text-align:center;cursor:pointer}
+.mod-backstage-push-button-secondary-v531{background:transparent;color:#e0ba62;border-color:rgba(224,186,98,.45)}
+.mod-backstage-push-button-v531:focus-visible{outline:2px solid #ffe09a;outline-offset:3px}
+@media(max-width:430px){.mod-backstage-push-panel-v531{padding:17px 13px}.mod-backstage-push-title-v531{letter-spacing:0}}
