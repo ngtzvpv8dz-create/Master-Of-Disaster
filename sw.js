@@ -184,3 +184,21 @@ self.addEventListener("fetch",event=>{
     return (await networkPromise)||Response.error();
   })());
 });
+
+/* Isolated V612 push-test listeners. Existing cache and update logic stays unchanged. */
+self.addEventListener("push",event=>{
+  let payload={title:"Master of Disaster",body:"Neue Erinnerung",url:"./"};
+  try{if(event.data)payload={...payload,...event.data.json()};}catch(_){}
+  const title=String(payload.title||"Master of Disaster").slice(0,120);
+  const options={body:String(payload.body||"").slice(0,300),icon:"./master-of-disaster-192.png",badge:"./master-of-disaster-192.png",tag:"mod-push-test",data:{url:String(payload.url||"./")}};
+  event.waitUntil(self.registration.showNotification(title,options));
+});
+self.addEventListener("notificationclick",event=>{
+  event.notification.close();
+  event.waitUntil((async()=>{
+    const target=new URL(event.notification.data?.url||"./",self.registration.scope).href;
+    const clientsList=await self.clients.matchAll({type:"window",includeUncontrolled:true});
+    for(const client of clientsList){if(client.url.startsWith(self.registration.scope)){await client.focus();return;}}
+    await self.clients.openWindow(target);
+  })());
+});
