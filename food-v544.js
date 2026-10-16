@@ -691,11 +691,19 @@
 
     for(const entry of lots){
       const product=(state?.products||[]).find(row=>String(row.id||'')===String(entry.lot.product_id||''))||null;
-      segments.push({
-        quantity:entry.quantity,
-        label:familyAllocationProductText(product,stock)+(entry.thaw?' · ältere TK-Portion':entry.frozen?' · TK-Portion':entry.kind==='opened'?' · angebrochene Packung':' · neue Packung'),
-        frozen:entry.frozen||entry.thaw
-      });
+      const freezer=(state?.freezer||[]).find(p=>String(p.frozen_lot_id||'')===String(entry.lot.id)
+        &&['frozen','thawing','thawed'].includes(p.status));
+      const chicken=stock?.name==='Hähnchenbrustfilet';
+      const physicalLabel=chicken
+        ?'Hähnchenbrustfilet · Kauf '+(entry.lot.purchased_on?fmtDate(String(entry.lot.purchased_on).slice(0,10)):'unbekannt')
+        :familyAllocationProductText(product,stock);
+      const status=freezer?.status==='thawed'?' · aufgetaut'
+        :freezer?.status==='thawing'?' · Auftauen läuft'
+        :entry.frozen?' · TK-Portion'
+        :entry.kind==='opened'?' · angebrochene Packung':' · neue Packung';
+      segments.push({quantity:entry.quantity,label:physicalLabel+status,
+        // 'previously frozen and already thawed' is not a new thaw task.
+        frozen:entry.frozen});
     }
 
     let skip=Math.max(0,Number(consumedBefore)||0);
