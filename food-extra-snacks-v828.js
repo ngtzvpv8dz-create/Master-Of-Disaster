@@ -51,8 +51,13 @@
   }
   function panel(){return document.getElementById(PANEL);}
   function productOptions(){
-    const match=term.toLocaleLowerCase('de-DE');
-    const options=offered().filter(p=>!match||productName(p).toLocaleLowerCase('de-DE').includes(match));
+    // Alle Suchwörter dürfen unabhängig von Punkten und Wortreihenfolge vorkommen.
+    const words=term.toLocaleLowerCase('de-DE').trim().split(/\s+/).filter(Boolean);
+    const options=offered().filter(p=>{
+      if(!words.length)return true;
+      const name=productName(p).toLocaleLowerCase('de-DE');
+      return words.every(word=>name.includes(word));
+    });
     if(!options.length)return '<option value="">Keine passenden Produkte</option>';
     const visible=options.slice(0,500);
     return '<option value="">Produkt wählen … ('+options.length+' Treffer)</option>'+visible.map(p=>
