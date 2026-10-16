@@ -1405,9 +1405,31 @@
       if(found){localItem=found;break;}
     }
     if(!localItem)throw new Error('Auftau-Zutat nicht gefunden.');
+    // Explicitly pick ONE real physical portion; never move all associated
+    // portions just because one ingredient's thermometer was tapped.
+    const linkedFrozen=(state.freezer||[]).filter(p=>
+      String(p.meal_ingredient_id||'')===id&&p.status==='frozen'
+      &&(state.lots||[]).some(l=>String(l.id)===String(p.frozen_lot_id)));
+    if(linkedFrozen.length){
+      const options=linkedFrozen.map(p=>'<option value="'+esc(p.id)+'">'+
+        esc(fmtQty(Number(p.quantity),p.unit)+' · '+(p.label||localItem.name||'TK-Portion'))+'</option>').join('');
+      return addModal('❄️ Welche Einzelportion auftauen?',
+        '<form><label>Ausgewähltes TK-Stück<select name="portion_id">'+options+'</select></label>'
+        +'<p class="food-modal-copy-v544">Nur die ausgewählte Portion wird als tatsächlich zum Auftauen entnommen markiert.</p>'
+        +'<button class="food-action-v544" type="submit">🌡️ Auftauen dieser Portion starten</button></form>',
+        async form=>{
+          const chosen=linkedFrozen.find(p=>String(p.id)===String(form.get('portion_id')));
+          if(!chosen)throw new Error('Teilstück nicht gefunden.');
+          const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+          const res=await supabase.rpc('advance_food_freezer_portion',{
+            p_portion_id:chosen.id,p_action:'start_thaw'});
+          if(res.error)throw res.error;
+          plannedThawCacheState=null;plannedThawCache=null;
+          loadPromise=null;await render();
+        });
+    }
     const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
-    // One atomic server action also starts all concrete linked freezer portions.
-    // Legacy ingredients without a portion retain their previous date-only behavior.
+    // Only legacy ingredients without a remaining linked freezer portion use the date-only path.
     const result=await withTimeout(
       supabase.rpc('start_food_ingredient_freezer_thaw',{p_meal_ingredient_id:id}),
       'Auftauen und Vorrat synchronisieren',12000
