@@ -826,7 +826,7 @@
       kcal:'0 kcal',protein:'0 g Protein',note:'',label:'Tag gesamt',incomplete:false
     };
     const incomplete=day.unresolved>0;
-    const allMissing=day.meals>0&&day.unresolved===day.meals;
+    const allMissing=day.meals>0&&day.unresolved===day.meals&&!(day.extras>0);
     return {
       kcal:allMissing?'kcal offen':formatNumber(Math.round(day.kcal),0)+' kcal',
       protein:allMissing?'Protein offen':formatNumber(day.protein,1)+' g Protein',
