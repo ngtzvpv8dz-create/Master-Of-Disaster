@@ -1075,7 +1075,7 @@
         return fresh.map(source=>{
           const wasFrozen=source.frozen===true;
           let label=String(source.label||source.name||ingredientName(item)).trim();
-          if(wasFrozen)label=label.replace(/\\s*[·,-]\\s*frisch\\s*$/i,'').trim()+' · aufgetaut (TK)';
+          if(wasFrozen)label=label.replace(/\s*[·,-]\s*frisch\s*$/i,'').trim()+' · aufgetaut (TK)';
           return '<li><span>'+esc(label)+'</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b></li>';
         });
       }
