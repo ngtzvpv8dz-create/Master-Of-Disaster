@@ -1296,6 +1296,7 @@
           quantity,
           unit:item.unit,
           thawStartedAt:linked?.thaw_started_at||item.thaw_started_at||null,
+          thawingConfirmed:linked?.status==='thawing',
           thawedAt:linked?.status==='thawed'?linked.thawed_at||true:null,
           freezerPortionId:linked?.id||null
         });
@@ -1320,6 +1321,7 @@
 
     const timing=task=>{
       if(task.thawedAt)return 'Aufgetaut · im Vorrat bestätigt';
+      if(task.thawingConfirmed&&!task.thawStartedAt)return 'Auftauen läuft · Startzeit nicht erfasst';
       if(task.thawStartedAt){
         const date=new Date(task.thawStartedAt);
         const time=Number.isNaN(date.getTime())?'':new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(date);
@@ -1350,7 +1352,7 @@
 
     const rows=tasks.map(task=>{
       const thawed=Boolean(task.thawedAt);
-      const thawing=Boolean(task.thawStartedAt);
+      const thawing=Boolean(task.thawStartedAt||task.thawingConfirmed);
       return '<div class="food-thaw-entry-v739 '+(thawed?'is-thawing-v739':thawing?'is-thawing-v739':'is-frozen-v739')+'">'
         +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
         +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" title="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" '+(thawing||thawed?'disabled':'')+'>'
@@ -1978,7 +1980,7 @@
       const target=(state?.meals||[]).find(meal=>(meal.ingredients||[]).some(ing=>
         String(ing.id||'')===String(portion.meal_ingredient_id||'')&&portion.meal_ingredient_id));
       const time=portion.thaw_started_at
-        ?new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(portion.thaw_started_at))
+        ?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(portion.thaw_started_at))
         :null;
       const targetText=target?' · für '+(MEAL_LABELS[target.meal_type]||target.meal_type||'Mahlzeit')+' „'+target.title+'“':'';
       const heading=portion.status==='thawing'
@@ -2207,10 +2209,15 @@
       ||(portion.status==='thawed'&&portion.thawed_at
         &&new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(portion.thawed_at))===now));
     const cookedLater=cooked.filter(portion=>portion.status==='frozen'&&portion.needed_on&&portion.needed_on>now);
-    const due=living.filter(portion=>portion.status==='thawing'
-      ||(portion.status==='frozen'&&portion.needed_on&&portion.needed_on<=now)
-      ||(portion.status==='thawed'&&portion.thawed_at
-        &&new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(portion.thawed_at))===now))
+    const due=living.filter(portion=>{
+      const isThawed=portion.status==='thawed';
+      const todayThawed=Boolean(portion.thawed_at)
+        &&new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'})
+          .format(new Date(portion.thawed_at))===now;
+      return portion.status==='thawing'
+        ||(portion.status==='frozen'&&portion.needed_on&&portion.needed_on<=now)
+        ||(isThawed&&((portion.needed_on&&portion.needed_on<=now)||todayThawed));
+    })
       .sort((a,b)=>(a.status==='thawing'?-1:0)-(b.status==='thawing'?-1:0)
         ||String(a.needed_on||'').localeCompare(String(b.needed_on||'')));
     const later=living.filter(portion=>portion.status==='frozen'&&portion.needed_on&&portion.needed_on>now)
