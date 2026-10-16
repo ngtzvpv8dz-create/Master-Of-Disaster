@@ -5,7 +5,7 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V826';
+  const VERSION='V827';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
@@ -419,9 +419,13 @@
     const hasEstimate=planned.some(row=>row.amount_type==='estimate');
     const projected=knownBank.afterAll-plannedTotal;
     const rows=planned.map(row=>{
-      const kind=row.amount_type==='estimate'?'GESCHÄTZT':'FEST';
-      const className=row.amount_type==='estimate'?'is-estimated':'is-fixed';
-      return '<div class="finance-plan-row-v826"><div><strong>'+esc(row.title)+'</strong><span>'+fmtDate(row.planned_date)+' · <em class="'+className+'">'+kind+'</em></span></div><b>−'+fmtMoney(row.amount)+'</b></div>';
+      const estimate=row.amount_type==='estimate';
+      const kind=estimate?'GESCHÄTZT':'FEST';
+      const badgeClass=estimate?'':' is-plan-fixed';
+      return '<div class="finance-plan-row-v826"><div><strong>'+esc(row.title)+'</strong>'+
+        '<div class="finance-plan-meta-v827"><span>'+fmtDate(row.planned_date)+'</span>'+
+        '<small class="finance-booking-tag-v679'+badgeClass+'">'+kind+'</small></div>'+
+        '</div><b>−'+fmtMoney(row.amount)+'</b></div>';
     }).join('');
     const bankCount=knownBank.pendingCount+knownBank.notVisibleCount;
     return '<section class="finance-panel-v552 finance-plan-panel-v826">'+
