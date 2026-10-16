@@ -2076,37 +2076,33 @@
   }
 
   // V786: use the same food-plan thaw allocations, but never move inventory automatically.
+  // V824: Allow several separate frozen pieces to cover one planned ingredient.
+  // A partial assignment must keep offering the remaining weight.
   function freezerPlanHintMarkup(task,data=state){
     const ingredient=(data.meals||[]).flatMap(meal=>meal.ingredients||[])
       .find(item=>String(item.id)===String(task.ingredientId));
     if(!ingredient?.inventory_id)return '';
-    const tracked=(data.freezer||[]).some(portion=>
-      String(portion.meal_ingredient_id||'')===String(task.ingredientId)
-      &&['frozen','thawing','thawed'].includes(portion.status));
-    if(tracked)return '';
+    const outstanding=Number(task.missingQuantity??task.quantity)||0;
+    if(outstanding<=0.000001)return '';
     const today=todayIso();
     const due=String(task.dueDate||'')<=today||Boolean(task.thawStartedAt);
     const eligible=(data.lots||[]).filter(lot=>String(lot.inventory_id)===String(ingredient.inventory_id)
       &&frozenStorageLocation(lot.storage_location)).some(lot=>{
-        const qty=freezerLotQuantity(lot);
-        return qty&&qty.quantity>=Number(task.quantity)
-          &&qty.unit.toLowerCase()===String(task.unit||'').toLowerCase();
+        const q=freezerLotQuantity(lot);
+        const reservedOther=(data.freezer||[]).some(p=>String(p.frozen_lot_id)===String(lot.id)
+          &&p.meal_ingredient_id&&String(p.meal_ingredient_id)!==String(task.ingredientId));
+        return !reservedOther&&q&&q.quantity>0
+          &&q.unit.toLowerCase()===String(task.unit||'').toLowerCase();
       });
-    const started=task.thawStartedAt
-      ?new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(task.thawStartedAt))
-      :null;
-    const headline=started?'Auftauen läuft · seit '+started+' Uhr'
-      :due?'Jetzt in den Kühlschrank legen'
-      :'Auftauen am '+fmtDate(task.dueDate);
+    const headline=Number(task.linkedQuantity||0)>0
+      ?'Weitere TK-Portion auswählen'
+      :due?'Jetzt in den Kühlschrank legen':'Auftauen am '+fmtDate(task.dueDate);
     const target=task.targetType?(MEAL_LABELS[task.targetType]||task.targetType)+' ':'';
-    const description=fmtQty(task.quantity,task.unit)+' '+task.ingredient
+    const description=fmtQty(outstanding,task.unit)+' noch zuordnen · '+task.ingredient
       +' · für '+target+'„'+task.targetTitle+'“';
-    const extra=started?'Im Essensplan als begonnen erfasst'
-      :due&&!eligible?'Keine passende einzelne TK-Portion festgestellt':'';
-    return freezerThawCardMarkup({headline,description,extra,
-      status:started?'thawing':'frozen',
-      action:due&&!started&&eligible?'plan-hint':'',
-      id:task.ingredientId});
+    return freezerThawCardMarkup({headline,description,
+      extra:eligible?'Auch mehrere kleinere Teilstücke auswählbar':'Keine passende freie TK-Portion vorhanden',
+      status:'frozen',action:due&&eligible?'plan-hint':'',id:task.ingredientId});
   }
 
   function freezerPlanHintModal(ingredientId){
@@ -2116,43 +2112,62 @@
     const ingredient=(state?.meals||[]).flatMap(meal=>meal.ingredients||[])
       .find(item=>String(item.id)===String(ingredientId));
     if(!hint||!ingredient?.inventory_id)return alert('Geplante Zutat nicht mehr vorhanden.');
+    const missing=Math.max(0,Number(hint.missingQuantity??hint.quantity)||0);
+    if(!missing)return alert('Die benötigte Zutatenmenge ist bereits vollständig zugeordnet.');
     const lots=(state?.lots||[]).filter(lot=>String(lot.inventory_id)===String(ingredient.inventory_id)
       &&frozenStorageLocation(lot.storage_location))
       .filter(lot=>{
         const q=freezerLotQuantity(lot);
-        return q&&String(q.unit).toLowerCase()===String(hint.unit||'').toLowerCase()
-          &&q.quantity>=Number(hint.quantity);
+        const otherMeal=(state?.freezer||[]).some(p=>String(p.frozen_lot_id)===String(lot.id)
+          &&p.meal_ingredient_id&&String(p.meal_ingredient_id)!==String(ingredientId));
+        return !otherMeal&&q&&q.quantity>0
+          &&String(q.unit).toLowerCase()===String(hint.unit||'').toLowerCase();
       });
-    if(!lots.length)return alert('Keine einzelne TK-Portion deckt diese Mahlzeit vollständig. Bitte Vorratschargen prüfen.');
+    if(!lots.length)return alert('Keine freie passende TK-Portion vorhanden.');
     const choices=lots.map(lot=>{
       const info=freezerLotQuantity(lot);
-      return '<option value="'+esc(lot.id)+'">'+esc(freezerLotLabel(lot))+' · '+esc(fmtQty(info.quantity,info.unit))+'</option>';
+      return '<option value="'+esc(lot.id)+'">'+esc(freezerLotLabel(lot))+
+        ' · '+esc(fmtQty(info.quantity,info.unit))+'</option>';
     }).join('');
-    return addModal('❄️ TK-Portion für Mahlzeit zuordnen',
-      '<form><p class="food-modal-copy-v544"><strong>'+esc(fmtQty(hint.quantity,hint.unit)+' '+hint.ingredient)+'</strong> für '
-      +esc(hint.targetTitle)+' · Auftauen ab '+esc(fmtDate(hint.dueDate))+'</p>'
-      +'<label>Welche tatsächliche TK-Charge?<select name="lot">'+choices+'</select></label>'
-      +'<p class="food-modal-copy-v544">Bitte nur bestätigen, wenn du diese Menge tatsächlich zum Auftauen in den Kühlschrank legst.</p>'
-      +'<button type="submit" class="food-action-v544">🌡️ Auftauen gestartet</button></form>',
+    const initial=Math.min(missing,freezerLotQuantity(lots[0]).quantity);
+    const modal=addModal('❄️ TK-Teilstück der Mahlzeit zuordnen',
+      '<form><p class="food-modal-copy-v544"><strong>Noch '+esc(fmtQty(missing,hint.unit))+
+      '</strong> für '+esc(hint.targetTitle)+' · '+esc(fmtDate(hint.targetDate))+'</p>'
+      +'<label>Welches konkrete TK-Teilstück?<select name="lot">'+choices+'</select></label>'
+      +'<label>Menge aus diesem Teilstück ('+esc(hint.unit)+')'
+      +'<input type="number" name="quantity" min="0.01" step="0.01" value="'+esc(initial)+'" max="'+esc(initial)+'" required></label>'
+      +'<p class="food-modal-copy-v544">Du kannst danach weitere separate Stücke derselben Zutat zuordnen. Nur wenn du den Auftau-Start bestätigst, wechselt das gewählte Stück in den Kühlschrank.</p>'
+      +'<button type="submit" class="food-action-v544">🌡️ Dieses Teilstück zum Auftauen bestätigen</button></form>',
       async form=>{
         const lot=lots.find(item=>String(item.id)===String(form.get('lot')));
-        if(!lot)throw new Error('Bitte eine der angezeigten Chargen auswählen.');
+        if(!lot)throw new Error('Bitte ein vorhandenes Teilstück auswählen.');
+        const amount=Number(form.get('quantity'));
+        if(!(amount>0&&amount<=missing+0.000001&&amount<=freezerLotQuantity(lot).quantity+0.000001))
+          throw new Error('Portionsmenge übersteigt den freien Bedarf oder das Teilstück.');
         const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
         const result=await supabase.rpc('prepare_food_frozen_for_meal',{
-          p_lot_id:lot.id,
-          p_quantity:Number(hint.quantity),
-          p_needed_on:hint.dueDate,
-          p_meal_ingredient_id:ingredientId
+          p_lot_id:lot.id,p_quantity:amount,
+          p_needed_on:hint.targetDate,p_meal_ingredient_id:ingredientId
         });
         if(result.error)throw result.error;
-        const thaw=await supabase.rpc('start_food_ingredient_freezer_thaw',{p_meal_ingredient_id:ingredientId});
+        const thaw=await supabase.rpc('advance_food_freezer_portion',{
+          p_portion_id:result.data,p_action:'start_thaw'
+        });
         if(thaw.error){
-          loadPromise=null;
-          await render();
-          throw new Error('TK-Portion zugeordnet, aber Auftau-Start nicht bestätigt: '+thaw.error.message);
+          loadPromise=null;await render();
+          throw new Error('Teilstück zugeordnet, aber Auftau-Start nicht gespeichert: '+thaw.error.message);
         }
         loadPromise=null;await render();
       });
+    const lotField=modal?.querySelector('[name="lot"]');
+    const amountField=modal?.querySelector('[name="quantity"]');
+    const updateMax=()=>{
+      const lot=lots.find(item=>String(item.id)===String(lotField?.value));
+      const max=lot?Math.min(missing,freezerLotQuantity(lot).quantity):missing;
+      if(amountField){amountField.max=String(max);amountField.value=String(max);}
+    };
+    lotField?.addEventListener('change',updateMax);
+    return modal;
   }
 
   // V790: Checkout purchases awaiting stock confirmation are a preview, never an
