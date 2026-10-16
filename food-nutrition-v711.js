@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V830';
+  const VERSION='V831';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -853,7 +853,7 @@
     return {
       kcal:allMissing?'kcal offen':formatNumber(Math.round(day.kcal),0)+' kcal',
       protein:allMissing?'Protein offen':formatNumber(day.protein,1)+' g Protein',
-      note:[incomplete?'⚠ '+day.unresolved+' offen':'',day.extras?('+'+day.extras+' Extra'+(day.extras===1?'':'s')):''].filter(Boolean).join(' · '),
+      note:incomplete?'⚠ '+day.unresolved+' offen':'', // V831: Extras sind bereits in kcal + Protein enthalten und stehen unten einzeln.
       label:incomplete?'Teilsumme':'Tag gesamt',
       incomplete
     };
