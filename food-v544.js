@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V809';
+  const VERSION='V830';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1058,22 +1058,34 @@
       .sort((a,b)=>ranking(a.source)-ranking(b.source)||a.index-b.index)
       .map(entry=>entry.source);
 
-    const rows=ordered.length
-      ?ordered.map(source=>{
-        const wasFrozen=source.frozen===true;
-        let label=String(source.label||source.name||'Vorratszutat').trim();
-        // "frisch" auf einem historischen Kaufetikett darf nach Auftauen
-        // nicht mit der tatsaechlichen Verwendung verwechselt werden.
-        if(wasFrozen)label=label.replace(/\s*[·,-]\s*frisch\s*$/i,'').trim();
-        if(wasFrozen)label+=' · aufgetaut (TK)';
-        return '<li><span>'+esc(label)+'</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b></li>';
-      })
-      :original.map(item=>
-        '<li><span>'+esc(ingredientName(item))+'</span><b>'+
-        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+
-        '</b></li>'
-      );
-
+    // V830: Gespeicherte Zutatenliste ist VOLLSTÄNDIG; snapshot.sources
+    // enthält nur chargengenau aufgelöste Vorratsanteile und darf die
+    // anderen Zutaten (Knusperbrot, Frischkäse, Gewürze) nie verdrängen.
+    const usedSources=new Set();
+    const itemRows=original.filter(item=>item?.eaten_only_extra!==true).flatMap(item=>{
+      const name=familyText(ingredientName(item));
+      const matches=ordered.filter(source=>{
+        const candidates=[source.name,source.label].map(familyText).filter(Boolean);
+        return name&&candidates.some(candidate=>candidate===name
+          ||candidate.includes(name)||name.includes(candidate));
+      });
+      const fresh=matches.filter(source=>!usedSources.has(source));
+      if(fresh.length){
+        fresh.forEach(source=>usedSources.add(source));
+        return fresh.map(source=>{
+          const wasFrozen=source.frozen===true;
+          let label=String(source.label||source.name||ingredientName(item)).trim();
+          if(wasFrozen)label=label.replace(/\\s*[·,-]\\s*frisch\\s*$/i,'').trim()+' · aufgetaut (TK)';
+          return '<li><span>'+esc(label)+'</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b></li>';
+        });
+      }
+      return ['<li><span>'+esc(ingredientName(item))+'</span><b>'+
+        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+'</b></li>'];
+    });
+    const unassigned=ordered.filter(source=>!usedSources.has(source))
+      .map(source=>'<li><span>'+esc(source.label||source.name||'Vorratszutat')+
+        '</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b></li>');
+    const rows=[...itemRows,...unassigned];
     const extraMarkup=eatenExtras.length
       ?'<div class="food-recipe-detail-block-v572 food-meal-eaten-extras-v809"><strong>Zusätzlich an diesem Tag gegessen (nicht Teil des Meal Prep)</strong><ul>'
         +eatenExtras.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')
@@ -4371,12 +4383,11 @@
         await render();
       }
     }));
-    root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',()=>{const id=String(button.dataset.foodMealToggle);if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);renderState();}));
+    root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();toggleMealCard(String(button.dataset.foodMealToggle));}));
     root.querySelectorAll('[data-food-meal-card]').forEach(card=>card.addEventListener('click',event=>{
       if(event.target?.closest?.('button,input,select,textarea,label'))return;
       const id=String(card.dataset.foodMealCard);
-      if(expandedMeals.has(id))expandedMeals.delete(id);else expandedMeals.add(id);
-      renderState();
+      toggleMealCard(id);
     }));
     root.querySelectorAll('[data-food-cart-toggle]').forEach(button=>button.addEventListener('click',async event=>{
       event.stopPropagation();
@@ -4457,8 +4468,29 @@
   function renderState(){
     ++renderSerial;
     const root=ensureRoot();if(!root||!state)return false;
-    root.innerHTML=shell();
+    // V830: Beim Aufklappen nicht das gesamte App-Shell mit Header,
+    // Navigation und Scroll-Kontext zerstören. Nur den Inhaltsbereich erneuern.
+    if(!root.querySelector('.food-content-v544'))root.innerHTML=shell();
     return paint(root,state);
+  }
+
+  function toggleMealCard(id){
+    const root=ensureRoot();
+    const before=[...(root?.querySelectorAll('[data-food-meal-card]')||[])]
+      .find(card=>String(card.dataset.foodMealCard)===String(id));
+    const beforeTop=before?.getBoundingClientRect().top;
+    if(expandedMeals.has(id))expandedMeals.delete(id);
+    else expandedMeals.add(id);
+    renderState();
+    // Das angetippte Gericht bleibt beim Umschalten an derselben Position,
+    // statt auf iOS scheinbar wegzuspringen.
+    const after=[...(root?.querySelectorAll('[data-food-meal-card]')||[])]
+      .find(card=>String(card.dataset.foodMealCard)===String(id));
+    if(beforeTop!==undefined&&after&&Number.isFinite(beforeTop)){
+      const displacement=after.getBoundingClientRect().top-beforeTop;
+      if(Math.abs(displacement)>1&&Number.isFinite(displacement))
+        window.scrollBy(0,displacement);
+    }
   }
 
   async function render(){
