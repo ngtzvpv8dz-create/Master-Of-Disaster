@@ -1383,7 +1383,10 @@
       const thawed=Boolean(task.thawedAt);
       const thawing=Boolean(task.thawStartedAt||task.thawingConfirmed);
       return '<div class="food-thaw-entry-v739 '+(thawed?'is-thawing-v739':thawing?'is-thawing-v739':'is-frozen-v739')+'">'
-        +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span></div>'
+        +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span>'
+        +(task.portionDetails?'<small>'+esc(task.portionDetails)+'</small>':'')
+        +(task.planDifference>0?'<small>⚠ Tatsächlich '+esc(fmtQty(task.planDifference,task.unit))+' weniger als im Rezept geplant. Bitte Mahlzeitenmenge abgleichen.</small>':'')
+        +'</div>'
         +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" title="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" '+(thawing||thawed?'disabled':'')+'>'
           +'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span>'
         +'</button>'
