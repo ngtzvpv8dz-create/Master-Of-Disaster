@@ -2353,9 +2353,13 @@
     return addModal('❄️ Einzelportion auftauen',
       '<form><p class="food-modal-copy-v544">'+esc(source)+' · im TK '+esc(fmtQty(info.quantity,info.unit))+'</p>'
       +'<label>Wie viel möchtest du auftauen? ('+esc(info.unit)+')<input type="number" name="quantity" min="0.01" max="'+esc(info.quantity)+'" step="0.01" inputmode="decimal" value="'+esc(info.quantity)+'" required></label>'
-      +'<label>Auftauen beginnen am (optional)<input type="date" name="needed_on"></label>'
-      +'<p class="food-modal-copy-v544">Die ausgewählte Teilportion bleibt bis zum tatsächlichen Auftau-Start eingefroren. Der übrige TK-Bestand bleibt unverändert.</p>'
-      +'<button type="submit" class="food-action-v544">Portion vormerken</button></form>',
+      +'<label>Auftautermin<input type="date" name="needed_on" value="'+esc(todayIso())+'"></label>'
+      +'<label>Aktion<select name="thaw_action">'
+      +'<option value="plan">Später auftauen · bleibt im Tiefkühler</option>'
+      +'<option value="start">Jetzt tatsächlich in den Kühlschrank gelegt · Auftauen starten</option>'
+      +'</select></label>'
+      +'<p class="food-modal-copy-v544">Nur bei bestätigtem Auftau-Start wechselt die Portion in den Kühlschrank. Die Gesamtmenge wird beim Auftauen nicht verbraucht.</p>'
+      +'<button type="submit" class="food-action-v544">Einzelportion bestätigen</button></form>',
       async form=>{
         const amount=Number(form.get('quantity'));
         if(!Number.isFinite(amount)||amount<=0||amount>info.quantity)throw new Error('Die gewählte Menge ist nicht verfügbar.');
@@ -2364,6 +2368,12 @@
           p_lot_id:lot.id,p_quantity:amount,p_needed_on:String(form.get('needed_on')||'')||null
         });
         if(result.error)throw result.error;
+        if(String(form.get('thaw_action')||'plan')==='start'){
+          const move=await supabase.rpc('advance_food_freezer_portion',{
+            p_portion_id:result.data,p_action:'start_thaw'
+          });
+          if(move.error)throw new Error('Portion vorgemerkt; Auftau-Start nicht bestätigt: '+move.error.message);
+        }
         loadPromise=null;await render();
       });
   }
