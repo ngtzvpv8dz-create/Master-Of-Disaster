@@ -124,10 +124,13 @@
     if(!view)return false;
     view.innerHTML=`<section class="mod-backstage-placeholder-v531" data-backstage-placeholder-v531="${section}"><div class="mod-backstage-placeholder-card-v531"><div class="mod-backstage-placeholder-code-v531">SEKTOR ${meta.index}</div><h3 class="mod-backstage-placeholder-title-v531">${meta.title}</h3><p class="mod-backstage-placeholder-text-v531">${meta.text}</p><span class="mod-backstage-placeholder-state-v531">GRUNDGERÜST · NOCH NICHT VERDRAHTET</span></div></section>`;
     if(section==='system'){
-      const panel=document.createElement('div');
-      panel.style.cssText='margin:16px auto;max-width:660px;padding:18px;border:1px solid #5b6b72;border-radius:16px;background:rgba(20,30,35,.75);color:#f5f5f5';
-      panel.innerHTML='<h3 style="margin:0 0 8px">🔔 Push-Benachrichtigungen</h3><p>Dieses Gerät für automatische Master-of-Disaster-Erinnerungen anmelden, Status prüfen oder abmelden.</p><p id="modPushState" role="status">Status wird geprüft …</p><button id="modPushEnable" type="button" style="padding:12px;margin:5px;border-radius:10px">Push aktivieren / erneuern</button><button id="modPushDisable" type="button" style="padding:12px;margin:5px;border-radius:10px">Dieses Gerät abmelden</button>';
-      view.querySelector('[data-backstage-placeholder-v531="system"]').appendChild(panel);
+      const placeholder=view.querySelector('[data-backstage-placeholder-v531="system"]');
+      placeholder.innerHTML='';
+      placeholder.classList.add('mod-backstage-system-push-v531');
+      const panel=document.createElement('section');
+      panel.className='mod-backstage-push-panel-v531';
+      panel.innerHTML='<div class="mod-backstage-push-kicker-v531">SEKTOR 05 / SYSTEM</div><h3 class="mod-backstage-push-title-v531">🔔 PUSH-BENACHRICHTIGUNGEN</h3><p class="mod-backstage-push-description-v531">Automatische Erinnerungen direkt auf diesem Gerät empfangen, auch wenn die App geschlossen ist.</p><div class="mod-backstage-push-status-v531" id="modPushState" role="status">Status wird geprüft …</div><div class="mod-backstage-push-actions-v531"><button id="modPushEnable" type="button" class="mod-backstage-push-button-v531">Push aktivieren / erneuern</button><button id="modPushDisable" type="button" class="mod-backstage-push-button-v531 mod-backstage-push-button-secondary-v531">Dieses Gerät abmelden</button></div>';
+      placeholder.appendChild(panel);
       const status=panel.querySelector('#modPushState');
       const client=()=>window.getSupabaseClient();
       const pub='BJtiubOtF__86LUPRH9YLQCZLNfXPTbweZP8nXnzXoUijwGqj26jrjm2S6-JwiF6Kn8QEz8WmNZH8LQLYtSeMEY';
