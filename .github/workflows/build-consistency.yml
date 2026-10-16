@@ -92,6 +92,9 @@ jobs:
             task-title-library-v507.js archive-weight-layout-v508.js summary-weight-due-polish-v494.js; do
             node --check "$f"
           done
+          node --check food-nutrition-v711.js
+          node --check food-extra-snacks-v828.js
+          node --test tests/food-extras-v828.test.cjs
           node --check sw.js
 
       - name: Generator follows highest current version
