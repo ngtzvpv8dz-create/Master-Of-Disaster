@@ -3,14 +3,14 @@
   "schemaVersion": 1,
   "version": "V828",
   "generatedAt": "16.10.2026 · 17:37",
-  "sourceCommit": "36701d49b35ab8e40f663681cd033072cc63f9b9",
+  "sourceCommit": "08b9eb170272703a7df1ed1a1b0af44aad2fa9d4",
   "automated": true,
   "versionSource": "highest-current-root-module-version",
   "excludes": [
     "development-metrics.json"
   ],
   "repository": {
-    "reachableCommits": 2951,
+    "reachableCommits": 2953,
     "pullRequests": 272,
     "mergedPullRequests": 266,
     "currentFiles": 301,
@@ -18,9 +18,9 @@
     "workflowFiles": 5,
     "javascriptFiles": 165,
     "cssFiles": 47,
-    "currentTextLines": 133843,
-    "currentBytes": 7758634,
-    "currentTextBytes": 6416743,
+    "currentTextLines": 133855,
+    "currentBytes": 7759183,
+    "currentTextBytes": 6417292,
     "imageBytes": 1085359,
     "otherBinaryBytes": 256532
   }
