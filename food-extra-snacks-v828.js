@@ -1,4 +1,4 @@
-/* V828 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
+/* V831 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
    Nur bestätigte Einträge in food_extra_consumptions; verändert NICHT den Vorrat. */
 (function(){
   'use strict';
@@ -127,11 +127,23 @@
     const root=document.getElementById(ROOT);
     const summary=root?.querySelector('[data-food-day-summary-today]');
     if(!summary||root.getAttribute('aria-hidden')==='true')return;
-    if(panel())return;
+    const d=today();
+    // V831: Kalenderdatum immer in Europe/Berlin bestimmen, keine
+    // Sonderbehandlung für den heutigen Tag 16.10.2026.
+    if(panel()){
+      if(date!==d){
+        date=d;ready=false;rows=[];formOpen=false;editing=null;notice='';
+        if(!loading)refresh();
+      }
+      return;
+    }
+    const contents=summary.closest('.food-content-v544')||root;
+    const lastMealSection=contents.querySelector('.food-meal-list-v544, .food-empty-card-v544');
+    if(!lastMealSection)return;
     const el=document.createElement('section');el.id=PANEL;el.className='food-extra-panel-v828';
     el.setAttribute('aria-label','Zusatz-Snacks und Getränke');
-    summary.insertAdjacentElement('afterend',el);
-    const d=today();
+    // V831: Tagesbilanz → Auftauhinweise → alle Mahlzeiten → Extras.
+    lastMealSection.insertAdjacentElement('afterend',el);
     if(date!==d){date=d;ready=false;rows=[];formOpen=false;editing=null;notice='';}
     draw();
     if(!ready&&!loading)refresh();
@@ -260,6 +272,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V828',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V831',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
