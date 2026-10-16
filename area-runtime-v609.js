@@ -93,7 +93,7 @@
       './development-stats-v451.js?v=451-1431',
       './build-freshness-v502.js?v=609',
       './project-history-v452.js?v=452-1501',
-      './backstage-v531.js?v=609',
+      './backstage-v531.js?v=push-system-1',
       './backstage-size-v532.js?v=532-system-size'
     ]
   };
