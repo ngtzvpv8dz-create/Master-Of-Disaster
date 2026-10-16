@@ -89,7 +89,7 @@
     const el=panel();if(!el)return;
     el.innerHTML='<div class="food-extra-heading-v828"><div><strong>🍬 Zusatz-Snacks &amp; Getränke</strong><small>Zusätzlich zu den geplanten Mahlzeiten</small></div>'+
       '<button type="button" data-extra-toggle aria-expanded="'+formOpen+'">'+(formOpen?'− Schließen':'+ Hinzufügen')+'</button></div>'+
-      (error?'<p class="food-extra-error-v828" role="alert">'+esc(error)+'</p>':'')+
+      (error?'<p class="food-extra-error-v828" role="alert">'+esc(error)+' <button type="button" data-extra-retry>Erneut laden</button></p>':'')+
       (notice?'<p class="food-extra-notice-v828" role="status">'+esc(notice)+'</p>':'')+
       (!ready?'<p class="food-extra-empty-v828">'+(loading?'Einträge werden geladen …':'Cloud-Daten prüfen …')+'</p>':rowsHtml())+
       (ready?formHtml():'');
@@ -226,9 +226,10 @@
   function attach(){
     if(bound)return;bound=true;styles();
     document.addEventListener('click',async e=>{
-      const target=e.target?.closest?.('[data-extra-toggle],[data-extra-cancel],[data-extra-mode],[data-extra-edit],[data-extra-delete]');
+      const target=e.target?.closest?.('[data-extra-toggle],[data-extra-cancel],[data-extra-mode],[data-extra-edit],[data-extra-delete],[data-extra-retry]');
       if(!target||!target.closest('#'+PANEL))return;
       e.preventDefault();
+      if(target.hasAttribute('data-extra-retry')){await refresh();return;}
       if(target.hasAttribute('data-extra-toggle')){formOpen=!formOpen;editing=null;mode='catalog';error='';notice='';draw();return;}
       if(target.hasAttribute('data-extra-cancel')){formOpen=false;editing=null;draw();return;}
       if(target.hasAttribute('data-extra-mode')){mode=target.dataset.extraMode;selected='';term='';editing=null;draw();return;}
@@ -238,9 +239,9 @@
     document.addEventListener('input',e=>{
       if(!e.target?.closest?.('#'+PANEL))return;
       if(e.target.matches('[data-extra-search]')){
-        term=e.target.value;
+        term=e.target.value;selected='';
         const sel=panel()?.querySelector('[data-extra-product]');if(sel)sel.innerHTML=productOptions();
-        return;
+        updatePreview();return;
       }
       if(e.target.matches('[data-extra-quantity]'))updatePreview();
     });
