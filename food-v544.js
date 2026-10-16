@@ -1289,10 +1289,26 @@
           String(portion.meal_ingredient_id||'')===String(item.id||'') &&
           ['frozen','thawing','thawed'].includes(String(portion.status||'')) &&
           (state?.lots||[]).some(lot=>String(lot.id)===String(portion.frozen_lot_id)));
-        if(!frozen.length&&!linked)continue;
-        const quantity=linked?Number(linked.quantity):
+        // V822: a single recipe may use physically distinct old/new freezer pieces.
+        // Show their real combined ready quantity, not only the one direct DB link.
+        const matchingPhysical=String(ingredientName(item))==='Hähnchenbrustfilet'
+          ?(state?.freezer||[]).filter(portion=>
+            String(portion.inventory_id||'')===String(item.inventory_id||'')&&
+            String(portion.needed_on||'')===String(target.meal_date||'')&&
+            ['thawing','thawed'].includes(String(portion.status||''))&&
+            (state?.lots||[]).some(lot=>String(lot.id)===String(portion.frozen_lot_id)))
+          :[];
+        if(!frozen.length&&!linked&&!matchingPhysical.length)continue;
+        const quantity=matchingPhysical.length
+          ?matchingPhysical.reduce((sum,p)=>sum+Math.max(0,Number(p.quantity)||0),0)
+          :linked?Number(linked.quantity):
           frozen.reduce((sum,part)=>sum+(Number(part.quantity)||0),0);
         if(quantity<=0)continue;
+        const portionDetails=matchingPhysical.length>1
+          ?matchingPhysical.map(p=>fmtQty(Number(p.quantity),item.unit)+' '+(p.status==='thawed'?'aufgetaut':'Auftauen läuft')).join(' · ')
+          :null;
+        const planDifference=matchingPhysical.length
+          ?Math.max(0,(Number(item.quantity)||0)-quantity):0;
         tasks.push({
           targetMealId:String(target.id||''),
           ingredientId:String(item.id||''),
@@ -1303,9 +1319,12 @@
           ingredient:ingredientName(item),
           quantity,
           unit:item.unit,
+          portionDetails,
+          planDifference,
           thawStartedAt:linked?.thaw_started_at||item.thaw_started_at||null,
-          thawingConfirmed:linked?.status==='thawing',
-          thawedAt:linked?.status==='thawed'?linked.thawed_at||true:null,
+          thawingConfirmed:matchingPhysical.length?matchingPhysical.some(p=>p.status==='thawing'):linked?.status==='thawing',
+          thawedAt:matchingPhysical.length?(matchingPhysical.every(p=>p.status==='thawed')?(matchingPhysical[0]?.thawed_at||true):null)
+            :linked?.status==='thawed'?linked.thawed_at||true:null,
           freezerPortionId:linked?.id||null
         });
       }
