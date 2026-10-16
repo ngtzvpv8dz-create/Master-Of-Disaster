@@ -1,0 +1,16 @@
+{
+  "name": "Dingsi Lab · Designvorschau",
+  "short_name": "Dingsi Lab",
+  "start_url": "./dingsi-lab.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1016",
+  "theme_color": "#10131b",
+  "icons": [
+    {
+      "src": "./assets/icons/denkfabrik-v634-192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    }
+  ]
+}
