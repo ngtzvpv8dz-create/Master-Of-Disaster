@@ -2786,3 +2786,39 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-freezer-weight-button-v806{font-size:1.08rem;font-weight:800;min-width:30px;min-height:32px}
 .food-freezer-weigh-modal-v806 [data-food-freezer-weigh-summary]{font-weight:700;line-height:1.5;padding:10px 12px;border-radius:10px;background:rgba(60,148,192,.10)}
 .food-freezer-weigh-modal-v806 select,.food-freezer-weigh-modal-v806 input{max-width:100%}
+
+
+/* V822 · Physical frozen poultry pieces and visible temperature states */
+.food-chicken-pieces-v822{display:grid;gap:8px;margin-top:11px}
+.food-chicken-pieces-v822>strong{font-size:11px;color:#526d7c;letter-spacing:.02em}
+.food-chicken-piece-v822{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px;
+  border:1px solid rgba(108,139,158,.22);border-radius:12px;background:#f6f9fb}
+.food-chicken-piece-v822>div{display:grid;gap:3px;min-width:0}
+.food-chicken-piece-v822>div>strong{font-size:15px;color:#233a47}
+.food-chicken-piece-v822 span{font-size:11px;font-weight:850}
+.food-chicken-piece-v822 small{font-size:10px;color:#617683;line-height:1.5;overflow-wrap:anywhere}
+.food-chicken-piece-v822.is-frozen,.food-freezer-line-v784.is-frozen-v822{
+  border-color:rgba(61,137,193,.34);
+  background:linear-gradient(135deg,#f4fbff 0%,#e1f3ff 70%,#cce8fa 100%);
+  box-shadow:inset 0 1px 0 #fff,0 3px 8px rgba(72,144,195,.07)}
+.food-chicken-piece-v822.is-frozen span{color:#216e9f}
+.food-chicken-piece-v822.is-thawing{border-color:rgba(194,147,71,.4);
+  background:linear-gradient(135deg,#f4fbff 0%,#eaf7ff 70%,#ffeccf 100%)}
+.food-chicken-piece-v822.is-thawing span{color:#996017}
+.food-chicken-piece-v822.is-thawed{border-color:rgba(87,156,104,.35);
+  background:linear-gradient(135deg,#f1faf3,#e4f4e9)}
+.food-chicken-piece-v822.is-thawed span{color:#32814f}
+.food-chicken-piece-v822 button,.food-freezer-line-v784.is-frozen-v822 button{
+  padding:8px 10px;max-width:44%;border-radius:10px;
+  border:1px solid #93cbe9;background:#fff;color:#216a94;
+  font-size:11px;font-weight:800;cursor:pointer}
+.food-freezer-line-v784.is-freeze-planned-v822{position:relative;overflow:hidden;
+  border-color:rgba(78,139,188,.35);
+  background:linear-gradient(135deg,#fbfdfd 0%,#f1f8fc 66%,#d9ecfa 100%)}
+.food-freezer-line-v784.is-freeze-planned-v822::before{
+  content:'❄';position:absolute;right:11px;top:6px;color:rgba(56,129,184,.36);
+  font-size:18px;pointer-events:none}
+@media(max-width:420px){
+  .food-chicken-piece-v822{align-items:flex-start;flex-direction:column}
+  .food-chicken-piece-v822 button{max-width:100%}
+}
