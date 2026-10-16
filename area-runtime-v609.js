@@ -54,7 +54,8 @@
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
       './food-v544.js?v=825-multi-freezer-meals-booking',
-      './food-nutrition-v711.js?v=819-stock-priority'
+      './food-nutrition-v711.js?v=828-extra-totals',
+      './food-extra-snacks-v828.js?v=828'
     ],
     shopping:[
       SUPABASE,
@@ -62,7 +63,7 @@
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
       './food-v544.js?v=825-multi-freezer-meals-booking',
-      './food-nutrition-v711.js?v=819-stock-priority',
+      './food-nutrition-v711.js?v=828-extra-totals',
       './shopping-v678.js?v=821-pack-suggestions'
     ],
     kistology:[
@@ -145,9 +146,9 @@
     ],
     sport:['./sport-v626.js?v=817-team-erle','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-v544.js?v=825-multi-freezer-meals-booking',
-      './food-nutrition-v711.js?v=819-stock-priority'],
+      './food-nutrition-v711.js?v=828-extra-totals','./food-extra-snacks-v828.js?v=828'],
     shopping:['./food-v544.js?v=825-multi-freezer-meals-booking',
-      './food-nutrition-v711.js?v=819-stock-priority','./shopping-v678.js?v=821-pack-suggestions'],
+      './food-nutrition-v711.js?v=828-extra-totals','./shopping-v678.js?v=821-pack-suggestions'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=827-finance-style'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
