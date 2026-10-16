@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V828';
+  const VERSION='V830';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -85,6 +85,9 @@
     const need=text(name);
     const base=text(family);
     if(!need||!base)return null;
+    // V830: "Frischkäse leicht" darf NICHT aus dem getrennten körnigen
+    // Frischkäse-Familienvorrat bedient werden. Exakte Sorte hat Vorrang.
+    if(need==='frischkäse leicht'&&base!=='frischkäse leicht')return null;
     if(need===base)return 'generic';
     if(need.startsWith(base+' ')||need.endsWith(' '+base)){
       if(/\b(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\b/.test(need))return 'frozen';
@@ -517,7 +520,11 @@
       if(n.kcal===null||n.protein===null)return {complete:false,missing:[name+' (Chargennährwerte fehlen)']};
       const grams=stockUnit==='kg'||stockUnit==='l'?taken*1000:taken;
       if(stockUnit==='stück'){
-        const each=number(product.serving_quantity);
+        // V830: Für Obst die vereinbarte essbare Stückmenge übernehmen.
+        // product_data war bislang vorhanden, wurde hier aber ignoriert.
+        const each=number(product?.product_data?.edible_weight_per_piece_g)
+          ||number(product?.product_data?.edible_weight_per_piece_estimated_g)
+          ||(text(product.serving_unit)==='g'?number(product.serving_quantity):null);
         if(!each)return {complete:false,missing:[name+' (Stückgewicht fehlt)']};
         kcal+=n.kcal*each*taken/100;
         protein+=n.protein*each*taken/100;
