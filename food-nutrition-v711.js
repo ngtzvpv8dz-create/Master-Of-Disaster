@@ -821,6 +821,22 @@
     totals.set(date,day);
   }
 
+  // Eindeutige Tages-Addition. Wird pro frischem Tages-Map genau einmal aufgerufen.
+  function addConsumedExtrasToDays(totals,extras){
+    for(const extra of extras||[]){
+      const date=String(extra.consumption_date||'');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
+      const day=totals.get(date)||{kcal:0,protein:0,meals:0,unresolved:0,extras:0};
+      const kcal=number(extra.calories_kcal),protein=number(extra.protein_g);
+      if(kcal===null||protein===null){day.unresolved++;day.meals++;totals.set(date,day);continue;}
+      day.kcal+=kcal;
+      day.protein+=protein;
+      day.extras=(day.extras||0)+1;
+      totals.set(date,day);
+    }
+    return totals;
+  }
+
   function dailySummary(day){
     if(!day||(!day.meals&&!day.extras))return {
       kcal:'0 kcal',protein:'0 g Protein',note:'',label:'Tag gesamt',incomplete:false
@@ -1031,19 +1047,8 @@
         else unresolvedMeals.push({id:meal.id,title:meal.title,missing:n?.missing||[]});
       });
 
-      // V828: Nur explizit als verzehrt gespeicherte Extras addieren. Kein Vorrats-
-      // und kein Meal-Plan-Eintrag entsteht durch diese Tagesbuchung.
-      for(const extra of data.extras||[]){
-        const date=String(extra.consumption_date||'');
-        if(!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
-        const day=dailyTotals.get(date)||{kcal:0,protein:0,meals:0,unresolved:0,extras:0};
-        const kcal=number(extra.calories_kcal),protein=number(extra.protein_g);
-        if(kcal===null||protein===null){day.unresolved++;day.meals++;continue;}
-        day.kcal+=kcal;
-        day.protein+=protein;
-        day.extras=(day.extras||0)+1;
-        dailyTotals.set(date,day);
-      }
+      // Bereits verzehrte Extras addieren; niemals in Rezept-/Bestandsmengen mischen.
+      addConsumedExtrasToDays(dailyTotals,data.extras);
 
       ensureDailyTotalStyle();
       patchNutritionAlarm(root,todayWarnings);
