@@ -155,6 +155,14 @@ self.addEventListener("fetch",event=>{
   const navigation=event.request.mode==="navigate";
   if(!navigation&&!sameOrigin)return;
 
+  // Dingsi Lab is a design preview: always fetch its latest HTML, never a cached page.
+  if(navigation&&sameOrigin&&url.pathname.endsWith("/dingsi-lab.html")){
+    event.respondWith(fetch(new Request(event.request,{cache:"no-store"})).catch(()=>new Response(
+      "<!doctype html><html lang=de><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><body style='background:#11151b;color:#fff;font:16px system-ui;padding:2rem'>Dingsi Lab konnte gerade nicht aktualisiert werden. Bitte bei bestehender Internetverbindung erneut öffnen.</body></html>",
+      {status:503,headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store"}}
+    )));
+    return;
+  }
   if(navigation){
     event.respondWith((async()=>{
       const fallback=(await cached(event.request))||await caches.match("./index.html")||await caches.match("./");
