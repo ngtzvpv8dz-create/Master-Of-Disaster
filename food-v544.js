@@ -1669,6 +1669,35 @@
     return slices;
   }
 
+  // Each physical poultry portion has its own lot and freezer status.
+  function chickenPiecesMarkup(item,data=state){
+    if(item?.name!=='Hähnchenbrustfilet')return '';
+    const lots=(data.lots||[]).filter(l=>String(l.inventory_id)===String(item.id)&&
+      (Number(l.opened_remaining_quantity||0)>0||Number(l.unopened_packages||0)>0))
+      .sort((a,b)=>String(a.purchased_on||'').localeCompare(String(b.purchased_on||''))||
+        Number(a.opened_remaining_quantity||0)-Number(b.opened_remaining_quantity||0));
+    if(!lots.length)return '';
+    const timestamp=x=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',
+      year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(x));
+    return '<div class="food-chicken-pieces-v822"><strong>Einzelportionen</strong>'+lots.map(lot=>{
+      const q=lotQuantityForInventory(lot,item);if(!(q>0))return '';
+      const portion=(data.freezer||[]).find(p=>String(p.frozen_lot_id)===String(lot.id)&&
+        ['frozen','thawing','thawed'].includes(p.status));
+      const status=portion?.status==='thawed'?'thawed':portion?.status==='thawing'?'thawing'
+        :frozenStorageLocation(lot.storage_location)?'frozen':'fresh';
+      const text=status==='frozen'?'❄️ Eingefroren':status==='thawing'?'🌡️ Auftauen läuft'
+        :status==='thawed'?'✓ Aufgetaut':'Im Kühlschrank';
+      const time=status==='thawing'
+        ?portion?.thaw_started_at?' · seit '+timestamp(portion.thaw_started_at):' · Startzeit unbekannt'
+        :status==='thawed'&&portion?.thawed_at?' · seit '+timestamp(portion.thawed_at)
+        :status==='frozen'&&portion?.frozen_at?' · seit '+timestamp(portion.frozen_at):'';
+      const purchase='Kauf '+(lot.purchased_on?fmtDate(String(lot.purchased_on).slice(0,10)):'unbekannt');
+      const action=status==='frozen'?'<button type="button" data-food-freezer-prepare-lot="'+esc(lot.id)+'">Auftauen auswählen</button>':'';
+      return '<div class="food-chicken-piece-v822 is-'+status+'"><div><strong>'+esc(fmtQty(q,item.unit))+'</strong>'
+        +'<span>'+esc(text)+'</span><small>'+esc(purchase+time)+'</small></div>'+action+'</div>';
+    }).join('')+'</div>';
+  }
+
   function inventoryMhdMarkup(item,data=state){
     const lots=(data?.lots||[]).filter(lot=>String(lot.inventory_id)===String(item.id));
     const activeLots=lots.filter(lot=>{
@@ -1853,7 +1882,8 @@
     const tomorrowClass=!empty&&item.use_priority==='tomorrow'?' priority-tomorrow-v574':'';
     const freezePlanClass=freezePlanned?' has-freeze-plan-v664':'';
     const slices=empty?[]:inventoryStorageSlices(item);
-    const showSlices=slices.length>1||slices.some(slice=>slice.kind==='frozen');
+    const chickenPieces=empty?'':chickenPiecesMarkup(item);
+    const showSlices=!chickenPieces&&(slices.length>1||slices.some(slice=>slice.kind==='frozen'));
     const sliceMarkup=showSlices
       ?'<div class="food-stock-slices-v664" aria-label="Bestandsaufteilung">'+slices.map(slice=>
         '<div class="food-stock-slice-v664 is-'+slice.kind+'"><span>'+esc(slice.label)+'</span><strong>'+esc(fmtQty(slice.quantity,item.unit))+'</strong></div>'
@@ -1870,10 +1900,10 @@
     // redundant 'Aktuelles Produkt' layer beneath Strawberry Lime / Fresh Cherry.
     // Product IDs and batch data remain available for booking and history.
     const isIsoclearFlavor=String(item.catalog_family_name||item.family_name||'').trim().toLocaleLowerCase('de-DE')==='esn isoclear whey protein isolate';
-    const currentProduct=empty||isIsoclearFlavor?'':inventoryCurrentProductMarkup(item);
+    const currentProduct=empty||isIsoclearFlavor||Boolean(chickenPieces)?'':inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
     const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -1912,7 +1942,9 @@
     const stock=(data?.inventory||[]).find(x=>String(x.id)===String(lot.inventory_id));
     const product=(data?.products||[]).find(x=>String(x.id)===String(lot.product_id));
     const brand=[product?.brand,product?.product_name,product?.variant].filter(Boolean).join(' · ');
-    return brand||stock?.name||lot.package_label||'Vorratsportion';
+    const display=frozenStorageLocation(lot.storage_location)
+      ?brand.replace(/\s*·\s*Frisch\s*·/gi,' ·').replace(/\s*·\s*Frisch$/gi,''):brand;
+    return display||stock?.name||lot.package_label||'Vorratsportion';
   }
 
   // V793: render Vorrat thaw cards with the same markup and CSS as
@@ -1950,7 +1982,7 @@
         :null;
       const targetText=target?' · für '+(MEAL_LABELS[target.meal_type]||target.meal_type||'Mahlzeit')+' „'+target.title+'“':'';
       const heading=portion.status==='thawing'
-        ?'Auftauen läuft'+(time?' · seit '+time+' Uhr':'')
+        ?'Auftauen läuft'+(time?' · seit '+time:' · Startzeit unbekannt')
         :portion.status==='thawed'?'Aufgetaut'
         :'Auftauen am '+(portion.needed_on?fmtDate(portion.needed_on):'geplanten Tag');
       const description=fmtQty(amount,portion.unit)+' '+label+targetText;
@@ -2002,9 +2034,13 @@
     const status=freezeDate?'Eingefroren am '+freezeDate:'Einfrierdatum nicht erfasst';
     const original=lot.best_before_date?' · ursprüngliches MHD '+fmtDate(lot.best_before_date):'';
     const purchase=lot.purchased_on?' · gekauft '+fmtDate(String(lot.purchased_on).slice(0,10)):'';
-    return '<article class="food-freezer-line-v784 food-freezer-compact-v790">'
-      +'<div class="food-freezer-copy-v790"><strong>'+esc(freezerLotLabel(lot))+' · '+esc(fmtQty(q.quantity,q.unit))+'</strong>'
-      +'<small>❄️ '+esc(status+purchase+original)+'</small></div></article>';
+    const chicken=(state.inventory||[]).some(i=>String(i.id)===String(lot.inventory_id)&&i.name==='Hähnchenbrustfilet');
+    const label=chicken?'Hähnchenbrustfilet · Teilstück':freezerLotLabel(lot);
+    const action='<button type="button" class="food-freezer-secondary-v790" data-food-freezer-prepare-lot="'+esc(lot.id)+'">Auftauen auswählen</button>';
+    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 is-frozen-v822">'
+      +'<div class="food-freezer-copy-v790"><strong>'+esc(label)+' · '+esc(fmtQty(q.quantity,q.unit))+'</strong>'
+      +'<small>❄️ '+esc(status+purchase+original)+'</small></div>'
+      +'<div class="food-freezer-actions-v784">'+action+'</div></article>';
   }
 
   // V786: use the same food-plan thaw allocations, but never move inventory automatically.
@@ -4152,6 +4188,9 @@
       button.disabled=true;
       try{await freezerTrackLot(button.dataset.foodFreezerTrack);}
       catch(error){alert(error?.message||'Die TK-Charge konnte nicht übernommen werden.');button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-freezer-prepare-lot]').forEach(button=>button.addEventListener('click',()=>{
+      freezerPrepareModal(String(button.dataset.foodFreezerPrepareLot||''));
     }));
     root.querySelectorAll('[data-food-freezer-weight]').forEach(button=>button.addEventListener('click',()=>{
       freezerMeasuredQuantityModal(String(button.dataset.foodFreezerWeight||''));
