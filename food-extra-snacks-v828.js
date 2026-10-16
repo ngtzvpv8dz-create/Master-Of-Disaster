@@ -15,7 +15,7 @@
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
   function bases(p){
     const basis=String(p?.nutrition_per_100?.basis||p?.product_data?.nutrition_basis||'').toLowerCase();
-    return /100.ml|per_100_ml/.test(basis)||p.package_unit==='ml'?'ml':'g';
+    return /100.ml|per_100_ml/.test(basis)||p?.package_unit==='ml'?'ml':'g';
   }
   function offered(){
     return products.filter(p=>valid(nval(p,'energy_kcal'))&&valid(nval(p,'protein_g')))
