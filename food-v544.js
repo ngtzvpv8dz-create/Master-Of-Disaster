@@ -2412,9 +2412,14 @@
         const amount=Number(form.get('quantity'));
         if(!Number.isFinite(amount)||amount<=0||amount>info.quantity)throw new Error('Die gewählte Menge ist nicht verfügbar.');
         const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
-        const result=await supabase.rpc('prepare_food_frozen_portion',{
-          p_lot_id:lot.id,p_quantity:amount,p_needed_on:String(form.get('needed_on')||'')||null
-        });
+        const target=targets.find(t=>String(t.id)===String(form.get('meal_ingredient_id')||''));
+        if(target&&amount>target.free+.000001)
+          throw new Error('Für diese Mahlzeit fehlen nur noch '+fmtQty(target.free,info.unit)+'.');
+        const method=target?'prepare_food_frozen_for_meal':'prepare_food_frozen_portion';
+        const args=target
+          ?{p_lot_id:lot.id,p_quantity:amount,p_needed_on:target.date,p_meal_ingredient_id:target.id}
+          :{p_lot_id:lot.id,p_quantity:amount,p_needed_on:String(form.get('needed_on')||'')||null};
+        const result=await supabase.rpc(method,args);
         if(result.error)throw result.error;
         if(String(form.get('thaw_action')||'plan')==='start'){
           const move=await supabase.rpc('advance_food_freezer_portion',{
@@ -2424,6 +2429,15 @@
         }
         loadPromise=null;await render();
       });
+    const select=modal?.querySelector('[name="meal_ingredient_id"]');
+    const qty=modal?.querySelector('[name="quantity"]');
+    const date=modal?.querySelector('[name="needed_on"]');
+    select?.addEventListener('change',()=>{
+      const t=targets.find(t=>String(t.id)===String(select.value));
+      if(qty){const max=t?Math.min(info.quantity,t.free):info.quantity;qty.max=String(max);qty.value=String(max);}
+      if(date){date.disabled=Boolean(t);date.value=t?String(t.date):todayIso();}
+    });
+    return modal;
   }
 
 
