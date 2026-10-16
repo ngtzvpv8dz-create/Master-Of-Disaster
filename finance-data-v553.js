@@ -5,14 +5,14 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V693';
+  const VERSION='V826';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
   let visibleRefreshTimer=null;
   let rootObserver=null;
   let bodyObserver=null;
-  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[]};
+  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[],plannedExpenses:[],plannedError:null};
   const expandedTransactions=new Set();
   const expandedCategories=new Set();
 
@@ -406,6 +406,37 @@
     }).join('')+'</div>';
   }
 
+
+  /* V826: geplante Ausgaben bleiben von tatsächlichen Bankbuchungen getrennt. */
+  function planningHtml(){
+    if(!state.loaded||state.error)return '';
+    const planned=(state.plannedExpenses||[]).filter(row=>row.status==='planned');
+    if(state.plannedError){
+      return '<section class="finance-panel-v552 finance-plan-panel-v826"><div class="finance-panel-head-v552"><div><span>03 · PROGNOSE</span><h3>Geplante Ausgaben</h3></div><small>FEHLER</small></div><div class="finance-plan-notice-v826">Planung konnte nicht geladen werden. Die übrigen Finanzwerte bleiben davon unberührt.</div></section>';
+    }
+    const knownBank=openBalanceModel();
+    const plannedTotal=planned.reduce((sum,row)=>sum+num(row.amount),0);
+    const hasEstimate=planned.some(row=>row.amount_type==='estimate');
+    const projected=knownBank.afterAll-plannedTotal;
+    const rows=planned.map(row=>{
+      const kind=row.amount_type==='estimate'?'GESCHÄTZT':'FEST';
+      const className=row.amount_type==='estimate'?'is-estimated':'is-fixed';
+      return '<div class="finance-plan-row-v826"><div><strong>'+esc(row.title)+'</strong><span>'+fmtDate(row.planned_date)+' · <em class="'+className+'">'+kind+'</em></span></div><b>−'+fmtMoney(row.amount)+'</b></div>';
+    }).join('');
+    const bankCount=knownBank.pendingCount+knownBank.notVisibleCount;
+    return '<section class="finance-panel-v552 finance-plan-panel-v826">'+
+      '<div class="finance-panel-head-v552"><div><span>03 · PROGNOSE</span><h3>Geplante Ausgaben</h3></div><small>VORSCHAU</small></div>'+
+      '<div class="finance-forecast-v826">'+
+        '<div class="finance-forecast-math-v826"><div><span>Gebuchter Kontostand</span><b>'+fmtMoney(state.currentBalance)+'</b></div>'+
+        '<div><span>'+bankCount+' bekannte offene Bankbewegung'+(bankCount===1?'':'en')+'</span><b>'+fmtImpact(knownBank.pendingImpact+knownBank.notVisibleImpact)+'</b></div>'+
+        '<div><span>'+planned.length+' geplante Ausgabe'+(planned.length===1?'':'n')+'</span><b>−'+fmtMoney(plannedTotal)+'</b></div></div>'+
+        '<div class="finance-forecast-result-v826"><span>PROGNOSE NACH BANK & PLANUNG</span><strong>'+(hasEstimate?'ca. ':'')+fmtMoney(projected)+'</strong></div>'+
+        '<p class="finance-forecast-disclaimer-v826">Planwerte sind keine Zahlungen. Schätzungen können abweichen. Nur bekannte offene Bankbewegungen berücksichtigt.</p>'+
+      '</div>'+
+      '<div class="finance-plan-list-v826">'+(rows||'<div class="finance-plan-empty-v826">Aktuell keine geplanten Ausgaben.</div>')+'</div>'+
+    '</section>';
+  }
+
   function shell(){
     const summary=summarize();
     const currency=(state.periodTransactions[0]&&state.periodTransactions[0].currency)||'EUR';
@@ -444,8 +475,9 @@
       '<div class="finance-grid-v552">'+
         '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>'+periodSpec().title+'</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
         '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Konto</h3></div><small>AKTUELL</small></div><div class="finance-score-v552"><strong class="'+balanceClass+'">'+(connected?fmtMoney(summary.balance,currency):'—')+'</strong><span>Saldo</span></div>'+balanceNotesHtml+'<div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
-        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>03 · BUCHUNGEN</span><h3>Alle im Zeitraum</h3></div><small>'+esc(periodSpec().label)+'</small></div>'+recentHtml()+'</section>'+
-        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · KATEGORIEN</span><h3>Ausgaben & Vorteile</h3></div><small>DETAIL</small></div>'+categoriesHtml()+'</section>'+
+        planningHtml()+
+         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · BUCHUNGEN</span><h3>Alle im Zeitraum</h3></div><small>'+esc(periodSpec().label)+'</small></div>'+recentHtml()+'</section>'+
+        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>05 · KATEGORIEN</span><h3>Ausgaben & Vorteile</h3></div><small>DETAIL</small></div>'+categoriesHtml()+'</section>'+
       '</div>'+
       '<footer class="finance-footer-v552"><span><i></i> '+(connected?'Supabase verbunden':'Oberfläche bereit')+'</span><span>'+VERSION+' · LIVE DATA</span></footer>'+
     '</div>';
@@ -502,6 +534,26 @@
     return rows.map(row=>({...row,finance_items:(row.finance_items||[]).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))}));
   }
 
+
+  async function fetchPlannedExpenses(supabase){
+    const rows=[];
+    const pageSize=500;
+    for(let from=0;;from+=pageSize){
+      const query=supabase.from('finance_planned_expenses')
+        .select('id,planned_date,title,amount,amount_type,category,status,actual_transaction_id')
+        .eq('status','planned')
+        .order('planned_date',{ascending:true})
+        .order('created_at',{ascending:true})
+        .range(from,from+pageSize-1);
+      const result=await withTimeout(query,'Geplante Ausgaben laden',12000);
+      if(result?.error)throw result.error;
+      const page=result?.data||[];
+      rows.push(...page);
+      if(page.length<pageSize)break;
+    }
+    return rows;
+  }
+
   async function remoteData(){
     const supabase=client();
     if(!supabase)throw new Error('Supabase-Client ist nicht verfügbar.');
@@ -513,6 +565,7 @@
     const mode=state.periodMode||'month';
     const spec=periodSpec(mode);
     const periodPromise=fetchPeriodTransactions(supabase,spec);
+    const planningPromise=fetchPlannedExpenses(supabase).then(data=>({data,error:null})).catch(error=>({data:[],error:String(error?.message||error)}));
     const balanceQuery=supabase.rpc('finance_current_balance');
     const openQuery=supabase.from('finance_transactions')
       .select('id,transaction_date,bank_booking_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected')
@@ -520,10 +573,11 @@
       .order('transaction_date',{ascending:false})
       .order('created_at',{ascending:false});
 
-    const [periodTransactions,balanceResult,openResult]=await Promise.all([
+    const [periodTransactions,balanceResult,openResult,planningResult]=await Promise.all([
       periodPromise,
       withTimeout(balanceQuery,'Kontostand'),
-      withTimeout(openQuery,'Vorgemerkte Buchungen')
+      withTimeout(openQuery,'Vorgemerkte Buchungen'),
+      planningPromise
     ]);
     if(balanceResult?.error)throw balanceResult.error;
     if(openResult?.error)throw openResult.error;
@@ -534,7 +588,9 @@
       periodMode:mode,
       periodTransactions,
       pendingTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='pending'),
-      notVisibleTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='not_visible')
+      notVisibleTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='not_visible'),
+      plannedExpenses:planningResult.data,
+      plannedError:planningResult.error
     };
   }
 
