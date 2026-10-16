@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V812';
+  const VERSION='V828';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -822,15 +822,15 @@
   }
 
   function dailySummary(day){
-    if(!day||!day.meals)return {
+    if(!day||(!day.meals&&!day.extras))return {
       kcal:'0 kcal',protein:'0 g Protein',note:'',label:'Tag gesamt',incomplete:false
     };
     const incomplete=day.unresolved>0;
-    const allMissing=day.unresolved===day.meals;
+    const allMissing=day.meals>0&&day.unresolved===day.meals;
     return {
       kcal:allMissing?'kcal offen':formatNumber(Math.round(day.kcal),0)+' kcal',
       protein:allMissing?'Protein offen':formatNumber(day.protein,1)+' g Protein',
-      note:incomplete?'⚠ '+day.unresolved+' offen':'',
+      note:[incomplete?'⚠ '+day.unresolved+' offen':'',day.extras?('+'+day.extras+' Extra'+(day.extras===1?'':'s')):''].filter(Boolean).join(' · '),
       label:incomplete?'Teilsumme':'Tag gesamt',
       incomplete
     };
@@ -902,7 +902,9 @@
       supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
-      supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit')
+      supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit'),
+      // Extra-Konsum wird als eigene, bereits gegessene Tagesposition gezählt.
+      supabase.from('food_extra_consumptions').select('id,consumption_date,calories_kcal,protein_g,carbohydrates_g,fat_g').gte('consumption_date',from).lte('consumption_date',to).limit(1500)
     ]);
     const bad=results.find(result=>result.error);
     if(bad?.error)throw bad.error;
@@ -911,7 +913,8 @@
       meals:results[1].data||[],
       inventory:results[2].data||[],
       products:results[3].data||[],
-      lots:results[4].data||[]
+      lots:results[4].data||[],
+      extras:results[5].data||[]
     };
   }
 
@@ -943,6 +946,9 @@
         total+=nutrition.kcal*(eaten!==null&&eaten>0?eaten:1);
       }
     }
+    // Die Vorschau muss dieselben zusätzlichen Tageskcal wie die Live-Bilanz enthalten.
+    total+=(data.extras||[]).filter(x=>x.consumption_date===target.meal_date)
+      .reduce((sum,x)=>sum+(number(x.calories_kcal)||0),0);
     return {complete,kcal:complete?Math.round(total):null,missing:[...new Set(missing)],date:target.meal_date};
   }
 
@@ -1025,11 +1031,26 @@
         else unresolvedMeals.push({id:meal.id,title:meal.title,missing:n?.missing||[]});
       });
 
+      // V828: Nur explizit als verzehrt gespeicherte Extras addieren. Kein Vorrats-
+      // und kein Meal-Plan-Eintrag entsteht durch diese Tagesbuchung.
+      for(const extra of data.extras||[]){
+        const date=String(extra.consumption_date||'');
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
+        const day=dailyTotals.get(date)||{kcal:0,protein:0,meals:0,unresolved:0,extras:0};
+        const kcal=number(extra.calories_kcal),protein=number(extra.protein_g);
+        if(kcal===null||protein===null){day.unresolved++;day.meals++;continue;}
+        day.kcal+=kcal;
+        day.protein+=protein;
+        day.extras=(day.extras||0)+1;
+        dailyTotals.set(date,day);
+      }
+
       ensureDailyTotalStyle();
       patchNutritionAlarm(root,todayWarnings);
       patchDailyTotals(root,dailyTotals);
       lastStatus={
         dayTotals:[...dailyTotals].map(([date,day])=>({date,...day})),
+        extraConsumptions:data.extras?.length||0,
         recipes:data.recipes.length,
         meals:data.meals.length,
         dynamicRecipes,
