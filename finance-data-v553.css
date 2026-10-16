@@ -207,3 +207,33 @@
 .finance-balance-open-v679 .is-ok strong{
   color:rgba(112,255,180,.76);
 }
+
+
+/* V826 · Finanzprognose, getrennt von Bankbuchungen */
+.finance-plan-panel-v826 .finance-panel-head-v552 small{color:rgba(255,209,102,.75)}
+.finance-forecast-v826{display:grid;gap:11px;padding:13px 14px 14px;border-bottom:1px solid rgba(112,255,180,.12);background:linear-gradient(155deg,rgba(255,209,102,.055),rgba(112,255,180,.015))}
+.finance-forecast-math-v826{display:grid;gap:7px}
+.finance-forecast-math-v826>div{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.finance-forecast-math-v826 span{color:rgba(214,255,228,.56);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;line-height:1.35}
+.finance-forecast-math-v826 b{color:#edfaf1;font-size:12px;font-weight:650;white-space:nowrap}
+.finance-forecast-result-v826{display:grid;gap:5px;margin-top:3px;padding:13px;border:1px solid rgba(255,209,102,.30);border-radius:6px;background:rgba(255,209,102,.075)}
+.finance-forecast-result-v826 span{color:rgba(255,227,164,.8);font-size:9px;font-weight:750;letter-spacing:.06em;line-height:1.3}
+.finance-forecast-result-v826 strong{color:#ffdf96;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:clamp(23px,5vw,34px);font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+.finance-forecast-disclaimer-v826{margin:0;color:rgba(214,255,228,.48);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;line-height:1.5}
+.finance-plan-list-v826{display:grid}
+.finance-plan-row-v826{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:12px 14px;border-bottom:1px solid rgba(112,255,180,.1)}
+.finance-plan-row-v826:last-child{border-bottom:0}
+.finance-plan-row-v826>div{min-width:0;display:grid;gap:5px}
+.finance-plan-row-v826 strong{color:#e9f8ed;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:12px;line-height:1.35;font-weight:650}
+.finance-plan-row-v826 span{color:rgba(214,255,228,.55);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:10px;line-height:1.3}
+.finance-plan-row-v826 em{font-size:9px;font-weight:800;font-style:normal;letter-spacing:.03em}
+.finance-plan-row-v826 em.is-fixed{color:#85dcaa}
+.finance-plan-row-v826 em.is-estimated{color:#ffdf96}
+.finance-plan-row-v826 b{color:#f0faf2;font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.finance-plan-empty-v826,.finance-plan-notice-v826{padding:14px;color:rgba(214,255,228,.58);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:11px;line-height:1.5}
+.finance-plan-notice-v826{color:#ffdf96}
+@media(max-width:700px){
+  .finance-forecast-v826{padding:12px}
+  .finance-plan-row-v826{padding:11px 12px;gap:8px}
+  .finance-forecast-result-v826{padding:12px}
+}
