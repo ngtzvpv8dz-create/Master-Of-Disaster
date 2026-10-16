@@ -1,4 +1,6 @@
-/* V831 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
+/* V832 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
+   Vollständiger aktiver Produktstamm plus nicht verknüpfte Vorratsartikel.
+   Fehlende Nährwerte werden abgefragt statt Produkte still zu verstecken.
    Nur bestätigte Einträge in food_extra_consumptions; verändert NICHT den Vorrat. */
 (function(){
   'use strict';
@@ -11,20 +13,26 @@
   const valid=n=>n!==null&&n!==undefined&&n!==''&&Number.isFinite(Number(n))&&Number(n)>=0;
   const decimal=x=>Number(String(x??'').trim().replace(',','.'));
   const client=()=>window.getSupabaseClient?.();
-  function productName(p){return [p.brand,p.product_name,p.variant].filter(Boolean).join(' · ');}
+  function productName(p){return p?._inventoryOnly?'Vorrat · '+p.product_name:[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');}
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
   function bases(p){
+    if(!p)return 'g';
+    // Einheiten ohne belastbare 100-g-Nährwertbasis (z. B. Brausetabletten).
+    const stockUnit=String(p.inventory_unit||'');
+    if(!hasMacros(p)&&['Stück','Portion','Päckchen','Kapsel'].includes(stockUnit))return stockUnit;
     const basis=String(p?.nutrition_per_100?.basis||p?.product_data?.nutrition_basis||'').toLowerCase();
     return /100.ml|per_100_ml/.test(basis)||p?.package_unit==='ml'?'ml':'g';
   }
+  function hasMacros(p){return Boolean(p)&&valid(nval(p,'energy_kcal'))&&valid(nval(p,'protein_g'));}
   function offered(){
-    return products.filter(p=>valid(nval(p,'energy_kcal'))&&valid(nval(p,'protein_g')))
-      .sort((a,b)=>productName(a).localeCompare(productName(b),'de'));
+    // Fehlende Nährwertdaten dürfen kein Produkt aus der Suche entfernen.
+    return [...products].sort((a,b)=>productName(a).localeCompare(productName(b),'de'));
   }
   function chosen(){return products.find(p=>String(p.id)===selected)||null;}
   function initialQty(p){
     if(!p)return 100;
     const unit=bases(p), serving=Number(p.serving_quantity),pack=Number(p.package_quantity);
+    if(!['g','ml'].includes(unit))return 1;
     if(p.serving_unit===unit&&serving>0&&serving<=1500)return serving;
     if(p.package_unit===unit&&pack>0&&pack<=1000)return pack;
     return 100;
@@ -43,11 +51,18 @@
   }
   function panel(){return document.getElementById(PANEL);}
   function productOptions(){
-    const match=term.toLocaleLowerCase('de-DE');
-    const options=offered().filter(p=>!match||productName(p).toLocaleLowerCase('de-DE').includes(match));
-    if(!options.length)return '<option value="">Keine passenden Produkte mit Nährwerten</option>';
-    return '<option value="">Produkt wählen …</option>'+options.slice(0,180).map(p=>
-      '<option value="'+esc(p.id)+'"'+(selected===String(p.id)?' selected':'')+'>'+esc(productName(p))+'</option>').join('');
+    // Alle Suchwörter dürfen unabhängig von Punkten und Wortreihenfolge vorkommen.
+    const words=term.toLocaleLowerCase('de-DE').trim().split(/\s+/).filter(Boolean);
+    const options=offered().filter(p=>{
+      if(!words.length)return true;
+      const name=productName(p).toLocaleLowerCase('de-DE');
+      return words.every(word=>name.includes(word));
+    });
+    if(!options.length)return '<option value="">Keine passenden Produkte</option>';
+    const visible=options.slice(0,500);
+    return '<option value="">Produkt wählen … ('+options.length+' Treffer)</option>'+visible.map(p=>
+      '<option value="'+esc(p.id)+'"'+(selected===String(p.id)?' selected':'')+'>'+esc(productName(p))+'</option>').join('')+
+      (options.length>visible.length?'<option value="" disabled>Weitere '+(options.length-visible.length)+' Treffer: Suche präzisieren</option>':'');
   }
   function formHtml(){
     if(!formOpen)return '';
@@ -59,7 +74,13 @@
         '<label>Produkt<select name="product" data-extra-product>'+productOptions()+'</select></label>'+
         '<div class="food-extra-fields-v828"><label>Menge<input name="quantity" type="number" step="0.1" min="0.1" inputmode="decimal" value="'+esc(p?initialQty(p):100)+'" required data-extra-quantity></label>'+
         '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output></label></div>'+
-        '<p class="food-extra-preview-v828" data-extra-preview>'+esc(p?'Nährwerte werden berechnet.':'Bitte ein Produkt auswählen.')+'</p>'
+        '<p class="food-extra-preview-v828" data-extra-preview>'+esc(p?'Nährwerte werden berechnet.':'Bitte ein Produkt auswählen.')+'</p>'+
+        '<div class="food-extra-missing-v832" data-extra-missing-macros hidden><p class="food-extra-help-v828">Für diesen Artikel fehlen vollständige Kalorien-/Eiweißwerte. Bitte die Nährwerte für die tatsächlich verzehrte Menge eintragen. Unbekannte Werte nicht einfach als 0 annehmen.</p>'+
+        '<div class="food-extra-macros-v828">'+[
+          ['calories_kcal','Kalorien (kcal)'],['protein_g','Protein (g)'],
+          ['carbohydrates_g','Kohlenhydrate (g)'],['fat_g','Fett (g)'],
+          ['sugars_g','Zucker (g)'],['salt_g','Salz (g)'],['caffeine_mg','Koffein (mg)']
+        ].map(([key,label])=>'<label>'+label+'<input name="'+key+'" type="number" min="0" step="0.01" inputmode="decimal"></label>').join('')+'</div></div>'
       :'<label>Bezeichnung<input name="title" maxlength="160" placeholder="z. B. 2 Stück Schokolade" required></label>'+
         '<div class="food-extra-fields-v828"><label>Menge<input name="quantity" type="number" step="0.1" min="0.1" value="1" inputmode="decimal" required></label>'+
         '<label>Einheit<select name="unit"><option>Portion</option><option>Stück</option><option>g</option><option>ml</option></select></label></div>'+
@@ -99,23 +120,50 @@
     const form=panel()?.querySelector('[data-food-extra-form]');if(!form||mode!=='catalog')return;
     const p=chosen(),output=form.querySelector('[data-extra-preview]');
     form.querySelector('[data-extra-unit]').textContent=bases(p);
-    if(!p){output.textContent='Bitte ein Produkt mit vorhandenen Nährwerten auswählen.';return;}
+    const missing=form.querySelector('[data-extra-missing-macros]');
+    if(missing)missing.hidden=!p||hasMacros(p);
+    if(!p){output.textContent='Bitte ein Produkt aus dem gesamten Vorrat oder Produktstamm auswählen.';return;}
     const qty=decimal(form.elements.quantity.value);
     if(!(qty>0)){output.textContent='Bitte eine gültige Menge eingeben.';return;}
+    if(!hasMacros(p)){
+      output.textContent='Produkt gefunden. Nährwerte fehlen teilweise und müssen für '+nf(qty)+' '+bases(p)+' ergänzt werden.';
+      return;
+    }
     const n=valuesFromCatalog(p,qty);
     output.textContent=nf(n.calories_kcal,1)+' kcal · '+nf(n.protein_g)+' g Protein · '+nf(n.carbohydrates_g)+' g KH · '+nf(n.fat_g)+' g Fett';
+  }
+  async function fetchPages(build){
+    const result=[],page=500;
+    for(let start=0;start<50000;start+=page){
+      const {data,error}=await build(start,start+page-1);
+      if(error)throw error;
+      const part=data||[];result.push(...part);
+      if(part.length<page)return result;
+    }
+    throw new Error('Produktmenge überschreitet die technische Sicherheitsgrenze.');
   }
   async function fetchAll(){
     const supabase=client();if(!supabase)throw new Error('Supabase-Verbindung fehlt.');
     const auth=await supabase.auth.getSession();
     if(auth.error||!auth.data?.session?.user?.id)throw new Error('Bitte zuerst anmelden.');
     const uid=auth.data.session.user.id;
-    const [a,b]=await Promise.all([
+    const [a,catalog,stock]=await Promise.all([
       supabase.from('food_extra_consumptions').select('id,consumption_date,product_id,title,kind,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g,sugars_g,salt_g,caffeine_mg,nutrition_source,source_reference').eq('user_id',uid).eq('consumption_date',date).order('created_at',{ascending:true}).limit(500),
-      supabase.from('shopping_products').select('id,brand,product_name,variant,package_quantity,package_unit,serving_quantity,serving_unit,nutrition_per_100,product_data').eq('active',true).range(0,999)
+      fetchPages((start,end)=>supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,serving_quantity,serving_unit,nutrition_per_100,product_data').eq('active',true).order('id',{ascending:true}).range(start,end)),
+      fetchPages((start,end)=>supabase.from('food_inventory').select('id,name,quantity,unit').eq('user_id',uid).eq('is_active',true).order('id',{ascending:true}).range(start,end))
     ]);
-    if(a.error)throw a.error;if(b.error)throw b.error;
-    rows=a.data||[];products=b.data||[];return uid;
+    if(a.error)throw a.error;
+    rows=a.data||[];
+    const stockById=new Map(stock.map(i=>[i.id,i]));
+    const primary=catalog.map(p=>({...p,_inventoryOnly:false,inventory_unit:stockById.get(p.inventory_id)?.unit||null}));
+    const linked=new Set(primary.map(p=>p.inventory_id).filter(Boolean));
+    const missing=stock.filter(i=>!linked.has(i.id)).map(i=>({
+      id:'inventory:'+i.id,inventory_id:i.id,inventory_unit:i.unit,
+      product_name:i.name,brand:null,variant:null,package_unit:i.unit,
+      serving_quantity:null,package_quantity:null,nutrition_per_100:{},product_data:{},_inventoryOnly:true
+    }));
+    products=[...primary,...missing];
+    return uid;
   }
   async function refresh(){
     if(loading)return;
@@ -165,9 +213,25 @@
     let entry;
     if(mode==='catalog'){
       const p=chosen();if(!p)throw new Error('Bitte ein Produkt auswählen.');
-      const n=valuesFromCatalog(p,qty);
-      if(!valid(n.calories_kcal)||!valid(n.protein_g))throw new Error('Für dieses Produkt fehlen Kalorien oder Protein.');
-      entry={product_id:p.id,title:productName(p),kind:bases(p)==='ml'?'drink':'snack',quantity:qty,unit:bases(p),...n,nutrition_source:'Produktstamm: Herstellerwerte je 100 '+bases(p)};
+      let n,source;
+      if(hasMacros(p)&&['g','ml'].includes(bases(p))){
+        n=valuesFromCatalog(p,qty);
+        source='Produktstamm: Herstellerwerte je 100 '+bases(p);
+      }else{
+        const read=(key,required=false)=>{
+          const raw=String(form.elements[key]?.value??'').trim();
+          if(!raw){if(required)throw new Error('Bitte Kalorien und Protein für diesen Artikel eintragen.');return null;}
+          const value=decimal(raw);
+          if(!Number.isFinite(value)||value<0)throw new Error('Ungültiger Nährwert: '+key);
+          return value;
+        };
+        n={calories_kcal:read('calories_kcal',true),protein_g:read('protein_g',true),
+          carbohydrates_g:read('carbohydrates_g'),fat_g:read('fat_g'),
+          sugars_g:read('sugars_g'),salt_g:read('salt_g'),caffeine_mg:read('caffeine_mg')};
+        source='Fehlende Produkt-Nährwerte manuell für verzehrte Menge ergänzt';
+      }
+      entry={product_id:p._inventoryOnly?null:p.id,title:productName(p),
+        kind:bases(p)==='ml'?'drink':'snack',quantity:qty,unit:bases(p),...n,nutrition_source:source};
     }else{
       const title=String(form.elements.title.value||'').trim();if(!title)throw new Error('Bitte eine Bezeichnung angeben.');
       const read=(key,required=false)=>{
@@ -188,7 +252,8 @@
       if(editing){
         res=await supabase.from('food_extra_consumptions').update(entry).eq('id',editing).eq('user_id',uid).select('id').single();
       }else{
-        const ref='food-ui-v828-'+crypto.randomUUID();
+        const p=mode==='catalog'?chosen():null;
+        const ref='food-ui-v832-'+(p?._inventoryOnly?'inventory-'+p.inventory_id+'-':'')+crypto.randomUUID();
         res=await supabase.from('food_extra_consumptions').insert({...entry,user_id:uid,consumption_date:date,source_reference:ref}).select('id').single();
       }
       if(res.error)throw res.error;
@@ -231,6 +296,7 @@
       '.food-extra-fields-v828{display:grid;grid-template-columns:1fr 1fr;gap:10px}.food-extra-fields-v828 output{padding:10px 0}'+
       '.food-extra-macros-v828{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.food-extra-preview-v828{font-size:11px;color:#2c7451;font-weight:800}'+
       '.food-extra-help-v828,.food-extra-form-v828 small{font-size:10px;margin:0;line-height:1.4;color:#667767}'+
+      '.food-extra-missing-v832[hidden]{display:none!important}.food-extra-missing-v832{display:grid;gap:8px;padding:9px;border:1px solid #c5d5c6;border-radius:8px;background:#fff8ee}'+
       '.food-extra-actions-v828{justify-content:flex-start}.food-extra-actions-v828 button[type=submit]{background:#d9efda;color:#24623c}'+
       '.food-extra-error-v828{color:#a43429;font-weight:700}.food-extra-notice-v828{color:#257246;font-weight:700}';
     document.head.appendChild(css);
@@ -272,6 +338,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V831',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V832',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
