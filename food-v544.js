@@ -2387,10 +2387,21 @@
     const info=freezerLotQuantity(lot);
     if(!lot||!info||!frozenStorageLocation(lot.storage_location))return alert('Diese TK-Portion ist nicht mehr verfügbar.');
     const source=freezerLotLabel(lot);
-    return addModal('❄️ Einzelportion auftauen',
+    const targets=(state.meals||[]).filter(m=>normalizedStatus(m.status)==='planned'&&!m.inventory_booked_at)
+      .flatMap(m=>(m.ingredients||[]).filter(i=>String(i.inventory_id)===String(lot.inventory_id)
+        &&String(i.unit)===String(info.unit)).map(i=>{
+        const assigned=(state.freezer||[]).filter(p=>String(p.meal_ingredient_id||'')===String(i.id)
+          &&['frozen','thawing','thawed'].includes(p.status))
+          .reduce((s,p)=>s+(Number(p.quantity)||0),0);
+        return {id:i.id,date:m.meal_date,title:m.title,free:Math.max(0,Number(i.quantity)-assigned)};
+      })).filter(t=>t.free>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const choices='<option value="">Keine Mahlzeit zuordnen</option>'+targets.map(t=>
+      '<option value="'+esc(t.id)+'">'+esc(fmtDate(t.date)+' · '+t.title+' · frei '+fmtQty(t.free,info.unit))+'</option>').join('');
+    const modal=addModal('❄️ Einzelportion auftauen',
       '<form><p class="food-modal-copy-v544">'+esc(source)+' · im TK '+esc(fmtQty(info.quantity,info.unit))+'</p>'
       +'<label>Wie viel möchtest du auftauen? ('+esc(info.unit)+')<input type="number" name="quantity" min="0.01" max="'+esc(info.quantity)+'" step="0.01" inputmode="decimal" value="'+esc(info.quantity)+'" required></label>'
-      +'<label>Auftautermin<input type="date" name="needed_on" value="'+esc(todayIso())+'"></label>'
+      +'<label>Mahlzeit (optional)<select name="meal_ingredient_id">'+choices+'</select></label>'
+      +'<label>Auftautermin / Verwendungstag<input type="date" name="needed_on" value="'+esc(todayIso())+'"></label>'
       +'<label>Aktion<select name="thaw_action">'
       +'<option value="plan">Später auftauen · bleibt im Tiefkühler</option>'
       +'<option value="start">Jetzt tatsächlich in den Kühlschrank gelegt · Auftauen starten</option>'
