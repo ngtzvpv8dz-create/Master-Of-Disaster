@@ -2019,7 +2019,7 @@
        +' title="Tatsächlich gewogene Menge und zugehörige Mahlzeit korrigieren" aria-label="Gewicht bearbeiten">✎</button>':'';
     const cancel=portion.status==='planned'
       ?'<button type="button" class="food-freezer-secondary-v790" data-food-freezer-action="cancel" data-freezer-id="'+esc(portion.id)+'" title="Planung verwerfen" aria-label="Planung verwerfen">×</button>':'';
-    return '<article class="food-freezer-line-v784 food-freezer-compact-v790">'
+    return '<article class="food-freezer-line-v784 food-freezer-compact-v790 '+(portion.status==='planned'?'is-freeze-planned-v822':'')+'">'
       +'<div class="food-freezer-copy-v790"><strong>'+esc(fmtQty(amount,portion.unit)+' '+label)+'</strong>'
       +(portion.status==='planned'?'<small>Zum Einfrieren vorgesehen</small>':'')
       +(detail?'<small>'+esc(detail)+'</small>':'')
