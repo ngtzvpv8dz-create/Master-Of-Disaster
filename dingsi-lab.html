@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#000000"><title>Dingsi Lab · Homescreen V20</title><link rel="manifest" href="./dingsi-lab.webmanifest"><style>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#000000"><title>Dingsi Lab · Homescreen V21</title><link rel="manifest" href="./dingsi-lab.webmanifest"><style>
 *{box-sizing:border-box}html{background:#12151b}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 7% 10%,#34242b 0,transparent 47%),radial-gradient(ellipse at 98% 86%,#183038 0,transparent 56%),#0d1016;color:#faf4f0;font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}
 header{position:sticky;top:0;z-index:5;text-align:center;padding:calc(env(safe-area-inset-top) + 10px) 10px 12px;background:linear-gradient(180deg,#16191eea,#16191edc);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid #f0c58d42;box-shadow:0 7px 20px #0004}
 h1{margin:0;display:flex;align-items:center;justify-content:center;white-space:nowrap;font-size:clamp(1.17rem,5.15vw,2rem);font-weight:950;letter-spacing:-.025em;line-height:1.15}
@@ -119,6 +119,21 @@ body{position:relative;touch-action:none;-webkit-user-select:none;user-select:no
 button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .lab-waves{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden}
 header,main,#toast{position:relative;z-index:1}
+
+/* V21: tasteful labels beneath icons, preserve icon geometry */
+.tile{position:relative}
+.name{
+ position:absolute;left:50%;top:calc(100% + 2px);transform:translateX(-50%);
+ display:block;width:max-content;max-width:calc(var(--icon-width) + 18px);height:auto;
+ overflow:visible;clip-path:none;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ font-size:clamp(8px,2.25vw,10px);font-weight:750;letter-spacing:.095em;
+ line-height:1.15;white-space:nowrap;text-align:center;
+ color:#e4e3ed;text-shadow:0 1px 3px #000c,0 0 9px #b2b4db3b;
+ pointer-events:none;
+}
+.grid{--icon-gap:clamp(16px,3.9vw,22px)}
+@media(max-height:730px){.grid{--icon-gap:clamp(13px,3.5vw,17px)}.name{font-size:8px;letter-spacing:.055em}}
 </style></head><body><svg class="lab-waves" aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
 <defs>
 <linearGradient id="violetShelf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#75558b" stop-opacity=".30"/><stop offset=".55" stop-color="#4e3a73" stop-opacity=".24"/><stop offset="1" stop-color="#1c2536" stop-opacity=".05"/></linearGradient>
