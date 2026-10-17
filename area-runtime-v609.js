@@ -55,7 +55,7 @@
       './food-stock-resolver-v746.js?v=816-isoclear-family',
       './food-v544.js?v=830-accordion-prepared-ingredients',
       './food-nutrition-v711.js?v=831-total-extras-label',
-      './food-extra-snacks-v828.js?v=833-optional-macros'
+      './food-extra-snacks-v828.js?v=834-egg-edible-weight'
     ],
     shopping:[
       SUPABASE,
@@ -146,7 +146,7 @@
     ],
     sport:['./sport-v626.js?v=817-team-erle','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-v544.js?v=830-accordion-prepared-ingredients',
-      './food-nutrition-v711.js?v=831-total-extras-label','./food-extra-snacks-v828.js?v=833-optional-macros'],
+      './food-nutrition-v711.js?v=831-total-extras-label','./food-extra-snacks-v828.js?v=834-egg-edible-weight'],
     shopping:['./food-v544.js?v=830-accordion-prepared-ingredients',
       './food-nutrition-v711.js?v=831-total-extras-label','./shopping-v678.js?v=821-pack-suggestions'],
     kistology:['./kistology-v603.js?v=609-current'],
