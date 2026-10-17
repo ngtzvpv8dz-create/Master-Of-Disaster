@@ -1,7 +1,6 @@
-/* V832 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
-   Vollständiger aktiver Produktstamm plus nicht verknüpfte Vorratsartikel.
-   Fehlende Nährwerte werden abgefragt statt Produkte still zu verstecken.
-   Nur bestätigte Einträge in food_extra_consumptions; verändert NICHT den Vorrat. */
+/* V833 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
+   Bestätigte Portionen ohne erneute Gewichtsabfrage; fehlende Makros bleiben unbekannt.
+   Referenzwerte aus Produktstamm nutzen; die Erfassung verändert NICHT den Vorrat. */
 (function(){
   'use strict';
   if(window.__modFoodExtrasV828)return;
@@ -73,9 +72,9 @@
       (catalog?'<label>Produkt suchen<input type="search" name="search" value="'+esc(term)+'" placeholder="z. B. Red Bull, HOLY, Schokolade" data-extra-search autocomplete="off"></label>'+
         '<label>Produkt<select name="product" data-extra-product>'+productOptions()+'</select></label>'+
         '<div class="food-extra-fields-v828"><label>Menge<input name="quantity" type="number" step="0.1" min="0.1" inputmode="decimal" value="'+esc(p?initialQty(p):100)+'" required data-extra-quantity></label>'+
-        '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output></label></div>'+
+        '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output>'+(p&&bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?'<small>'+nf(p.product_data.weight_per_tablet_g)+' g je Tablette (hinterlegt)</small>':'')+'</label></div>'+
         '<p class="food-extra-preview-v828" data-extra-preview>'+esc(p?'Nährwerte werden berechnet.':'Bitte ein Produkt auswählen.')+'</p>'+
-        '<div class="food-extra-missing-v832" data-extra-missing-macros hidden><p class="food-extra-help-v828">Für diesen Artikel fehlen vollständige Kalorien-/Eiweißwerte. Bitte die Nährwerte für die tatsächlich verzehrte Menge eintragen. Unbekannte Werte nicht einfach als 0 annehmen.</p>'+
+        '<div class="food-extra-missing-v832" data-extra-missing-macros hidden><p class="food-extra-help-v828">Für diesen Artikel sind Kalorien/Eiweiß nicht vollständig belegt. Angaben sind freiwillig. Ohne verlässliche Werte wird die Einnahme trotzdem gespeichert; die Tagesbilanz markiert die Lücke. Unbekannt ist nicht gleich null.</p>'+
         '<div class="food-extra-macros-v828">'+[
           ['calories_kcal','Kalorien (kcal)'],['protein_g','Protein (g)'],
           ['carbohydrates_g','Kohlenhydrate (g)'],['fat_g','Fett (g)'],
@@ -84,9 +83,9 @@
       :'<label>Bezeichnung<input name="title" maxlength="160" placeholder="z. B. 2 Stück Schokolade" required></label>'+
         '<div class="food-extra-fields-v828"><label>Menge<input name="quantity" type="number" step="0.1" min="0.1" value="1" inputmode="decimal" required></label>'+
         '<label>Einheit<select name="unit"><option>Portion</option><option>Stück</option><option>g</option><option>ml</option></select></label></div>'+
-        '<p class="food-extra-help-v828">Nährwerte für genau die eingetragene Menge (nicht je 100 g):</p>'+
+        '<p class="food-extra-help-v828">Nährwerte für genau die eingetragene Menge (nicht je 100 g). Unbekannte Werte leer lassen:</p>'+
         '<div class="food-extra-macros-v828">'+[
-          ['calories_kcal','Kalorien (kcal)',true],['protein_g','Protein (g)',true],
+          ['calories_kcal','Kalorien (kcal)',false],['protein_g','Protein (g)',false],
           ['carbohydrates_g','Kohlenhydrate (g)',false],['fat_g','Fett (g)',false],
           ['sugars_g','Zucker (g)',false],['salt_g','Salz (g)',false],['caffeine_mg','Koffein (mg)',false]
         ].map(([key,label,required])=>'<label>'+label+'<input name="'+key+'" type="number" min="0" step="0.01" inputmode="decimal" '+(required?'required':'')+'></label>').join('')+'</div>')+
@@ -97,11 +96,16 @@
   }
   function rowsHtml(){
     const sum=rows.reduce((a,r)=>({kcal:a.kcal+Number(r.calories_kcal||0),protein:a.protein+Number(r.protein_g||0),carbs:a.carbs+Number(r.carbohydrates_g||0),fat:a.fat+Number(r.fat_g||0)}),{kcal:0,protein:0,carbs:0,fat:0});
+    const incomplete=rows.filter(r=>!valid(r.calories_kcal)||!valid(r.protein_g)).length;
     return '<div class="food-extra-total-v828"><b>'+rows.length+' Zusatz'+(rows.length===1?'':'-Snacks')+'</b>'+
-      '<span>'+nf(sum.kcal,0)+' kcal · '+nf(sum.protein)+' g Protein</span></div>'+
+      '<span>'+nf(sum.kcal,0)+' kcal · '+nf(sum.protein)+' g Protein'+(incomplete?' (bekannte Werte)':'')+'</span></div>'+
+      (incomplete?'<p class="food-extra-help-v828">'+incomplete+' Eintrag'+(incomplete===1?' hat':'e haben')+' unbekannte Kalorien- oder Eiweißwerte. Tagesbilanz deshalb unvollständig, keine Nullwerte erfunden.</p>':'')+
       (rows.length?'<ul class="food-extra-list-v828">'+rows.map(r=>
-        '<li><div><strong>'+esc(r.title)+'</strong><small>'+esc(nf(r.quantity)+' '+r.unit)+' · '+nf(r.calories_kcal,0)+' kcal · '+nf(r.protein_g)+' g Protein'+
-        (r.carbohydrates_g!==null?' · KH '+nf(r.carbohydrates_g)+' g':'')+(r.fat_g!==null?' · Fett '+nf(r.fat_g)+' g':'')+'</small></div>'+
+        '<li><div><strong>'+esc(r.title)+'</strong><small>'+esc(nf(r.quantity)+' '+r.unit)+' · '+
+        (valid(r.calories_kcal)?nf(r.calories_kcal,0)+' kcal':'kcal unbekannt')+' · '+
+        (valid(r.protein_g)?nf(r.protein_g)+' g Protein':'Protein unbekannt')+
+        (r.carbohydrates_g!==null?' · KH '+nf(r.carbohydrates_g)+' g':'')+
+        (r.fat_g!==null?' · Fett '+nf(r.fat_g)+' g':'')+'</small></div>'+
         '<div class="food-extra-row-actions-v828"><button type="button" data-extra-edit="'+esc(r.id)+'" aria-label="'+esc(r.title)+' bearbeiten" title="Bearbeiten">✎</button>'+
         '<button type="button" data-extra-delete="'+esc(r.id)+'" aria-label="'+esc(r.title)+' löschen" title="Entfernen">✕</button></div></li>').join('')+'</ul>':
       '<p class="food-extra-empty-v828">Noch kein zusätzlicher Snack eingetragen.</p>');
@@ -126,7 +130,7 @@
     const qty=decimal(form.elements.quantity.value);
     if(!(qty>0)){output.textContent='Bitte eine gültige Menge eingeben.';return;}
     if(!hasMacros(p)){
-      output.textContent='Produkt gefunden. Nährwerte fehlen teilweise und müssen für '+nf(qty)+' '+bases(p)+' ergänzt werden.';
+      output.textContent='Menge: '+nf(qty)+' '+bases(p)+(bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?' à '+nf(p.product_data.weight_per_tablet_g)+' g':'')+'. Nicht belegte Nährwerte bleiben offen; Speichern ist trotzdem möglich.';
       return;
     }
     const n=valuesFromCatalog(p,qty);
@@ -216,7 +220,7 @@
       let n,source;
       if(hasMacros(p)&&['g','ml'].includes(bases(p))){
         n=valuesFromCatalog(p,qty);
-        source='Produktstamm: Herstellerwerte je 100 '+bases(p);
+        source=(p.product_data?.nutrition_is_reference?'Produktstamm: dokumentierte Referenzwerte je 100 ':'Produktstamm: Herstellerwerte je 100 ')+bases(p);
       }else{
         const read=(key,required=false)=>{
           const raw=String(form.elements[key]?.value??'').trim();
@@ -225,10 +229,10 @@
           if(!Number.isFinite(value)||value<0)throw new Error('Ungültiger Nährwert: '+key);
           return value;
         };
-        n={calories_kcal:read('calories_kcal',true),protein_g:read('protein_g',true),
+        n={calories_kcal:read('calories_kcal'),protein_g:read('protein_g'),
           carbohydrates_g:read('carbohydrates_g'),fat_g:read('fat_g'),
           sugars_g:read('sugars_g'),salt_g:read('salt_g'),caffeine_mg:read('caffeine_mg')};
-        source='Fehlende Produkt-Nährwerte manuell für verzehrte Menge ergänzt';
+        source=valid(n.calories_kcal)&&valid(n.protein_g)?'Produktstamm: Kalorien und Eiweiß manuell ergänzt':'Produktstamm: Gewicht/Menge gesichert, Makronährwerte teilweise unbekannt';
       }
       entry={product_id:p._inventoryOnly?null:p.id,title:productName(p),
         kind:bases(p)==='ml'?'drink':'snack',quantity:qty,unit:bases(p),...n,nutrition_source:source};
@@ -241,7 +245,7 @@
         return n;
       };
       entry={product_id:null,title,kind:form.elements.unit.value==='ml'?'drink':'snack',quantity:qty,unit:form.elements.unit.value,
-        calories_kcal:read('calories_kcal',true),protein_g:read('protein_g',true),
+        calories_kcal:read('calories_kcal'),protein_g:read('protein_g'),
         carbohydrates_g:read('carbohydrates_g'),fat_g:read('fat_g'),
         sugars_g:read('sugars_g'),salt_g:read('salt_g'),caffeine_mg:read('caffeine_mg'),
         nutrition_source:'Manuell vom Nutzer eingegeben'};
@@ -338,6 +342,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V832',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V833',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
