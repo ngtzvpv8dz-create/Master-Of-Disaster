@@ -1,4 +1,4 @@
-/* V833 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
+/* V834 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
    Bestätigte Portionen ohne erneute Gewichtsabfrage; fehlende Makros bleiben unbekannt.
    Referenzwerte aus Produktstamm nutzen; die Erfassung verändert NICHT den Vorrat. */
 (function(){
@@ -14,10 +14,24 @@
   const client=()=>window.getSupabaseClient?.();
   function productName(p){return p?._inventoryOnly?'Vorrat · '+p.product_name:[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');}
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
+  // Stückprodukte mit dokumentierter essbarer Portionsmenge: kein erneutes Wiegen verlangen.
+  // Für Eier die explizite Schätzung verwenden, niemals das Schalengewicht.
+  function ediblePieceWeight(p){
+    const d=p?.product_data||{};
+    const w=Number(d.edible_weight_per_piece_g??d.edible_weight_per_piece_estimated_g);
+    return Number.isFinite(w)&&w>0&&w<=10000?w:null;
+  }
+  function edibleWeightNote(p){
+    const g=ediblePieceWeight(p);
+    if(!g)return '';
+    const estimated=valid(p?.product_data?.edible_weight_per_piece_estimated_g)&&!valid(p?.product_data?.edible_weight_per_piece_g);
+    return (estimated?'ca. ':'')+nf(g)+' g essbarer Anteil je Stück'+(estimated?' (geschätzt)':'');
+  }
   function bases(p){
     if(!p)return 'g';
     // Einheiten ohne belastbare 100-g-Nährwertbasis (z. B. Brausetabletten).
     const stockUnit=String(p.inventory_unit||'');
+    if(stockUnit==='Stück'&&ediblePieceWeight(p))return 'Stück';
     if(!hasMacros(p)&&['Stück','Portion','Päckchen','Kapsel'].includes(stockUnit))return stockUnit;
     const basis=String(p?.nutrition_per_100?.basis||p?.product_data?.nutrition_basis||'').toLowerCase();
     return /100.ml|per_100_ml/.test(basis)||p?.package_unit==='ml'?'ml':'g';
@@ -37,7 +51,7 @@
     return 100;
   }
   function valuesFromCatalog(p,quantity){
-    const factor=quantity/100,n=p.nutrition_per_100||{};
+    const factor=(bases(p)==='Stück'&&ediblePieceWeight(p)?quantity*ediblePieceWeight(p):quantity)/100,n=p.nutrition_per_100||{};
     const scaled=key=>valid(n[key])?Math.round(Number(n[key])*factor*100)/100:null;
     const productData=p.product_data||{};
     let caffeine=null;
@@ -72,7 +86,10 @@
       (catalog?'<label>Produkt suchen<input type="search" name="search" value="'+esc(term)+'" placeholder="z. B. Red Bull, HOLY, Schokolade" data-extra-search autocomplete="off"></label>'+
         '<label>Produkt<select name="product" data-extra-product>'+productOptions()+'</select></label>'+
         '<div class="food-extra-fields-v828"><label>Menge<input name="quantity" type="number" step="0.1" min="0.1" inputmode="decimal" value="'+esc(p?initialQty(p):100)+'" required data-extra-quantity></label>'+
-        '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output>'+(p&&bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?'<small>'+nf(p.product_data.weight_per_tablet_g)+' g je Tablette (hinterlegt)</small>':'')+'</label></div>'+
+        '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output>'+
+          (p&&bases(p)==='Stück'&&ediblePieceWeight(p)?'<small>'+esc(edibleWeightNote(p))+'</small>':
+          p&&bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?'<small>'+nf(p.product_data.weight_per_tablet_g)+' g je Tablette (hinterlegt)</small>':'')+
+        '</label></div>'+
         '<p class="food-extra-preview-v828" data-extra-preview>'+esc(p?'Nährwerte werden berechnet.':'Bitte ein Produkt auswählen.')+'</p>'+
         '<div class="food-extra-missing-v832" data-extra-missing-macros hidden><p class="food-extra-help-v828">Für diesen Artikel sind Kalorien/Eiweiß nicht vollständig belegt. Angaben sind freiwillig. Ohne verlässliche Werte wird die Einnahme trotzdem gespeichert; die Tagesbilanz markiert die Lücke. Unbekannt ist nicht gleich null.</p>'+
         '<div class="food-extra-macros-v828">'+[
@@ -134,7 +151,8 @@
       return;
     }
     const n=valuesFromCatalog(p,qty);
-    output.textContent=nf(n.calories_kcal,1)+' kcal · '+nf(n.protein_g)+' g Protein · '+nf(n.carbohydrates_g)+' g KH · '+nf(n.fat_g)+' g Fett';
+    output.textContent=nf(n.calories_kcal,1)+' kcal · '+nf(n.protein_g)+' g Protein · '+nf(n.carbohydrates_g)+' g KH · '+nf(n.fat_g)+' g Fett'+
+      (bases(p)==='Stück'&&ediblePieceWeight(p)?' · '+edibleWeightNote(p):'');
   }
   async function fetchPages(build){
     const result=[],page=500;
@@ -218,9 +236,11 @@
     if(mode==='catalog'){
       const p=chosen();if(!p)throw new Error('Bitte ein Produkt auswählen.');
       let n,source;
-      if(hasMacros(p)&&['g','ml'].includes(bases(p))){
+      if(hasMacros(p)&&(['g','ml'].includes(bases(p))||(bases(p)==='Stück'&&ediblePieceWeight(p)))){
         n=valuesFromCatalog(p,qty);
-        source=(p.product_data?.nutrition_is_reference?'Produktstamm: dokumentierte Referenzwerte je 100 ':'Produktstamm: Herstellerwerte je 100 ')+bases(p);
+        const ref=Boolean(p.product_data?.nutrition_is_reference||p.product_data?.source_nutrition_not_from_package);
+        source=(ref?'Produktstamm: dokumentierte Referenzwerte je 100 ':'Produktstamm: Herstellerwerte je 100 ')+
+          (bases(p)==='Stück'?'g, '+edibleWeightNote(p):bases(p));
       }else{
         const read=(key,required=false)=>{
           const raw=String(form.elements[key]?.value??'').trim();
@@ -342,6 +362,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V833',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V834',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
