@@ -1,4 +1,4 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#000000"><title>Dingsi Lab · Homescreen V25</title><link rel="manifest" href="./dingsi-lab.webmanifest"><style>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#000000"><title>Dingsi Lab · Homescreen V26</title><link rel="manifest" href="./dingsi-lab.webmanifest"><style>
 *{box-sizing:border-box}html{background:#12151b}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 7% 10%,#34242b 0,transparent 47%),radial-gradient(ellipse at 98% 86%,#183038 0,transparent 56%),#0d1016;color:#faf4f0;font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}
 header{position:sticky;top:0;z-index:5;text-align:center;padding:calc(env(safe-area-inset-top) + 10px) 10px 12px;background:linear-gradient(180deg,#16191eea,#16191edc);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid #f0c58d42;box-shadow:0 7px 20px #0004}
 h1{margin:0;display:flex;align-items:center;justify-content:center;white-space:nowrap;font-size:clamp(1.17rem,5.15vw,2rem);font-weight:950;letter-spacing:-.025em;line-height:1.15}
@@ -139,14 +139,16 @@ header,main,#toast{position:relative;z-index:1}
 .grid{column-gap:clamp(16px,3.9vw,22px);row-gap:clamp(29px,7.2vw,35px)}
 .name{top:calc(100% + 1px)}
 @media(max-height:730px){.grid{row-gap:clamp(23px,6.1vw,29px)}}
+
+.lab-waves{-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 78%,transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 78%,transparent 100%)}
 </style></head><body><svg class="lab-waves" aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
 <defs>
 <linearGradient id="v24violet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#805a9e" stop-opacity=".31"/><stop offset=".55" stop-color="#4b426e" stop-opacity=".20"/><stop offset="1" stop-color="#192637" stop-opacity=".04"/></linearGradient>
 <linearGradient id="v24blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5c72ae" stop-opacity=".14"/><stop offset=".52" stop-color="#436c96" stop-opacity=".31"/><stop offset="1" stop-color="#253b57" stop-opacity=".12"/></linearGradient>
 <linearGradient id="v24teal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2e6478" stop-opacity=".12"/><stop offset=".52" stop-color="#3b9694" stop-opacity=".31"/><stop offset="1" stop-color="#245967" stop-opacity=".27"/></linearGradient>
-<linearGradient id="v24glowV" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#b68ad8" stop-opacity="0"/><stop offset=".22" stop-color="#c8a4f0" stop-opacity=".02"/><stop offset=".42" stop-color="#e2adff" stop-opacity="1"/><stop offset=".59" stop-color="#b77de4" stop-opacity=".18"/><stop offset=".84" stop-color="#ad83e1" stop-opacity="0"/></linearGradient>
-<linearGradient id="v24glowB" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8aa8eb" stop-opacity="0"/><stop offset=".28" stop-color="#a6c7ff" stop-opacity=".10"/><stop offset=".58" stop-color="#a6c9ff" stop-opacity="1"/><stop offset=".78" stop-color="#6d9ed7" stop-opacity=".04"/><stop offset="1" stop-color="#6d9ed7" stop-opacity="0"/></linearGradient>
-<linearGradient id="v24glowT" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#78e4d5" stop-opacity="0"/><stop offset=".15" stop-color="#78e4d5" stop-opacity=".95"/><stop offset=".36" stop-color="#78e4d5" stop-opacity=".12"/><stop offset=".7" stop-color="#78e4d5" stop-opacity="0"/><stop offset="1" stop-color="#78e4d5" stop-opacity="0"/></linearGradient>
+<linearGradient id="v24glowV" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#b68ad8" stop-opacity="0"/><stop offset=".22" stop-color="#c8a4f0" stop-opacity=".02"/><stop offset=".42" stop-color="#f041ff" stop-opacity="1"/><stop offset=".59" stop-color="#b77de4" stop-opacity=".18"/><stop offset=".84" stop-color="#ad83e1" stop-opacity="0"/></linearGradient>
+<linearGradient id="v24glowB" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8aa8eb" stop-opacity="0"/><stop offset=".28" stop-color="#a6c7ff" stop-opacity=".10"/><stop offset=".58" stop-color="#368bff" stop-opacity="1"/><stop offset=".78" stop-color="#6d9ed7" stop-opacity=".04"/><stop offset="1" stop-color="#6d9ed7" stop-opacity="0"/></linearGradient>
+<linearGradient id="v24glowT" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#00f5ce" stop-opacity="0"/><stop offset=".15" stop-color="#00f5ce" stop-opacity=".95"/><stop offset=".36" stop-color="#00f5ce" stop-opacity=".12"/><stop offset=".7" stop-color="#00f5ce" stop-opacity="0"/><stop offset="1" stop-color="#00f5ce" stop-opacity="0"/></linearGradient>
 <filter id="v24shadow" x="-35%" y="-90%" width="170%" height="280%"><feGaussianBlur stdDeviation="11"/></filter>
 <filter id="v24halo" x="-40%" y="-400%" width="180%" height="900%"><feGaussianBlur stdDeviation="5"/></filter>
 </defs>
