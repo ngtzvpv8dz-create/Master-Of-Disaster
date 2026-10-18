@@ -2822,3 +2822,53 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   .food-chicken-piece-v822{align-items:flex-start;flex-direction:column}
   .food-chicken-piece-v822 button{max-width:100%}
 }
+
+
+/* V836 | Vorrat: klare visuelle Trennung von Einfrieren, TK und Auftauen. */
+.food-freezer-section-v784.is-freeze-v790 .food-freezer-line-v784.food-freezer-compact-v790.is-freeze-planned-v822{
+  position:relative;
+  overflow:hidden;
+  border-color:rgba(64,139,188,.38);
+  background:linear-gradient(114deg,#fbfdfd 0%,#f0f9ff 47%,#c6e9fc 100%);
+}
+.food-freezer-section-v784.is-freeze-v790 .food-freezer-line-v784.food-freezer-compact-v790.is-frozen-v822{
+  border-color:rgba(61,137,193,.34);
+  background:linear-gradient(135deg,#f4fbff 0%,#e1f3ff 70%,#cce8fa 100%);
+}
+.food-freezer-section-v784.is-thaw-v790 .food-thaw-entry-v739.food-stock-thaw-v793.is-thawing-v739{
+  border-color:rgba(215,158,71,.38);
+  background:
+    radial-gradient(circle at 96% 4%,rgba(255,183,84,.42),transparent 45%),
+    linear-gradient(130deg,#f0f9ff 0%,#e5f2f9 56%,#ffebd0 100%);
+}
+.food-freezer-section-v784.is-thaw-v790 .food-thaw-entry-v739.food-stock-thaw-v793.is-frozen-v739{
+  border-color:rgba(65,150,193,.3);
+  background:linear-gradient(130deg,#f8fcff 0%,#e7f6fd 64%,#d2ebfa 100%);
+}
+.food-freezer-section-v784 .food-freezer-compact-v790 strong{
+  font-size:12px;
+}
+.food-freezer-section-v784 .food-freezer-compact-v790 small{
+  font-size:10.5px;
+  line-height:1.5;
+}
+.food-thaw-more-piece-v836{
+  position:relative;
+  z-index:3;
+  margin-top:7px;
+  padding:8px 11px;
+  align-self:start;
+  width:fit-content;
+  max-width:100%;
+  border:1px solid rgba(75,136,181,.4);
+  border-radius:10px;
+  background:linear-gradient(125deg,#f4fbff,#deeffb);
+  color:#315e78;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.4;
+  text-align:left;
+  cursor:pointer;
+}
+.food-thaw-more-piece-v836:focus-visible{outline:2px solid #357b9f;outline-offset:2px}
