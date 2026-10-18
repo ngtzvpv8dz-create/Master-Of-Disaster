@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f6fc">
+<title>Dingsi Lab · Icon-Ische Variacionen</title>
+<style>
+*{box-sizing:border-box}
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#334359;background:#f7f6fc;color-scheme:light}
+body{margin:0;min-height:100dvh;background:linear-gradient(170deg,#f7f6fc,#f4fbf8);font-size:14px}
+button,input{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,label:focus-within{outline:3px solid #8e9ae7;outline-offset:3px}
+main{width:min(740px,100%);margin:0 auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(42px + env(safe-area-inset-bottom,0px))}
+.top{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:24px}
+.back{display:inline-flex;align-items:center;gap:7px;border:1px solid #d6dce8;background:#ffffffd9;color:#485c76;padding:10px 12px;text-decoration:none;border-radius:12px;font-size:12px;font-weight:800}
+.lab-id{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#8192ab;font-weight:850}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:850;color:#9b78b5}
+h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:7px 0 10px;color:#34445d}
+.lead{color:#687a91;line-height:1.55;margin:0 0 22px;max-width:590px}
+.section-label{display:block;font-size:11px;font-weight:850;letter-spacing:.095em;text-transform:uppercase;color:#697c94;margin:19px 0 9px}
+.control-panel{border:1px solid #dce3ed;border-radius:22px;background:#ffffffc7;padding:14px;box-shadow:0 8px 25px #8193aa15}
+.switches{display:flex;flex-wrap:wrap;gap:7px}
+.switches button,.variant-buttons button{border:1px solid #d9dfeb;color:#52617a;background:#f9fafde8;border-radius:12px;padding:10px 13px;font-size:12px;font-weight:800}
+.switches button[aria-pressed=true],.variant-buttons button[aria-pressed=true]{color:#4e4366;background:linear-gradient(120deg,#f5dce9,#e3e1fa 70%,#dcf3ee);border-color:#c9b8dc;box-shadow:0 0 0 1px #ccbfe1 inset}
+#photo-label{position:relative;display:inline-flex;align-items:center;justify-content:center;border:1px dashed #a6b5c9;border-radius:12px;padding:9px 13px;font-size:12px;font-weight:800;color:#536f86;background:#fff;cursor:pointer}
+#photo{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.hint{margin:10px 0 0;color:#7b8a9d;font-size:11px;line-height:1.5}
+.variant-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.variant-buttons button{min-width:0;padding:10px 4px;line-height:1.3}
+.variant-buttons span{display:block;font-size:14px;margin-bottom:2px}
+.variant-buttons small{display:block;font-size:10px;font-weight:650}
+.showcase{margin-top:15px;border-radius:26px;overflow:hidden;border:1px solid #dbe3ed;background:#fff;box-shadow:0 14px 35px #617e9c1a}
+.showcase-header{padding:16px 18px 12px;background:#ffffffd9;border-bottom:1px solid #e4e7ef}
+.showcase-header strong{display:block;font-size:17px;color:#35425e;letter-spacing:-.015em}
+.showcase-header small{display:block;margin-top:5px;color:#65748b;line-height:1.5}
+.preview{padding:25px 12px 24px;position:relative;isolation:isolate;min-height:248px;transition:background .18s}
+.preview[data-surface="dark"]{background:radial-gradient(ellipse at 12% 10%,#51406270,transparent 50%),radial-gradient(ellipse at 91% 94%,#2e777077,transparent 57%),#161b29;--caption:#f4f3fc}
+.preview[data-surface="pastel"]{background:radial-gradient(ellipse at 0 12%,#f2dceec7,transparent 52%),radial-gradient(ellipse at 100% 84%,#cceee9ce,transparent 55%),linear-gradient(160deg,#fefdfd,#edf1fb 75%,#f6fffb);--caption:#42506b}
+.preview[data-surface="checker"]{background-color:#fff;background-image:linear-gradient(45deg,#d0d5df 25%,transparent 25%),linear-gradient(-45deg,#d0d5df 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#d0d5df 75%),linear-gradient(-45deg,transparent 75%,#d0d5df 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;--caption:#303e54}
+.preview[data-surface="photo"]{background-color:#7c9b8d;background-image:var(--photo-background);background-size:cover;background-position:center;--caption:white}
+.preview[data-surface="photo"]::before{content:"";position:absolute;inset:0;background:#13272b42;z-index:-1}
+.icon-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:620px;margin:auto;gap:8px;align-items:center;justify-items:center}
+.art-wrap{width:100%;max-width:160px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;--main:#85c6ba;--main2:#d4ede3;--edge:#356b6d;--paper:#fffefa;--line:#426977;--warm:#e8ac63;--highlight:#fff9e8}
+.art-wrap[data-motif="food"]{--main:#c99567;--main2:#f3ce9c;--edge:#835a53;--paper:#fff6d9;--line:#866047;--warm:#de6f58;--highlight:#e8f3bf}
+.art-wrap[data-motif="kisto"]{--main:#8faed9;--main2:#dbe8fa;--edge:#5277aa;--paper:#fffdf8;--line:#54769d;--warm:#e8bf80;--highlight:#e4f4ff}
+.icon-svg{display:block;width:100%;max-width:155px;aspect-ratio:1;overflow:visible;fill:none;flex:none;filter:drop-shadow(0 8px 7px #0c1a2542)}
+.art-wrap figcaption{margin-top:3px;font-size:clamp(9px,2.5vw,12px);letter-spacing:.09em;font-weight:900;color:var(--caption);text-shadow:0 1px 3px #0915222a;white-space:nowrap}
+.art-wrap{margin:0}
+.icon-svg .main{fill:url(#grad-todo)}
+.icon-svg .main2{fill:var(--main2)}
+.icon-svg .edge{fill:var(--edge)}
+.icon-svg .paper{fill:var(--paper)}
+.icon-svg .line{stroke:var(--line);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.icon-svg .warm{fill:var(--warm)}
+.icon-svg .highlight{fill:var(--highlight)}
+.icon-svg .gloss{fill:#ffffff54}
+.icon-svg .art-outline{stroke:var(--edge);stroke-width:2.5;stroke-linejoin:round}
+.icon-svg .grad-start{stop-color:var(--main2)}
+.icon-svg .grad-end{stop-color:var(--main)}
+/* All styles use exactly the same motifs and preserve true SVG alpha. */
+.preview[data-variant="I01"] .icon-svg{filter:drop-shadow(0 9px 6px #18232a3b)}
+.preview[data-variant="I02"] .art-wrap{--main:#b4d8cf;--main2:#ecfaf3;--edge:#7aa99e;--paper:#fffdfc;--line:#6f9697;--warm:#f0b99b;--highlight:#faf9d5}
+.preview[data-variant="I02"] .art-wrap[data-motif=food]{--main:#e3ba9f;--main2:#f9e9cf;--edge:#c99978;--line:#b07f69}
+.preview[data-variant="I02"] .art-wrap[data-motif=kisto]{--main:#b8cbed;--main2:#edf2fd;--edge:#9ab1dc;--line:#7792b8}
+.preview[data-variant="I02"] .icon-svg{filter:drop-shadow(0 6px 11px #54596b30) saturate(.83);transform:scale(1.03)}
+.preview[data-variant="I03"] .icon-svg{filter:drop-shadow(0 3px 1px #26334422)}
+.preview[data-variant="I03"] .icon-svg .grad-start,.preview[data-variant="I03"] .icon-svg .grad-end{stop-color:var(--main)}
+.preview[data-variant="I03"] .icon-svg .gloss{display:none}
+.preview[data-variant="I03"] .icon-svg .art-outline{stroke-width:2}
+.preview[data-variant="I04"] .icon-svg{filter:drop-shadow(0 2px 8px #8bcce92a)}
+.preview[data-variant="I04"] .icon-svg .main,.preview[data-variant="I04"] .icon-svg .main2,.preview[data-variant="I04"] .icon-svg .edge,.preview[data-variant="I04"] .icon-svg .paper,.preview[data-variant="I04"] .icon-svg .warm,.preview[data-variant="I04"] .icon-svg .highlight{fill:transparent;stroke:var(--main);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.preview[data-variant="I04"] .icon-svg .paper{stroke:var(--line)}
+.preview[data-variant="I04"] .icon-svg .line{stroke:var(--edge);stroke-width:4.3}
+.preview[data-variant="I04"] .icon-svg .gloss{display:none}
+.preview[data-variant="I04"] .icon-svg .art-outline{stroke-width:3}
+.preview[data-variant="I04"][data-surface="pastel"] .art-wrap{--main:#4f928e;--edge:#426f84;--line:#526489}
+.preview[data-variant="I04"][data-surface="pastel"] .art-wrap[data-motif=food]{--main:#a86d50;--edge:#92605e;--line:#986c4d}
+.preview[data-variant="I04"][data-surface="pastel"] .art-wrap[data-motif=kisto]{--main:#517ca8;--edge:#50749e;--line:#6376a5}
+.showcase-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid #e3e7ef;background:#ffffffee;padding:13px 16px}
+.alpha-note{color:#66788e;font-size:11px;line-height:1.45;max-width:440px}
+.choice{border:1px solid #cbb8dd;background:#f6eaf5;color:#714d7a;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:850;white-space:nowrap}
+.choice[aria-pressed=true]{background:#dff5e8;color:#376b50;border-color:#a2d9b4}
+.saved{font-size:12px;color:#52617a;min-height:18px;margin:11px 0}
+.note{margin-top:16px;color:#728399;font-size:11px;line-height:1.55}
+@media(max-width:370px){main{padding-left:10px;padding-right:10px}.control-panel{padding:11px}.switches button{padding:9px}.variant-buttons button{padding:8px 2px}.icon-grid{gap:1px}.preview{padding-left:5px;padding-right:5px}.art-wrap figcaption{font-size:9px}}
+</style>
+</head>
+<body>
+<main>
+ <div class="top"><a class="back" href="./dingsi-lab.html?v=36">← Dingsi Lab</a><span class="lab-id">Nur Testumgebung</span></div>
+ <div class="eyebrow">Design-Experiment · echte Transparenz</div>
+ <h1>Icon-Ische Variacionen</h1>
+ <p class="lead">Motiv bleibt Motiv, aber der alte eingebackene Kachelrand fliegt raus. Hier testen wir nur drei neu gezeichnete SVG-Motive und vier unterschiedliche Stile.</p>
+ <section class="control-panel" aria-label="Vorschau einstellen">
+  <span class="section-label" style="margin-top:0">Farbschema</span>
+  <div class="switches" role="group" aria-label="Farbschema">
+   <button type="button" data-theme="dark" aria-pressed="false">🌙 Dunkel</button>
+   <button type="button" data-theme="pastel" aria-pressed="true">☀️ Hell / Pastell</button>
+  </div>
+  <span class="section-label">Hintergrund zum Rand-Testen</span>
+  <div class="switches" role="group" aria-label="Testhintergrund">
+   <button type="button" data-bg="theme" aria-pressed="true">Theme</button>
+   <button type="button" data-bg="checker" aria-pressed="false">▦ Transparenz</button>
+   <button type="button" data-bg="photo" aria-pressed="false">🏞 Foto</button>
+   <label id="photo-label">+ Eigenes Bild<input id="photo" type="file" accept="image/*" aria-label="Eigenes Hintergrundbild auswählen"></label>
+  </div>
+  <p class="hint">Dein Foto wird nur lokal im Browser angezeigt, nicht hochgeladen. Der Schachbrett-Hintergrund macht jeden störenden Rand sofort sichtbar.</p>
+  <span class="section-label">Icon-Varianten</span>
+  <div class="variant-buttons" role="group" aria-label="Icon-Stil">
+   <button type="button" data-variant="I01" aria-pressed="true"><span>#I01</span><small>Soft 3D</small></button>
+   <button type="button" data-variant="I02" aria-pressed="false"><span>#I02</span><small>Pastell Clay</small></button>
+   <button type="button" data-variant="I03" aria-pressed="false"><span>#I03</span><small>Clean Flat</small></button>
+   <button type="button" data-variant="I04" aria-pressed="false"><span>#I04</span><small>Line Art</small></button>
+  </div>
+ </section>
+ <section class="showcase" aria-label="Live-Vorschau der Icon-Varianten">
+  <div class="showcase-header"><strong id="variant-title">#I01 · Soft 3D</strong><small id="variant-description">Weiche Lichtkanten und dezenter Schatten. Nur die Motive, ohne quadratischen Hintergrund.</small></div>
+  <div class="preview" id="preview" data-variant="I01" data-surface="pastel">
+   <div class="icon-grid" id="icon-grid"></div>
+  </div>
+  <div class="showcase-foot">
+   <span class="alpha-note">✓ Echte Vektorformen · transparenter Hintergrund · kein eingebauter schwarzer oder weißer Kachelrand</span>
+   <button id="fave" type="button" class="choice" aria-pressed="false">♡ Stil vormerken</button>
+  </div>
+ </section>
+ <p class="saved" id="saved" role="status" aria-live="polite"></p>
+ <p class="note">Die 14 bisherigen Homescreen-Icons bleiben unverändert. Eine Übernahme in den Homescreen erfolgt erst nach deiner Auswahl. Die Nummern #I01–#I04 bleiben für diesen Versuch fest.</p>
+</main>
+<script>
+(function(){
+ 'use strict';
+ var KEY='mod-dingsi-lab-icon-variacionen-v1';
+ var LABELS={
+  I01:['Soft 3D','Weiche Lichtkanten, plastische Motive und sanfter Schatten. Keine Kachel als Bild.'],
+  I02:['Pastell Clay','Matt, freundlich, leicht rundlich und weniger Kontrast.'],
+  I03:['Clean Flat','Klarere Flächen, fast keine Lichtreflexe und minimale Tiefe.'],
+  I04:['Line Art','Freigestellte Konturen statt voller Flächen, besonders leicht auf Fotohintergründen.']
+ };
+ var state={variant:'I01',theme:'pastel',background:'theme',liked:[]};
+ try{
+  var saved=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(saved && LABELS[saved.variant]){
+   state.variant=saved.variant;
+   if(saved.theme==='dark'||saved.theme==='pastel')state.theme=saved.theme;
+   if(saved.background==='theme'||saved.background==='checker')state.background=saved.background;
+   if(Array.isArray(saved.liked))state.liked=saved.liked.filter(function(x){return !!LABELS[x]});
+  }
+ }catch(_){}
+ var preview=document.getElementById('preview');
+ var grid=document.getElementById('icon-grid');
+ var photo=document.getElementById('photo');
+ var photoUrl=null;
+ function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(_){}}
+ function svgStart(id){return '<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="'+id+' – transparentes Vektormotiv"><defs><linearGradient id="grad-'+id+'" x1="0" y1="0" x2=".85" y2="1"><stop class="grad-start" offset="0"/><stop class="grad-end" offset="1"/></linearGradient></defs>';}
+ function icon(id){
+  var start=svgStart(id), end='</svg>';
+  if(id==='todo')return start+
+   '<g transform="rotate(-5 88 92)">'+
+   '<rect class="edge art-outline" x="36" y="29" width="108" height="133" rx="17"/>'+
+   '<rect class="main art-outline" x="42" y="35" width="96" height="120" rx="12"/>'+
+   '<rect class="paper art-outline" x="51" y="48" width="79" height="96" rx="9"/>'+
+   '<path class="gloss" d="M53 53q2-4 7-4h62q4 0 6 3H53z"/>'+
+   '<rect class="edge" x="67" y="21" width="45" height="20" rx="8"/>'+
+   '<rect class="warm" x="79" y="15" width="21" height="18" rx="8"/>'+
+   '<rect class="main2 art-outline" x="60" y="63" width="16" height="16" rx="4"/>'+
+   '<rect class="main2 art-outline" x="60" y="91" width="16" height="16" rx="4"/>'+
+   '<rect class="main2 art-outline" x="60" y="119" width="16" height="16" rx="4"/>'+
+   '<path class="line" d="m64 70 5 5 9-12M64 98l5 5 9-12M64 126l5 5 9-12M86 70h34M86 77h26M86 98h34M86 105h21M86 126h34M86 133h24"/>'+
+   '</g><g transform="rotate(24 136 103)"><rect class="edge art-outline" x="130" y="65" width="12" height="73" rx="5"/><rect class="warm" x="132" y="72" width="8" height="45" rx="3"/><path class="highlight" d="m131 138 5 16 6-16z"/></g>'+end;
+  if(id==='food')return start+
+   '<path class="main2 art-outline" d="M55 109q-19-29-5-51 17-15 32 14l6 33z"/>'+
+   '<circle class="warm art-outline" cx="74" cy="86" r="23"/>'+
+   '<path class="edge" d="M68 65q-12-16 0-21 10 7 9 21 13-16 21-7-2 10-17 12z"/>'+
+   '<path class="main art-outline" d="M99 98q-12-48 10-60 23 12 9 60z"/>'+
+   '<path class="highlight" d="M105 57q0-16 5-21 6 5 6 18z"/>'+
+   '<path class="warm art-outline" d="M122 113q4-51 20-58 19 25-5 60z"/>'+
+   '<path class="line" d="m133 62 7-12M137 67l10-5"/>'+
+   '<path class="edge art-outline" d="M24 93q0-10 11-10h112q11 0 11 10v56q0 12-12 12H36q-12 0-12-12z"/>'+
+   '<path class="main art-outline" d="M30 97h121v58H30z"/>'+
+   '<path class="main2" d="M30 105h121v12H30zM30 130h121v11H30z"/>'+
+   '<path class="line" d="M64 99v55M115 99v55"/>'+
+   '<path class="warm art-outline" d="M30 90h121v15H30z"/>'+
+   '<rect class="highlight art-outline" x="75" y="110" width="31" height="29" rx="6"/>'+
+   '<path class="line" d="M82 120h16M82 127h12"/>'+end;
+  return start+
+   '<path class="edge art-outline" d="M22 51q0-11 12-11h42l12 12h57q12 0 12 12v74q0 12-12 12H34q-12 0-12-12z"/>'+
+   '<path class="main2 art-outline" d="M30 63q0-10 11-10h40l11 12h52q9 0 9 10v68H30z"/>'+
+   '<path class="main art-outline" d="M19 77q0-8 9-8h112q10 0 9 11l-8 69q-1 9-11 9H36q-12 0-13-11z"/>'+
+   '<path class="gloss" d="M27 77h113l-2 9H26z"/>'+
+   '<g transform="rotate(-9 118 116)">'+
+   '<rect class="edge art-outline" x="85" y="80" width="77" height="67" rx="8"/>'+
+   '<rect class="paper" x="90" y="86" width="67" height="57" rx="5"/>'+
+   '<path class="main2" d="M95 91h57v32H95z"/>'+
+   '<circle class="warm" cx="137" cy="98" r="7"/>'+
+   '<path class="main art-outline" d="m95 124 19-19 12 11 12-12 14 20z"/>'+
+   '<path class="line" d="M100 132h47"/>'+
+   '</g>'+end;
+ }
+ var MOTIFS=[['todo','TO-DO'],['food','FOOD'],['kisto','KISTOLOGIE']];
+ MOTIFS.forEach(function(item){
+  var fig=document.createElement('figure');
+  fig.className='art-wrap';
+  fig.dataset.motif=item[0];
+  fig.innerHTML=icon(item[0])+'<figcaption>'+item[1]+'</figcaption>';
+  grid.appendChild(fig);
+ });
+ function render(){
+  var surface=state.background==='theme'?state.theme:state.background;
+  preview.dataset.surface=surface;
+  preview.dataset.variant=state.variant;
+  document.querySelectorAll('[data-variant]').forEach(function(b){if(b.tagName==='BUTTON')b.setAttribute('aria-pressed',String(b.dataset.variant===state.variant));});
+  document.querySelectorAll('[data-theme]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.theme===state.theme));});
+  document.querySelectorAll('[data-bg]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.bg===state.background));});
+  document.getElementById('variant-title').textContent='#'+state.variant+' · '+LABELS[state.variant][0];
+  document.getElementById('variant-description').textContent=LABELS[state.variant][1];
+  var liked=state.liked.includes(state.variant);
+  var fave=document.getElementById('fave');
+  fave.textContent=liked?'♥ Vorgemerkt':'♡ Stil vormerken';
+  fave.setAttribute('aria-pressed',String(liked));
+  document.getElementById('saved').textContent=state.liked.length?'Vorgemerkt: '+state.liked.map(function(v){return '#'+v}).join(', '):'Noch keine Variante vorgemerkt.';
+  document.querySelector('meta[name="theme-color"]').setAttribute('content',surface==='dark'?'#161b29':'#f7f6fc');
+ }
+ document.querySelectorAll('[data-variant]').forEach(function(b){if(b.tagName==='BUTTON')b.addEventListener('click',function(){state.variant=b.dataset.variant;save();render();});});
+ document.querySelectorAll('[data-theme]').forEach(function(b){b.addEventListener('click',function(){state.theme=b.dataset.theme;if(state.background==='theme'){render();}else render();save();});});
+ document.querySelectorAll('[data-bg]').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.bg==='photo'&&!photoUrl){photo.click();return;}state.background=b.dataset.bg;save();render();});});
+ photo.addEventListener('change',function(){
+  var f=photo.files&&photo.files[0];
+  if(!f||!f.type.startsWith('image/'))return;
+  if(f.size>20*1024*1024){document.getElementById('saved').textContent='Bitte ein Foto unter 20 MB auswählen.';return;}
+  if(photoUrl)URL.revokeObjectURL(photoUrl);
+  photoUrl=URL.createObjectURL(f);
+  preview.style.setProperty('--photo-background','url("'+photoUrl+'")');
+  state.background='photo';render();
+  /* Photo remains browser-local and is never saved or uploaded. */
+ });
+ document.getElementById('fave').addEventListener('click',function(){
+  var i=state.liked.indexOf(state.variant);
+  if(i>=0)state.liked.splice(i,1);else state.liked.push(state.variant);
+  save();render();
+ });
+ render();
+})();
+</script>
+</body>
+</html>
