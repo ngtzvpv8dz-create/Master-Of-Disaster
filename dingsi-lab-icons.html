@@ -47,7 +47,9 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
 .icon-svg{display:block;width:100%;max-width:155px;aspect-ratio:1;overflow:visible;fill:none;flex:none;filter:drop-shadow(0 8px 7px #0c1a2542)}
 .art-wrap figcaption{margin-top:3px;font-size:clamp(9px,2.5vw,12px);letter-spacing:.09em;font-weight:900;color:var(--caption);text-shadow:0 1px 3px #0915222a;white-space:nowrap}
 .art-wrap{margin:0}
-.icon-svg .main{fill:url(#grad-todo)}
+.art-wrap[data-motif="todo"] .main{fill:url(#grad-todo)}
+.art-wrap[data-motif="food"] .main{fill:url(#grad-food)}
+.art-wrap[data-motif="kisto"] .main{fill:url(#grad-kisto)}
 .icon-svg .main2{fill:var(--main2)}
 .icon-svg .edge{fill:var(--edge)}
 .icon-svg .paper{fill:var(--paper)}
