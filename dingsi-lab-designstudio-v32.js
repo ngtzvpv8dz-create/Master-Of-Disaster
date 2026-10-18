@@ -21,10 +21,12 @@ const BASE={
  borderThickness:2,borderColor1:'#b5d9ec',borderColor2:'#e9fafc',borderOpacity:80,borderType:'linear',
  borderAngle:130,borderX:90,borderY:80,borderConcentration:40,borderContrast:65,
  imageMode:'placeholder',imageSize:94,imageX:85,imageY:62,imageOpacity:68,imageRadius:19,
- imageRotate:0,imageShadow:10,imageLayer:'back',imageData:null
+ imageRotate:0,imageShadow:10,imageLayer:'back',imageData:null,
+ frostEnabled:true,sunRayCount:8,sunRotation:0,sunFillEnabled:true,sunFillOpacity:28,
+ sunOutlineOpacity:95,sunOutlineThickness:2,sunRayOpacity:90
 };
 const DEFAULTS={
- fresh:{coldStrength:12,coldOpacity:23,crystalCount:0,frostRim:3,frostHaze:4,sunEnabled:false,
+ fresh:{coldStrength:12,coldOpacity:23,crystalCount:0,frostRim:3,frostHaze:4,sunEnabled:false,frostEnabled:false,
  coldColor1:'#c3e2c8',coldColor2:'#f4fff4',borderColor1:'#c3ddc9',borderColor2:'#f5faf0',
  imageMode:'demo',imageX:82,imageY:56,imageOpacity:70},
  freeze:{coldStrength:47,coldOpacity:68,crystalCount:24,crystalSize:32,crystalCenterX:101,crystalCenterY:104,
@@ -38,8 +40,8 @@ const DEFAULTS={
 };
 const GROUPS=[
  {title:'Typografie',hint:'Titel, Menge, Lesbarkeit',fields:[
- ['fontSize','Grundschrift',9,23,1,'px'],['titleSize','Produkttitel',12,35,1,'px'],['detailSize','Infotext',9,23,1,'px'],
- ['amountSize','Mengenanzeige',15,45,1,'px'],['titleWeight','Schriftstärke Titel',400,950,50,''],
+ ['fontSize','Grundschrift',6,23,1,'px'],['titleSize','Produkttitel',7,35,1,'px'],['detailSize','Infotext',6,23,1,'px'],
+ ['amountSize','Mengenanzeige',9,45,1,'px'],['titleWeight','Schriftstärke Titel',400,950,50,''],
  ['lineHeight','Zeilenhöhe',105,200,5,'%']]},
  {title:'Karten & Abstände',hint:'Breite, Höhe und Buttons',fields:[
  ['cardWidth','Kartenbreite',220,600,5,'px'],['cardHeight','Kartenhöhe',175,510,5,'px'],
@@ -53,7 +55,8 @@ const GROUPS=[
  ['crystalCenterY','Kristallzentrum Y',-10,115,1,'%'],['crystalSpreadX','Verteilung horizontal',0,130,1,'%'],
  ['crystalSpreadY','Verteilung vertikal',0,130,1,'%'],
  ['seed','Zufalls-Seed',1,9999,1,''],['crystalColor','Kristallfarbe','color']]},
- {title:'Frostnebel & Kälteverlauf',hint:'Radial/linear, Farben, Richtung und Auslauf',fields:[
+ {title:'Frostnebel & Kälteverlauf',hint:'An/Aus, Farben, Richtung und Auslauf',fields:[
+ ['frostEnabled','Frosteffekt anzeigen','checkbox'],
  ['coldType','Verlaufstyp','select',['radial','linear']],
  ['coldColor1','Kältefarbe 1','color'],['coldColor2','Kältefarbe 2','color'],
  ['coldX','Verlaufzentrum X',-30,130,1,'%'],['coldY','Verlaufzentrum Y',-30,130,1,'%'],
@@ -66,7 +69,11 @@ const GROUPS=[
  ['sunEnabled','Sonne anzeigen','checkbox'],
  ['sunX','Sonnenposition X',-20,125,1,'%'],['sunY','Sonnenposition Y',-20,125,1,'%'],
  ['sunSize','Sonnengröße',25,240,1,'px'],['sunGlow','Sonnenglanz / Glow',0,65,1,'px'],
- ['sunRays','Strahlenlänge',0,100,1,'%'],['sunOpacity','Sonnen-Deckkraft',0,100,1,'%'],
+ ['sunRays','Strahlenlänge',0,100,1,'%'],['sunRayCount','Anzahl Sonnenstrahlen',0,32,1,''],
+ ['sunRotation','Sonne drehen',-180,180,1,'°'],['sunFillEnabled','Sonnenkreis füllen','checkbox'],
+ ['sunFillOpacity','Fülltransparenz',0,100,1,'%'],['sunOutlineOpacity','Kontur-Deckkraft',0,100,1,'%'],
+ ['sunOutlineThickness','Konturstärke',0,10,.5,'px'],['sunRayOpacity','Strahlen-Deckkraft',0,100,1,'%'],
+ ['sunOpacity','Sonnen-Deckkraft',0,100,1,'%'],
  ['sunHeat','Wärmeintensität',0,100,1,'%'],['sunSpread','Wärme-Ausbreitung',10,160,1,'%'],
  ['sunType','Wärmeverlauf-Typ','select',['radial','linear']],['sunAngle','Wärme-Richtung',0,360,1,'°'],
  ['sunSoftness','Wärme-Auslauf',0,100,1,'%'],['sunColor','Sonnenfarbe','color'],['warmColor','Wärmefarbe','color']]},
@@ -91,7 +98,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const initial=()=>Object.fromEntries(KEYS.map(k=>[k,{...BASE,...DEFAULTS[k]}]));
 const originals=initial();
 const draft=clone(originals);
-let saved={},savedAt={},approved={},selected='frozen',compareOn=false,saveWarning='';
+let saved={},savedAt={},approved={},selected='frozen',compareOn=false,previewMode='compact',saveWarning='';
 try{
  const data=JSON.parse(localStorage.getItem(storeKey)||'null');
  if(data&&data.version===32&&data.saved){
@@ -149,11 +156,11 @@ function styleVars(p){
  '--button-padding':p.buttonPad+'px','--fs':p.fontSize+'px','--ts':p.titleSize+'px',
  '--ds':p.detailSize+'px','--qs':p.amountSize+'px','--weight':p.titleWeight,
  '--bw':p.borderThickness+'px','--border-bg':borderGradient(p),
- '--main-gradient':mixedGradient(p),'--bg-strength':1,
+ '--main-gradient':mixedGradient(p),'--bg-strength':p.frostEnabled?1:0,
  '--haze-gradient':'radial-gradient(ellipse '+(p.coldSpread*2)+'% '+(p.coldSpread*1.8)+'% at '+p.coldX+'% '+p.coldY+'%,'+hexrgba('#ffffff',haze*.76)+' 0%,transparent 74%)',
- '--haze-alpha':haze,'--haze-blur':p.frostBlur+'px',
- '--rim-radius':(p.frostRim*.35)+'px','--rim-color':hexrgba('#ffffff',p.frostRim/100*.9),
- '--flake-opacity':p.crystalOpacity/100,'--flake-blur':p.crystalBlur+'px',
+ '--haze-alpha':p.frostEnabled?haze:0,'--haze-blur':p.frostBlur+'px',
+ '--rim-radius':(p.frostRim*.35)+'px','--rim-color':hexrgba('#ffffff',p.frostEnabled?p.frostRim/100*.9:0),
+ '--flake-opacity':p.frostEnabled?p.crystalOpacity/100:0,'--flake-blur':p.crystalBlur+'px',
  '--flake-color':p.crystalColor,
  '--sun-halo':sunGradient(p),
  '--sun-alpha':p.sunEnabled?p.sunOpacity/100:0,
@@ -167,7 +174,7 @@ function styleVars(p){
 }
 function rand(seed){let s=(seed|0)||1;return ()=>{s=(Math.imul(1664525,s)+1013904223)|0;return (s>>>0)/4294967296;}}
 function flakes(p){
- if(!p.crystalCount)return '';
+ if(!p.frostEnabled||!p.crystalCount)return '';
  const r=rand(p.seed);
  let out='';
  for(let i=0;i<p.crystalCount;i++){
@@ -198,8 +205,18 @@ function imageMarkup(key,p){
 }
 function sunMarkup(p){
  if(!p.sunEnabled)return '';
- const arms=(p.sunRays/100*28).toFixed(1);
- return '<svg class="st-sun" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="20" fill="'+html(p.sunColor)+'" fill-opacity=".28"/><path d="M50 '+(20-arms)+'V22M50 78V'+(80+Number(arms))+'M22 50H'+(20-arms)+'M78 50H'+(80+Number(arms))+'M31 31L'+(31-arms*.65)+' '+(31-arms*.65)+'M69 69L'+(69+arms*.65)+' '+(69+arms*.65)+'M31 69L'+(31-arms*.65)+' '+(69+arms*.65)+'M69 31L'+(69+arms*.65)+' '+(31-arms*.65)+'"/></svg>';
+ const count=clamp(Math.round(p.sunRayCount),0,32);
+ const length=5+p.sunRays/100*22;
+ const arms=Array.from({length:count},(_,i)=>{
+   const angle=i*Math.PI*2/count;
+   const x1=(50+25*Math.sin(angle)).toFixed(2),y1=(50-25*Math.cos(angle)).toFixed(2);
+   const x2=(50+(25+length)*Math.sin(angle)).toFixed(2),y2=(50-(25+length)*Math.cos(angle)).toFixed(2);
+   return '<path d="M'+x1+' '+y1+'L'+x2+' '+y2+'"/>';
+ }).join('');
+ const fill=p.sunFillEnabled?html(p.sunColor):'none';
+ return '<svg class="st-sun" viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate('+p.sunRotation+' 50 50)">'+
+ '<circle cx="50" cy="50" r="20" fill="'+fill+'" fill-opacity="'+(p.sunFillEnabled?p.sunFillOpacity/100:0)+'" stroke-opacity="'+p.sunOutlineOpacity/100+'" stroke-width="'+p.sunOutlineThickness+'"/>'+
+ '<g fill="none" stroke-opacity="'+p.sunRayOpacity/100+'">'+arms+'</g></g></svg>';
 }
 function cardMarkup(key,p){
  const row=DEMO[key];const bold=''+html(row.product);
@@ -212,29 +229,54 @@ function cardMarkup(key,p){
  '<div class="st-card-quantity">'+html(row.amount)+'</div><p class="st-card-notes">'+html(row.info)+'</p>'+
  '<div class="st-card-buttons"><span>Menge ändern</span><span>Zustand & Verwendung</span></div></div></div>';
 }
+function setPreviewMode(mode){
+ if(mode!=='compact'&&mode!=='original')return;
+ previewMode=mode;
+ const panel=document.querySelector('.st-preview-panel');
+ if(panel)panel.classList.toggle('is-original',previewMode==='original');
+ document.querySelectorAll('[data-preview-mode]').forEach(button=>{
+  button.setAttribute('aria-pressed',String(button.dataset.previewMode===mode));
+ });
+ renderPreview();
+}
 function renderPreview(){
- const p=draft[selected];
- const slot=$('st-preview');
- const space=$('st-demo-space');
+ const p=draft[selected],slot=$('st-preview'),space=$('st-demo-space');
  slot.innerHTML=cardMarkup(selected,p);
  $('st-preview-label').textContent=NAMES[selected];
- // The actual card retains its configured dimensions; a visual scale makes
- // even a 510-px tall experiment fit into a compact iPhone sticky preview.
+ const card=slot.querySelector('.st-card');
+ if(previewMode==='original'){
+  // Never scale font sizes: CSS max-width only reduces card width on narrow screens.
+  if(card){
+   card.style.width='100%';
+   card.style.height='auto';
+   card.style.minHeight=p.cardHeight+'px';
+   card.style.transform='none';
+  }
+  slot.style.width='min(100%, '+p.cardWidth+'px)';
+  slot.style.height='auto';
+  space.style.height='auto';
+  const label=$('st-preview-scale');
+  if(label)label.textContent='100 % · echte Schriftgröße';
+  return;
+ }
+ // Compact sticky view: only the picture of the entire card is scaled.
  const viewportHeight=(typeof window!=='undefined'&&Number(window.innerHeight))||780;
  const viewportWidth=(typeof window!=='undefined'&&Number(window.innerWidth))||390;
  const width=Math.max(180,Math.min(Number(space?.clientWidth)||viewportWidth-54,viewportWidth-54));
  const heightCap=Math.max(140,Math.min(290,Math.round(viewportHeight*.32)));
  const scale=Math.max(.18,Math.min(1,width/p.cardWidth,heightCap/p.cardHeight));
- const card=slot.querySelector('.st-card');
  if(card){
   card.style.width=p.cardWidth+'px';
   card.style.height=p.cardHeight+'px';
+  card.style.minHeight=p.cardHeight+'px';
   card.style.transform='scale('+scale.toFixed(4)+')';
   card.style.transformOrigin='top left';
  }
  slot.style.width=Math.ceil(p.cardWidth*scale)+'px';
  slot.style.height=Math.ceil(p.cardHeight*scale)+'px';
  space.style.height=Math.ceil(p.cardHeight*scale)+'px';
+ const label=$('st-preview-scale');
+ if(label)label.textContent='Vorschau '+Math.round(scale*100)+' % · skaliert';
 }
 function renderComparison(){
  if(!compareOn)return;
@@ -246,7 +288,8 @@ function fieldMarkup(row){
  if(type==='color')control='<input type="color" data-setting="'+key+'" value="'+html(p[key])+'" aria-label="'+html(label)+'">';
  else if(type==='select')control='<select data-setting="'+key+'" aria-label="'+html(label)+'">'+max.map(v=>'<option value="'+html(v)+'"'+(p[key]===v?' selected':'')+'>'+html(v)+'</option>').join('')+'</select>';
  else if(type==='checkbox')control='<input type="checkbox" data-setting="'+key+'" '+(p[key]?'checked':'')+' aria-label="'+html(label)+'">';
- else control='<div class="st-range"><input type="range" data-setting="'+key+'" min="'+type+'" max="'+max+'" step="'+step+'" value="'+p[key]+'" aria-label="'+html(label)+'"><output>'+p[key]+(unit||'')+'</output></div>';
+ else control='<div class="st-range"><input type="range" data-setting="'+key+'" min="'+type+'" max="'+max+'" step="'+step+'" value="'+p[key]+'" aria-label="'+html(label)+'"><output>'+p[key]+(unit||'')+'</output></div>'
+   +((key==='imageRotate'||key==='sunRotation')?'<button type="button" class="st-zero-button" data-zero-setting="'+key+'">0° · Gerade</button>':'');
  return '<div class="st-field"><label>'+html(label)+'</label>'+control+'</div>';
 }
 function renderGroups(){
@@ -359,6 +402,15 @@ async function upload(file){
  }finally{URL.revokeObjectURL(u);}
 }
 function statusInit(){
+ document.querySelectorAll('[data-preview-mode]').forEach(el=>el.addEventListener('click',()=>setPreviewMode(el.dataset.previewMode)));
+ $('st-groups').addEventListener('click',e=>{
+  const zero=e.target.closest('[data-zero-setting]');
+  if(!zero)return;
+  const key=zero.dataset.zeroSetting;
+  if(key!=='imageRotate'&&key!=='sunRotation')return;
+  draft[selected][key]=0;
+  renderPreview();renderGroups();renderSaved();if(compareOn)renderComparison();
+ });
  document.querySelectorAll('[data-status]').forEach(el=>el.addEventListener('click',()=>changeSelected(el.dataset.status)));
  $('st-groups').addEventListener('input',e=>{const c=e.target.closest('[data-setting]');if(c)updateControl(c);});
  $('st-groups').addEventListener('change',e=>{const c=e.target.closest('[data-setting]');if(c)updateControl(c);});

@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#eef3ee">
 <meta name="color-scheme" content="light">
 <link rel="manifest" href="./dingsi-lab.webmanifest">
-<title>Dingsi Lab V33 · Lebensmittel-Designstudio</title>
-<link rel="stylesheet" href="./dingsi-lab-designstudio-v32.css?v=33-sticky-preview">
+<title>Dingsi Lab V34 · Lebensmittel-Designstudio</title>
+<link rel="stylesheet" href="./dingsi-lab-designstudio-v32.css?v=34-preview-modes">
 </head>
 <body>
 <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -17,12 +17,17 @@
 </symbol></defs>
 </svg>
 <main id="studio">
-<div class="st-top"><a class="st-back" href="./dingsi-lab.html?v=33">← Dingsi Lab</a><span class="st-badge">DESIGNSTUDIO · V33</span></div>
+<div class="st-top"><a class="st-back" href="./dingsi-lab.html?v=34">← Dingsi Lab</a><span class="st-badge">DESIGNSTUDIO · V34</span></div>
 <h1 class="st-heading">Lebensmittelkarten</h1>
 
 
 <section class="st-panel st-preview-panel" aria-label="Live-Vorschau">
 <div class="st-preview-header"><strong>Live-Vorschau · <span id="st-preview-label">Eingefroren</span></strong><small>Reine Beispieldaten</small></div>
+<div class="st-preview-mode" role="group" aria-label="Vorschaugröße">
+ <button type="button" class="st-mode-button" data-preview-mode="compact" aria-pressed="true">Kompakt · Sticky</button>
+ <button type="button" class="st-mode-button" data-preview-mode="original" aria-pressed="false">Originalgröße · 100 %</button>
+</div>
+<div class="st-preview-scale" id="st-preview-scale" role="status">Vorschau wird angepasst</div>
 <details class="st-status-picker" id="st-status-picker"><summary>Ansicht wählen <span id="st-picker-label">Eingefroren</span></summary>
 <nav class="st-statuses" id="st-statuses" aria-label="Zu bearbeitenden Lebensmittelzustand auswählen">
 <button class="st-tab" type="button" data-status="fresh" aria-selected="false">Frisch<span class="st-dot"></span></button>
@@ -43,7 +48,7 @@
 <button type="button" class="st-btn" data-preset="bloom">Eisblüte</button>
 <button type="button" class="st-btn" data-preset="storm">Schneesturm</button>
 </div>
-<div class="st-extra">Die Regler wirken nur auf die ausgewählte Variante. Die Vorschau bleibt beim Scrollen oben stehen.</div>
+<div class="st-extra">Im Kompaktmodus bleibt die Vorschau oben stehen. „Originalgröße · 100 %“ zeigt die echten Schriftgrößen und macht eine breitere Karte auf schmalen Displays nur in der Breite passend. In diesem Modus scrollt die Karte mit.</div>
 <div class="st-actions st-quick-tools"><button class="st-btn" type="button" id="st-reseed">Kristalle neu mischen</button><button class="st-btn" type="button" id="st-compare-toggle">Alle vier vergleichen</button></div>
 </div>
 <div class="st-editor-groups" id="st-groups"></div>
@@ -79,6 +84,6 @@
 </section>
 <a class="st-back" style="display:inline-flex;margin-top:17px" href="./dingsi-lab-food-status.html?v=31">Originale V31-Vorschau öffnen</a>
 </main>
-<script src="./dingsi-lab-designstudio-v32.js?v=33-sticky-preview"></script>
+<script src="./dingsi-lab-designstudio-v32.js?v=34-preview-modes"></script>
 </body>
 </html>
