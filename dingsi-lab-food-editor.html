@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#eef3ee">
 <meta name="color-scheme" content="light">
 <link rel="manifest" href="./dingsi-lab.webmanifest">
-<title>Dingsi Lab V32 · Lebensmittel-Designstudio</title>
-<link rel="stylesheet" href="./dingsi-lab-designstudio-v32.css?v=32-01">
+<title>Dingsi Lab V33 · Lebensmittel-Designstudio</title>
+<link rel="stylesheet" href="./dingsi-lab-designstudio-v32.css?v=33-sticky-preview">
 </head>
 <body>
 <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
@@ -17,30 +17,21 @@
 </symbol></defs>
 </svg>
 <main id="studio">
-<div class="st-top"><a class="st-back" href="./dingsi-lab.html?v=32">← Dingsi Lab</a><span class="st-badge">DESIGNSTUDIO · V32</span></div>
+<div class="st-top"><a class="st-back" href="./dingsi-lab.html?v=33">← Dingsi Lab</a><span class="st-badge">DESIGNSTUDIO · V33</span></div>
 <h1 class="st-heading">Lebensmittelkarten</h1>
-<p class="st-sub">Deine Frost-Spielwiese: einen Status auswählen, sämtliche Effekte live anpassen und jede Variante separat speichern. Alles lokal und ohne echten Vorratszugriff.</p>
-<nav class="st-statuses" aria-label="Zu bearbeitenden Lebensmittelzustand auswählen">
+
+
+<section class="st-panel st-preview-panel" aria-label="Live-Vorschau">
+<div class="st-preview-header"><strong>Live-Vorschau · <span id="st-preview-label">Eingefroren</span></strong><small>Reine Beispieldaten</small></div>
+<details class="st-status-picker" id="st-status-picker"><summary>Ansicht wählen <span id="st-picker-label">Eingefroren</span></summary>
+<nav class="st-statuses" id="st-statuses" aria-label="Zu bearbeitenden Lebensmittelzustand auswählen">
 <button class="st-tab" type="button" data-status="fresh" aria-selected="false">Frisch<span class="st-dot"></span></button>
 <button class="st-tab" type="button" data-status="freeze" aria-selected="false">Noch einzufrieren<span class="st-dot"></span></button>
 <button class="st-tab" type="button" data-status="frozen" aria-selected="true">Eingefroren<span class="st-dot"></span></button>
 <button class="st-tab" type="button" data-status="thaw" aria-selected="false">Auftauen läuft<span class="st-dot"></span></button>
 </nav>
-<div class="st-workspace">
-<section class="st-panel st-preview-panel" aria-label="Live-Vorschau">
-<div class="st-preview-header"><strong>Live-Vorschau · <span id="st-preview-label">Eingefroren</span></strong><small>Reine Beispieldaten</small></div>
-<div class="st-demo-space" id="st-preview" aria-live="off"></div>
-<div class="st-actions">
-<button type="button" class="st-btn primary" id="st-save">Einstellungen speichern</button>
-<button type="button" class="st-btn" id="st-load">Gespeicherten Stand laden</button>
-<button type="button" class="st-btn" id="st-approve">Für Übernahme vormerken</button>
-<button type="button" class="st-btn warn" id="st-reset">Zurücksetzen</button>
-</div>
-<div id="st-save-status" class="st-saved" role="status" aria-live="polite"></div>
-<p class="st-extra">Hier nur vormerken, nicht direkt in die echte Food-App schreiben. Das JSON enthält gespeicherte Werte und die vorgemerkten Varianten.</p>
-<div id="st-notice" class="st-saved" aria-live="polite"></div>
-<div class="st-actions"><button class="st-btn" type="button" id="st-compare-toggle">Alle vier vergleichen</button>
-<button class="st-btn" type="button" id="st-reseed">Kristalle neu mischen</button></div>
+</details>
+<div class="st-demo-space" id="st-demo-space"><div id="st-preview" aria-live="off"></div></div>
 </section>
 <section aria-label="Designregler">
 <h2 class="st-section-title" id="st-selected-heading">Regler für: Eingefroren</h2>
@@ -52,7 +43,8 @@
 <button type="button" class="st-btn" data-preset="bloom">Eisblüte</button>
 <button type="button" class="st-btn" data-preset="storm">Schneesturm</button>
 </div>
-<div class="st-extra">Alle Regler unten wirken nur auf die oben ausgewählte Variante. Aufgeklappte Gruppen bleiben beim Anpassen geöffnet.</div>
+<div class="st-extra">Die Regler wirken nur auf die ausgewählte Variante. Die Vorschau bleibt beim Scrollen oben stehen.</div>
+<div class="st-actions st-quick-tools"><button class="st-btn" type="button" id="st-reseed">Kristalle neu mischen</button><button class="st-btn" type="button" id="st-compare-toggle">Alle vier vergleichen</button></div>
 </div>
 <div class="st-editor-groups" id="st-groups"></div>
 <div class="st-panel" style="margin-top:11px">
@@ -62,7 +54,6 @@
 <p class="st-image-info">„Demo“ zeigt eine kleine gezeichnete SVG-Lebensmittelillustration, „Platzhalter“ einen neutralen Bildbereich. Keine KI-Generierung und keine externen Bildanfragen im Test.</p>
 </div>
 </section>
-</div>
 <section class="st-compare-block" id="st-compare"><h2 class="st-section-title">Vergleich der vier Varianten</h2><div class="st-compare" id="st-comparison"></div></section>
 <section class="st-export" aria-label="Varianten sichern und übertragen">
 <h2 class="st-section-title" style="margin:2px 0 6px">Konfiguration sichern & übernehmen</h2>
@@ -76,8 +67,18 @@
 <p class="st-extra">„Übernehmen“ in die produktive Food-App erfolgt erst nach deiner Freigabe. Diese Testseite schreibt nichts in Supabase.</p>
 </section>
 <p class="st-footer-note">Performance: Farbverläufe und SVG-Symbole werden vom Browser gerendert. Bis zu 160 Kristalle pro Karte sind zum Experimentieren möglich; für den produktiven Alltag ist wahrscheinlich deutlich weniger sinnvoll. Prüfe auf deinem iPhone, welche Einstellungen flüssig bleiben.</p>
+<section class="st-panel st-save-panel" aria-label="Einstellungen speichern"><h2 class="st-section-title">Einstellungen speichern</h2><p class="st-extra">Du speicherst immer nur die ausgewählte Variante. Dein bestehender lokaler Speicherstand und der JSON-Export bleiben unverändert.</p>
+<div class="st-actions">
+<button type="button" class="st-btn primary" id="st-save">Einstellungen speichern</button>
+<button type="button" class="st-btn" id="st-load">Gespeicherten Stand laden</button>
+<button type="button" class="st-btn" id="st-approve">Für Übernahme vormerken</button>
+<button type="button" class="st-btn warn" id="st-reset">Zurücksetzen</button>
+</div>
+<div id="st-save-status" class="st-saved" role="status" aria-live="polite"></div>
+<div id="st-notice" class="st-saved" aria-live="polite"></div>
+</section>
 <a class="st-back" style="display:inline-flex;margin-top:17px" href="./dingsi-lab-food-status.html?v=31">Originale V31-Vorschau öffnen</a>
 </main>
-<script src="./dingsi-lab-designstudio-v32.js?v=32-01"></script>
+<script src="./dingsi-lab-designstudio-v32.js?v=33-sticky-preview"></script>
 </body>
 </html>
