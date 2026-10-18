@@ -728,7 +728,20 @@
   // the prepared batch from which later meal-prep servings are derived.
   const preparedOnly=items=>(items||[]).filter(item=>item.eaten_only_extra!==true);
   const eatenOnly=items=>(items||[]).filter(item=>item.eaten_only_extra===true);
+  function estimatedNutritionForMeal(meal){
+    // Only explicitly marked, user-confirmed estimates qualify.
+    // They contribute to daily totals but never require product packaging data.
+    const note=String(meal?.note||'');
+    if(!/^Nährwerte geschätzt\./i.test(note))return null;
+    const kcal=number(meal?.calories_kcal_per_serving_override);
+    const match=note.match(/(\d+(?:[.,]\d+)?)\s*g\s*Eiweiß/i);
+    const protein=match?Number(match[1].replace(',','.')):null;
+    if(kcal===null||kcal<0||protein===null||!Number.isFinite(protein))return null;
+    return {complete:true,kcal,protein,estimated:true,missing:[]};
+  }
   function nutritionForMeal(meal,recipeMap,mealMap,data,context,allocations){
+    const estimate=estimatedNutritionForMeal(meal);
+    if(estimate)return estimate;
     const items=meal.food_meal_ingredients||[];
     let base;
     if(meal.leftover_id||meal.source_meal_id){
@@ -801,10 +814,10 @@
     }
     const pristine=String(em.getAttribute('data-food-nutrition-base-v816')||'');
     const parts=pristine.split(/\s*·\s*/).filter(Boolean)
-      .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part)&&!/^(kcal|Nährwerte) offen$/i.test(part)&&!/^Nährwert(e)? prüfen:/i.test(part));
+      .filter(part=>!/^\d+(?:[.,]\d+)?\s*kcal$/i.test(part)&&!/^\d+(?:[.,]\d+)?\s*g\s+Protein$/i.test(part)&&!/^(kcal|Nährwerte) offen$/i.test(part)&&!/^Nährwert(e)? prüfen:/i.test(part)&&!/^Nährwerte geschätzt$/i.test(part));
     const reasons=[...new Set(nutrition?.missing||[])];
     const nutritionParts=nutrition?.complete
-      ?nutritionText(nutrition).split(/\s*·\s*/)
+      ?[...nutritionText(nutrition).split(/\s*·\s*/),...(nutrition.estimated?['Nährwerte geschätzt']:[])]
       :['kcal offen',...(reasons.length?['Nährwerte prüfen: '+reasons.slice(0,2).join(', ')+(reasons.length>2?' …':'')]:[])];
     let insertAt=parts.findIndex(part=>/zubereitet|geplant|erledigt|vorbereitet|gegessen/i.test(part));
     if(insertAt<0)insertAt=parts.findIndex(part=>/Portion(?:en)?\s+zubereitet/i.test(part));
@@ -939,7 +952,7 @@
     const to=plusDays(todayIso(),60);
     const results=await Promise.all([
       supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
-      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
+      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
       supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit'),
