@@ -46,7 +46,7 @@ function boot(){
 test('V32 standalone preview files have all controls and four status tabs',()=>{
  for(const item of ['st-preview','st-save','st-load','st-reset','st-approve','st-groups','st-import','st-export','st-upload','st-compare-toggle'])assert(html.includes('id="'+item+'"'),item);
  assert.equal((html.match(/data-status="/g)||[]).length,4);
- assert(home.includes('dingsi-lab-food-editor.html?v=32'));
+ assert(home.includes('dingsi-lab-food-editor.html?v=35'));
  assert(css.includes('.st-crystals')&&css.includes('.st-sunlight'));
 });
 test('V32 JavaScript is valid and uses no production food database',()=>{
