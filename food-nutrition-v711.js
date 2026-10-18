@@ -1125,21 +1125,42 @@
   });
   observer.observe(document.documentElement,{subtree:true,childList:true});
 
+  // Einheitliches Zielverhalten fuer alle Quellen offener Tageswerte.
+  function openUnresolvedTarget(type,id){
+    const root=document.getElementById(ROOT_ID);
+    if(type==='extra'){
+      const extras=window.__modFoodExtrasV828;
+      if(extras?.openEntry)void extras.openEntry(id).catch(error=>console.warn('Zusatz-Eintrag öffnen:',error));
+      else document.getElementById('food-extra-snacks-v828')?.scrollIntoView?.({behavior:'smooth',block:'center'});
+      return;
+    }
+    const findCard=()=>[...(root?.querySelectorAll('[data-food-meal-card]')||[])]
+      .find(card=>String(card.dataset.foodMealCard)===id);
+    const card=findCard();
+    const toggle=card?.querySelector('[data-food-meal-toggle]');
+    if(toggle?.getAttribute('aria-expanded')==='false')toggle.click();
+    requestAnimationFrame(()=>{
+      const current=findCard();
+      current?.scrollIntoView?.({behavior:'smooth',block:'center'});
+      current?.querySelector('[data-food-meal-toggle]')?.focus?.({preventScroll:true});
+    });
+  }
+
   document.addEventListener('click',event=>{
-    const target=event.target?.closest?.('[data-food-nutrition-goto]');
+    const target=event.target?.closest?.('[data-food-nutrition-goto],[data-food-extra-goto],[data-food-day-summary-goto]');
     if(target){
-      const id=String(target.dataset.foodNutritionGoto||'');
-      const root=document.getElementById(ROOT_ID);
-      const findCard=()=>[...(root?.querySelectorAll('[data-food-meal-card]')||[])]
-        .find(card=>String(card.dataset.foodMealCard)===id);
-      const card=findCard();
-      const toggle=card?.querySelector('[data-food-meal-toggle]');
-      if(toggle?.getAttribute('aria-expanded')==='false')toggle.click();
-      requestAnimationFrame(()=>{
-        const current=findCard();
-        current?.scrollIntoView?.({behavior:'smooth',block:'center'});
-        current?.querySelector('[data-food-meal-toggle]')?.focus?.({preventScroll:true});
-      });
+      if(target.hasAttribute('data-food-day-summary-goto')){
+        const targets=lastStatus.todayUnresolvedTargets||[];
+        if(targets.length===1)openUnresolvedTarget(targets[0].type,targets[0].id);
+        else{
+          const alert=document.querySelector('#'+ROOT_ID+' [data-food-nutrition-alarm]');
+          const first=alert?.querySelector('.food-nutrition-alarm-link-v795');
+          alert?.scrollIntoView?.({behavior:'smooth',block:'start'});
+          first?.focus?.({preventScroll:true});
+        }
+      }else if(target.hasAttribute('data-food-extra-goto'))
+        openUnresolvedTarget('extra',String(target.dataset.foodExtraGoto||''));
+      else openUnresolvedTarget('meal',String(target.dataset.foodNutritionGoto||''));
     }
     if(event.target?.closest?.('[data-food-tab],[data-food-edit-recipe],[data-food-edit-planned-meal],[data-food-edit-free-meal]'))schedule(450);
   },true);
