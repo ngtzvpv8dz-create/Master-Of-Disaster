@@ -13,7 +13,7 @@ function boot(saved){
   return {tagName:'BUTTON',dataset:{[kind]:name},setAttribute(k,v){attrs[kind+name+':'+k]=v;},
    addEventListener(type,fn){listeners[kind+name+':'+type]=fn;}};
  }
- const variants=['I01','I02','I03','I04'].map(x=>button('variant',x));
+ const variants=['I01','I02','I03','I04','I05','I06','I07','I08'].map(x=>button('variant',x));
  const themes=['dark','pastel'].map(x=>button('theme',x));
  const bgs=['theme','checker','photo'].map(x=>button('bg',x));
  const elements={
@@ -42,10 +42,10 @@ function boot(saved){
  vm.runInNewContext(script,{document,localStorage,URL,console});
  return {listeners,attrs,elements,storage};
 }
-test('Dingsi Lab has dedicated Icon-Ische Variacionen area and four stable numbered styles',()=>{
+test('Dingsi Lab has dedicated Icon-Ische Variacionen area and eight stable numbered styles',()=>{
  assert.match(lab,/href="\.\/dingsi-lab-icons\.html\?v=36"/);
  assert.match(html,/Icon-Ische Variacionen/);
- for(const id of ['I01','I02','I03','I04'])assert(html.includes('data-variant="'+id+'"'));
+ for(const id of ['I01','I02','I03','I04','I05','I06','I07','I08'])assert(html.includes('data-variant="'+id+'"'));
  assert.match(html,/data-bg="checker"/);
  assert.match(html,/data-bg="photo"/);
  assert.match(html,/type="file" accept="image\/\*"/);
@@ -93,4 +93,41 @@ test('photo preview is local only and not uploaded; photo state is not resurrect
  assert.equal(reload.elements.preview.dataset.surface,'pastel');
  assert.equal(reload.elements.preview.dataset.variant,'I02');
  assert.doesNotMatch(script,/fetch\(|XMLHttpRequest|supabase|FileReader/);
+});
+
+test('I05–I08 are independent relief-lit 3D motifs without any built-in image background',()=>{
+ const x=boot();
+ for(const variant of ['I05','I06','I07','I08']){
+  x.listeners['variant'+variant+':click']();
+  assert.equal(x.elements.preview.dataset.variant,variant);
+  for(const fig of x.elements['icon-grid'].children){
+   assert.match(fig.innerHTML,/class="model-extrusion"/);
+   assert.match(fig.innerHTML,/class="model-face"/);
+   assert.match(fig.innerHTML,/feSpecularLighting/);
+   assert.match(fig.innerHTML,/<use[^>]+href="#model-(?:todo|food|kisto)"/);
+   assert.doesNotMatch(fig.innerHTML,/<image\b|data:image|<foreignObject\b|base64,/i);
+   assert.doesNotMatch(fig.innerHTML,/x="0" y="0" width="180" height="180"/i);
+  }
+  const saved=JSON.parse(x.storage.get('mod-dingsi-lab-icon-variacionen-v1'));
+  assert.equal(saved.variant,variant);
+ }
+ x.listeners['variantI08:click']();
+ x.listeners['themedark:click']();
+ assert.equal(x.elements.preview.dataset.surface,'dark');
+ x.listeners['bgchecker:click']();
+ assert.equal(x.elements.preview.dataset.surface,'checker');
+ x.listeners['fave:click']();
+ assert.match(x.elements.saved.textContent,/#I08/);
+ const restored=boot(Object.fromEntries(x.storage));
+ assert.equal(restored.elements.preview.dataset.variant,'I08');
+ assert.match(restored.elements['icon-grid'].children[0].innerHTML,/class="model-face"/);
+ assert.match(restored.elements.saved.textContent,/#I08/);
+});
+test('Original I01–I04 remain usable, retaining the unmodified non-extruded model',()=>{
+ const x=boot();
+ for(const v of ['I01','I02','I03','I04']){
+  x.listeners['variant'+v+':click']();
+  assert.equal(x.elements.preview.dataset.variant,v);
+  assert.doesNotMatch(x.elements['icon-grid'].children[0].innerHTML,/class="model-extrusion"/);
+ }
 });
