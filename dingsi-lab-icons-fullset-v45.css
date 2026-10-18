@@ -1,0 +1,32 @@
+/* V45 · Icon-Ische Variacionen: I11 Glass 3D 14-item preview, Lab only */
+.fullset-toolbar-v45{margin:16px 0;border:1px solid #d9c9ed;border-radius:19px;padding:14px;background:linear-gradient(130deg,#fffdfd,#f0eafa 65%,#edf9f6);box-shadow:0 7px 18px #767ca717}
+.fullset-toolbar-v45 .fullset-heading{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#85749e;font-weight:850}
+.fullset-toolbar-v45 p{margin:6px 0 12px;color:#64758d;font-size:12px;line-height:1.4}
+#fullset-toggle-v45{appearance:none;background:linear-gradient(135deg,#665385,#7e649a);color:#fff;border:none;border-radius:13px;padding:13px 16px;min-height:46px;width:100%;font-size:13px;font-weight:850;box-shadow:0 7px 12px #624a8335;cursor:pointer}
+#fullset-toggle-v45[aria-expanded=true]{background:linear-gradient(135deg,#526878,#618c8c)}
+#fullset-toggle-v45:focus-visible,.fullset-card-v45:focus-visible{outline:3px solid #a283d4;outline-offset:2px}
+#fullset-panel-v45[hidden],#fullset-detail-v45[hidden]{display:none}
+#fullset-panel-v45{margin-top:16px;border:1px solid #d6dfeb;border-radius:22px;overflow:hidden;box-shadow:0 12px 30px #4d708122;background:#fff}
+.fullset-top-v45{padding:17px 17px 15px;background:#ffffffdb}
+.fullset-top-v45 h2{font-size:20px;letter-spacing:-.025em;color:#3d4964;margin:0 0 5px}
+.fullset-top-v45 p{font-size:11px;line-height:1.5;color:#6e7d93;margin:0}
+.fullset-surface-v45{position:relative;isolation:isolate;padding:16px 9px 22px;background:#f6f5fa}
+.fullset-surface-v45[data-surface="dark"]{background:radial-gradient(ellipse at 15% 0%,#58436e77,transparent 55%),radial-gradient(ellipse at 100% 80%,#28786977,transparent 57%),#151b29;--fullset-label:#f7f7ff}
+.fullset-surface-v45[data-surface="pastel"]{background:radial-gradient(ellipse at 0 13%,#f1dceeca,transparent 52%),radial-gradient(ellipse at 100% 80%,#cdeee9c7,transparent 52%),linear-gradient(150deg,#fefdfd,#ebf2f8,#f7fff9);--fullset-label:#4c5870}
+.fullset-surface-v45[data-surface="checker"]{background-color:#fff;background-image:linear-gradient(45deg,#d2d9e3 25%,transparent 25%),linear-gradient(-45deg,#d2d9e3 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#d2d9e3 75%),linear-gradient(-45deg,transparent 75%,#d2d9e3 75%);background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0;--fullset-label:#313e57}
+.fullset-surface-v45[data-surface="photo"]{background-image:var(--photo-background);background-size:cover;background-position:center;--fullset-label:white}
+.fullset-surface-v45[data-surface="photo"]::before{content:"";position:absolute;inset:0;background:#101f3147;z-index:-1}
+.fullset-grid-v45{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:620px;margin:auto}
+.fullset-card-v45{appearance:none;display:flex;align-items:center;flex-direction:column;gap:4px;min-width:0;border:1px solid transparent;background:transparent;padding:4px 1px 8px;border-radius:15px;cursor:pointer;transition:transform .12s,background .12s}
+.fullset-card-v45:hover,.fullset-card-v45[aria-pressed="true"]{background:#afc5de26}
+.fullset-card-v45[aria-pressed="true"]{border-color:#c49de6;background:#bb9cda35}
+.fullset-card-v45 img{display:block;aspect-ratio:1;width:100%;height:auto;max-width:150px;object-fit:contain;background:transparent!important;border:0!important;border-radius:0!important;filter:drop-shadow(0 5px 8px #06172a30)}
+.fullset-surface-v45[data-surface="checker"] .fullset-card-v45 img{filter:none}
+.fullset-card-v45 strong{font-size:clamp(9px,2.1vw,12px);letter-spacing:.095em;color:var(--fullset-label);font-weight:900;white-space:nowrap;text-shadow:0 1px 2px #0e132526}
+#fullset-detail-v45{border-top:1px solid #d3d8e2;padding:15px;display:flex;align-items:center;gap:15px;background:#ffffffdd;color:#41536d;font-size:12px}
+#fullset-detail-v45 img{width:min(30vw,130px);height:auto;aspect-ratio:1;object-fit:contain;background:transparent}
+#fullset-detail-v45 strong{font-size:16px;display:block;margin-bottom:5px}
+.fullset-foot-v45{font-size:11px;line-height:1.5;padding:13px 17px;color:#74859a;background:#fff}
+@media(min-width:610px){.fullset-grid-v45{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:370px){.fullset-grid-v45{gap:3px}.fullset-card-v45 strong{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.fullset-card-v45{transition:none}}
