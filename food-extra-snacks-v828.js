@@ -118,7 +118,7 @@
       '<span>'+nf(sum.kcal,0)+' kcal · '+nf(sum.protein)+' g Protein'+(incomplete?' (bekannte Werte)':'')+'</span></div>'+
       (incomplete?'<p class="food-extra-help-v828">'+incomplete+' Eintrag'+(incomplete===1?' hat':'e haben')+' unbekannte Kalorien- oder Eiweißwerte. Tagesbilanz deshalb unvollständig, keine Nullwerte erfunden.</p>':'')+
       (rows.length?'<ul class="food-extra-list-v828">'+rows.map(r=>
-        '<li><div><strong>'+esc(r.title)+'</strong><small>'+esc(nf(r.quantity)+' '+r.unit)+' · '+
+        '<li data-food-extra-row="'+esc(r.id)+'"'+(!valid(r.calories_kcal)||!valid(r.protein_g)?' class="food-extra-unresolved-v838"':'')+'><div><strong>'+esc(r.title)+'</strong><small>'+esc(nf(r.quantity)+' '+r.unit)+' · '+
         (valid(r.calories_kcal)?nf(r.calories_kcal,0)+' kcal':'kcal unbekannt')+' · '+
         (valid(r.protein_g)?nf(r.protein_g)+' g Protein':'Protein unbekannt')+
         (r.carbohydrates_g!==null?' · KH '+nf(r.carbohydrates_g)+' g':'')+
@@ -219,12 +219,36 @@
     if(!ready&&!loading)refresh();
   }
   function editingRow(row){
-    editing=row.id;mode='manual';formOpen=true;notice='';error='';draw();
+    editing=row.id;
+    // Produkt-ID beim Korrigieren von Makros erhalten: die alte manuelle
+    // Bearbeitung hat den Produktstamm sonst mit product_id:null geloescht.
+    const linked=products.find(product=>String(product.id)===String(row.product_id));
+    mode=linked?'catalog':'manual';
+    selected=linked?String(linked.id):'';
+    term='';
+    formOpen=true;notice='';error='';draw();
     const form=panel()?.querySelector('[data-food-extra-form]');if(!form)return;
     for(const name of ['title','quantity','unit','calories_kcal','protein_g','carbohydrates_g','fat_g','sugars_g','salt_g','caffeine_mg']){
       if(form.elements[name]&&row[name]!==null&&row[name]!==undefined)form.elements[name].value=String(row[name]);
     }
-    form.querySelector('[name="title"]')?.focus();
+    if(linked)updatePreview();
+    form.querySelector('[name="calories_kcal"],[name="title"],[name="quantity"]')?.focus();
+  }
+  async function openEntry(id){
+    mount();
+    if(!ready&&!loading)await refresh();
+    const target=rows.find(row=>String(row.id)===String(id));
+    if(!target){
+      panel()?.scrollIntoView?.({behavior:'smooth',block:'center'});
+      return false;
+    }
+    editingRow(target);
+    requestAnimationFrame(()=>{
+      const el=panel()?.querySelector('[data-food-extra-form]')||panel();
+      el?.scrollIntoView?.({behavior:'smooth',block:'center'});
+      el?.querySelector('[name="calories_kcal"],[name="quantity"]')?.focus?.({preventScroll:true});
+    });
+    return true;
   }
   async function persist(form){
     if(busy)return;
@@ -312,6 +336,7 @@
       '.food-extra-total-v828{margin-top:11px;padding-top:9px;border-top:1px solid #d6e3d5;font-size:11px}.food-extra-total-v828 span{color:#28764d;font-weight:800;font-variant-numeric:tabular-nums}'+
       '.food-extra-empty-v828{margin:9px 0 0;color:#718278;font-size:11px}'+
       '.food-extra-list-v828{padding:0;margin:9px 0 0;list-style:none}.food-extra-list-v828 li{padding:8px 0;border-top:1px solid rgba(142,166,142,.18)}'+
+      '.food-extra-list-v828 .food-extra-unresolved-v838{border-left:3px solid #be5f4e;padding-left:7px;background:#fff6f2;border-radius:5px}'+
       '.food-extra-list-v828 li>div:first-child{min-width:0}.food-extra-list-v828 strong{display:block;font-size:11px;overflow-wrap:anywhere}.food-extra-list-v828 small{display:block;font-size:10px;line-height:1.4;color:#627b68}'+
       '.food-extra-row-actions-v828{display:flex;gap:5px}.food-extra-row-actions-v828 button{padding:4px 7px;font-size:13px}'+
       '.food-extra-form-v828{margin-top:11px;padding-top:10px;border-top:1px solid #d6e3d5;display:grid;gap:9px}.food-extra-form-v828 label{display:grid;gap:4px;font-size:11px;font-weight:700}'+
@@ -362,6 +387,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V834',refresh, getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V838',refresh,openEntry,getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
