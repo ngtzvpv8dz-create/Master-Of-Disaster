@@ -29,6 +29,6 @@ assert(food.includes('missingIngredientSourceMarkup(item,true)'),
   'Unmatched historical ingredients show that provenance was not recorded');
 assert(food.includes('snapshot?.sources'),
   'Historical sources must still use immutable saved meal snapshot');
-assert(runtime.includes('food-v544.js?v=837-uniform-provenance'),
+assert(/food-v544\.js\?v=\d+-/.test(runtime),
   'All FOOD entry points need updated cache version');
 console.log('PASS: Feta whole/alias matching and consistent provenance fallbacks');

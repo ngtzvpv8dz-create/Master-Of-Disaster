@@ -96,6 +96,7 @@ jobs:
           node --check food-extra-snacks-v828.js
           node tests/food-ingredient-provenance-v837.test.cjs
           node --test tests/food-provenance-v837.test.cjs
+          node --test tests/food-daily-warning-v838.test.cjs
           node --test tests/food-extras-v828.test.cjs
           node --check sw.js
 
