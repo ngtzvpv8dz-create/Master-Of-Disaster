@@ -53,7 +53,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
-      './food-v544.js?v=830-accordion-prepared-ingredients',
+      './food-v544.js?v=836-multi-thaw-piece',
       './food-nutrition-v711.js?v=835-estimated-piece-weight',
       './food-extra-snacks-v828.js?v=834-egg-edible-weight'
     ],
@@ -62,7 +62,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
-      './food-v544.js?v=830-accordion-prepared-ingredients',
+      './food-v544.js?v=836-multi-thaw-piece',
       './food-nutrition-v711.js?v=835-estimated-piece-weight',
       './shopping-v678.js?v=821-pack-suggestions'
     ],
@@ -145,9 +145,9 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=817-team-erle','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=830-accordion-prepared-ingredients',
+    food:['./food-v544.js?v=836-multi-thaw-piece',
       './food-nutrition-v711.js?v=835-estimated-piece-weight','./food-extra-snacks-v828.js?v=834-egg-edible-weight'],
-    shopping:['./food-v544.js?v=830-accordion-prepared-ingredients',
+    shopping:['./food-v544.js?v=836-multi-thaw-piece',
       './food-nutrition-v711.js?v=835-estimated-piece-weight','./shopping-v678.js?v=821-pack-suggestions'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=827-finance-style'],
