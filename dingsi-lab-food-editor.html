@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eef3ee">
+<meta name="color-scheme" content="light">
+<link rel="manifest" href="./dingsi-lab.webmanifest">
+<title>Dingsi Lab V32 · Lebensmittel-Designstudio</title>
+<link rel="stylesheet" href="./dingsi-lab-designstudio-v32.css?v=32-01">
+</head>
+<body>
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+<defs><symbol id="st-crystal" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+<path d="M50 4V96M10 27L90 73M10 73L90 27M50 4L40 19M50 4L60 19M50 96L40 81M50 96L60 81M10 27L29 27M10 27L20 43M90 73L71 73M90 73L80 57M10 73L29 73M10 73L20 57M90 27L71 27M90 27L80 43"/>
+<path d="M50 31l-8 5m8-5 8 5m-8 33-8-5m8 5 8-5M27 37l13 1m-13-1 5 12m41 14-13-1m13 1-5-12M27 63l13-1m-13 1 5-12m41-14-13 1m13-1-5 12" stroke-width=".65"/>
+</symbol></defs>
+</svg>
+<main id="studio">
+<div class="st-top"><a class="st-back" href="./dingsi-lab.html?v=32">← Dingsi Lab</a><span class="st-badge">DESIGNSTUDIO · V32</span></div>
+<h1 class="st-heading">Lebensmittelkarten</h1>
+<p class="st-sub">Deine Frost-Spielwiese: einen Status auswählen, sämtliche Effekte live anpassen und jede Variante separat speichern. Alles lokal und ohne echten Vorratszugriff.</p>
+<nav class="st-statuses" aria-label="Zu bearbeitenden Lebensmittelzustand auswählen">
+<button class="st-tab" type="button" data-status="fresh" aria-selected="false">Frisch<span class="st-dot"></span></button>
+<button class="st-tab" type="button" data-status="freeze" aria-selected="false">Noch einzufrieren<span class="st-dot"></span></button>
+<button class="st-tab" type="button" data-status="frozen" aria-selected="true">Eingefroren<span class="st-dot"></span></button>
+<button class="st-tab" type="button" data-status="thaw" aria-selected="false">Auftauen läuft<span class="st-dot"></span></button>
+</nav>
+<div class="st-workspace">
+<section class="st-panel st-preview-panel" aria-label="Live-Vorschau">
+<div class="st-preview-header"><strong>Live-Vorschau · <span id="st-preview-label">Eingefroren</span></strong><small>Reine Beispieldaten</small></div>
+<div class="st-demo-space" id="st-preview" aria-live="off"></div>
+<div class="st-actions">
+<button type="button" class="st-btn primary" id="st-save">Einstellungen speichern</button>
+<button type="button" class="st-btn" id="st-load">Gespeicherten Stand laden</button>
+<button type="button" class="st-btn" id="st-approve">Für Übernahme vormerken</button>
+<button type="button" class="st-btn warn" id="st-reset">Zurücksetzen</button>
+</div>
+<div id="st-save-status" class="st-saved" role="status" aria-live="polite"></div>
+<p class="st-extra">Hier nur vormerken, nicht direkt in die echte Food-App schreiben. Das JSON enthält gespeicherte Werte und die vorgemerkten Varianten.</p>
+<div id="st-notice" class="st-saved" aria-live="polite"></div>
+<div class="st-actions"><button class="st-btn" type="button" id="st-compare-toggle">Alle vier vergleichen</button>
+<button class="st-btn" type="button" id="st-reseed">Kristalle neu mischen</button></div>
+</section>
+<section aria-label="Designregler">
+<h2 class="st-section-title" id="st-selected-heading">Regler für: Eingefroren</h2>
+<div class="st-panel">
+<div class="st-toolbar"><span class="st-extra" style="margin:0">Schnell-Presets:</span></div>
+<div id="st-presets" class="st-actions">
+<button type="button" class="st-btn" data-preset="soft">Sanft</button>
+<button type="button" class="st-btn" data-preset="balanced">Ausgewogen</button>
+<button type="button" class="st-btn" data-preset="bloom">Eisblüte</button>
+<button type="button" class="st-btn" data-preset="storm">Schneesturm</button>
+</div>
+<div class="st-extra">Alle Regler unten wirken nur auf die oben ausgewählte Variante. Aufgeklappte Gruppen bleiben beim Anpassen geöffnet.</div>
+</div>
+<div class="st-editor-groups" id="st-groups"></div>
+<div class="st-panel" style="margin-top:11px">
+<strong style="font-size:13px;color:#37646a">Eigenes Produktbild</strong>
+<p class="st-extra">Ein eigenes PNG, JPEG oder WebP wird für die Vorschau auf maximal 360 Pixel verkleinert. Danach im Bildmodus „upload“ auswählen oder automatisch übernehmen.</p>
+<div class="st-image-tools"><label class="st-btn st-upload-label" for="st-upload">Bild auswählen <input type="file" id="st-upload" accept="image/png,image/jpeg,image/webp"></label></div>
+<p class="st-image-info">„Demo“ zeigt eine kleine gezeichnete SVG-Lebensmittelillustration, „Platzhalter“ einen neutralen Bildbereich. Keine KI-Generierung und keine externen Bildanfragen im Test.</p>
+</div>
+</section>
+</div>
+<section class="st-compare-block" id="st-compare"><h2 class="st-section-title">Vergleich der vier Varianten</h2><div class="st-compare" id="st-comparison"></div></section>
+<section class="st-export" aria-label="Varianten sichern und übertragen">
+<h2 class="st-section-title" style="margin:2px 0 6px">Konfiguration sichern & übernehmen</h2>
+<p>Gespeicherte Designs bleiben in diesem Browser erhalten. Für ein anderes Gerät, gegen Browserdatenverlust und für die spätere Übernahme in die echte App unbedingt <strong>JSON exportieren</strong>.</p>
+<div class="st-export-buttons">
+<button type="button" id="st-export" class="st-btn primary">Vier Varianten als JSON exportieren</button>
+<label class="st-btn st-upload-label" for="st-import">JSON importieren <input class="st-import-file" id="st-import" type="file" accept=".json,application/json"></label>
+</div>
+<p style="margin-top:13px"><strong>Werte kopieren:</strong> Aktuelle Variante als Ausgangspunkt für einen anderen Zustand nutzen.</p>
+<div class="st-toolbar"><select class="st-select" id="st-copy-target" aria-label="Zielvariante für Kopie"></select><button type="button" class="st-btn" id="st-copy">In diese Variante kopieren</button></div>
+<p class="st-extra">„Übernehmen“ in die produktive Food-App erfolgt erst nach deiner Freigabe. Diese Testseite schreibt nichts in Supabase.</p>
+</section>
+<p class="st-footer-note">Performance: Farbverläufe und SVG-Symbole werden vom Browser gerendert. Bis zu 160 Kristalle pro Karte sind zum Experimentieren möglich; für den produktiven Alltag ist wahrscheinlich deutlich weniger sinnvoll. Prüfe auf deinem iPhone, welche Einstellungen flüssig bleiben.</p>
+<a class="st-back" style="display:inline-flex;margin-top:17px" href="./dingsi-lab-food-status.html?v=31">Originale V31-Vorschau öffnen</a>
+</main>
+<script src="./dingsi-lab-designstudio-v32.js?v=32-01"></script>
+</body>
+</html>
