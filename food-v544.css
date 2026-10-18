@@ -2864,7 +2864,10 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   border-radius:10px;
   background:linear-gradient(125deg,#f4fbff,#deeffb);
   color:#315e78;
-  font:800 11px/1.4 inherit;
+  font-family:inherit;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.4;
   text-align:left;
   cursor:pointer;
 }
