@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V830';
+  const VERSION='V837';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -266,10 +266,11 @@
     .toLocaleLowerCase('de-DE')
     .replace(/[·_]+/g,' ')
     .replace(/\s+/g,' ');
-  const familyAliases=value=>String(value||'')
+  // Allow the complete family label as well as each alias. A compound
+  // ingredient such as 'Feta / Hirtenkäse' must match its exact family.
+  const familyAliases=value=>[familyText(value),...String(value||'')
     .split(/\s*[/|]\s*/)
-    .map(familyText)
-    .filter(Boolean);
+    .map(familyText)].filter((alias,index,all)=>alias&&all.indexOf(alias)===index);
   const familyNeedMatch=(name,familyName)=>{
     const need=familyText(name);
     if(!need)return null;
@@ -1096,11 +1097,40 @@
       +'</div>'+extraMarkup;
   }
 
+  // A missing product link is visible, never silently hidden. Historical
+  // records must not be retroactively attributed to today's stock.
+  function missingIngredientSourceMarkup(item,historical=false){
+    const name=ingredientName(item);
+    const isWater=/^(wasser|leitungswasser)$/i.test(name);
+    let label='';
+    if(isWater){
+      label='Leitungswasser · keine Handelscharge';
+    }else if(historical){
+      label='Produkt/Charge zum Zubereitungszeitpunkt nicht dokumentiert';
+    }else if(!sourceIsReal('inventory')){
+      label='Produkt-/Chargenprüfung derzeit nicht verfügbar';
+    }else{
+      const rows=(state?.inventory||[]).filter(row=>row.is_active!==false);
+      const stock=item?.inventory_id
+        ?rows.find(row=>String(row.id)===String(item.inventory_id))
+        :null;
+      const exact=stock||rows.find(row=>normalizedIngredient(row.name,row.unit)===normalizedIngredient(name,item.unit));
+      const familyMatches=exact?[]:rows.filter(row=>row.family_name&&familyNeedMatch(name,row.family_name));
+      const unique=exact||(familyMatches.length===1?familyMatches[0]:null);
+      label=unique
+        ?familyAllocationProductLabel(unique)+' · aktuell keine verfügbare Chargenzuordnung'
+        :'Produktstamm/Charge nicht eindeutig zugeordnet';
+    }
+    return '<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-missing">'
+      +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
+      +'<span class="food-allocation-copy-v741">'+esc(label)+'</span></div></div>';
+  }
+
   function ingredientListMarkup(items,allocationMap=null){
     return '<ul>'+items.map(item=>{
       const q=num(item.quantity);
       const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item);
-      const allocationHtml=allocationMarkup(allocation,item);
+      const allocationHtml=allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item);
       const editable=editableAllocationContext(item);
       const canRemove=Boolean(editable);
       const quantityHtml=q===null||Number.isNaN(q)
