@@ -39,7 +39,7 @@ function boot({local,remote,authenticated=true,fail,never=false}={}){
   change(x){store.set(KEY,JSON.stringify({variant:x.variant,chosen:x.chosen,liked:x.liked}));callbacks['win:mod-icon-lab-local-change']({detail:x});}};
 }
 test('HTML loads v43 bridge directly and cache-busted lab page',()=>{
- assert.match(hub,/dingsi-lab-icons\.html\?v=45/);
+ assert.match(hub,/dingsi-lab-icons\.html\?v=46/);
  assert.match(html,/dingsi-lab-icons-cloud-v44\.js\?v=44/);
  assert.match(html,/id="cloud-retry-v43"/);
  assert.doesNotMatch(html,/@supabase\/supabase-js@2/);
