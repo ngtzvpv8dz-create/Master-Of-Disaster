@@ -1077,11 +1077,17 @@
           const wasFrozen=source.frozen===true;
           let label=String(source.label||source.name||ingredientName(item)).trim();
           if(wasFrozen)label=label.replace(/\s*[·,-]\s*frisch\s*$/i,'').trim()+' · aufgetaut (TK)';
-          return '<li><span>'+esc(label)+'</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b></li>';
+          const detail=familyText(label)===familyText(ingredientName(item))
+            ?'Produkt/Charge bei Zubereitung nicht näher dokumentiert':label;
+          return '<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b>'
+            +'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
+            +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
+            +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div></li>';
         });
       }
-      return ['<li><span>'+esc(ingredientName(item))+'</span><b>'+
-        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+'</b></li>'];
+      return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+
+        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+'</b>'
+        +missingIngredientSourceMarkup(item,true)+'</li>'];
     });
     const unassigned=ordered.filter(source=>!usedSources.has(source))
       .map(source=>'<li><span>'+esc(source.label||source.name||'Vorratszutat')+
