@@ -26,6 +26,8 @@ const context={
   isNonShoppingIngredient:name=>['wasser','leitungswasser'].includes(String(name).toLowerCase()),
   normalizedIngredient:name=>String(name||'').trim().toLocaleLowerCase('de-DE'),
   regularShoppingDate:date=>dateToShopping[date]||date,
+  // Fruit test does not use the short-lived berries rule.
+  freshConsumptionWindowDays:()=>null,
   ingredientStockInfo:(need,_rows,byId)=>{
     const stock=byId.get(need.inventory_id);
     const unitMismatch=Boolean(stock&&stock.unit!==need.unit);
