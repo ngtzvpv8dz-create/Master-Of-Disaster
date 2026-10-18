@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f7f6fc">
-<title>Dingsi Lab · Icon-Ische Variacionen</title>
+<title>Dingsi Lab · Icon-Ische Variacionen · Cloud-Auswahl</title>
 <style>
 *{box-sizing:border-box}
 :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#334359;background:#f7f6fc;color-scheme:light}
@@ -205,6 +205,7 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   </div>
  </section>
  <p class="saved" id="saved" role="status" aria-live="polite"></p>
+ <p class="saved" id="cloud-status" role="status" aria-live="polite">☁️ Cloud-Abgleich wird geprüft …</p>
  <p class="note">Die 14 bisherigen Homescreen-Icons bleiben unverändert. Eine Übernahme in den Homescreen erfolgt erst nach deiner Auswahl. Deine Auswahl bleibt im Dingsi Lab gespeichert, bis du ausdrücklich die Übernahme in den produktiven Homescreen beauftragst.</p>
 </main>
 <script>
@@ -246,7 +247,14 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
  var grid=document.getElementById('icon-grid');
  var photo=document.getElementById('photo');
  var photoUrl=null;
- function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(_){}}
+ function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(_){}
+  if(typeof window!=='undefined' && typeof CustomEvent==='function'){
+   window.dispatchEvent(new CustomEvent('mod-icon-lab-local-change',{
+    detail:{variant:state.variant,chosen:state.chosen,liked:state.liked.slice()}
+   }));
+  }
+ }
  function svgStart(id){return '<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="'+id+' – freigestelltes transparentes 3D-Testmotiv"><defs>'+
   '<linearGradient id="grad-'+id+'" x1="0" y1="0" x2=".85" y2="1"><stop class="grad-start" offset="0"/><stop class="grad-end" offset="1"/></linearGradient>'+
   '<linearGradient id="metal-'+id+'" x1=".05" y1="0" x2=".98" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".16" stop-color="var(--main2)"/><stop offset=".45" stop-color="var(--main)"/><stop offset=".78" stop-color="var(--main2)"/><stop offset="1" stop-color="var(--edge)"/></linearGradient>'+
@@ -374,8 +382,23 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   if(i>=0)state.liked.splice(i,1);else state.liked.push(state.variant);
   save();render();
  });
+ if(typeof window!=='undefined' && typeof window.addEventListener==='function'){
+  window.addEventListener('mod-icon-lab-cloud-hydrate',function(event){
+   var remote=event.detail;
+   if(!remote||!LABELS[remote.variant])return;
+   state.variant=remote.variant;
+   state.chosen=LABELS[remote.chosen]?remote.chosen:null;
+   state.liked=Array.isArray(remote.liked)?remote.liked.filter(function(v){return !!LABELS[v];}):[];
+   try{localStorage.setItem(KEY,JSON.stringify(state));}catch(_){}
+   render();
+  });
+ }
  render();
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase-config.js?v=41"></script>
+<script src="./supabase-client-lite-v593.js?v=593"></script>
+<script src="./dingsi-lab-icons-cloud-v41.js?v=41"></script>
 </body>
 </html>
