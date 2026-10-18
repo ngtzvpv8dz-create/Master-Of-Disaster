@@ -98,7 +98,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const initial=()=>Object.fromEntries(KEYS.map(k=>[k,{...BASE,...DEFAULTS[k]}]));
 const originals=initial();
 const draft=clone(originals);
-let saved={},savedAt={},approved={},selected='frozen',compareOn=false,previewMode='compact',saveWarning='';
+let saved={},savedAt={},approved={},selected='frozen',compareOn=false,saveWarning='';
 try{
  const data=JSON.parse(localStorage.getItem(storeKey)||'null');
  if(data&&data.version===32&&data.saved){
@@ -229,54 +229,25 @@ function cardMarkup(key,p){
  '<div class="st-card-quantity">'+html(row.amount)+'</div><p class="st-card-notes">'+html(row.info)+'</p>'+
  '<div class="st-card-buttons"><span>Menge ändern</span><span>Zustand & Verwendung</span></div></div></div>';
 }
-function setPreviewMode(mode){
- if(mode!=='compact'&&mode!=='original')return;
- previewMode=mode;
- const panel=document.querySelector('.st-preview-panel');
- if(panel)panel.classList.toggle('is-original',previewMode==='original');
- document.querySelectorAll('[data-preview-mode]').forEach(button=>{
-  button.setAttribute('aria-pressed',String(button.dataset.previewMode===mode));
- });
- renderPreview();
-}
 function renderPreview(){
  const p=draft[selected],slot=$('st-preview'),space=$('st-demo-space');
  slot.innerHTML=cardMarkup(selected,p);
  $('st-preview-label').textContent=NAMES[selected];
+ // A card is always rendered at native pixel font sizes.
+ // Only its maximum width is limited by the actual screen; never use CSS transform/zoom.
  const card=slot.querySelector('.st-card');
- if(previewMode==='original'){
-  // Never scale font sizes: CSS max-width only reduces card width on narrow screens.
-  if(card){
-   card.style.width='100%';
-   card.style.height='auto';
-   card.style.minHeight=p.cardHeight+'px';
-   card.style.transform='none';
-  }
-  slot.style.width='min(100%, '+p.cardWidth+'px)';
-  slot.style.height='auto';
-  space.style.height='auto';
-  const label=$('st-preview-scale');
-  if(label)label.textContent='100 % · echte Schriftgröße';
-  return;
- }
- // Compact sticky view: only the picture of the entire card is scaled.
- const viewportHeight=(typeof window!=='undefined'&&Number(window.innerHeight))||780;
- const viewportWidth=(typeof window!=='undefined'&&Number(window.innerWidth))||390;
- const width=Math.max(180,Math.min(Number(space?.clientWidth)||viewportWidth-54,viewportWidth-54));
- const heightCap=Math.max(140,Math.min(290,Math.round(viewportHeight*.32)));
- const scale=Math.max(.18,Math.min(1,width/p.cardWidth,heightCap/p.cardHeight));
  if(card){
-  card.style.width=p.cardWidth+'px';
-  card.style.height=p.cardHeight+'px';
+  card.style.width='100%';
+  card.style.maxWidth='100%';
   card.style.minHeight=p.cardHeight+'px';
-  card.style.transform='scale('+scale.toFixed(4)+')';
-  card.style.transformOrigin='top left';
+  card.style.height='auto';
+  card.style.transform='none';
  }
- slot.style.width=Math.ceil(p.cardWidth*scale)+'px';
- slot.style.height=Math.ceil(p.cardHeight*scale)+'px';
- space.style.height=Math.ceil(p.cardHeight*scale)+'px';
- const label=$('st-preview-scale');
- if(label)label.textContent='Vorschau '+Math.round(scale*100)+' % · skaliert';
+ slot.style.width='min(100%, '+p.cardWidth+'px)';
+ slot.style.maxWidth='100%';
+ slot.style.height='auto';
+ // The viewport itself is capped by CSS: extra-tall cards scroll inside the preview.
+ space.style.height='auto';
 }
 function renderComparison(){
  if(!compareOn)return;
@@ -402,7 +373,6 @@ async function upload(file){
  }finally{URL.revokeObjectURL(u);}
 }
 function statusInit(){
- document.querySelectorAll('[data-preview-mode]').forEach(el=>el.addEventListener('click',()=>setPreviewMode(el.dataset.previewMode)));
  $('st-groups').addEventListener('click',e=>{
   const zero=e.target.closest('[data-zero-setting]');
   if(!zero)return;
