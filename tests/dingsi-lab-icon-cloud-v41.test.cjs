@@ -7,6 +7,13 @@ const vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'..','dingsi-lab-icons-cloud-v41.js'),'utf8');
 const html=fs.readFileSync(path.join(__dirname,'..','dingsi-lab-icons.html'),'utf8');
 const KEY='mod-dingsi-lab-icon-variacionen-v1';
+const hub=fs.readFileSync(path.join(__dirname,'..','dingsi-lab.html'),'utf8');
+const sw=fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8');
+test('Icon-Lab navigation invalidates old cache and service worker fetches fresh icon page',()=>{
+ assert.match(hub,/href="\.\/dingsi-lab-icons\.html\?v=42"/);
+ assert.match(sw,/url\.pathname\.endsWith\("\/dingsi-lab-icons\.html"\)/);
+ assert.match(sw,/fetch\(new Request\(event\.request,\{cache:"no-store"\}\)\)/);
+});
 const settle=()=>new Promise(resolve=>setTimeout(resolve,0));
 function boot({local=null,remote=null,authenticated=true}={}){
  const listeners=new Map(),store=new Map(),writes=[],hydrates=[];
