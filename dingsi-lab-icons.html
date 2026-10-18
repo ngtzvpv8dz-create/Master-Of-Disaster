@@ -125,6 +125,22 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
 .preview[data-variant^="I0"] .art-wrap[data-motif="kisto"]{--metal-fill:url(#metal-kisto);--glass-fill:url(#glass-kisto);--glass-edge:#86a8d8}
 @media(max-width:370px){.variant-buttons button{min-height:49px}.variant-buttons small{font-size:9px}}
 
+
+/* V40: The approved original 3D renders, not regenerated SVGs.
+   The canvas outside each object uses true WebP alpha transparency. */
+.render-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.render-gallery button{appearance:none;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;min-width:0;padding:8px 3px;border:1px solid #dce1e9;border-radius:14px;background:#f4f7fb;cursor:pointer;font:800 10px/1.3 system-ui,sans-serif;color:#52637b}
+.render-gallery button img{display:block;aspect-ratio:1;width:min(100%,130px);object-fit:contain;filter:drop-shadow(0 4px 5px #1e3a4c36)}
+.render-gallery button[aria-pressed="true"]{border-color:#b897cf;background:linear-gradient(140deg,#f6e6f3,#eaf0fc);box-shadow:0 0 0 1px #cdb5df inset}
+.preview:is([data-variant="I09"],[data-variant="I10"],[data-variant="I11"],[data-variant="I12"]) .icon-grid{grid-template-columns:1fr;max-width:340px}
+.preview:is([data-variant="I09"],[data-variant="I10"],[data-variant="I11"],[data-variant="I12"]) .art-wrap[data-motif="food"],
+.preview:is([data-variant="I09"],[data-variant="I10"],[data-variant="I11"],[data-variant="I12"]) .art-wrap[data-motif="kisto"]{display:none}
+.preview:is([data-variant="I09"],[data-variant="I10"],[data-variant="I11"],[data-variant="I12"]) .art-wrap[data-motif="todo"]{max-width:250px}
+.icon-raster{display:block;width:100%;max-width:250px;height:auto;aspect-ratio:1;object-fit:contain;background:transparent!important;border:none!important;border-radius:0!important;filter:drop-shadow(0 8px 10px #0d243b32)}
+.preview[data-surface="pastel"] .icon-raster{filter:drop-shadow(0 8px 12px #45607324)}
+.preview[data-surface="checker"] .icon-raster{filter:none}
+@media(max-width:370px){.render-gallery{gap:4px}.render-gallery button{padding:5px 1px;font-size:9px}}
+
 .showcase-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid #e3e7ef;background:#ffffffee;padding:13px 16px}
 .alpha-note{color:#66788e;font-size:11px;line-height:1.45;max-width:440px}
 .choice{border:1px solid #cbb8dd;background:#f6eaf5;color:#714d7a;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:850;white-space:nowrap}
@@ -136,10 +152,10 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
 </head>
 <body>
 <main>
- <div class="top"><a class="back" href="./dingsi-lab.html?v=36">← Dingsi Lab</a><span class="lab-id">Nur Testumgebung</span></div>
+ <div class="top"><a class="back" href="./dingsi-lab.html?v=40">← Dingsi Lab</a><span class="lab-id">Nur Testumgebung</span></div>
  <div class="eyebrow">Design-Experiment · echte Transparenz</div>
  <h1>Icon-Ische Variacionen</h1>
- <p class="lead">Motiv bleibt Motiv, aber der alte eingebackene Kachelrand fliegt raus. Hier testen wir drei freigestellte Testmotive in acht nummerierten Stilen. Die neuen #I05–#I08 setzen auf deutlich mehr 3D-Tiefe.</p>
+ <p class="lead">Motiv bleibt Motiv, aber der alte eingebackene Kachelrand fliegt raus. Hier testen wir drei freigestellte Testmotive in acht nummerierten Stilen. Die neuen #I09–#I12 zeigen deine vier fertigen, transparenten 3D-Renderings des TO-DO-Motivs. Die Varianten #I01–#I08 bleiben unverändert.</p>
  <section class="control-panel" aria-label="Vorschau einstellen">
   <span class="section-label" style="margin-top:0">Farbschema</span>
   <div class="switches" role="group" aria-label="Farbschema">
@@ -164,6 +180,17 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
    <button type="button" data-variant="I06" aria-pressed="false"><span>#I06</span><small>Clean 3D Transp.</small></button>
    <button type="button" data-variant="I07" aria-pressed="false"><span>#I07</span><small>Glass 3D</small></button>
    <button type="button" data-variant="I08" aria-pressed="false"><span>#I08</span><small>Hero 3D</small></button>
+   <button type="button" data-variant="I09" aria-pressed="false"><span>#I09</span><small>Render · Soft</small></button>
+   <button type="button" data-variant="I10" aria-pressed="false"><span>#I10</span><small>Render · Clean</small></button>
+   <button type="button" data-variant="I11" aria-pressed="false"><span>#I11</span><small>Render · Glass</small></button>
+   <button type="button" data-variant="I12" aria-pressed="false"><span>#I12</span><small>Render · Hero</small></button>
+  </div>
+  <span class="section-label">Vier freigestellte 3D-Originale zum direkten Vergleichen</span>
+  <div class="render-gallery" role="group" aria-label="Vier neue 3D-Iconbilder vergleichen">
+    <button type="button" data-render-choice="I09" aria-pressed="false"><img src="./assets/dingsi-lab-icons/icon-i09-todo-3d-alpha.webp?v=40" loading="lazy" alt=""><span>#I09 · Soft</span></button>
+    <button type="button" data-render-choice="I10" aria-pressed="false"><img src="./assets/dingsi-lab-icons/icon-i10-todo-3d-alpha.webp?v=40" loading="lazy" alt=""><span>#I10 · Clean</span></button>
+    <button type="button" data-render-choice="I11" aria-pressed="false"><img src="./assets/dingsi-lab-icons/icon-i11-todo-3d-alpha.webp?v=40" loading="lazy" alt=""><span>#I11 · Glass</span></button>
+    <button type="button" data-render-choice="I12" aria-pressed="false"><img src="./assets/dingsi-lab-icons/icon-i12-todo-3d-alpha.webp?v=40" loading="lazy" alt=""><span>#I12 · Hero</span></button>
   </div>
  </section>
  <section class="showcase" aria-label="Live-Vorschau der Icon-Varianten">
@@ -172,12 +199,13 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
    <div class="icon-grid" id="icon-grid"></div>
   </div>
   <div class="showcase-foot">
-   <span class="alpha-note">✓ Echte Vektorformen · transparenter Hintergrund · kein eingebauter schwarzer oder weißer Kachelrand</span>
+   <span class="alpha-note">✓ Transparenter Außenbereich · #I09–#I12: echte 3D-Bilder mit Alpha-Kanal · noch keine Übernahme in die Haupt-App</span>
+   <button id="choose-style" type="button" class="choice" aria-pressed="false">★ Diese Variante auswählen</button>
    <button id="fave" type="button" class="choice" aria-pressed="false">♡ Stil vormerken</button>
   </div>
  </section>
  <p class="saved" id="saved" role="status" aria-live="polite"></p>
- <p class="note">Die 14 bisherigen Homescreen-Icons bleiben unverändert. Eine Übernahme in den Homescreen erfolgt erst nach deiner Auswahl. Die Nummern #I01–#I04 bleiben für diesen Versuch fest.</p>
+ <p class="note">Die 14 bisherigen Homescreen-Icons bleiben unverändert. Eine Übernahme in den Homescreen erfolgt erst nach deiner Auswahl. Deine Auswahl bleibt im Dingsi Lab gespeichert, bis du ausdrücklich die Übernahme in den produktiven Homescreen beauftragst.</p>
 </main>
 <script>
 (function(){
@@ -191,9 +219,19 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   I05:['Soft 3D Transparent','Weich modellierte 3D-Motive mit fühlbarer Tiefe, Lichtkanten und freiem transparentem Außenbereich.'],
   I06:['Clean 3D Transparent','Klarere Materialien, definierte Kanten und moderne 3D-Extrusion ohne festen Kachelrand.'],
   I07:['Glass / Soft Card 3D','Transluzente Glas-Materialwirkung auf den freistehenden Formen, nicht als rechteckige Bildkachel.'],
-  I08:['Hero 3D Transparent','Kräftige Farben, deutliche Tiefe und dramatischeres Studiolicht, nah an der Wirkung unserer bisherigen 3D-Icons.']
+  I08:['Hero 3D Transparent','Kräftige Farben, deutliche Tiefe und dramatischeres Studiolicht, nah an der Wirkung unserer bisherigen 3D-Icons.'],
+  I09:['Originalrender · Soft 3D','Das zuvor erzeugte und freigestellte 3D-Klemmbrett. Nur das TO-DO-Motiv, mit echtem transparenten Hintergrund.'],
+  I10:['Originalrender · Clean 3D','Die zweite bereits erstellte, klarer modellierte 3D-Version. Echtes Bildmaterial mit Alphakanal.'],
+  I11:['Originalrender · Glass 3D','Die dritte bereits erstellte, glasig glänzende 3D-Version. Echtes Bildmaterial mit Alphakanal.'],
+  I12:['Originalrender · Hero 3D','Die vierte bereits erstellte, ausdrucksstarke 3D-Version. Echtes Bildmaterial mit Alphakanal.']
  };
- var state={variant:'I01',theme:'pastel',background:'theme',liked:[]};
+ var RENDERS={
+  I09:'./assets/dingsi-lab-icons/icon-i09-todo-3d-alpha.webp?v=40',
+  I10:'./assets/dingsi-lab-icons/icon-i10-todo-3d-alpha.webp?v=40',
+  I11:'./assets/dingsi-lab-icons/icon-i11-todo-3d-alpha.webp?v=40',
+  I12:'./assets/dingsi-lab-icons/icon-i12-todo-3d-alpha.webp?v=40'
+ };
+ var state={variant:'I01',theme:'pastel',background:'theme',liked:[],chosen:null};
  try{
   var saved=JSON.parse(localStorage.getItem(KEY)||'null');
   if(saved && LABELS[saved.variant]){
@@ -201,6 +239,7 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
    if(saved.theme==='dark'||saved.theme==='pastel')state.theme=saved.theme;
    if(saved.background==='theme'||saved.background==='checker')state.background=saved.background;
    if(Array.isArray(saved.liked))state.liked=saved.liked.filter(function(x){return !!LABELS[x]});
+   if(LABELS[saved.chosen])state.chosen=saved.chosen;
   }
  }catch(_){}
  var preview=document.getElementById('preview');
@@ -290,10 +329,15 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   Array.from(grid.children).forEach(function(fig){
     var id=fig.dataset.motif;
     var label=MOTIFS.find(function(pair){return pair[0]===id;})[1];
-    fig.innerHTML=(use3d?iconAs3d(id):icon(id))+'<figcaption>'+label+'</figcaption>';
+    if(RENDERS[state.variant] && id==='todo'){
+      fig.innerHTML='<img class="icon-raster" src="'+RENDERS[state.variant]+'" alt="Freigestelltes TO-DO-3D-Klemmbrett, Variante #'+state.variant+'" decoding="async"><figcaption>'+label+'</figcaption>';
+    }else{
+      fig.innerHTML=(use3d?iconAs3d(id):icon(id))+'<figcaption>'+label+'</figcaption>';
+    }
   });
   document.querySelectorAll('[data-variant]').forEach(function(b){if(b.tagName==='BUTTON')b.setAttribute('aria-pressed',String(b.dataset.variant===state.variant));});
   document.querySelectorAll('[data-theme]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.theme===state.theme));});
+  document.querySelectorAll('[data-render-choice]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.renderChoice===state.variant));});
   document.querySelectorAll('[data-bg]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.bg===state.background));});
   document.getElementById('variant-title').textContent='#'+state.variant+' · '+LABELS[state.variant][0];
   document.getElementById('variant-description').textContent=LABELS[state.variant][1];
@@ -301,10 +345,18 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   var fave=document.getElementById('fave');
   fave.textContent=liked?'♥ Vorgemerkt':'♡ Stil vormerken';
   fave.setAttribute('aria-pressed',String(liked));
-  document.getElementById('saved').textContent=state.liked.length?'Vorgemerkt: '+state.liked.map(function(v){return '#'+v}).join(', '):'Noch keine Variante vorgemerkt.';
+  var chosen=document.getElementById('choose-style');
+  if(chosen){
+   chosen.setAttribute('aria-pressed',String(state.chosen===state.variant));
+   chosen.textContent=state.chosen===state.variant?'★ Ausgewählt (#'+state.variant+')':'☆ Diese Variante auswählen';
+  }
+  document.getElementById('saved').textContent=(state.chosen?'Deine Wahl: #'+state.chosen+'. ':'Noch keine feste Wahl. ')+(state.liked.length?'Vorgemerkt: '+state.liked.map(function(v){return '#'+v}).join(', '):'');
   document.querySelector('meta[name="theme-color"]').setAttribute('content',surface==='dark'?'#161b29':'#f7f6fc');
  }
  document.querySelectorAll('[data-variant]').forEach(function(b){if(b.tagName==='BUTTON')b.addEventListener('click',function(){state.variant=b.dataset.variant;save();render();});});
+ document.querySelectorAll('[data-render-choice]').forEach(function(b){b.addEventListener('click',function(){state.variant=b.dataset.renderChoice;save();render();});});
+ var choose=document.getElementById('choose-style');
+ if(choose)choose.addEventListener('click',function(){state.chosen=state.variant;save();render();});
  document.querySelectorAll('[data-theme]').forEach(function(b){b.addEventListener('click',function(){state.theme=b.dataset.theme;if(state.background==='theme'){render();}else render();save();});});
  document.querySelectorAll('[data-bg]').forEach(function(b){b.addEventListener('click',function(){if(b.dataset.bg==='photo'&&!photoUrl){photo.click();return;}state.background=b.dataset.bg;save();render();});});
  photo.addEventListener('change',function(){

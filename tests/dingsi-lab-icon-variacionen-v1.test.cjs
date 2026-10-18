@@ -13,7 +13,8 @@ function boot(saved){
   return {tagName:'BUTTON',dataset:{[kind]:name},setAttribute(k,v){attrs[kind+name+':'+k]=v;},
    addEventListener(type,fn){listeners[kind+name+':'+type]=fn;}};
  }
- const variants=['I01','I02','I03','I04','I05','I06','I07','I08'].map(x=>button('variant',x));
+ const variants=['I01','I02','I03','I04','I05','I06','I07','I08','I09','I10','I11','I12'].map(x=>button('variant',x));
+ const renderChoices=['I09','I10','I11','I12'].map(x=>button('renderChoice',x));
  const themes=['dark','pastel'].map(x=>button('theme',x));
  const bgs=['theme','checker','photo'].map(x=>button('bg',x));
  const elements={
@@ -22,6 +23,7 @@ function boot(saved){
   photo:{files:[],addEventListener(k,fn){listeners['photo:'+k]=fn;}},
   'variant-title':{},'variant-description':{},
   fave:{setAttribute(k,v){attrs['fave:'+k]=v},addEventListener(k,fn){listeners['fave:'+k]=fn;}},
+  'choose-style':{setAttribute(k,v){attrs['choose:'+k]=v},addEventListener(k,fn){listeners['choose:'+k]=fn;}},
   saved:{}
  };
  const storage=new Map(saved?Object.entries(saved):[]);
@@ -29,7 +31,7 @@ function boot(saved){
   getElementById(id){return elements[id];},
   createElement(){return {dataset:{},innerHTML:'',className:''}},
   querySelectorAll(selector){
-   return selector==='[data-variant]'?variants:selector==='[data-theme]'?themes:selector==='[data-bg]'?bgs:[];
+   return selector==='[data-variant]'?variants:selector==='[data-render-choice]'?renderChoices:selector==='[data-theme]'?themes:selector==='[data-bg]'?bgs:[];
   },
   querySelector(selector){
    assert.equal(selector,'meta[name="theme-color"]');
@@ -42,10 +44,10 @@ function boot(saved){
  vm.runInNewContext(script,{document,localStorage,URL,console});
  return {listeners,attrs,elements,storage};
 }
-test('Dingsi Lab has dedicated Icon-Ische Variacionen area and eight stable numbered styles',()=>{
- assert.match(lab,/href="\.\/dingsi-lab-icons\.html\?v=36"/);
+test('Dingsi Lab has dedicated Icon-Ische Variacionen area and twelve stable numbered styles',()=>{
+ assert.match(lab,/href="\.\/dingsi-lab-icons\.html\?v=40"/);
  assert.match(html,/Icon-Ische Variacionen/);
- for(const id of ['I01','I02','I03','I04','I05','I06','I07','I08'])assert(html.includes('data-variant="'+id+'"'));
+ for(const id of ['I01','I02','I03','I04','I05','I06','I07','I08','I09','I10','I11','I12'])assert(html.includes('data-variant="'+id+'"'));
  assert.match(html,/data-bg="checker"/);
  assert.match(html,/data-bg="photo"/);
  assert.match(html,/type="file" accept="image\/\*"/);
@@ -130,4 +132,40 @@ test('Original I01–I04 remain usable, retaining the unmodified non-extruded mo
   assert.equal(x.elements.preview.dataset.variant,v);
   assert.doesNotMatch(x.elements['icon-grid'].children[0].innerHTML,/class="model-extrusion"/);
  }
+});
+
+test('The four approved original 3D images appear as real WebP-alpha assets',()=>{
+ const x=boot();
+ for(const id of ['I09','I10','I11','I12']){
+  x.listeners['variant'+id+':click']();
+  assert.equal(x.elements.preview.dataset.variant,id);
+  const preview=x.elements['icon-grid'].children[0].innerHTML;
+  assert.match(preview,new RegExp('icon-'+id.toLowerCase()+'-todo-3d-alpha\\.webp'));
+  assert.match(preview,/class="icon-raster"/);
+  assert.doesNotMatch(preview,/class="icon-svg"|class="model-face"/);
+  assert.match(html,new RegExp('data-render-choice="'+id+'"'));
+  assert.equal(x.attrs['renderChoice'+id+':aria-pressed'],'true');
+  assert.equal(x.attrs['renderChoice'+(id==='I09'?'I10':'I09')+':aria-pressed'],'false');
+ }
+});
+test('Gallery selection and explicit chosen variant survive a reload; old selections are preserved',()=>{
+ const x=boot();
+ x.listeners['renderChoiceI11:click']();
+ assert.equal(x.elements.preview.dataset.variant,'I11');
+ x.listeners['choose:click']();
+ assert.match(x.elements.saved.textContent,/Deine Wahl: #I11/);
+ assert.equal(x.attrs['choose:aria-pressed'],'true');
+ x.listeners['fave:click']();
+ const saved=JSON.parse(x.storage.get('mod-dingsi-lab-icon-variacionen-v1'));
+ assert.equal(saved.chosen,'I11');
+ assert.deepEqual(Array.from(saved.liked),['I11']);
+ x.listeners['bgchecker:click']();
+ assert.equal(x.elements.preview.dataset.surface,'checker');
+ const reload=boot(Object.fromEntries(x.storage));
+ assert.equal(reload.elements.preview.dataset.variant,'I11');
+ assert.match(reload.elements.saved.textContent,/Deine Wahl: #I11/);
+ assert.match(reload.elements['icon-grid'].children[0].innerHTML,/icon-i11-todo-3d-alpha\.webp/);
+ reload.listeners['variantI02:click']();
+ assert.match(reload.elements['icon-grid'].children[0].innerHTML,/<svg/);
+ assert.match(reload.elements.saved.textContent,/Deine Wahl: #I11/);
 });
