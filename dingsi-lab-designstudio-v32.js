@@ -212,7 +212,30 @@ function cardMarkup(key,p){
  '<div class="st-card-quantity">'+html(row.amount)+'</div><p class="st-card-notes">'+html(row.info)+'</p>'+
  '<div class="st-card-buttons"><span>Menge ändern</span><span>Zustand & Verwendung</span></div></div></div>';
 }
-function renderPreview(){ $('st-preview').innerHTML=cardMarkup(selected,draft[selected]);$('st-preview-label').textContent=NAMES[selected];}
+function renderPreview(){
+ const p=draft[selected];
+ const slot=$('st-preview');
+ const space=$('st-demo-space');
+ slot.innerHTML=cardMarkup(selected,p);
+ $('st-preview-label').textContent=NAMES[selected];
+ // The actual card retains its configured dimensions; a visual scale makes
+ // even a 510-px tall experiment fit into a compact iPhone sticky preview.
+ const viewportHeight=(typeof window!=='undefined'&&Number(window.innerHeight))||780;
+ const viewportWidth=(typeof window!=='undefined'&&Number(window.innerWidth))||390;
+ const width=Math.max(180,Math.min(Number(space?.clientWidth)||viewportWidth-54,viewportWidth-54));
+ const heightCap=Math.max(140,Math.min(290,Math.round(viewportHeight*.32)));
+ const scale=Math.max(.18,Math.min(1,width/p.cardWidth,heightCap/p.cardHeight));
+ const card=slot.querySelector('.st-card');
+ if(card){
+  card.style.width=p.cardWidth+'px';
+  card.style.height=p.cardHeight+'px';
+  card.style.transform='scale('+scale.toFixed(4)+')';
+  card.style.transformOrigin='top left';
+ }
+ slot.style.width=Math.ceil(p.cardWidth*scale)+'px';
+ slot.style.height=Math.ceil(p.cardHeight*scale)+'px';
+ space.style.height=Math.ceil(p.cardHeight*scale)+'px';
+}
 function renderComparison(){
  if(!compareOn)return;
  $('st-comparison').innerHTML=KEYS.map(k=>'<div class="st-compare-item"><strong>'+html(NAMES[k])+'</strong>'+cardMarkup(k,draft[k])+'</div>').join('');
@@ -243,9 +266,10 @@ function renderSaved(){
  el.classList.toggle('saved',Boolean(saved[k]));
  });
  $('st-selected-heading').textContent='Regler für: '+NAMES[selected];
+ const pickerLabel=$('st-picker-label');if(pickerLabel)pickerLabel.textContent=NAMES[selected];
 }
 function renderAll(){renderPreview();renderGroups();renderSaved();renderComparison();}
-function changeSelected(key){if(!KEYS.includes(key))return;selected=key;renderAll();}
+function changeSelected(key){if(!KEYS.includes(key))return;selected=key;const picker=$('st-status-picker');if(picker)picker.open=false;renderAll();}
 function showNotice(s,good=true){const n=$('st-notice');n.textContent=s;n.style.color=good?'#237253':'#a14f35';}
 function persist(){
  const data={version:32,saved,savedAt,approved};
@@ -355,6 +379,7 @@ function statusInit(){
  });
  $('st-copy-target').innerHTML=KEYS.map(k=>'<option value="'+k+'">'+NAMES[k]+'</option>').join('');
  $('st-copy-target').value='thaw';
+ if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('resize',renderPreview,{passive:true});
  renderAll();
  if(saveWarning)showNotice(saveWarning,false);
 }
