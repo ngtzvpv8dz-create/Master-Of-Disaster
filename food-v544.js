@@ -1086,8 +1086,7 @@
         });
       }
       return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+
-        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+'</b>'
-        +missingIngredientSourceMarkup(item,true)+'</li>'];
+        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+'</b></li>'];
     });
     const unassigned=ordered.filter(source=>!usedSources.has(source))
       .map(source=>'<li><span>'+esc(source.label||source.name||'Vorratszutat')+
