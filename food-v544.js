@@ -1684,7 +1684,7 @@
         '<strong class="food-day-summary-value-v778" data-food-day-kcal>… kcal</strong>'+
         '<span class="food-day-summary-separator-v778" aria-hidden="true">·</span>'+
         '<strong class="food-day-summary-value-v778" data-food-day-protein>… g Protein</strong>'+
-        '<small class="food-day-summary-note-v778" data-food-day-summary-note></small>'+
+        '<button type="button" class="food-day-summary-note-v778 food-day-summary-goto-v838" data-food-day-summary-note data-food-day-summary-goto hidden aria-label="Offenen Tageswert prüfen"></button>'+
       '</div>'+
       thawTodayAlertsMarkup()+
       (meals.length?'<div class="food-meal-list-v544">'+meals.map(mealCard).join('')+'</div>':'<div class="food-empty-card-v544"><h4>Heute ist noch nichts eingeplant.</h4><p>Ein Rezept kann direkt aus dem Rezeptgarten eingeplant werden.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezepte öffnen</button></div>');
