@@ -37,15 +37,17 @@ function boot(){
    setTimeout(){},Image:function(){},Blob:function(){}});
  return {node,tabs,window,storage:()=>stored};
 }
-test('V33 sticky preview is above settings and compact status dropdown replaces toolbar',()=>{
+test('V35 retains collapsed status dropdown, keeps full-size preview above separately scrolling controls',()=>{
  assert(html.includes('id="st-status-picker"'));
  assert(html.includes('id="st-picker-label"'));
- assert(css.includes('.st-preview-panel{\n position:sticky'));
- assert(html.indexOf('id="st-demo-space"')<html.indexOf('id="st-groups"'));
+ assert(html.includes('id="st-controls-scroll"'));
+ assert(css.includes('.st-controls-scroll{'));
+ assert(css.includes('overflow-y:auto'));
+ assert(html.indexOf('id="st-demo-space"')<html.indexOf('id="st-controls-scroll"'));
  assert(html.indexOf('id="st-groups"')<html.indexOf('id="st-save"'));
  assert(html.indexOf('id="st-export"')<html.indexOf('id="st-save"'));
- assert(!html.includes('Deine Frost-Spielwiese:'));
- assert(lab.includes('dingsi-lab-food-editor.html?v=33'));
+ assert(!html.includes('data-preview-mode='));
+ assert(lab.includes('dingsi-lab-food-editor.html?v=35'));
 });
 test('V33 app script parses and no localStorage schema change',()=>{
  assert.doesNotThrow(()=>new vm.Script(js));
@@ -53,8 +55,8 @@ test('V33 app script parses and no localStorage schema change',()=>{
 });
 test('V33 preview reacts to status changes, stays compact, retains separate saves',()=>{
  const app=boot();
- const px=parseInt(app.node('st-preview').style.height,10);
- assert(px>=140&&px<=245,'visual height capped by viewport');
+ assert.equal(app.node('st-preview').style.height,'auto');
+ assert.equal(app.node('st-preview').mockCard.style.transform,'none');
  assert(app.node('st-preview').innerHTML.includes('Blattspinat TK'));
  assert.equal(app.node('st-picker-label').textContent,'Eingefroren');
  app.node('st-save').listeners.click();
@@ -68,5 +70,5 @@ test('V33 preview reacts to status changes, stays compact, retains separate save
  assert(data.saved.frozen);
  assert(data.saved.thaw);
  assert.equal(data.approved.thaw,true);
- assert(app.window.listeners.resize,'rescale listener attached');
+ assert(app.window.listeners.resize,'rotation/viewport refresh listener attached');
 });
