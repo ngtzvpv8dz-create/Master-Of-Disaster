@@ -45,7 +45,7 @@ function boot({local=null,remote=null,authenticated=true}={}){
  return {
   status,writes,hydrates,store,
   setAuthenticated(x){authenticated=x;},
-  change(x){window.dispatchEvent(new CustomEvent('mod-icon-lab-local-change',{detail:x}));},
+  change(x){store.set(KEY,JSON.stringify({variant:x.variant,chosen:x.chosen,liked:x.liked}));window.dispatchEvent(new CustomEvent('mod-icon-lab-local-change',{detail:x}));},
   retry(){listeners.get('window:online')?.();}
  };
 }
