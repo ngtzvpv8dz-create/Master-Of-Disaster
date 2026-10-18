@@ -148,6 +148,10 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
 .saved{font-size:12px;color:#52617a;min-height:18px;margin:11px 0}
 .note{margin-top:16px;color:#728399;font-size:11px;line-height:1.55}
 @media(max-width:370px){main{padding-left:10px;padding-right:10px}.control-panel{padding:11px}.switches button{padding:9px}.variant-buttons button{padding:8px 2px}.icon-grid{gap:1px}.preview{padding-left:5px;padding-right:5px}.art-wrap figcaption{font-size:9px}}
+.cloud-controls-v43{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:7px}
+.cloud-controls-v43 .saved{margin:0;flex:1;min-width:210px}
+#cloud-retry-v43{border:1px solid #b7cce5;color:#3a5d85;background:#ebf4ff;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:800}
+#cloud-retry-v43[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -205,7 +209,7 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   </div>
  </section>
  <p class="saved" id="saved" role="status" aria-live="polite"></p>
- <p class="saved" id="cloud-status" role="status" aria-live="polite">☁️ Cloud-Abgleich wird geprüft …</p>
+ <div class="cloud-controls-v43"><p class="saved" id="cloud-status" role="status" aria-live="polite">☁️ Cloud-Abgleich wird geprüft …</p><button id="cloud-retry-v43" type="button" hidden>↻ Erneut synchronisieren</button></div>
  <p class="note">Die 14 bisherigen Homescreen-Icons bleiben unverändert. Eine Übernahme in den Homescreen erfolgt erst nach deiner Auswahl. Deine Auswahl bleibt im Dingsi Lab gespeichert, bis du ausdrücklich die Übernahme in den produktiven Homescreen beauftragst.</p>
 </main>
 <script>
@@ -396,9 +400,7 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
  render();
 })();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="./supabase-config.js?v=41"></script>
-<script src="./supabase-client-lite-v593.js?v=593"></script>
-<script src="./dingsi-lab-icons-cloud-v41.js?v=41"></script>
+<script src="./supabase-config.js?v=43"></script>
+<script src="./dingsi-lab-icons-cloud-v43.js?v=43"></script>
 </body>
 </html>
