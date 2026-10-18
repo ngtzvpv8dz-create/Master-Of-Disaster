@@ -36,9 +36,9 @@ function arrange(stock,lots,freezer=[]){
 test('actual thawing meat first, 100g frozen reserved for separate later meal',()=>{
   const stock={id:'hack',name:'Hackfleisch gemischt',quantity:831,unit:'g'};
   const lots=[
-    {id:'thaw',inventory_id:'hack',opened_remaining_quantity:40,opened_remaining_unit:'g',opened_packages:1,unopened_packages:0,package_quantity:40,package_unit:'g',storage_location:'Kühlschrank',best_before_date:'2026-10-06',product_id:'product'},
-    {id:'fresh',inventory_id:'hack',opened_remaining_quantity:691,opened_remaining_unit:'g',opened_packages:1,unopened_packages:0,package_quantity:800,package_unit:'g',storage_location:null,best_before_date:'2026-10-17',product_id:'product'},
-    {id:'wrap',inventory_id:'hack',opened_remaining_quantity:100,opened_remaining_unit:'g',opened_packages:1,unopened_packages:0,package_quantity:100,package_unit:'g',storage_location:'Tiefkühler',best_before_date:'2026-10-17',product_id:'product'}
+    {id:'thaw',inventory_id:'hack',opened_remaining_quantity:40,opened_remaining_unit:'g',opened_packages:1,unopened_packages:0,package_quantity:40,package_unit:'g',storage_location:'Kühlschrank',purchased_on:'2026-10-03',best_before_date:'2026-10-06',product_id:'product'},
+    {id:'fresh',inventory_id:'hack',opened_remaining_quantity:691,opened_remaining_unit:'g',opened_packages:1,unopened_packages:0,package_quantity:800,package_unit:'g',storage_location:null,purchased_on:'2026-10-16',best_before_date:'2026-10-17',product_id:'product'},
+    {id:'wrap',inventory_id:'hack',opened_remaining_quantity:100,opened_remaining_unit:'g',opened_packages:1,unopened_packages:0,package_quantity:100,package_unit:'g',storage_location:'Tiefkühler',purchased_on:'2026-10-17',best_before_date:'2026-10-17',product_id:'product'}
   ];
   const freezer=[
     {frozen_lot_id:'thaw',status:'thawing',meal_ingredient_id:'lasagne'},
@@ -47,7 +47,7 @@ test('actual thawing meat first, 100g frozen reserved for separate later meal',(
   const split=arrange(stock,lots,freezer);
   const today=split(490);
   assert.deepEqual(today.map(p=>p.grams),[40,450]);
-  assert(today[0].label.includes('ältere TK-Portion'));
+  assert(today[0].label.includes('Auftauen läuft'));
   assert(today[1].label.includes('angebrochene Packung'));
   assert.deepEqual(split(241,490).map(p=>p.grams),[241]);
   assert.deepEqual(split(100,731).map(p=>p.grams),[100]);
