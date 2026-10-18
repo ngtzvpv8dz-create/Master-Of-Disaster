@@ -32,7 +32,7 @@ test('Zusatz-Snack auch ohne geplante Mahlzeiten sichtbar',()=>{
   const day=dailySummary(totals.get('2026-10-16'));
   assert.equal(day.kcal,'113 kcal');
   assert.equal(day.protein,'0 g Protein');
-  assert.match(day.note,/Extra/);
+  assert.equal(day.note,'','V831: extras are shown separately, not duplicated in the total note');
 });
 
 test('unvollständige Mahlzeit verdeckt bestätigte Zusatzkalorien nicht',()=>{
