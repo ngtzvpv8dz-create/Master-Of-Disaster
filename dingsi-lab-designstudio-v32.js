@@ -90,7 +90,7 @@ const clone=x=>JSON.parse(JSON.stringify(x));
 const initial=()=>Object.fromEntries(KEYS.map(k=>[k,{...BASE,...DEFAULTS[k]}]));
 const originals=initial();
 const draft=clone(originals);
-let saved={},savedAt={},selected='frozen',compareOn=false,saveWarning='';
+let saved={},savedAt={},approved={},selected='frozen',compareOn=false,saveWarning='';
 try{
  const data=JSON.parse(localStorage.getItem(storeKey)||'null');
  if(data&&data.version===32&&data.saved){
@@ -98,6 +98,7 @@ try{
    saved[key]=sanitize(data.saved[key],key);
    draft[key]=clone(saved[key]);
    savedAt[key]=String(data.savedAt?.[key]||'');
+   if(data.approved?.[key]===true)approved[key]=true;
   }
  }
 }catch(e){saveWarning='Lokaler Speicher nicht verfügbar; verwende JSON-Export.'}
@@ -227,7 +228,7 @@ function unsaved(){return !saved[selected]||JSON.stringify(draft[selected])!==JS
 function renderSaved(){
  $('st-save-status').textContent=unsaved()
    ?'Nicht gespeicherte Änderungen · '+NAMES[selected]
-   :'Gespeichert: '+NAMES[selected]+(savedAt[selected]?' · '+new Date(savedAt[selected]).toLocaleString('de-DE'):'');
+   :'Gespeichert: '+NAMES[selected]+(savedAt[selected]?' · '+new Date(savedAt[selected]).toLocaleString('de-DE'):'')+(approved[selected]?' · Für Übernahme vorgemerkt':'');
  $('st-save-status').className='st-saved '+(unsaved()?'unsaved':'ok');
  document.querySelectorAll('[data-status]').forEach(el=>{
  const k=el.dataset.status;
@@ -240,13 +241,18 @@ function renderAll(){renderPreview();renderGroups();renderSaved();renderComparis
 function changeSelected(key){if(!KEYS.includes(key))return;selected=key;renderAll();}
 function showNotice(s,good=true){const n=$('st-notice');n.textContent=s;n.style.color=good?'#237253':'#a14f35';}
 function persist(){
- const data={version:32,saved,savedAt};
+ const data={version:32,saved,savedAt,approved};
  try{localStorage.setItem(storeKey,JSON.stringify(data));return true}
  catch(e){showNotice('Speichern im Browser fehlgeschlagen. Bitte JSON-Export verwenden.',false);return false}
 }
 function saveCurrent(){
- saved[selected]=clone(draft[selected]);savedAt[selected]=new Date().toISOString();
+ saved[selected]=clone(draft[selected]);savedAt[selected]=new Date().toISOString();delete approved[selected];
  if(persist()){renderSaved();showNotice('✓ '+NAMES[selected]+' gespeichert. Für geräteübergreifende Sicherung bitte zusätzlich JSON exportieren.');}
+}
+function approveCurrent(){
+ if(unsaved())return showNotice('Erst die aktuellen Einstellungen speichern, danach für die Übernahme vormerken.',false);
+ approved[selected]=true;
+ if(persist()){renderSaved();showNotice('✓ '+NAMES[selected]+' für spätere Übernahme vorgemerkt, nicht produktiv veröffentlicht.');}
 }
 function loadCurrent(){draft[selected]=clone(saved[selected]||originals[selected]);renderAll();showNotice('Gespeicherten Stand geladen (oder Standard, falls noch nichts gespeichert).');}
 function resetCurrent(){draft[selected]=clone(originals[selected]);renderAll();showNotice('Diese Variante wurde auf Standard zurückgesetzt. Noch nicht gespeichert.');}
@@ -263,7 +269,7 @@ function setPreset(name){
  draft[selected]=b;renderAll();showNotice('Preset eingestellt, noch nicht gespeichert.');
 }
 function downloadJSON(){
- const data={format:'dingsi-lab-style-v32',version:32,createdAt:new Date().toISOString(),saved,saveDates:savedAt};
+ const data={format:'dingsi-lab-style-v32',version:32,createdAt:new Date().toISOString(),saved,saveDates:savedAt,approved};
  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Dingsi-Lab-Designs-V32.json';
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
@@ -277,7 +283,8 @@ async function importJSON(file){
  for(const key of KEYS)if(data.saved[key]&&typeof data.saved[key]==='object'){
   const corrected=sanitize(data.saved[key],key);
   saved[key]=corrected;draft[key]=clone(corrected);
-  savedAt[key]=String(data.saveDates?.[key]||new Date().toISOString());count++;
+  savedAt[key]=String(data.saveDates?.[key]||new Date().toISOString());
+  if(data.approved?.[key]===true)approved[key]=true;else delete approved[key];count++;
  }
  if(!count)throw Error('Keine gespeicherten Varianten vorhanden');
  if(!persist())throw Error('Konfiguration geladen, aber Speichern im Browser nicht möglich');
@@ -325,6 +332,7 @@ function statusInit(){
  $('st-groups').addEventListener('input',e=>{const c=e.target.closest('[data-setting]');if(c)updateControl(c);});
  $('st-groups').addEventListener('change',e=>{const c=e.target.closest('[data-setting]');if(c)updateControl(c);});
  $('st-save').addEventListener('click',saveCurrent);
+ $('st-approve').addEventListener('click',approveCurrent);
  $('st-load').addEventListener('click',loadCurrent);
  $('st-reset').addEventListener('click',resetCurrent);
  $('st-reseed').addEventListener('click',()=>{draft[selected].seed=draft[selected].seed+1>9999?1:draft[selected].seed+1;renderAll();showNotice('Kristalle neu gemischt.');});
