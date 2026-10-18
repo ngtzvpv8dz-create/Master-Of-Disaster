@@ -1308,15 +1308,16 @@
         if(quantity<=0)continue;
         const missingQuantity=linkedParts.length
           ?Math.max(0,(Number(item.quantity)||0)-linkedTotal):quantity;
-        const portionDetails=linkedParts.length>1
+        const portionDetails=linkedParts.length
           ?linkedParts.map(p=>fmtQty(Number(p.quantity),item.unit)+' '+
              (p.status==='thawed'?'aufgetaut':p.status==='thawing'?'Auftauen läuft':'noch eingefroren')).join(' · ')
+             +(missingQuantity>0.000001?' · '+fmtQty(missingQuantity,item.unit)+' noch nicht zugeordnet':'')
           :null;
         const planDifference=linkedParts.length&&linkedParts.every(p=>p.status!=='frozen')
           ?Math.max(0,(Number(item.quantity)||0)-linkedTotal):0;
         const first=linkedParts[0]||null;
         const anyThawing=linkedParts.some(p=>p.status==='thawing');
-        const allThawed=linkedParts.length>0&&linkedParts.every(p=>p.status==='thawed');
+        const allThawed=linkedParts.length>0&&missingQuantity<=0.000001&&linkedParts.every(p=>p.status==='thawed');
         const noExactStart=linkedParts.length>1;
         tasks.push({
           targetMealId:String(target.id||''),
@@ -1357,6 +1358,7 @@
     if(!tasks.length)return '';
 
     const timing=task=>{
+      if(task.linkedQuantity>0&&task.missingQuantity>0.000001)return 'Teilweise zugeordnet · weiteres TK-Teilstück fehlt';
       if(task.thawedAt)return 'Aufgetaut · im Vorrat bestätigt';
       if(task.thawingConfirmed&&!task.thawStartedAt)return 'Auftauen läuft · Startzeit nicht erfasst';
       if(task.thawStartedAt){
@@ -1395,7 +1397,9 @@
       return '<div class="food-thaw-entry-v739 '+(thawed?'is-thawing-v739':thawing?'is-thawing-v739':'is-frozen-v739')+'">'
         +'<div class="food-thaw-copy-v739"><b>'+esc(timing(task))+'</b><span>'+esc(fmtQty(task.quantity,task.unit)+' '+task.ingredient+' · für '+targetLabel(task)+' „'+task.targetTitle+'“')+'</span>'
         +(task.portionDetails?'<small>'+esc(task.portionDetails)+'</small>':'')
-        +(task.planDifference>0?'<small>⚠ Tatsächlich '+esc(fmtQty(task.planDifference,task.unit))+' weniger als im Rezept geplant. Bitte Mahlzeitenmenge abgleichen.</small>':'')
+        +(task.linkedQuantity>0&&task.missingQuantity>0.000001
+            ?'<button type="button" class="food-thaw-more-piece-v836" data-food-freezer-plan-hint="'+esc(task.ingredientId)+'">+ Weiteres Teilstück auswählen ('+esc(fmtQty(task.missingQuantity,task.unit))+')</button>'
+            :'')
         +'</div>'
         +'<button type="button" class="food-thaw-thermometer-button-v740 '+(thawing?'is-active-v740':'')+'" data-food-thaw-start="'+esc(task.ingredientId)+'" aria-pressed="'+thawing+'" aria-label="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" title="'+(thawed?'Aufgetaut':thawing?'Auftauen läuft':'Auftauen starten')+'" '+(thawing||thawed?'disabled':'')+'>'
           +'<span class="food-thaw-thermometer-v740" aria-hidden="true"><i></i></span>'
@@ -2046,7 +2050,7 @@
       const time=portion.thaw_started_at
         ?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(portion.thaw_started_at))
         :null;
-      const targetText=target?' · für '+(MEAL_LABELS[target.meal_type]||target.meal_type||'Mahlzeit')+' „'+target.title+'“':'';
+      const targetText=target?' · für '+fmtDate(target.meal_date)+' '+(MEAL_LABELS[target.meal_type]||target.meal_type||'Mahlzeit')+' „'+target.title+'“':'';
       const heading=portion.status==='thawing'
         ?'Auftauen läuft'+(time?' · seit '+time:' · Startzeit unbekannt')
         :portion.status==='thawed'?'Aufgetaut'
@@ -2133,7 +2137,7 @@
       :due?'Jetzt in den Kühlschrank legen':'Auftauen am '+fmtDate(task.dueDate);
     const target=task.targetType?(MEAL_LABELS[task.targetType]||task.targetType)+' ':'';
     const description=fmtQty(outstanding,task.unit)+' noch zuordnen · '+task.ingredient
-      +' · für '+target+'„'+task.targetTitle+'“';
+      +' · für '+fmtDate(task.targetDate)+' '+target+'„'+task.targetTitle+'“';
     return freezerThawCardMarkup({headline,description,
       extra:eligible?'Auch mehrere kleinere Teilstücke auswählbar':'Keine passende freie TK-Portion vorhanden',
       status:'frozen',action:due&&eligible?'plan-hint':'',id:task.ingredientId});
@@ -2317,9 +2321,9 @@
       .flatMap(meal=>meal.ingredients||[])
       .filter(ingredient=>ingredient.id&&ingredient.inventory_id)
       .map(ingredient=>[String(ingredient.id),String(ingredient.inventory_id)]));
+    // Bereits aufgetaute Teilstücke dürfen den noch offenen Rest NICHT verstecken.
     const hints=mealHints.filter(hint=>ingredientStockIds.has(String(hint.ingredientId))
-      &&!portions.some(portion=>String(portion.meal_ingredient_id||'')===String(hint.ingredientId)
-        &&['frozen','thawing','thawed'].includes(portion.status)));
+      &&Number(hint.missingQuantity)>0.000001);
     const hintNow=hints.filter(hint=>hint.dueDate<=now||hint.thawStartedAt);
     const hintLater=hints.filter(hint=>hint.dueDate>now&&!hint.thawStartedAt);
     return section('🌡️ Jetzt auftauen / Auftauen läuft',due.length+hintNow.length+cookedDue.length,
