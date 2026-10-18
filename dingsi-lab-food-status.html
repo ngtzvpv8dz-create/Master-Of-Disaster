@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#eff4ec"><meta name="color-scheme" content="light">
+<title>Dingsi Lab · Lebensmittel-Status</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#294337;background:#eff4ec;--ice-level:.68;--crystal-number:2}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#eff4ec}
+body{background:radial-gradient(ellipse at 80% 6%,rgba(211,235,231,.5),transparent 65%),#eff4ec}
+button,input{font:inherit}button{cursor:pointer}
+main{max-width:830px;margin:auto;padding:calc(21px + env(safe-area-inset-top,0px)) 15px calc(45px + env(safe-area-inset-bottom,0px))}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.back{padding:10px 12px;text-decoration:none;color:#406d70;background:#ffffffa6;border:1px solid #d5e2d9;border-radius:12px;font-size:12px;font-weight:800}
+.lab-pill{border:1px solid #b5d7dd;border-radius:99px;padding:5px 10px;color:#397887;font-size:10px;letter-spacing:.08em;font-weight:850}
+h1{font-size:clamp(25px,6vw,36px);line-height:1.1;letter-spacing:-.045em;margin:23px 0 8px}
+.lead{color:#65796d;font-size:13px;line-height:1.55;margin:0 0 17px}
+.legend{font-size:11px;color:#68827b;background:#ffffffad;border:1px solid #dce7df;border-radius:12px;padding:10px 12px;line-height:1.6;margin-bottom:14px}
+.controls{display:grid;gap:11px;padding:14px;border:1px solid #cfdfd6;border-radius:17px;background:#f8faf6;box-shadow:0 4px 13px #4a7b5310;margin-bottom:19px}
+.control-row{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.control-row label{font-size:12px;font-weight:850;color:#506b64}
+.slider-wrap{display:flex;align-items:center;gap:8px;min-width:48%}
+.slider-wrap input{width:100%;accent-color:#4fa2c5}
+.slider-wrap output{width:32px;text-align:right;color:#467e98;font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.choice{display:flex;gap:5px;flex-wrap:wrap}
+.choice button{border:1px solid #c9dadc;border-radius:9px;background:#fff;color:#587078;font-size:11px;font-weight:750;padding:8px 10px}
+.choice button[aria-pressed=true]{border-color:#70b0d1;background:#d8f0fc;color:#235d78}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.panel{padding:13px;border-radius:20px;background:#f8faf7;border:1px solid #dce7df;box-shadow:0 7px 24px rgba(49,85,67,.06);min-width:0}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 1px 11px}
+.panel-head strong{font-size:14px;font-weight:900;color:#385a49}
+.panel-head span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:#728479}
+.product{position:relative;min-height:245px;overflow:hidden;border-radius:17px;border:1px solid #d3e3db;background:#f6faf5;isolation:isolate}
+.product-content{position:relative;z-index:3;padding:18px 16px 14px;display:flex;flex-direction:column;align-items:flex-start;min-height:243px}
+.variant{font-weight:800;font-size:10px;letter-spacing:.09em;color:#627c72;text-transform:uppercase;margin-bottom:9px}
+.product h2{font-size:19px;line-height:1.3;margin:0 0 3px;color:#29483c;letter-spacing:-.025em}
+.detail{font-size:12px;color:#627a73;margin:0 0 11px}
+.amount{font-weight:900;font-size:26px;color:#28473e;letter-spacing:-.045em;margin:0 0 12px}
+.info{font-size:11.5px;color:#577575;line-height:1.5;max-width:98%;margin:0 0 12px}
+.info strong{color:#39595b}
+.buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}
+.buttons span{display:inline-block;padding:9px 11px;background:#ffffffe3;border:1px solid #d2e0dc;border-radius:11px;color:#3c5b53;font-size:10px;font-weight:800}
+.state{font-size:10px;font-weight:900;letter-spacing:.04em;padding:5px 9px;border-radius:99px;border:1px solid #d4e3d8;margin-bottom:10px;background:#ffffffba;color:#52766b}
+.status-fresh{background:radial-gradient(ellipse at 103% 104%,rgba(181,221,191,.22),transparent 63%),linear-gradient(125deg,#fbfdfa,#f2f8f1)}
+.status-fresh .state{color:#457656}
+.status-freeze{background:
+ radial-gradient(ellipse 132% 118% at 108% 110%,rgba(141,209,243,.72) 0%,rgba(196,234,249,.45) 33%,rgba(229,245,252,.19) 58%,transparent 82%),
+ linear-gradient(125deg,#fbfdfa 0%,#f6fbfd 72%,#eaf6fc 100%);border-color:#b8def2}
+.status-freeze .state,.status-frozen .state{color:#377da2;border-color:#add5ea;background:#e6f7ffcc}
+.status-frozen{background:
+ radial-gradient(ellipse 148% 150% at 104% 108%,rgba(129,198,239,.76) 0%,rgba(181,220,244,.56) 23%,rgba(218,240,250,.36) 49%,rgba(235,246,250,.15) 76%,transparent 100%),
+ linear-gradient(130deg,#f8fcfe 0%,#eaf6fb 72%,#d5ecf8 100%);border-color:#add7ee}
+.status-thaw{background:
+ radial-gradient(ellipse 72% 82% at 105% -4%,rgba(255,185,82,.87) 0%,rgba(255,213,154,.57) 37%,rgba(255,236,206,.22) 67%,transparent 99%),
+ radial-gradient(ellipse 130% 90% at 88% 116%,rgba(153,215,239,.48) 0%,rgba(207,237,250,.36) 40%,transparent 80%),
+ linear-gradient(130deg,#f9fcfd,#f4f9fa 54%,#fff4e8 100%);border-color:#e8d8bd}
+.status-thaw .state{border-color:#efc89d;color:#a3672e;background:#fff5e7ec}
+.status-thaw .product-content{min-height:243px}
+.frost-field{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:var(--ice-level);overflow:hidden;transition:opacity .18s}
+.crystal{position:absolute;width:67px;height:67px;color:#fff;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 3px rgba(255,255,255,.7))}
+.crystal.c1{right:-13px;bottom:-12px;width:111px;height:111px;opacity:.9;transform:rotate(17deg)}
+.crystal.c2{right:54px;bottom:8px;width:53px;height:53px;opacity:.86;transform:rotate(-14deg)}
+.crystal.c3{right:13px;bottom:92px;width:34px;height:34px;opacity:.74}
+.crystal.c4{right:114px;bottom:35px;width:29px;height:29px;opacity:.62}
+.crystal.c5{left:17%;bottom:-5px;width:42px;height:42px;opacity:.46;transform:rotate(12deg)}
+.crystal.c6{left:9%;top:9%;width:28px;height:28px;opacity:.3}
+.crystal.c7{right:38%;top:13%;width:25px;height:25px;opacity:.3}
+.crystal.c8{left:35%;bottom:40%;width:19px;height:19px;opacity:.19}
+.status-frozen .frost-field{opacity:calc(var(--ice-level) * .95)}
+.status-freeze .frost-field{opacity:calc(var(--ice-level) * .82)}
+.status-thaw .frost-field{opacity:calc(var(--ice-level) * .62)}
+.status-thaw .crystal.c1,.status-thaw .crystal.c3{bottom:-23px}
+.status-thaw .crystal.c2{right:23%;bottom:12px}
+.status-thaw .crystal.c5{left:8%;bottom:4px}
+.status-thaw .crystal.c6,.status-thaw .crystal.c7{display:none}
+.status-fresh .frost-field{display:none}
+.density-light .crystal:nth-child(n+4){display:none}
+.density-medium .crystal:nth-child(n+6){display:none}
+.density-rich .crystal{display:block}
+.density-rich .status-thaw .crystal.c6,.density-rich .status-thaw .crystal.c7{display:none}
+.sun{position:absolute;right:-9px;top:-11px;width:112px;height:112px;z-index:1;opacity:.6;pointer-events:none}
+.sun svg{width:100%;height:100%;fill:none;stroke:rgba(255,255,255,.86);stroke-width:2;stroke-linecap:round}
+.sun .disc{fill:rgba(255,253,228,.53);stroke:rgba(255,255,255,.9)}
+.sun:after{content:"";position:absolute;inset:-16px;border-radius:50%;background:radial-gradient(circle at 63% 36%,rgba(255,252,228,.45),transparent 64%);z-index:-1}
+.small-note{font-size:11px;color:#71857b;line-height:1.5;margin:17px 3px 0}
+.sample-bottom{margin-top:18px;padding:13px;background:#f8faf7;border:1px solid #d5e4dc;border-radius:17px}
+.sample-bottom h2{font-size:14px;margin:0 0 7px}
+.sample-bottom p{font-size:12px;line-height:1.6;color:#637c70;margin:0}
+@media(max-width:570px){.cards{grid-template-columns:1fr;gap:13px}.product{min-height:215px}.product-content,.status-thaw .product-content{min-height:213px}.panel{padding:12px}.control-row{align-items:flex-start;flex-direction:column;gap:8px}.slider-wrap{width:100%}.choice{width:100%}.choice button{flex:1}.crystal.c6{left:8%}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body class="density-rich">
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+<defs><symbol id="crystal-lab-v31" viewBox="0 0 100 100"><path d="M50 4V96M10 27L90 73M10 73L90 27M50 4L40 19M50 4L60 19M50 96L40 81M50 96L60 81M10 27L29 27M10 27L20 43M90 73L71 73M90 73L80 57M10 73L29 73M10 73L20 57M90 27L71 27M90 27L80 43"/></symbol></defs>
+</svg>
+<main>
+<div class="topline"><a class="back" href="./dingsi-lab.html?v=31">← Lab-Übersicht</a><span class="lab-pill">LIVETEST · V31</span></div>
+<h1>Lebensmittel-Status</h1>
+<p class="lead">Eisblüte C, direkt als HTML, CSS und SVG. Die Frostflächen sind echte Oberflächen, keine hinterlegten KI-Bilder.</p>
+<div class="legend"><strong>Nur Design-Demodaten:</strong> keine Verbindung zu Supabase, kein Ändern deines Vorrats. Die vier Karten zeigen die geplanten Statusfarben und Ecken.</div>
+<section class="controls" aria-label="Frostdesign live anpassen">
+ <div class="control-row"><label for="iceStrength">Frostintensität</label><div class="slider-wrap"><input id="iceStrength" type="range" min="15" max="100" value="68" step="1"><output id="iceValue" for="iceStrength">68%</output></div></div>
+ <div class="control-row"><label>Kristallmenge</label><div class="choice" role="group" aria-label="Anzahl Eiskristalle"><button type="button" data-density="light" aria-pressed="false">Wenig</button><button type="button" data-density="medium" aria-pressed="false">Mittel</button><button type="button" data-density="rich" aria-pressed="true">Eisblüte</button></div></div>
+</section>
+<section class="cards" aria-label="Vier Lebensmittel-Statuskarten">
+ <article class="panel"><div class="panel-head"><strong>Frisch</strong><span>Kühlschrank</span></div>
+  <div class="product status-fresh"><div class="product-content"><span class="state">FRISCH</span><span class="variant">fettarm · 1,5 % Fett</span><h2>H-Milch</h2><p class="detail">Geöffnete Packung</p><p class="amount">716 ml</p><p class="info"><strong>MHD:</strong> 24.01.2027<br><strong>Nächste Verwendung:</strong> 20.10.2026</p><div class="buttons"><span>Menge ändern</span><span>Zustand & Verwendung</span></div></div></div>
+ </article>
+ <article class="panel"><div class="panel-head"><strong>Noch einzufrieren</strong><span>Aufgabe</span></div>
+  <div class="product status-freeze">
+  <div class="frost-field" aria-hidden="true"><svg class="crystal c1"><use href="#crystal-lab-v31"/></svg><svg class="crystal c2"><use href="#crystal-lab-v31"/></svg><svg class="crystal c3"><use href="#crystal-lab-v31"/></svg><svg class="crystal c4"><use href="#crystal-lab-v31"/></svg><svg class="crystal c5"><use href="#crystal-lab-v31"/></svg><svg class="crystal c6"><use href="#crystal-lab-v31"/></svg><svg class="crystal c7"><use href="#crystal-lab-v31"/></svg><svg class="crystal c8"><use href="#crystal-lab-v31"/></svg></div>
+  <div class="product-content"><span class="state">NOCH EINZUFRIEREN</span><span class="variant">Geschnitten · Portioniert</span><h2>Paprika</h2><p class="detail">Geplante Einfrierportion</p><p class="amount">150 g</p><p class="info"><strong>Kauf:</strong> 18.10.2026<br>Frostverlauf sanft nach unten rechts</p><div class="buttons"><span>Menge ändern</span><span>Einfrieren bestätigen</span></div></div></div>
+ </article>
+ <article class="panel"><div class="panel-head"><strong>Eingefroren</strong><span>Tiefkühler</span></div>
+  <div class="product status-frozen">
+  <div class="frost-field" aria-hidden="true"><svg class="crystal c1"><use href="#crystal-lab-v31"/></svg><svg class="crystal c2"><use href="#crystal-lab-v31"/></svg><svg class="crystal c3"><use href="#crystal-lab-v31"/></svg><svg class="crystal c4"><use href="#crystal-lab-v31"/></svg><svg class="crystal c5"><use href="#crystal-lab-v31"/></svg><svg class="crystal c6"><use href="#crystal-lab-v31"/></svg><svg class="crystal c7"><use href="#crystal-lab-v31"/></svg><svg class="crystal c8"><use href="#crystal-lab-v31"/></svg></div>
+  <div class="product-content"><span class="state">EINGEFROREN</span><span class="variant">TK · Portioniert</span><h2>Blattspinat</h2><p class="detail">Lagert im Tiefkühler</p><p class="amount">212 g</p><p class="info"><strong>Eingefroren:</strong> 30.09.2026<br>Kristalle von rechts nach links immer blasser</p><div class="buttons"><span>Menge ändern</span><span>Zustand & Verwendung</span></div></div></div>
+ </article>
+ <article class="panel"><div class="panel-head"><strong>Auftauen läuft</strong><span>Kühlschrank</span></div>
+  <div class="product status-thaw">
+  <div class="frost-field" aria-hidden="true"><svg class="crystal c1"><use href="#crystal-lab-v31"/></svg><svg class="crystal c2"><use href="#crystal-lab-v31"/></svg><svg class="crystal c3"><use href="#crystal-lab-v31"/></svg><svg class="crystal c4"><use href="#crystal-lab-v31"/></svg><svg class="crystal c5"><use href="#crystal-lab-v31"/></svg><svg class="crystal c6"><use href="#crystal-lab-v31"/></svg><svg class="crystal c7"><use href="#crystal-lab-v31"/></svg><svg class="crystal c8"><use href="#crystal-lab-v31"/></svg></div>
+  <div class="sun" aria-hidden="true"><svg viewBox="0 0 120 120"><circle class="disc" cx="90" cy="29" r="31"/><path d="M90 1V0M46 29H37M55 2L49 -4M56 58L47 67M90 69V81M120 69L128 77M115 15L126 9"/></svg></div>
+  <div class="product-content"><span class="state">AUFTAUEN LÄUFT</span><span class="variant">Hackfleisch gemischt</span><h2>50 % Schwein / 50 % Rind</h2><p class="detail">Im Kühlschrank zum Auftauen</p><p class="amount">241 g</p><p class="info"><strong>Seit:</strong> 18.10.2026, 10:12<br><strong>Für:</strong> Heute · Abendessen</p><div class="buttons"><span>Menge ändern</span><span>Zustand & Verwendung</span></div></div></div>
+ </article>
+</section>
+<p class="small-note">Die Flächen werden vom Browser gezeichnet. Das Lab lädt dafür keine Lebensmittelbilder, Bilddateien oder Datenbankabfragen. Der Regler ändert direkt die tatsächlich gerenderten Kristalle.</p>
+<section class="sample-bottom"><h2>Technisches Prinzip</h2><p>Ein gemeinsames SVG-Kristallmotiv wird auf den Karten wiederverwendet. Der Übergang entsteht ausschließlich über CSS-Farbverläufe. Darum kann später jede echte Lebensmittelkarte denselben Stil erhalten, ohne eine Grafik pro Artikel herunterzuladen. Die endgültige Performance prüfen wir auf deinem iPhone.</p></section>
+</main>
+<script>
+(function(){
+ const root=document.documentElement;
+ const input=document.getElementById('iceStrength');
+ const value=document.getElementById('iceValue');
+ const buttons=[...document.querySelectorAll('[data-density]')];
+ function updateIce(){const v=Number(input.value);root.style.setProperty('--ice-level',(v/100).toFixed(2));value.textContent=v+'%';}
+ input.addEventListener('input',updateIce);
+ buttons.forEach(button=>button.addEventListener('click',()=>{
+   document.body.classList.remove('density-light','density-medium','density-rich');
+   document.body.classList.add('density-'+button.dataset.density);
+   buttons.forEach(other=>other.setAttribute('aria-pressed',String(other===button)));
+ }));
+ updateIce();
+})();
+</script></body></html>
