@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V835';
+  const VERSION='V837';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -88,11 +88,16 @@
     // V830: "Frischkäse leicht" darf NICHT aus dem getrennten körnigen
     // Frischkäse-Familienvorrat bedient werden. Exakte Sorte hat Vorrang.
     if(need==='frischkäse leicht'&&base!=='frischkäse leicht')return null;
-    if(need===base)return 'generic';
-    if(need.startsWith(base+' ')||need.endsWith(' '+base)){
-      if(/\b(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\b/.test(need))return 'frozen';
-      if(/\b(?:frisch|frische|frischer|frisches|bio|babyspinat)\b/.test(need))return 'fresh';
-      return 'generic';
+    // Match both the full food family and every slash-separated synonym.
+    // e.g. "Feta / Hirtenkäse" and "Feta" resolve to the same stock.
+    const aliases=[base,...base.split(/\s*[/|]\s*/)].filter(Boolean);
+    for(const alias of aliases){
+      if(need===alias)return 'generic';
+      if(need.startsWith(alias+' ')||need.endsWith(' '+alias)){
+        if(/\b(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\b/.test(need))return 'frozen';
+        if(/\b(?:frisch|frische|frischer|frisches|bio|babyspinat)\b/.test(need))return 'fresh';
+        return 'generic';
+      }
     }
     return null;
   }
