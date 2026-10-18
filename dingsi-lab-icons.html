@@ -79,6 +79,52 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
 .preview[data-variant="I04"][data-surface="pastel"] .art-wrap{--main:#4f928e;--edge:#426f84;--line:#526489}
 .preview[data-variant="I04"][data-surface="pastel"] .art-wrap[data-motif=food]{--main:#a86d50;--edge:#92605e;--line:#986c4d}
 .preview[data-variant="I04"][data-surface="pastel"] .art-wrap[data-motif=kisto]{--main:#517ca8;--edge:#50749e;--line:#6376a5}
+
+/* V2: 3D-first explorations. All rendering is pure SVG with transparent outer alpha.
+   The legacy I01–I04 paths and styling are unchanged. */
+.preview[data-variant^="I0"] .icon-svg{transition:filter .15s,transform .15s}
+.preview:is([data-variant="I05"],[data-variant="I06"],[data-variant="I07"],[data-variant="I08"]) .icon-svg{width:100%;max-width:160px;overflow:visible;transform:translateY(-1px)}
+.icon-svg .model-extrusion{display:none;transform-box:fill-box;transform-origin:center}
+.icon-svg .model-face{display:none}
+.preview:is([data-variant="I05"],[data-variant="I06"],[data-variant="I07"],[data-variant="I08"]) .icon-svg .model-extrusion,
+.preview:is([data-variant="I05"],[data-variant="I06"],[data-variant="I07"],[data-variant="I08"]) .icon-svg .model-face{display:inline}
+.preview[data-variant="I05"] .icon-svg{filter:drop-shadow(0 11px 8px #17243840) saturate(1.04)}
+.preview[data-variant="I05"] .icon-svg .model-extrusion{transform:translate(3px,5px);filter:brightness(.33) saturate(.75);opacity:.77}
+.preview[data-variant="I05"] .icon-svg .model-face{filter:url(#soft-relief);opacity:1}
+.preview[data-variant="I05"] .art-wrap{--main2:#b0e1d5;--edge:#477f78;--warm:#edac6e}
+.preview[data-variant="I05"] .art-wrap[data-motif=food]{--main2:#e9b67e;--edge:#996a50;--warm:#f78b58}
+.preview[data-variant="I05"] .art-wrap[data-motif=kisto]{--main2:#b0d3f6;--edge:#587eb2;--warm:#f0bd82}
+.preview[data-variant="I06"] .icon-svg{filter:drop-shadow(1px 10px 7px #142b3e42) saturate(1.09) contrast(1.09)}
+.preview[data-variant="I06"] .icon-svg .model-extrusion{transform:translate(3px,7px);filter:brightness(.27) saturate(.7);opacity:.92}
+.preview[data-variant="I06"] .icon-svg .model-face{filter:url(#clean-relief)}
+.preview[data-variant="I06"] .icon-svg .main2{fill:var(--metal-fill)}
+.preview[data-variant="I06"] .icon-svg .edge{fill:var(--edge)}
+.preview[data-variant="I06"] .icon-svg .warm{fill:var(--warm)}
+.preview[data-variant="I07"] .icon-svg{filter:drop-shadow(0 10px 13px #779fb34f) saturate(.87)}
+.preview[data-variant="I07"] .icon-svg .model-extrusion{transform:translate(2px,4px);filter:brightness(.48) saturate(.8);opacity:.47}
+.preview[data-variant="I07"] .icon-svg .model-face{filter:url(#glass-relief)}
+.preview[data-variant="I07"] .icon-svg .main,
+.preview[data-variant="I07"] .icon-svg .main2{fill:var(--glass-fill)}
+.preview[data-variant="I07"] .icon-svg .edge{fill:var(--glass-edge);opacity:.84}
+.preview[data-variant="I07"] .icon-svg .paper{fill:var(--paper);opacity:.93}
+.preview[data-variant="I07"] .icon-svg .gloss{fill:#fff;opacity:.54}
+.preview[data-variant="I07"] .art-wrap{--edge:#75b8ac;--line:#5e919c}
+.preview[data-variant="I07"] .art-wrap[data-motif=food]{--edge:#b69089;--line:#ae8170}
+.preview[data-variant="I07"] .art-wrap[data-motif=kisto]{--edge:#7c9fd0;--line:#6d8cbd}
+.preview[data-variant="I08"] .icon-svg{filter:drop-shadow(1px 14px 8px #071c3359) saturate(1.27) contrast(1.12);transform:translateY(-2px) scale(1.065)}
+.preview[data-variant="I08"] .icon-svg .model-extrusion{transform:translate(5px,9px);filter:brightness(.20) saturate(.95);opacity:.98}
+.preview[data-variant="I08"] .icon-svg .model-face{filter:url(#hero-relief)}
+.preview[data-variant="I08"] .icon-svg .main2{fill:var(--metal-fill)}
+.preview[data-variant="I08"] .icon-svg .gloss{fill:#fff;opacity:.7}
+.preview[data-variant="I08"] .icon-svg .art-outline{stroke-width:3;stroke-linejoin:round}
+.preview[data-variant="I08"] .art-wrap{--main:#53bea8;--main2:#a7ead5;--edge:#206d77;--warm:#e9a05a}
+.preview[data-variant="I08"] .art-wrap[data-motif=food]{--main:#e9a768;--main2:#ffd39d;--edge:#955235;--warm:#f87847}
+.preview[data-variant="I08"] .art-wrap[data-motif=kisto]{--main:#76aff2;--main2:#a4d2ff;--edge:#3362a6;--warm:#f8c074}
+.preview[data-variant^="I0"] .art-wrap[data-motif="todo"]{--metal-fill:url(#metal-todo);--glass-fill:url(#glass-todo);--glass-edge:#5b9b90}
+.preview[data-variant^="I0"] .art-wrap[data-motif="food"]{--metal-fill:url(#metal-food);--glass-fill:url(#glass-food);--glass-edge:#cda18c}
+.preview[data-variant^="I0"] .art-wrap[data-motif="kisto"]{--metal-fill:url(#metal-kisto);--glass-fill:url(#glass-kisto);--glass-edge:#86a8d8}
+@media(max-width:370px){.variant-buttons button{min-height:49px}.variant-buttons small{font-size:9px}}
+
 .showcase-foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid #e3e7ef;background:#ffffffee;padding:13px 16px}
 .alpha-note{color:#66788e;font-size:11px;line-height:1.45;max-width:440px}
 .choice{border:1px solid #cbb8dd;background:#f6eaf5;color:#714d7a;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:850;white-space:nowrap}
@@ -93,7 +139,7 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
  <div class="top"><a class="back" href="./dingsi-lab.html?v=36">← Dingsi Lab</a><span class="lab-id">Nur Testumgebung</span></div>
  <div class="eyebrow">Design-Experiment · echte Transparenz</div>
  <h1>Icon-Ische Variacionen</h1>
- <p class="lead">Motiv bleibt Motiv, aber der alte eingebackene Kachelrand fliegt raus. Hier testen wir nur drei neu gezeichnete SVG-Motive und vier unterschiedliche Stile.</p>
+ <p class="lead">Motiv bleibt Motiv, aber der alte eingebackene Kachelrand fliegt raus. Hier testen wir drei freigestellte Testmotive in acht nummerierten Stilen. Die neuen #I05–#I08 setzen auf deutlich mehr 3D-Tiefe.</p>
  <section class="control-panel" aria-label="Vorschau einstellen">
   <span class="section-label" style="margin-top:0">Farbschema</span>
   <div class="switches" role="group" aria-label="Farbschema">
@@ -114,6 +160,10 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
    <button type="button" data-variant="I02" aria-pressed="false"><span>#I02</span><small>Pastell Clay</small></button>
    <button type="button" data-variant="I03" aria-pressed="false"><span>#I03</span><small>Clean Flat</small></button>
    <button type="button" data-variant="I04" aria-pressed="false"><span>#I04</span><small>Line Art</small></button>
+   <button type="button" data-variant="I05" aria-pressed="false"><span>#I05</span><small>Soft 3D Transp.</small></button>
+   <button type="button" data-variant="I06" aria-pressed="false"><span>#I06</span><small>Clean 3D Transp.</small></button>
+   <button type="button" data-variant="I07" aria-pressed="false"><span>#I07</span><small>Glass 3D</small></button>
+   <button type="button" data-variant="I08" aria-pressed="false"><span>#I08</span><small>Hero 3D</small></button>
   </div>
  </section>
  <section class="showcase" aria-label="Live-Vorschau der Icon-Varianten">
@@ -137,7 +187,11 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   I01:['Soft 3D','Weiche Lichtkanten, plastische Motive und sanfter Schatten. Keine Kachel als Bild.'],
   I02:['Pastell Clay','Matt, freundlich, leicht rundlich und weniger Kontrast.'],
   I03:['Clean Flat','Klarere Flächen, fast keine Lichtreflexe und minimale Tiefe.'],
-  I04:['Line Art','Freigestellte Konturen statt voller Flächen, besonders leicht auf Fotohintergründen.']
+  I04:['Line Art','Freigestellte Konturen statt voller Flächen, besonders leicht auf Fotohintergründen.'],
+  I05:['Soft 3D Transparent','Weich modellierte 3D-Motive mit fühlbarer Tiefe, Lichtkanten und freiem transparentem Außenbereich.'],
+  I06:['Clean 3D Transparent','Klarere Materialien, definierte Kanten und moderne 3D-Extrusion ohne festen Kachelrand.'],
+  I07:['Glass / Soft Card 3D','Transluzente Glas-Materialwirkung auf den freistehenden Formen, nicht als rechteckige Bildkachel.'],
+  I08:['Hero 3D Transparent','Kräftige Farben, deutliche Tiefe und dramatischeres Studiolicht, nah an der Wirkung unserer bisherigen 3D-Icons.']
  };
  var state={variant:'I01',theme:'pastel',background:'theme',liked:[]};
  try{
@@ -154,7 +208,16 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
  var photo=document.getElementById('photo');
  var photoUrl=null;
  function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(_){}}
- function svgStart(id){return '<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="'+id+' – transparentes Vektormotiv"><defs><linearGradient id="grad-'+id+'" x1="0" y1="0" x2=".85" y2="1"><stop class="grad-start" offset="0"/><stop class="grad-end" offset="1"/></linearGradient></defs>';}
+ function svgStart(id){return '<svg class="icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="'+id+' – freigestelltes transparentes 3D-Testmotiv"><defs>'+
+  '<linearGradient id="grad-'+id+'" x1="0" y1="0" x2=".85" y2="1"><stop class="grad-start" offset="0"/><stop class="grad-end" offset="1"/></linearGradient>'+
+  '<linearGradient id="metal-'+id+'" x1=".05" y1="0" x2=".98" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".16" stop-color="var(--main2)"/><stop offset=".45" stop-color="var(--main)"/><stop offset=".78" stop-color="var(--main2)"/><stop offset="1" stop-color="var(--edge)"/></linearGradient>'+
+  '<radialGradient id="glass-'+id+'" cx=".22" cy=".12" r=".95"><stop offset="0" stop-color="#fff" stop-opacity=".97"/><stop offset=".23" stop-color="var(--main2)" stop-opacity=".82"/><stop offset=".72" stop-color="var(--main)" stop-opacity=".82"/><stop offset="1" stop-color="var(--edge)" stop-opacity=".94"/></radialGradient>'+
+  '<filter id="soft-relief" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="3" result="s"/><feSpecularLighting in="s" surfaceScale="3" specularConstant=".28" specularExponent="19" lighting-color="#fff7e6" result="l"><fePointLight x="-70" y="-50" z="110"/></feSpecularLighting><feComposite in="l" in2="SourceAlpha" operator="in" result="shine"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="shine"/></feMerge></filter>'+
+  '<filter id="clean-relief" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="1.6" result="s"/><feSpecularLighting in="s" surfaceScale="5" specularConstant=".30" specularExponent="24" lighting-color="#fff" result="l"><fePointLight x="-85" y="-75" z="100"/></feSpecularLighting><feComposite in="l" in2="SourceAlpha" operator="in" result="shine"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="shine"/></feMerge></filter>'+
+  '<filter id="glass-relief" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="s"/><feSpecularLighting in="s" surfaceScale="6" specularConstant=".52" specularExponent="30" lighting-color="#eafcff" result="l"><fePointLight x="-60" y="-70" z="80"/></feSpecularLighting><feComposite in="l" in2="SourceAlpha" operator="in" result="shine"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="shine"/></feMerge></filter>'+
+  '<filter id="hero-relief" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="2.4" result="s"/><feSpecularLighting in="s" surfaceScale="9" specularConstant=".63" specularExponent="32" lighting-color="#fff4db" result="l"><fePointLight x="-120" y="-100" z="65"/></feSpecularLighting><feComposite in="l" in2="SourceAlpha" operator="in" result="shine"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="shine"/></feMerge></filter>'+
+  '</defs>';}
+
  function icon(id){
   var start=svgStart(id), end='</svg>';
   if(id==='todo')return start+
@@ -199,6 +262,18 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
    '<path class="line" d="M100 132h47"/>'+
    '</g>'+end;
  }
+ function iconAs3d(id){
+  var flat=icon(id);
+  var p=flat.indexOf('</defs>'),cut=p+7;
+  if(p<0)throw Error('SVG definitions missing');
+  var defs=flat.slice(0,cut),drawing=flat.slice(cut,-6);
+  // The model is drawn twice: a darker offset silhouette for thickness and a light-reactive face.
+  // No full-image background shape is ever inserted, so the silhouette's outside stays alpha-transparent.
+  return defs+'<defs><g id="model-'+id+'">'+drawing+'</g></defs>'+
+   '<use class="model-extrusion" href="#model-'+id+'"/>'+
+   '<use class="model-face" href="#model-'+id+'"/>'+
+   '</svg>';
+ }
  var MOTIFS=[['todo','TO-DO'],['food','FOOD'],['kisto','KISTOLOGIE']];
  MOTIFS.forEach(function(item){
   var fig=document.createElement('figure');
@@ -211,6 +286,12 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
   var surface=state.background==='theme'?state.theme:state.background;
   preview.dataset.surface=surface;
   preview.dataset.variant=state.variant;
+  var use3d=['I05','I06','I07','I08'].includes(state.variant);
+  Array.from(grid.children).forEach(function(fig){
+    var id=fig.dataset.motif;
+    var label=MOTIFS.find(function(pair){return pair[0]===id;})[1];
+    fig.innerHTML=(use3d?iconAs3d(id):icon(id))+'<figcaption>'+label+'</figcaption>';
+  });
   document.querySelectorAll('[data-variant]').forEach(function(b){if(b.tagName==='BUTTON')b.setAttribute('aria-pressed',String(b.dataset.variant===state.variant));});
   document.querySelectorAll('[data-theme]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.theme===state.theme));});
   document.querySelectorAll('[data-bg]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.bg===state.background));});
