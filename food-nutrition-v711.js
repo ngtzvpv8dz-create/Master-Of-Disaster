@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V837';
+  const VERSION='V838';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -657,7 +657,7 @@
 
   const alarmEscape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function mealTypeForAlarm(type){
-    return ({breakfast:'Frühstück',lunch:'Mittagessen',snack:'Snack',dinner:'Abendessen'})[type]||String(type||'Mahlzeit');
+    return ({breakfast:'Frühstück',lunch:'Mittagessen',snack:'Snack',dinner:'Abendessen',extra:'Zusatz-Snack / Getränk'})[type]||String(type||'Mahlzeit');
   }
   function mealNutritionWarningMarkup(warnings){
     const count=warnings.reduce((sum,meal)=>sum+meal.issues.length,0);
@@ -669,7 +669,7 @@
       +'<div><strong>'+headline+'</strong><small>'+message+'</small></div>'
       +'<span class="food-nutrition-alarm-count-v795">'+count+'</span></div>'
       +'<div class="food-nutrition-alarm-list-v795">'
-      +warnings.map(meal=>'<button type="button" class="food-nutrition-alarm-link-v795" data-food-nutrition-goto="'+alarmEscape(meal.id)+'">'
+      +warnings.map(meal=>'<button type="button" class="food-nutrition-alarm-link-v795" '+(meal.extra?'data-food-extra-goto':'data-food-nutrition-goto')+'="'+alarmEscape(meal.id)+'">'
         +'<span class="food-nutrition-alarm-meal-v795">'+alarmEscape(mealTypeForAlarm(meal.type))+' · '+alarmEscape(meal.title)+'</span>'
         +'<span class="food-nutrition-alarm-issue-v795">'+meal.issues.map(issue=>'⚠ '+alarmEscape(issue.name)+': '+alarmEscape(issue.reason)).join('<span class="food-nutrition-alarm-break-v795"></span>')+'</span>'
         +'<span class="food-nutrition-alarm-arrow-v795" aria-hidden="true">↗</span>'
@@ -869,7 +869,7 @@
     if(el&&el.textContent!==value)el.textContent=value;
   }
 
-  function patchDailyTotals(root,totals){
+  function patchDailyTotals(root,totals,unresolvedTargets=[]){
     // Die beiden festen Anzeigeplätze werden bereits beim Erstellen der Tageskarte
     // erzeugt. Kein Suchen nach "HEUTE", denn die FOOD-Ansicht entfernt diese Überschrift.
     const todayPanel=root.querySelector('[data-food-day-summary-today]');
@@ -877,7 +877,15 @@
       const day=dailySummary(totals.get(todayIso()));
       setText(todayPanel.querySelector('[data-food-day-kcal]'),day.kcal);
       setText(todayPanel.querySelector('[data-food-day-protein]'),day.protein);
-      setText(todayPanel.querySelector('[data-food-day-summary-note]'),day.note);
+      const noteButton=todayPanel.querySelector('[data-food-day-summary-note]');
+      setText(noteButton,day.note);
+      if(noteButton){
+        noteButton.hidden=!day.incomplete;
+        noteButton.disabled=!day.incomplete;
+        noteButton.setAttribute('aria-label',day.unresolved+' offene Tageswerte: zu betroffenen Einträgen springen');
+        noteButton.title=unresolvedTargets.length===1
+          ?'Direkt zu '+unresolvedTargets[0].title+' springen':'Offene Tageswerte anzeigen';
+      }
       setText(todayPanel.querySelector('[data-food-day-summary-label]'),day.label);
       todayPanel.classList.toggle('is-incomplete-v778',day.incomplete);
     }
@@ -904,6 +912,9 @@
       '.food-day-summary-separator-v778{flex:none;color:#887b94;font-weight:500}'+
       '.food-day-summary-note-v778{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:680;color:#874d7b}'+
       '.food-day-summary-note-v778:empty{display:none}'+
+      '.food-day-summary-goto-v838{appearance:none;cursor:pointer;flex:none;border:1px solid rgba(152,62,48,.4);background:#fff0e9;color:#9e352a;border-radius:7px;padding:4px 6px;font-size:10px;font-weight:800;line-height:1.2}'+
+      '.food-day-summary-goto-v838:hover,.food-day-summary-goto-v838:focus-visible{background:#fbd9cf;outline-offset:2px}'+
+      '.food-day-summary-goto-v838[hidden]{display:none!important}'+
       '.food-day-summary-v778.is-incomplete-v778{border-color:rgba(145,117,177,.31);background:linear-gradient(105deg,rgba(241,227,249,.94),rgba(226,246,231,.91))}'+
       '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778{display:block;margin-top:4px;color:#67517f;font-size:10px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}'+
       '.food-plan-day-v685>.food-day-label-v544 .food-plan-day-summary-v778.is-incomplete-v778{color:#874d7b}'+
@@ -933,7 +944,7 @@
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
       supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit'),
       // Extra-Konsum wird als eigene, bereits gegessene Tagesposition gezählt.
-      supabase.from('food_extra_consumptions').select('id,consumption_date,calories_kcal,protein_g,carbohydrates_g,fat_g').gte('consumption_date',from).lte('consumption_date',to).limit(1500)
+      supabase.from('food_extra_consumptions').select('id,consumption_date,title,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g').gte('consumption_date',from).lte('consumption_date',to).limit(1500)
     ]);
     const bad=results.find(result=>result.error);
     if(bad?.error)throw bad.error;
@@ -1005,6 +1016,7 @@
       let dynamicRecipes=0,dynamicMeals=0,allocationRows=0;
       const dailyTotals=new Map();
       const todayWarnings=[];
+      const unresolvedTargets=[];
 
       root.querySelectorAll('[data-food-recipe-card]').forEach(card=>{
         const recipe=recipeMap.get(String(card.dataset.foodRecipeCard||''));
@@ -1056,17 +1068,32 @@
           todayWarnings.push({id:String(meal.id),title:String(meal.title||'Mahlzeit'),type:String(meal.meal_type||''),issues});
         }
         recordDailyNutrition(dailyTotals,meal,n);
+        if(String(meal.meal_date)===todayIso()&&!n?.complete)
+          unresolvedTargets.push({type:'meal',id:String(meal.id),title:String(meal.title||'Mahlzeit')});
         if(patchMeta(card,n))dynamicMeals++;
         else unresolvedMeals.push({id:meal.id,title:meal.title,missing:n?.missing||[]});
       });
 
+      // Zusatzartikel können die Tagesbilanz ebenfalls unvollständig machen.
+      // Ein fehlender Makrowert ist NICHT null kcal, auch nicht bei Brausetabletten.
+      for(const extra of data.extras||[]){
+        if(String(extra.consumption_date)!==todayIso())continue;
+        const missing=[number(extra.calories_kcal)===null?'Kalorien':null,
+          number(extra.protein_g)===null?'Protein':null].filter(Boolean);
+        if(!missing.length)continue;
+        const name=String(extra.title||'Zusatz-Snack / Getränk');
+        todayWarnings.push({id:String(extra.id),title:name,type:'extra',extra:true,
+          issues:[{id:String(extra.id),name,reason:missing.join(' und ')+' für diese konsumierte Portion nicht hinterlegt. Angaben am Produkt prüfen.'}]});
+        unresolvedTargets.push({type:'extra',id:String(extra.id),title:name});
+      }
       // Bereits verzehrte Extras addieren; niemals in Rezept-/Bestandsmengen mischen.
       addConsumedExtrasToDays(dailyTotals,data.extras);
 
       ensureDailyTotalStyle();
       patchNutritionAlarm(root,todayWarnings);
-      patchDailyTotals(root,dailyTotals);
+      patchDailyTotals(root,dailyTotals,unresolvedTargets);
       lastStatus={
+        todayUnresolvedTargets:unresolvedTargets,
         dayTotals:[...dailyTotals].map(([date,day])=>({date,...day})),
         extraConsumptions:data.extras?.length||0,
         recipes:data.recipes.length,
