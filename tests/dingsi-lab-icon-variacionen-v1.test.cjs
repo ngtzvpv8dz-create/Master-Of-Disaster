@@ -45,7 +45,7 @@ function boot(saved){
  return {listeners,attrs,elements,storage};
 }
 test('Dingsi Lab has dedicated Icon-Ische Variacionen area and twelve stable numbered styles',()=>{
- assert.match(lab,/href="\.\/dingsi-lab-icons\.html\?v=40"/);
+ assert.match(lab,/href="\.\/dingsi-lab-icons\.html\?v=42"/);
  assert.match(html,/Icon-Ische Variacionen/);
  for(const id of ['I01','I02','I03','I04','I05','I06','I07','I08','I09','I10','I11','I12'])assert(html.includes('data-variant="'+id+'"'));
  assert.match(html,/data-bg="checker"/);
