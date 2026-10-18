@@ -46,6 +46,8 @@ jobs:
           node tests/shopping-window-isoclear-wholewrap-oct15.test.cjs
           node tests/food-nutrition-alarm-v795.test.cjs
           node tests/asia-vegetable-family-v796.test.cjs
+          node tests/dingsi-lab-v31.test.cjs
+          node tests/dingsi-lab-home-v32.test.cjs
           node --check food-nutrition-v711.js
           node --check shopping-v678.js
           node --check finance-data-v553.js
