@@ -1,216 +1,55 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#000000"><title>Dingsi Lab · Homescreen V30</title><link rel="manifest" href="./dingsi-lab.webmanifest"><style>
-*{box-sizing:border-box}html{background:#12151b}body{margin:0;min-height:100dvh;background:radial-gradient(ellipse at 7% 10%,#34242b 0,transparent 47%),radial-gradient(ellipse at 98% 86%,#183038 0,transparent 56%),#0d1016;color:#faf4f0;font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}
-header{position:sticky;top:0;z-index:5;text-align:center;padding:calc(env(safe-area-inset-top) + 10px) 10px 12px;background:linear-gradient(180deg,#16191eea,#16191edc);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-bottom:1px solid #f0c58d42;box-shadow:0 7px 20px #0004}
-h1{margin:0;display:flex;align-items:center;justify-content:center;white-space:nowrap;font-size:clamp(1.17rem,5.15vw,2rem);font-weight:950;letter-spacing:-.025em;line-height:1.15}
-.home-letter{display:inline-flex;align-items:center;justify-content:center;width:.9em;height:.95em;border:0;background:none;padding:0;color:#f6f1e9;vertical-align:middle}.home-letter svg{width:.82em;height:.82em;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.sport-letter{color:#88c8df;text-shadow:0 0 10px #69b7d26e}h1 .red{color:#f66d76}header p{margin:5px 0 0;color:#f0c98e;font-size:.67rem;letter-spacing:.19em;font-weight:800;text-transform:uppercase}
-main{max-width:740px;margin:auto;padding:15px 12px calc(env(safe-area-inset-bottom) + 18px)}
-.topline{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 3px 14px}.topline strong{font-size:.67rem;letter-spacing:.15em;color:#f1c7ba}.topline span{font-size:.62rem;color:#aeb3b9}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(7px,2.3vw,15px);align-content:start}
-.tile{min-width:0;display:flex;align-items:center;flex-direction:column;gap:7px;border:1px solid #ffffff1d;border-radius:16px;padding:9px 3px 10px;color:#f5f1f0;background:linear-gradient(150deg,color-mix(in srgb,var(--accent),#171b23 88%),#171c25 32%,#10131b);box-shadow:inset 0 1px #ffffff1b,0 5px 13px #0005;cursor:pointer}
-.tile:active{transform:scale(.96)}
-.art{display:grid;place-items:center;width:min(100%,94px);aspect-ratio:1.18;border-radius:24%;position:relative;background:radial-gradient(circle at 22% 13%,color-mix(in srgb,var(--accent),white 38%),transparent 60%),linear-gradient(145deg,color-mix(in srgb,var(--accent),#25313a 34%),#171b24 83%);border:1.5px solid color-mix(in srgb,var(--accent),white 22%);box-shadow:inset 0 2px 3px #ffffff66,0 6px 9px #0007,0 0 13px color-mix(in srgb,var(--accent),transparent 75%)}
-.glyph{font-size:clamp(2rem,8vw,3.4rem);line-height:1;filter:drop-shadow(2px 5px 3px #0008);transform:rotate(-6deg)}
-.name{font-size:clamp(.49rem,1.8vw,.75rem);font-weight:850;letter-spacing:.005em;color:color-mix(in srgb,var(--accent),white 20%);white-space:nowrap}
-#toast{position:fixed;left:8%;right:8%;bottom:calc(env(safe-area-inset-bottom) + 18px);padding:13px;border-radius:14px;background:#242a33ed;border:1px solid #eab7a7;color:#fff;box-shadow:0 12px 30px #000a;text-align:center;font-size:.8rem;display:none;z-index:8}
-@media(min-width:650px){.grid{grid-template-columns:repeat(5,minmax(0,1fr))}.art{width:105px}.tile{padding:14px 5px}.glyph{font-size:3.5rem}}
-@media(max-width:360px){main{padding:10px 7px}.grid{gap:5px}.tile{padding:7px 2px}.name{font-size:.46rem}}
-@media(max-height:750px) and (max-width:650px){main{padding-top:9px}.topline{margin-bottom:8px}.tile{padding:6px 2px;gap:5px}.art{width:min(100%,72px)}.glyph{font-size:2.15rem}}
-
-/* DINGSI LAB V3: isolated mobile icon-only layout */
-html,body{width:100%;height:100%;overscroll-behavior:none}
-body{height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:radial-gradient(ellipse at 8% 0%,#26222f 0,transparent 49%),radial-gradient(ellipse at 95% 95%,#192b33 0,transparent 55%),#10131b}
-header{position:relative;flex:0 0 auto;top:auto;z-index:3;padding:calc(env(safe-area-inset-top) + 10px) 8px 15px;background:linear-gradient(180deg,#171a22f5,#171a22b8 85%,#171a2200);border-bottom:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-header::before{content:"";position:absolute;left:5%;right:5%;top:calc(env(safe-area-inset-top) + 1px);height:1px;background:linear-gradient(90deg,transparent,#a8b5ca66 25%,#d8b1c56b 75%,transparent);pointer-events:none}
-header h1{font-size:clamp(1.1rem,5.1vw,2rem);line-height:1.18}
-.home-letter{width:1.05em;height:1.13em;transform:translateY(-.015em)}
-.home-letter svg{width:1.02em;height:1.02em;stroke-width:2.25}
-header p{color:#e8b5d7;font-size:.7rem;letter-spacing:.155em;text-shadow:0 0 11px #ed9ed04d;margin-top:7px}
-main{flex:1 1 auto;min-height:0;overflow:hidden;width:100%;max-width:650px;padding:clamp(13px,2.5vh,24px) clamp(17px,6vw,36px) max(10px,env(safe-area-inset-bottom))}
-.grid{height:100%;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));column-gap:clamp(15px,5vw,34px);row-gap:clamp(10px,2.2vh,22px);align-items:center;justify-items:center}
-.tile{appearance:none;-webkit-appearance:none;display:grid;place-items:center;width:100%;height:100%;min-width:0;min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
-.tile:focus-visible{outline:2px solid #edbad9;outline-offset:3px;border-radius:18px}
-.art{width:min(100%,clamp(56px,11.5vh,116px));height:auto;aspect-ratio:1.18;max-height:100%;border-radius:24%;box-shadow:inset 0 2px 3px #ffffff66,0 7px 12px #0007,0 0 12px color-mix(in srgb,var(--accent),transparent 77%)}
-.glyph{font-size:clamp(1.9rem,7.5vw,3.8rem)}
-.name{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-@media(min-width:650px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr))}.tile{padding:0}.art{width:min(100%,116px)}}
-@media(max-height:720px){main{padding-top:9px}.grid{row-gap:7px}.art{width:min(100%,clamp(48px,10vh,94px))}}
-
-/* Dingsi Lab V4: equal row/column spacing, centered cluster, shopping-header proportions */
-header{padding:calc(env(safe-area-inset-top) + 8px) 9px 14px}
-header h1{font-size:clamp(1.2rem,5.45vw,2.12rem);font-weight:950;letter-spacing:-.037em}
-.home-letter{width:1.07em;height:1.11em;flex-shrink:0}
-.home-letter svg{width:1.1em;height:1.1em;stroke-width:2.1}
-header p{display:table;margin:8px auto 0;color:#dcb4e8;background:linear-gradient(to top,#63adfa 0%,#86c3ff 43%,#dc9bea 64%,#f0a0e4 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-size:clamp(.69rem,2.65vw,.84rem);font-weight:850;letter-spacing:.17em;text-transform:uppercase;text-shadow:none}
-main{display:flex;justify-content:center;align-items:center;min-height:0;padding:10px clamp(13px,4vw,28px) max(12px,env(safe-area-inset-bottom))}
-.grid{--icon-gap:clamp(12px,3.6vw,20px);--icon-width:min(26vw,clamp(72px,11.3vh,111px));height:auto;width:max-content;max-width:100%;grid-template-columns:repeat(3,var(--icon-width));grid-template-rows:repeat(5,calc(var(--icon-width) / 1.18));gap:var(--icon-gap);align-content:center;justify-content:center;align-items:center;justify-items:center}
-.tile{width:var(--icon-width);height:calc(var(--icon-width) / 1.18)}
-.art{width:100%;height:100%;max-height:none}
-@media(min-width:650px){.grid{grid-template-columns:repeat(3,var(--icon-width));grid-template-rows:repeat(5,calc(var(--icon-width) / 1.18));gap:var(--icon-gap)}.art{width:100%}}
-@media(max-height:730px){.grid{--icon-width:min(24vw,10.4vh);--icon-gap:clamp(8px,2.4vw,14px)}}
-header p{font-size:clamp(.74rem,2.9vw,.9rem);letter-spacing:.15em} 
-
-/* Dingsi Lab V7: header proportions, softer blue, raised icon cluster, seamless background */
-body{background:radial-gradient(ellipse at 8% 0%,#26222f 0,transparent 49%),radial-gradient(ellipse at 95% 95%,#192b33 0,transparent 55%),#10131b}
-header{background:transparent;border:0;box-shadow:none;padding-bottom:11px}
-header h1{font-size:clamp(1.32rem,5.95vw,2.35rem);letter-spacing:-.045em}
-.home-letter{width:1.12em;height:1.18em}
-.home-letter svg{width:1.16em;height:1.16em;stroke-width:2.35}
-header p{font-size:clamp(.7rem,2.65vw,.84rem);background:linear-gradient(to top,#91bff1 0%,#b1c4f3 21%,#e1a6e8 42%,#eca9e5 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-main{align-items:flex-start;padding-top:clamp(35px,7vh,72px)}
-@media(max-height:730px){main{padding-top:clamp(18px,4vh,38px)}}
-
-/* Lab header: exact production home-button geometry from index.html, no scaling experiments */
-header h1{font-size:clamp(28px,8vw,42px);line-height:1;letter-spacing:-1.5px;font-weight:950}
-.home-letter{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;position:relative;width:.74em;height:.82em;min-width:.74em;max-width:.74em;margin:0 -.015em;padding:0;border:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;line-height:1;letter-spacing:inherit;vertical-align:baseline;transform:translateY(.015em);overflow:visible;flex:0 0 .74em}
-.home-letter svg{display:block;width:.72em;height:.72em;min-width:0;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;fill:none;transform:none}
-.home-letter:active{transform:translateY(.015em) scale(.92)}
-
-/* Lab V11: approved original 3D image tiles, no emoji overlays */
-.art{border:0;background:none;box-shadow:none;border-radius:0;overflow:visible}
-.lab-3d-icon{display:block;width:100%;height:100%;object-fit:fill;border-radius:22%;filter:drop-shadow(0 6px 9px rgba(0,0,0,.36))}
-
-/* Dingsi Lab V15: seamless iPhone status-bar transition and subtle atmospheric dashboard */
-html{background:#0f141e}
-body{
- background:
-   radial-gradient(ellipse 76% 55% at 5% 30%,rgba(79,50,91,.20) 0%,transparent 75%),
-   radial-gradient(ellipse 72% 55% at 102% 93%,rgba(29,91,94,.27) 0%,transparent 76%),
-   radial-gradient(ellipse 68% 40% at 51% 57%,rgba(39,49,72,.16) 0%,transparent 80%),
-   linear-gradient(180deg,#0f141e 0%,#151721 23%,#131821 56%,#101720 100%);
-}
-header{background:transparent!important;border:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-header::before{display:none!important;content:none!important}
-
-/* V16: soft curved CSS-only dashboard lighting */
-body{background:radial-gradient(ellipse 95% 52% at -18% 37%,#38283e80,transparent 78%),radial-gradient(ellipse 100% 65% at 125% 90%,#21535477,transparent 78%),linear-gradient(180deg,#0f141e,#171923 42%,#101820)!important}
-body::before{content:"";position:fixed;z-index:-1;pointer-events:none;width:140vw;height:58vh;left:-54vw;top:18vh;border-radius:42% 58% 65% 35%;transform:rotate(-22deg);background:radial-gradient(ellipse,#64457636,transparent 73%);filter:blur(32px)}
-body::after{content:"";position:fixed;z-index:-1;pointer-events:none;width:140vw;height:60vh;right:-67vw;bottom:-15vh;border-radius:60% 40% 35% 65%;transform:rotate(22deg);background:radial-gradient(ellipse,#357b794d,transparent 74%);filter:blur(34px)}
-
-/* V17: visible, fixed curved light layers behind the dashboard content */
-body{isolation:isolate}
-body::before,body::after{z-index:0!important;opacity:1!important;mix-blend-mode:screen}
-body::before{background:radial-gradient(ellipse at 47% 46%,rgba(143,81,168,.40) 0%,rgba(100,58,130,.23) 42%,transparent 75%)!important;filter:blur(25px)!important}
-body::after{background:radial-gradient(ellipse at 42% 45%,rgba(53,157,154,.38) 0%,rgba(37,105,117,.24) 45%,transparent 78%)!important;filter:blur(28px)!important}
-header,main,#toast{position:relative;z-index:1}
-
-/* V18: reliable CSS background painted directly on body, no pseudo-element stacking */
-body{
- background:
-  radial-gradient(ellipse 95% 30% at 0% 34%,rgba(124,69,157,.48) 0%,rgba(88,51,122,.26) 49%,transparent 84%),
-  radial-gradient(ellipse 105% 34% at 100% 79%,rgba(46,151,148,.48) 0%,rgba(36,102,117,.28) 52%,transparent 87%),
-  radial-gradient(ellipse 88% 24% at 68% 56%,rgba(62,83,145,.19),transparent 84%),
-  linear-gradient(180deg,#0e1420 0%,#191825 36%,#151a25 66%,#101b24 100%)!important;
-}
-body::before,body::after{display:none!important}
-
-/* V19: iOS status-bar seam fix. Start with true black, fade below safe area. */
-html{background:#000!important}
-body{
- background:
-  radial-gradient(ellipse 95% 30% at 0% 39%,rgba(124,69,157,.48) 0%,rgba(88,51,122,.26) 49%,transparent 84%),
-  radial-gradient(ellipse 105% 34% at 100% 83%,rgba(46,151,148,.48) 0%,rgba(36,102,117,.28) 52%,transparent 87%),
-  linear-gradient(180deg,#000 0%,#000 6%,#090b11 13%,#151823 32%,#171923 62%,#101b24 100%)!important;
-}
-
-/* V20: fixed dashboard and layered curved glass-like terraces */
-html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:none!important}
-body{position:relative;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.lab-waves{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden}
-header,main,#toast{position:relative;z-index:1}
-
-/* V21: tasteful labels beneath icons, preserve icon geometry */
-.tile{position:relative}
-.name{
- position:absolute;left:50%;top:calc(100% + 2px);transform:translateX(-50%);
- display:block;width:max-content;max-width:calc(var(--icon-width) + 18px);height:auto;
- overflow:visible;clip-path:none;
- font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
- font-size:clamp(8px,2.25vw,10px);font-weight:750;letter-spacing:.095em;
- line-height:1.15;white-space:nowrap;text-align:center;
- color:#e4e3ed;text-shadow:0 1px 3px #000c,0 0 9px #b2b4db3b;
- pointer-events:none;
-}
-.grid{--icon-gap:clamp(16px,3.9vw,22px)}
-@media(max-height:730px){.grid{--icon-gap:clamp(13px,3.5vw,17px)}.name{font-size:8px;letter-spacing:.055em}}
-
-/* V22: balanced gap between each caption and the next icon row */
-.grid{column-gap:clamp(16px,3.9vw,22px);row-gap:clamp(29px,7.2vw,35px)}
-.name{top:calc(100% + 1px)}
-@media(max-height:730px){.grid{row-gap:clamp(23px,6.1vw,29px)}}
-
-.lab-waves{-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 78%,transparent 100%);mask-image:linear-gradient(to bottom,#000 0%,#000 78%,transparent 100%)}
-
-/* V27: stable iPhone viewport and seamless SVG backdrop */
-html,body{min-height:100dvh}
-.lab-waves{height:100dvh;bottom:0;-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 62%,rgba(0,0,0,.78) 67%,rgba(0,0,0,.26) 77%,transparent 87%);mask-image:linear-gradient(to bottom,#000 0%,#000 73%,transparent 97%)}
-
-/* V30: identical Safari and standard masks; reserve stable scene during image decoding */
-.lab-waves{-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 61%,rgba(0,0,0,.75) 68%,rgba(0,0,0,.2) 77%,transparent 86%)!important;mask-image:linear-gradient(to bottom,#000 0%,#000 61%,rgba(0,0,0,.75) 68%,rgba(0,0,0,.2) 77%,transparent 86%)!important}
-.grid{visibility:hidden}
-.grid.lab-ready{visibility:visible}
-</style></head><body><svg class="lab-waves" aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="v24violet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#805a9e" stop-opacity=".31"/><stop offset=".55" stop-color="#4b426e" stop-opacity=".20"/><stop offset="1" stop-color="#192637" stop-opacity=".04"/></linearGradient>
-<linearGradient id="v24blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5c72ae" stop-opacity=".14"/><stop offset=".52" stop-color="#436c96" stop-opacity=".31"/><stop offset="1" stop-color="#253b57" stop-opacity=".12"/></linearGradient>
-<linearGradient id="v24teal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2e6478" stop-opacity=".12"/><stop offset=".52" stop-color="#3b9694" stop-opacity=".31"/><stop offset="1" stop-color="#245967" stop-opacity=".27"/></linearGradient>
-<linearGradient id="v24glowV" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#b68ad8" stop-opacity="0"/><stop offset=".22" stop-color="#c8a4f0" stop-opacity=".02"/><stop offset=".42" stop-color="#f041ff" stop-opacity="1"/><stop offset=".59" stop-color="#b77de4" stop-opacity=".18"/><stop offset=".84" stop-color="#ad83e1" stop-opacity="0"/></linearGradient>
-<linearGradient id="v24glowB" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8aa8eb" stop-opacity="0"/><stop offset=".28" stop-color="#a6c7ff" stop-opacity=".10"/><stop offset=".58" stop-color="#368bff" stop-opacity="1"/><stop offset=".78" stop-color="#6d9ed7" stop-opacity=".04"/><stop offset="1" stop-color="#6d9ed7" stop-opacity="0"/></linearGradient>
-<linearGradient id="v24glowT" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#00f5ce" stop-opacity="0"/><stop offset=".15" stop-color="#00f5ce" stop-opacity=".95"/><stop offset=".36" stop-color="#00f5ce" stop-opacity=".12"/><stop offset=".7" stop-color="#00f5ce" stop-opacity="0"/><stop offset="1" stop-color="#00f5ce" stop-opacity="0"/></linearGradient>
-<filter id="v24shadow" x="-35%" y="-90%" width="170%" height="280%"><feGaussianBlur stdDeviation="11"/></filter>
-<filter id="v24halo" x="-40%" y="-400%" width="180%" height="900%"><feGaussianBlur stdDeviation="5"/></filter>
-</defs>
-<g transform="translate(0 -43)">
-<g transform="translate(0 -76)">
-<path d="M-100 273 C28 156 107 247 191 281 S347 343 490 191 L490 690 -100 690Z" fill="#02040d" opacity=".53" transform="translate(0 17)" filter="url(#v24shadow)"/>
-<path d="M-100 273 C28 156 107 247 191 281 S347 343 490 191 L490 690 -100 690Z" fill="url(#v24violet)"/>
-<path d="M-100 273 C28 156 107 247 191 281 S347 343 490 191" fill="none" stroke="#ad8bc6" stroke-opacity=".14" stroke-width="1.3"/>
-<path d="M-100 273 C28 156 107 247 191 281 S347 343 490 191" fill="none" stroke="url(#v24glowV)" stroke-width="17" filter="url(#v24halo)"/>
-<path d="M-100 273 C28 156 107 247 191 281 S347 343 490 191" fill="none" stroke="url(#v24glowV)" stroke-width="2.8"/>
-</g>
-<path d="M-90 417 C30 367 85 310 176 363 S322 481 486 326 L486 780 -90 780Z" fill="#00040c" opacity=".58" transform="translate(0 18)" filter="url(#v24shadow)"/>
-<path d="M-90 417 C30 367 85 310 176 363 S322 481 486 326 L486 780 -90 780Z" fill="url(#v24blue)"/>
-<path d="M-90 417 C30 367 85 310 176 363 S322 481 486 326" fill="none" stroke="#8cadd6" stroke-opacity=".15" stroke-width="1.3"/>
-<path d="M-90 417 C30 367 85 310 176 363 S322 481 486 326" fill="none" stroke="url(#v24glowB)" stroke-width="18" filter="url(#v24halo)"/>
-<path d="M-90 417 C30 367 85 310 176 363 S322 481 486 326" fill="none" stroke="url(#v24glowB)" stroke-width="2.8"/>
-<path d="M-95 638 C48 508 136 642 243 594 S375 524 490 485 L490 920 -95 920Z" fill="#00060b" opacity=".62" transform="translate(0 18)" filter="url(#v24shadow)"/>
-<path d="M-95 638 C48 508 136 642 243 594 S375 524 490 485 L490 920 -95 920Z" fill="url(#v24teal)"/>
-<path d="M-95 638 C48 508 136 642 243 594 S375 524 490 485" fill="none" stroke="#77b7b6" stroke-opacity=".16" stroke-width="1.4"/>
-<path d="M-95 638 C48 508 136 642 243 594 S375 524 490 485" fill="none" stroke="url(#v24glowT)" stroke-width="18" filter="url(#v24halo)"/>
-<path d="M-95 638 C48 508 136 642 243 594 S375 524 490 485" fill="none" stroke="url(#v24glowT)" stroke-width="2.8"/>
-<path d="M-65 522 C51 482 121 516 196 488 S339 439 472 461" fill="none" stroke="#101c34" stroke-opacity=".42" stroke-width="13" filter="url(#v24shadow)"/>
-<path d="M-65 522 C51 482 121 516 196 488 S339 439 472 461" fill="none" stroke="#7996c7" stroke-opacity=".15" stroke-width="1.4"/>
-<path d="M-65 522 C51 482 121 516 196 488 S339 439 472 461" fill="none" stroke="url(#v24glowB)" stroke-width="9" filter="url(#v24halo)"/>
-<path d="M-70 751 C31 670 117 724 197 682 S363 658 476 589" fill="none" stroke="#040b15" stroke-opacity=".65" stroke-width="14" filter="url(#v24shadow)"/>
-<path d="M-70 751 C31 670 117 724 197 682 S363 658 476 589" fill="none" stroke="#7ac4bf" stroke-opacity=".15" stroke-width="1.5"/>
-<path d="M-70 751 C31 670 117 724 197 682 S363 658 476 589" fill="none" stroke="url(#v24glowT)" stroke-width="10" filter="url(#v24halo)"/>
-</g></svg><header><h1><span>M</span><button class="home-letter" aria-label="Zur Startansicht" id="home" title="Home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-4.75v-6h-5.5v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></button><span><span class="sport-letter">S</span>TER OF DISASTE</span><span class="red">R</span></h1><p>Zentrale des Wahnsinns</p></header><main><div class="grid"><button class="tile" style="--accent:#d9b97d" data-id="todo" aria-label="TO-DO"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/todo.svg?v=4" alt="" loading="eager" decoding="sync"></span><span class="name">TO-DO</span></button><button class="tile" style="--accent:#76b7ec" data-id="sport" aria-label="FITNESS"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/fitness.svg" alt="" loading="eager" decoding="sync"></span><span class="name">FITNESS</span></button><button class="tile" style="--accent:#8eb4e5" data-id="kistology" aria-label="KISTOLOGIE"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/kistologie.svg" alt="" loading="eager" decoding="sync"></span><span class="name">KISTOLOGIE</span></button><button class="tile" style="--accent:#8bd4a2" data-id="food" aria-label="FOOD"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/food.svg" alt="" loading="eager" decoding="sync"></span><span class="name">FOOD</span></button><button class="tile" style="--accent:#b4a2f1" data-id="shopping" aria-label="EINKAUF"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/einkauf.svg" alt="" loading="eager" decoding="sync"></span><span class="name">EINKAUF</span></button><button class="tile" style="--accent:#efc477" data-id="finance" aria-label="FINANZEN"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/finanzen.svg" alt="" loading="eager" decoding="sync"></span><span class="name">FINANZEN</span></button><button class="tile" style="--accent:#ff969f" data-id="calendar" aria-label="KALENDER"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/kalender.svg" alt="" loading="eager" decoding="sync"></span><span class="name">KALENDER</span></button><button class="tile" style="--accent:#88d8cb" data-id="progress" aria-label="PROGRESS"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/progress.svg" alt="" loading="eager" decoding="sync"></span><span class="name">PROGRESS</span></button><button class="tile" style="--accent:#c4a4ee" data-id="denkfabrik" aria-label="DENKFABRIK"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/denkfabrik.svg" alt="" loading="eager" decoding="sync"></span><span class="name">DENKFABRIK</span></button><button class="tile" style="--accent:#81c4ba" data-id="outdoor" aria-label="OUTDOOR"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/outdoor.svg" alt="" loading="eager" decoding="sync"></span><span class="name">OUTDOOR</span></button><button class="tile" style="--accent:#eab08e" data-id="wohnung" aria-label="WOHNUNG"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/wohnung.svg" alt="" loading="eager" decoding="sync"></span><span class="name">WOHNUNG</span></button><button class="tile" style="--accent:#f4b66b" data-id="werkstatt" aria-label="WERKSTATT"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/werkstatt.svg" alt="" loading="eager" decoding="sync"></span><span class="name">WERKSTATT</span></button><button class="tile" style="--accent:#f5a2a2" data-id="reisen" aria-label="REISEN"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/reisen.svg" alt="" loading="eager" decoding="sync"></span><span class="name">REISEN</span></button><button class="tile" style="--accent:#e7c18d" data-id="backstage" aria-label="BACKSTAGE"><span class="art"><img class="lab-3d-icon" src="./assets/dingsi-lab-icons/backstage.svg" alt="" loading="eager" decoding="sync"></span><span class="name">BACKSTAGE</span></button></div></main><div id="toast" role="status"></div><script>
-document.addEventListener('gesturestart',event=>event.preventDefault(),{passive:false});
-document.addEventListener('gesturechange',event=>event.preventDefault(),{passive:false});
-document.addEventListener('touchmove',event=>event.preventDefault(),{passive:false});
-// Reveal the complete icon grid once, without individual image pop-in.
-(async()=>{
- const grid=document.querySelector('.grid');
- const icons=[...grid.querySelectorAll('img.lab-3d-icon')];
- await Promise.all(icons.map(img=>img.decode?.().catch(()=>{})||Promise.resolve()));
- grid.classList.add('lab-ready');
-})();
-const toast=document.getElementById('toast');let timer;function show(message){toast.textContent=message;toast.style.display='block';clearTimeout(timer);timer=setTimeout(()=>toast.style.display='none',2300)}
-document.querySelectorAll('.tile').forEach(button=>button.addEventListener('click',()=>show(button.querySelector('.name').textContent+' · Vorschau, noch kein produktiver Bereich')));
-document.getElementById('home').onclick=()=>{scrollTo({top:0,behavior:'smooth'});show('Dingsi Lab · Startansicht')};
-
-// Lab-only cleanup: remove stale lab HTML cache entries without reloading or touching the main app.
-(async()=>{
-  try{
-    if(!('caches' in window))return;
-    for(const name of await caches.keys()){
-      const cache=await caches.open(name);
-      for(const request of await cache.keys()){
-        const url=new URL(request.url);
-        if(url.origin===location.origin&&url.pathname.endsWith('/dingsi-lab.html'))await cache.delete(request);
-      }
-    }
-  }catch(_){}
-})();
-</script></body></html>
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1219">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="./dingsi-lab.webmanifest">
+<title>Dingsi Lab · Testübersicht</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#edf5fa;background:#0e1219}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#0e1219}
+body{min-height:100svh;background:radial-gradient(ellipse at 80% 3%,rgba(77,112,164,.18),transparent 44%),radial-gradient(ellipse at 2% 88%,rgba(55,129,150,.10),transparent 45%),#0e1219}
+main{max-width:640px;margin:auto;padding:calc(30px + env(safe-area-inset-top,0px)) 20px calc(40px + env(safe-area-inset-bottom,0px))}
+.lab-eyebrow{font-size:11px;letter-spacing:.23em;color:#92bed1;font-weight:850;text-transform:uppercase}
+.lab-heading{font-size:clamp(34px,9vw,50px);letter-spacing:-.055em;line-height:1.05;margin:10px 0}
+.lab-lead{color:#aebdca;font-size:15px;line-height:1.65;margin:10px 0 35px}
+.lab-section-title{font-size:12px;letter-spacing:.1em;color:#8da5b4;font-weight:800;text-transform:uppercase;margin:0 0 12px}
+.lab-list{display:grid;gap:14px}
+.lab-test{display:grid;grid-template-columns:50px minmax(0,1fr) 22px;align-items:center;gap:15px;min-height:110px;padding:19px 18px;background:linear-gradient(125deg,rgba(34,44,58,.92),rgba(24,35,48,.95));color:#edf5fa;border:1px solid rgba(146,181,201,.24);border-radius:22px;text-decoration:none;box-shadow:0 12px 24px rgba(0,0,0,.11);transition:transform .13s,border-color .13s}
+.lab-test:active{transform:scale(.988)}
+.lab-test:focus-visible{outline:2px solid #86cbee;outline-offset:3px}
+.lab-test:hover{border-color:#78b7d0}
+.lab-symbol{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:linear-gradient(155deg,#374d67,#23394d);color:#bce4f1}
+.lab-symbol svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
+.lab-symbol.food{background:linear-gradient(145deg,#334e4b,#23444d);color:#a5e1d8}
+.lab-test strong{display:block;font-size:17px;letter-spacing:-.02em;line-height:1.35;margin-bottom:4px}
+.lab-test small{display:block;font-size:12px;color:#a5bac7;line-height:1.5}
+.lab-test .arrow{font-size:25px;color:#92b3c9;font-weight:300;text-align:right}
+.lab-foot{font-size:12px;line-height:1.65;color:#93a8b6;border-top:1px solid rgba(150,191,208,.15);margin-top:26px;padding-top:19px}
+.lab-back{display:inline-flex;color:#add5e6;font-size:13px;text-decoration:none;margin-top:27px}
+.lab-back:focus-visible{outline:2px solid #add5e6}
+</style>
+</head>
+<body>
+<main>
+<div class="lab-eyebrow">Master of Disaster · Designwerkstatt</div>
+<h1 class="lab-heading">Dingsi Lab</h1>
+<p class="lab-lead">Unsere Versuchsküche für neue Designs. Jeder Test hat seine eigene Seite. Die echte App und deine Vorratsdaten bleiben davon unberührt.</p>
+<h2 class="lab-section-title">Testbereiche</h2>
+<nav class="lab-list" aria-label="Testbereiche öffnen">
+<a class="lab-test" href="./dingsi-lab-home.html?v=31">
+<span class="lab-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-4.75v-6h-5.5v6H4.5A1.5 1.5 0 0 1 3 19.5z"/></svg></span>
+<span><strong>Homescreen</strong><small>Aktueller Teststand der Startseite mit den App-Kacheln</small></span><span class="arrow" aria-hidden="true">›</span>
+</a>
+<a class="lab-test" href="./dingsi-lab-food-status.html?v=31">
+<span class="lab-symbol food" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 6l14 12M5 18 19 6M12 3l-3 3m3-3 3 3m0 15-3-3m3 3 3-3M5 6l3 1m-3-1 1 3m13 9-3-1m3 1-1-3M5 18l3-1m-3 1 1-3m13-9-3 1m3-1-1 3"/></svg></span>
+<span><strong>Lebensmittelkarten · Status-Test</strong><small>Frisch, Einfrieren, Tiefkühl und Auftauen mit dynamischem Frostdesign</small></span><span class="arrow" aria-hidden="true">›</span>
+</a>
+</nav>
+<p class="lab-foot">Neue Experimente hängen wir künftig einfach unten an diese Liste. Keine Navigation durch den produktiven Vorrat nötig.</p>
+<a class="lab-back" href="./index.html">← Zur normalen Master-of-Disaster-App</a>
+</main>
+</body></html>
