@@ -152,11 +152,20 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
 .cloud-controls-v43 .saved{margin:0;flex:1;min-width:210px}
 #cloud-retry-v43{border:1px solid #b7cce5;color:#3a5d85;background:#ebf4ff;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:800}
 #cloud-retry-v43[hidden]{display:none}
+.cloud-login-v44{margin:16px 0 8px;border:1px solid #d4ddea;background:rgba(255,255,255,.93);padding:16px;border-radius:18px;box-shadow:0 8px 18px rgba(52,76,103,.09)}
+.cloud-login-v44[hidden]{display:none}
+.cloud-login-v44 h2{font-size:17px;margin:0 0 6px;color:#35435c}
+.cloud-login-v44 p{font-size:12px;line-height:1.5;color:#6a7790;margin:0 0 13px}
+.cloud-login-v44 label{display:block;font-size:12px;font-weight:750;color:#53647e;margin:12px 0 5px}
+.cloud-login-v44 input{display:block;width:100%;height:45px;border:1px solid #ccd6e5;background:#fff;color:#28384d;border-radius:11px;padding:10px 12px;font-size:16px}
+.cloud-login-v44 button{margin-top:14px;background:#506a91;color:white;border:0;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:850;min-height:44px}
+.cloud-login-v44 button:disabled{opacity:.55}
+.cloud-login-v44 .privacy-note{font-size:11px;color:#71849b;margin-top:9px;margin-bottom:0}
 </style>
 </head>
 <body>
 <main>
- <div class="top"><a class="back" href="./dingsi-lab.html?v=42">← Dingsi Lab</a><span class="lab-id">Nur Testumgebung</span></div>
+ <div class="top"><a class="back" href="./dingsi-lab.html?v=44">← Dingsi Lab</a><span class="lab-id">Nur Testumgebung</span></div>
  <div class="eyebrow">Design-Experiment · echte Transparenz</div>
  <h1>Icon-Ische Variacionen</h1>
  <p class="lead">Motiv bleibt Motiv, aber der alte eingebackene Kachelrand fliegt raus. Hier testen wir drei freigestellte Testmotive in acht nummerierten Stilen. Die neuen #I09–#I12 zeigen deine vier fertigen, transparenten 3D-Renderings des TO-DO-Motivs. Die Varianten #I01–#I08 bleiben unverändert.</p>
@@ -210,6 +219,18 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
  </section>
  <p class="saved" id="saved" role="status" aria-live="polite"></p>
  <div class="cloud-controls-v43"><p class="saved" id="cloud-status" role="status" aria-live="polite">☁️ Cloud-Abgleich wird geprüft …</p><button id="cloud-retry-v43" type="button" hidden>↻ Erneut synchronisieren</button></div>
+ <section class="cloud-login-v44" id="cloud-login-v44" aria-label="Dingsi Lab Cloud-Anmeldung" hidden>
+  <h2>🔐 Einmal mit Supabase verbinden</h2>
+  <p>Das Icon Lab hat momentan keine eigene Anmeldung. Melde dich hier mit denselben Zugangsdaten wie in der Master-of-Disaster-App an. Anschließend wird deine bereits vorgemerkte Variante automatisch übernommen.</p>
+  <form id="cloud-login-form-v44">
+   <label for="cloud-login-email-v44">E-Mail</label>
+   <input type="email" id="cloud-login-email-v44" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="Deine Anmelde-E-Mail">
+   <label for="cloud-login-password-v44">Passwort</label>
+   <input type="password" id="cloud-login-password-v44" autocomplete="current-password" required placeholder="Dein Supabase-Passwort">
+   <button type="submit" id="cloud-login-submit-v44">Verbinden &amp; Vormerkung synchronisieren</button>
+  </form>
+  <p class="privacy-note">Dein Passwort wird direkt und verschlüsselt an Supabase übertragen, nicht im Dingsi Lab gespeichert und nicht an ChatGPT gesendet.</p>
+ </section>
  <p class="note">Die 14 bisherigen Homescreen-Icons bleiben unverändert. Eine Übernahme in den Homescreen erfolgt erst nach deiner Auswahl. Deine Auswahl bleibt im Dingsi Lab gespeichert, bis du ausdrücklich die Übernahme in den produktiven Homescreen beauftragst.</p>
 </main>
 <script>
@@ -400,7 +421,7 @@ h1{font-size:clamp(27px,7vw,43px);letter-spacing:-.052em;line-height:1.1;margin:
  render();
 })();
 </script>
-<script src="./supabase-config.js?v=43"></script>
-<script src="./dingsi-lab-icons-cloud-v43.js?v=43"></script>
+<script src="./supabase-config.js?v=44"></script>
+<script src="./dingsi-lab-icons-cloud-v44.js?v=44"></script>
 </body>
 </html>
