@@ -1,0 +1,93 @@
+/* Dingsi Lab Homescreen V32: isolated Dark / Hell-Pastell theme selector.
+   Existing 14 SVG icon motifs and dark-theme styles stay untouched. */
+.lab-theme-switch{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  width:max-content;max-width:calc(100vw - 24px);margin:11px auto 0;padding:4px;
+  border:1px solid rgba(220,228,246,.25);border-radius:999px;
+  background:rgba(20,25,38,.78);box-shadow:0 5px 18px rgba(0,0,0,.14);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+}
+.lab-theme-switch button{
+  appearance:none;-webkit-appearance:none;display:inline-flex;
+  align-items:center;justify-content:center;gap:6px;min-width:88px;
+  min-height:30px;border:0;border-radius:999px;padding:5px 12px;
+  background:transparent;color:#d2d8e5;font:800 11px/1.2 system-ui,-apple-system,sans-serif;
+  cursor:pointer;white-space:nowrap;touch-action:manipulation;
+}
+.lab-theme-switch button[aria-pressed="true"]{
+  color:#fff;background:#515779;box-shadow:0 1px 6px rgba(0,0,0,.24);
+}
+.lab-theme-switch button:focus-visible{outline:2px solid #a9c9fa;outline-offset:2px}
+.lab-theme-switch .theme-emoji{font-size:13px;line-height:1}
+body main{padding-top:clamp(12px,3.4vh,35px)}
+@media(max-height:730px){
+  .lab-theme-switch{margin-top:6px}
+  .lab-theme-switch button{min-height:27px;padding:4px 9px}
+  body main{padding-top:clamp(9px,1.9vh,19px)}
+}
+/* All pastel overrides are scoped to the chosen lab-only theme. */
+html[data-lab-theme="pastel"]{
+  background:#fcf9fd!important;color-scheme:light;
+}
+html[data-lab-theme="pastel"] body{
+  color:#35445c;
+  background:
+    radial-gradient(ellipse 93% 38% at -9% 32%,rgba(231,198,238,.55),transparent 83%),
+    radial-gradient(ellipse 110% 40% at 108% 83%,rgba(175,225,219,.52),transparent 82%),
+    radial-gradient(ellipse 85% 42% at 68% 52%,rgba(199,220,249,.35),transparent 82%),
+    linear-gradient(180deg,#fcf9fd 0%,#fffdfa 24%,#f5f5ff 56%,#f2fbf8 100%)!important;
+}
+html[data-lab-theme="pastel"] .lab-waves{
+  opacity:.42;
+  filter:invert(.87) hue-rotate(105deg) saturate(.58);
+  mix-blend-mode:normal;
+}
+html[data-lab-theme="pastel"] header h1,
+html[data-lab-theme="pastel"] .home-letter{color:#344259}
+html[data-lab-theme="pastel"] .sport-letter{
+  color:#7199cf;text-shadow:0 0 9px rgba(171,192,239,.28);
+}
+html[data-lab-theme="pastel"] h1 .red{color:#da8ea9}
+html[data-lab-theme="pastel"] header p{
+  background:linear-gradient(90deg,#849ccc,#bc90be 52%,#7faead);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+html[data-lab-theme="pastel"] .art{
+  border-radius:23%;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--accent),white 83%),rgba(255,255,255,.74));
+  box-shadow:0 9px 21px rgba(106,113,150,.16),inset 0 1px 0 rgba(255,255,255,.92);
+}
+html[data-lab-theme="pastel"] .lab-3d-icon{
+  /* Recolors the ORIGINAL artwork, not a replacement or changed motif. */
+  filter:saturate(.62) brightness(1.13) contrast(.91)
+    drop-shadow(0 5px 7px rgba(113,123,152,.18));
+}
+html[data-lab-theme="pastel"] .name{
+  color:#47556f;text-shadow:0 1px 2px rgba(255,255,255,.98);
+}
+html[data-lab-theme="pastel"] .tile:focus-visible{outline-color:#7795cc}
+html[data-lab-theme="pastel"] .lab-theme-switch{
+  background:rgba(255,255,255,.85);
+  border-color:rgba(179,190,215,.52);
+  box-shadow:0 4px 17px rgba(100,122,157,.12);
+}
+html[data-lab-theme="pastel"] .lab-theme-switch button{color:#6a7189}
+html[data-lab-theme="pastel"] .lab-theme-switch button[aria-pressed="true"]{
+  color:#554b6a;
+  background:linear-gradient(130deg,#f9dfeb,#e8e3fc 66%,#d8f2ec);
+  box-shadow:0 2px 7px rgba(136,133,167,.17);
+}
+html[data-lab-theme="pastel"] .lab-return-v31{
+  color:#455873;background:rgba(255,255,255,.90);
+  border-color:rgba(167,185,212,.60);
+  box-shadow:0 4px 13px rgba(89,111,154,.12);
+}
+html[data-lab-theme="pastel"] .lab-return-v31:focus-visible{outline-color:#7195d5}
+html[data-lab-theme="pastel"] #toast{
+  color:#34445d;background:rgba(255,253,255,.96);
+  border-color:#e8cade;box-shadow:0 8px 23px rgba(115,130,157,.19);
+}
+@media(prefers-reduced-motion:reduce){
+  .lab-theme-switch button{transition:none}
+}
