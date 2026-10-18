@@ -21,6 +21,7 @@ const ctx={
   familyNeedModeFromName:()=>null,
   normalizedIngredient:x=>String(x||'').toLowerCase(),
   familyFrozenFirstFor:()=>false,
+  frozenStorageLocation:()=>false, // Fixture contains only unfrozen vegetables
   familyRowMode:()=> 'neutral',
   inventoryQuantityInUnit:stock=>({available:Number(stock.quantity||0),unitMismatch:false}),
   familyAllocationStockParts:(stock,unit,take)=>[{label:stock.name,quantity:take,frozen:false}],
