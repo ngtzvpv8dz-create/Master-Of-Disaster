@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#eff4ec"><meta name="color-scheme" content="light"><title>Dingsi Lab · Food-Designstudio V32</title>
+<link rel="stylesheet" href="./dingsi-lab-designstudio-v32.css?v=32">
+<script src="./dingsi-lab-designstudio-v32.js?v=32" defer></script></head>
+<body>
+<svg aria-hidden="true" focusable="false" width="0" height="0" xmlns="http://www.w3.org/2000/svg" style="position:absolute;pointer-events:none"><defs><symbol id="st-crystal" viewBox="0 0 100 100"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M50 6v88M12 28l76 44M12 72l76-44"/><path d="M50 6L40 20M50 6l10 14M50 94L40 80M50 94l10-14M12 28l17-1M12 28l6 13M88 72l-17 1M88 72l-6-13M12 72l17 1M12 72l6-13M88 28l-17-1M88 28l-6 13"/></g></symbol></defs></svg>
+<main id="studio">
+<div class="st-top"><a class="st-back" href="./dingsi-lab.html?v=32">← Lab-Übersicht</a><span class="st-badge">EXPERIMENT V32 · LIVE</span></div>
+<h1 class="st-heading">Lebensmittel-Designstudio</h1>
+<p class="st-sub">Vier eigenständige Designs, eine Reglerzentrale. Du kannst direkt an der Karte drehen, Werte speichern und später exportieren. Nichts davon ändert deine echten Vorratsdaten.</p>
+<nav class="st-statuses" aria-label="Lebensmittelstatus wählen" role="tablist">
+<button type="button" class="st-tab" role="tab" data-status="fresh" aria-selected="false">Frisch<span class="st-dot"></span></button>
+<button type="button" class="st-tab" role="tab" data-status="freeze" aria-selected="false">Noch<br>einzufrieren<span class="st-dot"></span></button>
+<button type="button" class="st-tab" role="tab" data-status="frozen" aria-selected="true">Eingefroren<span class="st-dot"></span></button>
+<button type="button" class="st-tab" role="tab" data-status="thaw" aria-selected="false">Auftauen<br>läuft<span class="st-dot"></span></button>
+</nav>
+<div class="st-workspace">
+<section class="st-panel st-preview-panel" aria-label="Live-Vorschau">
+ <div class="st-preview-header"><strong>Live-Karte</strong><small id="st-preview-label">Eingefroren</small></div>
+ <div class="st-demo-space" id="st-preview" aria-live="off"></div>
+ <div class="st-actions">
+  <button type="button" class="st-btn primary" id="st-save">Einstellungen speichern</button>
+  <button type="button" class="st-btn" id="st-load">Gespeicherte laden</button>
+  <button type="button" class="st-btn" id="st-approve">Zur Übernahme vormerken</button>
+  <button type="button" class="st-btn warn" id="st-reset">Zurücksetzen</button>
+ </div>
+ <div id="st-save-status" class="st-saved" role="status">Noch keine gespeicherte Variante.</div>
+ <p class="st-extra">Jede Variante wird unabhängig gespeichert. Mit „Zur Übernahme vormerken“ kennzeichnest du deinen Favoriten, ohne die normale Food-App zu verändern.</p>
+ <div class="st-toolbar">
+   <button type="button" class="st-btn" id="st-reseed">Kristalle neu mischen</button>
+   <button type="button" class="st-btn" id="st-compare-toggle">Alle vier vergleichen</button>
+ </div>
+ <div class="st-compare-block" id="st-compare"><div class="st-compare" id="st-comparison"></div></div>
+</section>
+<section aria-label="Einstellungen">
+ <h2 class="st-section-title" id="st-selected-heading">Regler für: Eingefroren</h2>
+ <div class="st-toolbar" id="st-presets" aria-label="Voreinstellungen">
+  <button class="st-btn" type="button" data-preset="soft">Dezent</button>
+  <button class="st-btn" type="button" data-preset="balanced">Ausgewogen</button>
+  <button class="st-btn" type="button" data-preset="bloom">Eisblüte</button>
+  <button class="st-btn" type="button" data-preset="storm">Schneesturm</button>
+ </div>
+ <div class="st-editor-groups" id="st-groups"></div>
+ <section class="st-export">
+  <strong style="font-size:13px">Bild & Designdaten</strong>
+  <p>Optional ein echtes Bild hochladen. Es wird für die Vorschau auf höchstens 360 Pixel verkleinert. Eigene Designs werden nur in diesem Browser gesichert; JSON ist die zusätzliche portable Kopie.</p>
+  <div class="st-image-tools"><label class="st-btn st-upload-label">Produktbild wählen<input type="file" id="st-upload" accept="image/png,image/jpeg,image/webp"></label>
+  <select id="st-copy-target" class="st-select" aria-label="Einstellungen auf anderen Status übertragen"></select><button type="button" class="st-btn" id="st-copy">Auf Status kopieren</button></div>
+  <div class="st-export-buttons"><button type="button" class="st-btn primary" id="st-export">Gespeicherte Designs exportieren</button><label class="st-btn st-upload-label">JSON importieren<input type="file" id="st-import" class="st-import-file" accept=".json,application/json"></label></div>
+  <div class="st-image-info">Keine KI-Bilder automatisch geladen; Demo-Motive bestehen aus kleinen SVG-Formen. Ein eigenes Bild kannst du als Test einsetzen.</div>
+ </section>
+</section></div>
+<p class="st-footer-note" id="st-notice" role="status">Alles nur im Dingsi Lab: Änderungen erscheinen sofort, ohne den Vorrat zu buchen. Die Darstellung auf dem iPhone gibt uns später die echte Performance-Antwort.</p>
+</main>
+</body></html>
