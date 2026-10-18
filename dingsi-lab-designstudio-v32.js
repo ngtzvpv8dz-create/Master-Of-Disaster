@@ -17,7 +17,7 @@ const BASE={
  coldType:'radial',coldColor1:'#8bc6ed',coldColor2:'#e6f6ff',coldX:104,coldY:107,coldSpread:74,coldSoftness:67,
  coldOpacity:73,coldAngle:135,coldStrength:78,
  sunEnabled:false,sunX:91,sunY:7,sunSize:94,sunGlow:17,sunRays:70,sunOpacity:78,sunHeat:77,
- sunSpread:48,sunColor:'#fff4d6',warmColor:'#ffba72',
+ sunSpread:48,sunColor:'#fff4d6',warmColor:'#ffba72',sunType:'radial',sunAngle:145,sunSoftness:58,
  borderThickness:2,borderColor1:'#b5d9ec',borderColor2:'#e9fafc',borderOpacity:80,borderType:'linear',
  borderAngle:130,borderX:90,borderY:80,borderConcentration:40,borderContrast:65,
  imageMode:'placeholder',imageSize:94,imageX:85,imageY:62,imageOpacity:68,imageRadius:19,
@@ -68,7 +68,8 @@ const GROUPS=[
  ['sunSize','Sonnengröße',25,240,1,'px'],['sunGlow','Sonnenglanz / Glow',0,65,1,'px'],
  ['sunRays','Strahlenlänge',0,100,1,'%'],['sunOpacity','Sonnen-Deckkraft',0,100,1,'%'],
  ['sunHeat','Wärmeintensität',0,100,1,'%'],['sunSpread','Wärme-Ausbreitung',10,160,1,'%'],
- ['sunColor','Sonnenfarbe','color'],['warmColor','Wärmefarbe','color']]},
+ ['sunType','Wärmeverlauf-Typ','select',['radial','linear']],['sunAngle','Wärme-Richtung',0,360,1,'°'],
+ ['sunSoftness','Wärme-Auslauf',0,100,1,'%'],['sunColor','Sonnenfarbe','color'],['warmColor','Wärmefarbe','color']]},
  {title:'Rahmen & Farbverlauf',hint:'Zweifarbig, radial oder linear, mit Konzentration',fields:[
  ['borderThickness','Rahmendicke',0,15,.5,'px'],
  ['borderColor1','Rahmenfarbe 1','color'],['borderColor2','Rahmenfarbe 2','color'],
@@ -128,6 +129,12 @@ function mixedGradient(p){
  if(p.coldType==='linear')return 'linear-gradient('+p.coldAngle+'deg,'+b+' 0%,'+c+' '+(35+threshold)+'%,transparent 100%)';
  return 'radial-gradient(ellipse '+(Math.max(20,p.coldSpread*1.9))+'% '+(Math.max(20,p.coldSpread*1.65))+'% at '+p.coldX+'% '+p.coldY+'%,'+b+' 0%,'+c+' '+threshold+'%,transparent 100%)';
 }
+function sunGradient(p){
+ const strength=p.sunHeat/100,soft=clamp(p.sunSoftness*.55+12,12,78);
+ const c=hexrgba(p.warmColor,strength*.85),c2=hexrgba(p.warmColor,strength*.30);
+ if(p.sunType==='linear')return 'linear-gradient('+p.sunAngle+'deg,'+c+' 0%,'+c2+' '+soft+'%,transparent 100%)';
+ return 'radial-gradient(circle '+(p.sunSpread*1.5)+'% at '+p.sunX+'% '+p.sunY+'%,'+c+' 0%,'+c2+' '+soft+'%,transparent 100%)';
+}
 function borderGradient(p){
  const a=p.borderOpacity/100,b=hexrgba(p.borderColor1,a),c=hexrgba(p.borderColor2,a*Math.max(.12,p.borderContrast/100));
  const stop=Math.round(p.borderConcentration*.8);
@@ -135,7 +142,7 @@ function borderGradient(p){
  return 'linear-gradient('+p.borderAngle+'deg,'+b+' '+stop+'%,'+c+' 100%)';
 }
 function styleVars(p){
- const haze=p.frostHaze/100,heat=p.sunEnabled?p.sunHeat/100:0;
+ const haze=p.frostHaze/100;
  const props={
  '--w':p.cardWidth+'px','--h':p.cardHeight+'px','--pd':p.padding+'px','--radius':p.radius+'px',
  '--shadow':p.shadow+'px','--gap':p.contentGap+'px','--lh':p.lineHeight/100,
@@ -148,7 +155,7 @@ function styleVars(p){
  '--rim-radius':(p.frostRim*.35)+'px','--rim-color':hexrgba('#ffffff',p.frostRim/100*.9),
  '--flake-opacity':p.crystalOpacity/100,'--flake-blur':p.crystalBlur+'px',
  '--flake-color':p.crystalColor,
- '--sun-halo':'radial-gradient(circle '+(p.sunSpread*1.5)+'% at '+p.sunX+'% '+p.sunY+'%,'+hexrgba(p.warmColor,heat*.85)+' 0%,'+hexrgba(p.warmColor,heat*.35)+' 42%,transparent 100%)',
+ '--sun-halo':sunGradient(p),
  '--sun-alpha':p.sunEnabled?p.sunOpacity/100:0,
  '--sun-x':p.sunX+'%','--sun-y':p.sunY+'%','--sun-size':p.sunSize+'px',
  '--sun-glow':p.sunGlow+'px','--sun-visibility':p.sunEnabled?p.sunOpacity/100:0,'--sun-color':p.sunColor,
