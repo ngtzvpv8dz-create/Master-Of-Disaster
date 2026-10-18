@@ -57,7 +57,7 @@ function boot({local=null,remote=null,authenticated=true}={}){
  };
 }
 test('cloud bridge is wired to the existing Lab page',()=>{
- assert.match(html,/dingsi-lab-icons-cloud-v41\.js\?v=41/);
+ assert.match(html,/dingsi-lab-icons-cloud-v43\.js\?v=43/);
  assert.match(html,/id="cloud-status"/);
  assert.match(html,/mod-icon-lab-local-change/);
  assert.match(html,/mod-icon-lab-cloud-hydrate/);
