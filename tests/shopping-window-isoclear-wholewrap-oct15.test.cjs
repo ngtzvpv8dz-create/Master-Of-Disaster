@@ -41,6 +41,7 @@ const context={
   isNonShoppingIngredient:name=>['wasser','leitungswasser'].includes(String(name).toLowerCase()),
   normalizedIngredient:name=>String(name||'').trim().toLocaleLowerCase('de-DE'),
   regularShoppingDate,
+  freshConsumptionWindowDays:()=>null, // No short-lived berries in this shopping fixture
   ingredientStockInfo:(need,inventoryRows)=>resolver.resolve({item:need,inventoryRows}),
 };
 vm.createContext(context);
