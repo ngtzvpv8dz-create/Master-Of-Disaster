@@ -22,6 +22,7 @@ const ctx={
   normalizedIngredient:x=>String(x||'').toLowerCase(),
   familyFrozenFirstFor:()=>false,
   familyRowMode:()=> 'neutral',
+  frozenStorageLocation:location=>/gefrier|tiefkühl|frozen/.test(String(location||'').toLowerCase()),
   inventoryQuantityInUnit:stock=>({available:Number(stock.quantity||0),unitMismatch:false}),
   familyAllocationStockParts:(stock,unit,take)=>[{label:stock.name,quantity:take,frozen:false}],
   familyAllocationProductLabel:stock=>stock.name
