@@ -10,7 +10,7 @@ const KEY='mod-dingsi-lab-icon-variacionen-v1';
 const hub=fs.readFileSync(path.join(__dirname,'..','dingsi-lab.html'),'utf8');
 const sw=fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8');
 test('Icon-Lab navigation invalidates old cache and service worker fetches fresh icon page',()=>{
- assert.match(hub,/href="\.\/dingsi-lab-icons\.html\?v=42"/);
+ assert.match(hub,/href="\.\/dingsi-lab-icons\.html\?v=43"/);
  assert.match(sw,/url\.pathname\.endsWith\("\/dingsi-lab-icons\.html"\)/);
  assert.match(sw,/fetch\(new Request\(event\.request,\{cache:"no-store"\}\)\)/);
 });
@@ -57,7 +57,7 @@ function boot({local=null,remote=null,authenticated=true}={}){
  };
 }
 test('cloud bridge is wired to the existing Lab page',()=>{
- assert.match(html,/dingsi-lab-icons-cloud-v41\.js\?v=41/);
+ assert.match(html,/dingsi-lab-icons-cloud-v43\.js\?v=43/);
  assert.match(html,/id="cloud-status"/);
  assert.match(html,/mod-icon-lab-local-change/);
  assert.match(html,/mod-icon-lab-cloud-hydrate/);
