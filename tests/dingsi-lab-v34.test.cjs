@@ -33,20 +33,17 @@ function boot(){
   Blob:function(){},Image:function(){},setTimeout(){}});
  return {node,tabs,modes,panel,storage:()=>stored};
 }
-test('V34 has two preview modes, original view leaves text unscaled and adapts width',()=>{
- assert.match(html,/data-preview-mode="compact"/);
- assert.match(html,/data-preview-mode="original"/);
- assert.match(css,/\.st-preview-panel\.is-original/);
- assert(lab.includes('dingsi-lab-food-editor.html?v=34'));
+test('V35 renders native-size card without preview switching or font zoom',()=>{
+ assert(!html.includes('data-preview-mode='));
+ assert(html.includes('id="st-controls-scroll"'));
+ assert(css.includes('height:100dvh'));
+ assert(css.includes('overflow-y:auto'));
+ assert(lab.includes('dingsi-lab-food-editor.html?v=35'));
  const app=boot();
- assert.match(app.node('st-preview-scale').textContent,/skaliert/);
- app.modes[1].listeners.click();
- assert.match(app.node('st-preview-scale').textContent,/100 %/);
  assert.equal(app.node('st-preview').mockCard.style.transform,'none');
  assert.equal(app.node('st-preview').mockCard.style.width,'100%');
  assert.match(app.node('st-preview').style.width,/min\(100%,/);
- app.modes[0].listeners.click();
- assert.match(app.node('st-preview-scale').textContent,/skaliert/);
+ assert.equal(app.node('st-preview').style.height,'auto');
 });
 test('V34 old V32 storage key and exported schema stay compatible',()=>{
  assert(js.includes("const storeKey='mod-dingsi-lab-v32-designs'"));

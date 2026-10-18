@@ -10,7 +10,8 @@ const home=get('dingsi-lab-home.html');
 const food=get('dingsi-lab-food-status.html');
 test('Dingsi Lab root lists existing homescreen and new food preview separately',()=>{
   assert.match(index,/href="\.\/dingsi-lab-home\.html\?v=31"/);
-  assert.match(index,/href="\.\/dingsi-lab-food-status\.html\?v=31"/);
+  assert.match(index,/href="\.\/dingsi-lab-food-editor\.html\?v=35"/);
+  assert.match(index,/dingsi-lab-food-status\.html\?v=31/);
   assert.match(index,/Homescreen/);
   assert.match(index,/Lebensmittelkarten/);
 });

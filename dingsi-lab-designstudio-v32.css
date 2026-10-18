@@ -182,51 +182,6 @@ body{background:radial-gradient(ellipse at 88% 8%,#d8edf0 0%,transparent 46%),ra
 }
 
 
-/* V34: compact scaled sticky preview versus 100%-size responsive card */
-.st-preview-mode{display:flex;gap:6px;margin:3px 0 6px;flex-wrap:wrap}
-.st-mode-button{
- flex:1 1 125px;
- border:1px solid #c1d9d7;border-radius:10px;
- background:#f9fcfa;color:#527873;
- padding:8px 9px;font-size:10.5px;line-height:1.25;
- font-weight:850;cursor:pointer;
-}
-.st-mode-button[aria-pressed=true]{
- border-color:#65a7c9;
- background:linear-gradient(130deg,#e0f4fd,#d6ebf4);
- color:#216782;box-shadow:inset 0 0 0 1px #b3dded;
-}
-.st-mode-button:focus-visible,.st-zero-button:focus-visible{outline:2px solid #2889b2;outline-offset:2px}
-.st-preview-scale{font-size:10px;color:#587d7c;text-align:right;margin:0 1px 8px;line-height:1.3}
-.st-preview-panel.is-original{
- position:relative!important;
- top:auto!important;
- -webkit-backdrop-filter:none;
- backdrop-filter:none;
-}
-.st-preview-panel.is-original .st-demo-space{
- overflow:visible;
- min-height:0;
- width:100%;
- height:auto!important;
-}
-.st-preview-panel.is-original #st-preview{
- width:100%;
- height:auto!important;
- max-width:100%;
- flex:0 1 auto;
-}
-.st-preview-panel.is-original .st-card{
- width:100%;
- max-width:100%;
- height:auto!important;
- transform:none!important;
- transform-origin:initial!important;
-}
-.st-preview-panel.is-original .st-card-content{
- min-height:calc(var(--h,260px) - var(--bw,2px)*2);
- height:auto;
-}
 .st-zero-button{
  display:inline-flex;align-items:center;justify-content:center;
  min-height:32px;margin-top:5px;padding:5px 9px;
@@ -234,6 +189,103 @@ body{background:radial-gradient(ellipse at 88% 8%,#d8edf0 0%,transparent 46%),ra
  color:#367a91;background:linear-gradient(140deg,#fafefe,#eaf6fb);
  font-size:11px;font-weight:850;
 }
+
+
+/* V35: actual viewport split. No scaled preview, no mode switch, no sticky-scrolling tricks. */
+html,body{height:100%;max-height:100%;overflow:hidden;overscroll-behavior:none}
+body{min-height:0}
+#studio{
+ height:100vh;
+ height:100dvh;
+ min-height:0;
+ display:flex;
+ flex-direction:column;
+ overflow:hidden;
+ padding:calc(env(safe-area-inset-top,0px) + 8px) 13px calc(env(safe-area-inset-bottom,0px) + 7px);
+}
+.st-top{flex:0 0 auto;min-height:33px}
+.st-heading{flex:0 0 auto;font-size:clamp(23px,5.5vw,29px);margin:7px 0 10px;line-height:1.08}
+.st-preview-panel{
+ position:relative!important;
+ top:auto!important;
+ z-index:4;
+ flex:0 1 auto;
+ min-height:0;
+ max-height:min(63dvh,620px);
+ width:100%;
+ margin:0 0 8px;
+ display:flex;
+ flex-direction:column;
+ overflow:hidden;
+ padding:10px 10px 8px;
+ -webkit-backdrop-filter:none;
+ backdrop-filter:none;
+}
+.st-preview-header{flex:0 0 auto;margin-bottom:6px}
+.st-preview-scale{
+ flex:0 0 auto;
+ font-size:10px;
+ color:#527b7b;
+ text-align:right;
+ margin:0 1px 6px;
+ line-height:1.3;
+}
+.st-status-picker{flex:0 0 auto;margin-bottom:7px}
+.st-demo-space{
+ flex:0 1 auto;
+ min-height:0;
+ height:auto!important;
+ max-height:min(49dvh,520px);
+ width:100%;
+ overflow-x:hidden;
+ overflow-y:auto;
+ overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;
+ padding:0;
+ justify-content:center;
+ align-items:flex-start;
+ scrollbar-width:thin;
+}
+#st-preview{
+ width:100%;
+ max-width:100%;
+ height:auto!important;
+ min-height:0;
+ flex:0 1 auto;
+}
+#st-preview .st-card{
+ width:100%;
+ max-width:100%;
+ height:auto!important;
+ transform:none!important;
+ min-height:var(--h,260px);
+}
+#st-preview .st-card-content{
+ min-height:calc(var(--h,260px) - var(--bw,2px)*2);
+ height:auto;
+}
+.st-controls-scroll{
+ flex:1 1 0;
+ min-height:0;
+ width:100%;
+ overflow-x:hidden;
+ overflow-y:auto;
+ overscroll-behavior:contain;
+ -webkit-overflow-scrolling:touch;
+ padding:0 2px 24px;
+ scrollbar-width:thin;
+}
+.st-controls-scroll>.st-panel:first-child{margin-top:0}
+.st-controls-scroll .st-section-title{margin-top:14px}
+.st-controls-scroll .st-save-panel{margin-top:16px}
+@media(max-height:560px){
+ #studio{padding-top:calc(env(safe-area-inset-top,0px) + 3px)}
+ .st-heading{font-size:22px;margin:4px 0 6px}
+ .st-preview-panel{max-height:46dvh;padding:7px}
+ .st-demo-space{max-height:31dvh}
+}
 @media(min-width:661px){
- .st-preview-panel.is-original{position:relative!important;top:auto!important}
+ .st-preview-panel{top:auto!important;max-height:min(63dvh,620px)}
+ .st-demo-space{max-width:100%;margin:0 auto}
+ .st-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
