@@ -7,10 +7,10 @@ const css=read('dingsi-lab-icons-fullset-v45.css');
 const html=read('dingsi-lab-icons.html');
 const hub=read('dingsi-lab.html');
 test('I11 complete set is behind a new selectable button and retains the 12 individual variants',()=>{
- assert.match(hub,/dingsi-lab-icons\.html\?v=46/);
+ assert.match(hub,/dingsi-lab-icons\.html\?v=47/);
  assert.match(html,/id="fullset-toggle-v45" aria-expanded="false"/);
  assert.match(html,/id="fullset-panel-v45"[^>]+hidden/);
- assert.match(html,/dingsi-lab-icons-fullset-v46\.js\?v=46/);
+ assert.match(html,/dingsi-lab-icons-fullset-v47\.js\?v=47/);
  assert.match(html,/dingsi-lab-icons-fullset-v45\.css\?v=45/);
  assert.match(html,/data-variant="I11"/);
  assert.match(html,/id="choose-style"/);

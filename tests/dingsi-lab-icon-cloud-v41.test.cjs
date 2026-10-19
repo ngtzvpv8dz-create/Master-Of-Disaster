@@ -10,7 +10,7 @@ const KEY='mod-dingsi-lab-icon-variacionen-v1';
 const hub=fs.readFileSync(path.join(__dirname,'..','dingsi-lab.html'),'utf8');
 const sw=fs.readFileSync(path.join(__dirname,'..','sw.js'),'utf8');
 test('Icon-Lab navigation invalidates old cache and service worker fetches fresh icon page',()=>{
- assert.match(hub,/href="\.\/dingsi-lab-icons\.html\?v=46"/);
+ assert.match(hub,/href="\.\/dingsi-lab-icons\.html\?v=47"/);
  assert.match(sw,/url\.pathname\.endsWith\("\/dingsi-lab-icons\.html"\)/);
  assert.match(sw,/fetch\(new Request\(event\.request,\{cache:"no-store"\}\)\)/);
 });
