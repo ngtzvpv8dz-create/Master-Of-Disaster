@@ -55,6 +55,7 @@ jobs:
           node tests/dingsi-lab-icons-fullset-v45.test.cjs
           node tests/dingsi-lab-icons-approved-v46.test.cjs
           node tests/dingsi-lab-icons-exact-v46.test.cjs
+          node tests/dingsi-lab-icons-pastel-v47.test.cjs
           node tests/dingsi-lab-icons-pastel-used-v47.test.cjs
           node --check food-nutrition-v711.js
           node --check shopping-v678.js
