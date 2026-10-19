@@ -153,7 +153,7 @@
     if(!singular&&plurals[unit])displayUnit=plurals[unit];
     return displayUnit?text+' '+displayUnit:text;
   };
-  const normalizedStatus=status=>status==='consumed'||status==='prepared'?'completed':status==='completed'?'completed':'planned';
+  const normalizedStatus=status=>status==='consumed'||status==='prepared'?'completed':status==='completed'?'completed':status==='skipped'?'skipped':'planned';
   const portionLabel=value=>{
     const n=num(value);
     if(n===null||Number.isNaN(n))return 'Portion offen';
@@ -391,7 +391,7 @@
   const mealTypeOptions=selected=>['breakfast','snack','lunch','dinner'].map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(MEAL_LABELS[type])+'</option>').join('');
   const recipeCategoryOptions=selected=>RECIPE_CATEGORY_ORDER.map(type=>'<option value="'+type+'" '+(type===selected?'selected':'')+'>'+esc(RECIPE_GROUP_LABELS[type]||type)+'</option>').join('');
   const planningMealType=type=>['breakfast','snack','lunch','dinner'].includes(type)?type:'dinner';
-  const statusLabel=status=>normalizedStatus(status)==='completed'?'Erledigt':'Geplant';
+  const statusLabel=status=>normalizedStatus(status)==='completed'?'Erledigt':normalizedStatus(status)==='skipped'?'Ausgefallen':'Geplant';
   const priorityLabel=value=>({tomorrow:'Morgen verwenden',three_days:'In den nächsten 3 Tagen',later:'Hält sich länger'}[value]||'Keine Priorität');
 
   const fallback={
@@ -962,7 +962,7 @@
     if(!item?.id)return null;
     const context=mealIngredientContext(item.id);
     if(!context)return null;
-    if(normalizedStatus(context.meal.status)==='completed'||context.meal.inventory_booked_at)return null;
+    if(normalizedStatus(context.meal.status)!=='planned'||context.meal.inventory_booked_at)return null;
     return context;
   }
 
@@ -980,7 +980,7 @@
     for(const meal of meals){
       const perMeal=new Map();
       maps.set(String(meal.id||''),perMeal);
-      if(normalizedStatus(meal.status)==='completed'||meal.inventory_booked_at)continue;
+      if(normalizedStatus(meal.status)!=='planned'||meal.inventory_booked_at)continue;
       const items=[...(meal.ingredients||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
       for(const item of items){
         const allocation=manualAllocationForItem(item)||familyAllocationForItem(item,quantities)||specificAllocationForItem(item,quantities);
@@ -1524,17 +1524,16 @@
     const choices=creatineStockChoices();
     const first=choices[0]||null;
     const variant=first?.variant_label||'ESN';
-    const isPreview=date==='2026-10-10';
+    const manuallyBooked=date==='2026-10-10';
     const intake=(state?.intakes||[]).find(row=>row.intake_date===date && row.confirmed_at);
     const main=(text,description)=>'<div class="food-creatine-main-v773"><strong>'+esc(text)+'</strong><span>'+esc(description)+'</span></div>';
 
-    // 10.10. wurde vom Nutzer bereits genommen und der Bestand manuell korrigiert.
-    // Den Button nur zur Layoutvorschau zeigen, aber NIE erneut buchen.
-    if(isPreview){
-      return '<div class="food-creatine-reminder-v768 is-preview-v773" role="note">'
-        +main('💪 Kreatin','1 Stick · '+variant)
-        +'<button type="button" class="food-creatine-confirm-v772 is-preview-button-v773" disabled title="Heute bereits genommen und im Vorrat manuell verbucht">✓ Eingenommen</button>'
-        +'<small class="food-creatine-status-v773">Heute schon genommen · nur Vorschau, keine Abbuchung</small>'
+    // 10.10.: Bereits genommen, Bestand manuell korrigiert. Nicht doppelt buchen.
+    if(manuallyBooked){
+      return '<div class="food-creatine-reminder-v768 is-confirmed-v772" role="status">'
+        +main('💪 Kreatin','1 Stick · '+variant+' · am 10.10. manuell berücksichtigt')
+        +'<span class="food-creatine-done-v773">✓ Eingenommen</span>'
+        +'<small class="food-creatine-status-v773">Manuell erfasst · keine weitere Abbuchung</small>'
         +'</div>';
     }
 
@@ -1586,12 +1585,15 @@
     const frozenPrep=(state?.mealPrepFreezer||[]).find(item=>String(item.meal_id||'')===String(meal.id));
     const prepStorage=frozenPrep?(frozenPrep.status==='thawing'?'🌡️ AUFTAUEN LÄUFT':frozenPrep.status==='thawed'?'✓ AUFGETAUT':'❄️ EINGEFROREN'):'';
     const mealPrepReady=Boolean(meal.leftover_id)||normalizedStatus(sourceMeal?.status)==='completed';
-    const action=status==='completed'
-      ?''
-      :'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isMealPrep?'Als gegessen markieren':'Als zubereitet markieren')+'</button>';
+    const action=status==='planned'
+      ?'<button type="button" class="food-action-v544 food-meal-complete-v573" data-food-complete="'+esc(meal.id)+'">'+(isMealPrep?'Als gegessen markieren':'Als zubereitet markieren')+'</button>'
+      :'';
+    const skipAction=status==='planned'
+      ?'<button type="button" class="food-action-v544 compact food-meal-skip-v840" data-food-skip="'+esc(meal.id)+'">'+(isMealPrep?'Nicht gegessen':'Nicht zubereitet')+'</button>'
+      :'';
     const statusMeta=status==='completed'
-      ?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at))
-      :'Geplant';
+      ?(meal.prepared_at?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at)):(isMealPrep?'Gegessen · Zeitpunkt nicht erfasst':'Erledigt · Zeitpunkt nicht erfasst'))
+      :status==='skipped'?(isMealPrep?'Nicht gegessen':'Nicht zubereitet'):'Geplant';
 
     if(isMealPrep){
       const title=meal.title||recipe?.title||'Meal Prep';
@@ -1623,7 +1625,7 @@
         +details
         +confirmFrozen
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
-        +action
+        +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
         +'</article>';
     }
 
@@ -1633,10 +1635,10 @@
       const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null,false);
       const note=visibleMealNote(meal.note,{completed:status==='completed'});
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
-      const freezeHint=status==='completed'?'':mealPrepStorageMarkup(meal);
-      const quantityAction=status==='completed'
-        ?''
-        :'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Zutaten &amp; Mengen ändern</button>';
+      const freezeHint=status==='planned'?mealPrepStorageMarkup(meal):'';
+      const quantityAction=status==='planned'
+        ?'<button type="button" class="food-action-v544 compact" data-food-edit-planned-meal="'+esc(meal.id)+'">Zutaten &amp; Mengen ändern</button>'
+        :'';
       return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
           +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
@@ -1645,15 +1647,15 @@
         +dailyCreatineReminderMarkup(meal)
         +freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
-        +(status==='completed'?'':'<div class="food-meal-plan-actions-v630">'+quantityAction+action+'</div>')
+        +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+action+skipAction+'</div>':'')
         +'</article>';
     }
 
     const items=meal.ingredients||[];
     const portionMeta=mealPlanMeta(meal);
-    const editAction=status==='completed'
-      ?''
-      :'<button type="button" class="food-action-v544 compact" data-food-edit-free-meal="'+esc(meal.id)+'">Zutaten bearbeiten</button>';
+    const editAction=status==='planned'
+      ?'<button type="button" class="food-action-v544 compact" data-food-edit-free-meal="'+esc(meal.id)+'">Zutaten bearbeiten</button>'
+      :'';
     const note=visibleMealNote(meal.note,{completed:status==='completed'});
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
@@ -1670,7 +1672,7 @@
         +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
       +'</button>'
       +dailyCreatineReminderMarkup(meal)
-      +details+action
+      +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
       +'</article>';
   }
 
@@ -3288,6 +3290,16 @@
     await mutate(()=>result.data);
   }
 
+  async function skipMeal(id){
+    const meal=(state?.meals||[]).find(item=>String(item.id)===String(id));
+    if(!meal||normalizedStatus(meal.status)!=='planned'||meal.inventory_booked_at)throw new Error('Nur noch nicht gebuchte Mahlzeiten können ausfallen.');
+    const sb=client();
+    if(!sb)throw new Error('Cloud-Verbindung zum sicheren Speichern erforderlich.');
+    const res=await withTimeout(sb.rpc('skip_food_meal',{p_meal_id:id}),'Mahlzeit als ausgefallen speichern',15000);
+    if(res?.error)throw res.error;
+    await mutate(()=>res.data);
+  }
+
   function addModal(title,body,onSubmit){
     const root=ensureRoot();
     if(!root)return;
@@ -4445,6 +4457,15 @@
       renderState();
     }));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
+    root.querySelectorAll('[data-food-skip]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();
+      const id=String(button.dataset.foodSkip||'');
+      const meal=(state?.meals||[]).find(item=>String(item.id)===id);
+      const isMealPrep=Boolean(meal?.leftover_id||meal?.source_meal_id);
+      if(!confirm(isMealPrep?'Diese Meal-Prep-Portion als NICHT GEGESSEN markieren? Keine erneute Zutatenbuchung.':'Diese Mahlzeit als NICHT ZUBEREITET markieren? Keine Zutaten abbuchen und keine Kalorien als gegessen zählen.'))return;
+      button.disabled=true;
+      try{await skipMeal(id);}catch(error){alert(error?.message||'Ausfall konnte nicht gespeichert werden.');button.disabled=false;}
+    }));
     root.querySelectorAll('[data-food-thaw-start]').forEach(button=>button.addEventListener('click',async event=>{
       event.stopPropagation();
       if(button.getAttribute('aria-pressed')==='true')return;
