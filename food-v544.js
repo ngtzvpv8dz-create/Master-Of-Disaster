@@ -1263,7 +1263,7 @@
     if(!Number.isFinite(start))return null;
     const planned=(state?.meals||[])
       .filter(row=>String(row.source_meal_id||'')===String(meal.id))
-      .filter(row=>normalizedStatus(row.status)!=='cancelled')
+      .filter(row=>['planned','completed'].includes(normalizedStatus(row.status)))
       .map(row=>{
         const when=Date.parse(String(row.meal_date||'')+'T12:00:00Z');
         const days=Math.round((when-start)/86400000);
@@ -1602,6 +1602,10 @@
       const extrasSummary=extras.length
         ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
         :'';
+      const sourceIngredients=sourceMeal?preparedIngredientListMarkup(sourceMeal):'';
+      const originalPreparedMeta=sourceMeal
+        ?'<p class="food-recipe-note-v572">Ursprünglich am '+esc(fmtDate(sourceMeal.meal_date))+' für '+esc(portionLabel(sourceMeal.prepared_servings||1))+' zubereitet.</p>'
+        :'';
       // V805: Keine pauschale TK-Zuordnung; erst nach ausdruecklicher Bestätigung.
       const confirmFrozen=expanded&&status==='planned'&&meal.leftover_id&&!frozenPrep&&mealPrepReady&&sourceIsReal('mealPrepFreezer')
         ?'<div class="food-mealprep-freeze-optional-v805"><small>Nur falls diese Portion wirklich eingefroren wurde:</small>'
@@ -1613,7 +1617,9 @@
       const details=expanded
         ?'<div class="food-recipe-details-v572">'
           +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
+          +originalPreparedMeta+sourceIngredients
           +(extras.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
+          +(!sourceIngredients&&!extras.length&&!detailNote?'<p class="food-recipe-note-v572">Für diese Meal-Prep-Portion sind keine Zutatendetails gespeichert.</p>':'')
         +'</div>'
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(frozenPrep?'is-frozen-mealprep-v804 ':'')+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
