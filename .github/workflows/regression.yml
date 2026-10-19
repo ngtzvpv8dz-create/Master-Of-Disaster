@@ -48,6 +48,7 @@ jobs:
           node tests/asia-vegetable-family-v796.test.cjs
           node tests/dingsi-lab-v31.test.cjs
           node tests/dingsi-lab-home-v32.test.cjs
+          node tests/dingsi-lab-home-comic-v48.test.cjs
           node tests/dingsi-lab-icon-variacionen-v1.test.cjs
           node tests/dingsi-lab-icon-cloud-v41.test.cjs
           node tests/dingsi-lab-icon-cloud-v43.test.cjs
