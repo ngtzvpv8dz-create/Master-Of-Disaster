@@ -1,0 +1,88 @@
+{
+  "version": "v47",
+  "set_name": "Pastell-Comic 3D / Used",
+  "status": "dingsi_lab_preview_not_production",
+  "target": "home_screen_ready",
+  "asset_format": "WEBP",
+  "width": 1254,
+  "height": 1254,
+  "background": "transparent_alpha",
+  "artwork_origin": "individual user-reviewed generated illustrations",
+  "selection_notes": {
+    "food": "variant 4: rustic pasta meal with pantry background",
+    "kistologie": "top secret archive box containing shoulder X-ray with five anchors",
+    "fitness": "no FitX logo"
+  },
+  "icons": {
+    "todo": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-todo.webp",
+      "source_filename": "abgenutztes_klemmbrett_mit_checkliste_und_stift.png",
+      "sha256": "efa20eb48bcafa8796cee765f1f22783ce9e47d011728858a028e6256dd46fd1"
+    },
+    "fitness": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-fitness.webp",
+      "source_filename": "fitness_icon_mit_hantel_shaker_und_handtuch.png",
+      "sha256": "b18171c4ca63b267c1d543625b717f6cde170cb59663a748750f2f7abaf7f8a1"
+    },
+    "kistologie": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-kistologie.webp",
+      "source_filename": "vertrauliche_röntgenakten_im_archivkasten.png",
+      "sha256": "98e1873cbe3e7d33bdabe138ff8b7eb9ca3ce998b6a645bca5ebeac7cabf474a"
+    },
+    "food": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-food.webp",
+      "source_filename": "rustikale_küchenablage_mit_spaghetti_bolognese.png",
+      "sha256": "faeb5e029a9f18872ccbc1c280d12ebe82149f58e2293024577bcdaed760e005"
+    },
+    "einkauf": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-einkauf.webp",
+      "source_filename": "bunter_einkaufswagen_voller_lebensmittel.png",
+      "sha256": "04f7718fc523e86992291e07ffeb32e98696a5363fded6bc63fb60193b1b84f6"
+    },
+    "finanzen": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-finanzen.webp",
+      "source_filename": "abgenutztes_portemonnaie_mit_eurogeld.png",
+      "sha256": "3bb714a4b15b1904c152da40695c3688f0f1e43f89b9c4702ee185db560c45a5"
+    },
+    "kalender": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-kalender.webp",
+      "source_filename": "stilvoller_schreibtischkalender_mit_stift.png",
+      "sha256": "0fdce492e60283cd9dc31a8e6113471211a61a1ff3e1e333971e49b825657da7"
+    },
+    "progress": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-progress.webp",
+      "source_filename": "metallisches_wachstum_mit_pflanze_und_pfeil.png",
+      "sha256": "6137c6acdc80c8ac610902213d2837513c210ec7588b420ae61085eda8d8d679"
+    },
+    "denkfabrik": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-denkfabrik.webp",
+      "source_filename": "glühende_ideen_im_notizbuch.png",
+      "sha256": "8f87f9db64712d3a135895abc178450551925fb6fc0dd90091d536002798fe8f"
+    },
+    "outdoor": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-outdoor.webp",
+      "source_filename": "wanderstiefel_im_alpenabenteuer.png",
+      "sha256": "7e3057e3e78d8cda167c2b028b1fa9ce9b42c48fafa57bf76d0f7d1d676a8866"
+    },
+    "wohnung": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-wohnung.webp",
+      "source_filename": "gemütliche_leseecke_mit_zimmerpflanze.png",
+      "sha256": "75855cf166a0504d5c7d6767b28e34bd5a6090c6187853cf3e60c5d4ac7fe482"
+    },
+    "werkstatt": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-werkstatt.webp",
+      "source_filename": "werkzeugkiste_mit_hammer_und_schraubendreher.png",
+      "sha256": "07ab514ecbd7395c5422ab574a106cf148177f6209ac7a0ec64c7d4a2d04332b"
+    },
+    "reisen": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-reisen.webp",
+      "source_filename": "vintage_reisekoffer_mit_urlaubszubehör.png",
+      "sha256": "0801c86634a45c0acb55d327cd9b885985b5dcf19059cefd1a79222d9b3c0760"
+    },
+    "backstage": {
+      "path": "assets/dingsi-lab-icons/pastel-used-v47-backstage.webp",
+      "source_filename": "mechanisches_werkzeug_emblem.png",
+      "sha256": "c538e8f792d317077bea19209443a51d868d1e922fad72ee4284eacd3b788b84"
+    }
+  }
+}
