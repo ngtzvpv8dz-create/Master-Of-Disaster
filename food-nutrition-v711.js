@@ -380,6 +380,12 @@
   function sourceFor(item,data){
     const name=itemName(item);
     if(ZERO_NAMES.has(text(name)))return {nutrition:{kcal:0,protein:0,carbs:0,fat:0},product:null,stock:null};
+    // Abgebuchte, bereits zubereitete Zutaten verwenden ihre bei der Zubereitung
+    // gesicherte Produktnährwert-Quelle statt den inzwischen leeren Vorrat.
+    if(item?.prepared_nutrition_per_100){
+      const product={nutrition_per_100:item.prepared_nutrition_per_100};
+      return {nutrition:nutritionOf(product),product,stock:null};
+    }
 
     const inventory=data.inventory;
     const products=data.products;
@@ -595,6 +601,10 @@
   function nutritionProblem(item,data,allocationOverride=null){
     if(!item||ZERO_NAMES.has(text(itemName(item))))return null;
     const name=itemName(item);
+    if(item.prepared_nutrition_per_100){
+      const source=sourceFor(item,data);
+      if(source?.nutrition?.kcal!==null&&source?.nutrition?.protein!==null&&basisAmount(item,source)!==null)return null;
+    }
     const qty=number(item.quantity);
     const entry={id:String(item.id||''),name,reason:''};
     if(qty===null||qty<0)return {...entry,reason:'Die Zutatenmenge ist ungültig oder fehlt.'};
@@ -739,10 +749,24 @@
     if(kcal===null||kcal<0||protein===null||!Number.isFinite(protein))return null;
     return {complete:true,kcal,protein,estimated:true,missing:[]};
   }
+  function withPreparedNutrition(items,meal){
+    if(text(meal?.status)!=='completed')return items;
+    const sources=meal?.prepared_sources_snapshot?.sources;
+    if(!Array.isArray(sources))return items;
+    return items.map(item=>{
+      const matches=sources.filter(source=>source?.nutrition_per_100&&
+        String(source.inventory_id||'')===String(item.inventory_id||'')&&
+        text(source.name)===text(itemName(item))&&
+        text(source.unit)===text(item.unit)&&
+        number(source.quantity)===number(item.quantity));
+      return matches.length===1?{...item,prepared_nutrition_per_100:matches[0].nutrition_per_100}:item;
+    });
+  }
+
   function nutritionForMeal(meal,recipeMap,mealMap,data,context,allocations){
     const estimate=estimatedNutritionForMeal(meal);
     if(estimate)return estimate;
-    const items=meal.food_meal_ingredients||[];
+    const items=withPreparedNutrition(meal.food_meal_ingredients||[],meal);
     let base;
     if(meal.leftover_id||meal.source_meal_id){
       const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
@@ -952,7 +976,7 @@
     const to=plusDays(todayIso(),60);
     const results=await Promise.all([
       supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
-      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
+      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,prepared_sources_snapshot,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
       supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit'),
@@ -1046,7 +1070,7 @@
         if(!meal)return;
         if(text(meal.status)==='skipped'){card.dataset.foodNutritionV711='skipped';return;}
         let n=null;
-        const items=meal.food_meal_ingredients||[];
+        const items=withPreparedNutrition(meal.food_meal_ingredients||[],meal);
         const mealContext=planState.contexts.get(String(meal.id))||data;
         const mealAllocations=planState.allocations.get(String(meal.id))||null;
         n=nutritionForMeal(meal,recipeMap,mealMap,data,mealContext,mealAllocations);
