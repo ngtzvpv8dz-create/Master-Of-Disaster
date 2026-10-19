@@ -350,7 +350,7 @@
       const before=cloneDataWithStock(data,quantities);
       contexts.set(id,before);
 
-      if(text(meal.status)==='completed'||meal.inventory_booked_at)continue;
+      if(text(meal.status)!=='planned'||meal.inventory_booked_at)continue;
 
       const perIngredient=new Map();
       const items=[...(meal.food_meal_ingredients||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
@@ -835,7 +835,7 @@
   // Für Meal Prep bleibt die zubereitete Gesamtmenge der Divisor, niemals die Tagessumme.
   function recordDailyNutrition(totals,meal,nutrition){
     const date=String(meal?.meal_date||'');
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+    if(text(meal?.status)==='skipped'||!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
     const day=totals.get(date)||{kcal:0,protein:0,meals:0,unresolved:0};
     day.meals++;
     if(nutrition?.complete){
@@ -1044,6 +1044,7 @@
       root.querySelectorAll('[data-food-meal-card]').forEach(card=>{
         const meal=mealMap.get(String(card.dataset.foodMealCard||''));
         if(!meal)return;
+        if(text(meal.status)==='skipped'){card.dataset.foodNutritionV711='skipped';return;}
         let n=null;
         const items=meal.food_meal_ingredients||[];
         const mealContext=planState.contexts.get(String(meal.id))||data;
