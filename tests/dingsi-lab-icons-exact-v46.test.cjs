@@ -27,8 +27,8 @@ const expected={
  backstage:'658cb944b870ab8e37a926b9945a63b84478f68a0e414a4737d56f1f2d3e3b75'
 };
 test('Dingsi Lab uses exact new individual artwork not AI UI screenshot or wrong collage',()=>{
- assert.match(hub,/href="\.\/dingsi-lab-icons\.html\?v=46"/);
- assert.match(html,/dingsi-lab-icons-fullset-v46\.js\?v=46/);
+ assert.match(hub,/href="\.\/dingsi-lab-icons\.html\?v=47"/);
+ assert.match(html,/dingsi-lab-icons-fullset-v47\.js\?v=47/);
  assert.match(html,/id="fullset-toggle-v45"/);
  assert.match(html,/data-bg="checker"/);
  assert.match(html,/data-theme="pastel"/);
