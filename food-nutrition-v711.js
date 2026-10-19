@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V838';
+  const VERSION='V842';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -561,6 +561,20 @@
       // Nährwertfreie Grundzutaten niemals per Familien-/FIFO-Produktlookup
       // auflösen. Fehlende Herstellerdaten dürfen Salz nicht blockieren.
       if(ZERO_NAMES.has(text(itemName(item))))continue;
+      // Nach dem Kochen ist die dokumentierte Originalpackung maßgeblich.
+      // Keine heute verfügbaren Chargen oder generischen Familien über einen
+      // bestehenden, verifizierten Zubereitungs-Snapshot stellen.
+      if(item?.prepared_nutrition_per_100){
+        const original=sourceFor(item,data);
+        const grams=basisAmount(item,original);
+        if(!original||grams===null||original.nutrition.kcal===null||original.nutrition.protein===null){
+          missing.push(itemName(item)+' (historische Nährwerte unvollständig)');
+        }else{
+          kcal+=original.nutrition.kcal*grams/100;
+          protein+=original.nutrition.protein*grams/100;
+        }
+        continue;
+      }
       const allocationOverride=item?.id&&allocationMap?.get?.(String(item.id))||null;
       const familyNutrition=genericFamilyNutrition(item,data,allocationOverride);
       if(familyNutrition){
@@ -772,7 +786,7 @@
       const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
       const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
       const original=source
-        ?calculate(preparedOnly(source.food_meal_ingredients||[]),source.prepared_servings||1,data)
+        ?calculate(preparedOnly(withPreparedNutrition(source.food_meal_ingredients||[],source)),source.prepared_servings||1,data)
         :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data):{complete:false,missing:['Meal-Prep-Basis']});
       const extras=preparedOnly(items).length
         ?calculate(preparedOnly(items),meal.eaten_servings||meal.prepared_servings||1,context,allocations)
@@ -1079,7 +1093,7 @@
         const issueItems=[...items];
         if(meal.leftover_id||meal.source_meal_id){
           const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
-          if(source)issueItems.push(...preparedOnly(source.food_meal_ingredients||[]));
+          if(source)issueItems.push(...preparedOnly(withPreparedNutrition(source.food_meal_ingredients||[],source)));
           else if(meal.recipe_id){
             const baseRecipe=recipeMap.get(String(meal.recipe_id));
             if(baseRecipe)issueItems.push(...(baseRecipe.food_recipe_ingredients||[]));
