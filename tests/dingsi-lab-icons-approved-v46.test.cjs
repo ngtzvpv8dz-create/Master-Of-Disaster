@@ -28,8 +28,8 @@ const blobSha={
  backstage:'f914f53e0f703c18912f4f3f19c7f1a4a4cf8b66'
 };
 test('Dingsi Lab links to V46 and actual single-category images instead of a screenshot',()=>{
- assert.match(hub,/dingsi-lab-icons\.html\?v=46/);
- assert.match(html,/dingsi-lab-icons-fullset-v46\.js\?v=46/);
+ assert.match(hub,/dingsi-lab-icons\.html\?v=47/);
+ assert.match(html,/dingsi-lab-icons-fullset-v47\.js\?v=47/);
  assert.match(html,/id="fullset-toggle-v45" aria-expanded="false"/);
  assert.match(html,/id="fullset-panel-v45"[^>]+hidden/);
  assert.match(html,/id="fave"/);
