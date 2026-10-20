@@ -1654,7 +1654,7 @@
       '<div class="sport-multi-people-extra-v843"><input type="text" data-sport-new-person placeholder="Weiteren Namen eingeben" autocomplete="off"><button type="button" data-sport-add-person>+ Name</button></div>'+
     '</div>';
   }
-  function bindMultiPeoplePickers(){
+  function bindMultiPeoplePickers(root){
     root.querySelectorAll('form[data-sport-course-attendance],form[data-sport-test-course-attendance],form[data-sport-complete-occurrence],form[data-sport-book-special],form[data-sport-activity-participants]').forEach(form=>{
       const original=form.querySelector('input[name="participants"]');
       if(!original)return;
@@ -3185,7 +3185,7 @@
       const target=event.currentTarget;
       handle(target,()=>bookWeeklyCourse(target.dataset.sportBookWeekly,target.dataset.courseDate));
     }));
-    bindMultiPeoplePickers();
+    bindMultiPeoplePickers(root);
     root.querySelectorAll('[data-sport-book-special]').forEach(form=>form.addEventListener('submit',event=>{
       event.preventDefault();const target=event.currentTarget,submit=target.querySelector('button[type="submit"]');
       handle(submit,()=>bookSpecialCourse(target.dataset.sportBookSpecial,new FormData(target)));
