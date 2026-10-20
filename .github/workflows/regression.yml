@@ -486,3 +486,5 @@ jobs:
           NODE
       - name: Sport visible history in Chromium and WebKit
         run: node tests/sport-visible-history-20261020.cjs
+      - name: Food individual lot view and actions in Chromium and WebKit
+        run: node tests/food-lot-individual-v848.cjs

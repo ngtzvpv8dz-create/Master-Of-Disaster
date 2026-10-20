@@ -528,7 +528,7 @@
       safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
-      safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at').order('created_at')),
+      safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at,updated_at,best_before_label').order('created_at')),
       safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
@@ -1825,107 +1825,48 @@
     return '<span class="food-stock-mhd-v707">'+label+' '+esc(fmtDate(dates[0]))+'</span>';
   }
 
+  // V848: product families remain grouped, but every physical lot gets a separate row.
   function inventoryCurrentProductMarkup(item,data=state){
-    const products=(data?.products||[]).filter(product=>String(product.inventory_id||'')===String(item?.id||''));
-    const productsById=new Map((data?.products||[]).map(product=>[String(product.id||''),product]));
-    const lots=(data?.lots||[])
-      .filter(lot=>String(lot.inventory_id||'')===String(item?.id||''))
-      .filter(lot=>Math.max(0,Number(lot.unopened_packages)||0)>0||Math.max(0,Number(lot.opened_remaining_quantity)||0)>0)
-      .sort((a,b)=>{
-        const fa=frozenStorageLocation(a.storage_location)?1:0;
-        const fb=frozenStorageLocation(b.storage_location)?1:0;
-        if(fa!==fb)return fa-fb;
-        return String(a.best_before_date||'9999-12-31').localeCompare(String(b.best_before_date||'9999-12-31'))||
-          String(a.purchased_on||'9999-12-31').localeCompare(String(b.purchased_on||'9999-12-31'))||
-          String(a.created_at||'').localeCompare(String(b.created_at||''));
-      });
-
-    const productLabel=product=>product
-      ?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
-      :'Produkt nicht genauer erfasst';
-
-    const groupKey=lot=>{
-      const frozen=frozenStorageLocation(lot.storage_location);
-      return String(lot.product_id||'unknown')+'|'+(frozen?'frozen':'fresh');
-    };
-    const groups=new Map();
+    const products=new Map((data?.products||[]).map(p=>[String(p.id||''),p]));
+    const all=(data?.lots||[]).filter(lot=>String(lot.inventory_id||'')===String(item.id));
+    const lots=all.filter(lot=>Number(lot.unopened_packages)>0||Number(lot.opened_remaining_quantity)>0)
+      .sort((a,b)=>(Number(b.opened_remaining_quantity)>0?1:0)-(Number(a.opened_remaining_quantity)>0?1:0)
+        ||String(a.best_before_date||a.best_before_label||'9999').localeCompare(String(b.best_before_date||b.best_before_label||'9999'))
+        ||String(a.created_at||'').localeCompare(String(b.created_at||'')));
     let tracked=0;
-
-    for(const lot of lots){
-      const quantity=Math.max(0,Number(lotQuantityForInventory(lot,item))||0);
-      tracked+=quantity;
-      const key=groupKey(lot);
-      if(!groups.has(key)){
-        groups.set(key,{
-          product:productsById.get(String(lot.product_id||''))||null,
-          frozen:frozenStorageLocation(lot.storage_location),
-          opened:new Map(),
-          unopened:new Map(),
-          quantity:0
-        });
-      }
-      const group=groups.get(key);
-      group.quantity+=quantity;
-
+    const rows=lots.map(lot=>{
+      const product=products.get(String(lot.product_id||''))||null;
+      const label=product?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · '):item.name;
       const opened=Math.max(0,Number(lot.opened_remaining_quantity)||0);
-      const openedUnit=String(lot.opened_remaining_unit||lot.package_unit||item.unit||'').trim();
-      if(opened>0&&openedUnit){
-        group.opened.set(openedUnit,(group.opened.get(openedUnit)||0)+opened);
-      }
-
       const unopened=Math.max(0,Number(lot.unopened_packages)||0);
       const packQty=Math.max(0,Number(lot.package_quantity)||0);
       const packUnit=String(lot.package_unit||item.unit||'').trim();
-      if(unopened>0){
-        const packKey=packQty+'|'+packUnit;
-        const current=group.unopened.get(packKey)||{count:0,quantity:packQty,unit:packUnit};
-        current.count+=unopened;
-        group.unopened.set(packKey,current);
-      }
-    }
-
-    const rows=[...groups.values()].map(group=>{
+      const openUnit=String(lot.opened_remaining_unit||packUnit).trim();
+      const qty=lotQuantityForInventory(lot,item);
+      if(qty!==null)tracked+=qty;
       const parts=[];
-      for(const [unit,quantity] of group.opened){
-        parts.push(unit==='Stück'
-          ?fmtQty(quantity,unit)+' in angebrochener Packung'
-          :fmtQty(quantity,unit)+' · aus geöffneter Packung');
-      }
-      for(const pack of group.unopened.values()){
-        parts.push(pack.quantity>0
-          ?pack.count+' × '+fmtQty(pack.quantity,pack.unit)+' ungeöffnet'
-          :pack.count+' '+(pack.count===1?'Packung':'Packungen')+' ungeöffnet');
-      }
-      return {
-        label:productLabel(group.product),
-        summary:parts.join(' + ')||fmtQty(group.quantity,item.unit),
-        frozen:group.frozen
-      };
+      if(opened>0)parts.push(fmtQty(opened,openUnit)+' · angebrochen');
+      if(unopened>0)parts.push(unopened+' × '+fmtQty(packQty,packUnit)+' · ungeöffnet');
+      const meta=[];
+      if(lot.best_before_label)meta.push('MHD '+lot.best_before_label);
+      else if(lot.best_before_date)meta.push('MHD '+fmtDate(lot.best_before_date));
+      if(lot.purchased_on)meta.push('Kauf '+fmtDate(String(lot.purchased_on).slice(0,10)));
+      if(lot.storage_location)meta.push(lot.storage_location);
+      const frozen=frozenStorageLocation(lot.storage_location);
+      const edit='<button type="button" data-food-edit-lot="'+esc(lot.id)+'">Bearbeiten</button>';
+      const remove='<button type="button" data-food-discard-lot="'+esc(lot.id)+'">Entfernen</button>';
+      return '<div class="food-stock-lot-v848 '+(opened>0?'is-open-v848':'is-closed-v848')+(frozen?' is-frozen-v848':'')+'" data-food-lot-id="'+esc(lot.id)+'">'+
+        '<div class="food-stock-lot-top-v848"><b>'+esc(label)+'</b><span>'+esc(opened>0?'Angebrochen':'Ungeöffnet')+'</span></div>'+
+        '<strong>'+esc(parts.join(' + '))+'</strong>'+
+        (meta.length?'<small>'+esc(meta.join(' · '))+'</small>':'')+
+        '<div class="food-stock-lot-actions-v848">'+edit+remove+'</div></div>';
     });
-
-    const aggregate=Math.max(0,Number(item?.quantity)||0);
+    const aggregate=Math.max(0,Number(item.quantity)||0);
     const untracked=Math.max(0,aggregate-tracked);
-    if(untracked>.05){
-      rows.unshift({
-        label:lots.length?'Älterer Bestand':(products.length===1?productLabel(products[0]):'Bestand'),
-        summary:fmtQty(untracked,item.unit)+(lots.length?' · noch nicht einer Charge zugeordnet':' · ohne Chargenaufteilung'),
-        frozen:false
-      });
-    }
-
-    if(!rows.length&&aggregate>0){
-      rows.push({
-        label:products.length===1?productLabel(products[0]):'Bestand',
-        summary:fmtQty(aggregate,item.unit)+' · ohne Chargenaufteilung',
-        frozen:false
-      });
-    }
+    if(untracked>0.05)rows.unshift('<div class="food-stock-lot-untracked-v848"><b>Ohne Chargenzuordnung</b><span>'+
+      esc(fmtQty(untracked,item.unit))+'</span><small>Wird nicht automatisch von einer anderen Charge abgezogen.</small></div>');
     if(!rows.length)return '';
-
-    const html=rows.map(row=>
-      '<div class="food-stock-product-row-v736 '+(row.frozen?'is-frozen-v736':'')+'"><span><b>'+esc(row.label)+'</b><small>'+esc(row.summary+(row.frozen?' · eingefroren':''))+'</small></span></div>'
-    ).join('');
-    return '<div class="food-stock-products-v736"><small>'+(rows.length===1?'Aktuelles Produkt':'Bestand nach Produkt / Charge')+'</small>'+html+'</div>';
+    return '<div class="food-stock-lots-v848" aria-label="Einzelne Bestandschargen"><div class="food-stock-lots-head-v848">Chargen einzeln verwalten · '+lots.length+'</div>'+rows.join('')+'</div>';
   }
 
   // V800: use the same future meal plan and stock allocation logic as Food
@@ -2013,10 +1954,14 @@
     // redundant 'Aktuelles Produkt' layer beneath Strawberry Lime / Fresh Cherry.
     // Product IDs and batch data remain available for booking and history.
     const isIsoclearFlavor=String(item.catalog_family_name||item.family_name||'').trim().toLocaleLowerCase('de-DE')==='esn isoclear whey protein isolate';
-    const currentProduct=empty||isIsoclearFlavor||Boolean(chickenPieces)?'':inventoryCurrentProductMarkup(item);
+    const currentProduct=inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
-    const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544"><button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>'+weighAction+storageAction+'</div></article>';
+
+    const hasTrackedLots=(state?.lots||[]).some(lot=>String(lot.inventory_id||'')===String(item.id) && (Number(lot.unopened_packages)>0||Number(lot.opened_remaining_quantity)>0));
+    const storageAction=!empty&&!hasTrackedLots?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
+    const quantityAction=hasTrackedLots?'':'<button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>';
+    const addLotAction='<button type="button" data-food-add-lot="'+esc(item.id)+'">+ Charge</button>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544">'+quantityAction+addLotAction+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -4211,6 +4156,115 @@
     sync();
   }
 
+  // V848: all changes to actual lots use one transaction in Supabase.
+  // Never invoke the family-level FIFO quantity-adjustment for a specific lot.
+  const editableLot=(id)=>(state?.lots||[]).find(lot=>String(lot.id)===String(id))||null;
+  function requireFreshLotStock(){
+    if(sourceState.inventory!=='cloud'||sourceState.lots!=='cloud')
+      throw new Error('Chargen und Gesamtbestand müssen aktuell aus der Cloud geladen sein. Bitte FOOD neu laden.');
+  }
+  async function saveLotAction(payload){
+    requireFreshLotStock();
+    const supabase=client();
+    if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await withTimeout(supabase.rpc('manage_food_inventory_lot_v848',payload),'Einzelcharge speichern',18000);
+    if(result?.error)throw result.error;
+    await mutate(()=>result.data);
+    return result.data;
+  }
+  const lotProductTitle=p=>[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');
+
+  function addInventoryLotModal(inventoryId){
+    const item=(state?.inventory||[]).find(row=>String(row.id)===String(inventoryId));
+    if(!item)return;
+    try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    const products=(state?.products||[]).filter(p=>String(p.inventory_id||'')===String(item.id));
+    const existing=(state?.lots||[]).find(l=>String(l.inventory_id)===String(item.id)&&
+      Number(l.package_quantity)>0&&String(l.package_unit||item.unit)===String(item.unit));
+    const packageSize=Number(existing?.package_quantity)||Number(item.usage_content_quantity)||0;
+    const productSelect=products.length
+      ?'<label>Produkt<select name="product_id"><option value="">Ohne Produktzuordnung</option>'+
+        products.map(p=>'<option value="'+esc(p.id)+'" '+(products.length===1?'selected':'')+'>'+esc(lotProductTitle(p)||item.name)+'</option>').join('')+
+        '</select></label>'
+      :'';
+    const html='<form><p class="food-modal-copy-v544">Neue physische Charge von <strong>'+esc(item.name)+'</strong> anlegen. Bestehende Chargen bleiben unverändert.</p>'+
+      productSelect+
+      '<label>Packungsgröße ('+esc(item.unit||'Einheit')+')<input name="package_quantity" type="number" min="0.001" step="any" inputmode="decimal" value="'+esc(packageSize||'')+'" required></label>'+
+      '<label>Anzahl ungeöffneter Packungen<input name="unopened" type="number" min="0" step="1" value="1" required></label>'+
+      '<label>Restmenge angebrochen ('+esc(item.unit||'Einheit')+')<input name="opened_remaining" type="number" min="0" step="any" inputmode="decimal" value="0" required></label>'+
+      '<label>MHD (z. B. 10/2030)<input name="best_before_label" placeholder="MM/JJJJ oder TT.MM.JJJJ"></label>'+
+      '<label>Lagerort<input name="storage_location" placeholder="z. B. Vorratsschrank, Kühlschrank"></label>'+
+      '<label>Notiz<input name="note" placeholder="optional"></label>'+
+      '<p class="food-modal-copy-v544">Für eine angebrochene Dose: ungeöffnet = 0 und die tatsächliche Restmenge eintragen.</p>'+
+      '<button class="food-action-v544" type="submit">Diese Charge hinzufügen</button></form>';
+    addModal('Charge hinzufügen',html,async form=>{
+      const unopened=Number(form.get('unopened')),opened=Number(form.get('opened_remaining'));
+      const pack=Number(form.get('package_quantity'));
+      if(!Number.isInteger(unopened)||unopened<0||!Number.isFinite(opened)||opened<0||!Number.isFinite(pack)||pack<=0)
+        throw new Error('Bitte gültige Chargenmengen eingeben.');
+      return saveLotAction({
+        p_action:'create',p_inventory_id:item.id,p_lot_id:null,p_expected_updated_at:null,
+        p_unopened:unopened,p_opened_remaining:opened,p_package_quantity:pack,
+        p_product_id:String(form.get('product_id')||'')||null,
+        p_best_before_label:String(form.get('best_before_label')||''),
+        p_storage_location:String(form.get('storage_location')||''),
+        p_note:String(form.get('note')||''),p_reason:'Neue Charge einzeln hinzugefügt'
+      });
+    });
+  }
+
+  function editInventoryLotModal(lotId){
+    const lot=editableLot(lotId);if(!lot)return;
+    const item=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));if(!item)return;
+    try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    const product=(state?.products||[]).find(p=>String(p.id)===String(lot.product_id))||null;
+    const title=lotProductTitle(product)||item.name;
+    const packUnit=String(lot.package_unit||item.unit||'');
+    const openUnit=String(lot.opened_remaining_unit||packUnit);
+    const html='<form><p class="food-modal-copy-v544"><strong>'+esc(title)+'</strong><br>Nur diese Charge ändern. Alle anderen Chargen bleiben unverändert.</p>'+
+      '<label>Packungsgröße ('+esc(packUnit)+')<input name="package_quantity" type="number" min="0.001" step="any" inputmode="decimal" value="'+esc(lot.package_quantity||'')+'" required></label>'+
+      '<label>Ungeöffnete Packungen<input name="unopened" type="number" min="0" step="1" value="'+esc(lot.unopened_packages||0)+'" required></label>'+
+      '<label>Angebrochene Restmenge ('+esc(openUnit)+')<input name="opened_remaining" type="number" min="0" step="any" inputmode="decimal" value="'+esc(lot.opened_remaining_quantity||0)+'" required></label>'+
+      '<label>MHD<input name="best_before_label" value="'+esc(lot.best_before_label||'')+'" placeholder="MM/JJJJ"></label>'+
+      '<label>Lagerort<input name="storage_location" value="'+esc(lot.storage_location||'')+'" placeholder="z. B. Kühlschrank"></label>'+
+      '<label>Notiz<input name="note" value="'+esc(lot.note||'')+'"></label>'+
+      '<p class="food-modal-copy-v544">Packung geöffnet? Anzahl ungeöffneter Packungen entsprechend reduzieren und tatsächliche Restmenge eintragen.</p>'+
+      '<button class="food-action-v544" type="submit">Nur diese Charge speichern</button></form>';
+    addModal('Charge bearbeiten',html,async form=>{
+      const unopened=Number(form.get('unopened')),opened=Number(form.get('opened_remaining')),pack=Number(form.get('package_quantity'));
+      if(!Number.isInteger(unopened)||unopened<0||!Number.isFinite(opened)||opened<0||!Number.isFinite(pack)||pack<=0)
+        throw new Error('Bitte gültige Chargenmengen eintragen.');
+      return saveLotAction({
+        p_action:'update',p_inventory_id:item.id,p_lot_id:lot.id,p_expected_updated_at:lot.updated_at,
+        p_unopened:unopened,p_opened_remaining:opened,p_package_quantity:pack,
+        p_product_id:null,p_best_before_label:String(form.get('best_before_label')||''),
+        p_storage_location:String(form.get('storage_location')||''),
+        p_note:String(form.get('note')||''),p_reason:'Charge manuell bearbeitet'
+      });
+    });
+  }
+
+  function discardInventoryLotModal(lotId){
+    const lot=editableLot(lotId);if(!lot)return;
+    const item=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));if(!item)return;
+    try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    const qty=lotQuantityForInventory(lot,item);
+    const product=(state?.products||[]).find(p=>String(p.id)===String(lot.product_id))||null;
+    const label=lotProductTitle(product)||item.name;
+    const html='<form><p class="food-modal-copy-v544"><strong>'+esc(label)+'</strong><br>'+
+      esc(qty===null?'Menge nicht eindeutig berechenbar':fmtQty(qty,item.unit))+
+      ' aus genau dieser Charge entfernen. Andere Chargen bleiben unangetastet. Der Vorgang bleibt im Bestandsprotokoll nachvollziehbar.</p>'+
+      '<label>Grund<select name="reason"><option value="Verdorben">Verdorben / wegwerfen</option>'+
+      '<option value="Entsorgt">Entsorgt</option><option value="Bestand korrigiert">Bestand korrigiert</option></select></label>'+
+      '<button class="food-action-v544 food-lot-discard-confirm-v848" type="submit">Nur diese Charge entfernen</button></form>';
+    addModal('Einzelcharge entfernen',html,async form=>saveLotAction({
+      p_action:'discard',p_inventory_id:item.id,p_lot_id:lot.id,p_expected_updated_at:lot.updated_at,
+      p_unopened:0,p_opened_remaining:0,p_package_quantity:lot.package_quantity,
+      p_product_id:null,p_best_before_label:null,p_storage_location:null,p_note:null,
+      p_reason:String(form.get('reason')||'Entsorgt')
+    }));
+  }
+
   function adjustModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
     addModal('Menge ändern','<form><p class="food-modal-copy-v544">'+esc(item.name)+'</p><label>Neue Menge<input name="quantity" type="number" min="0" step="0.01" value="'+esc(item.quantity??0)+'" required></label><label>Notiz (optional)<input name="note" placeholder="z. B. verschüttet"></label><button class="food-action-v544" type="submit">Menge speichern</button></form>',async form=>{
@@ -4511,6 +4565,15 @@
       const id=String(card.dataset.foodRecipeCard);
       if(expandedRecipes.has(id))expandedRecipes.delete(id);else expandedRecipes.add(id);
       renderState();
+    }));
+    root.querySelectorAll('[data-food-add-lot]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();addInventoryLotModal(button.dataset.foodAddLot);
+    }));
+    root.querySelectorAll('[data-food-edit-lot]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();editInventoryLotModal(button.dataset.foodEditLot);
+    }));
+    root.querySelectorAll('[data-food-discard-lot]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();discardInventoryLotModal(button.dataset.foodDiscardLot);
     }));
     root.querySelectorAll('[data-food-adjust]').forEach(button=>button.addEventListener('click',()=>adjustModal(button.dataset.foodAdjust)));
     root.querySelector('[data-food-add-inventory]')?.addEventListener('click',addInventoryModal);
