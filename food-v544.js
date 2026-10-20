@@ -1956,8 +1956,9 @@
     const isIsoclearFlavor=String(item.catalog_family_name||item.family_name||'').trim().toLocaleLowerCase('de-DE')==='esn isoclear whey protein isolate';
     const currentProduct=inventoryCurrentProductMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
-    const storageAction=!empty?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
+
     const hasTrackedLots=(state?.lots||[]).some(lot=>String(lot.inventory_id||'')===String(item.id) && (Number(lot.unopened_packages)>0||Number(lot.opened_remaining_quantity)>0));
+    const storageAction=!empty&&!hasTrackedLots?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
     const quantityAction=hasTrackedLots?'':'<button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>';
     const addLotAction='<button type="button" data-food-add-lot="'+esc(item.id)+'">+ Charge</button>';
     return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544">'+quantityAction+addLotAction+weighAction+storageAction+'</div></article>';
