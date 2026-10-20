@@ -1588,6 +1588,60 @@
   function parseCoursePeople(value){
     return [...new Set(String(value||'').split(/[,;+\n]/).map(item=>item.trim()).filter(Boolean))];
   }
+
+  // V843: multiple companions for course planning, attendance and history.
+  function multiPeopleField(value=[]){
+    const chosen=parseCoursePeople(Array.isArray(value)?value.join(', '):value);
+    const people=[...new Set([...knownSportParticipants(),...chosen])].sort(byName);
+    return '<div class="sport-multi-people-v843" data-sport-multi-people>'+
+      '<div class="sport-multi-people-caption-v843">Mit wem? <small>Mehrfachauswahl</small></div>'+
+      '<input type="hidden" name="participants" value="'+esc(chosen.join(', '))+'">'+
+      '<div class="sport-multi-people-options-v843">'+
+        people.map(name=>'<label><input type="checkbox" value="'+esc(name)+'"'+(chosen.includes(name)?' checked':'')+'><span>'+esc(name)+'</span></label>').join('')+
+      '</div>'+
+      '<div class="sport-multi-people-extra-v843"><input type="text" data-sport-new-person placeholder="Weiteren Namen eingeben" autocomplete="off"><button type="button" data-sport-add-person>+ Name</button></div>'+
+    '</div>';
+  }
+  function bindMultiPeoplePickers(){
+    root.querySelectorAll('form[data-sport-course-attendance],form[data-sport-test-course-attendance],form[data-sport-complete-occurrence],form[data-sport-book-special],form[data-sport-activity-participants]').forEach(form=>{
+      const original=form.querySelector('input[name="participants"]');
+      if(!original)return;
+      const wrapper=document.createElement('div');
+      wrapper.innerHTML=multiPeopleField(original.value);
+      original.replaceWith(wrapper.firstElementChild);
+    });
+    root.querySelectorAll('[data-sport-multi-people]').forEach(picker=>{
+      const hidden=picker.querySelector('input[name="participants"]');
+      const list=picker.querySelector('.sport-multi-people-options-v843');
+      const extra=picker.querySelector('[data-sport-new-person]');
+      const sync=()=>{hidden.value=parseCoursePeople([...list.querySelectorAll('input[type="checkbox"]:checked')].map(input=>input.value).join(', ')).join(', ');};
+      list.querySelectorAll('input[type="checkbox"]').forEach(input=>input.addEventListener('change',sync));
+      const add=()=>{
+        const name=String(extra.value||'').trim();
+        if(!name)return;
+        let checkbox=[...list.querySelectorAll('input[type="checkbox"]')].find(input=>input.value.toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE'));
+        if(!checkbox){
+          const label=document.createElement('label');
+          checkbox=document.createElement('input');
+          checkbox.type='checkbox';
+          checkbox.value=name;
+          const caption=document.createElement('span');
+          caption.textContent=name;
+          label.append(checkbox,caption);
+          list.append(label);
+          checkbox.addEventListener('change',sync);
+        }
+        checkbox.checked=true;
+        extra.value='';
+        sync();
+      };
+      picker.querySelector('[data-sport-add-person]').addEventListener('click',add);
+      extra.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();add();}});
+      picker.closest('form')?.addEventListener('submit',()=>{if(extra.value.trim())add();sync();});
+      sync();
+    });
+  }
+
   async function bookWeeklyCourse(slotId,dateKey){
     const slot=(state.weeklySlots||[]).find(item=>String(item.id)===String(slotId));
     const course=(state.courseCatalog||[]).find(item=>String(item.id)===String(slot?.course_id));
@@ -3076,6 +3130,7 @@
       const target=event.currentTarget;
       handle(target,()=>bookWeeklyCourse(target.dataset.sportBookWeekly,target.dataset.courseDate));
     }));
+    bindMultiPeoplePickers();
     root.querySelectorAll('[data-sport-book-special]').forEach(form=>form.addEventListener('submit',event=>{
       event.preventDefault();const target=event.currentTarget,submit=target.querySelector('button[type="submit"]');
       handle(submit,()=>bookSpecialCourse(target.dataset.sportBookSpecial,new FormData(target)));
