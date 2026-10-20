@@ -4155,6 +4155,115 @@
     sync();
   }
 
+  // V848: all changes to actual lots use one transaction in Supabase.
+  // Never invoke the family-level FIFO quantity-adjustment for a specific lot.
+  const editableLot=(id)=>(state?.lots||[]).find(lot=>String(lot.id)===String(id))||null;
+  function requireFreshLotStock(){
+    if(sourceState.inventory!=='cloud'||sourceState.lots!=='cloud')
+      throw new Error('Chargen und Gesamtbestand müssen aktuell aus der Cloud geladen sein. Bitte FOOD neu laden.');
+  }
+  async function saveLotAction(payload){
+    requireFreshLotStock();
+    const supabase=client();
+    if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await withTimeout(supabase.rpc('manage_food_inventory_lot_v848',payload),'Einzelcharge speichern',18000);
+    if(result?.error)throw result.error;
+    await mutate(()=>result.data);
+    return result.data;
+  }
+  const lotProductTitle=p=>[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');
+
+  function addInventoryLotModal(inventoryId){
+    const item=(state?.inventory||[]).find(row=>String(row.id)===String(inventoryId));
+    if(!item)return;
+    try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    const products=(state?.products||[]).filter(p=>String(p.inventory_id||'')===String(item.id));
+    const existing=(state?.lots||[]).find(l=>String(l.inventory_id)===String(item.id)&&
+      Number(l.package_quantity)>0&&String(l.package_unit||item.unit)===String(item.unit));
+    const packageSize=Number(existing?.package_quantity)||Number(item.usage_content_quantity)||0;
+    const productSelect=products.length
+      ?'<label>Produkt<select name="product_id"><option value="">Ohne Produktzuordnung</option>'+
+        products.map(p=>'<option value="'+esc(p.id)+'" '+(products.length===1?'selected':'')+'>'+esc(lotProductTitle(p)||item.name)+'</option>').join('')+
+        '</select></label>'
+      :'';
+    const html='<form><p class="food-modal-copy-v544">Neue physische Charge von <strong>'+esc(item.name)+'</strong> anlegen. Bestehende Chargen bleiben unverändert.</p>'+
+      productSelect+
+      '<label>Packungsgröße ('+esc(item.unit||'Einheit')+')<input name="package_quantity" type="number" min="0.001" step="any" inputmode="decimal" value="'+esc(packageSize||'')+'" required></label>'+
+      '<label>Anzahl ungeöffneter Packungen<input name="unopened" type="number" min="0" step="1" value="1" required></label>'+
+      '<label>Restmenge angebrochen ('+esc(item.unit||'Einheit')+')<input name="opened_remaining" type="number" min="0" step="any" inputmode="decimal" value="0" required></label>'+
+      '<label>MHD (z. B. 10/2030)<input name="best_before_label" placeholder="MM/JJJJ oder TT.MM.JJJJ"></label>'+
+      '<label>Lagerort<input name="storage_location" placeholder="z. B. Vorratsschrank, Kühlschrank"></label>'+
+      '<label>Notiz<input name="note" placeholder="optional"></label>'+
+      '<p class="food-modal-copy-v544">Für eine angebrochene Dose: ungeöffnet = 0 und die tatsächliche Restmenge eintragen.</p>'+
+      '<button class="food-action-v544" type="submit">Diese Charge hinzufügen</button></form>';
+    addModal('Charge hinzufügen',html,async form=>{
+      const unopened=Number(form.get('unopened')),opened=Number(form.get('opened_remaining'));
+      const pack=Number(form.get('package_quantity'));
+      if(!Number.isInteger(unopened)||unopened<0||!Number.isFinite(opened)||opened<0||!Number.isFinite(pack)||pack<=0)
+        throw new Error('Bitte gültige Chargenmengen eingeben.');
+      return saveLotAction({
+        p_action:'create',p_inventory_id:item.id,p_lot_id:null,p_expected_updated_at:null,
+        p_unopened:unopened,p_opened_remaining:opened,p_package_quantity:pack,
+        p_product_id:String(form.get('product_id')||'')||null,
+        p_best_before_label:String(form.get('best_before_label')||''),
+        p_storage_location:String(form.get('storage_location')||''),
+        p_note:String(form.get('note')||''),p_reason:'Neue Charge einzeln hinzugefügt'
+      });
+    });
+  }
+
+  function editInventoryLotModal(lotId){
+    const lot=editableLot(lotId);if(!lot)return;
+    const item=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));if(!item)return;
+    try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    const product=(state?.products||[]).find(p=>String(p.id)===String(lot.product_id))||null;
+    const title=lotProductTitle(product)||item.name;
+    const packUnit=String(lot.package_unit||item.unit||'');
+    const openUnit=String(lot.opened_remaining_unit||packUnit);
+    const html='<form><p class="food-modal-copy-v544"><strong>'+esc(title)+'</strong><br>Nur diese Charge ändern. Alle anderen Chargen bleiben unverändert.</p>'+
+      '<label>Packungsgröße ('+esc(packUnit)+')<input name="package_quantity" type="number" min="0.001" step="any" inputmode="decimal" value="'+esc(lot.package_quantity||'')+'" required></label>'+
+      '<label>Ungeöffnete Packungen<input name="unopened" type="number" min="0" step="1" value="'+esc(lot.unopened_packages||0)+'" required></label>'+
+      '<label>Angebrochene Restmenge ('+esc(openUnit)+')<input name="opened_remaining" type="number" min="0" step="any" inputmode="decimal" value="'+esc(lot.opened_remaining_quantity||0)+'" required></label>'+
+      '<label>MHD<input name="best_before_label" value="'+esc(lot.best_before_label||'')+'" placeholder="MM/JJJJ"></label>'+
+      '<label>Lagerort<input name="storage_location" value="'+esc(lot.storage_location||'')+'" placeholder="z. B. Kühlschrank"></label>'+
+      '<label>Notiz<input name="note" value="'+esc(lot.note||'')+'"></label>'+
+      '<p class="food-modal-copy-v544">Packung geöffnet? Anzahl ungeöffneter Packungen entsprechend reduzieren und tatsächliche Restmenge eintragen.</p>'+
+      '<button class="food-action-v544" type="submit">Nur diese Charge speichern</button></form>';
+    addModal('Charge bearbeiten',html,async form=>{
+      const unopened=Number(form.get('unopened')),opened=Number(form.get('opened_remaining')),pack=Number(form.get('package_quantity'));
+      if(!Number.isInteger(unopened)||unopened<0||!Number.isFinite(opened)||opened<0||!Number.isFinite(pack)||pack<=0)
+        throw new Error('Bitte gültige Chargenmengen eintragen.');
+      return saveLotAction({
+        p_action:'update',p_inventory_id:item.id,p_lot_id:lot.id,p_expected_updated_at:lot.updated_at,
+        p_unopened:unopened,p_opened_remaining:opened,p_package_quantity:pack,
+        p_product_id:null,p_best_before_label:String(form.get('best_before_label')||''),
+        p_storage_location:String(form.get('storage_location')||''),
+        p_note:String(form.get('note')||''),p_reason:'Charge manuell bearbeitet'
+      });
+    });
+  }
+
+  function discardInventoryLotModal(lotId){
+    const lot=editableLot(lotId);if(!lot)return;
+    const item=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));if(!item)return;
+    try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    const qty=lotQuantityForInventory(lot,item);
+    const product=(state?.products||[]).find(p=>String(p.id)===String(lot.product_id))||null;
+    const label=lotProductTitle(product)||item.name;
+    const html='<form><p class="food-modal-copy-v544"><strong>'+esc(label)+'</strong><br>'+
+      esc(qty===null?'Menge nicht eindeutig berechenbar':fmtQty(qty,item.unit))+
+      ' aus genau dieser Charge entfernen. Andere Chargen bleiben unangetastet. Der Vorgang bleibt im Bestandsprotokoll nachvollziehbar.</p>'+
+      '<label>Grund<select name="reason"><option value="Verdorben">Verdorben / wegwerfen</option>'+
+      '<option value="Entsorgt">Entsorgt</option><option value="Bestand korrigiert">Bestand korrigiert</option></select></label>'+
+      '<button class="food-action-v544 food-lot-discard-confirm-v848" type="submit">Nur diese Charge entfernen</button></form>';
+    addModal('Einzelcharge entfernen',html,async form=>saveLotAction({
+      p_action:'discard',p_inventory_id:item.id,p_lot_id:lot.id,p_expected_updated_at:lot.updated_at,
+      p_unopened:0,p_opened_remaining:0,p_package_quantity:lot.package_quantity,
+      p_product_id:null,p_best_before_label:null,p_storage_location:null,p_note:null,
+      p_reason:String(form.get('reason')||'Entsorgt')
+    }));
+  }
+
   function adjustModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
     addModal('Menge ändern','<form><p class="food-modal-copy-v544">'+esc(item.name)+'</p><label>Neue Menge<input name="quantity" type="number" min="0" step="0.01" value="'+esc(item.quantity??0)+'" required></label><label>Notiz (optional)<input name="note" placeholder="z. B. verschüttet"></label><button class="food-action-v544" type="submit">Menge speichern</button></form>',async form=>{
@@ -4455,6 +4564,15 @@
       const id=String(card.dataset.foodRecipeCard);
       if(expandedRecipes.has(id))expandedRecipes.delete(id);else expandedRecipes.add(id);
       renderState();
+    }));
+    root.querySelectorAll('[data-food-add-lot]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();addInventoryLotModal(button.dataset.foodAddLot);
+    }));
+    root.querySelectorAll('[data-food-edit-lot]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();editInventoryLotModal(button.dataset.foodEditLot);
+    }));
+    root.querySelectorAll('[data-food-discard-lot]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();discardInventoryLotModal(button.dataset.foodDiscardLot);
     }));
     root.querySelectorAll('[data-food-adjust]').forEach(button=>button.addEventListener('click',()=>adjustModal(button.dataset.foodAdjust)));
     root.querySelector('[data-food-add-inventory]')?.addEventListener('click',addInventoryModal);
