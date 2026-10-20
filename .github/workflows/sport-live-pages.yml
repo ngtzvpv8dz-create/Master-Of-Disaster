@@ -1,0 +1,50 @@
+name: Sport Live GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-sport:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Wait for live published Sport bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://ngtzvpv8dz-create.github.io/Master-Of-Disaster"
+          ready=0
+          for retry in {1..24}; do
+            if curl -fsSL --max-time 18 "$base/sport-v626.js?ci=$GITHUB_SHA-$retry" -o /tmp/sport-live.js \
+              && curl -fsSL --max-time 18 "$base/area-runtime-v609.js?ci=$GITHUB_SHA-$retry" -o /tmp/area-live.js \
+              && curl -fsSL --max-time 18 "$base/index.html?ci=$GITHUB_SHA-$retry" -o /tmp/index-live.html \
+              && grep -Fq 'bindMultiPeoplePickers(root);' /tmp/sport-live.js \
+              && grep -Fq 'Kurse & Aktivitäten bearbeiten' /tmp/sport-live.js \
+              && grep -Fq '847-history-edit-verified' /tmp/area-live.js \
+              && grep -Fq '847-history-edit-verified' /tmp/index-live.html; then
+              ready=1
+              echo "LIVE GitHub Pages delivers verified sport code"
+              break
+            fi
+            echo "Live deployment not yet updated (try $retry)"
+            sleep 12
+          done
+          if [ "$ready" != 1 ]; then
+            echo "::error::Live GitHub Pages is not serving the checked sport version"
+            exit 1
+          fi
+      - name: Install browser test dependencies
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium webkit >/dev/null 2>&1
+      - name: Visual sport history on published site in Chromium and WebKit
+        env:
+          SPORT_TEST_BASE_URL: https://ngtzvpv8dz-create.github.io/Master-Of-Disaster
+        run: node tests/sport-visible-history-20261020.cjs
