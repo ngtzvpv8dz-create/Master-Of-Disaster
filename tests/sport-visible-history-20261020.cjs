@@ -3,7 +3,7 @@
 const {chromium,webkit}=require('playwright');
 const {spawn}=require('node:child_process');
 const assert=require('node:assert/strict');
-const port=8899, base='http://127.0.0.1:'+port;
+const port=8899, base=String(process.env.SPORT_TEST_BASE_URL||('http://127.0.0.1:'+port)).replace(/\/$/,'');
 const server=spawn('python3',['-m','http.server',String(port)],{stdio:'ignore'});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const activity=(id,session_id,name,kind,start,end,mins)=>({
