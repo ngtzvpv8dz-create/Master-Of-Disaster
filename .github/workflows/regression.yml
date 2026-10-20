@@ -484,3 +484,5 @@ jobs:
             console.log('V609 WebKit staged-sections + stable-worker regression OK');
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
+      - name: Sport visible history in Chromium and WebKit
+        run: node tests/sport-visible-history-20261020.cjs

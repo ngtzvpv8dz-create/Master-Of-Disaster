@@ -1027,7 +1027,7 @@
 
   function unitCard(group,index=0){
     const courses=groupActivities(group),workout=groupWorkout(group),circuits=groupCircuits(group);
-    const targetSession=(group.sessions||[]).find(session=>session.kind==='xtraining'&&(session.workout||[]).length)||(group.sessions||[]).find(session=>session.kind==='xtraining')||null;
+    const targetSession=(group.sessions||[]).find(session=>session.kind==='xtraining'&&(session.workout||[]).length)||(group.sessions||[]).find(session=>session.kind==='xtraining')||(group.sessions||[]).find(session=>session.kind==='activity')||null;
     const editing=targetSession&&String(editingSessionId||'')===String(targetSession.id);
     return '<details class="sport-history-detail-v574 sport-unit-detail-v610 sport-unit-detail-v635 '+(editing?'is-editing-v613':'')+'" style="--sport-row-index-v568:'+index+'" '+(editing?'open':'')+'>'+
       '<summary>'+
@@ -1039,9 +1039,9 @@
         (targetSession?'<div class="sport-history-edit-toolbar-v613">'+
           (editing
             ?'<button type="button" data-sport-open-catalog data-session-id="'+esc(targetSession.id)+'">+ Übung</button><button type="button" data-sport-stop-edit-session>Bearbeitung schließen</button>'
-            :'<button type="button" data-sport-edit-session="'+esc(targetSession.id)+'">Training bearbeiten</button>')+
+            :'<button type="button" data-sport-edit-session="'+esc(targetSession.id)+'">'+(targetSession.kind==='activity'?'Kurse & Aktivitäten bearbeiten':'Training bearbeiten')+'</button>')+
         '</div>':'')+
-        (editing&&targetSession?strengthKcalEditor(targetSession):'')+
+        (editing&&targetSession&&targetSession.kind==='xtraining'?strengthKcalEditor(targetSession):'')+
         (editing&&targetSession?historyMetaEditor(targetSession):'')+
         (editing
           ?((courses.length?'<div class="sport-section-title-v568">Kurse & Aktivitäten</div><div class="sport-course-list-v568">'+courses.map((course,courseIndex)=>courseCard(course,courseIndex,true)).join('')+'</div>':'')
@@ -1654,7 +1654,7 @@
       '<div class="sport-multi-people-extra-v843"><input type="text" data-sport-new-person placeholder="Weiteren Namen eingeben" autocomplete="off"><button type="button" data-sport-add-person>+ Name</button></div>'+
     '</div>';
   }
-  function bindMultiPeoplePickers(){
+  function bindMultiPeoplePickers(root){
     root.querySelectorAll('form[data-sport-course-attendance],form[data-sport-test-course-attendance],form[data-sport-complete-occurrence],form[data-sport-book-special],form[data-sport-activity-participants]').forEach(form=>{
       const original=form.querySelector('input[name="participants"]');
       if(!original)return;
@@ -3185,7 +3185,7 @@
       const target=event.currentTarget;
       handle(target,()=>bookWeeklyCourse(target.dataset.sportBookWeekly,target.dataset.courseDate));
     }));
-    bindMultiPeoplePickers();
+    bindMultiPeoplePickers(root);
     root.querySelectorAll('[data-sport-book-special]').forEach(form=>form.addEventListener('submit',event=>{
       event.preventDefault();const target=event.currentTarget,submit=target.querySelector('button[type="submit"]');
       handle(submit,()=>bookSpecialCourse(target.dataset.sportBookSpecial,new FormData(target)));
