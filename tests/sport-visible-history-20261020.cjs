@@ -95,7 +95,7 @@ async function run(engine,which,partial){
     let skiText=await ski.innerText();
     for(const x of ['Ski-Einsteigerkurs 1','Freies Skifahren','PAUSE','10:00','14:00','15:00','16:00','AKTIVITÄT'])
       assert(skiText.includes(x),'missing shown ski step: '+x);
-    assert((await ski.locator('summary').innerText()).includes('5 h'),'waiting must not count toward sports time');
+    assert((await ski.locator('summary').innerText()).includes('5:00 h'),'waiting must not count toward sports time');
     const refresh=page.getByRole('button',{name:/Sportdaten aktualisieren/});
     assert.equal(await refresh.count(),1);
     await refresh.click();
