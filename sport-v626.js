@@ -582,6 +582,12 @@
     if(xtraining?.gymArrivedAt&&xtraining?.gymLeftAt){
       return Math.max(0,Math.round((new Date(xtraining.gymLeftAt)-new Date(xtraining.gymArrivedAt))/60000));
     }
+    // External activities may contain breaks. Count the recorded active duration
+    // rather than the full first-start / last-end timespan.
+    if(sessions.length&&sessions.every(session=>session.kind==='activity')){
+      const activeMinutes=sessions.reduce((sum,session)=>sum+Math.max(0,sessionMinutes(session)),0);
+      if(activeMinutes>0)return activeMinutes;
+    }
     const starts=sessions.map(session=>validDate(session.startedAt)).filter(Boolean).sort((a,b)=>a-b);
     const ends=sessions.map(session=>validDate(session.endedAt)).filter(Boolean).sort((a,b)=>a-b);
     if(starts.length&&ends.length&&ends[ends.length-1]>=starts[0])return Math.max(0,Math.round((ends[ends.length-1]-starts[0])/60000));
@@ -619,7 +625,7 @@
         const startMs=historyTimestamp(activity?.startedAt);
         const endMs=historyTimestamp(activity?.endedAt);
         events.push({
-          kind:'course',item:activity,
+          kind:activity?.type==='course'?'course':'activity',item:activity,
           startAt:activity?.startedAt||null,endAt:activity?.endedAt||null,
           startMs,endMs,order:Number(activity?.sortOrder??999)
         });
@@ -645,7 +651,7 @@
     });
 
     const sortMoment=event=>event.startMs??event.endMs??Number.MAX_SAFE_INTEGER;
-    const typeOrder={workout:0,course:1,circuit:2};
+    const typeOrder={workout:0,course:1,activity:1,pause:1,circuit:2};
     events.sort((a,b)=>
       sortMoment(a)-sortMoment(b)
       ||(a.endMs??Number.MAX_SAFE_INTEGER)-(b.endMs??Number.MAX_SAFE_INTEGER)
@@ -704,11 +710,11 @@
     const timeline=groupChronology(group);
     if(!timeline.length)return '';
     return '<div class="sport-history-flow-v748 sport-history-flow-v798">'+timeline.map((event,index)=>{
-      if(event.kind==='course'){
-        // Course card already displays its start/end. No duplicate clock rail.
+      if(event.kind==='course'||event.kind==='activity'){
+        // Activity card already displays its start/end. No duplicate clock rail.
         return '<div class="sport-history-flow-step-v748 sport-history-flow-step-v798 is-course">'+
           '<section class="sport-history-flow-content-v748">'+
-            '<b class="sport-history-flow-label-v748">KURS</b>'+courseCard(event.item,index,false)+
+            '<b class="sport-history-flow-label-v748">'+(event.kind==='course'?'KURS':'AKTIVITÄT')+'</b>'+courseCard(event.item,index,false)+
           '</section></div>';
       }
       if(event.kind==='circuit'){
@@ -840,12 +846,15 @@
     const circuits=groupCircuits(group);
     const people=groupParticipants(group);
     const parts=venueParts(group?.venue);
-    const venue=parts.type+(parts.detail?' · '+parts.detail:'');
+    const venue=(group?.sessions||[]).every(session=>session.kind==='activity')
+      ?String(group?.venue||'Sport')
+      :parts.type+(parts.detail?' · '+parts.detail:'');
     const rows=[];
 
-    if(activities.length){
-      rows.push('<span class="sport-unit-summary-main-v635">'+esc(countLabel(activities.length,'Kurs','Kurse'))+'</span>');
-    }
+    const courses=activities.filter(activity=>activity.type==='course').length;
+    const otherActivities=activities.length-courses;
+    if(courses)rows.push('<span class="sport-unit-summary-main-v635">'+esc(countLabel(courses,'Kurs','Kurse'))+'</span>');
+    if(otherActivities)rows.push('<span class="sport-unit-summary-main-v635">'+esc(countLabel(otherActivities,'Aktivität','Aktivitäten'))+'</span>');
 
     if(workout.length){
       rows.push('<span class="sport-unit-summary-main-v635">Freies Training</span>');
@@ -992,7 +1001,7 @@
         (editing&&targetSession?strengthKcalEditor(targetSession):'')+
         (editing&&targetSession?historyMetaEditor(targetSession):'')+
         (editing
-          ?((courses.length?'<div class="sport-section-title-v568">Kurse</div><div class="sport-course-list-v568">'+courses.map((course,courseIndex)=>courseCard(course,courseIndex,true)).join('')+'</div>':'')
+          ?((courses.length?'<div class="sport-section-title-v568">Kurse & Aktivitäten</div><div class="sport-course-list-v568">'+courses.map((course,courseIndex)=>courseCard(course,courseIndex,true)).join('')+'</div>':'')
             +(workout.length?'<div class="sport-section-title-v568">Freies Training</div><div class="sport-workout-list-v573 sport-history-edit-list-v613">'+(targetSession.workout||[]).map(workoutExerciseCard).join('')+'</div>':'')
             +(circuits.length?'<div class="sport-section-title-v568">Zirkeltraining</div><div class="sport-circuit-history-list-v675">'+circuits.map(circuitRunCard).join('')+'</div>':''))
           :historyChronologyMarkup(group))+
