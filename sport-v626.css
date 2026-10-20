@@ -2591,3 +2591,9 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 .sport-special-form-v762 .sport-multi-people-v843 input[type="checkbox"],
 .sport-course-people-v629 .sport-multi-people-v843 input[type="checkbox"]{width:15px;min-width:15px;height:15px;min-height:15px;padding:0;margin:0;grid-column:auto;grid-row:auto;flex:none;accent-color:#5ddfe2}
 .sport-multi-people-v843 input[type="hidden"]{display:none}
+
+/* V846: always-visible refresh in documented sport units */
+.sport-sessions-refresh-v846{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 13px}
+.sport-sessions-refresh-v846 button{appearance:none;border:1px solid rgba(111,228,234,.4);background:rgba(18,91,99,.38);color:#e8f9fa;border-radius:11px;padding:10px 13px;font:inherit;font-size:.72rem;font-weight:800;cursor:pointer}
+.sport-sessions-refresh-v846 button:disabled{opacity:.55;cursor:wait}
+.sport-sessions-refresh-v846 small{color:#9bb8be;font-size:.65rem}
