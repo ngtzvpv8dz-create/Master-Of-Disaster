@@ -4,8 +4,8 @@
 const {chromium,webkit}=require('playwright');
 const {spawn}=require('node:child_process');
 const assert=require('node:assert/strict');
-const port=8898,base='http://127.0.0.1:'+port;
-const server=spawn('python3',['-m','http.server',String(port)],{stdio:'ignore'});
+const port=8898,base=String(process.env.FOOD_LOT_TEST_BASE_URL||('http://127.0.0.1:'+port)).replace(/\/$/,'');
+const server=process.env.FOOD_LOT_TEST_BASE_URL?null:spawn('python3',['-m','http.server',String(port)],{stdio:'ignore'});
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function scenario(browser,label){
  const ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/Berlin',serviceWorkers:'block'});
@@ -124,5 +124,5 @@ async function scenario(browser,label){
     try{await scenario(browser,name);}finally{await browser.close();}
   }
   console.log('FOOD LOT BROWSER TESTS ALL PASS');
- }finally{server.kill('SIGTERM');}
+ }finally{if(server)server.kill('SIGTERM');}
 })().catch(e=>{console.error('FOOD LOT BROWSER TEST FAIL',e);process.exitCode=1;});
