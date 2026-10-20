@@ -8,14 +8,17 @@ const port=8898,base=String(process.env.FOOD_LOT_TEST_BASE_URL||('http://127.0.0
 const server=process.env.FOOD_LOT_TEST_BASE_URL?null:spawn('python3',['-m','http.server',String(port)],{stdio:'ignore'});
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 async function scenario(browser,label){
- const ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/Berlin',serviceWorkers:'block'});
+ const ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/Berlin',serviceWorkers:'allow'});
  try{
   const page=await ctx.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/*supabase.co/**',route=>route.abort());
-  await page.goto(base+'/?check=food-lot-v848-'+label,{waitUntil:'domcontentloaded',timeout:60000});
+  await page.goto(base+'/?check=food-lot-v848-'+label,{waitUntil:'networkidle',timeout:60000});
+  await page.waitForTimeout(1000);
   await page.waitForFunction(()=>window.__modAreaRuntimeV609,{timeout:30000});
   page.on('requestfailed',request=>{if(/food-v544|area-runtime/.test(request.url()))errors.push('REQUEST '+request.url()+' '+request.failure()?.errorText);});
+  const preloaded=await page.evaluate(()=>window.__modAreaRuntimeV609.preloadAll());
+  if(preloaded!==true)throw new Error('Staged module loader not ready: '+JSON.stringify(errors));
   const openResult=await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('food'));
   await page.waitForTimeout(500);
   const diagnostic=await page.evaluate(()=>({module:!!window.__modFoodV544,ready:window.__modAreaRuntimeV609?.ready,foodScripts:[...document.scripts].map(s=>s.src).filter(x=>x.includes('food'))}));
