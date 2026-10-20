@@ -2950,7 +2950,7 @@
   function activitiesPanel(rows){
     const flat=flatActivities(rows);
     const body=flat.length?`<div class="sport-content-v510 sport-list-v568">${flat.map(({session,activity},index)=>`<article class="sport-session-card-v510 sport-activity-row-v568" style="--sport-row-index-v568:${index}"><div class="sport-activity-main-v568"><div class="sport-card-title-v510">${esc(activity.name)}</div><div class="sport-card-sub-v510">${esc(dateLabel(session.date))} · ${esc(clock(activity.startedAt))}–${esc(clock(activity.endedAt))}</div>${participantsLine(activity)}</div><div class="sport-chip-v510">${esc(formatMinutes(activityMinutes(activity)))}</div></article>`).join('')}</div>`:'<div class="sport-content-v510"><div class="sport-empty-inline-v568">Noch keine Aktivitäten dokumentiert.</div></div>';
-    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="activities" data-sport-panel-v568="activities">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIVITÄTEN ${statusBadge()}</div><p class="sport-date-v510">Dein Kursverlauf</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">${flat.length}</div><div class="sport-duration-unit-v510">Kurse</div></div></div>${body}${errorNote()}</section>`;
+    return `<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v512="activities" data-sport-panel-v568="activities">${wave()}<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>AKTIVITÄTEN ${statusBadge()}</div><p class="sport-date-v510">Dein Sportverlauf</p><div class="sport-duration-row-v510"><div class="sport-duration-v510 sport-duration-small-v512">${flat.length}</div><div class="sport-duration-unit-v510">Aktivitäten</div></div></div>${body}${errorNote()}</section>`;
   }
 
   function aggregate(rows){
@@ -2959,7 +2959,8 @@
     const fitxGroups=groups.filter(group=>(group.sessions||[]).some(isFitx));
     const courseCounts=new Map(),partnerCounts=new Map();
     let courseTotal=0;
-    activities.forEach(({activity})=>{
+    const actualCourses=activities.filter(({activity})=>activity.type==='course');
+    actualCourses.forEach(({activity})=>{
       const minutes=activityMinutes(activity);courseTotal+=minutes;
       const c=courseCounts.get(activity.name)||{count:0,minutes:0};c.count++;c.minutes+=minutes;courseCounts.set(activity.name,c);
     });
@@ -2976,7 +2977,7 @@
       workoutItemCount:workoutItems.length,
       cardioCount:workoutItems.filter(item=>item.kind==='cardio').length,
       mixedCount,
-      courseCount:activities.length,
+      courseCount:actualCourses.length,
       courseTotal,
       longestFitx:fitxGroups.reduce((best,group)=>Math.max(best,groupDuration(group)),0),
       courseCounts:[...courseCounts.entries()].sort((a,b)=>b[1].count-a[1].count||b[1].minutes-a[1].minutes||byName(a[0],b[0])),
