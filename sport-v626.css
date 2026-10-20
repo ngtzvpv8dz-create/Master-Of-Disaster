@@ -2572,3 +2572,22 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 
 /* V800: a layout break only; active kcal use the EXACT same pill styling as other values. */
 .sport-history-flow-v798 .sport-cardio-row-break-v800{flex:0 0 100%;height:0;padding:0;margin:0}
+
+/* V843: Kursbegleitung mit mehrfach waehlbaren Personen */
+.sport-multi-people-v843{display:grid;gap:6px;flex:1 1 100%;min-width:0;margin:6px 0;padding:8px;border:1px solid rgba(111,228,234,.16);border-radius:11px;background:rgba(5,29,33,.38)}
+.sport-multi-people-caption-v843{font-size:.64rem;font-weight:850;color:#c6e9eb}
+.sport-multi-people-caption-v843 small{font-weight:650;font-size:.55rem;color:#83afb3}
+.sport-multi-people-options-v843{display:flex;gap:6px;flex-wrap:wrap}
+.sport-multi-people-options-v843 label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;padding:6px 8px;border:1px solid rgba(111,228,234,.14);border-radius:999px;background:rgba(9,43,49,.54);font-size:.63rem;color:#bdd8db}
+.sport-multi-people-options-v843 label:has(input:checked){background:rgba(30,132,139,.38);border-color:rgba(95,235,232,.56);color:#fff}
+.sport-multi-people-options-v843 input{accent-color:#5ddfe2;width:15px;height:15px;margin:0}
+.sport-multi-people-extra-v843{display:flex;gap:5px;min-width:0}
+.sport-multi-people-extra-v843 input{min-width:0;flex:1 1 90px;box-sizing:border-box;border:1px solid rgba(111,228,234,.17);border-radius:8px;background:#07191c;color:#e8f9fa;padding:7px;font:inherit;font-size:.65rem}
+.sport-multi-people-extra-v843 button{flex:none;padding:6px 9px;border:1px solid rgba(111,228,234,.23);border-radius:8px;background:rgba(19,101,109,.55);color:#e4fbfc;font-weight:800;font-size:.63rem}
+
+/* V843: rasterbasierte Kurszeilen und bestehende Input-Regeln */
+.sport-course-plan-row-v619>.sport-multi-people-v843{grid-column:1/-1;grid-row:auto;gap:6px;min-width:0}
+.sport-course-plan-row-v619 .sport-multi-people-v843 input[type="checkbox"],
+.sport-special-form-v762 .sport-multi-people-v843 input[type="checkbox"],
+.sport-course-people-v629 .sport-multi-people-v843 input[type="checkbox"]{width:15px;min-width:15px;height:15px;min-height:15px;padding:0;margin:0;grid-column:auto;grid-row:auto;flex:none;accent-color:#5ddfe2}
+.sport-multi-people-v843 input[type="hidden"]{display:none}
