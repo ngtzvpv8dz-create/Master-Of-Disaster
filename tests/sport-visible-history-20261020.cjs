@@ -4,7 +4,7 @@ const {chromium,webkit}=require('playwright');
 const {spawn}=require('node:child_process');
 const assert=require('node:assert/strict');
 const port=8899, base=String(process.env.SPORT_TEST_BASE_URL||('http://127.0.0.1:'+port)).replace(/\/$/,'');
-const server=spawn('python3',['-m','http.server',String(port)],{stdio:'ignore'});
+const server=process.env.SPORT_TEST_BASE_URL?null:spawn('python3',['-m','http.server',String(port)],{stdio:'ignore'});
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const activity=(id,session_id,name,kind,start,end,mins)=>({
   id,session_id,name,kind,sort_order:1,duration_minutes:mins,
@@ -113,5 +113,5 @@ async function run(engine,which,partial){
       try{await run(browser,name,false);await run(browser,name,true);}finally{await browser.close();}
     }
     console.log('ALL SPORT VISIBLE-HISTORY BROWSER TESTS PASS');
-  } finally {server.kill('SIGTERM');}
+  } finally {if(server)server.kill('SIGTERM');}
 })().catch(e=>{console.error('SPORT VISIBLE-HISTORY FAIL',e);process.exitCode=1;});
