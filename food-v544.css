@@ -2872,3 +2872,22 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   cursor:pointer;
 }
 .food-thaw-more-piece-v836:focus-visible{outline:2px solid #357b9f;outline-offset:2px}
+
+/* V848: independent lots within every FOOD product family. */
+.food-stock-lots-v848{display:grid;gap:9px;margin:11px 0;padding-top:9px;border-top:1px solid var(--food-line,rgba(128,128,128,.24))}
+.food-stock-lots-head-v848{font-size:11px;font-weight:800;letter-spacing:.04em;opacity:.75}
+.food-stock-lot-v848{display:grid;gap:5px;padding:10px 11px;border:1px solid rgba(130,130,130,.27);border-radius:12px;background:rgba(127,127,127,.06);min-width:0}
+.food-stock-lot-v848.is-open-v848{border-left:3px solid #de9e45}
+.food-stock-lot-v848.is-closed-v848{border-left:3px solid #6baa76}
+.food-stock-lot-v848.is-frozen-v848{border-left-color:#73acd3}
+.food-stock-lot-top-v848{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;min-width:0}
+.food-stock-lot-top-v848 b{font-size:13px;overflow-wrap:anywhere;min-width:0}
+.food-stock-lot-top-v848 span{font-size:10px;opacity:.75;flex-shrink:0}
+.food-stock-lot-v848>strong{font-size:13px}
+.food-stock-lot-v848>small{font-size:11px;opacity:.75;line-height:1.45;overflow-wrap:anywhere}
+.food-stock-lot-actions-v848{display:flex;flex-wrap:wrap;gap:7px;margin-top:3px}
+.food-stock-lot-actions-v848 button{flex:1 1 92px;min-height:37px;padding:7px;border:1px solid rgba(125,125,125,.35);border-radius:9px;background:transparent;color:inherit;font:inherit;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation}
+.food-stock-lot-actions-v848 button:last-child{border-color:rgba(180,95,85,.48);color:#b45248}
+.food-stock-lot-untracked-v848{display:grid;gap:4px;padding:10px;border:1px dashed rgba(158,135,93,.6);border-radius:10px;font-size:12px}
+.food-stock-lot-untracked-v848 small{opacity:.74}
+.food-lot-discard-confirm-v848{border-color:#b45248!important}
