@@ -395,7 +395,7 @@
   }
   function writeCache(rows){try{localStorage.setItem(CACHE_KEY,JSON.stringify(rows));}catch(_){ }}
 
-  async function remoteData(){
+  async function remoteData({historyOnly=false}={}){
     const supabase=client();
     if(!supabase)throw new Error('Supabase-Client ist nicht verfügbar.');
     const sessionResult=await withTimeout(supabase.auth.getSession(),'Anmeldung',3000);
@@ -421,8 +421,12 @@
       supabase.from('sport_circuit_run_exercises').select('id,run_id,name_snapshot,settings_snapshot,sort_order').eq('user_id',user.id).order('sort_order').limit(10000)
     ];
     const labels=['Sporttermine','Sportaktivitäten','Kurs-Teilnehmer','Trainingspartner','Kurskatalog','Kursplan','Wochenkurse','Kursbuchungen','Übungskatalog','Gerätekatalog','Übungen & Geräte','Übungs-Teilnehmer','Sätze','Zirkel-Läufe','Zirkel-Übungen'];
-    const results=await Promise.all(queries.map((query,index)=>withTimeout(query,labels[index],6500)));
+    // History is essential. A failing optional catalog or exercise query must
+    // not permanently hide newly recorded sessions and companions.
+    const selectedQueries=historyOnly?queries.slice(0,4):queries;
+    const results=await Promise.all(selectedQueries.map((query,index)=>withTimeout(query,labels[index],historyOnly?11000:8500)));
     for(const result of results)if(result?.error)throw result.error;
+    if(historyOnly)while(results.length<queries.length)results.push({data:[]});
     const [sessionsResult,activitiesResult,participantsResult,sessionPeopleResult,courseResult,coursePlansResult,weeklyResult,occurrenceResult,catalogResult,equipmentResult,workoutResult,exercisePeopleResult,setsResult,circuitRunsResult,circuitExercisesResult]=results;
 
     const peopleByActivity=new Map();
@@ -482,7 +486,7 @@
       });
     });
 
-    state={...state,
+    if(!historyOnly)state={...state,
       courseCatalog:(courseResult.data||[]),
       coursePlans:(coursePlansResult.data||[]),
       weeklySlots:(weeklyResult.data||[]),
@@ -495,13 +499,20 @@
       exerciseSets:(setsResult.data||[])
     };
 
-    return sortSessions((sessionsResult.data||[]).map(row=>({
+    const fresh=sortSessions((sessionsResult.data||[]).map(row=>({
       ...row,
       activities:activitiesBySession.get(row.id)||[],
       sessionParticipants:peopleBySession.get(row.id)||[],
       workout:workoutBySession.get(row.id)||[],
       circuitRun:circuitBySession.get(String(row.id))||null
     })));
+    if(!historyOnly)return fresh;
+    const previous=new Map((state.sessions.length?state.sessions:readCache()).map(session=>[session.id,session]));
+    return fresh.map(session=>({
+      ...session,
+      workout:previous.get(session.id)?.workout||[],
+      circuitRun:previous.get(session.id)?.circuitRun||null
+    }));
   }
 
   async function load(force=false){
@@ -518,10 +529,19 @@
     const task=remoteData().then(rows=>{
       state={...state,loaded:true,loading:false,error:null,source:'supabase',sessions:rows};
       writeCache(rows);render();return rows;
-    }).catch(error=>{
-      const cache=state.sessions.length?state.sessions:readCache();
-      state={...state,loaded:false,loading:false,error:error?.message||String(error),source:cache.length?'cache':'error',sessions:cache};
-      render();return cache;
+    }).catch(async error=>{
+      // Isolate optional-query failures: salvage up-to-date sessions and
+      // companions while keeping cached exercise details when possible.
+      try{
+        const liveHistory=await remoteData({historyOnly:true});
+        state={...state,loaded:true,loading:false,error:error?.message||String(error),source:'partial',sessions:liveHistory};
+        render();
+        return liveHistory;
+      }catch(historyError){
+        const cache=state.sessions.length?state.sessions:readCache();
+        state={...state,loaded:false,loading:false,error:historyError?.message||error?.message||String(error),source:cache.length?'cache':'error',sessions:cache};
+        render();return cache;
+      }
     }).finally(()=>{if(loadPromise===task)loadPromise=null;});
     loadPromise=task;return task;
   }
@@ -536,10 +556,11 @@
   function statusBadge(){
     if(state.loading)return '<span class="sport-sync-v568 is-loading"><i></i>SYNC</span>';
     if(state.source==='supabase'&&!state.error)return '<span class="sport-sync-v568 is-live"><i></i>SUPABASE · LIVE</span>';
+    if(state.source==='partial')return '<span class="sport-sync-v568 is-cache"><i></i>VERLAUF LIVE · TEILWEISE</span>';
     if(state.source==='cache')return '<span class="sport-sync-v568 is-cache"><i></i>CACHE</span>';
     return '<span class="sport-sync-v568 is-error"><i></i>OFFLINE</span>';
   }
-  function errorNote(){return state.error?`<div class="sport-cloud-note-v568">${esc(state.source==='cache'?'Cloud gerade nicht erreichbar · lokaler Stand wird gezeigt.':'Sportdaten konnten nicht geladen werden.')}</div>`:'';}
+  function errorNote(){return state.error?`<div class="sport-cloud-note-v568">${esc(state.source==='partial'?'Sportverlauf aktuell geladen. Andere Sportdaten konnten nicht vollständig aktualisiert werden.':state.source==='cache'?'Cloud gerade nicht erreichbar · lokaler Stand wird gezeigt.':'Sportdaten konnten nicht geladen werden.')}</div>`:'';}
   function wave(){return '<svg class="sport-wave-v510 sport-wave-v512" viewBox="0 0 700 96" preserveAspectRatio="none" aria-hidden="true"><path d="M0 58 C70 58 78 25 142 25 S226 82 300 53 S406 19 472 52 S590 79 700 31" fill="none" stroke="currentColor" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>';}
   function tabRail(){return `<aside class="sport-side-rail-v510 sport-side-rail-v512" aria-label="Sportbereiche">${TABS.map((tab,index)=>`<button type="button" class="sport-side-tab-v510 sport-side-tab-v512 ${activeTab===tab.id?'active':''}" data-sport-tab-v510="${tab.id}" data-sport-tab-v512="${tab.id}" data-sport-tab-v568="${tab.id}" style="--sport-tab-index-v512:${index}" ${activeTab===tab.id?'aria-current="page"':''} aria-label="${esc(tab.label)} öffnen"><span class="sport-side-tab-label-v510">${esc(tab.label)}</span></button>`).join('')}</aside>`;}
   function participantsLine(activity){return activity.participants?.length?`<div class="sport-people-v568"><span>mit</span> ${activity.participants.map(esc).join(' · ')}</div>`:'<div class="sport-people-v568 is-empty">ohne Teilnehmerangabe</div>';}
@@ -2794,7 +2815,9 @@
   function xTrainingPanel(){
     return '<section class="sport-panel-v510 sport-panel-v512" data-sport-panel-v568="sessions">'+wave()+
       '<div class="sport-hero-v510"><div class="sport-kicker-v510"><span class="sport-live-dot-v510"></span>EINHEITEN '+statusBadge()+'</div><p class="sport-date-v510">Dokumentierte Trainingstage. Geplante und laufende Einheiten bleiben hier draußen.</p><div class="sport-section-mark-v512">E</div></div>'+
-      '<div class="sport-content-v510">'+unitHistory(state.sessions)+errorNote()+'</div></section>';
+      '<div class="sport-content-v510">'+
+        '<div class="sport-sessions-refresh-v846"><button type="button" data-sport-retry-v568>↻ Sportdaten aktualisieren</button><small>'+esc(state.source==='supabase'?'Aktueller Cloud-Stand':state.source==='partial'?'Sportverlauf live, Zusatzdaten teilweise lokal':'Cloud-Abgleich prüfen')+'</small></div>'+
+        unitHistory(state.sessions)+errorNote()+'</div></section>';
   }
 
 
