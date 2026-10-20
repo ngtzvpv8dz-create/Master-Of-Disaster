@@ -1,0 +1,50 @@
+name: Food Lot Live GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-food-lots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify published Food lot bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://ngtzvpv8dz-create.github.io/Master-Of-Disaster"
+          ready=0
+          for retry in {1..24}; do
+            if curl -fsSL --max-time 18 "$base/food-v544.js?ci=$GITHUB_SHA-$retry" -o /tmp/food-live.js \
+              && curl -fsSL --max-time 18 "$base/area-runtime-v609.js?ci=$GITHUB_SHA-$retry" -o /tmp/area-live.js \
+              && curl -fsSL --max-time 18 "$base/index.html?ci=$GITHUB_SHA-$retry" -o /tmp/index-live.html \
+              && grep -Fq 'data-food-discard-lot' /tmp/food-live.js \
+              && grep -Fq 'manage_food_inventory_lot_v848' /tmp/food-live.js \
+              && grep -Fq '848-individual-lots' /tmp/area-live.js \
+              && grep -Fq '848-individual-lots' /tmp/index-live.html; then
+              ready=1
+              echo "LIVE GitHub Pages serves Food individual lot version"
+              break
+            fi
+            echo "Waiting for live Food code $retry"
+            sleep 12
+          done
+          if [ "$ready" != 1 ]; then
+            echo "::error::Published Food version did not update"
+            exit 1
+          fi
+      - name: Install browser engines
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.48.2 >/dev/null 2>&1
+          npx playwright install --with-deps chromium webkit >/dev/null 2>&1
+      - name: Verify each Food lot on actual published website
+        env:
+          FOOD_LOT_TEST_BASE_URL: https://ngtzvpv8dz-create.github.io/Master-Of-Disaster
+        run: node tests/food-lot-individual-v848.cjs
