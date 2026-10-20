@@ -639,6 +639,21 @@
           startMs,endMs,order:Number(exercise?.sortOrder??999)
         });
       });
+      // Clearly show known gaps between external activities without counting
+      // them as exercise (e.g. the ski-day wait from 14:00 to 15:00).
+      if(session.kind==='activity'){
+        const timed=(session.activities||[]).filter(activity=>activity?.type!=='test_course_plan').sort((a,b)=>
+          (historyTimestamp(a?.startedAt)??Number.MAX_SAFE_INTEGER)-(historyTimestamp(b?.startedAt)??Number.MAX_SAFE_INTEGER)
+        );
+        timed.slice(1).forEach((activity,index)=>{
+          const previous=timed[index];
+          const endMs=historyTimestamp(previous?.endedAt);
+          const startMs=historyTimestamp(activity?.startedAt);
+          if(endMs!==null&&startMs!==null&&startMs>endMs+5*60000&&startMs-endMs<12*60*60000){
+            events.push({kind:'pause',item:session,startAt:previous.endedAt,endAt:activity.startedAt,startMs:endMs,endMs:startMs,order:500});
+          }
+        });
+      }
       const run=session?.circuitRun;
       if(run){
         const startAt=run.startedAt||session.startedAt||null;
@@ -715,6 +730,13 @@
         return '<div class="sport-history-flow-step-v748 sport-history-flow-step-v798 is-course">'+
           '<section class="sport-history-flow-content-v748">'+
             '<b class="sport-history-flow-label-v748">'+(event.kind==='course'?'KURS':'AKTIVITÄT')+'</b>'+courseCard(event.item,index,false)+
+          '</section></div>';
+      }
+      if(event.kind==='pause'){
+        return '<div class="sport-history-flow-step-v748 sport-history-flow-step-v798 is-activity-break">'+
+          '<section class="sport-history-flow-content-v748">'+
+            '<b class="sport-history-flow-label-v748">PAUSE · KEINE TRAININGSZEIT</b>'+
+            '<small>'+esc(historyRange(event.startAt,event.endAt))+'</small>'+
           '</section></div>';
       }
       if(event.kind==='circuit'){
