@@ -2584,3 +2584,10 @@ button.is-added-v612{border-color:rgba(93,224,166,.22)!important;background:rgba
 .sport-multi-people-extra-v843{display:flex;gap:5px;min-width:0}
 .sport-multi-people-extra-v843 input{min-width:0;flex:1 1 90px;box-sizing:border-box;border:1px solid rgba(111,228,234,.17);border-radius:8px;background:#07191c;color:#e8f9fa;padding:7px;font:inherit;font-size:.65rem}
 .sport-multi-people-extra-v843 button{flex:none;padding:6px 9px;border:1px solid rgba(111,228,234,.23);border-radius:8px;background:rgba(19,101,109,.55);color:#e4fbfc;font-weight:800;font-size:.63rem}
+
+/* V843: rasterbasierte Kurszeilen und bestehende Input-Regeln */
+.sport-course-plan-row-v619>.sport-multi-people-v843{grid-column:1/-1;grid-row:auto;gap:6px;min-width:0}
+.sport-course-plan-row-v619 .sport-multi-people-v843 input[type="checkbox"],
+.sport-special-form-v762 .sport-multi-people-v843 input[type="checkbox"],
+.sport-course-people-v629 .sport-multi-people-v843 input[type="checkbox"]{width:15px;min-width:15px;height:15px;min-height:15px;padding:0;margin:0;grid-column:auto;grid-row:auto;flex:none;accent-color:#5ddfe2}
+.sport-multi-people-v843 input[type="hidden"]{display:none}
