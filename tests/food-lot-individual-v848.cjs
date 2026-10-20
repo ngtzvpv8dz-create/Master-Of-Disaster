@@ -18,8 +18,8 @@ async function scenario(browser,label){
   page.on('requestfailed',request=>{if(/food-v544|area-runtime/.test(request.url()))errors.push('REQUEST '+request.url()+' '+request.failure()?.errorText);});
   const openResult=await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('food'));
   await page.waitForTimeout(500);
-  const diagnostic=await page.evaluate(()=>({module:!!window.__modFoodV544,ready:window.__modAreaRuntimeV609?.ready,foodScripts:[...document.scripts].map(s=>s.src).filter(x=>x.includes('food')),openResult}));
-  if(!diagnostic.module)throw new Error('FOOD module not loaded: '+JSON.stringify(diagnostic)+' '+JSON.stringify(errors));
+  const diagnostic=await page.evaluate(()=>({module:!!window.__modFoodV544,ready:window.__modAreaRuntimeV609?.ready,foodScripts:[...document.scripts].map(s=>s.src).filter(x=>x.includes('food'))}));
+  if(!diagnostic.module)throw new Error('FOOD module not loaded: '+JSON.stringify({...diagnostic,openResult})+' '+JSON.stringify(errors));
   await page.evaluate(async()=>{
     const stock={id:'beans',name:'Schwarze Bohnen',quantity:680,unit:'g',
       catalog_family_name:'Bohnen',catalog_variant_label:'Schwarze Bohnen',
