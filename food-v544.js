@@ -1594,6 +1594,9 @@
     const statusMeta=status==='completed'
       ?(meal.prepared_at?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at)):(isMealPrep?'Gegessen · Zeitpunkt nicht erfasst':'Erledigt · Zeitpunkt nicht erfasst'))
       :status==='skipped'?(isMealPrep?'Nicht gegessen':'Nicht zubereitet'):'Geplant';
+    const reopenAction=status==='skipped'
+      ?'<button type="button" class="food-action-v544 compact" data-food-reopen-skipped="'+esc(meal.id)+'">Wieder öffnen</button>'
+      :'';
 
     if(isMealPrep){
       const title=meal.title||recipe?.title||'Meal Prep';
@@ -1632,6 +1635,7 @@
         +confirmFrozen
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
+        +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
         +'</article>';
     }
 
@@ -1654,6 +1658,7 @@
         +freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+action+skipAction+'</div>':'')
+        +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
         +'</article>';
     }
 
@@ -1679,6 +1684,7 @@
       +'</button>'
       +dailyCreatineReminderMarkup(meal)
       +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
+      +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
       +'</article>';
   }
 
@@ -3241,6 +3247,25 @@
     await mutate(()=>result.data);
   }
 
+  // V849: Undoing a skipped meal only reopens planning. It never books ingredients.
+  async function reopenSkippedMeal(id){
+    const meal=(state?.meals||[]).find(item=>String(item.id)===String(id));
+    if(!meal||normalizedStatus(meal.status)!=='skipped'||meal.inventory_booked_at)throw new Error('Nur ausgefallene, nicht gebuchte Mahlzeiten können wieder geöffnet werden.');
+    const sb=client();
+    if(!sb)throw new Error('Cloud-Verbindung zum sicheren Speichern erforderlich.');
+    const result=await withTimeout(
+      sb.from('food_meals')
+        .update({status:'planned',updated_at:new Date().toISOString()})
+        .eq('id',id).eq('meal_date',meal.meal_date).eq('status','skipped')
+        .is('inventory_booked_at',null)
+        .select('id,status').maybeSingle(),
+      'Mahlzeit wieder öffnen',15000
+    );
+    if(result?.error)throw result.error;
+    if(result?.data?.status!=='planned')throw new Error('Zurücksetzen nicht bestätigt. Bitte Cloud-Verbindung prüfen.');
+    await mutate(()=>result.data);
+  }
+
   async function skipMeal(id){
     const meal=(state?.meals||[]).find(item=>String(item.id)===String(id));
     if(!meal||normalizedStatus(meal.status)!=='planned'||meal.inventory_booked_at)throw new Error('Nur noch nicht gebuchte Mahlzeiten können ausfallen.');
@@ -4517,6 +4542,12 @@
       renderState();
     }));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
+    root.querySelectorAll('[data-food-reopen-skipped]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();
+      button.disabled=true;
+      try{await reopenSkippedMeal(String(button.dataset.foodReopenSkipped||''));}
+      catch(error){alert(error?.message||'Mahlzeit konnte nicht wieder geöffnet werden.');button.disabled=false;}
+    }));
     root.querySelectorAll('[data-food-skip]').forEach(button=>button.addEventListener('click',async event=>{
       event.preventDefault();event.stopPropagation();
       const id=String(button.dataset.foodSkip||'');
