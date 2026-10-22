@@ -27,9 +27,12 @@ jobs:
               && curl -fsSL --max-time 18 "$base/area-runtime-v609.js?ci=$GITHUB_SHA-$retry" -o /tmp/area-live.js \
               && curl -fsSL --max-time 18 "$base/index.html?ci=$GITHUB_SHA-$retry" -o /tmp/index-live.html \
               && grep -Fq 'data-food-discard-lot' /tmp/food-live.js \
+              && grep -Fq 'data-food-reopen-skipped' /tmp/food-live.js \
               && grep -Fq 'manage_food_inventory_lot_v848' /tmp/food-live.js \
               && grep -Fq '848-individual-lots' /tmp/area-live.js \
-              && grep -Fq '848-individual-lots' /tmp/index-live.html; then
+              && grep -Fq '849-reopen' /tmp/area-live.js \
+              && grep -Fq '848-individual-lots' /tmp/index-live.html \
+              && grep -Fq '849-reopen' /tmp/index-live.html; then
               ready=1
               echo "LIVE GitHub Pages serves Food individual lot version"
               break
