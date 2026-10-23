@@ -81,7 +81,7 @@ test('planned Feta displays the actual catalog product, lot status and source ar
 
 test('unresolved sources are visibly flagged rather than disappearing',()=>{
   assert(food.includes('allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item)'));
-  assert(food.includes('missingIngredientSourceMarkup(item,true)'));
+  assert(food.includes('const itemRows=original.filter(item=>item?.eaten_only_extra!==true)'));
   assert(food.includes('Produktstamm/Charge nicht eindeutig zugeordnet'));
   assert(food.includes('is-single-source-v741'));
 });
