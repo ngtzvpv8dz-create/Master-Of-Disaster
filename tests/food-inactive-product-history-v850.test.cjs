@@ -22,7 +22,7 @@ test('Nutrition and Food fetch historical products rather than filtering active 
   assert.doesNotMatch(f,/\.eq\('active',true\)/);
 });
 test('Existing lot may resolve archived product while untracked stock only chooses selectable products',()=>{
-  const ctx={chooseProduct:rows=>rows[0]||null};
+  const ctx={chooseProduct:rows=>rows[0]||null,number:value=>Number(value)||0};
   vm.createContext(ctx);
   vm.runInContext(between(nutrition,'  function productForStock(','  function rowMode(')+'\nthis.findProduct=productForStock;',ctx);
   const old={id:'old',inventory_id:'berries',active:false};
