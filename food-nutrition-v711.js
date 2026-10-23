@@ -70,8 +70,11 @@
       .filter(lot=>String(lot.inventory_id||'')===id)
       .filter(lot=>number(lot.unopened_packages)>0||number(lot.opened_remaining_quantity)>0)
       .map(lot=>String(lot.product_id||'')).filter(Boolean));
+    // Existing physical lots keep their product identity even after the catalogue entry is archived.
+    // For untracked stock, only currently selectable products may determine nutrition.
     return chooseProduct(liveIds.size
-      ?products.filter(product=>liveIds.has(String(product.id))):products);
+      ?products.filter(product=>liveIds.has(String(product.id)))
+      :products.filter(product=>product.active!==false));
   }
 
   function rowMode(row){
@@ -422,7 +425,7 @@
         const currentProducts=related.map(row=>productForStock(row,data)).filter(Boolean);
         product=chooseProduct(currentProducts);
       }
-      if(!product&&!familyRows.length)product=chooseProduct(products.filter(row=>key(row.product_name)===key(name)));
+      if(!product&&!familyRows.length)product=chooseProduct(products.filter(row=>row.active!==false&&key(row.product_name)===key(name)));
     }
 
     if(product)return {nutrition:nutritionOf(product),product,stock};
@@ -992,7 +995,7 @@
       supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
       supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,prepared_sources_snapshot,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
-      supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active').eq('active',true),
+      supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active'),
       supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit'),
       // Extra-Konsum wird als eigene, bereits gegessene Tagesposition gezählt.
       supabase.from('food_extra_consumptions').select('id,consumption_date,title,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g').gte('consumption_date',from).lte('consumption_date',to).limit(1500)

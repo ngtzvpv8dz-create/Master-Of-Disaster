@@ -98,6 +98,7 @@ jobs:
           node --test tests/food-provenance-v837.test.cjs
           node --test tests/food-daily-warning-v838.test.cjs
           node --test tests/food-extras-v828.test.cjs
+          node --test tests/food-inactive-product-history-v850.test.cjs
           node --check sw.js
 
       - name: Generator follows highest current version

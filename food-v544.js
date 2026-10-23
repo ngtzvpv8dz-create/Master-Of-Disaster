@@ -533,7 +533,7 @@
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false})),
-      safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data').eq('active',true)),
+      safeQuery('Produktstamm',supabase.from('shopping_products').select('id,inventory_id,category,brand,product_name,variant,barcode,active,product_data')),
       safeQuery('Kreatin-Einnahmen',supabase.from('food_creatine_intakes').select('id,intake_date,inventory_id,inventory_name,variant_label,quantity_g,creatine_g,confirmed_at').gte('intake_date',plusDays(todayIso(),-180)).lte('intake_date',planningHorizonIso()).order('intake_date',{ascending:false})),
       safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('TK-Meal-Prep',supabase.from('food_mealprep_freezer_portions').select('id,leftover_id,meal_id,servings,status,frozen_on,needed_on,thaw_started_at,thawed_at,note,created_at').in('status',['frozen','thawing','thawed']).order('needed_on',{ascending:true,nullsFirst:false})),
@@ -618,7 +618,7 @@
     const lotProduct=activeLots.map(lot=>(state?.products||[]).find(product=>String(product.id||'')===String(lot.product_id||''))).find(Boolean)||null;
     if(lotProduct)return familyAllocationProductText(lotProduct,stock);
 
-    const products=(state?.products||[]).filter(row=>String(row.inventory_id||'')===String(stock?.id||''));
+    const products=(state?.products||[]).filter(row=>row.active!==false&&String(row.inventory_id||'')===String(stock?.id||''));
     if(products.length===1)return familyAllocationProductText(products[0],stock);
     return String(stock?.variant_label||stock?.name||'Produkt').trim();
   }
@@ -2719,7 +2719,7 @@
   function deriveShopping(data){
     const needs=new Map();
     const inventoryByIdForShopping=new Map((data.inventory||[]).map(stock=>[stock.id,stock]));
-    const productsByInventoryId=new Map((data.products||[]).filter(product=>product.inventory_id).map(product=>[product.inventory_id,product]));
+    const productsByInventoryId=new Map((data.products||[]).filter(product=>product.active!==false&&product.inventory_id).map(product=>[product.inventory_id,product]));
     data.meals
       .filter(meal=>meal.meal_date>=recentPlanningStartIso()&&meal.meal_date<=planningHorizonIso()&&normalizedStatus(meal.status)==='planned')
       .forEach(meal=>(meal.ingredients||[]).forEach(item=>{
@@ -2800,7 +2800,7 @@
 
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
-      const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,data.products||[]);
+      const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,(data.products||[]).filter(product=>product.active!==false));
 
       need.uses.forEach(use=>{
         const routineBuyFrom=regularShoppingDate(use.date,use.mealType);
@@ -4203,7 +4203,8 @@
     const item=(state?.inventory||[]).find(row=>String(row.id)===String(inventoryId));
     if(!item)return;
     try{requireFreshLotStock();}catch(error){alert(error.message);return;}
-    const products=(state?.products||[]).filter(p=>String(p.inventory_id||'')===String(item.id));
+    // Archived catalogue entries remain resolvable for old lots but cannot be selected for a new one.
+    const products=(state?.products||[]).filter(p=>p.active!==false&&String(p.inventory_id||'')===String(item.id));
     const existing=(state?.lots||[]).find(l=>String(l.inventory_id)===String(item.id)&&
       Number(l.package_quantity)>0&&String(l.package_unit||item.unit)===String(item.unit));
     const packageSize=Number(existing?.package_quantity)||Number(item.usage_content_quantity)||0;

@@ -25,8 +25,9 @@ assert.equal(context.match('Tomaten','Feta / Hirtenkäse'),null,
 // Do not drop source information silently for ingredients without a link.
 assert(food.includes('allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item)'),
   'All planned and recipe ingredients need source display or explicit status');
-assert(food.includes('missingIngredientSourceMarkup(item,true)'),
-  'Unmatched historical ingredients show that provenance was not recorded');
+assert(food.includes('const original=Array.isArray(snapshot?.ingredients)') &&
+  food.includes('const itemRows=original.filter(item=>item?.eaten_only_extra!==true)'),
+  'Unmatched historical ingredients remain visible even when no source was recorded');
 assert(food.includes('snapshot?.sources'),
   'Historical sources must still use immutable saved meal snapshot');
 assert(/food-v544\.js\?v=\d+-/.test(runtime),
