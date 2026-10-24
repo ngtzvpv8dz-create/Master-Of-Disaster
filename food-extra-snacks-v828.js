@@ -8,10 +8,11 @@
   const nf=(value,d=1)=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:d}).format(Number(value)||0);
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin'}).format(new Date());
-  let date='',rows=[],products=[],loading=false,ready=false,formOpen=false,editing=null,mode='catalog',selected='',term='',busy=false,error='',notice='',bound=false;
+  let date='',rows=[],products=[],loading=false,ready=false,formOpen=false,editing=null,mode='catalog',selected='',term='',busy=false,error='',notice='',bound=false,requestId=null;
   const valid=n=>n!==null&&n!==undefined&&n!==''&&Number.isFinite(Number(n))&&Number(n)>=0;
   const decimal=x=>Number(String(x??'').trim().replace(',','.'));
   const client=()=>window.getSupabaseClient?.();
+  const autoCounted=row=>String(row?.source_reference||'').startsWith('food-counted-v873-');
   function productName(p){return p?._inventoryOnly?'Vorrat · '+p.product_name:[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');}
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
   // Stückprodukte mit dokumentierter essbarer Portionsmenge: kein erneutes Wiegen verlangen.
@@ -256,12 +257,12 @@
     el.setAttribute('aria-label','Zusatz-Snacks und Getränke');
     // V831: Tagesbilanz → Auftauhinweise → alle Mahlzeiten → Extras.
     lastMealSection.insertAdjacentElement('afterend',el);
-    if(date!==d){date=d;ready=false;rows=[];formOpen=false;editing=null;notice='';}
+    if(date!==d){date=d;ready=false;rows=[];formOpen=false;editing=null;requestId=null;notice='';}
     draw();
     if(!ready&&!loading)refresh();
   }
   function editingRow(row){
-    editing=row.id;
+    editing=row.id;requestId=null;
     // Produkt-ID beim Korrigieren von Makros erhalten: die alte manuelle
     // Bearbeitung hat den Produktstamm sonst mit product_id:null geloescht.
     const linked=products.find(product=>String(product.id)===String(row.product_id));
@@ -340,7 +341,29 @@
     busy=true;const submit=form.querySelector('[data-extra-save]');if(submit)submit.disabled=true;
     try{
       let res;
-      if(editing){
+      const oldRow=editing?rows.find(x=>String(x.id)===String(editing)):null;
+      const product=mode==='catalog'?chosen():null;
+      const pieceWeight=countedPieceWeight(product);
+      const updateBooked=autoCounted(oldRow);
+      const newBooked=!editing&&Boolean(pieceWeight);
+      if(updateBooked||newBooked){
+        if(!product||!pieceWeight||(oldRow&&String(oldRow.product_id)!==String(product.id)))
+          throw new Error('Zum Bearbeiten das ursprüngliche Pralinenprodukt verwenden.');
+        if(!Number.isInteger(qty)||qty<1)throw new Error('Bitte ganze Pralinen eingeben.');
+        if(newBooked&&!requestId)requestId=crypto.randomUUID();
+        res=await supabase.rpc('save_counted_food_extra_v873',{
+          p_action:'save',p_product_id:product.id,p_pieces:qty,p_day:date,
+          p_extra_id:editing||null,p_request_id:newBooked?requestId:null
+        });
+        if(res.error)throw res.error;
+        notice='✓ '+qty+' '+(qty===1?'Praline':'Pralinen')
+          +' erfasst und gemeinsam mit dem Vorrat verbucht.';
+      }else if(editing){
+        if(product&&pieceWeight&&oldRow&&!updateBooked){
+          // Existing 18 October gram intake was manually booked already.
+          entry.quantity=Number((qty*pieceWeight).toFixed(5));
+          entry.unit='g';
+        }
         res=await supabase.from('food_extra_consumptions').update(entry).eq('id',editing).eq('user_id',uid).select('id').single();
       }else{
         const p=mode==='catalog'?chosen():null;
@@ -348,9 +371,11 @@
         res=await supabase.from('food_extra_consumptions').insert({...entry,user_id:uid,consumption_date:date,source_reference:ref}).select('id').single();
       }
       if(res.error)throw res.error;
-      formOpen=false;editing=null;notice='✓ Gespeichert und in die Tagesbilanz übernommen.';error='';
-      await refresh();
+      formOpen=false;editing=null;requestId=null;
+      if(!updateBooked&&!newBooked)notice='✓ Gespeichert und in die Tagesbilanz übernommen.';
+      error='';await refresh();
       window.__modFoodNutritionV711?.refresh?.();
+      if(updateBooked||newBooked)await window.__modFoodV544?.reload?.();
     }finally{busy=false;if(submit)submit.disabled=false;}
   }
   async function remove(id){
@@ -361,10 +386,15 @@
       const supabase=client(),auth=await supabase.auth.getSession();
       const uid=auth.data?.session?.user?.id;
       if(!uid)throw new Error('Keine aktive Anmeldung.');
-      const res=await supabase.from('food_extra_consumptions').delete().eq('id',id).eq('user_id',uid).select('id').single();
+      const booked=autoCounted(row);
+      const res=booked
+        ?await supabase.rpc('save_counted_food_extra_v873',{p_action:'delete',p_extra_id:id})
+        :await supabase.from('food_extra_consumptions').delete().eq('id',id).eq('user_id',uid).select('id').single();
       if(res.error)throw res.error;
-      notice='✓ Zusatz entfernt.';error='';await refresh();
+      notice=booked?'✓ Snack und Vorratsverbrauch gemeinsam zurückgenommen.':'✓ Zusatz entfernt.';
+      error='';await refresh();
       window.__modFoodNutritionV711?.refresh?.();
+      if(booked)await window.__modFoodV544?.reload?.();
     }finally{busy=false;}
   }
   function styles(){
@@ -400,16 +430,16 @@
       if(!target||!target.closest('#'+PANEL))return;
       e.preventDefault();
       if(target.hasAttribute('data-extra-retry')){await refresh();return;}
-      if(target.hasAttribute('data-extra-toggle')){formOpen=!formOpen;editing=null;mode='catalog';error='';notice='';draw();return;}
-      if(target.hasAttribute('data-extra-cancel')){formOpen=false;editing=null;draw();return;}
-      if(target.hasAttribute('data-extra-mode')){mode=target.dataset.extraMode;selected='';term='';editing=null;draw();return;}
+      if(target.hasAttribute('data-extra-toggle')){formOpen=!formOpen;editing=null;requestId=null;mode='catalog';error='';notice='';draw();return;}
+      if(target.hasAttribute('data-extra-cancel')){formOpen=false;editing=null;requestId=null;draw();return;}
+      if(target.hasAttribute('data-extra-mode')){mode=target.dataset.extraMode;selected='';term='';editing=null;requestId=null;draw();return;}
       if(target.hasAttribute('data-extra-edit')){const row=rows.find(r=>String(r.id)===target.dataset.extraEdit);if(row)editingRow(row);return;}
       if(target.hasAttribute('data-extra-delete')){try{await remove(target.dataset.extraDelete);}catch(err){error=err.message||String(err);draw();}}
     });
     document.addEventListener('input',e=>{
       if(!e.target?.closest?.('#'+PANEL))return;
       if(e.target.matches('[data-extra-search]')){
-        term=e.target.value;selected='';
+        term=e.target.value;selected='';requestId=null;
         const sel=panel()?.querySelector('[data-extra-product]');if(sel)sel.innerHTML=productOptions();
         updatePreview();return;
       }
@@ -417,7 +447,7 @@
     });
     document.addEventListener('change',e=>{
       if(!e.target?.matches?.('#'+PANEL+' [data-extra-product]'))return;
-      selected=e.target.value;
+      selected=e.target.value;requestId=null;
       const field=panel()?.querySelector('[data-extra-quantity]');
       if(field&&chosen())field.value=String(initialQty(chosen()));
       updatePreview();
