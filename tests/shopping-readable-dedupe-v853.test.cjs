@@ -44,5 +44,5 @@ test('date and notes get their own readable lines on narrow screens',()=>{
   assert.match(css,/white-space:pre-line/);
   assert.match(css,/overflow-wrap:anywhere/);
   assert.match(html,/shopping-v678\.css\?v=853-readable-shopping-cards/);
-  assert.match(runtime,/shopping-v678\.js\?v=860-shopping-catalog-window-audit/);
+  assert.match(runtime,/shopping-v678\.js\?v=862-shopping-recipe-family-validation/);
 });
