@@ -255,6 +255,26 @@
     let kcal=0,protein=0,used=0,lastProduct=null;
     for(const part of parts){
       const stock=part.stock||familyStocks.find(row=>String(row.id)===String(part.inventoryId||''));
+      // V877: Eine Zutatenfamilie kann mehrere reale Marken/Chargen IN EINEM
+      // Vorratsartikel enthalten (z. B. 216 ml ja! Milch 47 kcal und 3 l
+      // Milbona 46 kcal). chooseProduct() lehnt zu Recht ein einzelnes
+      // Produkt bei unterschiedlichen Nährwerten ab. Deshalb die Portion
+      // zuerst chargengenau in derselben Reihenfolge wie beim Verbrauch
+      // ausrechnen, anstatt eine falsche "Nährwerte fehlen"-Warnung zu zeigen.
+      const lotMix=stock?mixedLotNutrition({
+        name:stock.name,
+        inventory_id:stock.id,
+        quantity:part.take,
+        unit:item.unit
+      },data):null;
+      if(lotMix){
+        if(!lotMix.complete)return {complete:false,missing:lotMix.missing||[name+' (Chargennährwerte ungeklärt)']};
+        kcal+=lotMix.kcal;
+        protein+=lotMix.protein;
+        used+=Number(part.take);
+        lastProduct=lotMix.lastProduct||lastProduct;
+        continue;
+      }
       const product=productForStock(stock,data);
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
@@ -517,7 +537,7 @@
     const total=active.reduce((sum,v)=>sum+v.amount,0);
     const current=number(stock.quantity);
     if(current===null||current>total+.001)return {complete:false,missing:[name+' (nicht zugeordneter Altbestand)']};
-    let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0;
+    let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0,lastProduct=null;
     const isFrozen=v=>/(gefrier|tiefkühl|freezer|frozen)/.test(text(v.lot.storage_location));
     const isMeat=/(hähnchen|huhn|hackfleisch|rind|schwein|pute|fleisch)/.test(text(stock.name));
     const rank=v=>isMeat?0:v.open>0?0:isFrozen(v)?2:1;
@@ -538,6 +558,7 @@
       if(!product)return {complete:false,missing:[name+' (Chargenprodukt fehlt)']};
       const n=nutritionOf(product);
       if(n.kcal===null||n.protein===null)return {complete:false,missing:[name+' (Chargennährwerte fehlen)']};
+      lastProduct=product;
       const grams=stockUnit==='kg'||stockUnit==='l'?taken*1000:taken;
       if(stockUnit==='stück'){
         // V830: Für Obst die vereinbarte essbare Stückmenge übernehmen.
@@ -556,7 +577,7 @@
       if(remaining<=.0001)break;
     }
     if(remaining>.0001)return {complete:false,missing:[name+' (Chargenzuordnung unvollständig)']};
-    return {complete:true,kcal,protein,missing:[]};
+    return {complete:true,kcal,protein,missing:[],lastProduct};
   }
 
   function calculate(items,servings,data,allocationMap=null){
