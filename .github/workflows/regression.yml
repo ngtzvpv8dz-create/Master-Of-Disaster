@@ -36,6 +36,7 @@ jobs:
           node --check remote-historical-archive-import-v541.js
           node --check food-stock-resolver-v746.js
           node --check food-v544.js
+          node --test tests/food-plan-cutoff-v852.test.cjs
           node tests/food-reopen-skipped-v849.test.cjs
           grep -q 'data-food-remove-meal-ingredient' food-v544.js
           grep -q 'removeMealIngredient' food-v544.js
