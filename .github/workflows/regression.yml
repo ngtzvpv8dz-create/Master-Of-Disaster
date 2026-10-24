@@ -47,6 +47,7 @@ jobs:
           node tests/banana-shopping-units-20261009.test.cjs
           node tests/shopping-window-isoclear-wholewrap-oct15.test.cjs
           node --test tests/shopping-retailer-badge-v851.test.cjs
+          node --test tests/shopping-readable-dedupe-v853.test.cjs
           node tests/food-nutrition-alarm-v795.test.cjs
           node tests/asia-vegetable-family-v796.test.cjs
           node tests/dingsi-lab-v31.test.cjs
