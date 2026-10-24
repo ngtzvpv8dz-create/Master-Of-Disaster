@@ -3841,6 +3841,7 @@
         +'<select data-food-planned-add-inventory>'+plannedMealInventoryOptions()+'</select>'
         +'<input data-food-planned-add-quantity type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Menge">'
         +'<input data-food-planned-add-unit placeholder="g, ml, Stück …">'
+        +'<small data-food-planned-piece-hint hidden></small>'
         +'<button type="button" class="food-planned-remove-v729" data-food-planned-add-remove>Entfernen</button>'
       +'</div>'
     +'</div>';
@@ -3895,10 +3896,16 @@
         const unit=String(row.querySelector('[data-food-planned-add-unit]')?.value||'').trim();
         if(!inventoryId&&!raw&&!unit)return null;
         if(!inventoryId)throw new Error('Bei neuer Zutat '+(index+1)+' fehlt die Auswahl aus dem Vorrat.');
-        const quantity=Number(raw);
-        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei neuer Zutat '+(index+1)+' fehlt eine gültige Menge.');
+        const stock=(state?.inventory||[]).find(item=>String(item.id)===inventoryId);
+        const pieces=inventoryCountedPieces(stock);
+        const entered=Number(raw);
+        if(!Number.isFinite(entered)||entered<=0)throw new Error('Bei neuer Zutat '+(index+1)+' fehlt eine gültige Menge.');
         if(!unit)throw new Error('Bei neuer Zutat '+(index+1)+' fehlt die Einheit.');
-        return {add:true,inventory_id:inventoryId,quantity,unit};
+        if(pieces&&(!Number.isInteger(entered)||unit!=='Stück'))
+          throw new Error('Bitte für diese Pralinen eine ganze Stückzahl wählen.');
+        return {add:true,inventory_id:inventoryId,
+          quantity:pieces?Number((entered*pieces.weight).toFixed(5)):entered,
+          unit:pieces?'g':unit};
       }).filter(Boolean);
 
       const changes=[...existingChanges,...addChanges];
@@ -3951,10 +3958,26 @@
     const wireAddedRow=row=>{
       const select=row.querySelector('[data-food-planned-add-inventory]');
       const unit=row.querySelector('[data-food-planned-add-unit]');
-      select?.addEventListener('change',()=>{
-        const inventory=(state?.inventory||[]).find(item=>String(item.id)===String(select.value));
-        if(unit&&!unit.value)unit.value=inventory?.unit||select.selectedOptions?.[0]?.dataset?.unit||'';
-      });
+      const quantity=row.querySelector('[data-food-planned-add-quantity]');
+      const hint=row.querySelector('[data-food-planned-piece-hint]');
+      const sync=()=>{
+        const inventory=(state?.inventory||[]).find(item=>String(item.id)===String(select?.value||''));
+        const pieces=inventoryCountedPieces(inventory);
+        if(unit){
+          unit.value=pieces?'Stück':inventory?.unit||select?.selectedOptions?.[0]?.dataset?.unit||'';
+          unit.readOnly=Boolean(pieces);
+        }
+        if(quantity){
+          quantity.step=pieces?'1':'0.01';
+          quantity.min=pieces?'1':'0.01';
+          quantity.inputMode=pieces?'numeric':'decimal';
+          quantity.placeholder=pieces?'Anzahl Pralinen':'Menge';
+          if(pieces&&!quantity.value)quantity.value='1';
+        }
+        if(hint){hint.hidden=!pieces;hint.textContent=pieces?'1 Praline = '+fmtQty(pieces.weight,'g'):'';}
+      };
+      select?.addEventListener('change',sync);
+      sync();
       row.querySelector('[data-food-planned-add-remove]')?.addEventListener('click',()=>row.remove());
     };
     modal.querySelector('[data-food-planned-add]')?.addEventListener('click',()=>{
