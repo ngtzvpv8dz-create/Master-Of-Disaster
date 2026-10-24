@@ -785,6 +785,17 @@
         }
       }
       if(uncovered<=0.0001)continue;
+      // A glass/loaf pack converted with an *estimated* capacity cannot be
+      // added arithmetically to a gram deficit. Keep the purchasable pack
+      // quantity and flag the unknown real content rather than "Kaufen 2 g".
+      const estimatedProvider=candidates.find(entry=>entry.estimated);
+      if(estimatedProvider){
+        const target=estimatedProvider.row;
+        target.flags={...target.flags,unitMismatch:true};
+        if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
+        if(row.nextUseDate&&(!target.nextUseDate||row.nextUseDate<target.nextUseDate))target.nextUseDate=row.nextUseDate;
+        continue;
+      }
       // Same product + same shop window: combine the shortfall into the
       // existing purchase line, including the checkout quantity.
       const sameUnit=candidates.find(entry=>entry.unit===unit);
