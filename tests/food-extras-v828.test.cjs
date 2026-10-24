@@ -59,3 +59,36 @@ test('ungültiges Datum wird ignoriert',()=>{
   const totals=addExtras(new Map(),[{consumption_date:'falsch',calories_kcal:999,protein_g:5}]);
   assert.equal(totals.size,0);
 });
+
+test('Milka Pralinen use whole pieces in Heute extra snack, not manual 5.7g',()=>{
+  const extra=fs.readFileSync(path.join(__dirname,'..','food-extra-snacks-v828.js'),'utf8');
+  const start=extra.indexOf('  function productName(');
+  const end=extra.indexOf('  function panel(){',start);
+  assert.ok(start>0&&end>start);
+  const product={
+    id:'milka',inventory_unit:'g',package_quantity:114,package_unit:'g',
+    brand:'Milka',product_name:'Danke – Pralinen',variant:'Milchcreme-Karamell',
+    nutrition_per_100:{energy_kcal:503,protein_g:4.9,carbohydrates_g:59,fat_g:30},
+    product_data:{net_weight_g:114,pieces_per_box:20,grams_per_piece:5.7}
+  };
+  const make=new Function('products','nf','valid',
+    extra.slice(start,end)+'\nreturn {bases,countedPieceWeight,initialQty,valuesFromCatalog,displayPieceQuantity,extraQuantityDisplay};');
+  const lib=make([product],(v,d=1)=>Number(v).toLocaleString('de-DE',{maximumFractionDigits:d}),
+    v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0);
+  assert.equal(lib.bases(product),'Stück');
+  assert.equal(lib.countedPieceWeight(product),5.7);
+  assert.equal(lib.initialQty(product),1);
+  assert.equal(lib.valuesFromCatalog(product,1).calories_kcal,28.67);
+  assert.equal(lib.valuesFromCatalog(product,2).calories_kcal,57.34);
+  assert.equal(lib.displayPieceQuantity(product,11.4,'g'),2);
+  assert.equal(lib.extraQuantityDisplay({product_id:'milka',unit:'g',quantity:11.4}),'2 Stück');
+  assert.match(extra,/if\(countedPieceWeight\(p\)&&!Number.isInteger\(qty\)\)/);
+  assert.match(extra,/Anzahl Pralinen/);
+  assert.match(extra,/quantity:qty,unit:bases\(p\)/);
+});
+test('planned snack accepts pieces but sends underlying recipe in grams',()=>{
+  const food=fs.readFileSync(path.join(__dirname,'..','food-v544.js'),'utf8');
+  assert.match(food,/data-food-planned-piece-hint/);
+  assert.match(food,/unit:pieces\?'g':unit/);
+  assert.match(food,/entered\*pieces\.weight/);
+});
