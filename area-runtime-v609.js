@@ -64,7 +64,7 @@
       './food-stock-resolver-v746.js?v=816-isoclear-family',
       './food-v544.js?v=848-individual-lots-849-reopen-850-product-history',
       './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history',
-      './shopping-v678.js?v=821-pack-suggestions'
+      './shopping-v678.js?v=851-retailer-badge'
     ],
     kistology:[
       SUPABASE,
@@ -148,7 +148,7 @@
     food:['./food-v544.js?v=848-individual-lots-849-reopen-850-product-history',
       './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./food-extra-snacks-v828.js?v=838-daily-open-jump'],
     shopping:['./food-v544.js?v=848-individual-lots-849-reopen-850-product-history',
-      './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./shopping-v678.js?v=821-pack-suggestions'],
+      './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./shopping-v678.js?v=851-retailer-badge'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=827-finance-style'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
