@@ -483,9 +483,12 @@
       const packageDetails=shoppingPackageSummary(item.purchase_data||{},item.unit);
       // The retailer recommendation has its own compact UI row, not a second notes paragraph.
       const cleanNotes=String(item.notes||'').split(/\r?\n/).filter(line=>!line.trim().startsWith('🏬 Empfehlung:')).join('\n').trim();
+      // The shopping phase already says Today / Later / Extra. Keep the actual
+      // due date and purchase notes on readable separate lines on mobile.
       const secondary=isStockup
-        ?('Heute kaufen'+(item.needed_by?' · Bedarf '+fmtDate(item.needed_by):''))
-        :([cleanNotes,packageDetails].filter(Boolean).join(' · '));
+        ?([item.needed_by?'Benötigt am '+fmtDate(item.needed_by):'',
+            cleanNotes.split(/\r?\n/).filter(Boolean)[0]||''].filter(Boolean).join('\n'))
+        :([cleanNotes,packageDetails].filter(Boolean).join('\n'));
       const timing=isStockup
         ?''
         :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
@@ -502,9 +505,46 @@
     rows.forEach(row=>{row.substitution=substitutionsByKey.get(String(row.key||''))||null;});
 
     const collator=new Intl.Collator('de-DE',{sensitivity:'base',numeric:true});
-    rows.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
-    rowMap=new Map(rows.map(row=>[row.id,row]));
-    return rows;
+    // V853: Do not turn the same planned purchase into two shop entries.
+    // Only merge already-scheduled general groceries which can fully cover a
+    // live plan deficit. Never collapse different meats or later purchases.
+    const shoppingFamily=name=>{
+      const n=String(name||'').toLocaleLowerCase('de-DE')
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+      if(/kreuzkummel/.test(n))return 'cumin';
+      if(/(?:hahnchen|huhner)brust/.test(n))return 'chicken_breast';
+      if(/(?:mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5)/.test(n))return 'lean_beef_mince';
+      if(/^karotten(?: frisch| warm| roh)?$/.test(n))return 'carrots';
+      if(/naturjoghurt/.test(n))return 'plain_yogurt';
+      return '';
+    };
+    const providers=rows.filter(row=>row.source==='general'&&['now','cart'].includes(row.section))
+      .map(row=>({...row,family:shoppingFamily(row.label),remaining:Number(row.general?.quantity)||0,
+        unit:String(row.general?.unit||'').trim()}));
+    const included=[];
+    for(const row of rows){
+      if(row.source!=='food-gap'||row.section!=='now'){included.push(row);continue;}
+      const family=shoppingFamily(row.label);
+      const requested=Number(row.foodAction?.stockQuantity)||0;
+      const needDate=String(row.neededDate||row.buyFrom||todayIso());
+      const supplier=family&&requested>0?providers.find(entry=>{
+        if(entry.family!==family||entry.remaining<=0)return false;
+        const scheduled=String(entry.general?.needed_by||todayIso());
+        if(scheduled>needDate)return false;
+        if(family==='cumin'&&row.foodAction?.stockUnit==='g'&&entry.unit==='Glas')
+          return entry.remaining>=1;
+        return entry.unit===String(row.foodAction?.stockUnit||'')&&entry.remaining>=requested;
+      }):null;
+      if(!supplier){included.push(row);continue;}
+      supplier.remaining-=family==='cumin'&&supplier.unit==='Glas'?1:requested;
+      const target=supplier.row;
+      if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
+      target.secondary=[target.secondary,'Planbedarf ab '+fmtDate(needDate)+': '+fmtQty(requested,row.foodAction.stockUnit)]
+        .filter(Boolean).join('\n');
+    }
+    included.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
+    rowMap=new Map(included.map(row=>[row.id,row]));
+    return included;
   }
 
   function cartIcon(){
@@ -563,8 +603,8 @@
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
       +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701 has-stock-lines-v755':'')+'">'
       +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
-      +'<span>'+esc(row.secondary||row.timing||'')+'</span>'
-      +(row.secondary&&row.timing?'<em>'+esc(row.timing)+'</em>':'')
+      +'<span class="shopping-secondary-v853">'+esc(row.secondary||row.timing||'')+'</span>'
+      +(row.secondary&&row.timing?'<em class="shopping-timing-v853">'+esc(row.timing)+'</em>':'')
       +retailerLine
       +'</div>'
       +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+remove+'</div></div>'

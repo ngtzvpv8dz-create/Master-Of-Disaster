@@ -38,6 +38,6 @@ test('legacy notes store suggestion is hidden from visible notes to avoid duplic
   assert.match(js,/\[cleanNotes,packageDetails\]/);
 });
 test('runtime and CSS fetch fresh retailer badge assets',()=>{
-  assert.equal(runtime.match(/shopping-v678\.js\?v=851-retailer-badge/g)?.length,2);
-  assert.match(html,/shopping-v678\.css\?v=851-retailer-badge/);
+  assert.equal(runtime.match(/shopping-v678\.js\?v=853-readable-de-duplicate/g)?.length,2);
+  assert.match(html,/shopping-v678\.css\?v=853-readable-shopping-cards/);
 });
