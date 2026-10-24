@@ -4786,7 +4786,21 @@
           quantity:Number(ingredient.quantity),
           unit:String(ingredient.unit)
         })));
+    // V865: Compact grocery first-use index across the planned food horizon.
+    // Shopping needs dates without inventing new gaps or mutating inventory.
+    const plannedShoppingUses=(data.meals||[])
+      .filter(meal=>normalizedStatus(meal.status)==='planned'
+        &&String(meal.meal_date||'')>=todayIso())
+      .flatMap(meal=>(meal.ingredients||[])
+        .filter(ingredient=>Number(ingredient.quantity)>0
+          &&String(ingredient.name||ingredient.label||'').trim())
+        .map(ingredient=>({
+          name:String(ingredient.name||ingredient.label||'').trim(),
+          date:String(meal.meal_date),
+          unit:String(ingredient.unit||'')
+        })));
     return {
+      plannedShoppingUses,
       plannedIngredientUses,
       mealPlanVerified:sourceIsReal('meals'),
       gaps:gaps.map(item=>({...item,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
