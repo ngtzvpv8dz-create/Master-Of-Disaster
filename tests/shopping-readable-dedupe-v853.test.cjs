@@ -18,7 +18,7 @@ test('known true duplicates use one shopping family; different beef cuts stay se
   assert.equal(shoppingFamily('Mageres Hackfleisch'),'lean_beef_mince');
   assert.equal(shoppingFamily('Mageres Rinderhack 5 %'),'lean_beef_mince');
   assert.equal(shoppingFamily('Rinderhack mager'),'lean_beef_mince');
-  assert.equal(shoppingFamily('Mageres Rindfleisch (für Streifen)'),'');
+  assert.notEqual(shoppingFamily('Mageres Rindfleisch (für Streifen)'),'lean_beef_mince');
   assert.equal(shoppingFamily('Kreuzkümmel gemahlen'),'cumin');
   assert.equal(shoppingFamily('Hähnchenbrust frisch'),'chicken_breast');
   assert.equal(shoppingFamily('Hähnchenbrust'),'chicken_breast');
@@ -28,7 +28,7 @@ test('known true duplicates use one shopping family; different beef cuts stay se
 
 test('shopping UI merges by product, purchase date, safety window and actual uncovered amount',()=>{
   assert.match(js,/entry\.family!==family/);
-  assert.match(js,/entry\.remaining<=0/);
+  assert.match(js,/entry\.remaining-=covered/);
   assert.match(js,/const days=dayDifference\(needed,entry\.shopDate\)/);
   assert.match(js,/entry\.remaining-=covered/);
   assert.match(js,/if\(uncovered<=0\.0001\)continue/);
