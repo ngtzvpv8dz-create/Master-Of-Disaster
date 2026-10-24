@@ -27,12 +27,12 @@ test('known true duplicates use one shopping family; different beef cuts stay se
 });
 
 test('shopping UI merges by product, purchase date, safety window and actual uncovered amount',()=>{
-  assert.match(js,/entry\\.family!==family/);
-  assert.match(js,/entry\\.remaining<=0/);
-  assert.match(js,/const days=dayDifference\\(needed,entry\\.shopDate\\)/);
-  assert.match(js,/entry\\.remaining-=covered/);
-  assert.match(js,/if\\(uncovered<=0\\.0001\\)continue/);
-  assert.match(js,/rowMap=new Map\\(included\\.map/);
+  assert.match(js,/entry\.family!==family/);
+  assert.match(js,/entry\.remaining<=0/);
+  assert.match(js,/const days=dayDifference\(needed,entry\.shopDate\)/);
+  assert.match(js,/entry\.remaining-=covered/);
+  assert.match(js,/if\(uncovered<=0\.0001\)continue/);
+  assert.match(js,/rowMap=new Map\(included\.map/);
   assert.match(js,/data-shopping-cart/);
 });
 
