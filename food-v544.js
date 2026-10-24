@@ -1577,11 +1577,15 @@
     return res.data;
   }
 
-  function mealCard(meal){
+  function mealCard(meal,inHistory=false){
     const status=normalizedStatus(meal.status);
     const expanded=expandedMeals.has(String(meal.id));
     const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
     const sourceMeal=mealPrepSource(meal);
+    const historyRecipe=recipe||(sourceMeal?.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(sourceMeal.recipe_id)):null);
+    const historyRating=inHistory&&status==='completed'&&historyRecipe
+      ?'<div class="food-history-rating-v851">'+recipeRatingControl(historyRecipe)+'</div>'
+      :'';
     const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
     const sourceLabel=mealPrepSourceLabel(meal);
     const frozenPrep=(state?.mealPrepFreezer||[]).find(item=>String(item.meal_id||'')===String(meal.id));
@@ -1638,6 +1642,7 @@
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
+        +historyRating
         +'</article>';
     }
 
@@ -1661,6 +1666,7 @@
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
+        +historyRating
         +'</article>';
     }
 
@@ -1687,6 +1693,7 @@
       +dailyCreatineReminderMarkup(meal)
       +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
       +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
+      +historyRating
       +'</article>';
   }
 
@@ -1736,7 +1743,7 @@
     });
     return '<div class="food-section-head-v544"><div><span>HISTORY</span><h3>Vergangene Tage</h3></div><small>'+past.length+' Mahlzeiten</small></div>'+
       (groups.length
-        ?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></section>').join('')
+        ?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(meal=>mealCard(meal,true)).join('')+'</div></section>').join('')
         :'<div class="food-empty-card-v544"><h4>Noch keine vergangenen Mahlzeiten.</h4><p>Sobald ein Tag vorbei ist, bleibt er hier weiterhin abrufbar.</p></div>');
   }
 
