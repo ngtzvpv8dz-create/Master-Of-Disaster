@@ -95,13 +95,16 @@
     if(/^tomatensalsa$/.test(n))return 'Tomatensalsa (Sorte prüfen)';
     if(/^apfel$|^apfel fur snacks$|^apfel snacks$/.test(n))return 'Äpfel (Stück)';
     if(/^mandarinen?$/.test(n))return 'Mandarinen (Stück)';
-    if(/^nussmischung(?: ohne zucker)?$/.test(n))return 'Nussmischung (ungesüßt, Zutaten prüfen)';
+    if(/^nussmischung(?: ohne zucker)?$/.test(n))return 'Nussmischung natur (ungesüßt, ungesalzen)';
     if(/^schnittlauch$/.test(n))return 'Schnittlauch (Bund)';
     if(/^limetten?$/.test(n))return 'Limette';
     if(/^zitronen?$/.test(n))return 'Zitrone';
     if(/^avocado(?: hass frisch)?$/.test(n))return 'Avocado Hass (Stück)';
     if(/^tk blattspinat(?: monatsreserve)?$|^blattspinat tk$/.test(n))return 'Blattspinat TK';
     if(/^tomaten(?: warm| roh| frisch)?$/.test(n))return 'Tomaten (frisch, Sorte prüfen)';
+    if(/^paprika roh$/.test(n))return 'Paprika (frisch)';
+    if(/^paprika bunt$/.test(n))return 'Paprika bunt (frisch)';
+    if(/^senf$/.test(n))return 'Senf (scharf)';
     return String(value||'').trim();
   }
 
@@ -466,12 +469,20 @@
         ?' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' für diesen Einkaufsblock übrig'
         :'';
       const packSuggestion=shoppingPackSuggestion(item);
+      const tomatoStockDetail=shoppingFamilyLabel(item.label)==='Tomaten (frisch, Sorte prüfen)'
+        ?inventory.filter(stock=>shoppingNormalize(stock.family_name)==='tomaten'
+          &&Number(stock.quantity)>0&&stock.unit==='g')
+          .map(stock=>fmtQty(stock.quantity,'g')+' '+String(stock.name||'Tomaten'))
+          .join('\n')
+        :'';
+
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
         currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
         secondary:(usePlan?'Rezeptbedarf:\n'+usePlan.replace(/ · /g,'\n'):'Planbedarf: '+fmtQty(item.required,item.unit))
+          +(tomatoStockDetail?'\nVorhandene Tomatensorten:\n'+tomatoStockDetail:'')
           +(reservedNote?'\n'+reservedNote.trim():'')+(packSuggestion?'\n'+packSuggestion:''),
         timing:(item.shortageDate
           ?((delayed?'Kaufen ab '+fmtDate(item.buyFrom)+'\n':'')+'Bedarf spätestens: '+fmtDate(item.shortageDate))
