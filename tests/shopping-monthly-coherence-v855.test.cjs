@@ -133,3 +133,14 @@ test('frozen green beans and brown rice are never combined with fresh beans or w
     general('Langkornreis (trocken)',500,'g','2026-10-28'),
     gap('Naturreis (trocken)',110,'g','2026-10-28')).length,2);
 });
+
+
+test('estimated spice glass cannot turn 16g into a fictitious 2g checkout',()=>{
+  const planned=general('Pfeffer schwarz (ganze Körner)',1,'Glas','2026-10-28','later');
+  const extra=gap('Pfeffer schwarz (für die Mühle)',16,'g','2026-10-28','later');
+  const rows=covered(planned,extra);
+  assert.equal(rows.length,1);
+  assert.equal(rows[0].general.quantity,1);
+  assert.equal(rows[0].checkoutOverrideQuantity,undefined);
+  assert.equal(rows[0].flags.unitMismatch,true);
+});
