@@ -72,9 +72,10 @@
     if(/^mango(?: essbar)?$/.test(n))return 'Mango';
     if(/^pide ?fladen(?:brot)?$/.test(n))return 'Pide-Fladenbrot';
     if(/^pita(?: taschen)?$/.test(n))return 'Pita-Taschen';
-    if(/^reis fit naturreis$|^naturreis$/.test(n))return 'Naturreis (trocken)';
-    if(n==='reis')return 'Langkornreis (trocken)';
-    if(/^paella langkornreis$/.test(n))return 'Paella-/Langkornreis (trocken)';
+    if(/^reis fit naturreis$|^naturreis$/.test(n))return 'Naturreis (lose, trocken)';
+    if(/^langkornreis trocken monatsreserve$/.test(n))return 'Langkornreis (lose, trocken, Monatsreserve)';
+    if(n==='reis')return 'Langkornreis (lose, trocken)';
+    if(/^paella langkornreis$/.test(n))return 'Paella-/Langkornreis (lose, trocken)';
     if(/^pfeffer(?: schwarz)?(?: gemahlen)?$/.test(n))return 'Pfeffer schwarz (für die Mühle)';
     if(/^schnittkase(?: frisch)?$/.test(n))return 'Schnittkäse';
     if(/^vollkornbrot(?: frisch)?$/.test(n))return 'Vollkornbrot';
