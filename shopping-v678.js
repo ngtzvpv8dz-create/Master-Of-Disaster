@@ -463,6 +463,10 @@
       const buyUnit=item.garlic?item.purchaseUnit:item.unit;
       derivedKeys.add(normalizedIngredient(item.label,item.unit)+'|'+String(item.unit||'').toLocaleLowerCase('de-DE'));
       const usePlan=foodUsageTimeline(item.uses,item.unit);
+      const firstUpcomingUse=(item.uses||[])
+        .map(use=>String(use.date||''))
+        .filter(date=>date>=todayIso())
+        .sort()[0]||item.shortageDate||null;
       const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
       const windowAvailable=Math.max(0,Number(item.available)||0);
       const preWindowPlanned=Math.max(0,currentAvailable-windowAvailable);
@@ -482,6 +486,7 @@
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
         currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
+        nextUseDate:firstUpcomingUse,packHint:packSuggestion,
         secondary:(usePlan?'Rezeptbedarf:\n'+usePlan.replace(/ · /g,'\n'):'Planbedarf: '+fmtQty(item.required,item.unit))
           +(tomatoStockDetail?'\nVorhandene Tomatensorten:\n'+tomatoStockDetail:'')
           +(reservedNote?'\n'+reservedNote.trim():'')+(packSuggestion?'\n'+packSuggestion:''),
@@ -562,6 +567,7 @@
       rows.push({
         id:'general:'+item.id,key:'general:'+item.id,source:'general',label:shoppingFamilyLabel(item.label),
         section,inCart:section==='cart',primary:section==='extra'?(quantity||item.category||'Wunsch'):(quantity?('Kaufen '+quantity):'Kaufen'),
+        nextUseDate:null,packHint:'',
         secondary,timing,
         buyFrom:item.status==='later'?(item.needed_by||null):null,neededDate:item.needed_by||null,
         category:item.category||'Sonstiges',general:item,flags:{stockup:isStockup}
@@ -704,6 +710,7 @@
         if(uncovered<=0.0001)break;
         const target=entry.row;
         if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
+        if(row.nextUseDate&&(!target.nextUseDate||row.nextUseDate<target.nextUseDate))target.nextUseDate=row.nextUseDate;
         // A can/bottle/fruit pack is bought whole. Do not invent the drained
         // weight, density, or edible fruit weight: display an explicit check.
         if(entry.unit!==unit){
@@ -733,6 +740,7 @@
         target.checkoutOverrideUnit=unit;
         target.primary='Kaufen '+fmtQty(target.checkoutOverrideQuantity,unit);
         if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
+        if(row.nextUseDate&&(!target.nextUseDate||row.nextUseDate<target.nextUseDate))target.nextUseDate=row.nextUseDate;
         target.secondary=[target.secondary,
           'Zusätzlicher Rezeptbedarf '+fmtDate(needed)+': '+fmtQty(uncovered,unit),
           'Gesamt-Kaufmenge einschließlich geplanter Packung: '+fmtQty(target.checkoutOverrideQuantity,unit)
@@ -758,8 +766,39 @@
     return allowed[raw]||'';
   }
 
+  // V864: Shopping is an action list, not the recipe-planning audit.
+  // The detailed timeline stays in calculations, but one upcoming use is enough.
+  function shoppingCompactDescription(row){
+    const fromPlanning=row.source==='food-gap'
+      ||row.source==='food-manual'
+      ||String(row.general?.source||'').startsWith('food-');
+    if(!fromPlanning){
+      const raw=String(row.secondary||'').split(/\r?\n/)
+        .filter(line=>line.trim()&&!line.includes('🏬 Empfehlung:'))
+        .filter(line=>!/(filialbestand nicht gepruft|filialbestand nicht geprüft)/i.test(line));
+      return raw.slice(0,2).join('\n').trim();
+    }
+    if(row.section==='extra')return String(row.secondary||'').split(/\r?\n/).slice(0,2).join('\n');
+    const lines=[];
+    const when=row.nextUseDate||(!row.general&&row.neededDate)||null;
+    if(when)lines.push('Nächster Bedarf: '+fmtDate(when));
+    if(row.source==='food-gap'&&row.packHint)lines.push(row.packHint);
+    if(row.general?.source==='food-month-audit'
+      &&/monatsreserve/i.test(String(row.general.label||'')))
+      lines.push('Optionaler Vorratskauf');
+    if(row.label==='Tomaten (frisch, Sorte prüfen)'&&row.source==='food-gap'){
+      const available=(state.food?.inventory||[])
+        .filter(item=>item.is_active!==false&&shoppingNormalize(item.family_name)==='tomaten'
+          &&Number(item.quantity)>0)
+        .map(item=>String(item.name)+': '+fmtQty(item.quantity,item.unit));
+      if(available.length)lines.push('Vorhanden: '+available.join(', '));
+    }
+    return lines.join('\n');
+  }
+
   function rowMarkup(row){
     const retailer=shoppingRetailerHint(row);
+    const compactDescription=shoppingCompactDescription(row);
     const retailerLine=retailer
       ?'<div class="shopping-retailer-line-v851"><small>HÄNDLER-TIPP</small><span class="shopping-retailer-badge-v851" title="Empfehlung, keine bestätigte Filialverfügbarkeit">'+esc(retailer)+'</span></div>'
       :'';
@@ -802,8 +841,7 @@
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
       +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701 has-stock-lines-v755':'')+'">'
       +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
-      +'<span class="shopping-secondary-v853">'+esc(row.secondary||row.timing||'')+'</span>'
-      +(row.secondary&&row.timing?'<em class="shopping-timing-v853">'+esc(row.timing)+'</em>':'')
+      +(compactDescription?'<span class="shopping-secondary-v853">'+esc(compactDescription)+'</span>':'')
       +retailerLine
       +'</div>'
       +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+remove+'</div></div>'
