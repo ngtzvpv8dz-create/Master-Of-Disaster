@@ -2891,3 +2891,20 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-stock-lot-untracked-v848{display:grid;gap:4px;padding:10px;border:1px dashed rgba(158,135,93,.6);border-radius:10px;font-size:12px}
 .food-stock-lot-untracked-v848 small{opacity:.74}
 .food-lot-discard-confirm-v848{border-color:#b45248!important}
+
+/* V869 · Whole-piece consumption for gram-backed individual candy. */
+.food-stock-piece-info-v869{
+  padding:7px 9px;
+  margin:5px 0 4px;
+  border:1px solid rgba(148,172,194,.18);
+  border-radius:9px;
+  background:rgba(148,172,194,.05);
+  color:#bacbd6;
+  font-size:12px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.food-stock-actions-v544 [data-food-piece-consume]{
+  border-color:rgba(165,191,164,.35);
+  background:rgba(165,191,164,.09);
+}
