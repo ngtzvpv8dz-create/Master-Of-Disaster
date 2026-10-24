@@ -874,8 +874,9 @@
     if(/^(?:h milch|milch(?: 1 5)?$)/.test(n))return 'Milch';
     if(/^(?:joghurt|naturjoghurt|skyr|magerquark|quark|frischkase|korniger frischkase|mozzarella|ricotta|halloumi|hirtenkase|feta|schnittkase|butter|ayran)/.test(n))
       return 'Milchprodukte';
-    if(/^(?:hahnchen|mageres rinderhack|rinderhack|mageres rindfleisch|rindfleisch|hackfleisch|pute|schweinefleisch|lachs|thunfisch frisch)/.test(n))
-      return 'Fleisch & Fisch';
+    if(/^(?:hahnchen|mageres rinderhack|rinderhack|mageres rindfleisch|rindfleisch|hackfleisch|pute|schweinefleisch)/.test(n))
+      return 'Fleisch';
+    if(/^(?:lachs|thunfisch|kabeljau|seelachs)/.test(n))return 'Fisch';
     if(/^(?:reis|naturreis|langkornreis|paella|quinoa|bulgur|linsen|haselnuss|walnuss|nussmischung|kokosraspeln|hafer|buchweizen|mehl|lasagneplatten|nudeln|penne|spaghetti)/.test(n))
       return 'Trockenwaren';
     if(/^(?:vollkornbrot|pide|pita|knusperbrot|mehrkornbrot|brot|wrap)/.test(n))
