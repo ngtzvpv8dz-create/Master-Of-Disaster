@@ -108,12 +108,10 @@
       '<button type="button" data-extra-mode="manual" class="'+(!catalog?'is-selected':'')+'">Manuell erfassen</button></div>'+
       (catalog?'<label>Produkt suchen<input type="search" name="search" value="'+esc(term)+'" placeholder="z. B. Red Bull, HOLY, Schokolade" data-extra-search autocomplete="off"></label>'+
         '<label>Produkt<select name="product" data-extra-product>'+productOptions()+'</select></label>'+
-        '<div class="food-extra-fields-v828"><label>'+(p&&countedPieceWeight(p)?'Anzahl Pralinen':'Menge')+'<input name="quantity" type="number" step="'+(p&&countedPieceWeight(p)?'1':'0.1')+'" min="'+(p&&countedPieceWeight(p)?'1':'0.1')+'" inputmode="'+(p&&countedPieceWeight(p)?'numeric':'decimal')+'" value="'+esc(p?initialQty(p):100)+'" required data-extra-quantity></label>'+
-        '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output>'+
-          (p&&countedPieceWeight(p)?'<small>1 Praline = '+nf(countedPieceWeight(p))+' g</small>':
-           p&&bases(p)==='Stück'&&ediblePieceWeight(p)?'<small>'+esc(edibleWeightNote(p))+'</small>':
-          p&&bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?'<small>'+nf(p.product_data.weight_per_tablet_g)+' g je Tablette (hinterlegt)</small>':'')+
-        '</label></div>'+
+        '<div class="food-extra-fields-v828"><label><span data-extra-quantity-caption>'+(p&&countedPieceWeight(p)?'Anzahl Pralinen':'Menge')+'</span><input name="quantity" type="number" step="'+(p&&countedPieceWeight(p)?'1':'0.1')+'" min="'+(p&&countedPieceWeight(p)?'1':'0.1')+'" inputmode="'+(p&&countedPieceWeight(p)?'numeric':'decimal')+'" value="'+esc(p?initialQty(p):100)+'" required data-extra-quantity></label>'+
+        '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output>'+ 
+          '<small data-extra-piece-note hidden></small>'+ 
+         '</label></div>'+
         '<p class="food-extra-preview-v828" data-extra-preview>'+esc(p?'Nährwerte werden berechnet.':'Bitte ein Produkt auswählen.')+'</p>'+
         '<div class="food-extra-missing-v832" data-extra-missing-macros hidden><p class="food-extra-help-v828">Für diesen Artikel sind Kalorien/Eiweiß nicht vollständig belegt. Angaben sind freiwillig. Ohne verlässliche Werte wird die Einnahme trotzdem gespeichert; die Tagesbilanz markiert die Lücke. Unbekannt ist nicht gleich null.</p>'+
         '<div class="food-extra-macros-v828">'+[
@@ -165,6 +163,24 @@
     const form=panel()?.querySelector('[data-food-extra-form]');if(!form||mode!=='catalog')return;
     const p=chosen(),output=form.querySelector('[data-extra-preview]');
     form.querySelector('[data-extra-unit]').textContent=bases(p);
+    const counted=countedPieceWeight(p);
+    const caption=form.querySelector('[data-extra-quantity-caption]');
+    if(caption)caption.textContent=counted?'Anzahl Pralinen':'Menge';
+    const amount=form.elements.quantity;
+    if(amount){
+      amount.step=counted?'1':'0.1';
+      amount.min=counted?'1':'0.1';
+      amount.inputMode=counted?'numeric':'decimal';
+    }
+    const hint=form.querySelector('[data-extra-piece-note]');
+    if(hint){
+      const note=counted?'1 Praline = '+nf(counted)+' g'
+        :bases(p)==='Stück'&&ediblePieceWeight(p)?edibleWeightNote(p)
+        :bases(p)==='Stück'&&Number(p?.product_data?.weight_per_tablet_g)>0
+          ?nf(p.product_data.weight_per_tablet_g)+' g je Tablette (hinterlegt)':'';
+      hint.textContent=note;
+      hint.hidden=!note;
+    }
     const missing=form.querySelector('[data-extra-missing-macros]');
     if(missing)missing.hidden=!p||hasMacros(p);
     if(!p){output.textContent='Bitte ein Produkt aus dem gesamten Vorrat oder Produktstamm auswählen.';return;}
