@@ -68,7 +68,7 @@ test('one package estimate is visible, while real stock and checkout remain unto
   const row=general('Vollkornbrot',1,'Laib');
   const result=covered(row,gap('Vollkornbrot',200,'g'));
   assert.equal(result.length,1);
-  assert.match(result[0].secondary,/Packungsgröße prüfen/);
+  assert.match(result[0].secondary,/Packungs-\/Abtropf-\/Stückgewicht prüfen/);
   assert.equal(result[0].general.quantity,1);
 });
 
