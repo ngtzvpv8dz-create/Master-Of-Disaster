@@ -45,6 +45,7 @@ jobs:
           node tests/v746-food-stock-resolver.test.cjs
           node tests/banana-shopping-units-20261009.test.cjs
           node tests/shopping-window-isoclear-wholewrap-oct15.test.cjs
+          node --test tests/shopping-retailer-badge-v851.test.cjs
           node tests/food-nutrition-alarm-v795.test.cjs
           node tests/asia-vegetable-family-v796.test.cjs
           node tests/dingsi-lab-v31.test.cjs
@@ -91,7 +92,7 @@ jobs:
           grep -q 'shopping-v643.css?v=' index.html
           grep -q 'food-stock-resolver-v746.js?v=816-isoclear-family' area-runtime-v609.js
           grep -q 'food-v544.js?v=' area-runtime-v609.js
-          grep -q 'shopping-v678.js?v=821-pack-suggestions' area-runtime-v609.js
+          grep -q 'shopping-v678.js?v=851-retailer-badge' area-runtime-v609.js
           grep -q "shopping:'Einkaufsliste'" area-runtime-v609.js
           grep -q '__modShoppingV651' shopping-v651.js
           grep -q 'shopping_receipt_reviews' shopping-v651.js
