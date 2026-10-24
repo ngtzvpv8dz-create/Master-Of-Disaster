@@ -119,7 +119,9 @@
       return anchor.toISOString().slice(0,10);
     };
     let cutoff=cutoffFor(base.getUTCFullYear(),base.getUTCMonth());
-    if(cutoff<String(baseIso)){
+    // The monthly shopping cutoff itself is not the end of a newly started planning cycle.
+    // On that day the next cycle must already be visible (24.10.2026 -> 25.11.2026).
+    if(cutoff<=String(baseIso)){
       const nextMonth=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+1,1,12));
       cutoff=cutoffFor(nextMonth.getUTCFullYear(),nextMonth.getUTCMonth());
     }
