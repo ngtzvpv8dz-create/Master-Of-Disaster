@@ -531,13 +531,14 @@
       if(/^(?:passata|passierte tomaten)(?: \d+ ?g)?$/.test(n))return 'passata';
       if(/^rote paprika$|^paprika rot$|^paprika frisch rot$|^paprika bunt$/.test(n))return 'red_pepper';
       if(/^tk beeren(?:mischung|mix)?$|^tk beerenmischung$/.test(n))return 'tk_berries';
+      if(/^(?:tk blattspinat(?: monatsreserve)?|blattspinat tk)$/.test(n))return 'frozen_spinach';
       if(/^vollkornbrot(?: frisch)?$|^roggen vollkornbrot$/.test(n))return 'wholegrain_bread';
       if(/^zucchini(?: frisch)?$/.test(n))return 'zucchini';
       if(/^magerquark(?: \d+ ?g)?$/.test(n))return 'quark';
       if(/^aubergine(?:n)?$/.test(n))return 'aubergine';
       return '';
     };
-    const stockStable=new Set(['cumin','dried_mint','cinnamon','passata','tk_berries']);
+    const stockStable=new Set(['cumin','dried_mint','cinnamon','passata','tk_berries','frozen_spinach']);
     const providerCapacity=(row,family)=>{
       const q=Number(row.general?.quantity)||0;
       const unit=String(row.general?.unit||'').trim();
