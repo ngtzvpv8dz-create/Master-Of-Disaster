@@ -2763,7 +2763,11 @@
         // Count their combined stock ONCE and merge demand into one family key.
         const isIsoclearFamily=String(linkedStock?.family_name||'').trim().toLocaleLowerCase('de-DE')
           ==='esn isoclear whey protein isolate';
-        const shoppingName=isIsoclearFamily?linkedStock.family_name:name;
+        // V861: Preparation qualifiers are not separate grocery products.
+        // Preserve the recipe ingredient itself for nutrition and cooking.
+        const shoppingName=isIsoclearFamily?linkedStock.family_name
+          :/^karotten (?:warm|rohkost|roh)$/i.test(name)?'Karotten'
+          :name;
         const stockId=isIsoclearFamily?null:(item.inventory_id||null);
         const canonical=normalizedIngredient(shoppingName,shoppingUnit);
         const key=isIsoclearFamily
