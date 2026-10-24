@@ -16,6 +16,29 @@
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
   // Stückprodukte mit dokumentierter essbarer Portionsmenge: kein erneutes Wiegen verlangen.
   // Für Eier die explizite Schätzung verwenden, niemals das Schalengewicht.
+  // V870: select exact whole pieces when packaging weight confirms conversion.
+  function countedPieceWeight(p){
+    const d=p?.product_data||{},n=Number(d.pieces_per_box);
+    const net=Number(d.net_weight_g),one=Number(d.grams_per_piece);
+    return p?.inventory_unit==='g'&&Number.isInteger(n)&&n>0
+      &&Number.isFinite(net)&&net>0&&Number.isFinite(one)&&one>0
+      &&Math.abs(n*one-net)<=.051?one:null;
+  }
+  const catalogPieceWeight=p=>countedPieceWeight(p)||ediblePieceWeight(p);
+  function displayPieceQuantity(p,quantity,unit){
+    const weight=countedPieceWeight(p),amount=Number(quantity);
+    if(weight&&unit==='g'&&Math.abs(amount/weight-Math.round(amount/weight))<.001)
+      return Math.round(amount/weight);
+    return quantity;
+  }
+  function extraQuantityDisplay(row){
+    const p=products.find(item=>String(item.id)===String(row.product_id));
+    if(countedPieceWeight(p)&&row.unit==='g'){
+      const count=Number(displayPieceQuantity(p,row.quantity,row.unit));
+      if(Number.isInteger(count)&&count>0)return nf(count)+' Stück';
+    }
+    return nf(row.quantity)+' '+row.unit;
+  }
   function ediblePieceWeight(p){
     const d=p?.product_data||{};
     const w=Number(d.edible_weight_per_piece_g??d.edible_weight_per_piece_estimated_g);
@@ -31,7 +54,7 @@
     if(!p)return 'g';
     // Einheiten ohne belastbare 100-g-Nährwertbasis (z. B. Brausetabletten).
     const stockUnit=String(p.inventory_unit||'');
-    if(stockUnit==='Stück'&&ediblePieceWeight(p))return 'Stück';
+    if(countedPieceWeight(p)||(stockUnit==='Stück'&&ediblePieceWeight(p)))return 'Stück';
     if(!hasMacros(p)&&['Stück','Portion','Päckchen','Kapsel'].includes(stockUnit))return stockUnit;
     const basis=String(p?.nutrition_per_100?.basis||p?.product_data?.nutrition_basis||'').toLowerCase();
     return /100.ml|per_100_ml/.test(basis)||p?.package_unit==='ml'?'ml':'g';
@@ -51,7 +74,7 @@
     return 100;
   }
   function valuesFromCatalog(p,quantity){
-    const factor=(bases(p)==='Stück'&&ediblePieceWeight(p)?quantity*ediblePieceWeight(p):quantity)/100,n=p.nutrition_per_100||{};
+    const factor=(bases(p)==='Stück'&&catalogPieceWeight(p)?quantity*catalogPieceWeight(p):quantity)/100,n=p.nutrition_per_100||{};
     const scaled=key=>valid(n[key])?Math.round(Number(n[key])*factor*100)/100:null;
     const productData=p.product_data||{};
     let caffeine=null;
@@ -85,9 +108,10 @@
       '<button type="button" data-extra-mode="manual" class="'+(!catalog?'is-selected':'')+'">Manuell erfassen</button></div>'+
       (catalog?'<label>Produkt suchen<input type="search" name="search" value="'+esc(term)+'" placeholder="z. B. Red Bull, HOLY, Schokolade" data-extra-search autocomplete="off"></label>'+
         '<label>Produkt<select name="product" data-extra-product>'+productOptions()+'</select></label>'+
-        '<div class="food-extra-fields-v828"><label>Menge<input name="quantity" type="number" step="0.1" min="0.1" inputmode="decimal" value="'+esc(p?initialQty(p):100)+'" required data-extra-quantity></label>'+
+        '<div class="food-extra-fields-v828"><label>'+(p&&countedPieceWeight(p)?'Anzahl Pralinen':'Menge')+'<input name="quantity" type="number" step="'+(p&&countedPieceWeight(p)?'1':'0.1')+'" min="'+(p&&countedPieceWeight(p)?'1':'0.1')+'" inputmode="'+(p&&countedPieceWeight(p)?'numeric':'decimal')+'" value="'+esc(p?initialQty(p):100)+'" required data-extra-quantity></label>'+
         '<label>Einheit <output data-extra-unit>'+esc(bases(p))+'</output>'+
-          (p&&bases(p)==='Stück'&&ediblePieceWeight(p)?'<small>'+esc(edibleWeightNote(p))+'</small>':
+          (p&&countedPieceWeight(p)?'<small>1 Praline = '+nf(countedPieceWeight(p))+' g</small>':
+           p&&bases(p)==='Stück'&&ediblePieceWeight(p)?'<small>'+esc(edibleWeightNote(p))+'</small>':
           p&&bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?'<small>'+nf(p.product_data.weight_per_tablet_g)+' g je Tablette (hinterlegt)</small>':'')+
         '</label></div>'+
         '<p class="food-extra-preview-v828" data-extra-preview>'+esc(p?'Nährwerte werden berechnet.':'Bitte ein Produkt auswählen.')+'</p>'+
@@ -118,7 +142,7 @@
       '<span>'+nf(sum.kcal,0)+' kcal · '+nf(sum.protein)+' g Protein'+(incomplete?' (bekannte Werte)':'')+'</span></div>'+
       (incomplete?'<p class="food-extra-help-v828">'+incomplete+' Eintrag'+(incomplete===1?' hat':'e haben')+' unbekannte Kalorien- oder Eiweißwerte. Tagesbilanz deshalb unvollständig, keine Nullwerte erfunden.</p>':'')+
       (rows.length?'<ul class="food-extra-list-v828">'+rows.map(r=>
-        '<li data-food-extra-row="'+esc(r.id)+'"'+(!valid(r.calories_kcal)||!valid(r.protein_g)?' class="food-extra-unresolved-v838"':'')+'><div><strong>'+esc(r.title)+'</strong><small>'+esc(nf(r.quantity)+' '+r.unit)+' · '+
+        '<li data-food-extra-row="'+esc(r.id)+'"'+(!valid(r.calories_kcal)||!valid(r.protein_g)?' class="food-extra-unresolved-v838"':'')+'><div><strong>'+esc(r.title)+'</strong><small>'+esc(extraQuantityDisplay(r))+' · '+
         (valid(r.calories_kcal)?nf(r.calories_kcal,0)+' kcal':'kcal unbekannt')+' · '+
         (valid(r.protein_g)?nf(r.protein_g)+' g Protein':'Protein unbekannt')+
         (r.carbohydrates_g!==null?' · KH '+nf(r.carbohydrates_g)+' g':'')+
@@ -146,13 +170,15 @@
     if(!p){output.textContent='Bitte ein Produkt aus dem gesamten Vorrat oder Produktstamm auswählen.';return;}
     const qty=decimal(form.elements.quantity.value);
     if(!(qty>0)){output.textContent='Bitte eine gültige Menge eingeben.';return;}
+    if(countedPieceWeight(p)&&!Number.isInteger(qty)){output.textContent='Bitte ganze Pralinen eingeben.';return;}
     if(!hasMacros(p)){
-      output.textContent='Menge: '+nf(qty)+' '+bases(p)+(bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?' à '+nf(p.product_data.weight_per_tablet_g)+' g':'')+'. Nicht belegte Nährwerte bleiben offen; Speichern ist trotzdem möglich.';
+      output.textContent='Menge: '+nf(qty)+' '+bases(p)+(countedPieceWeight(p)?' = '+nf(qty*countedPieceWeight(p))+' g':'')+(bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?' à '+nf(p.product_data.weight_per_tablet_g)+' g':'')+'. Nicht belegte Nährwerte bleiben offen; Speichern ist trotzdem möglich.';
       return;
     }
     const n=valuesFromCatalog(p,qty);
     output.textContent=nf(n.calories_kcal,1)+' kcal · '+nf(n.protein_g)+' g Protein · '+nf(n.carbohydrates_g)+' g KH · '+nf(n.fat_g)+' g Fett'+
-      (bases(p)==='Stück'&&ediblePieceWeight(p)?' · '+edibleWeightNote(p):'');
+      (countedPieceWeight(p)?' · '+nf(qty)+' '+(qty===1?'Praline':'Pralinen')+' = '+nf(qty*countedPieceWeight(p))+' g':
+       bases(p)==='Stück'&&ediblePieceWeight(p)?' · '+edibleWeightNote(p):'');
   }
   async function fetchPages(build){
     const result=[],page=500;
@@ -229,7 +255,7 @@
     formOpen=true;notice='';error='';draw();
     const form=panel()?.querySelector('[data-food-extra-form]');if(!form)return;
     for(const name of ['title','quantity','unit','calories_kcal','protein_g','carbohydrates_g','fat_g','sugars_g','salt_g','caffeine_mg']){
-      if(form.elements[name]&&row[name]!==null&&row[name]!==undefined)form.elements[name].value=String(row[name]);
+      if(form.elements[name]&&row[name]!==null&&row[name]!==undefined)form.elements[name].value=String(name==='quantity'&&linked?displayPieceQuantity(linked,row.quantity,row.unit):row[name]);
     }
     if(linked)updatePreview();
     form.querySelector('[name="calories_kcal"],[name="title"],[name="quantity"]')?.focus();
@@ -260,11 +286,12 @@
     if(mode==='catalog'){
       const p=chosen();if(!p)throw new Error('Bitte ein Produkt auswählen.');
       let n,source;
-      if(hasMacros(p)&&(['g','ml'].includes(bases(p))||(bases(p)==='Stück'&&ediblePieceWeight(p)))){
+      if(countedPieceWeight(p)&&!Number.isInteger(qty))throw new Error('Bitte eine ganze Anzahl Pralinen eingeben.');
+      if(hasMacros(p)&&(['g','ml'].includes(bases(p))||(bases(p)==='Stück'&&catalogPieceWeight(p)))){
         n=valuesFromCatalog(p,qty);
         const ref=Boolean(p.product_data?.nutrition_is_reference||p.product_data?.source_nutrition_not_from_package);
         source=(ref?'Produktstamm: dokumentierte Referenzwerte je 100 ':'Produktstamm: Herstellerwerte je 100 ')+
-          (bases(p)==='Stück'?'g, '+edibleWeightNote(p):bases(p));
+          (bases(p)==='Stück'?'g, '+(countedPieceWeight(p)?nf(countedPieceWeight(p))+' g je Praline':edibleWeightNote(p)):bases(p));
       }else{
         const read=(key,required=false)=>{
           const raw=String(form.elements[key]?.value??'').trim();
