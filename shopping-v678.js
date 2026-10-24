@@ -566,39 +566,85 @@
     // V855: A purchase entry is the authority. Recipe gaps are missing-demand
     // previews, NOT new purchases if an already scheduled basket row covers them.
     // Keep availability, dates, packaging and perishability explicit.
+    // V859: Exact product families only. Do not merge fresh with TK beans,
+    // brown with white rice, regular with light mozzarella, or unlike meat cuts.
     const shoppingFamily=name=>{
-      const n=String(name||'').toLocaleLowerCase('de-DE').normalize('NFD')
+      const n=String(name||'').toLocaleLowerCase('de-DE')
+        .replace(/ß/g,'ss').normalize('NFD')
         .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
       if(/kreuzkummel/.test(n))return 'cumin';
       if(/getrocknete minze/.test(n))return 'dried_mint';
       if(/^zimt( gemahlen)?$/.test(n))return 'cinnamon';
       if(/^butter(?: \d+ ?g)?$/.test(n))return 'butter';
       if(/^ayran/.test(n))return 'ayran';
-      if(/eier? (gro(?:ß|ss)e|gro(?:ß|ss)e)? ?m$/.test(n)||n==='eier gro e m'||n==='eier grosse m')return 'eggs_m';
-      if(/(?:hahnchen|huhner)brust/.test(n))return 'chicken_breast';
-      if(/(?:mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5)/.test(n))return 'lean_beef_mince';
-      if(/^karotten(?: frisch| warm| roh)?$/.test(n))return 'carrots';
-      if(/^naturjoghurt(?: (?:fettarm )?1 5)?$/.test(n))return 'plain_yogurt';
+      if(/eier? (gro(?:ss)e )?m$/.test(n))return 'eggs_m';
+      if(/hahnchenbrust(?:filet)?/.test(n))return 'chicken_breast';
+      if(/mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5/.test(n))return 'lean_beef_mince';
+      if(/^karotten(?: frisch| warm| roh| rohkost)?$/.test(n))return 'carrots';
+      if(/^naturjoghurt/.test(n))return 'plain_yogurt';
+      if(/^joghurt griechischer art/.test(n))return 'greek_yogurt_2pct';
       if(/^skyr natur$/.test(n))return 'skyr';
-      if(/^(?:passata|passierte tomaten)(?: \d+ ?g)?$/.test(n))return 'passata';
-      if(/^rote paprika$|^paprika rot$|^paprika frisch rot$|^paprika bunt$/.test(n))return 'red_pepper';
+      if(/^(?:passata|passierte tomaten)/.test(n))return 'passata';
+      if(/^rote paprika$|^paprika rot$|^paprika frisch rot$/.test(n))return 'red_pepper';
       if(/^tk beeren(?:mischung|mix)?$|^tk beerenmischung$/.test(n))return 'tk_berries';
-      if(/^(?:tk blattspinat(?: monatsreserve)?|blattspinat tk)$/.test(n))return 'frozen_spinach';
+      if(/^tk blattspinat|^blattspinat tk/.test(n))return 'frozen_spinach';
       if(/^vollkornbrot(?: frisch)?$|^roggen vollkornbrot$/.test(n))return 'wholegrain_bread';
       if(/^zucchini(?: frisch)?$/.test(n))return 'zucchini';
-      if(/^magerquark(?: \d+ ?g)?$/.test(n))return 'quark';
+      if(/^magerquark/.test(n))return 'quark';
       if(/^aubergine(?:n)?$/.test(n))return 'aubergine';
+      if(/^salatgurke$|^gurke$/.test(n))return 'cucumber';
+      if(/^blattsalat/.test(n))return 'lettuce';
+      if(/^tomaten(?: frisch)?/.test(n))return 'tomatoes';
+      if(/^kiwi/.test(n))return 'kiwi';
+      if(/^mandarinen/.test(n))return 'mandarin';
+      if(/^apfel|^apfel fur snacks|^apfel snacks/.test(n))return 'apple';
+      if(/^pide fladenbrot/.test(n))return 'pide';
+      if(/^pita taschen/.test(n))return 'pita';
+      if(/^naturreis/.test(n))return 'brown_rice';
+      if(/^langkornreis/.test(n))return 'longgrain_rice';
+      if(/^paella langkornreis/.test(n))return 'paella_rice';
+      if(/^pfeffer schwarz/.test(n))return 'pepper';
+      if(/^schnittkase$/.test(n))return 'sliced_cheese';
+      if(/^mozzarella light/.test(n))return 'light_mozzarella';
+      if(/^sojasauce$/.test(n))return 'soy_sauce';
+      if(/^edamame tk/.test(n))return 'frozen_edamame';
+      if(/^erbsen tk/.test(n))return 'frozen_peas';
+      if(/^kirschen tk/.test(n))return 'frozen_cherries';
+      if(/^grune bohnen tk/.test(n))return 'frozen_green_beans';
+      if(/^lasagneplatten/.test(n))return 'lasagna_sheets';
+      if(/^mais dose/.test(n))return 'canned_corn';
+      if(/^kichererbsen dose/.test(n))return 'canned_chickpeas';
+      if(/^ananas dose/.test(n))return 'canned_pineapple';
+      if(/^oregano gerebelt/.test(n))return 'oregano';
+      if(/^tomatensalsa/.test(n))return 'tomato_salsa';
+      if(/^nussmischung/.test(n))return 'nut_mix';
+      if(/^kokosraspeln$/.test(n))return 'coconut_flakes';
+      if(/^ricotta$/.test(n))return 'ricotta';
+      if(/^brokkoli$/.test(n))return 'broccoli';
+      if(/^radieschen$/.test(n))return 'radish';
+      if(/^limette$/.test(n))return 'lime';
+      if(/^zitrone$/.test(n))return 'lemon';
+      if(/^schnittlauch/.test(n))return 'chives';
+      if(/^avocado hass/.test(n))return 'avocado_hass';
       return '';
     };
-    const stockStable=new Set(['cumin','dried_mint','cinnamon','passata','tk_berries','frozen_spinach']);
+    const stockStable=new Set([
+      'cumin','dried_mint','cinnamon','passata','tk_berries','frozen_spinach',
+      'brown_rice','longgrain_rice','paella_rice','pepper','soy_sauce',
+      'frozen_edamame','frozen_peas','frozen_cherries','frozen_green_beans',
+      'lasagna_sheets','canned_corn','canned_chickpeas','canned_pineapple',
+      'oregano','tomato_salsa','coconut_flakes'
+    ]);
     const providerCapacity=(row,family)=>{
       const q=Number(row.general?.quantity)||0;
       const unit=String(row.general?.unit||'').trim();
       if(q<=0)return null;
-      if(unit==='Glas'&&['cumin','dried_mint','cinnamon'].includes(family))
-        return {amount:q*20,unit:'g',estimated:true};
+      if(unit==='Glas'&&['cumin','dried_mint','cinnamon','oregano','pepper'].includes(family))
+        return {amount:q*15,unit:'g',estimated:true};
       if(unit==='Packung'&&family==='butter')
         return {amount:q*250,unit:'g',estimated:true};
+      if(unit==='Packung'&&family==='pide')
+        return {amount:q*500,unit:'g',estimated:true};
       if(unit==='Laib'&&family==='wholegrain_bread')
         return {amount:q*400,unit:'g',estimated:true};
       return {amount:q,unit,estimated:false};
@@ -628,32 +674,55 @@
       if(!family||!(requested>0)){included.push(row);continue;}
       const needed=String(row.neededDate||row.buyFrom||todayIso());
       let uncovered=requested;
+      // Match a pre-existing purchase before treating a recipe as a second purchase.
+      // A later purchase cannot cover an earlier meal. Fresh food is short-lived.
       const candidates=providers.filter(entry=>{
-        if(entry.family!==family||entry.unit!==unit||entry.remaining<=0)return false;
+        if(entry.family!==family)return false;
         const days=dayDifference(needed,entry.shopDate);
         if(days<0)return false;
-        return stockStable.has(family)?days<=45:days<=3;
+        const notes=String(entry.row.general?.notes||'').toLocaleLowerCase('de-DE');
+        const canFreeze=['chicken_breast','lean_beef_mince'].includes(family)
+          &&/portion|einfrier|tk|tiefkühl|frost/.test(notes);
+        return days<=(stockStable.has(family)?45:canFreeze?7:3);
       }).sort((a,b)=>b.shopDate.localeCompare(a.shopDate));
       for(const entry of candidates){
         if(uncovered<=0.0001)break;
-        const covered=Math.min(uncovered,entry.remaining);
-        entry.remaining-=covered;
-        uncovered-=covered;
         const target=entry.row;
         if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
-        target.secondary=[target.secondary,
-          'Abgedeckter Rezeptbedarf '+fmtDate(needed)+': '+fmtQty(covered,unit)
-          +(entry.estimated?' (Gebindegröße beim Einkauf prüfen)':'')]
-          .filter(Boolean).join('\n');
+        // A can/bottle/fruit pack is bought whole. Do not invent the drained
+        // weight, density, or edible fruit weight: display an explicit check.
+        if(entry.unit!==unit){
+          target.secondary=[target.secondary,
+            'Rezeptbedarf '+fmtDate(needed)+': '+fmtQty(uncovered,unit),
+            'Packungs-/Abtropf-/Stückgewicht prüfen: '+fmtQty(entry.row.general.quantity,entry.row.general.unit)+' eingeplant'
+          ].filter(Boolean).join('\n');
+          target.flags={...target.flags,unitMismatch:true};
+          uncovered=0;
+          break;
+        }
+        const covered=Math.min(uncovered,Math.max(0,entry.remaining));
+        entry.remaining-=covered;
+        uncovered-=covered;
+        if(covered>0){
+          target.secondary=[target.secondary,'Rezeptbedarf '+fmtDate(needed)+': '+fmtQty(covered,unit)
+            +(entry.estimated?' (Packungsgröße prüfen)':'')].filter(Boolean).join('\n');
+        }
       }
       if(uncovered<=0.0001)continue;
-      // If a package covered only part, show ONLY the additional shortfall,
-      // preserving the original foodAction for stock correction on this row.
-      if(uncovered<requested-.0001){
-        row.primary='Zusätzlich kaufen '+fmtQty(uncovered,unit);
-        row.secondary=[row.secondary,'Bereits eingeplante Käufe decken '
-          +fmtQty(requested-uncovered,unit)].filter(Boolean).join('\n');
-        row.foodAction={...row.foodAction,stockQuantity:uncovered};
+      // Same product + same shop window: combine the shortfall into the
+      // existing purchase line, including the checkout quantity.
+      const sameUnit=candidates.find(entry=>entry.unit===unit);
+      if(sameUnit){
+        const target=sameUnit.row;
+        target.checkoutOverrideQuantity=(target.checkoutOverrideQuantity??Number(target.general.quantity))+uncovered;
+        target.checkoutOverrideUnit=unit;
+        target.primary='Kaufen '+fmtQty(target.checkoutOverrideQuantity,unit);
+        if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
+        target.secondary=[target.secondary,
+          'Zusätzlicher Rezeptbedarf '+fmtDate(needed)+': '+fmtQty(uncovered,unit),
+          'Gesamt-Kaufmenge einschließlich geplanter Packung: '+fmtQty(target.checkoutOverrideQuantity,unit)
+        ].filter(Boolean).join('\n');
+        continue;
       }
       included.push(row);
     }
@@ -1504,11 +1573,11 @@
   }
 
   function cartPlannedQuantity(row){
-    return row.foodAction?.stockQuantity??row.general?.quantity??null;
+    return row.checkoutOverrideQuantity??row.foodAction?.stockQuantity??row.general?.quantity??null;
   }
 
   function cartPlannedUnit(row){
-    return row.foodAction?.stockUnit??row.general?.unit??null;
+    return row.checkoutOverrideUnit??row.foodAction?.stockUnit??row.general?.unit??null;
   }
 
   async function saveSubstitution(row,payload){
