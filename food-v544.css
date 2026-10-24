@@ -2908,3 +2908,14 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   border-color:rgba(165,191,164,.35);
   background:rgba(165,191,164,.09);
 }
+
+/* V851: Kompakte, editierbare Rezept-Sterne nur in FOOD History. */
+.food-history-rating-v851{
+  padding:2px 12px 10px;
+  border-top:1px solid rgba(144,156,135,.15);
+}
+.food-history-rating-v851 .food-recipe-rating-v636{margin-top:2px;gap:6px}
+.food-history-rating-v851 .food-recipe-rating-v636>span{font-size:10px}
+.food-history-rating-v851 .food-recipe-stars-v636 button{
+  width:18px;height:18px;font-size:12px;border-radius:4px;
+}
