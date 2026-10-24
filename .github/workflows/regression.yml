@@ -49,6 +49,7 @@ jobs:
           node --test tests/shopping-retailer-badge-v851.test.cjs
           node --test tests/shopping-readable-dedupe-v853.test.cjs
           node --test tests/shopping-load-hotfix-v854.test.cjs
+          node --test tests/shopping-monthly-coherence-v855.test.cjs
           node tests/food-nutrition-alarm-v795.test.cjs
           node tests/asia-vegetable-family-v796.test.cjs
           node tests/dingsi-lab-v31.test.cjs
