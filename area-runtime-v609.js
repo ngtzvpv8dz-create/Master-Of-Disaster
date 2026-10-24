@@ -53,7 +53,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
-      './food-v544.js?v=866-shopping-category-actions',
+      './food-v544.js?v=868-grocery-layout-and-units',
       './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history',
       './food-extra-snacks-v828.js?v=838-daily-open-jump'
     ],
@@ -62,9 +62,9 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
-      './food-v544.js?v=866-shopping-category-actions',
+      './food-v544.js?v=868-grocery-layout-and-units',
       './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history',
-      './shopping-v678.js?v=866-shopping-category-actions'
+      './shopping-v678.js?v=868-grocery-layout-and-units'
     ],
     kistology:[
       SUPABASE,
@@ -145,10 +145,10 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=866-shopping-category-actions',
+    food:['./food-v544.js?v=868-grocery-layout-and-units',
       './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./food-extra-snacks-v828.js?v=838-daily-open-jump'],
-    shopping:['./food-v544.js?v=866-shopping-category-actions',
-      './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./shopping-v678.js?v=866-shopping-category-actions'],
+    shopping:['./food-v544.js?v=868-grocery-layout-and-units',
+      './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./shopping-v678.js?v=868-grocery-layout-and-units'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=827-finance-style'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
