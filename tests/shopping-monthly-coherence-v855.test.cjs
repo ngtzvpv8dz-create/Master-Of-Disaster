@@ -76,3 +76,20 @@ test('extra rows have no fictional needed date and planned purchases are not cal
   assert.match(source,/Einkauf vorgesehen am /);
   assert.doesNotMatch(source,/Benötigt am /);
 });
+
+
+test('monthly frozen spinach in cart covers the 80g recipe gap and other November needs',()=>{
+  const monthly=general('TK-Blattspinat, Monatsreserve',1500,'g',date,'cart');
+  const gaps=[
+    gap('Blattspinat TK',80,'g','2026-10-28'),
+    gap('Blattspinat TK',180,'g','2026-11-01','later'),
+    gap('Blattspinat TK',240,'g','2026-11-11','later'),
+    gap('Blattspinat TK',280,'g','2026-11-23','later')
+  ];
+  const rows=simulate([monthly,...gaps]);
+  assert.equal(rows.length,1,'The already planned 1500g should cover all listed needs');
+  assert.equal(rows[0],monthly);
+  assert.equal(monthly.general.quantity,1500,'No inventory or cart data is changed');
+  assert.equal(simulate([general('Babyspinat frisch',100,'g'),gap('Blattspinat TK',80,'g','2026-10-28')]).length,2,
+    'Fresh spinach must not cover frozen spinach demand');
+});
