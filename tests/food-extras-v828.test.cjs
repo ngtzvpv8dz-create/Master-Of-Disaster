@@ -92,3 +92,17 @@ test('planned snack accepts pieces but sends underlying recipe in grams',()=>{
   assert.match(food,/unit:pieces\?'g':unit/);
   assert.match(food,/entered\*pieces\.weight/);
 });
+
+
+test('confirmed piece snacks atomically write calories and stock, including edit and delete',()=>{
+  const extra=fs.readFileSync(path.join(__dirname,'..','food-extra-snacks-v828.js'),'utf8');
+  assert.match(extra,/supabase\.rpc\('save_counted_food_extra_v873'/);
+  assert.match(extra,/p_action:'save'/);
+  assert.match(extra,/p_action:'delete'/);
+  assert.match(extra,/p_request_id:newBooked\?requestId:null/);
+  assert.match(extra,/if\(product&&pieceWeight&&oldRow&&!updateBooked\)/);
+  assert.match(extra,/entry\.unit='g'/);
+  assert.match(extra,/await window\.__modFoodV544\?\.reload\?\.\(\)/);
+  assert.match(extra,/countedPieceWeight\(p\)/);
+  assert.match(extra,/data-extra-quantity-caption/);
+});
