@@ -481,9 +481,11 @@
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
       const packageDetails=shoppingPackageSummary(item.purchase_data||{},item.unit);
+      // The retailer recommendation has its own compact UI row, not a second notes paragraph.
+      const cleanNotes=String(item.notes||'').split(/\r?\n/).filter(line=>!line.trim().startsWith('🏬 Empfehlung:')).join('\n').trim();
       const secondary=isStockup
         ?('Heute kaufen'+(item.needed_by?' · Bedarf '+fmtDate(item.needed_by):''))
-        :([item.notes,packageDetails].filter(Boolean).join(' · '));
+        :([cleanNotes,packageDetails].filter(Boolean).join(' · '));
       const timing=isStockup
         ?''
         :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
@@ -509,7 +511,19 @@
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 9.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 7H7"/><circle cx="10" cy="19" r="1.4"/><circle cx="18" cy="19" r="1.4"/></svg>';
   }
 
+  // V851: use the saved purchase_data field directly. Never infer shop availability.
+  function shoppingRetailerHint(row){
+    if(row?.source!=='general')return '';
+    const raw=String(row.general?.purchase_data?.retailer_suggestion||'').trim().toLocaleLowerCase('de-DE');
+    const allowed={rewe:'REWE',edeka:'EDEKA',lidl:'Lidl',fachhandel:'Fachhandel'};
+    return allowed[raw]||'';
+  }
+
   function rowMarkup(row){
+    const retailer=shoppingRetailerHint(row);
+    const retailerLine=retailer
+      ?'<div class="shopping-retailer-line-v851"><small>HÄNDLER-TIPP</small><span class="shopping-retailer-badge-v851" title="Empfehlung, keine bestätigte Filialverfügbarkeit">'+esc(retailer)+'</span></div>'
+      :'';
     const badges=[
       row.category?'<span>'+esc(row.category)+'</span>':'',
       row.source==='food-gap'?'<span>PLAN</span>':'',
@@ -551,6 +565,7 @@
       +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
       +'<span>'+esc(row.secondary||row.timing||'')+'</span>'
       +(row.secondary&&row.timing?'<em>'+esc(row.timing)+'</em>':'')
+      +retailerLine
       +'</div>'
       +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+remove+'</div></div>'
       +'</article>';
