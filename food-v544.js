@@ -1924,15 +1924,63 @@
     return earliest;
   }
 
+  // V869: Net grams remain the canonical lot and nutrition quantity.
+  // An original box with a verified piece count and net weight can be
+  // displayed and consumed in whole pieces without converting the stock unit.
+  function inventoryCountedPieces(item){
+    if(!item||String(item.unit)!=='g')return null;
+    const products=(state?.products||[]).filter(product=>product.active!==false
+      &&String(product.inventory_id||'')===String(item.id||''));
+    const product=products.find(product=>{
+      const meta=product.product_data||{};
+      const pieces=Number(meta.pieces_per_box);
+      const grams=Number(meta.grams_per_piece);
+      const net=Number(meta.net_weight_g);
+      return Number.isInteger(pieces)&&pieces>0&&Number.isFinite(grams)&&grams>0
+        &&Number.isFinite(net)&&net>0
+        &&Math.abs(pieces*grams-net)<0.051;
+    });
+    if(!product)return null;
+    const meta=product.product_data;
+    const weight=Number(meta.grams_per_piece);
+    const net=Number(meta.net_weight_g);
+    const originalPieces=Number(meta.pieces_per_box);
+    const actualGrams=Number(item.quantity);
+    if(!Number.isFinite(actualGrams)||actualGrams<0)return null;
+    const remaining=actualGrams/weight;
+    if(Math.abs(remaining-Math.round(remaining))>0.001
+      ||remaining>originalPieces+0.001)return null;
+    return {
+      remaining:Math.round(remaining),total:originalPieces,
+      weight,net,unitLabel:shoppingPieceLabel(item),
+      stockGrams:actualGrams
+    };
+  }
+  function shoppingPieceLabel(item){
+    return String(item.family_name||'').toLocaleLowerCase('de-DE')==='pralinen'
+      ?'Pralinen':'Stück';
+  }
+
   function inventoryCard(item,nextUses){
     const expanded=expandedInventory.has(String(item.id));
-    const baseQuantity=(item.unit==='Zehe'||item.unit==='Knolle')?fmtQty(item.quantity,item.unit):fmtQty(item.quantity,item.unit);
+    const pieceInfo=inventoryCountedPieces(item);
+    const baseQuantity=pieceInfo
+      ?pieceInfo.remaining+' von '+pieceInfo.total+' '+pieceInfo.unitLabel
+      :fmtQty(item.quantity,item.unit);
     const pending=item.pending_weighing===true;
     const known=num(item.quantity);
     const empty=!pending&&known!==null&&known<=0;
     const quantity=pending
       ?((known!==null&&known>0)?baseQuantity+' + Einkauf noch abwiegen':'Einkauf noch abwiegen')
       :baseQuantity;
+    const pieceDescription=pieceInfo
+      ?'<div class="food-stock-piece-info-v869">Gesamtpackung: '+esc(fmtQty(pieceInfo.net,'g'))
+        +' · 1 '+esc(pieceInfo.unitLabel==='Pralinen'?'Praline':'Stück')
+        +': '+esc(fmtQty(pieceInfo.weight,'g'))
+        +' · Rest: '+esc(fmtQty(pieceInfo.stockGrams,'g'))+'</div>':'';
+    const pieceConsumeAction=pieceInfo&&!empty
+      ?'<button type="button" data-food-piece-consume="'+esc(item.id)+'">'+esc(pieceInfo.unitLabel)+' verbrauchen</button>'
+      :'';
     const freezePlanned=!empty&&/einfrier/i.test(String(item.forecast_label||''));
     const forecast=!empty&&item.forecast_label
       ?(freezePlanned
@@ -1969,7 +2017,7 @@
     const storageAction=!empty&&!hasTrackedLots?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
     const quantityAction=hasTrackedLots?'':'<button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>';
     const addLotAction='<button type="button" data-food-add-lot="'+esc(item.id)+'">+ Charge</button>';
-    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544">'+quantityAction+addLotAction+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+pieceDescription+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544">'+pieceConsumeAction+quantityAction+addLotAction+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -4384,16 +4432,55 @@
   function consumeModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
     if(num(item.quantity)===null){alert('Bitte zuerst die vorhandene Menge eintragen.');return;}
+    const pieces=inventoryCountedPieces(item);
     const bottle=item.name==='Pepsi Zero Cherry'&&item.unit==='l';
     const amount=bottle?1.25:1;
-    addModal('Verbrauch eintragen','<form><p class="food-modal-copy-v544">'+esc(item.name)+' · vorhanden: '+esc(fmtQty(item.quantity,item.unit))+'</p>'+(bottle?'<p class="food-modal-copy-v544">1 Flasche = 1,25 l</p>':'')+'<label>Verbrauchte Menge ('+esc(item.unit)+')<input name="quantity" type="number" min="0.01" max="'+esc(item.quantity)+'" step="0.01" value="'+amount+'" required></label><button class="food-action-v544" type="submit">Vom Vorrat abziehen</button></form>',async form=>{
+    const isCounted=Boolean(pieces);
+    const inputLabel=isCounted?'Verbrauchte '+pieces.unitLabel+' (Stück)':'Verbrauchte Menge ('+item.unit+')';
+    const balance=isCounted
+      ?pieces.remaining+' von '+pieces.total+' '+pieces.unitLabel
+        +' · '+fmtQty(pieces.stockGrams,'g')+' Rest'
+      :fmtQty(item.quantity,item.unit);
+    const step=isCounted?'1':'0.01';
+    const max=isCounted?pieces.remaining:item.quantity;
+    const dialog=addModal('Verbrauch eintragen',
+      '<form><p class="food-modal-copy-v544">'+esc(item.name)+' · vorhanden: '+esc(balance)+'</p>'
+      +(bottle?'<p class="food-modal-copy-v544">1 Flasche = 1,25 l</p>':'')
+      +(isCounted?'<p class="food-modal-copy-v544">1 Stück = '+esc(fmtQty(pieces.weight,'g'))
+        +'. Die Gramm werden automatisch für Vorrat und Nährwerte umgerechnet.</p>':'')
+      +'<label>'+esc(inputLabel)+'<input name="quantity" type="number" min="'+(isCounted?'1':'0.01')
+      +'" max="'+esc(max)+'" step="'+step+'" value="'+amount+'" required></label>'
+      +(isCounted?'<p class="food-modal-copy-v544" data-food-piece-preview></p>':'')
+      +'<button class="food-action-v544" type="submit">Vom Vorrat abziehen</button></form>',
+    async form=>{
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
-      const quantity=Number(form.get('quantity'));
-      if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bitte eine positive Menge eingeben.');
-      const result=await supabase.rpc('consume_food_inventory',{p_inventory_id:id,p_quantity:quantity,p_unit:item.unit,p_expected_quantity:Number(item.quantity)});
+      const entered=Number(form.get('quantity'));
+      if(!Number.isFinite(entered)||entered<=0)throw new Error('Bitte eine positive Menge eingeben.');
+      if(isCounted&&(!Number.isInteger(entered)||entered>pieces.remaining))
+        throw new Error('Bitte eine ganze, verfügbare Stückzahl eingeben.');
+      const quantity=isCounted?Number((entered*pieces.weight).toFixed(5)):entered;
+      if(quantity>Number(item.quantity)+0.00001)
+        throw new Error('So viel ist nicht mehr im Vorrat.');
+      const result=await supabase.rpc('consume_food_inventory',{
+        p_inventory_id:id,p_quantity:quantity,p_unit:item.unit,
+        p_expected_quantity:Number(item.quantity)
+      });
       if(result.error)throw result.error;
       await mutate(()=>result.data);
     });
+    if(isCounted){
+      const input=dialog?.querySelector('input[name="quantity"]');
+      const preview=dialog?.querySelector('[data-food-piece-preview]');
+      const sync=()=>{
+        const count=Number(input?.value)||0;
+        if(preview)preview.textContent=(Number.isInteger(count)&&count>=0
+          ?count+' '+(pieces.unitLabel==='Pralinen'?(count===1?'Praline':'Pralinen'):'Stück')
+            +' = '+fmtQty(Number((count*pieces.weight).toFixed(5)),'g')
+          :'Bitte ganze Stückzahl wählen.');
+      };
+      input?.addEventListener('input',sync);
+      sync();
+    }
   }
 
   async function archiveInventory(id){
@@ -4631,6 +4718,10 @@
     }));
     root.querySelectorAll('[data-food-discard-lot]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();discardInventoryLotModal(button.dataset.foodDiscardLot);
+    }));
+    root.querySelectorAll('[data-food-piece-consume]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();
+      consumeModal(button.dataset.foodPieceConsume);
     }));
     root.querySelectorAll('[data-food-adjust]').forEach(button=>button.addEventListener('click',()=>adjustModal(button.dataset.foodAdjust)));
     root.querySelector('[data-food-add-inventory]')?.addEventListener('click',addInventoryModal);
