@@ -519,7 +519,9 @@
       return '';
     };
     const providers=rows.filter(row=>row.source==='general'&&['now','cart'].includes(row.section))
-      .map(row=>({...row,family:shoppingFamily(row.label),remaining:Number(row.general?.quantity)||0,
+      // Keep a reference to the original display row. Spreading it into a new
+      // object without 'row' made supplier.row undefined and crashed Shopping.
+      .map(row=>({row,family:shoppingFamily(row.label),remaining:Number(row.general?.quantity)||0,
         unit:String(row.general?.unit||'').trim()}));
     const included=[];
     for(const row of rows){
@@ -529,7 +531,7 @@
       const needDate=String(row.neededDate||row.buyFrom||todayIso());
       const supplier=family&&requested>0?providers.find(entry=>{
         if(entry.family!==family||entry.remaining<=0)return false;
-        const scheduled=String(entry.general?.needed_by||todayIso());
+        const scheduled=String(entry.row.general?.needed_by||todayIso());
         if(scheduled>needDate)return false;
         if(family==='cumin'&&row.foodAction?.stockUnit==='g'&&entry.unit==='Glas')
           return entry.remaining>=1;
