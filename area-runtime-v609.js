@@ -55,7 +55,7 @@
       './food-stock-resolver-v746.js?v=816-isoclear-family',
       './food-v544.js?v=871-praline-snack-grid-fix',
       './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history',
-      './food-extra-snacks-v828.js?v=872-praline-dynamic-piece-picker'
+      './food-extra-snacks-v828.js?v=873-auto-stock-snack'
     ],
     shopping:[
       SUPABASE,
@@ -146,7 +146,7 @@
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-v544.js?v=871-praline-snack-grid-fix',
-      './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./food-extra-snacks-v828.js?v=872-praline-dynamic-piece-picker'],
+      './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./food-extra-snacks-v828.js?v=873-auto-stock-snack'],
     shopping:['./food-v544.js?v=871-praline-snack-grid-fix',
       './food-nutrition-v711.js?v=842-history-snapshot-priority-850-product-history','./shopping-v678.js?v=870-snack-pralines-by-piece'],
     kistology:['./kistology-v603.js?v=609-current'],
