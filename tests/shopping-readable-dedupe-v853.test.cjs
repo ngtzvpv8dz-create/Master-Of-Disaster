@@ -37,12 +37,12 @@ test('shopping UI only merges fully covered same-date live food gaps and preserv
 });
 
 test('date and notes get their own readable lines on narrow screens',()=>{
-  assert.match(js,/Benötigt am /);
+  assert.match(js,/Einkauf vorgesehen am /);
   assert.match(js,/shopping-secondary-v853/);
   assert.match(js,/shopping-timing-v853/);
   assert.match(css,/\.shopping-item-meta-v643>\.shopping-secondary-v853/);
   assert.match(css,/white-space:pre-line/);
   assert.match(css,/overflow-wrap:anywhere/);
   assert.match(html,/shopping-v678\.css\?v=853-readable-shopping-cards/);
-  assert.match(runtime,/shopping-v678\.js\?v=854-shopping-load-crash-hotfix/);
+  assert.match(runtime,/shopping-v678\.js\?v=855-shopping-dates-dedupe/);
 });
