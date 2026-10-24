@@ -8,7 +8,7 @@ const start=source.indexOf('    const shoppingFamily=name=>');
 const stop=source.indexOf('    return included;',start);
 assert.ok(start>0&&stop>start,'purchase deduplication in production source');
 const run=new Function('rows','todayIso','fmtDate','fmtQty','collator',
-  'let rowMap;\n'+source.slice(start,stop+'    return included;'.length));
+  'let rowMap; const food={plannedShoppingUses:[]}; const inventory=[]; const shoppingFamilyLabel=x=>x;\n'+source.slice(start,stop+'    return included;'.length));
 const date='2026-10-24',fmtDate=s=>s,fmtQty=(q,u)=>q+' '+u;
 const simulate=rows=>run(rows,()=>date,fmtDate,fmtQty,new Intl.Collator('de-DE'));
 const general=(label,quantity,unit,when=date,section='now')=>({
@@ -43,10 +43,11 @@ test('double items in the user shopping list are covered by ONE actual purchase'
   }
 });
 
-test('do not hide missing excess: buy 500g pepper, need 620g, display 120g additional',()=>{
+test('not hide missing excess: combine buy 500g pepper +120g into one 620g purchase',()=>{
   const result=covered(general('Rote Paprika',500,'g'),gap('Paprika rot',620,'g'));
-  assert.equal(result.length,2);
-  assert.match(result.find(x=>x.source==='food-gap').primary,/120 g/);
+  assert.equal(result.length,1);
+  assert.match(result[0].primary,/620 g/);
+  assert.equal(result[0].checkoutOverrideQuantity,620);
 });
 
 test('can cover near future with a planned later purchase but not old fresh goods',()=>{
@@ -67,7 +68,7 @@ test('one package estimate is visible, while real stock and checkout remain unto
   const row=general('Vollkornbrot',1,'Laib');
   const result=covered(row,gap('Vollkornbrot',200,'g'));
   assert.equal(result.length,1);
-  assert.match(result[0].secondary,/Gebindegröße beim Einkauf prüfen/);
+  assert.match(result[0].secondary,/Packungsgröße prüfen/);
   assert.equal(result[0].general.quantity,1);
 });
 
