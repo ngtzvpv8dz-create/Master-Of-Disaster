@@ -823,33 +823,62 @@
     return lines.join('\n');
   }
 
+  // V866: These badges describe the purchasable item, not the arbitrary
+  // category inherited from a historic recipe or shopping note.
+  function shoppingCategory(row){
+    const n=shoppingNormalize(row.label);
+    const original=String(row.general?.category||row.category||'').trim();
+    if(row.source==='general'&&!String(row.general?.source||'').startsWith('food-')
+      &&!['Lebensmittel','Sonstiges'].includes(original))return original;
+    if(/^(?:tk |.* tk(?: |$)|erbsen tk|kirschen tk|blattsalat tk|edamame tk|beerenmischung tk|blatts pinat tk)/.test(n))
+      return 'Tiefkühlkost';
+    if(/^(?:birne|apfel|apfel fur snacks|kiwi|mandarine|zitrone|limette|avocado|mango|ananas frisch|blaubeer|himbeer|erdbeer|banane|nektarine|pfirsich|traube|orange|pflaume)/.test(n))
+      return 'Obst';
+    if(/^(?:salatgurke|gurke|blattsalat|karotte|paprika|rote paprika|tomaten|rispentomaten|dattelcherry|brokkoli|zucchini|aubergine|kartoffel|zwiebel|radieschen|fruhlingszwiebel|champignon|sellerie|kurbis)/.test(n))
+      return 'Gemüse';
+    if(/^(?:h milch|milch(?: 1 5)?$)/.test(n))return 'Milch';
+    if(/^(?:joghurt|naturjoghurt|skyr|magerquark|quark|frischkase|korniger frischkase|mozzarella|ricotta|halloumi|hirtenkase|feta|schnittkase|butter|ayran)/.test(n))
+      return 'Milchprodukte';
+    if(/^(?:hahnchen|mageres rinderhack|rinderhack|mageres rindfleisch|rindfleisch|hackfleisch|pute|schweinefleisch|lachs|thunfisch frisch)/.test(n))
+      return 'Fleisch & Fisch';
+    if(/^(?:reis|naturreis|langkornreis|paella|quinoa|bulgur|linsen|haselnuss|walnuss|nussmischung|kokosraspeln|hafer|buchweizen|mehl|lasagneplatten|nudeln|penne|spaghetti)/.test(n))
+      return 'Trockenwaren';
+    if(/^(?:vollkornbrot|pide|pita|knusperbrot|mehrkornbrot|brot|wrap)/.test(n))
+      return 'Brot';
+    if(/^(?:pfeffer|oregano|zimt|senf|sojasauce|teriyaki|gochujang|miso|aji|kreuzkummel|paprikapulver|getrocknete minze|salz|schnittlauch|petersilie)/.test(n))
+      return 'Gewürze & Soßen';
+    if(/^(?:mais dose|kichererbsen dose|passierte tomaten|ananas dose|tomatensalsa|passata)/.test(n))
+      return 'Konserven';
+    if(/^eier|^ei grosse|^ei grose/.test(n))return 'Eier';
+    return original==='Lebensmittel'?'':original;
+  }
+
   function rowMarkup(row){
     const retailer=shoppingRetailerHint(row);
     const compactDescription=shoppingCompactDescription(row);
     const retailerLine=retailer
       ?'<div class="shopping-retailer-line-v851"><small>HÄNDLER-TIPP</small><span class="shopping-retailer-badge-v851" title="Empfehlung, keine bestätigte Filialverfügbarkeit">'+esc(retailer)+'</span></div>'
       :'';
+    const categoryLabel=shoppingCategory(row);
     const badges=[
-      row.category?'<span>'+esc(row.category)+'</span>':'',
+      categoryLabel?'<span>'+esc(categoryLabel)+'</span>':'',
       row.source==='food-gap'?'<span>PLAN</span>':'',
       row.flags?.stockup?'<span>VORRAT</span>':'',
       row.flags?.converted?'<span>UMGERECHNET</span>':'',
-      row.flags?.unitMismatch?'<span class="is-warn">EINHEIT PRÜFEN</span>':'',
       row.substitution?'<span class="is-substitute-v698">ERSATZ</span>':''
     ].filter(Boolean).join('');
 
-    const completeAction=row.inCart
-      ?''
-      :row.source==='general'
-        ?'<button type="button" data-shopping-done="'+esc(row.id)+'">✓ Erledigt</button>'
-        :row.foodAction
-          ?'<button type="button" data-shopping-food-complete="'+esc(row.id)+'">Vorrat korrigieren</button>'
-          :'<button type="button" data-shopping-food-check="'+esc(row.id)+'">✓ Abhaken</button>';
-
-    const postpone=row.source==='general'&&row.section!=='cart'&&row.section!=='extra'
-      ?'<button type="button" data-shopping-later="'+esc(row.id)+'">'+(row.section==='later'?'Heute':'Später')+'</button>'
+    // The cart/receipt flow is the sole way to record a purchase.
+    // "Erledigt" previously hid purchases without booking inventory;
+    // "Vorrat korrigieren" edited stock without the receipt flow.
+    // Neither belongs on a grocery shopping card.
+    const completeAction=row.section==='extra'
+      &&row.source==='general'&&row.general?.source==='manual'
+      ?'<button type="button" data-shopping-done="'+esc(row.id)+'">✓ Erledigt</button>'
       :'';
-
+    const postpone='';
+    // Only persisted user-edited entries can be deleted. Recipe deficits
+    // are calculated and would reappear if silently removed.
     const remove=row.source==='general'
       ?'<button type="button" class="is-quiet" data-shopping-delete="'+esc(row.id)+'">Entfernen</button>'
       :'';
@@ -867,6 +896,7 @@
       +substitution
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
       +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701 has-stock-lines-v755':'')+'">'
+      +(row.flags?.unitMismatch?'<div class="shopping-unit-warning-v866" role="note">Einheit prüfen</div>':'')
       +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
       +(compactDescription?'<span class="shopping-secondary-v853">'+esc(compactDescription)+'</span>':'')
       +retailerLine
