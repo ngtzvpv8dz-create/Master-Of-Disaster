@@ -28,7 +28,7 @@ test('the actual shopping buildRows block does not crash when 330g beef deficit 
  const result=simulate([gap('beef-gap','Mageres Rinderhack 5 %',330),purchase]);
  assert.equal(result.length,1);
  assert.strictEqual(result[0],purchase,'update the real row, not a detached spread');
- assert.match(result[0].secondary,/Planbedarf ab 2026-10-24: 330 g/);
+ assert.match(result[0].secondary,/Abgedeckter Rezeptbedarf 2026-10-24: 330 g/);
  assert.equal(result[0].currentStock,'Aktuell im Vorrat 0 g');
 });
 
