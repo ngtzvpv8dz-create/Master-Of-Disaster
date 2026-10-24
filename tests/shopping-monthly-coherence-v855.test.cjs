@@ -93,3 +93,42 @@ test('monthly frozen spinach in cart covers the 80g recipe gap and other Novembe
   assert.equal(simulate([general('Babyspinat frisch',100,'g'),gap('Blattspinat TK',80,'g','2026-10-28')]).length,2,
     'Fresh spinach must not cover frozen spinach demand');
 });
+
+
+test('whole shopping purchases absorb the concrete recipe needs, not two lines',()=>{
+  const recipes=[
+    [general('Hähnchenbrustfilet',500,'g','2026-10-28'),gap('Hähnchenbrustfilet',550,'g','2026-10-29'),550],
+    [general('Mageres Rinderhack (ca. 5 % Fett)',250,'g','2026-10-28'),gap('Mageres Rinderhack (ca. 5 % Fett)',260,'g','2026-10-28'),260],
+    [general('Tomaten (frisch, Sorte prüfen)',500,'g','2026-10-28'),gap('Tomaten (frisch, Sorte prüfen)',605,'g','2026-10-28'),605],
+    [general('Ricotta',250,'g','2026-11-11'),gap('Ricotta',110,'g','2026-11-11'),null],
+    [general('Edamame TK (ohne Schote)',300,'g','2026-11-11'),gap('Edamame TK (ohne Schote)',130,'g','2026-11-11'),null],
+    [general('Mozzarella Light',200,'g','2026-11-11'),gap('Mozzarella Light',45,'g','2026-11-11'),null],
+    [general('Hummus',150,'g','2026-11-06'),gap('Hummus',90,'g','2026-11-07'),null],
+    [general('Quinoa',250,'g','2026-11-06'),gap('Quinoa',120,'g','2026-11-07'),null],
+    [general('Gochujang',1,'Glas','2026-11-04'),gap('Gochujang',10,'g','2026-11-05'),null]
+  ];
+  for(const [g,f,total] of recipes){
+    const rows=covered(g,f);
+    assert.equal(rows.length,1,g.label+' must be one line');
+    if(total!==null)assert.equal(rows[0].checkoutOverrideQuantity,total,g.label+' checkout matches display');
+  }
+});
+test('unverified gram-to-bottle/fruit purchases show one caution, not a fictional conversion',()=>{
+  for(const [g,f] of [
+    [general('Kiwi',5,'Stück','2026-10-30'),gap('Kiwi',110,'g','2026-10-30')],
+    [general('Sojasauce',1,'Flasche','2026-11-04'),gap('Sojasauce',35,'ml','2026-11-05')],
+    [general('Mais (Dose)',1,'Dose','2026-10-30'),gap('Mais (Dose)',80,'g','2026-10-31')]
+  ]){
+    const rows=covered(g,f);
+    assert.equal(rows.length,1,g.label+' needs one real purchase row');
+    assert.equal(rows[0].flags.unitMismatch,true,'Unknown package conversion must be visible');
+  }
+});
+test('frozen green beans and brown rice are never combined with fresh beans or white rice',()=>{
+  assert.equal(covered(
+    general('Grüne Bohnen (Zubereitungsform prüfen)',400,'g','2026-11-18'),
+    gap('Grüne Bohnen TK',310,'g','2026-11-18')).length,2);
+  assert.equal(covered(
+    general('Langkornreis (trocken)',500,'g','2026-10-28'),
+    gap('Naturreis (trocken)',110,'g','2026-10-28')).length,2);
+});
