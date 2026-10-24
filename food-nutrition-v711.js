@@ -422,6 +422,11 @@
         let related=familyRows;
         if(requested==='fresh')related=related.filter(row=>rowMode(row)!=='frozen');
         if(requested==='frozen')related=related.filter(row=>rowMode(row)==='frozen');
+        // V876: Bei Familien mit Stückvorrat und Gramm-Rezeptmenge (z. B. Apfel)
+        // nur tatsächlich vorhandene Sorten betrachten. 0 Granny Smith darf
+        // 6 Pink Lady nicht zu einem falschen "Nährwerte fehlen" machen.
+        const available=related.filter(row=>number(row.quantity)>0);
+        if(available.length)related=available;
         const currentProducts=related.map(row=>productForStock(row,data)).filter(Boolean);
         product=chooseProduct(currentProducts);
       }
