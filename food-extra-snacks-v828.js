@@ -131,7 +131,7 @@
         ].map(([key,label,required])=>'<label>'+label+'<input name="'+key+'" type="number" min="0" step="0.01" inputmode="decimal" '+(required?'required':'')+'></label>').join('')+'</div>')+
       '<div class="food-extra-actions-v828"><button type="submit" data-extra-save>✓ '+(editing?'Änderung speichern':'Zusatz eintragen')+'</button>'+
       '<button type="button" data-extra-cancel>Abbrechen</button></div>'+
-      '<small>Nur tatsächlich verzehrte Extras eintragen. Der Vorrat wird hierbei nicht automatisch abgebucht.</small>'+
+      '<small>Pralinen mit bestätigtem Stückgewicht: Snack und Vorrat werden gemeinsam gebucht. Bei anderen Extras erfolgt keine automatische Vorratsbuchung.</small>'+
     '</form>';
   }
   function rowsHtml(){
