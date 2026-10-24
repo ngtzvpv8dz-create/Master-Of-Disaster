@@ -2730,16 +2730,31 @@
         const name=ingredientName(item);
         if(isNonShoppingIngredient(name))return;
         const unit=String(item.unit||'').trim();
-        // Use the product's saved edible weight per piece. This applies to
-        // bananas, Granny Smith apples and every other piece-counted product
-        // with a verified weight; nutrition per 100 g remains independent.
+        // Recipe nutrition remains in grams, but grocery stock counts whole fruit.
+        // Generic apple recipes have no inventory_id: use the actual available
+        // apple-family variety (e.g. 6 Pink Lady), not an unrelated apple SKU.
         const linkedStock=inventoryByIdForShopping.get(item.inventory_id)||null;
-        const pieceData=productsByInventoryId.get(item.inventory_id)?.product_data||{};
-        const pieceWeight=Number(pieceData.edible_weight_per_piece_g||pieceData.piece_weight_g);
-        const gramsToPieces=unit==='g'&&linkedStock?.unit==='Stück'
+        const genericApple=unit==='g'&&!item.inventory_id
+          &&['apfel','äpfel'].includes(normalizedIngredient(name,unit));
+        const appleFamilyStock=genericApple
+          ?(data.inventory||[])
+            .filter(stock=>stock.is_active!==false&&stock.unit==='Stück'
+              &&normalizedIngredient(stock.family_name)==='apfel')
+            .sort((a,b)=>Math.max(0,Number(b.quantity)||0)-Math.max(0,Number(a.quantity)||0))[0]||null
+          :null;
+        const pieceStock=linkedStock||appleFamilyStock;
+        const pieceData=productsByInventoryId.get(pieceStock?.id)?.product_data||{};
+        const pieceWeight=Number(pieceData.edible_weight_per_piece_g
+          ||pieceData.edible_weight_per_piece_estimated_g||pieceData.piece_weight_g);
+        const gramsToPieces=unit==='g'&&pieceStock?.unit==='Stück'
           &&Number.isFinite(pieceWeight)&&pieceWeight>0;
         const shoppingUnit=gramsToPieces?'Stück':unit;
-        const shoppingQuantity=gramsToPieces?quantity/pieceWeight:quantity;
+        // The saved 150 g Pink Lady weight is estimated. A 160 g snack is
+        // one fruit, not two; allow 10% size variation when budgeting pieces.
+        // Linked products keep their existing exact gram-to-piece behaviour.
+        const shoppingQuantity=gramsToPieces
+          ?(genericApple?Math.max(1,Math.ceil(quantity/(pieceWeight*1.1)-1e-8)):quantity/pieceWeight)
+          :quantity;
         // Isoclear flavours share availability but not nutritional metadata.
         // Count their combined stock ONCE and merge demand into one family key.
         const isIsoclearFamily=String(linkedStock?.family_name||'').trim().toLocaleLowerCase('de-DE')
