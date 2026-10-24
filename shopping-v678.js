@@ -595,11 +595,13 @@
       if(/^zimt( gemahlen)?$/.test(n))return 'cinnamon';
       if(/^butter(?: \d+ ?g)?$/.test(n))return 'butter';
       if(/^ayran/.test(n))return 'ayran';
+      if(/^h milch(?: 1 5)?$|^milch(?: 1 5)?$/.test(n))return 'milk_15';
       if(/eier? (gro(?:ss)e )?m$/.test(n))return 'eggs_m';
       if(/hahnchenbrust(?:filet)?/.test(n))return 'chicken_breast';
       if(/mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5/.test(n))return 'lean_beef_mince';
       if(/^karotten(?: frisch| warm| roh| rohkost)?$/.test(n))return 'carrots';
       if(/^naturjoghurt/.test(n))return 'plain_yogurt';
+      if(/^frischkase(?: leicht)?$/.test(n))return 'cream_cheese';
       if(/^joghurt griechischer art/.test(n))return 'greek_yogurt_2pct';
       if(/^skyr natur$/.test(n))return 'skyr';
       if(/^(?:passata|passierte tomaten)/.test(n))return 'passata';
@@ -649,6 +651,31 @@
       return n?'exact:'+n:'';
 
     };
+    // Only dates of real planned recipes can be used as buying reasons.
+    // This never books food, assumes pack contents, or creates stock movements.
+    const firstRecipeUseByFamily=new Map();
+    (food.plannedShoppingUses||[]).forEach(use=>{
+      const date=String(use.date||'').slice(0,10);
+      if(!date||date<todayIso())return;
+      const family=shoppingFamily(shoppingFamilyLabel(use.name));
+      if(!family)return;
+      if(!firstRecipeUseByFamily.has(family))firstRecipeUseByFamily.set(family,[]);
+      firstRecipeUseByFamily.get(family).push(date);
+    });
+    firstRecipeUseByFamily.forEach(dates=>dates.sort());
+    rows.filter(row=>row.source==='general'
+        &&row.general?.source!=='manual'
+        &&row.category!=='Haushalt'&&row.category!=='Drogerie'
+        &&row.category!=='Technik')
+      .forEach(row=>{
+        const family=shoppingFamily(row.label);
+        const useDates=firstRecipeUseByFamily.get(family)||[];
+        const shoppingDate=String(row.general?.needed_by||todayIso());
+        const next=useDates.find(date=>date>=shoppingDate);
+        if(next)row.nextUseDate=next;
+        else if(row.section==='later'&&row.general?.source==='food-stockup'
+          &&useDates.length===0)row.unmatchedPlannedPurchase=true;
+      });
     const stockStable=new Set([
       'cumin','dried_mint','cinnamon','passata','tk_berries','frozen_spinach',
       'brown_rice','longgrain_rice','paella_rice','pepper','soy_sauce',
