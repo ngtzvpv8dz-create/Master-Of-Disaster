@@ -28,7 +28,11 @@ const context={
   regularShoppingDate:date=>dateToShopping[date]||date,
   // Fruit test does not use the short-lived berries rule.
   freshConsumptionWindowDays:()=>null,
-  ingredientStockInfo:(need,_rows,byId)=>{
+  ingredientStockInfo:(need,rows,byId)=>{
+    const family=need.name==='Apfel'&&need.unit==='Stück'
+      ?rows.filter(row=>row.family_name==='Apfel'&&row.unit==='Stück'&&row.is_active!==false)
+      :[];
+    if(family.length)return {stock:null,available:family.reduce((sum,row)=>sum+Number(row.quantity||0),0),unitMismatch:false,family:true,converted:false};
     const stock=byId.get(need.inventory_id);
     const unitMismatch=Boolean(stock&&stock.unit!==need.unit);
     return {stock,available:unitMismatch?0:Number(stock?.quantity||0),unitMismatch,family:false,converted:false};
@@ -86,6 +90,25 @@ const appleShort=context.deriveShopping({inventory:[apple],products:[appleProduc
 assert.equal(appleShort.length,1);
 assert.equal(appleShort[0].unit,'Stück');
 assert.equal(appleShort[0].missing,1,'Shopping must round apple purchase up to one whole apple');
+
+const pink={id:'pink-lady',name:'Pink Lady',family_name:'Apfel',quantity:6,unit:'Stück',is_active:true};
+const pinkProduct={inventory_id:'pink-lady',active:true,product_data:{edible_weight_per_piece_estimated_g:150}};
+const genericApples=[
+  ['2026-10-10',160],['2026-10-11',160],['2026-10-12',160],
+  ['2026-10-16',150],['2026-10-19',120],['2026-10-22',160]
+].map(([date,quantity])=>({
+  meal_date:date,meal_type:'snack',status:'planned',
+  ingredients:[{name:'Apfel',quantity,unit:'g',inventory_id:null}]
+}));
+assert.equal(context.deriveShopping({inventory:[pink],products:[pinkProduct],meals:genericApples}).length,0,
+  'Six in-stock Pink Lady apples cover six generic gram-based apple meals');
+const appleAfterSix={...genericApples[5],ingredients:[{name:'Apfel',quantity:250,unit:'g',inventory_id:null}]};
+const laterGaps=context.deriveShopping({inventory:[pink],products:[pinkProduct],meals:[...genericApples,appleAfterSix]});
+assert.equal(laterGaps.length,1,'Additional apples appear only once six pieces are already planned');
+assert.equal(laterGaps[0].unit,'Stück','Generic apples must be counted in pieces, never grams');
+assert.equal(laterGaps[0].missing,2,'250g edible apple needs about two pieces, not 250 pieces');
+assert.equal(laterGaps[0].currentAvailable,6,'Current Pink Lady inventory remains exactly six apples');
+
 
 const nutritionSource=fs.readFileSync(path.join(__dirname,'..','food-nutrition-v711.js'),'utf8');
 const basisStart=nutritionSource.indexOf('  function basisAmount(item,source){');
