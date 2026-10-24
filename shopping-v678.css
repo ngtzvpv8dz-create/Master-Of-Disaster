@@ -854,3 +854,28 @@
   font-style:normal;
   color:#b6a48b;
 }
+
+
+/* V866: a full-width unit warning directly below the product name and
+   above the inventory line, not squeezed between footer action buttons. */
+.shopping-item-meta-v643>.shopping-unit-warning-v866{
+  display:block;
+  box-sizing:border-box;
+  width:fit-content;
+  max-width:100%;
+  min-width:0;
+  padding:4px 8px;
+  margin:0 0 3px;
+  border:1px solid rgba(217,160,116,.30);
+  border-radius:7px;
+  background:rgba(217,160,116,.075);
+  color:#edbe94;
+  font-size:.57rem;
+  font-weight:800;
+  letter-spacing:.01em;
+  line-height:1.35;
+  white-space:normal;
+  overflow:visible;
+  overflow-wrap:break-word;
+}
+.shopping-item-v643 .shopping-actions-v643:empty{display:none}
