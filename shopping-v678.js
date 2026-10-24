@@ -55,6 +55,57 @@
   };
   const manualFoodKey=item=>'manual:'+String(item?.id||'');
 
+  // V858: Store exact product/inventory identities separately from shopping names.
+  // Preparation text ('warm', 'abgetropft', 'essbar') is not sold as a product.
+  const shoppingNormalize=value=>String(value||'').toLocaleLowerCase('de-DE')
+    .replace(/ß/g,'ss').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+  function shoppingFamilyLabel(value){
+    const n=shoppingNormalize(value);
+    if(/^(?:gurke|salatgurke)(?: frisch)?$/.test(n))return 'Salatgurke';
+    if(/^blattsalat(?: frisch| roh)?$/.test(n))return 'Blattsalat (frisch)';
+    if(/^hahnchenbrust(?:filet)?(?: frisch)?$/.test(n))return 'Hähnchenbrustfilet';
+    if(/^(?:mageres? )?(?:rinderhack(?:fleisch)?|hackfleisch)(?: 5(?: fett)?)?$/.test(n))return 'Mageres Rinderhack (ca. 5 % Fett)';
+    if(/^joghurt griechischer art(?: 2)?$/.test(n))return 'Joghurt griechischer Art (2 % Fett)';
+    if(/^naturjoghurt(?: fettarm)?(?: 1 5)?$/.test(n))return 'Naturjoghurt mild (1,5 % Fett)';
+    if(/^kiwi(?: essbar)?$/.test(n))return 'Kiwi';
+    if(/^mango(?: essbar)?$/.test(n))return 'Mango';
+    if(/^pide ?fladen(?:brot)?$/.test(n))return 'Pide-Fladenbrot';
+    if(/^pita(?: taschen)?$/.test(n))return 'Pita-Taschen';
+    if(/^reis fit naturreis$|^naturreis$/.test(n))return 'Naturreis (trocken)';
+    if(n==='reis')return 'Langkornreis (trocken)';
+    if(/^paella langkornreis$/.test(n))return 'Paella-/Langkornreis (trocken)';
+    if(/^pfeffer(?: schwarz)?(?: gemahlen)?$/.test(n))return 'Pfeffer schwarz (für die Mühle)';
+    if(/^schnittkase(?: frisch)?$/.test(n))return 'Schnittkäse';
+    if(/^vollkornbrot(?: frisch)?$/.test(n))return 'Vollkornbrot';
+    if(/^mozzarella(?: light| leicht)?$/.test(n))return 'Mozzarella Light';
+    if(/^karotten(?: rohkost| warm| roh| frisch)?$/.test(n))return 'Karotten (frisch)';
+    if(/^mais(?: abgetropft)?$/.test(n))return 'Mais (Dose)';
+    if(/^kichererbsen(?: abgetropft)?$/.test(n))return 'Kichererbsen (Dose)';
+    if(/^lasagneplatten(?: trockenanteil)?$/.test(n))return 'Lasagneplatten (trocken)';
+    if(/^ananas(?: im eigenen saft)?$/.test(n))return 'Ananas (Dose, im eigenen Saft)';
+    if(/^sojasosse$|^sojasauce$/.test(n))return 'Sojasauce';
+    if(/^edamame tk ohne schote$/.test(n))return 'Edamame TK (ohne Schote)';
+    if(/^tk erbsen$/.test(n))return 'Erbsen TK';
+    if(/^tk kirschen$/.test(n))return 'Kirschen TK';
+    if(/^grune bohnen tk$/.test(n))return 'Grüne Bohnen TK';
+    if(/^grune bohnen$/.test(n))return 'Grüne Bohnen (Zubereitungsform prüfen)';
+    if(/^passata(?: \d+ g)?$|^passierte tomaten$/.test(n))return 'Passierte Tomaten (Passata)';
+    if(/^oregano (?:gerebelt|gerieben)$/.test(n))return 'Oregano gerebelt';
+    if(/^tomatensalsa$/.test(n))return 'Tomatensalsa (Sorte prüfen)';
+    if(/^apfel$|^apfel fur snacks$|^apfel snacks$/.test(n))return 'Äpfel (Stück)';
+    if(/^mandarinen?$/.test(n))return 'Mandarinen (Stück)';
+    if(/^nussmischung(?: ohne zucker)?$/.test(n))return 'Nussmischung (ungesüßt, Zutaten prüfen)';
+    if(/^schnittlauch$/.test(n))return 'Schnittlauch (Bund)';
+    if(/^limetten?$/.test(n))return 'Limette';
+    if(/^zitronen?$/.test(n))return 'Zitrone';
+    if(/^avocado(?: hass frisch)?$/.test(n))return 'Avocado Hass (Stück)';
+    if(/^tk blattspinat(?: monatsreserve)?$|^blattspinat tk$/.test(n))return 'Blattspinat TK';
+    if(/^tomaten(?: warm| roh| frisch)?$/.test(n))return 'Tomaten (frisch, Sorte prüfen)';
+    return String(value||'').trim();
+  }
+
+
   function client(){
     try{return typeof window.getSupabaseClient==='function'?window.getSupabaseClient():null;}
     catch(_){return null;}
@@ -416,16 +467,17 @@
         :'';
       const packSuggestion=shoppingPackSuggestion(item);
       rows.push({
-        id:'food-gap:'+key,key,source:'food-gap',label:item.label||'Lebensmittel',
+        id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
         currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
-        secondary:(usePlan?'Bedarf: '+usePlan:'Planbedarf '+fmtQty(item.required,item.unit))+reservedNote+(packSuggestion?' · '+packSuggestion:''),
+        secondary:(usePlan?'Rezeptbedarf:\n'+usePlan.replace(/ · /g,'\n'):'Planbedarf: '+fmtQty(item.required,item.unit))
+          +(reservedNote?'\n'+reservedNote.trim():'')+(packSuggestion?'\n'+packSuggestion:''),
         timing:(item.shortageDate
-          ?((delayed?'Kaufen ab '+fmtDate(item.buyFrom)+' · ':'')+'Fehlt ab '+fmtDate(item.shortageDate))
+          ?((delayed?'Kaufen ab '+fmtDate(item.buyFrom)+'\n':'')+'Bedarf spätestens: '+fmtDate(item.shortageDate))
           :(delayed?'Kaufen ab '+fmtDate(item.buyFrom):''))
           +(item.freshWindowDays&&item.shortageDate
-            ?' · Frischware: '+fmtDate(item.buyFrom)+' bis '+fmtDate(item.shortageDate)
+            ?'\nFrischware: '+fmtDate(item.buyFrom)+' bis '+fmtDate(item.shortageDate)
              +' vor Verzehr kaufen (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)'
             :''),
         buyFrom:item.buyFrom||null,neededDate:item.shortageDate||null,
@@ -467,7 +519,7 @@
       }
 
       rows.push({
-        id:'food-manual:'+item.id,key,source:'food-manual',label:item.label||'Food',
+        id:'food-manual:'+item.id,key,source:'food-manual',label:shoppingFamilyLabel(item.label||'Food'),
         section:inCart?'cart':'now',inCart,primary,secondary,timing:'',
         buyFrom:null,neededDate:null,
         category:'Lebensmittel',foodAction,shoppingId:item.id,flags
@@ -496,7 +548,7 @@
         ?''
         :(item.needed_by?'Einkauf vorgesehen am '+fmtDate(item.needed_by):'');
       rows.push({
-        id:'general:'+item.id,key:'general:'+item.id,source:'general',label:item.label,
+        id:'general:'+item.id,key:'general:'+item.id,source:'general',label:shoppingFamilyLabel(item.label),
         section,inCart:section==='cart',primary:section==='extra'?(quantity||item.category||'Wunsch'):(quantity?('Kaufen '+quantity):'Kaufen'),
         secondary,timing,
         buyFrom:item.status==='later'?(item.needed_by||null):null,neededDate:item.needed_by||null,
