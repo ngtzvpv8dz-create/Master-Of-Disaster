@@ -3841,9 +3841,9 @@
         +'<select data-food-planned-add-inventory>'+plannedMealInventoryOptions()+'</select>'
         +'<input data-food-planned-add-quantity type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Menge">'
         +'<input data-food-planned-add-unit placeholder="g, ml, Stück …">'
-        +'<small data-food-planned-piece-hint hidden></small>'
         +'<button type="button" class="food-planned-remove-v729" data-food-planned-add-remove>Entfernen</button>'
       +'</div>'
+      +'<small data-food-planned-piece-hint hidden></small>'
     +'</div>';
   }
 
