@@ -526,7 +526,7 @@
       if(/(?:hahnchen|huhner)brust/.test(n))return 'chicken_breast';
       if(/(?:mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5)/.test(n))return 'lean_beef_mince';
       if(/^karotten(?: frisch| warm| roh)?$/.test(n))return 'carrots';
-      if(/^naturjoghurt(?: fettarm(?: 1 5)?)?$/.test(n))return 'plain_yogurt';
+      if(/^naturjoghurt(?: (?:fettarm )?1 5)?$/.test(n))return 'plain_yogurt';
       if(/^skyr natur$/.test(n))return 'skyr';
       if(/^(?:passata|passierte tomaten)(?: \d+ ?g)?$/.test(n))return 'passata';
       if(/^rote paprika$|^paprika rot$|^paprika frisch rot$|^paprika bunt$/.test(n))return 'red_pepper';
