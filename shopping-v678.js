@@ -676,6 +676,33 @@
         else if(row.section==='later'&&row.general?.source==='food-stockup'
           &&useDates.length===0)row.unmatchedPlannedPurchase=true;
       });
+    // Show the real inventory for scheduled purchases as well as recipe gaps.
+    // Never fake a stock quantity when the only available unit is incompatible.
+    rows.filter(row=>row.source==='general'&&String(row.general?.source||'').startsWith('food-'))
+      .forEach(row=>{
+        if(row.currentStock)return;
+        const family=shoppingFamily(row.label);
+        if(!family)return;
+        const matches=inventory.filter(item=>shoppingFamily(shoppingFamilyLabel(item.name))===family
+          ||(item.family_name&&shoppingFamily(shoppingFamilyLabel(item.family_name))===family));
+        const requestedUnit=String(row.general?.unit||'').trim();
+        const amounts=new Map();
+        for(const item of matches){
+          const quantity=Math.max(0,Number(item.quantity)||0);
+          const originalUnit=String(item.unit||'').trim();
+          let targetUnit=requestedUnit,converted=quantity;
+          if(originalUnit===requestedUnit){}
+          else if(originalUnit==='kg'&&requestedUnit==='g')converted=quantity*1000;
+          else if(originalUnit==='g'&&requestedUnit==='kg')converted=quantity/1000;
+          else if(originalUnit==='l'&&requestedUnit==='ml')converted=quantity*1000;
+          else if(originalUnit==='ml'&&requestedUnit==='l')converted=quantity/1000;
+          else targetUnit=originalUnit;
+          amounts.set(targetUnit,(amounts.get(targetUnit)||0)+converted);
+        }
+        if(!amounts.size)row.currentStock='Aktuell im Vorrat 0 '+requestedUnit;
+        else row.currentStock='Aktuell im Vorrat '+[...amounts.entries()]
+          .map(([unit,qty])=>fmtQty(qty,unit)).join(' + ');
+      });
     const stockStable=new Set([
       'cumin','dried_mint','cinnamon','passata','tk_berries','frozen_spinach',
       'brown_rice','longgrain_rice','paella_rice','pepper','soy_sauce',
@@ -776,6 +803,8 @@
       }
       included.push(row);
     }
+    included.filter(row=>row.unmatchedPlannedPurchase&&row.source==='general')
+      .forEach(row=>{row.primary='Plan prüfen: '+fmtQty(row.general.quantity,row.general.unit);});
     included.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
     rowMap=new Map(included.map(row=>[row.id,row]));
     return included;
@@ -805,7 +834,13 @@
         .filter(line=>!/(filialbestand nicht gepruft|filialbestand nicht geprüft)/i.test(line));
       return raw.slice(0,2).join('\n').trim();
     }
-    if(row.section==='extra')return String(row.secondary||'').split(/\r?\n/).slice(0,2).join('\n');
+    if(row.section==='extra'){
+      if(/(?:hahnchenbrust|rinderhack)/.test(shoppingNormalize(row.label))
+        &&/monats tk/i.test(String(row.general?.label||row.label)))
+        return 'Optional · Portionieren und einfrieren, nur bei Gefrierplatz';
+      return String(row.secondary||'').split(/\r?\n/).slice(0,2).join('\n');
+    }
+    if(row.unmatchedPlannedPurchase)return 'Kein passender Rezeptbedarf gefunden · Kauf prüfen';
     const lines=[];
     const when=row.nextUseDate||(!row.general&&row.neededDate)||null;
     if(when)lines.push('Nächster Bedarf: '+fmtDate(when));
