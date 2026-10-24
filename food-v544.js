@@ -202,7 +202,7 @@
 
   const NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser']);
   const isNonShoppingIngredient=name=>NON_SHOPPING_INGREDIENTS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
-  const SHOPPING_DATE_OVERRIDES={'2026-10-03':'2026-10-02','2026-10-17':'2026-10-16'};
+  const SHOPPING_DATE_OVERRIDES={'2026-10-03':'2026-10-02','2026-10-17':'2026-10-16','2026-11-07':'2026-11-06'};
   const SHOPPING_OVERDUE_LOOKBACK_DAYS=7;
   const recentPlanningStartIso=()=>plusDays(todayIso(),-SHOPPING_OVERDUE_LOOKBACK_DAYS);
   const regularShoppingDate=(iso,mealType='')=>{
@@ -2734,15 +2734,19 @@
         // Generic apple recipes have no inventory_id: use the actual available
         // apple-family variety (e.g. 6 Pink Lady), not an unrelated apple SKU.
         const linkedStock=inventoryByIdForShopping.get(item.inventory_id)||null;
-        const genericApple=unit==='g'&&!item.inventory_id
-          &&['apfel','äpfel'].includes(normalizedIngredient(name,unit));
-        const appleFamilyStock=genericApple
+        const namedFruit=normalizedIngredient(name,unit).toLocaleLowerCase('de-DE');
+        const fruitFamily=unit==='g'&&!item.inventory_id
+          ?(['apfel','äpfel'].includes(namedFruit)?'apfel'
+            :namedFruit==='mandarine'?'mandarinen/clementinen'
+            :namedFruit==='avocado'?'avocado':null)
+          :null;
+        const fruitFamilyStock=fruitFamily
           ?(data.inventory||[])
             .filter(stock=>stock.is_active!==false&&stock.unit==='Stück'
-              &&normalizedIngredient(stock.family_name)==='apfel')
+              &&normalizedIngredient(stock.family_name)===fruitFamily)
             .sort((a,b)=>Math.max(0,Number(b.quantity)||0)-Math.max(0,Number(a.quantity)||0))[0]||null
           :null;
-        const pieceStock=linkedStock||appleFamilyStock;
+        const pieceStock=linkedStock||fruitFamilyStock;
         const pieceData=productsByInventoryId.get(pieceStock?.id)?.product_data||{};
         const pieceWeight=Number(pieceData.edible_weight_per_piece_g
           ||pieceData.edible_weight_per_piece_estimated_g||pieceData.piece_weight_g);
@@ -2753,7 +2757,7 @@
         // one fruit, not two; allow 10% size variation when budgeting pieces.
         // Linked products keep their existing exact gram-to-piece behaviour.
         const shoppingQuantity=gramsToPieces
-          ?(genericApple?Math.max(1,Math.ceil(quantity/(pieceWeight*1.1)-1e-8)):quantity/pieceWeight)
+          ?(fruitFamily?Math.max(1,Math.ceil(quantity/(pieceWeight*1.1)-1e-8)):quantity/pieceWeight)
           :quantity;
         // Isoclear flavours share availability but not nutritional metadata.
         // Count their combined stock ONCE and merge demand into one family key.
