@@ -10,7 +10,7 @@ const runtime=fs.readFileSync(path.join(__dirname,'../area-runtime-v609.js'),'ut
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 
 const anchor=js.indexOf('    const shoppingFamily=name=>');
-const end=js.indexOf('    const providers=rows.filter',anchor);
+const end=js.indexOf('    // Only dates of real planned recipes',anchor);
 assert.ok(anchor>0&&end>anchor,'dedupe shopping family resolver in real source');
 const shoppingFamily=new Function(js.slice(anchor,end)+'\nreturn shoppingFamily')();
 
@@ -62,6 +62,33 @@ test('shopping cards show only the next recipe date and one useful package hint'
   assert.match(js,/compactDescription=shoppingCompactDescription\(row\)/);
   assert.match(css,/white-space:pre-line/);
   assert.match(css,/overflow-wrap:anywhere/);
-  assert.match(html,/shopping-v678\.css\?v=853-readable-shopping-cards/);
-  assert.match(runtime,/shopping-v678\.js\?v=864-one-next-need/);
+  assert.match(html,/shopping-v678\.css\?v=866-shopping-unit-above-stock/);
+  assert.match(runtime,/shopping-v678\.js\?v=866-shopping-category-actions/);
+});
+
+
+test('food labels use consistent categories across source tables',()=>{
+  const prefix=js.slice(js.indexOf('  const shoppingNormalize=value=>'),js.indexOf('  function client(){'));
+  const fn=js.slice(js.indexOf('  function shoppingCategory(row){'),js.indexOf('  function rowMarkup(row){'));
+  const classify=new Function(prefix+fn+'\nreturn shoppingCategory')();
+  for(const [label,expected] of [
+    ['Birne','Obst'],['Blattsalat (frisch)','Gemüse'],['Salatgurke','Gemüse'],
+    ['H-Milch 1,5 %','Milch'],['Naturjoghurt mild (1,5 % Fett)','Milchprodukte'],
+    ['Langkornreis (lose, trocken)','Trockenwaren'],
+    ['Naturreis (lose, trocken)','Trockenwaren'],['Paprika rot','Gemüse'],
+    ['Hähnchenbrustfilet','Fleisch'],['Edamame TK (ohne Schote)','Tiefkühlkost']
+  ]){
+    assert.equal(classify({label,source:'food-gap',category:'Lebensmittel'}),expected,label);
+  }
+});
+
+test('food shopping cards have only the cart action; warning has a full line above stock',()=>{
+  const block=js.slice(js.indexOf('  function rowMarkup(row){'),js.indexOf('  function sectionMarkup('));
+  assert.match(block,/data-shopping-cart/);
+  assert.doesNotMatch(block,/data-shopping-food-complete|data-shopping-food-check|data-shopping-later/);
+  assert.match(block,/shopping-unit-warning-v866/);
+  assert.ok(block.indexOf('shopping-unit-warning-v866')<block.indexOf('shopping-current-stock-v701'));
+  assert.doesNotMatch(block,/class="is-warn"/);
+  assert.match(css,/\.shopping-item-meta-v643>\.shopping-unit-warning-v866/);
+  assert.match(css,/white-space:normal/);
 });
