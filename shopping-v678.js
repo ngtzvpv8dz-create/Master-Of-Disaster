@@ -637,7 +637,10 @@
       if(/^zitrone$/.test(n))return 'lemon';
       if(/^schnittlauch/.test(n))return 'chives';
       if(/^avocado hass/.test(n))return 'avocado_hass';
-      return '';
+      // Exact normalized names also belong to a common grocery article.
+      // Unknown varieties are NOT generalized beyond exact name equality.
+      return n?'exact:'+n:'';
+
     };
     const stockStable=new Set([
       'cumin','dried_mint','cinnamon','passata','tk_berries','frozen_spinach',
@@ -694,7 +697,7 @@
         const notes=String(entry.row.general?.notes||'').toLocaleLowerCase('de-DE');
         const canFreeze=['chicken_breast','lean_beef_mince'].includes(family)
           &&/portion|einfrier|tk|tiefkühl|frost/.test(notes);
-        return days<=(stockStable.has(family)?45:canFreeze?7:3);
+        return days<=(stockStable.has(family)?45:canFreeze?7:['kiwi','plain_yogurt','greek_yogurt_2pct','apple'].includes(family)?7:3);
       }).sort((a,b)=>b.shopDate.localeCompare(a.shopDate));
       for(const entry of candidates){
         if(uncovered<=0.0001)break;
