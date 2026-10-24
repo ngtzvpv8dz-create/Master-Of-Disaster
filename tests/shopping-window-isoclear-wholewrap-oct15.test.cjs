@@ -22,6 +22,7 @@ const dateContext={
 vm.createContext(dateContext);
 vm.runInContext(dates+'\nthis.regularShoppingDate=regularShoppingDate;',dateContext);
 const regularShoppingDate=dateContext.regularShoppingDate;
+assert.equal(regularShoppingDate('2026-11-07','dinner'),'2026-11-06','November 7 shopping moved to Friday November 6');
 assert.equal(regularShoppingDate('2026-10-17','breakfast'),'2026-10-16',
   'Saturday breakfast must use the special Friday shopping window');
 assert.equal(regularShoppingDate('2026-10-17','dinner'),'2026-10-16',
