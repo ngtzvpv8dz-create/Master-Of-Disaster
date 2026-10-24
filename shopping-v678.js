@@ -485,13 +485,16 @@
       const cleanNotes=String(item.notes||'').split(/\r?\n/).filter(line=>!line.trim().startsWith('🏬 Empfehlung:')).join('\n').trim();
       // The shopping phase already says Today / Later / Extra. Keep the actual
       // due date and purchase notes on readable separate lines on mobile.
-      const secondary=isStockup
-        ?([item.needed_by?'Benötigt am '+fmtDate(item.needed_by):'',
-            cleanNotes.split(/\r?\n/).filter(Boolean)[0]||''].filter(Boolean).join('\n'))
-        :([cleanNotes,packageDetails].filter(Boolean).join('\n'));
-      const timing=isStockup
+      const secondary=section==='extra'
+        ?(['Freiwilliger Vorratskauf, kein fester Einkaufstermin',
+            cleanNotes,packageDetails].filter(Boolean).join('\n'))
+        :isStockup
+          ?([item.needed_by?'Einkauf vorgesehen am '+fmtDate(item.needed_by):'',
+              cleanNotes.split(/\r?\n/).filter(Boolean)[0]||''].filter(Boolean).join('\n'))
+          :([cleanNotes,packageDetails].filter(Boolean).join('\n'));
+      const timing=section==='extra'||isStockup
         ?''
-        :(item.needed_by?'Benötigt '+fmtDate(item.needed_by):'');
+        :(item.needed_by?'Einkauf vorgesehen am '+fmtDate(item.needed_by):'');
       rows.push({
         id:'general:'+item.id,key:'general:'+item.id,source:'general',label:item.label,
         section,inCart:section==='cart',primary:section==='extra'?(quantity||item.category||'Wunsch'):(quantity?('Kaufen '+quantity):'Kaufen'),
@@ -508,41 +511,98 @@
     // V853: Do not turn the same planned purchase into two shop entries.
     // Only merge already-scheduled general groceries which can fully cover a
     // live plan deficit. Never collapse different meats or later purchases.
+    // V855: A purchase entry is the authority. Recipe gaps are missing-demand
+    // previews, NOT new purchases if an already scheduled basket row covers them.
+    // Keep availability, dates, packaging and perishability explicit.
     const shoppingFamily=name=>{
-      const n=String(name||'').toLocaleLowerCase('de-DE')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+      const n=String(name||'').toLocaleLowerCase('de-DE').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
       if(/kreuzkummel/.test(n))return 'cumin';
+      if(/getrocknete minze/.test(n))return 'dried_mint';
+      if(/^zimt( gemahlen)?$/.test(n))return 'cinnamon';
+      if(/^butter(?: \d+ ?g)?$/.test(n))return 'butter';
+      if(/^ayran/.test(n))return 'ayran';
+      if(/eier? (gro(?:ß|ss)e|gro(?:ß|ss)e)? ?m$/.test(n)||n==='eier gro e m'||n==='eier grosse m')return 'eggs_m';
       if(/(?:hahnchen|huhner)brust/.test(n))return 'chicken_breast';
       if(/(?:mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5)/.test(n))return 'lean_beef_mince';
       if(/^karotten(?: frisch| warm| roh)?$/.test(n))return 'carrots';
-      if(/naturjoghurt/.test(n))return 'plain_yogurt';
+      if(/^naturjoghurt(?: (?:fettarm )?1 5)?$/.test(n))return 'plain_yogurt';
+      if(/^skyr natur$/.test(n))return 'skyr';
+      if(/^(?:passata|passierte tomaten)(?: \d+ ?g)?$/.test(n))return 'passata';
+      if(/^rote paprika$|^paprika rot$|^paprika frisch rot$|^paprika bunt$/.test(n))return 'red_pepper';
+      if(/^tk beeren(?:mischung|mix)?$|^tk beerenmischung$/.test(n))return 'tk_berries';
+      if(/^vollkornbrot(?: frisch)?$|^roggen vollkornbrot$/.test(n))return 'wholegrain_bread';
+      if(/^zucchini(?: frisch)?$/.test(n))return 'zucchini';
+      if(/^magerquark(?: \d+ ?g)?$/.test(n))return 'quark';
+      if(/^aubergine(?:n)?$/.test(n))return 'aubergine';
       return '';
     };
-    const providers=rows.filter(row=>row.source==='general'&&['now','cart'].includes(row.section))
-      // Keep a reference to the original display row. Spreading it into a new
-      // object without 'row' made supplier.row undefined and crashed Shopping.
-      .map(row=>({row,family:shoppingFamily(row.label),remaining:Number(row.general?.quantity)||0,
-        unit:String(row.general?.unit||'').trim()}));
+    const stockStable=new Set(['cumin','dried_mint','cinnamon','passata','tk_berries']);
+    const providerCapacity=(row,family)=>{
+      const q=Number(row.general?.quantity)||0;
+      const unit=String(row.general?.unit||'').trim();
+      if(q<=0)return null;
+      if(unit==='Glas'&&['cumin','dried_mint','cinnamon'].includes(family))
+        return {amount:q*20,unit:'g',estimated:true};
+      if(unit==='Packung'&&family==='butter')
+        return {amount:q*250,unit:'g',estimated:true};
+      if(unit==='Laib'&&family==='wholegrain_bread')
+        return {amount:q*400,unit:'g',estimated:true};
+      return {amount:q,unit,estimated:false};
+    };
+    const providers=rows.filter(row=>row.source==='general'
+      &&['now','later','cart'].includes(row.section)).map(row=>{
+      const family=shoppingFamily(row.label);
+      const capacity=family?providerCapacity(row,family):null;
+      return {row,family,capacity,remaining:capacity?.amount||0,
+        unit:capacity?.unit||'',estimated:capacity?.estimated||false,
+        shopDate:String(row.general?.needed_by||todayIso())};
+    });
+    const dayDifference=(a,b)=>{
+      const left=Date.parse(String(a)+'T12:00:00Z');
+      const right=Date.parse(String(b)+'T12:00:00Z');
+      return Number.isFinite(left)&&Number.isFinite(right)
+        ?Math.round((left-right)/86400000):Infinity;
+    };
     const included=[];
     for(const row of rows){
-      if(row.source!=='food-gap'||row.section!=='now'){included.push(row);continue;}
+      if(row.source!=='food-gap'||!['now','later'].includes(row.section)){
+        included.push(row);continue;
+      }
       const family=shoppingFamily(row.label);
       const requested=Number(row.foodAction?.stockQuantity)||0;
-      const needDate=String(row.neededDate||row.buyFrom||todayIso());
-      const supplier=family&&requested>0?providers.find(entry=>{
-        if(entry.family!==family||entry.remaining<=0)return false;
-        const scheduled=String(entry.row.general?.needed_by||todayIso());
-        if(scheduled>needDate)return false;
-        if(family==='cumin'&&row.foodAction?.stockUnit==='g'&&entry.unit==='Glas')
-          return entry.remaining>=1;
-        return entry.unit===String(row.foodAction?.stockUnit||'')&&entry.remaining>=requested;
-      }):null;
-      if(!supplier){included.push(row);continue;}
-      supplier.remaining-=family==='cumin'&&supplier.unit==='Glas'?1:requested;
-      const target=supplier.row;
-      if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
-      target.secondary=[target.secondary,'Planbedarf ab '+fmtDate(needDate)+': '+fmtQty(requested,row.foodAction.stockUnit)]
-        .filter(Boolean).join('\n');
+      const unit=String(row.foodAction?.stockUnit||'').trim();
+      if(!family||!(requested>0)){included.push(row);continue;}
+      const needed=String(row.neededDate||row.buyFrom||todayIso());
+      let uncovered=requested;
+      const candidates=providers.filter(entry=>{
+        if(entry.family!==family||entry.unit!==unit||entry.remaining<=0)return false;
+        const days=dayDifference(needed,entry.shopDate);
+        if(days<0)return false;
+        return stockStable.has(family)?days<=45:days<=3;
+      }).sort((a,b)=>b.shopDate.localeCompare(a.shopDate));
+      for(const entry of candidates){
+        if(uncovered<=0.0001)break;
+        const covered=Math.min(uncovered,entry.remaining);
+        entry.remaining-=covered;
+        uncovered-=covered;
+        const target=entry.row;
+        if(!target.currentStock&&row.currentStock)target.currentStock=row.currentStock;
+        target.secondary=[target.secondary,
+          'Abgedeckter Rezeptbedarf '+fmtDate(needed)+': '+fmtQty(covered,unit)
+          +(entry.estimated?' (Gebindegröße beim Einkauf prüfen)':'')]
+          .filter(Boolean).join('\n');
+      }
+      if(uncovered<=0.0001)continue;
+      // If a package covered only part, show ONLY the additional shortfall,
+      // preserving the original foodAction for stock correction on this row.
+      if(uncovered<requested-.0001){
+        row.primary='Zusätzlich kaufen '+fmtQty(uncovered,unit);
+        row.secondary=[row.secondary,'Bereits eingeplante Käufe decken '
+          +fmtQty(requested-uncovered,unit)].filter(Boolean).join('\n');
+        row.foodAction={...row.foodAction,stockQuantity:uncovered};
+      }
+      included.push(row);
     }
     included.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
     rowMap=new Map(included.map(row=>[row.id,row]));
