@@ -4016,7 +4016,7 @@
     },0);
     const statedMl=[...clean.matchAll(/([0-9]+(?:\.[0-9]{3})*(?:,[0-9]+)?)\s*ml\b/gi)]
       .map(match=>Number(match[1].replace(/\./g,'').replace(',','.')));
-    const waterMentioned=/(?:^|[^a-z])(?:wasser|kochfl[üu]ssigkeit)(?:[^a-z]|$)/i.test(clean);
+    const waterMentioned=/(?:^|[^a-z])(?:(?:koch)?wasser|kochfl[üu]ssigkeit)(?:[^a-z]|$)/i.test(clean);
     const explicitWater=/(?:[0-9]+(?:\.[0-9]{3})*(?:,[0-9]+)?)\s*ml\s+(?:(?:kaltes?|heisses?|heißes?|warmes?|lauwarmes?|kochendes?|abgemessenes?)\s+)?(?:koch)?wasser\b/i.test(clean)
       ||/(?:[0-9]+(?:\.[0-9]{3})*(?:,[0-9]+)?)\s*ml\s+(?:koch)?wasser\b/i.test(clean);
     if(!steps.length)errors.push('Die Zubereitung fehlt.');
