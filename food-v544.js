@@ -1632,6 +1632,15 @@
         ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
         :'';
       const sourceIngredients=sourceMeal?preparedIngredientListMarkup(sourceMeal):'';
+      // Manche alte Meal-Prep-Portionen haben keine Originalmahlzeit verknüpft.
+      // Nur wenn der Originalnachweis fehlt, Rezeptbestandteile als
+      // unverbindliche Referenz zeigen, niemals als belegten Verzehr.
+      const referenceIngredients=!sourceIngredients&&historyRecipe
+        ?'<div class="food-recipe-detail-block-v572 food-mealprep-reference-v882"><strong>Rezept-Zutaten (historische Mengen nicht belegt)</strong>'+
+          '<ul>'+(historyRecipe.food_recipe_ingredients||[]).map(item=>
+            '<li><span>'+esc(ingredientName(item))+'</span><b>'+
+            esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>'
+        :'';
       const originalPreparedMeta=sourceMeal
         ?'<p class="food-recipe-note-v572">Ursprünglich am '+esc(fmtDate(sourceMeal.meal_date))+' für '+esc(portionLabel(sourceMeal.prepared_servings||1))+' zubereitet.</p>'
         :'';
@@ -1646,9 +1655,9 @@
       const details=expanded
         ?'<div class="food-recipe-details-v572">'
           +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
-          +originalPreparedMeta+sourceIngredients
+          +originalPreparedMeta+sourceIngredients+referenceIngredients
           +(extras.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
-          +(!sourceIngredients&&!extras.length&&!detailNote?'<p class="food-recipe-note-v572">Für diese Meal-Prep-Portion sind keine Zutatendetails gespeichert.</p>':'')
+          +(!sourceIngredients&&!referenceIngredients&&!extras.length&&!detailNote?'<p class="food-recipe-note-v572">Für diese Meal-Prep-Portion sind keine Zutatendetails gespeichert.</p>':'')
         +'</div>'
         :'';
       return '<article class="food-recipe-card-v544 food-leftover-meal-v632 '+(frozenPrep?'is-frozen-mealprep-v804 ':'')+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
