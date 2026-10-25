@@ -5,7 +5,7 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V827';
+  const VERSION='V878';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
@@ -15,6 +15,14 @@
   let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[],plannedExpenses:[],plannedError:null};
   const expandedTransactions=new Set();
   const expandedCategories=new Set();
+  // Separate section toggles for each period. In GESAMT the very long
+  // transaction list starts folded, with categories immediately reachable.
+  const collapsedPanelsByPeriod={
+    month:new Set(),
+    year:new Set(),
+    all:new Set(['bookings'])
+  };
+  const FINANCE_PANEL_STATE_KEY='mod.finance.collapsedPanels.v878';
 
   const esc=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   const num=value=>Number.isFinite(Number(value))?Number(value):0;
@@ -322,6 +330,22 @@
     })}));
   }
 
+  function panelSectionHtml(which,kicker,title,meta,bodyRender){
+    const hidden=collapsedPanelsByPeriod[state.periodMode]?.has(which)===true;
+    const id='finance-panel-content-v878-'+which;
+    return '<section class="finance-panel-v552 finance-list-panel-v552 finance-collapsible-section-v878">'+
+      '<button type="button" class="finance-panel-head-v552 finance-section-toggle-v878"'+
+        ' data-finance-section-toggle="'+esc(which)+'"'+
+        ' aria-expanded="'+String(!hidden)+'" aria-controls="'+id+'">'+
+        '<div class="finance-section-heading-v878"><span>'+esc(kicker)+'</span><h3>'+esc(title)+'</h3></div>'+
+        '<div class="finance-section-tail-v878"><small>'+esc(meta)+'</small>'+
+        '<i aria-hidden="true" class="finance-chevron-v554">'+(hidden?'⌄':'⌃')+'</i></div>'+
+      '</button>'+
+      '<div class="finance-section-body-v878" id="'+id+'"'+(hidden?' hidden':'')+'>'+
+        (hidden?'':bodyRender())+'</div>'+
+    '</section>';
+  }
+
   function chartHtml(){
     const chart=chartModel();
     const axis='<div class="finance-axis-v552"><span>'+esc(chart.axisLabels[0])+'</span><span>'+esc(chart.axisLabels[1])+'</span><span>'+esc(chart.axisLabels[2])+'</span></div>';
@@ -480,8 +504,8 @@
         '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>'+periodSpec().title+'</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
         '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Konto</h3></div><small>AKTUELL</small></div><div class="finance-score-v552"><strong class="'+balanceClass+'">'+(connected?fmtMoney(summary.balance,currency):'—')+'</strong><span>Saldo</span></div>'+balanceNotesHtml+'<div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
         planningHtml()+
-         '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>04 · BUCHUNGEN</span><h3>Alle im Zeitraum</h3></div><small>'+esc(periodSpec().label)+'</small></div>'+recentHtml()+'</section>'+
-        '<section class="finance-panel-v552 finance-list-panel-v552"><div class="finance-panel-head-v552"><div><span>05 · KATEGORIEN</span><h3>Ausgaben & Vorteile</h3></div><small>DETAIL</small></div>'+categoriesHtml()+'</section>'+
+          panelSectionHtml('bookings','04 · BUCHUNGEN','Alle im Zeitraum',periodSpec().label,recentHtml)+
+          panelSectionHtml('categories','05 · KATEGORIEN','Ausgaben & Vorteile','DETAIL',categoriesHtml)+
       '</div>'+
       '<footer class="finance-footer-v552"><span><i></i> '+(connected?'Supabase verbunden':'Oberfläche bereit')+'</span><span>'+VERSION+' · LIVE DATA</span></footer>'+
     '</div>';
@@ -667,6 +691,22 @@
     if(!root||root.dataset.financeInteractionsV554==='true')return;
     root.dataset.financeInteractionsV554='true';
     root.addEventListener('click',event=>{
+      const sectionButton=event.target?.closest?.('[data-finance-section-toggle]');
+      if(sectionButton&&root.contains(sectionButton)){
+        const which=sectionButton.dataset.financeSectionToggle;
+        if(['bookings','categories'].includes(which)){
+          const set=collapsedPanelsByPeriod[state.periodMode];
+          if(set.has(which))set.delete(which);
+          else set.add(which);
+          try{
+            localStorage.setItem(FINANCE_PANEL_STATE_KEY,JSON.stringify(
+              Object.fromEntries(Object.entries(collapsedPanelsByPeriod).map(([period,value])=>[period,[...value]]))
+            ));
+          }catch(_){}
+          render();
+        }
+        return;
+      }
       const transactionButton=event.target?.closest?.('[data-finance-transaction-toggle]');
       if(transactionButton&&root.contains(transactionButton)){
         toggleExpanded(expandedTransactions,transactionButton.dataset.financeTransactionToggle);
@@ -701,6 +741,16 @@
 
   function init(){
     try{const saved=localStorage.getItem('mod.finance.period.v691');if(['month','year','all'].includes(saved))state.periodMode=saved;}catch(_){}
+    try{
+      const saved=JSON.parse(localStorage.getItem(FINANCE_PANEL_STATE_KEY)||'null');
+      if(saved&&typeof saved==='object'){
+        for(const period of ['month','year','all']){
+          if(Array.isArray(saved[period])){
+            collapsedPanelsByPeriod[period]=new Set(saved[period].filter(value=>['bookings','categories'].includes(value)));
+          }
+        }
+      }
+    }catch(_){};
     document.addEventListener('visibilitychange',refreshWhenVisible);
     window.addEventListener('focus',refreshWhenVisible);
     window.addEventListener('pageshow',refreshWhenVisible);
