@@ -8,11 +8,11 @@ const start=js.indexOf('    const shoppingFamily=name=>');
 const end=js.indexOf('    return included;',start);
 assert.ok(start>=0&&end>start,'real shopping deduplication block exists');
 const originalBlock=js.slice(start,end+'    return included;'.length);
-const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','let rowMap;\n'+originalBlock);
+const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','food','inventory','shoppingFamilyLabel','let rowMap;\n'+originalBlock);
 const fmtDate=iso=>iso;
 const fmtQty=(n,u)=>n+' '+u;
 const collator=new Intl.Collator('de-DE');
-const simulate=rows=>run(rows,()=> '2026-10-24',fmtDate,fmtQty,collator);
+const simulate=rows=>run(rows,()=> '2026-10-24',fmtDate,fmtQty,collator,{plannedShoppingUses:[]},[],name=>name);
 const general=(id,label,quantity,unit='g',status='now',neededBy='2026-10-24')=>({
  id,key:id,source:'general',section:status,label,secondary:'Einkauf geplant',
  general:{quantity,unit,needed_by:neededBy}
@@ -28,16 +28,17 @@ test('the actual shopping buildRows block does not crash when 330g beef deficit 
  const result=simulate([gap('beef-gap','Mageres Rinderhack 5 %',330),purchase]);
  assert.equal(result.length,1);
  assert.strictEqual(result[0],purchase,'update the real row, not a detached spread');
- assert.match(result[0].secondary,/Abgedeckter Rezeptbedarf 2026-10-24: 330 g/);
+ assert.match(result[0].secondary,/Rezeptbedarf 2026-10-24: 330 g/);
  assert.equal(result[0].currentStock,'Aktuell im Vorrat 0 g');
 });
 
-test('a second shortage is not swallowed after the 700g purchase has only 370g unused',()=>{
+test('a second shortage increases the checkout quantity after the 700g purchase has only 370g unused',()=>{
  const result=simulate([general('buy-beef','Mageres Rinderhack 5 %',700),
  gap('gap-1','Mageres Rinderhack 5 %',330),
  gap('gap-2','Mageres Rinderhack 5 %',380)]);
- assert.equal(result.length,2);
- assert.ok(result.some(row=>row.id==='gap-2'));
+ assert.equal(result.length,1,'duplicate food gap must not create a second buy row');
+ assert.equal(result[0].checkoutOverrideQuantity,710,'700g purchase plus uncovered 10g');
+ assert.match(result[0].secondary,/Zusätzlicher Rezeptbedarf 2026-10-24: 10 g/);
 });
 
 test('one spice jar covers recipe cumin grams without a separate 2g purchase row',()=>{

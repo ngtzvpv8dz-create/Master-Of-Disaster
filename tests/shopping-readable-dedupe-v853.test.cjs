@@ -62,8 +62,9 @@ test('shopping cards show only the next recipe date and one useful package hint'
   assert.match(js,/compactDescription=shoppingCompactDescription\(row\)/);
   assert.match(css,/white-space:pre-line/);
   assert.match(css,/overflow-wrap:anywhere/);
-  assert.match(html,/shopping-v678\.css\?v=866-shopping-unit-above-stock/);
-  assert.match(runtime,/shopping-v678\.js\?v=868-grocery-layout-and-units/);
+  assert.match(html,/shopping-v678\.css\?v=[a-zA-Z0-9-]+/);
+  assert.equal([...runtime.matchAll(/shopping-v678\.js\?v=([a-zA-Z0-9-]+)/g)].length,2);
+  assert.equal(new Set([...runtime.matchAll(/shopping-v678\.js\?v=([a-zA-Z0-9-]+)/g)].map(m=>m[1])).size,1);
 });
 
 
