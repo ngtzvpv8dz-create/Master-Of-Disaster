@@ -1,0 +1,33 @@
+name: Food Genuss Smoke
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  food-genuss:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax FOOD changes
+        run: |
+          node --check area-runtime-v609.js
+          node --check food-v544.js
+          node --check food-extra-snacks-v828.js
+          node --check food-planned-extras-v880.js
+          node --check food-nutrition-v711.js
+      - name: Relevant FOOD regression tests
+        run: |
+          node --test tests/food-planned-extras-v880.test.cjs tests/food-extras-v828.test.cjs tests/food-daily-warning-v838.test.cjs tests/food-recipe-quality-v880.test.cjs tests/food-inactive-product-history-v850.test.cjs
+      - name: Loader and database wiring
+        run: |
+          grep -Fq 'food-planned-extras-v880.js?v=880-genuss-budget' area-runtime-v609.js
+          grep -Fq 'area-runtime-v609.js?v=883-food-treats-planner' index.html
+          grep -Fq 'edit_food_planned_extra_v1' supabase/migrations/20261025202100_food_planned_extra_edit_v1.sql

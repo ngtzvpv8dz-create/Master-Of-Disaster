@@ -146,7 +146,7 @@
         (valid(r.protein_g)?nf(r.protein_g)+' g Protein':'Protein unbekannt')+
         (r.carbohydrates_g!==null?' · KH '+nf(r.carbohydrates_g)+' g':'')+
         (r.fat_g!==null?' · Fett '+nf(r.fat_g)+' g':'')+'</small></div>'+
-        '<div class="food-extra-row-actions-v828"><button type="button" data-extra-edit="'+esc(r.id)+'" aria-label="'+esc(r.title)+' bearbeiten" title="Bearbeiten">✎</button>'+
+        '<div class="food-extra-row-actions-v828">'+(String(r.source_reference||'').startsWith('food-planned-extra-v1-')?'':'<button type="button" data-extra-edit="'+esc(r.id)+'" aria-label="'+esc(r.title)+' bearbeiten" title="Bearbeiten">✎</button>')+
         '<button type="button" data-extra-delete="'+esc(r.id)+'" aria-label="'+esc(r.title)+' löschen" title="Entfernen">✕</button></div></li>').join('')+'</ul>':
       '<p class="food-extra-empty-v828">Noch kein zusätzlicher Snack eingetragen.</p>');
   }
@@ -262,6 +262,9 @@
     if(!ready&&!loading)refresh();
   }
   function editingRow(row){
+    if(String(row.source_reference||'').startsWith('food-planned-extra-v1-')){
+      formOpen=false;notice='Bitte die Bestätigung beim geplanten Genuss-Extra rückgängig machen, bevor du es änderst.';draw();return;
+    }
     editing=row.id;requestId=null;
     // Produkt-ID beim Korrigieren von Makros erhalten: die alte manuelle
     // Bearbeitung hat den Produktstamm sonst mit product_id:null geloescht.
@@ -386,6 +389,17 @@
       const supabase=client(),auth=await supabase.auth.getSession();
       const uid=auth.data?.session?.user?.id;
       if(!uid)throw new Error('Keine aktive Anmeldung.');
+      const planRef=String(row.source_reference||'');
+      if(planRef.startsWith('food-planned-extra-v1-')){
+        const undo=await supabase.rpc('undo_food_planned_extra_v1',{p_plan_id:planRef.slice('food-planned-extra-v1-'.length)});
+        if(undo.error)throw undo.error;
+        notice='✓ Bestätigtes Extra und Vorratsverbrauch zurückgebucht.';
+        error='';await refresh();
+        window.__modFoodTreatsV880?.refresh?.();
+        window.__modFoodNutritionV711?.refresh?.();
+        await window.__modFoodV544?.reload?.();
+        return;
+      }
       const booked=autoCounted(row);
       const res=booked
         ?await supabase.rpc('save_counted_food_extra_v873',{p_action:'delete',p_extra_id:id})

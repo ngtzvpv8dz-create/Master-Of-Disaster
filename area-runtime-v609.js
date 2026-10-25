@@ -55,7 +55,7 @@
       './food-stock-resolver-v746.js?v=816-isoclear-family',
       './food-v544.js?v=881-whole-bread-slices',
       './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition',
-      './food-extra-snacks-v828.js?v=873-auto-stock-snack'
+      './food-extra-snacks-v828.js?v=880-genuss-budget','./food-planned-extras-v880.js?v=880-genuss-budget'
     ],
     shopping:[
       SUPABASE,
@@ -146,7 +146,7 @@
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-v544.js?v=881-whole-bread-slices',
-      './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition','./food-extra-snacks-v828.js?v=873-auto-stock-snack'],
+      './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition','./food-extra-snacks-v828.js?v=880-genuss-budget','./food-planned-extras-v880.js?v=880-genuss-budget'],
     shopping:['./food-v544.js?v=881-whole-bread-slices',
       './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition','./shopping-v678.js?v=870-snack-pralines-by-piece'],
     kistology:['./kistology-v603.js?v=609-current'],
