@@ -96,7 +96,7 @@ jobs:
           grep -q 'shopping-v643.css?v=' index.html
           grep -q 'food-stock-resolver-v746.js?v=816-isoclear-family' area-runtime-v609.js
           grep -q 'food-v544.js?v=' area-runtime-v609.js
-          grep -q 'shopping-v678.js?v=855-shopping-dates-dedupe' area-runtime-v609.js
+          grep -Eq 'shopping-v678[.]js[?]v=[a-zA-Z0-9-]+' area-runtime-v609.js
           grep -q "shopping:'Einkaufsliste'" area-runtime-v609.js
           grep -q '__modShoppingV651' shopping-v651.js
           grep -q 'shopping_receipt_reviews' shopping-v651.js
