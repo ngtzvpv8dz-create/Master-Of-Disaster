@@ -8,7 +8,7 @@
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const nf=x=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:1}).format(Number(x)||0);
   const berlinDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  let day='',rows=[],ready=false,busy=false,error='',note='',mounting=false,uid='';
+  let day='',rows=[],ready=false,busy=false,error='',note='',mounting=false,uid='',editingId='';
   const client=()=>window.getSupabaseClient?.();
   function box(){return document.getElementById(ID);}
   function styles(){
@@ -23,7 +23,9 @@
      '.food-treat-panel-v880 button{border:1px solid #b0b2c7;background:#fff;border-radius:8px;padding:7px 9px;font-size:12px;cursor:pointer;color:#353558}' +
      '.food-treat-panel-v880 button[data-treat-confirm]{background:#d8f2de;color:#166036;border-color:#a9d0b3;font-weight:800}' +
      '.food-treat-panel-v880 button:disabled{opacity:.45;cursor:wait}.food-treat-panel-v880 .food-treat-error-v880{color:#a52626;font-weight:700}' +
-     '.food-treat-panel-v880 .food-treat-success-v880{color:#226a47;font-weight:700}';
+     '.food-treat-panel-v880 .food-treat-success-v880{color:#226a47;font-weight:700}'+
+     '.food-treat-panel-v880 .food-treat-edit-v880{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 0 0}'+
+     '.food-treat-panel-v880 .food-treat-edit-v880 input{max-width:78px;min-width:52px;border:1px solid #b0b2c7;border-radius:7px;padding:6px;background:white;color:#353558;font:inherit}';
     document.head.append(s);
   }
   function render(){
@@ -37,12 +39,23 @@
       (!ready?'<p>Geplante Extras werden geladen …</p>':
       '<p>Offene Vorschläge: '+pending.length+' · '+nf(kcal)+' kcal · Bestätigt: '+confirmed.length+'</p>'+
       (rows.length?'<ul>'+rows.map(r=>{
-        const note2=r.note?' · '+r.note:'';
-        const unitDisplay=r.title.startsWith('Milka Danke')?'1 Stück (5,7 g)':nf(r.quantity)+' '+r.unit;
+        const isMilka=r.title.startsWith('Milka Danke');
+        const note2=isMilka?'':r.note?' · '+r.note:'';
+        const unitDisplay=isMilka?nf(Number(r.quantity)/5.7)+' Stück ('+nf(r.quantity)+' g)':nf(r.quantity)+' '+r.unit;
+        const editable=r.status==='planned'||r.status==='confirmed';
+        const showEdit=editingId===r.id&&editable;
+        const shownQuantity=isMilka?Number(r.quantity)/5.7:Number(r.quantity);
+        const integerUnit=isMilka||r.unit==='Portion';
+        const editForm=showEdit?'<form class="food-treat-edit-v880" data-treat-edit-form="'+esc(r.id)+'">'+
+          '<label><span>Menge ('+esc(isMilka?'Stück':r.unit)+') </span>'+
+          '<input type="number" name="quantity" value="'+esc(shownQuantity)+'" min="'+(integerUnit?'1':'0.1')+'" step="'+(integerUnit?'1':'0.1')+'" required inputmode="'+(integerUnit?'numeric':'decimal')+'"></label>'+
+          '<button type="submit"'+(busy?' disabled':'')+'>✓ Speichern</button>'+
+          '<button type="button" data-treat-cancel="'+esc(r.id)+'">Abbrechen</button></form>':'';
         return '<li><div class="food-treat-info-v880"><strong>'+esc(r.title)+'</strong><small>'+esc(unitDisplay)+' · '+
           (r.calories_kcal===null?'Kalorien unbekannt':nf(r.calories_kcal)+' kcal')+
           (r.caffeine_mg&&Number(r.caffeine_mg)>0?' · '+nf(r.caffeine_mg)+' mg Koffein':'')+
-          esc(note2)+'</small></div><div class="food-treat-buttons-v880">'+
+          esc(note2)+'</small>'+editForm+'</div><div class="food-treat-buttons-v880">'+
+          (editable?'<button type="button" data-treat-edit="'+esc(r.id)+'" title="Menge bearbeiten" aria-label="'+esc(r.title)+' Menge ändern"'+(busy?' disabled':'')+'>✎</button>':'')+
           (r.status==='planned'?'<button type="button" data-treat-confirm="'+esc(r.id)+'" aria-label="'+esc(r.title)+' tatsächlich verwendet" title="Verbraucht bestätigen"'+(busy?' disabled':'')+'>✓</button>'+
           '<button type="button" data-treat-skip="'+esc(r.id)+'" aria-label="'+esc(r.title)+' nicht genutzt" title="Nicht genutzt"'+(busy?' disabled':'')+'>✕</button>':
           r.status==='confirmed'?'<span aria-label="Bestätigt">✓ Verwendet</span><button type="button" data-treat-undo="'+esc(r.id)+'" title="Bestätigung rückgängig"'+(busy?' disabled':'')+'>↶</button>':
@@ -80,25 +93,28 @@
       }else if(day!==berlinDay()&&!busy){ready=false;rows=[];note='';render();refresh();}
     }finally{mounting=false;}
   }
-  async function action(what,id){
+  async function action(what,id,newQuantity=null){
     if(busy)return;
     const row=rows.find(r=>r.id===id);if(!row)return;
     const api=client();if(!api)return;
     busy=true;note='';error='';render();
     try{
       let result;
-      if(what==='confirm')result=await api.rpc('confirm_food_planned_extra_v1',{p_plan_id:id});
+      if(what==='edit')result=await api.rpc('edit_food_planned_extra_v1',{p_plan_id:id,p_quantity:newQuantity});
+      else if(what==='confirm')result=await api.rpc('confirm_food_planned_extra_v1',{p_plan_id:id});
       else if(what==='undo')result=await api.rpc('undo_food_planned_extra_v1',{p_plan_id:id});
       else result=await api.from('food_planned_extras')
          .update({status:what==='skip'?'skipped':'planned',updated_at:new Date().toISOString()})
          .eq('id',id).eq('user_id',uid)
          .eq('status',what==='skip'?'planned':'skipped').select('id').single();
       if(result.error)throw result.error;
-      note=what==='confirm'?'✓ Verzehr und Vorrat gemeinsam bestätigt.':
+      editingId='';
+      note=what==='edit'?'✓ Menge angepasst, Kalorien und ggf. Vorrat aktualisiert.':
+        what==='confirm'?'✓ Verzehr und Vorrat gemeinsam bestätigt.':
         what==='undo'?'↶ Verzehr und Vorrat zurückgebucht.':
         what==='skip'?'Vorschlag entfernt, kein Verbrauch gebucht.':'Vorschlag wieder eingeplant.';
       busy=false;await refresh();note&&render();
-      if(['confirm','undo'].includes(what)){
+      if(['confirm','undo'].includes(what)||(what==='edit'&&row.status==='confirmed')){
         await window.__modFoodExtrasV828?.refresh?.();
         window.__modFoodNutritionV711?.refresh?.();
         await window.__modFoodV544?.reload?.();
@@ -106,13 +122,32 @@
     }catch(e){busy=false;error=e?.message||String(e);render();}
   }
   document.addEventListener('click',e=>{
-    const btn=e.target.closest?.('[data-treat-confirm],[data-treat-skip],[data-treat-undo],[data-treat-restore]');
+    const btn=e.target.closest?.('[data-treat-confirm],[data-treat-skip],[data-treat-undo],[data-treat-restore],[data-treat-edit],[data-treat-cancel]');
     if(!btn||!btn.closest('#'+ID))return;
     e.preventDefault();
+    const edit=btn.getAttribute('data-treat-edit');
+    const cancel=btn.getAttribute('data-treat-cancel');
+    if(edit){editingId=editingId===edit?'':edit;error='';render();return;}
+    if(cancel){editingId='';render();return;}
     for(const what of ['confirm','skip','undo','restore']){
       const id=btn.getAttribute('data-treat-'+what);
       if(id){action(what,id);break;}
     }
+  });
+  document.addEventListener('submit',e=>{
+    const form=e.target?.closest?.('[data-treat-edit-form]');
+    if(!form||!form.closest('#'+ID))return;
+    e.preventDefault();
+    const id=form.dataset.treatEditForm;
+    const row=rows.find(r=>r.id===id);if(!row)return;
+    const entered=Number(String(form.elements.quantity.value).replace(',','.'));
+    const counted=row.title.startsWith('Milka Danke');
+    const whole=counted||row.unit==='Portion';
+    if(!Number.isFinite(entered)||entered<=0||(whole&&!Number.isInteger(entered))){
+      error='Bitte eine gültige '+(whole?'ganze Stückzahl':'Menge')+' eingeben.';render();return;
+    }
+    const next=counted?Math.round(entered*5.7*100)/100:entered;
+    action('edit',id,next);
   });
   const observer=new MutationObserver(ms=>{if(ms.some(m=>m.addedNodes.length))mount();});
   function start(){observer.observe(document.documentElement,{subtree:true,childList:true});mount();}
