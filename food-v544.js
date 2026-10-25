@@ -3997,7 +3997,7 @@
 
   // V880: Validate a recipe at its real entry points before it enters the catalog.
   // Existing historical meals are deliberately NOT modified by this guard.
-  function auditFoodRecipeBeforeSave(instructions,ingredients){
+  function auditFoodRecipeBeforeSave(instructions,ingredients,recipeTitle=''){
     const clean=String(instructions||'').replace(/\r/g,'');
     const steps=clean.split(/\s*\|\s*|\n+/)
       .map(line=>line.trim().replace(/^\s*(?:\d+[.)]|[-•])\s*/,'')).filter(Boolean);
@@ -4036,6 +4036,31 @@
     }else if(waterMentioned && /\b(?:mit|in|etwas|einem)\s+wasser\b/i.test(clean)){
       warnings.push('Wasser erscheint in der Zubereitung ohne Mengenangabe in der Zutatenliste.');
     }
+    // Drinking powders have manufacturer-defined ratios. Cooking with 10 g
+    // protein coffee (e.g. pancakes) is deliberately not classified as a drink.
+    const namedDrink=normalized(recipeTitle);
+    const coffeeDrink=/(protein coffee|maxpresso)/.test(namedDrink)
+      &&/(shak|trink|mix|ruhr|ruehr)/.test(joined);
+    const isoclearDrink=/isoclear/.test(namedDrink)
+      &&/(shak|trink|mix|ruhr|ruehr)/.test(joined);
+    if(coffeeDrink||isoclearDrink){
+      const powder=ingredientList.filter(item=>coffeeDrink
+        ?/(protein coffee|maxpresso)/.test(normalized(item?.name))
+        :/isoclear/.test(normalized(item?.name)));
+      const liquid=ingredientList.filter(item=>coffeeDrink
+        ?/milch/.test(normalized(item?.name))
+        :isWater(item));
+      const powderAmount=powder.reduce((sum,item)=>sum+(Number(item?.quantity)||0),0);
+      const liquidAmount=liquid.reduce((sum,item)=>sum+(Number(item?.quantity)||0),0);
+      const target=coffeeDrink?250:500;
+      if(powderAmount!==30||liquidAmount!==target)
+        errors.push((coffeeDrink?'Protein Coffee':'Isoclear')+
+          ': als Getränk genau 30 g Pulver und '+target+' ml '+
+          (coffeeDrink?'Milch':'Wasser')+' einplanen.');
+      if(powderAmount===30&&liquidAmount===target &&
+        (!/\b30\s*g\b/i.test(clean)||!statedMl.some(n=>n===target)))
+        warnings.push('Das feste Getränkemischverhältnis (30 g / '+target+' ml) ausdrücklich in den Kochschritten nennen.');
+    }
     const eggs=ingredientList.filter(item=>/^(ei|eier)(?: |$)/.test(normalized(item?.name)))
       .reduce((sum,item)=>sum+(Number(item?.quantity)||0),0);
     if(eggs>0&&eggs<2&&/\b(?:zweites|zweiten|zweite)\s+ei\b/i.test(clean))
@@ -4071,8 +4096,8 @@
     };
   }
 
-  function checkedFoodRecipeInstructions(instructions,ingredients){
-    const audit=auditFoodRecipeBeforeSave(instructions,ingredients);
+  function checkedFoodRecipeInstructions(instructions,ingredients,recipeTitle){
+    const audit=auditFoodRecipeBeforeSave(instructions,ingredients,recipeTitle);
     if(audit.errors.length)throw new Error('Rezept vor dem Speichern korrigieren:\n• '+audit.errors.join('\n• '));
     if(audit.warnings.length&&!confirm(
       'Rezept-Zutatenabgleich prüfen:\n• '+audit.warnings.slice(0,8).join('\n• ')+
@@ -4167,7 +4192,7 @@
         return {user_id:user.id,inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit,sort_order:index+1};
       });
 
-      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients);
+      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients,title);
       if(validatedInstructions===null)return false;
 
       let recipe=null;
@@ -4269,7 +4294,7 @@
         return {inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit};
       });
 
-      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients);
+      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients,title);
       if(validatedInstructions===null)return false;
 
       const result=await withTimeout(
