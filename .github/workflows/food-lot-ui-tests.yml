@@ -20,3 +20,5 @@ jobs:
           npx playwright install --with-deps chromium webkit >/dev/null 2>&1
       - name: Test independent Food lot rendering, update, removal and creation
         run: node tests/food-lot-individual-v848.cjs
+      - name: Test recipe instructions, water and fixed drink mixtures
+        run: node --test tests/food-recipe-quality-v880.test.cjs
