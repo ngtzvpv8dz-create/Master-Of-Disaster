@@ -39,10 +39,10 @@ test('legacy notes store suggestion is hidden from visible notes to avoid duplic
 });
 test('runtime and CSS fetch fresh retailer badge assets',()=>{
   // A cache-buster is deliberately versioned and must not hard-code yesterday's build.
-  const scripts=[...runtime.matchAll(/shopping-v678\\.js\\?v=([a-zA-Z0-9-]+)/g)].map(match=>match[1]);
+  const scripts=[...runtime.matchAll(/shopping-v678\.js\?v=([a-zA-Z0-9-]+)/g)].map(match=>match[1]);
   assert.equal(scripts.length,2,'shopping loaded on both relevant app surfaces');
   assert.equal(new Set(scripts).size,1,'both surfaces use the same shopping script build');
-  assert.match(html,/shopping-v678\\.css\\?v=[a-zA-Z0-9-]+/);
-  assert.match(css,/\\.shopping-retailer-line-v851/);
-  assert.match(css,/\\.shopping-retailer-badge-v851/);
+  assert.match(html,/shopping-v678\.css\?v=[a-zA-Z0-9-]+/);
+  assert.match(css,/\.shopping-retailer-line-v851/);
+  assert.match(css,/\.shopping-retailer-badge-v851/);
 });
