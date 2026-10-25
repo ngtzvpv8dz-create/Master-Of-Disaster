@@ -67,6 +67,7 @@ test('planned Feta displays the actual catalog product, lot status and source ar
   });
   vm.runInContext(between(food,'  function allocationMarkup(','  // Verbrauchsbuchungen')+
     '\nthis.renderAllocation=allocationMarkup;',c);
+  vm.runInContext(between(food,'  const ingredientQuantityForDisplay=item=>{','  const ingredientDisplay=item=>{'),c);
   vm.runInContext(between(food,'  function missingIngredientSourceMarkup(','  function splitMealIngredients(')+
     '\nthis.renderList=ingredientListMarkup;this.missing=missingIngredientSourceMarkup;',c);
   const html=c.renderList([{id:'meal-feta',name:'Feta / Hirtenkäse',quantity:60,unit:'g'}]);
