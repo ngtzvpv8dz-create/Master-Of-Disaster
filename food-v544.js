@@ -3994,6 +3994,94 @@
     });
   }
 
+
+  // V880: Validate a recipe at its real entry points before it enters the catalog.
+  // Existing historical meals are deliberately NOT modified by this guard.
+  function auditFoodRecipeBeforeSave(instructions,ingredients){
+    const clean=String(instructions||'').replace(/\r/g,'');
+    const steps=clean.split(/\s*\|\s*|\n+/)
+      .map(line=>line.trim().replace(/^\s*(?:\d+[.)]|[-•])\s*/,'')).filter(Boolean);
+    const errors=[],warnings=[];
+    const normalized=value=>String(value||'').toLocaleLowerCase('de-DE')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ß/g,'ss')
+      .replace(/[^a-z0-9]+/g,' ').trim();
+    const joined=normalized(steps.join(' '));
+    const ingredientList=Array.isArray(ingredients)?ingredients:[];
+    const isWater=item=>/^(wasser|leitungswasser)$/.test(normalized(item?.name));
+    const waters=ingredientList.filter(isWater);
+    const waterQuantity=waters.reduce((sum,item)=>{
+      const qty=Number(item?.quantity);
+      const unit=normalized(item?.unit);
+      return sum+(Number.isFinite(qty)?qty*(unit==='l'?1000:1):0);
+    },0);
+    const statedMl=[...clean.matchAll(/([0-9]+(?:\.[0-9]{3})*(?:,[0-9]+)?)\s*ml\b/gi)]
+      .map(match=>Number(match[1].replace(/\./g,'').replace(',','.')));
+    const waterMentioned=/(?:^|[^a-z])(?:wasser|kochfl[üu]ssigkeit)(?:[^a-z]|$)/i.test(clean);
+    const explicitWater=/(?:[0-9]+(?:\.[0-9]{3})*(?:,[0-9]+)?)\s*ml\s+(?:(?:kaltes?|heisses?|heißes?|warmes?|lauwarmes?|kochendes?|abgemessenes?)\s+)?(?:koch)?wasser\b/i.test(clean)
+      ||/(?:[0-9]+(?:\.[0-9]{3})*(?:,[0-9]+)?)\s*ml\s+(?:koch)?wasser\b/i.test(clean);
+    if(!steps.length)errors.push('Die Zubereitung fehlt.');
+    else if(steps.length<2)errors.push('Bitte mindestens zwei nachvollziehbare Arbeitsschritte angeben.');
+    if(/f[uü]r den vorgesehenen kochschritt|hack zu k[oö]fte formen(?!.*[rlä])/i.test(clean))
+      errors.push('Ein Platzhalter oder ein unklarer Kochschritt muss konkret erklärt werden.');
+    if(waters.length){
+      if(!waterMentioned)errors.push('Die gelistete Wasserzutat wird in der Zubereitung nicht erwähnt.');
+      if(!statedMl.some(ml=>Math.abs(ml-waterQuantity)<0.02))
+        errors.push('Die Gesamtmenge Wasser ('+waterQuantity+' ml) muss auch in der Zubereitung ausdrücklich stehen.');
+      const mlUnits=waters.some(item=>!['ml','l'].includes(normalized(item?.unit)));
+      if(mlUnits)errors.push('Wasser bitte in ml oder l angeben.');
+      if(!/reis|bulgur|couscous|quinoa|brei|teig|sauce|soße|sosse|suppe|pochier|koch|gar|quark|joghurt|mix|shake|trink|auflauf|back/i.test(joined))
+        warnings.push('Der Verwendungszweck des Wassers ist nicht eindeutig beschrieben.');
+    }else if(explicitWater){
+      errors.push('In der Zubereitung wird eine Wassermenge genannt, aber Wasser fehlt in der Zutatenliste.');
+    }else if(waterMentioned && /\b(?:mit|in|etwas|einem)\s+wasser\b/i.test(clean)){
+      warnings.push('Wasser erscheint in der Zubereitung ohne Mengenangabe in der Zutatenliste.');
+    }
+    const eggs=ingredientList.filter(item=>/^(ei|eier)(?: |$)/.test(normalized(item?.name)))
+      .reduce((sum,item)=>sum+(Number(item?.quantity)||0),0);
+    if(eggs>0&&eggs<2&&/\b(?:zweites|zweiten|zweite)\s+ei\b/i.test(clean))
+      errors.push('Die Zubereitung verlangt ein zweites Ei, eingeplant ist aber nur eines.');
+    const aliases=[
+      [/^eier?\b/,['ei','eier']],
+      [/^naturreis|^langkornreis|^basmati|^parboiled/,['reis']],
+      [/^rinderhack|^hackfleisch/,['hack','rindfleisch']],
+      [/^hahnchen|^haehnchen/,['hahnchen','haehnchen','huhner','huhn']],
+      [/^olivenol/,['olivenol','ol']],
+      [/^feta|^hirtenkase/,['feta','hirtenkase','kase']],
+      [/^frischkase/,['frischkase','frischk']],
+      [/^passierte tomaten/,['passierte tomaten','passata','tomatensauce','tomatensosse','tomatensose']],
+      [/^rote linsen/,['linsen','linse']],
+      [/^wasser|^leitungswasser/,['wasser','kochflussigkeit']],
+      [/^h milch/,['milch']],
+      [/^protein coffee/,['protein coffee','protein kaffe','maxpresso']],
+      [/^zarte haferflocken/,['hafer']],
+      [/^pfeffer/,['pfeffer']],
+      [/^salz/,['salz']],
+      [/^blattsalat/,['salat']]
+    ];
+    for(const item of ingredientList){
+      const name=normalized(item?.name),alias=aliases.find(([rx])=>rx.test(name));
+      const words=alias?alias[1]:[name.split(' ')[0]];
+      const found=words.some(word=>joined.includes(word)||joined.includes(word.slice(0,Math.min(word.length,5))));
+      if(!found)warnings.push('Zutat „'+String(item?.name||'?')+'“ wird in der Zubereitung nicht eindeutig erwähnt.');
+    }
+    return {
+      instructions:steps.map((step,index)=>(index+1)+'. '+step).join('\n'),
+      errors:[...new Set(errors)],
+      warnings:[...new Set(warnings)]
+    };
+  }
+
+  function checkedFoodRecipeInstructions(instructions,ingredients){
+    const audit=auditFoodRecipeBeforeSave(instructions,ingredients);
+    if(audit.errors.length)throw new Error('Rezept vor dem Speichern korrigieren:\n• '+audit.errors.join('\n• '));
+    if(audit.warnings.length&&!confirm(
+      'Rezept-Zutatenabgleich prüfen:\n• '+audit.warnings.slice(0,8).join('\n• ')+
+      (audit.warnings.length>8?'\n• … und '+(audit.warnings.length-8)+' weitere Hinweise':'')+
+      '\n\nTrotz dieser Hinweise speichern?'
+    ))return null;
+    return audit.instructions;
+  }
+
   const recipeInventoryOptionLabel=item=>{
     const family=String(item?.family_name||'').trim();
     if(!family)return String(item?.name||'Vorrat').trim();
@@ -4079,9 +4167,12 @@
         return {user_id:user.id,inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit,sort_order:index+1};
       });
 
+      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients);
+      if(validatedInstructions===null)return false;
+
       let recipe=null;
       const recipeResult=await withTimeout(
-        supabase.from('food_recipes').insert({user_id:user.id,title,meal_type:mealType,description,servings,prep_minutes:prepMinutes,instructions,active:true}).select('id,title,meal_type,description,servings,prep_minutes,instructions,active,created_at').single(),
+        supabase.from('food_recipes').insert({user_id:user.id,title,meal_type:mealType,description,servings,prep_minutes:prepMinutes,instructions:validatedInstructions,active:true}).select('id,title,meal_type,description,servings,prep_minutes,instructions,active,created_at').single(),
         'Rezept speichern',
         8000
       );
@@ -4178,6 +4269,9 @@
         return {inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit};
       });
 
+      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients);
+      if(validatedInstructions===null)return false;
+
       const result=await withTimeout(
         supabase.rpc('update_food_recipe',{
           p_recipe_id:recipeId,
@@ -4186,7 +4280,7 @@
           p_servings:servings,
           p_prep_minutes:prepMinutes,
           p_description:description,
-          p_instructions:instructions,
+          p_instructions:validatedInstructions,
           p_ingredients:ingredients
         }),
         'Rezept aktualisieren',
