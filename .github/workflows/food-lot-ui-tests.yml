@@ -22,3 +22,5 @@ jobs:
         run: node tests/food-lot-individual-v848.cjs
       - name: Test recipe instructions, water and fixed drink mixtures
         run: node --test tests/food-recipe-quality-v880.test.cjs
+      - name: Whole bread slice display
+        run: node --test tests/food-whole-bread-slices-v881.test.cjs

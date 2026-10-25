@@ -179,10 +179,30 @@
     return text+' '+(Math.abs(n-1)<.0001?'Portion':'Portionen')+' zubereitet';
   };
   const ingredientName=item=>String(item?.name||item?.label||'Zutat').trim();
+  // Physical bread slices remain whole in the kitchen. Grams stay in the
+  // database for nutrition, lot quantities and consumption calculations.
+  // Only show the piece quantity if the saved label explicitly confirms it.
+  const ingredientQuantityForDisplay=item=>{
+    const stored=fmtQty(item?.quantity,item?.unit);
+    if(String(item?.unit||'').trim().toLowerCase()!=='g')return stored;
+    const name=String(item?.name||'').trim();
+    if(!/(brot|toast|pita|fladen)/i.test(name))return stored;
+    const label=String(item?.label||'').trim();
+    const pieces=label.match(/^(\d+)\s+(Scheibe|Scheiben|Stück)\b/i);
+    const grams=label.match(/(?:ca\.\s*)?(\d+(?:[.,]\d+)?)\s*g\b/i);
+    if(!pieces||!grams)return stored;
+    const count=Number(pieces[1]);
+    const weight=Number(grams[1].replace(',','.'));
+    const actual=Number(item?.quantity);
+    if(!Number.isInteger(count)||count<1||!Number.isFinite(actual)
+      ||Math.abs(actual-weight)>Math.max(1,actual*.02))return stored;
+    return count+' '+(pieces[2].toLowerCase().startsWith('scheib')
+      ?(count===1?'Scheibe':'Scheiben'):'Stück');
+  };
   const ingredientDisplay=item=>{
     const q=num(item?.quantity);
     if(q===null||Number.isNaN(q))return ingredientName(item);
-    return fmtQty(q,item?.unit)+' '+ingredientName(item);
+    return ingredientQuantityForDisplay(item)+' '+ingredientName(item);
   };
   const normalizedIngredient=(name,unit='')=>{
     const normalized=String(name||'').trim().toLocaleLowerCase('de-DE');
@@ -1088,7 +1108,7 @@
         });
       }
       return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+
-        esc(num(item.quantity)===null?'Menge offen':fmtQty(item.quantity,item.unit))+'</b></li>'];
+        esc(num(item.quantity)===null?'Menge offen':ingredientQuantityForDisplay(item))+'</b></li>'];
     });
     const unassigned=ordered.filter(source=>!usedSources.has(source))
       .map(source=>'<li><span>'+esc(source.label||source.name||'Vorratszutat')+
@@ -1142,7 +1162,7 @@
       const canRemove=Boolean(editable);
       const quantityHtml=q===null||Number.isNaN(q)
         ?''
-        :'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">'+esc(fmtQty(q,item.unit))+'</b>';
+        :'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">'+esc(ingredientQuantityForDisplay(item))+'</b>';
       const removeHtml=canRemove
         ?'<button type="button" class="food-ingredient-remove-v751" data-food-remove-meal-ingredient="'+esc(item.id)+'" aria-label="'+esc(ingredientName(item))+' nur aus dieser Mahlzeit entfernen" title="Nur aus dieser Mahlzeit entfernen">×</button>'
         :'';
