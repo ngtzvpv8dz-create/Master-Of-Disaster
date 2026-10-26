@@ -11,7 +11,7 @@ const loader=read('area-runtime-v609.js');
 const migration=read('supabase/migrations/20261025185641_food_planned_extras_genussbudget_v1.sql');
 
 test('optional Genuss-Extras mount after actual snack area in FOOD today',()=>{
- assert.match(loader,/food-planned-extras-v880[.]js[?]v=880-genuss-budget/);
+ assert.match(loader,/food-planned-extras-v880[.]js[?]v=885-loop-guard/);
  assert.match(proposed,/extra[.]insertAdjacentElement\('afterend',el\)/);
  assert.match(proposed,/food-extra-snacks-v828/);
  assert.match(proposed,/new Intl[.]DateTimeFormat\('en-CA',[\s\S]*?Europe\/Berlin/);

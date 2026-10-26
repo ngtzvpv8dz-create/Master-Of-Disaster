@@ -8,7 +8,7 @@
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const nf=x=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:1}).format(Number(x)||0);
   const berlinDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  let day='',rows=[],ready=false,busy=false,error='',note='',mounting=false,uid='',editingId='';
+  let day='',rows=[],ready=false,busy=false,error='',note='',mounting=false,uid='',editingId='',loading=false;
   const client=()=>window.getSupabaseClient?.();
   function box(){return document.getElementById(ID);}
   function styles(){
@@ -63,19 +63,46 @@
           '</div></li>';
       }).join('')+'</ul>':'<p>Heute ist kein Extra fest eingeplant. Das Genussbudget bleibt optional.</p>'));
   }
+  // V885: Date + in-flight flag must be set BEFORE the first await.
+  // Otherwise our own MutationObserver sees the loading markup and starts
+  // another getSession() on every redraw (unbounded WebKit microtask loop).
+  function withTimeout(request,label,ms=8000){
+    let timer;
+    return Promise.race([
+      Promise.resolve(request),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(label+' braucht zu lange.')),ms);})
+    ]).finally(()=>clearTimeout(timer));
+  }
   async function refresh(){
-    if(busy)return;
-    const api=client();if(!api){error='Supabase-Verbindung fehlt';ready=true;render();return;}
-    const {data:session,error:e}=await api.auth.getSession();
-    uid=session?.session?.user?.id||'';
-    if(e||!uid){error='Bitte zuerst anmelden';ready=true;render();return;}
-    const today=berlinDay();day=today;
-    const result=await api.from('food_planned_extras')
-      .select('id,plan_date,title,kind,quantity,unit,calories_kcal,caffeine_mg,note,status')
-      .eq('user_id',uid).eq('plan_date',today).order('created_at',{ascending:true}).limit(100);
-    if(result.error){error=result.error.message;rows=[];}
-    else{rows=result.data||[];error='';}
-    ready=true;render();
+    if(busy||loading)return;
+    loading=true;
+    const requestedDay=berlinDay();
+    day=requestedDay;
+    try{
+      const api=client();
+      if(!api)throw new Error('Supabase-Verbindung fehlt');
+      const {data:session,error:sessionError}=await withTimeout(api.auth.getSession(),'Anmeldung');
+      uid=session?.session?.user?.id||'';
+      if(sessionError||!uid)throw new Error('Bitte zuerst anmelden');
+      const result=await withTimeout(api.from('food_planned_extras')
+        .select('id,plan_date,title,kind,quantity,unit,calories_kcal,caffeine_mg,note,status')
+        .eq('user_id',uid).eq('plan_date',requestedDay)
+        .order('created_at',{ascending:true}).limit(100),'Genuss-Extras');
+      if(result.error)throw result.error;
+      if(day===requestedDay){rows=result.data||[];error='';}
+    }catch(e){
+      if(day===requestedDay){error=e?.message||String(e);rows=[];}
+    }finally{
+      loading=false;
+      if(day!==requestedDay){
+        // A date rollover during the request needs exactly one new request.
+        ready=false;
+        refresh();
+      }else{
+        ready=true;
+        render();
+      }
+    }
   }
   function mount(){
     if(mounting)return;
@@ -85,12 +112,19 @@
     mounting=true;
     try{
       styles();
+      const today=berlinDay();
+      if(day!==today){
+        // Set date synchronously, not after auth.getSession().
+        day=today;ready=false;rows=[];note='';error='';editingId='';
+      }
       if(!box()){
         const el=document.createElement('section');el.id=ID;el.className='food-treat-panel-v880';
         el.setAttribute('aria-label','Geplante Genuss-Extras');
         extra.insertAdjacentElement('afterend',el);
-        day='';ready=false;note='';error='';render();refresh();
-      }else if(day!==berlinDay()&&!busy){ready=false;rows=[];note='';render();refresh();}
+        render();
+        // Re-entry refreshes once, and shares an already running request.
+        if(!loading&&!busy)refresh();
+      }
     }finally{mounting=false;}
   }
   async function action(what,id,newQuantity=null){
@@ -149,7 +183,15 @@
     const next=counted?Math.round(entered*5.7*100)/100:entered;
     action('edit',id,next);
   });
-  const observer=new MutationObserver(ms=>{if(ms.some(m=>m.addedNodes.length))mount();});
+  // Only the actual extra-snack anchor can trigger a mount, never the
+  // planned-extras panel's OWN innerHTML changes.
+  function isExtraAnchor(node){
+    return node?.nodeType===1&&(node.id==='food-extra-snacks-v828'
+      ||Boolean(node.querySelector?.('#food-extra-snacks-v828')));
+  }
+  const observer=new MutationObserver(ms=>{
+    if(ms.some(m=>Array.from(m.addedNodes||[]).some(isExtraAnchor)))mount();
+  });
   function start(){observer.observe(document.documentElement,{subtree:true,childList:true});mount();}
   window.__modFoodTreatsV880={version:'V880',refresh};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
