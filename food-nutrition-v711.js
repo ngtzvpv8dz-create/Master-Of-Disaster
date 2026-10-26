@@ -798,7 +798,9 @@
     if(!Array.isArray(sources))return items;
     return items.map(item=>{
       const matches=sources.filter(source=>source?.nutrition_per_100&&
-        String(source.inventory_id||'')===String(item.inventory_id||'')&&
+        // A generic recipe ingredient has no pinned inventory_id. Match its
+        // unique recorded source by name, unit and quantity, never by today's stock.
+        (!item.inventory_id||String(source.inventory_id||'')===String(item.inventory_id))&&
         text(source.name)===text(itemName(item))&&
         text(source.unit)===text(item.unit)&&
         number(source.quantity)===number(item.quantity));
