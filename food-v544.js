@@ -547,7 +547,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,rating,rating_updated_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at,updated_at,best_before_label').order('created_at')),
@@ -1217,17 +1217,18 @@
     return Number.isInteger(rating)&&rating>=1&&rating<=5?rating:null;
   };
 
-  function recipeRatingControl(recipe){
+  function recipeRatingControl(recipe,kind='recipe'){
     const rating=normalizedRecipeRating(recipe?.rating);
     const id=String(recipe?.id||'');
+    const targetAttribute=kind==='meal'?'data-food-rate-meal':'data-food-rate-recipe';
     const stars=[1,2,3,4,5].map(value=>{
       const active=rating!==null&&value<=rating;
       const pressed=rating===value;
       const label=value===1?'1 Stern':value+' Sterne';
-      return '<button type="button" class="'+(active?'is-active':'')+'" data-food-rate-recipe="'+esc(id)+'" data-food-rating="'+value+'" aria-label="'+label+'" aria-pressed="'+pressed+'" title="'+label+'">★</button>';
+      return '<button type="button" class="'+(active?'is-active':'')+'" '+targetAttribute+'="'+esc(id)+'" data-food-rating="'+value+'" aria-label="'+label+'" aria-pressed="'+pressed+'" title="'+label+'">★</button>';
     }).join('');
     const status=rating===null?'Unbewertet':rating+' von 5 Sternen';
-    return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(recipe?.title||'Rezept')+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div></div>';
+    return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(recipe?.title||(kind==='meal'?'Mahlzeit':'Rezept'))+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div></div>';
   }
 
   async function setRecipeRating(recipeId,value){
@@ -1252,6 +1253,32 @@
     recipe.rating=result.data?.rating??null;
     recipe.rating_updated_at=result.data?.rating_updated_at??null;
     sourceState.recipes='cloud';
+    renderState();
+    return result.data;
+  }
+
+  async function setMealRating(mealId,value){
+    if(!sourceIsReal('meals'))throw new Error('Die Mahlzeiten sind noch nicht sicher mit der Cloud synchronisiert. Bitte „Erneut laden“ verwenden.');
+    const meal=(state?.meals||[]).find(item=>String(item.id)===String(mealId));
+    if(!meal)throw new Error('Mahlzeit nicht gefunden.');
+    if(normalizedStatus(meal.status)==='skipped')throw new Error('Nicht gegessene Mahlzeiten können nicht bewertet werden.');
+    const requested=normalizedRecipeRating(value);
+    if(requested===null)throw new Error('Die Bewertung muss zwischen 1 und 5 Sternen liegen.');
+    const current=normalizedRecipeRating(meal.rating);
+    const next=requested===current?null:requested;
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await withTimeout(
+      supabase.from('food_meals')
+        .update({rating:next,rating_updated_at:next===null?null:new Date().toISOString()})
+        .eq('id',mealId)
+        .select('id,rating,rating_updated_at')
+        .single(),
+      'Mahlzeitenbewertung speichern',8000
+    );
+    if(result?.error)throw result.error;
+    meal.rating=result.data?.rating??null;
+    meal.rating_updated_at=result.data?.rating_updated_at??null;
+    sourceState.meals='cloud';
     renderState();
     return result.data;
   }
@@ -1603,8 +1630,10 @@
     const recipe=meal.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(meal.recipe_id)):null;
     const sourceMeal=mealPrepSource(meal);
     const historyRecipe=recipe||(sourceMeal?.recipe_id?(state?.recipes||[]).find(item=>String(item.id)===String(sourceMeal.recipe_id)):null);
-    const historyRating=inHistory&&status==='completed'&&historyRecipe
-      ?'<div class="food-history-rating-v851">'+recipeRatingControl(historyRecipe)+'</div>'
+    // Rating belongs to the recipe when present, otherwise to this individual meal.
+    // Show it consistently in Today, Plan and History, including planned meals.
+    const mealRatingMarkup=status!=='skipped'
+      ?'<div class="food-history-rating-v851">'+(historyRecipe?recipeRatingControl(historyRecipe):recipeRatingControl(meal,'meal'))+'</div>'
       :'';
     const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
     const sourceLabel=mealPrepSourceLabel(meal);
@@ -1671,7 +1700,7 @@
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
-        +historyRating
+        +mealRatingMarkup
         +'</article>';
     }
 
@@ -1695,7 +1724,7 @@
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
-        +historyRating
+        +mealRatingMarkup
         +'</article>';
     }
 
@@ -1722,7 +1751,7 @@
       +dailyCreatineReminderMarkup(meal)
       +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
       +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
-      +historyRating
+      +mealRatingMarkup
       +'</article>';
   }
 
@@ -4872,6 +4901,12 @@
       button.disabled=true;
       try{await setRecipeRating(button.dataset.foodRateRecipe,Number(button.dataset.foodRating));}
       catch(error){alert(error?.message||'Bewertung konnte nicht gespeichert werden.');button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-rate-meal]').forEach(button=>button.addEventListener('click',async event=>{
+      event.stopPropagation();
+      button.disabled=true;
+      try{await setMealRating(button.dataset.foodRateMeal,Number(button.dataset.foodRating));}
+      catch(error){alert(error?.message||'Mahlzeitenbewertung konnte nicht gespeichert werden.');button.disabled=false;}
     }));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));

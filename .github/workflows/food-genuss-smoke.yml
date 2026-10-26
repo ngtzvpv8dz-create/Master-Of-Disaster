@@ -25,9 +25,9 @@ jobs:
           node --check food-nutrition-v711.js
       - name: Relevant FOOD regression tests
         run: |
-          node --test tests/food-planned-extras-mount-v885.test.cjs tests/food-planned-extras-v880.test.cjs tests/food-extras-v828.test.cjs tests/food-daily-warning-v838.test.cjs tests/food-recipe-quality-v880.test.cjs tests/food-inactive-product-history-v850.test.cjs
+          node --test tests/food-planned-extras-mount-v885.test.cjs tests/food-planned-extras-v880.test.cjs tests/food-extras-v828.test.cjs tests/food-daily-warning-v838.test.cjs tests/food-recipe-quality-v880.test.cjs tests/food-inactive-product-history-v850.test.cjs tests/food-ratings-and-prepared-nutrition-v886.test.cjs
       - name: Loader and database wiring
         run: |
           grep -Fq 'food-planned-extras-v880.js?v=885-loop-guard' area-runtime-v609.js
-          grep -Fq 'area-runtime-v609.js?v=885-loop-guard' index.html
+          grep -Fq 'area-runtime-v609.js?v=886-food-repair' index.html
           grep -Fq 'edit_food_planned_extra_v1' supabase/migrations/20261025202100_food_planned_extra_edit_v1.sql
