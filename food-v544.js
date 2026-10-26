@@ -4948,14 +4948,49 @@
     }
   }
 
+  // V884: Eine fehlerhafte Datenantwort oder einzelne kaputte Karte darf FOOD
+  // nicht mehr dauerhaft bei "FOOD wird gedeckt" stehen lassen.
+  // Notfallanzeige bleibt read-only, damit kein falscher Vorrat gebucht wird.
+  function renderFailure(root,error){
+    console.error('V884 FOOD Ansicht konnte nicht aufgebaut werden.',error);
+    const target=root?.querySelector('.food-content-v544');
+    if(!target)return;
+    const meals=sourceIsReal('meals')&&Array.isArray(state?.meals)
+      ?state.meals.filter(meal=>meal.meal_date===todayIso())
+        .sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0))
+      :[];
+    const list=meals.map(meal=>'<article class="food-meal-card-v544">'
+      +'<small>'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small>'
+      +'<h4>'+esc(meal.title||'Mahlzeit')+'</h4>'
+      +((meal.ingredients||[]).length
+        ?'<ul>'+(meal.ingredients||[]).map(item=>'<li>'+esc(fmtQty(item.quantity,item.unit)+' '+ingredientName(item))+'</li>').join('')+'</ul>'
+        :'')
+      +'</article>').join('');
+    target.innerHTML='<section class="food-cloud-warning-v548" role="alert">'
+      +'<div><strong>FOOD-Anzeige vorübergehend gestört</strong>'
+      +'<span>Der Ladebildschirm wurde beendet. '+esc(error?.message||'Ansicht konnte nicht aufgebaut werden.')+'</span>'
+      +'<span>Keine Mahlzeiten oder Vorräte wurden verändert.</span></div>'
+      +'<button type="button" data-food-retry>Erneut laden</button></section>'
+      +(meals.length?'<div class="food-section-head-v544"><div><h3>Heute · Notfallansicht (nur lesen)</h3></div></div>'
+        +'<div class="food-meal-list-v544">'+list+'</div>'
+        :'<p>Keine sicher aus der Cloud geladenen Tagesdaten verfügbar. Bitte erneut laden.</p>');
+    root.querySelector('[data-food-retry]')?.addEventListener('click',()=>{loadPromise=null;render();});
+  }
+
   async function render(){
     const serial=++renderSerial;
     const root=ensureRoot();if(!root)return false;
     root.innerHTML=shell();
-    const data=await load();
-    if(serial!==renderSerial)return false;
-    state=data;
-    return paint(root,data);
+    try{
+      const data=await withTimeout(load(),'FOOD-Daten',10000);
+      if(serial!==renderSerial)return false;
+      state=data;
+      return paint(root,data);
+    }catch(error){
+      if(serial!==renderSerial)return false;
+      renderFailure(root,error);
+      return false;
+    }
   }
 
   function setSurface(active){
