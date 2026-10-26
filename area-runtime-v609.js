@@ -53,8 +53,8 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
-      './food-v544.js?v=884-food-load-recovery',
-      './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition',
+      './food-v544.js?v=886-all-meal-ratings',
+      './food-nutrition-v711.js?v=886-prepared-source-nutrition',
       './food-extra-snacks-v828.js?v=880-genuss-budget','./food-planned-extras-v880.js?v=885-loop-guard'
     ],
     shopping:[
@@ -62,8 +62,8 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=816-isoclear-family',
-      './food-v544.js?v=884-food-load-recovery',
-      './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition',
+      './food-v544.js?v=886-all-meal-ratings',
+      './food-nutrition-v711.js?v=886-prepared-source-nutrition',
       './shopping-v678.js?v=870-snack-pralines-by-piece'
     ],
     kistology:[
@@ -145,10 +145,10 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=884-food-load-recovery',
-      './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition','./food-extra-snacks-v828.js?v=880-genuss-budget','./food-planned-extras-v880.js?v=885-loop-guard'],
-    shopping:['./food-v544.js?v=884-food-load-recovery',
-      './food-nutrition-v711.js?v=877-mixed-milk-lot-nutrition','./shopping-v678.js?v=870-snack-pralines-by-piece'],
+    food:['./food-v544.js?v=886-all-meal-ratings',
+      './food-nutrition-v711.js?v=886-prepared-source-nutrition','./food-extra-snacks-v828.js?v=880-genuss-budget','./food-planned-extras-v880.js?v=885-loop-guard'],
+    shopping:['./food-v544.js?v=886-all-meal-ratings',
+      './food-nutrition-v711.js?v=886-prepared-source-nutrition','./shopping-v678.js?v=870-snack-pralines-by-piece'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
