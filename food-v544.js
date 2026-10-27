@@ -26,7 +26,7 @@
   let plannedThawCacheState=null;
   let plannedThawCache=null;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -34,6 +34,7 @@
   const expandedRecipes=new Set();
   const expandedMeals=new Set();
   const expandedPlanDays=new Set();
+  const expandedHistoryDays=new Set();
   const expandedInventory=new Set();
   let unavailableInventoryOpen=false;
   let inventorySearch='';
@@ -523,14 +524,37 @@
     return Object.fromEntries(SOURCE_KEYS.map(key=>[key,keepOrFallback(key)]));
   }
 
-  async function safeQuery(key,promise){
+  async function safeQuery(key,promise,timeoutMs=REQUEST_TIMEOUT_MS){
     try{
-      const result=await withTimeout(promise,key);
+      const result=await withTimeout(promise,key,timeoutMs);
       if(result?.error)return {data:null,error:result.error};
       return result||{data:[]};
     }catch(error){
       return {data:null,error};
     }
+  }
+
+  // Zusatzverzehr bleibt eine eigene, echte Aufnahme. In der History unabhängig
+  // von einer normalen Mahlzeit anzeigen und bei großen Datenmengen paginieren.
+  async function loadExtraHistory(supabase,userId){
+    const all=[];
+    const pageSize=500;
+    for(let offset=0;offset<10000;offset+=pageSize){
+      const result=await withTimeout(
+        supabase.from('food_extra_consumptions')
+          .select('id,consumption_date,consumed_at,title,kind,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g,note,created_at')
+          .eq('user_id',userId).lt('consumption_date',todayIso())
+          .order('consumption_date',{ascending:false})
+          .order('created_at',{ascending:false})
+          .range(offset,offset+pageSize-1),
+        'Zusatzverzehr-Historie',8000
+      );
+      if(result?.error)throw result.error;
+      const page=result?.data||[];
+      all.push(...page);
+      if(page.length<pageSize)return {data:all};
+    }
+    throw new Error('Die Zusatzverzehr-Historie ist größer als 10.000 Einträge und benötigt eine weitere Seitennavigation.');
   }
 
   async function remoteData(){
@@ -547,11 +571,11 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,rating,rating_updated_at,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,rating,rating_updated_at,rating_note,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at,updated_at,best_before_label').order('created_at')),
-      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
+      safeQuery('Rezepte',supabase.from('food_recipes').select('id,title,meal_type,description,servings,prep_minutes,difficulty,instructions,display_note,rating,rating_updated_at,rating_note,calories_kcal_per_serving,protein_g_per_serving,carbs_g_per_serving,fat_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true).order('title')),
       safeQuery('Einkauf',supabase.from('food_shopping_items').select('id,label,quantity,unit,checked,created_at').order('created_at')),
       safeQuery('Einkaufswagen',supabase.from('food_shopping_cart_state').select('id,shopping_key,added_at').order('added_at')),
       safeQuery('Restportionen',supabase.from('food_leftovers').select('id,recipe_id,source_meal_id,available_servings,original_servings,status,note,created_at,food_recipes(title,meal_type)').eq('status','available').gt('available_servings',0).order('created_at',{ascending:false})),
@@ -559,7 +583,8 @@
       safeQuery('Kreatin-Einnahmen',supabase.from('food_creatine_intakes').select('id,intake_date,inventory_id,inventory_name,variant_label,quantity_g,creatine_g,confirmed_at').gte('intake_date',plusDays(todayIso(),-180)).lte('intake_date',planningHorizonIso()).order('intake_date',{ascending:false})),
       safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('TK-Meal-Prep',supabase.from('food_mealprep_freezer_portions').select('id,leftover_id,meal_id,servings,status,frozen_on,needed_on,thaw_started_at,thawed_at,note,created_at').in('status',['frozen','thawing','thawed']).order('needed_on',{ascending:true,nullsFirst:false})),
-      safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3)))
+      safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3))),
+      safeQuery('Zusatzverzehr-Historie',loadExtraHistory(supabase,user.id),12000)
     ]);
 
     cloudIssues=[];
@@ -587,7 +612,8 @@
       intakes:take('intakes',9,rows=>rows),
       freezer:take('freezer',10,rows=>rows),
       mealPrepFreezer:take('mealPrepFreezer',11,rows=>rows),
-      pendingCheckout:take('pendingCheckout',12,rows=>rows)
+      pendingCheckout:take('pendingCheckout',12,rows=>rows),
+      extras:take('extras',13,rows=>rows)
     };
   }
 
@@ -1231,6 +1257,40 @@
     return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(recipe?.title||(kind==='meal'?'Mahlzeit':'Rezept'))+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div></div>';
   }
 
+  function ratingNoteControl(entry,kind='recipe'){
+    const note=String(entry?.rating_note||'');
+    const target=kind==='meal'?'meal':'recipe';
+    const title=note?'Anmerkung zur Planung · vorhanden':'Anmerkung zur Planung hinzufügen';
+    return '<details class="food-rating-note-v887" data-food-rating-note-details>'+
+      '<summary>'+esc(title)+'</summary>'+
+      '<form data-food-rating-note-form data-food-note-kind="'+target+'" data-food-note-id="'+esc(entry?.id||'')+'">'+
+        '<label>Was soll beim nächsten Mal anders sein?'+
+          '<textarea name="rating_note" rows="3" maxlength="2000" placeholder="z. B. weniger Joghurt, mehr Gemüse, Sauce kräftiger würzen …">'+esc(note)+'</textarea>'+
+        '</label>'+
+        '<button type="submit" class="food-action-v544 compact">Anmerkung speichern</button>'+
+      '</form></details>';
+  }
+
+  async function saveRatingNote(kind,id,note){
+    const isMeal=kind==='meal';
+    const key=isMeal?'meals':'recipes';
+    if(!sourceIsReal(key))throw new Error('Die Daten sind gerade nicht sicher synchronisiert. Bitte erneut laden.');
+    const entry=(state?.[key]||[]).find(item=>String(item.id)===String(id));
+    if(!entry)throw new Error('Eintrag nicht gefunden.');
+    const value=String(note||'').trim();
+    if(value.length>2000)throw new Error('Bitte höchstens 2.000 Zeichen verwenden.');
+    const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const result=await withTimeout(
+      supabase.from(isMeal?'food_meals':'food_recipes')
+        .update({rating_note:value||null}).eq('id',id).select('id,rating_note').single(),
+      'Anmerkung speichern',8000
+    );
+    if(result?.error)throw result.error;
+    entry.rating_note=result.data?.rating_note??null;
+    sourceState[key]='cloud';
+    renderState();
+  }
+
   async function setRecipeRating(recipeId,value){
     if(!sourceIsReal('recipes'))throw new Error('Die Rezeptdaten sind gerade nicht sicher mit der Cloud synchronisiert. Bitte zuerst „Erneut laden“ verwenden.');
     const recipe=(state?.recipes||[]).find(item=>String(item.id)===String(recipeId));
@@ -1633,7 +1693,8 @@
     // Rating belongs to the recipe when present, otherwise to this individual meal.
     // Show it consistently in Today, Plan and History, including planned meals.
     const mealRatingMarkup=status!=='skipped'
-      ?'<div class="food-history-rating-v851">'+(historyRecipe?recipeRatingControl(historyRecipe):recipeRatingControl(meal,'meal'))+'</div>'
+      ?'<div class="food-history-rating-v851">'+(historyRecipe?recipeRatingControl(historyRecipe):recipeRatingControl(meal,'meal'))
+        +ratingNoteControl(historyRecipe||meal,historyRecipe?'recipe':'meal')+'</div>'
       :'';
     const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
     const sourceLabel=mealPrepSourceLabel(meal);
@@ -1789,20 +1850,48 @@
       (groups.length?'<div class="food-plan-days-v685">'+groups.map(group=>'<details class="food-day-group-v544 food-plan-day-v685" data-food-plan-day="'+esc(group.date)+'" '+(expandedPlanDays.has(group.date)?'open':'')+'><summary class="food-day-label-v544"><span class="food-plan-day-title-v685"><strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em><span class="food-plan-day-summary-v778" data-food-day-summary-plan>Kalorien &amp; Protein werden berechnet …</span></span><b class="food-plan-day-count-v685">'+esc(group.meals.length)+'</b></summary><div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></div></details>').join('')+'</div>':'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
   }
 
+  function extraHistoryCard(extra){
+    const qty=fmtQty(extra.quantity,extra.unit);
+    const kcal=num(extra.calories_kcal);
+    const protein=num(extra.protein_g);
+    const meta=[qty,kcal===null?'Kalorien unbekannt':Math.round(kcal*10)/10+' kcal',
+      protein===null?'Protein unbekannt':Math.round(protein*10)/10+' g Protein'].join(' · ');
+    return '<article class="food-meal-card-v544 food-history-extra-v887" data-food-extra-history="'+esc(extra.id)+'">'+
+      '<div class="food-history-extra-body-v887">'+
+      '<small>🍬 ZUSÄTZLICHER '+esc(extra.kind==='drink'?'DRINK':'SNACK')+'</small>'+
+      '<h4>'+esc(extra.title)+'</h4><p>'+esc(meta)+'</p>'+
+      (extra.note?'<p class="food-history-extra-note-v887">'+esc(extra.note)+'</p>':'')+
+      '</div></article>';
+  }
+
   function historyView(data){
-    const past=data.meals
-      .filter(meal=>meal.meal_date<todayIso())
-      .sort((a,b)=>b.meal_date.localeCompare(a.meal_date)||(a.sort_order||0)-(b.sort_order||0));
-    const groups=[];
-    past.forEach(meal=>{
-      let group=groups.find(item=>item.date===meal.meal_date);
-      if(!group){group={date:meal.meal_date,meals:[]};groups.push(group);}
-      group.meals.push(meal);
-    });
-    return '<div class="food-section-head-v544"><div><span>HISTORY</span><h3>Vergangene Tage</h3></div><small>'+past.length+' Mahlzeiten</small></div>'+
+    const past=(data.meals||[]).filter(meal=>meal.meal_date<todayIso());
+    const extras=(data.extras||[]).filter(extra=>extra.consumption_date<todayIso());
+    const byDate=new Map();
+    const groupFor=date=>{
+      if(!byDate.has(date))byDate.set(date,{date,meals:[],extras:[]});
+      return byDate.get(date);
+    };
+    past.forEach(meal=>groupFor(meal.meal_date).meals.push(meal));
+    extras.forEach(extra=>groupFor(extra.consumption_date).extras.push(extra));
+    const groups=[...byDate.values()].sort((a,b)=>b.date.localeCompare(a.date));
+    groups.forEach(group=>group.meals.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)));
+    return '<div class="food-section-head-v544"><div><span>HISTORY</span><h3>Vergangene Tage</h3></div><small>'+
+      past.length+' Mahlzeiten · '+extras.length+' Extras</small></div>'+
       (groups.length
-        ?groups.map(group=>'<section class="food-day-group-v544"><div class="food-day-label-v544"><strong>'+esc(fmtDay(group.date))+'</strong><span>'+esc(fmtDate(group.date))+'</span></div><div class="food-meal-list-v544">'+group.meals.map(meal=>mealCard(meal,true)).join('')+'</div></section>').join('')
-        :'<div class="food-empty-card-v544"><h4>Noch keine vergangenen Mahlzeiten.</h4><p>Sobald ein Tag vorbei ist, bleibt er hier weiterhin abrufbar.</p></div>');
+        ?'<div class="food-plan-days-v685 food-history-days-v887">'+groups.map(group=>
+          '<details class="food-day-group-v544 food-plan-day-v685 food-history-day-v887" data-food-history-day="'+esc(group.date)+'" '+(expandedHistoryDays.has(group.date)?'open':'')+'>'+
+            '<summary class="food-day-label-v544"><span class="food-plan-day-title-v685">'+
+              '<strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em>'+
+              '<span class="food-history-day-count-v887">'+group.meals.length+' Mahlzeiten · '+group.extras.length+' Extras</span></span>'+
+              '<b class="food-day-toggle-indicator-v887" aria-hidden="true"></b>'+
+            '</summary>'+
+            '<div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+
+              group.meals.map(meal=>mealCard(meal,true)).join('')+
+              group.extras.map(extraHistoryCard).join('')+
+            '</div></div></details>'
+         ).join('')+'</div>'
+        :'<div class="food-empty-card-v544"><h4>Noch keine vergangenen Mahlzeiten oder Extras.</h4><p>Bestätigter Zusatzverzehr erscheint hier auch ohne Mahlzeitenzuordnung.</p></div>');
   }
 
   function inventoryNoteHtml(note){
@@ -3283,7 +3372,7 @@
     const view=recipePresentation(recipe,expanded);
     const preparedTotal=preparedPortionTotal(recipe.id,data);
     const meta=[view.meta,preparedPortionLabel(preparedTotal)].filter(Boolean).join(' · ');
-    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+recipeRatingControl(recipe)+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
+    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+recipeRatingControl(recipe)+ratingNoteControl(recipe)+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
   }
 
   function recipesView(data){
@@ -4822,6 +4911,11 @@
       if(!date)return;
       if(day.open)expandedPlanDays.add(date);else expandedPlanDays.delete(date);
     }));
+    root.querySelectorAll('[data-food-history-day]').forEach(day=>day.addEventListener('toggle',()=>{
+      const date=String(day.dataset.foodHistoryDay||'');
+      if(!date)return;
+      if(day.open)expandedHistoryDays.add(date);else expandedHistoryDays.delete(date);
+    }));
     root.querySelectorAll('[data-food-weigh]').forEach(button=>button.addEventListener('click',()=>weighPendingModal(button.dataset.foodWeigh)));
     root.querySelectorAll('[data-food-creatine-confirm]').forEach(button=>button.addEventListener('click',async event=>{
       event.stopPropagation();
@@ -4908,6 +5002,13 @@
       try{await setMealRating(button.dataset.foodRateMeal,Number(button.dataset.foodRating));}
       catch(error){alert(error?.message||'Mahlzeitenbewertung konnte nicht gespeichert werden.');button.disabled=false;}
     }));
+    root.querySelectorAll('[data-food-rating-note-form]').forEach(form=>form.addEventListener('submit',async event=>{
+      event.preventDefault();event.stopPropagation();
+      const button=form.querySelector('button[type=submit]');
+      if(button)button.disabled=true;
+      try{await saveRatingNote(form.dataset.foodNoteKind,form.dataset.foodNoteId,form.elements.rating_note.value);}
+      catch(error){alert(error?.message||'Anmerkung konnte nicht gespeichert werden.');if(button)button.disabled=false;}
+    }));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));
     root.querySelectorAll('[data-food-schedule-leftover]').forEach(button=>button.addEventListener('click',()=>scheduleLeftoverModal(button.dataset.foodScheduleLeftover)));
@@ -4918,7 +5019,7 @@
       renderState();
     }));
     root.querySelectorAll('[data-food-recipe-card]').forEach(card=>card.addEventListener('click',event=>{
-      if(event.target?.closest?.('button,input,select,textarea,label'))return;
+      if(event.target?.closest?.('button,input,select,textarea,label,.food-rating-note-v887'))return;
       const id=String(card.dataset.foodRecipeCard);
       if(expandedRecipes.has(id))expandedRecipes.delete(id);else expandedRecipes.add(id);
       renderState();

@@ -41,6 +41,6 @@ test('Today, Plan and History all render stars for recipe and standalone meals',
   assert.doesNotMatch(renderer,/inHistory&&status==='completed'/);
   assert.match(food,/data-food-rate-meal/);
   assert.match(food,/setMealRating\(button.dataset.foodRateMeal/);
-  assert.match(food,/rating,rating_updated_at,food_meal_ingredients/);
+  assert.match(food,/rating,rating_updated_at,rating_note,food_meal_ingredients/);
   assert.match(food,/\.update\(\{rating:next,rating_updated_at:next===null\?null:new Date\(\)\.toISOString\(\)\}\)/);
 });
