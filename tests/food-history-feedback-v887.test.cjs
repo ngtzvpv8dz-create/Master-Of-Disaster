@@ -73,6 +73,6 @@ test('Extras are cloud-sourced and paginated rather than inferred from meal assi
   assert.match(food,/from\('food_extra_consumptions'\)/);
   assert.match(food,/range\(offset,offset\+pageSize-1\)/);
   assert.match(food,/extras:take\('extras',13,rows=>rows\)/);
-  assert.match(loader,/food-v544\.js\?v=887-history-feedback/);
+  assert.match(loader,/food-v544\.js\?v=888-notes-click/);
   assert.match(css,/food-history-extra-v887/);
 });
