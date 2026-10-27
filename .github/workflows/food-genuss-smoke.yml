@@ -29,5 +29,5 @@ jobs:
       - name: Loader and database wiring
         run: |
           grep -Fq 'food-planned-extras-v880.js?v=885-loop-guard' area-runtime-v609.js
-          grep -Fq 'area-runtime-v609.js?v=886-food-repair' index.html
+          grep -Fq 'area-runtime-v609.js?v=887-history-feedback' index.html
           grep -Fq 'edit_food_planned_extra_v1' supabase/migrations/20261025202100_food_planned_extra_edit_v1.sql
