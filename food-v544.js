@@ -33,6 +33,7 @@
   const frostDecor=new Map();
   const expandedRecipes=new Set();
   const expandedMeals=new Set();
+  const expandedRatingNotes=new Set();
   const expandedPlanDays=new Set();
   const expandedHistoryDays=new Set();
   const expandedInventory=new Set();
@@ -1261,7 +1262,9 @@
     const note=String(entry?.rating_note||'');
     const target=kind==='meal'?'meal':'recipe';
     const title=note?'Anmerkung zur Planung · vorhanden':'Anmerkung zur Planung hinzufügen';
-    return '<details class="food-rating-note-v887" data-food-rating-note-details>'+
+    const noteKey=target+':'+String(entry?.id||'');
+    return '<details class="food-rating-note-v887" data-food-rating-note-details'+
+      (expandedRatingNotes.has(noteKey)?' open':'')+'>'+
       '<summary>'+esc(title)+'</summary>'+
       '<form data-food-rating-note-form data-food-note-kind="'+target+'" data-food-note-id="'+esc(entry?.id||'')+'">'+
         '<label>Was soll beim nächsten Mal anders sein?'+
@@ -4935,7 +4938,9 @@
     }));
     root.querySelectorAll('[data-food-meal-toggle]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();toggleMealCard(String(button.dataset.foodMealToggle));}));
     root.querySelectorAll('[data-food-meal-card]').forEach(card=>card.addEventListener('click',event=>{
-      if(event.target?.closest?.('button,input,select,textarea,label'))return;
+      // Inner controls, especially the native Anmerkung <details>/<summary>,
+      // must never collapse the whole meal card or destroy the textarea.
+      if(event.target?.closest?.('button,input,select,textarea,label,details,summary,.food-rating-note-v887'))return;
       const id=String(card.dataset.foodMealCard);
       toggleMealCard(id);
     }));
@@ -5002,6 +5007,17 @@
       try{await setMealRating(button.dataset.foodRateMeal,Number(button.dataset.foodRating));}
       catch(error){alert(error?.message||'Mahlzeitenbewertung konnte nicht gespeichert werden.');button.disabled=false;}
     }));
+    root.querySelectorAll('[data-food-rating-note-details]').forEach(details=>{
+      // Do not bubble native details clicks to the surrounding clickable card.
+      details.addEventListener('click',event=>event.stopPropagation());
+      details.addEventListener('toggle',()=>{
+        const form=details.querySelector('[data-food-rating-note-form]');
+        if(!form)return;
+        const key=String(form.dataset.foodNoteKind||'')+':'+String(form.dataset.foodNoteId||'');
+        if(details.open)expandedRatingNotes.add(key);
+        else expandedRatingNotes.delete(key);
+      });
+    });
     root.querySelectorAll('[data-food-rating-note-form]').forEach(form=>form.addEventListener('submit',async event=>{
       event.preventDefault();event.stopPropagation();
       const button=form.querySelector('button[type=submit]');
@@ -5019,7 +5035,7 @@
       renderState();
     }));
     root.querySelectorAll('[data-food-recipe-card]').forEach(card=>card.addEventListener('click',event=>{
-      if(event.target?.closest?.('button,input,select,textarea,label,.food-rating-note-v887'))return;
+      if(event.target?.closest?.('button,input,select,textarea,label,details,summary,.food-rating-note-v887'))return;
       const id=String(card.dataset.foodRecipeCard);
       if(expandedRecipes.has(id))expandedRecipes.delete(id);else expandedRecipes.add(id);
       renderState();
