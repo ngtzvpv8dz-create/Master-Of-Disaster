@@ -8,7 +8,7 @@ const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
 const food=read('food-v544.js');
 const loader=read('area-runtime-v609.js');
 const css=read('food-v544.css');
-const sql=read('supabase/migrations/20261027055400_food_rating_notes_v887.sql');
+const sql=read('supabase/migrations/20261027050204_food_rating_notes_v887.sql');
 
 function isolatedHistory(){
   const from=food.indexOf('  function extraHistoryCard(extra){');
