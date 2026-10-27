@@ -2919,3 +2919,24 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-history-rating-v851 .food-recipe-stars-v636 button{
   width:18px;height:18px;font-size:12px;border-radius:4px;
 }
+
+/* V887 · eigenständige Zusatzverzehr-Historie, Tagesakkordeon und Bewertungsnotizen */
+.food-history-days-v887{margin-top:10px}
+.food-history-day-v887 .food-plan-day-body-v685{padding:10px}
+.food-history-day-count-v887{display:block;margin-top:5px;font-size:10px;color:#758777}
+.food-day-toggle-indicator-v887::after{content:'+';display:block;font-size:20px;line-height:1;color:#617666}
+.food-history-day-v887[open] .food-day-toggle-indicator-v887::after{content:'−'}
+.food-history-extra-v887{padding:12px 13px;margin-bottom:9px;border:1px solid rgba(111,139,101,.20);border-radius:12px;background:rgba(234,241,226,.42)}
+.food-history-extra-body-v887{position:relative;z-index:1}
+.food-history-extra-body-v887>small{display:block;font-size:9px;font-weight:800;letter-spacing:.06em;color:#68806b}
+.food-history-extra-body-v887 h4{margin:5px 0;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.food-history-extra-body-v887 p{margin:4px 0 0;font-size:11px;line-height:1.45;color:#637367}
+.food-history-extra-note-v887{font-style:italic}
+.food-rating-note-v887{margin-top:5px;border-top:1px solid rgba(144,156,135,.15)}
+.food-rating-note-v887 summary{padding:8px 0 3px;cursor:pointer;list-style:disclosure-closed;font-size:11px;font-weight:700;color:#667c69}
+.food-rating-note-v887[open] summary{list-style:disclosure-open}
+.food-rating-note-v887 form{display:flex;flex-direction:column;gap:9px;margin-top:9px}
+.food-rating-note-v887 label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:#667c69}
+.food-rating-note-v887 textarea{box-sizing:border-box;display:block;width:100%;min-height:75px;padding:10px;border:1px solid rgba(90,121,96,.3);border-radius:9px;background:rgba(255,255,255,.72);color:#334535;font:inherit;font-size:12px;line-height:1.5;resize:vertical}
+.food-rating-note-v887 button[type=submit]{align-self:flex-start;min-height:32px}
+.food-recipe-card-v544>.food-rating-note-v887{margin:5px 12px 9px}
