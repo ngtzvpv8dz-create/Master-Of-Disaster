@@ -61,7 +61,7 @@ test('editing an extra preserves its linked product catalog identity',()=>{
   assert(extra.includes('async function openEntry(id)'));
   assert(extra.includes("data-food-extra-row"));
   assert(/food-nutrition-v711\.js\?v=\d+-/.test(runtime));
-  assert(runtime.includes("food-extra-snacks-v828.js?v=880-genuss-budget"));
-  assert(runtime.includes("food-planned-extras-v880.js?v=885-loop-guard"));
+  assert.match(runtime,/food-extra-snacks-v828[.]js[?]v=\d+-/);
+  assert.match(runtime,/food-planned-extras-v880[.]js[?]v=\d+-/);
   assert(/version:'V\d+'/.test(index));
 });

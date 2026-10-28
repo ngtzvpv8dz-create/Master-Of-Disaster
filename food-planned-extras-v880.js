@@ -50,10 +50,10 @@
     if(!root||root.getAttribute('aria-hidden')==='true')return;
     if(!isPossibleWorkday(berlinDay())){workCoffeeBox()?.remove();return;}
     if(workCoffeeBox())return;
-    const summary=root.querySelector('[data-food-day-summary-today]');
-    const contents=summary?.closest('.food-content-v544')||root;
-    const list=contents.querySelector('.food-meal-list-v544');
+    const summary=root.querySelector?.('[data-food-day-summary-today]');
     if(!summary)return;
+    const contents=summary.closest?.('.food-content-v544')||root;
+    const list=contents.querySelector?.('.food-meal-list-v544')||null;
     const panel=document.createElement('section');
     panel.id=WORK_COFFEE_ID;
     panel.className=WORK_COFFEE_ID;

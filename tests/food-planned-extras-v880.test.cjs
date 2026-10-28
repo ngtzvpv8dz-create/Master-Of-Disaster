@@ -11,13 +11,14 @@ const loader=read('area-runtime-v609.js');
 const migration=read('supabase/migrations/20261025185641_food_planned_extras_genussbudget_v1.sql');
 
 test('optional Genuss-Extras mount after actual snack area in FOOD today',()=>{
- assert.match(loader,/food-planned-extras-v880[.]js[?]v=885-loop-guard/);
+ assert.match(loader,/food-planned-extras-v880[.]js[?]v=\d+-/);
  assert.match(proposed,/extra[.]insertAdjacentElement\('afterend',el\)/);
  assert.match(proposed,/food-extra-snacks-v828/);
  assert.match(proposed,/new Intl[.]DateTimeFormat\('en-CA',[\s\S]*?Europe\/Berlin/);
 });
 test('planned is NOT eaten and the checklist requires deliberate action',()=>{
- assert.match(proposed,/rows[.]filter\(r=>r[.]status==='planned'\)/);
+ assert.match(proposed,/const visibleRows=rows[.]filter\(r=>r[.]source_key!==WORK_COFFEE_KEY\)/);
+ assert.match(proposed,/visibleRows[.]filter\(r=>r[.]status==='planned'\)/);
  assert.match(proposed,/data-treat-confirm/);
  assert.match(proposed,/data-treat-skip/);
  assert.match(proposed,/data-treat-undo/);
