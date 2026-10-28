@@ -1710,6 +1710,10 @@
     const skipAction=status==='planned'
       ?'<button type="button" class="food-action-v544 compact food-meal-skip-v840" data-food-skip="'+esc(meal.id)+'">'+(isMealPrep?'Nicht gegessen':'Nicht zubereitet')+'</button>'
       :'';
+    // V890: Abschluss ist bereits gespeichert, kein erneutes Abbuchen.
+    const recordedSnack=status==='completed'&&meal.meal_type==='snack'
+      ?'<div class="food-meal-plan-actions-v630"><p class="food-meal-plan-note-v581" role="status">✓ Bereits als zubereitet gespeichert · kein zweiter Vorratsabzug</p></div>'
+      :'';
     const statusMeta=status==='completed'
       ?(meal.prepared_at?(isMealPrep?fmtPreparedAt(meal.prepared_at).replace('Zubereitet am ','Gegessen am '):fmtPreparedAt(meal.prepared_at)):(isMealPrep?'Gegessen · Zeitpunkt nicht erfasst':'Erledigt · Zeitpunkt nicht erfasst'))
       :status==='skipped'?(isMealPrep?'Nicht gegessen':'Nicht zubereitet'):'Geplant';
@@ -1763,7 +1767,7 @@
         +confirmFrozen
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
-        +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
+        +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')+recordedSnack
         +mealRatingMarkup
         +'</article>';
     }
@@ -1787,7 +1791,7 @@
         +freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+action+skipAction+'</div>':'')
-        +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
+        +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')+recordedSnack
         +mealRatingMarkup
         +'</article>';
     }
@@ -1814,7 +1818,7 @@
       +'</button>'
       +dailyCreatineReminderMarkup(meal)
       +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
-      +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
+      +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')+recordedSnack
       +mealRatingMarkup
       +'</article>';
   }
