@@ -53,7 +53,7 @@
     const summary=root.querySelector('[data-food-day-summary-today]');
     const contents=summary?.closest('.food-content-v544')||root;
     const list=contents.querySelector('.food-meal-list-v544');
-    if(!summary||!list)return;
+    if(!summary)return;
     const panel=document.createElement('section');
     panel.id=WORK_COFFEE_ID;
     panel.className=WORK_COFFEE_ID;
@@ -61,7 +61,8 @@
     const first=list.querySelector('[data-food-meal-card]');
     const label=first?.querySelector('.food-recipe-type-v544')?.textContent||'';
     if(first&&/Frühstück/i.test(label))first.insertAdjacentElement('afterend',panel);
-    else list.insertAdjacentElement('beforebegin',panel);
+    else if(list)list.insertAdjacentElement('beforebegin',panel);
+    else summary.insertAdjacentElement('afterend',panel);
     renderWorkCoffee();
   }
   function renderWorkCoffee(){
