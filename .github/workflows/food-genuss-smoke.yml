@@ -31,5 +31,5 @@ jobs:
           grep -Eq 'food-planned-extras-v880[.]js[?]v=[0-9]+-' area-runtime-v609.js
           grep -Eq 'area-runtime-v609[.]js[?]v=[0-9]+-' index.html
           grep -Fq 'work-coffee-employer-v1' food-planned-extras-v880.js
-          grep -Fq 'recordedSnack' food-v544.js
+          ! grep -Fq 'recordedSnack' food-v544.js
           grep -Fq 'edit_food_planned_extra_v1' supabase/migrations/20261025202100_food_planned_extra_edit_v1.sql
