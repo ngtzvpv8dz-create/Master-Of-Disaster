@@ -58,7 +58,7 @@
     panel.id=WORK_COFFEE_ID;
     panel.className=WORK_COFFEE_ID;
     panel.setAttribute('aria-label','Arbeitskaffee zum Fruehstueck');
-    const first=list.querySelector('[data-food-meal-card]');
+    const first=list?.querySelector('[data-food-meal-card]');
     const label=first?.querySelector('.food-recipe-type-v544')?.textContent||'';
     if(first&&/Frühstück/i.test(label))first.insertAdjacentElement('afterend',panel);
     else if(list)list.insertAdjacentElement('beforebegin',panel);
