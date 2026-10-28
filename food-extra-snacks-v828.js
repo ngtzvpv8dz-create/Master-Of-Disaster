@@ -135,12 +135,14 @@
     '</form>';
   }
   function rowsHtml(){
-    const sum=rows.reduce((a,r)=>({kcal:a.kcal+Number(r.calories_kcal||0),protein:a.protein+Number(r.protein_g||0),carbs:a.carbs+Number(r.carbohydrates_g||0),fat:a.fat+Number(r.fat_g||0)}),{kcal:0,protein:0,carbs:0,fat:0});
-    const incomplete=rows.filter(r=>!valid(r.calories_kcal)||!valid(r.protein_g)).length;
-    return '<div class="food-extra-total-v828"><b>'+rows.length+' Zusatz'+(rows.length===1?'':'-Snacks')+'</b>'+
+    // Arbeitgeber-Kaffee wird separat direkt beim Fruehstueck gezeigt.
+    const visibleRows=rows.filter(row=>!(row.title==='Arbeitskaffee (vom Arbeitgeber)'&&String(row.source_reference||'').startsWith('food-planned-extra-v1-')));
+    const sum=visibleRows.reduce((a,r)=>({kcal:a.kcal+Number(r.calories_kcal||0),protein:a.protein+Number(r.protein_g||0),carbs:a.carbs+Number(r.carbohydrates_g||0),fat:a.fat+Number(r.fat_g||0)}),{kcal:0,protein:0,carbs:0,fat:0});
+    const incomplete=visibleRows.filter(r=>!valid(r.calories_kcal)||!valid(r.protein_g)).length;
+    return '<div class="food-extra-total-v828"><b>'+visibleRows.length+' Zusatz'+(visibleRows.length===1?'':'-Snacks')+'</b>'+
       '<span>'+nf(sum.kcal,0)+' kcal · '+nf(sum.protein)+' g Protein'+(incomplete?' (bekannte Werte)':'')+'</span></div>'+
       (incomplete?'<p class="food-extra-help-v828">'+incomplete+' Eintrag'+(incomplete===1?' hat':'e haben')+' unbekannte Kalorien- oder Eiweißwerte. Tagesbilanz deshalb unvollständig, keine Nullwerte erfunden.</p>':'')+
-      (rows.length?'<ul class="food-extra-list-v828">'+rows.map(r=>
+      (visibleRows.length?'<ul class="food-extra-list-v828">'+visibleRows.map(r=>
         '<li data-food-extra-row="'+esc(r.id)+'"'+(!valid(r.calories_kcal)||!valid(r.protein_g)?' class="food-extra-unresolved-v838"':'')+'><div><strong>'+esc(r.title)+'</strong><small>'+esc(extraQuantityDisplay(r))+' · '+
         (valid(r.calories_kcal)?nf(r.calories_kcal,0)+' kcal':'kcal unbekannt')+' · '+
         (valid(r.protein_g)?nf(r.protein_g)+' g Protein':'Protein unbekannt')+
