@@ -4,7 +4,7 @@
 (function(){
   'use strict';
   if(window.__modFoodTreatsV880)return;
-  const ID='food-planned-extras-v880',ROOT='modFoodV544';
+  const ID='food-planned-extras-v880',ROOT='modFoodV544',WORK_COFFEE_KEY='work-coffee-employer-v1',WORK_COFFEE_ID='food-work-coffee-v889';
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const nf=x=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:1}).format(Number(x)||0);
   const berlinDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
@@ -26,11 +26,115 @@
      '.food-treat-panel-v880 .food-treat-success-v880{color:#226a47;font-weight:700}'+
      '.food-treat-panel-v880 .food-treat-edit-v880{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:7px 0 0}'+
      '.food-treat-panel-v880 .food-treat-edit-v880 input{max-width:78px;min-width:52px;border:1px solid #b0b2c7;border-radius:7px;padding:6px;background:white;color:#353558;font:inherit}';
+    s.textContent+='.'+WORK_COFFEE_ID+'{margin:8px 0 14px;padding:12px 14px;border:1px solid #cfbfa4;border-radius:12px;background:#fcf5e9;color:#393027;font-size:12px;line-height:1.5}'+
+      '.'+WORK_COFFEE_ID+' strong{display:block;font-size:14px;margin-bottom:2px}'+
+      '.'+WORK_COFFEE_ID+' small{display:block;color:#665c4f;margin:4px 0}'+
+      '.'+WORK_COFFEE_ID+' button{margin-top:7px;padding:7px 12px;background:#f5e4c7;color:#493321;border:1px solid #bca17d;border-radius:8px;font:inherit;font-weight:700;cursor:pointer}'+
+      '.'+WORK_COFFEE_ID+' button:disabled{opacity:.55;cursor:wait}';
     document.head.append(s);
   }
+
+  // V889: Arbeitgeber-Kaffee wird NIEMALS als private Zutat verbucht.
+  // Montag-Donnerstag ist nur ein Kandidat: Urlaub, Krankheit und freie Tage
+  // erfordern eine ausdrueckliche Bestaetigung des tatsaechlichen Konsums.
+  function isPossibleWorkday(date){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(date||'')))return false;
+    const [year,month,dayOfMonth]=date.split('-').map(Number);
+    const weekday=new Date(Date.UTC(year,month-1,dayOfMonth)).getUTCDay();
+    return weekday>=1&&weekday<=4;
+  }
+  function workCoffeeRow(){return rows.find(row=>row.source_key===WORK_COFFEE_KEY)||null;}
+  function workCoffeeBox(){return document.getElementById(WORK_COFFEE_ID);}
+  function ensureWorkCoffeePanel(){
+    const root=document.getElementById(ROOT);
+    if(!root||root.getAttribute('aria-hidden')==='true')return;
+    if(!isPossibleWorkday(berlinDay())){workCoffeeBox()?.remove();return;}
+    if(workCoffeeBox())return;
+    const summary=root.querySelector('[data-food-day-summary-today]');
+    const contents=summary?.closest('.food-content-v544')||root;
+    const list=contents.querySelector('.food-meal-list-v544');
+    if(!summary||!list)return;
+    const panel=document.createElement('section');
+    panel.id=WORK_COFFEE_ID;
+    panel.className=WORK_COFFEE_ID;
+    panel.setAttribute('aria-label','Arbeitskaffee zum Fruehstueck');
+    const first=list.querySelector('[data-food-meal-card]');
+    const label=first?.querySelector('.food-recipe-type-v544')?.textContent||'';
+    if(first&&/Frühstück/i.test(label))first.insertAdjacentElement('afterend',panel);
+    else list.insertAdjacentElement('beforebegin',panel);
+    renderWorkCoffee();
+  }
+  function renderWorkCoffee(){
+    const panel=workCoffeeBox();
+    if(!panel)return;
+    if(!isPossibleWorkday(berlinDay())){panel.remove();return;}
+    const row=workCoffeeRow();
+    const confirmed=row?.status==='confirmed';
+    const caption=confirmed?'✓ Als getrunken erfasst · 7,05 kcal in der Tagesbilanz':
+      'Nur bei tatsächlichem Arbeitstag bestätigen. Ohne Bestätigung keine Kalorien- oder Verbrauchsbuchung.';
+    panel.innerHTML='<strong>☕ Arbeitskaffee zum Frühstück</strong>'+
+      '<span>200 ml Kaffee · ca. 15 ml Milch · ohne Zucker</span>'+
+      '<small>Vom Arbeitgeber gestellt · kein privater Vorrat · kein Einkaufsbedarf · '+esc(caption)+'</small>'+
+      (error?'<small role="alert">'+esc(error)+'</small>':'')+
+      (!ready?'<small>Status wird geprüft …</small>':
+       '<button type="button" data-work-coffee-action="'+(confirmed?'undo':'confirm')+'"'+
+       (busy?' disabled':'')+'>'+(confirmed?'↶ Buchung rückgängig':'✓ Heute auf der Arbeit getrunken')+'</button>');
+  }
+  async function workCoffeeAction(action){
+    if(busy||loading||!ready||!isPossibleWorkday(berlinDay()))return;
+    const requestedDay=berlinDay(),api=client();
+    if(!api||!uid){error='Bitte zuerst anmelden.';render();return;}
+    busy=true;error='';note='';render();
+    try{
+      let row=workCoffeeRow();
+      if(action==='undo'){
+        if(!row||row.status!=='confirmed')throw new Error('Kein bestätigter Arbeitskaffee vorhanden.');
+        const undo=await withTimeout(api.rpc('undo_food_planned_extra_v1',{p_plan_id:row.id}),'Arbeitskaffee rückgängig');
+        if(undo.error)throw undo.error;
+      }else{
+        if(row?.status==='confirmed')return;
+        if(row?.status==='skipped'){
+          const restored=await withTimeout(api.from('food_planned_extras')
+            .update({status:'planned',updated_at:new Date().toISOString()})
+            .eq('id',row.id).eq('user_id',uid).eq('status','skipped'),'Arbeitskaffee wieder öffnen');
+          if(restored.error)throw restored.error;
+        }
+        if(!row){
+          // Null-Verknuepfungen sind Absicht: Arbeitgeber stellt Kaffee UND Milch.
+          const inserted=await withTimeout(api.from('food_planned_extras').upsert({
+            user_id:uid,plan_date:requestedDay,source_key:WORK_COFFEE_KEY,
+            inventory_id:null,product_id:null,title:'Arbeitskaffee (vom Arbeitgeber)',
+            kind:'drink',quantity:200,unit:'ml',
+            calories_kcal:7.05,protein_g:0.51,carbohydrates_g:0.735,fat_g:0.225,
+            caffeine_mg:null,status:'planned',
+            note:'200 ml Kaffee ohne Zucker und ca. 15 ml Milch vom Arbeitgeber. Nährwerte aus 15 ml Milch (47 kcal/100 ml); Kaffee selbst näherungsweise vernachlässigt. Keine private Vorrats- oder Einkaufsbuchung.'
+          },{onConflict:'user_id,plan_date,source_key',ignoreDuplicates:true}),'Arbeitskaffee einplanen');
+          if(inserted.error)throw inserted.error;
+        }
+        const found=await withTimeout(api.from('food_planned_extras')
+          .select('id,status').eq('user_id',uid).eq('plan_date',requestedDay)
+          .eq('source_key',WORK_COFFEE_KEY).single(),'Arbeitskaffee prüfen');
+        if(found.error)throw found.error;
+        row=found.data;
+        if(row?.status!=='confirmed'){
+          const result=await withTimeout(api.rpc('confirm_food_planned_extra_v1',{p_plan_id:row.id}),'Arbeitskaffee buchen');
+          if(result.error)throw result.error;
+        }
+      }
+      note=action==='undo'?'Arbeitskaffee rückgängig gemacht.':'Arbeitskaffee erfasst, ohne privaten Vorratsverbrauch.';
+      busy=false;await refresh();
+      await window.__modFoodExtrasV828?.refresh?.();
+      window.__modFoodNutritionV711?.refresh?.();
+      await window.__modFoodV544?.reload?.();
+    }catch(e){error=e?.message||String(e);}
+    finally{busy=false;render();}
+  }
+
   function render(){
     const el=box();if(!el)return;
-    const pending=rows.filter(r=>r.status==='planned'),confirmed=rows.filter(r=>r.status==='confirmed');
+    renderWorkCoffee();
+    const visibleRows=rows.filter(r=>r.source_key!==WORK_COFFEE_KEY);
+    const pending=visibleRows.filter(r=>r.status==='planned'),confirmed=visibleRows.filter(r=>r.status==='confirmed');
     const kcal=pending.reduce((sum,r)=>sum+(Number(r.calories_kcal)||0),0);
     el.innerHTML='<h3>🍬 Geplante Genuss-Extras</h3>'+
       '<p>Flexibler Richtwert: 100 kcal/Tag innerhalb von 1.800 kcal. Nur mit ✓ bestätigte Extras zählen in Tagesbilanz und Vorrat. Vorschläge sind freiwillig.</p>'+
@@ -38,7 +142,7 @@
       (note?'<p role="status" class="food-treat-success-v880">'+esc(note)+'</p>':'')+
       (!ready?'<p>Geplante Extras werden geladen …</p>':
       '<p>Offene Vorschläge: '+pending.length+' · '+nf(kcal)+' kcal · Bestätigt: '+confirmed.length+'</p>'+
-      (rows.length?'<ul>'+rows.map(r=>{
+      (visibleRows.length?'<ul>'+visibleRows.map(r=>{
         const isMilka=r.title.startsWith('Milka Danke');
         const note2=isMilka?'':r.note?' · '+r.note:'';
         const unitDisplay=isMilka?nf(Number(r.quantity)/5.7)+' Stück ('+nf(r.quantity)+' g)':nf(r.quantity)+' '+r.unit;
@@ -85,7 +189,7 @@
       uid=session?.session?.user?.id||'';
       if(sessionError||!uid)throw new Error('Bitte zuerst anmelden');
       const result=await withTimeout(api.from('food_planned_extras')
-        .select('id,plan_date,title,kind,quantity,unit,calories_kcal,caffeine_mg,note,status')
+        .select('id,plan_date,source_key,title,kind,quantity,unit,calories_kcal,caffeine_mg,note,status')
         .eq('user_id',uid).eq('plan_date',requestedDay)
         .order('created_at',{ascending:true}).limit(100),'Genuss-Extras');
       if(result.error)throw result.error;
@@ -113,6 +217,7 @@
     try{
       styles();
       const today=berlinDay();
+      ensureWorkCoffeePanel();
       if(day!==today){
         // Set date synchronously, not after auth.getSession().
         day=today;ready=false;rows=[];note='';error='';editingId='';
@@ -155,6 +260,12 @@
       }
     }catch(e){busy=false;error=e?.message||String(e);render();}
   }
+  document.addEventListener('click',e=>{
+    const button=e.target.closest?.('[data-work-coffee-action]');
+    if(!button||!button.closest('#'+WORK_COFFEE_ID))return;
+    e.preventDefault();
+    workCoffeeAction(button.getAttribute('data-work-coffee-action'));
+  });
   document.addEventListener('click',e=>{
     const btn=e.target.closest?.('[data-treat-confirm],[data-treat-skip],[data-treat-undo],[data-treat-restore],[data-treat-edit],[data-treat-cancel]');
     if(!btn||!btn.closest('#'+ID))return;
