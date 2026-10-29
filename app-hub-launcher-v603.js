@@ -28,7 +28,8 @@
     {id:'finance',label:'FINANZEN',active:true},
     {id:'progress',label:'PROGRESS',active:false},
     {id:'backstage',label:'BACKSTAGE',active:true},
-    {id:'denkfabrik',label:'DENKFABRIK',active:true}
+    {id:'denkfabrik',label:'DENKFABRIK',active:true},
+    {id:'planonisierung',label:'PLANONISIERUNG',active:true}
   ];
   let observer=null;
   let patching=false;
@@ -39,6 +40,19 @@
   function isReady(){return runtime()?.ready===true;}
 
   function iconMarkup(item){
+    if(item.id==='planonisierung'){
+      return '<svg class="mod-hub-app-plano-art-v901" viewBox="0 0 192 192" aria-hidden="true">'
+        +'<defs><linearGradient id="planoBg901" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#49458e"/><stop offset=".65" stop-color="#252547"/><stop offset="1" stop-color="#121932"/></linearGradient>'
+        +'<linearGradient id="planoRim901" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d7c6ff"/><stop offset=".55" stop-color="#8aa9df"/><stop offset="1" stop-color="#6b5eaa"/></linearGradient></defs>'
+        +'<rect x="7" y="7" width="178" height="178" rx="39" fill="url(#planoBg901)" stroke="url(#planoRim901)" stroke-width="5"/>'
+        +'<rect x="37" y="39" width="118" height="115" rx="14" fill="#ece9ff" stroke="#5c5b9b" stroke-width="4"/>'
+        +'<path d="M37 53q0-14 14-14h90q14 0 14 14v20H37z" fill="#8a7bc9"/>'
+        +'<path d="M64 31v24M128 31v24" stroke="#e2dfff" stroke-width="10" stroke-linecap="round"/>'
+        +'<path d="M54 91h34M54 110h22M54 130h27" stroke="#a6a4c5" stroke-width="6" stroke-linecap="round"/>'
+        +'<circle cx="122" cy="119" r="27" fill="#36386f" stroke="#8e85ce" stroke-width="4"/>'
+        +'<path d="M122 103v17l12 8" fill="none" stroke="#f5edff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'
+        +'</svg>';
+    }
     if(item.id==='denkfabrik'){
       return '<svg class="mod-hub-app-denk-art-v752" viewBox="0 0 192 192" aria-hidden="true">'
         +'<defs>'
@@ -93,7 +107,7 @@
   }
   function labelMarkup(item){return '<span class="mod-hub-app-label-v517">'+item.label+'</span>';}
   function ariaLabel(item){
-    const names={todo:'To-do',sport:'Sport',kistology:'Kistology',food:'Food',shopping:'Einkaufsliste',finance:'Finanzen',progress:'Progress',backstage:'Backstage',denkfabrik:'Denkfabrik'};
+    const names={todo:'To-do',sport:'Sport',kistology:'Kistology',food:'Food',shopping:'Einkaufsliste',finance:'Finanzen',progress:'Progress',backstage:'Backstage',denkfabrik:'Denkfabrik',planonisierung:'Planonisierung'};
     return (names[item.id]||item.label)+(item.active?' öffnen':' noch nicht aktiv');
   }
   function progressMarkup(){
@@ -165,7 +179,7 @@
 
   const api={
     version:VERSION,render,sources:{...SOURCES},modules:MODULES.map(item=>({...item})),
-    updateProgress,homescreenStyle:true,nineTileGrid:true,denkfabrikTileV634:true,denkfabrikVectorV752:true,shoppingActiveV643:true,realBootstrapProgress:true,legacyLoadersRemoved:true
+    updateProgress,homescreenStyle:true,nineTileGrid:true,planonisierungTenthTileV901:true,denkfabrikTileV634:true,denkfabrikVectorV752:true,shoppingActiveV643:true,realBootstrapProgress:true,legacyLoadersRemoved:true
   };
   window.__modHubLauncherV603=api;
   /* Namespace aliases keep existing feature modules/tests pointed at the one current launcher. */
