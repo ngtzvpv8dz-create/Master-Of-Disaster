@@ -1,8 +1,14 @@
 /* Planonisierung V1 · read-only agenda / unabridged push inbox */
 .mod-hub-app-button-planonisierung-v517{--mod-hub-glow:rgba(148,145,255,.28);}
-.mod-hub-app-slot-planonisierung-v517{
-  grid-column:1/-1;
-  justify-self:center;
+/* Fix: fifth grid row pairs Denkfabrik left with Planonisierung right.
+   The first eight tiles retain their original positions. */
+.mod-hub-app-grid-v517 > .mod-hub-app-slot-denkfabrik-v517{
+  grid-column:1;
+  justify-self:stretch;
+}
+.mod-hub-app-grid-v517 > .mod-hub-app-slot-planonisierung-v517{
+  grid-column:2;
+  justify-self:stretch;
 }
 .mod-hub-app-slot-planonisierung-v517 .mod-hub-app-label-v517{
   color:#d9d2ff;
