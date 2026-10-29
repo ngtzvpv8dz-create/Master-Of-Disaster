@@ -85,6 +85,12 @@
       './supabase-client-lite-v593.js?v=593',
       './denkfabrik-v752.js?v=760-clear-roles'
     ],
+    planonisierung:[
+      SUPABASE,
+      './supabase-config.js?v=609',
+      './supabase-client-lite-v593.js?v=593',
+      './planonisierung-v901.js?v=901'
+    ],
     backstage:[
       SUPABASE,
       './supabase-config.js?v=609',
@@ -163,6 +169,7 @@
     kistology:'Kistologie',
     finance:'Finanzen',
     denkfabrik:'Denkfabrik',
+    planonisierung:'Planonisierung',
     backstage:'Backstage'
   };
 
@@ -174,7 +181,7 @@
   };
 
   const HEAVY_AREAS=new Set(['todo','backstage']);
-  const ACTIVE_AREAS=new Set(['todo','sport','food','shopping','kistology','finance','denkfabrik','backstage']);
+  const ACTIVE_AREAS=new Set(['todo','sport','food','shopping','kistology','finance','denkfabrik','planonisierung','backstage']);
   const executed=new Set();
   const executing=new Map();
   const readyAreas=new Set();
@@ -327,6 +334,8 @@
       await waitFor(()=>window.__modKistologyV603);
     }else if(id==='finance'){
       await waitFor(()=>window.__modFinanceV552||window.__modFinanceV553);
+    }else if(id==='planonisierung'){
+      await waitFor(()=>window.__modPlanonisierungV901);
     }else if(id==='backstage'){
       await waitFor(()=>window.__modBackstageV531);
     }
@@ -719,6 +728,8 @@
       result=window.__modKistologyV603?.open?.();
     }else if(id==='denkfabrik'){
       result=window.__modDenkfabrikV635?.open?.();
+    }else if(id==='planonisierung'){
+      result=window.__modPlanonisierungV901?.open?.();
     }else if(id==='backstage'){
       result=window.__modBackstageV531?.open?.({section:'dev'});
     }
