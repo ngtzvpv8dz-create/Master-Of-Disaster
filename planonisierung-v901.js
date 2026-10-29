@@ -70,7 +70,18 @@
   }
   function remindersMarkup(){
     if(!reminders.length)return '<p class="plano-empty-v901">Keine Erinnerungen in den vergangenen drei Tagen oder den kommenden zwei Wochen.</p>';
-    return reminders.map(row=>{
+    const now=Date.now();
+    const priority=row=>{
+      const at=dateOf(row.scheduled_at).getTime();
+      return row.state==='pending'&&at>=now?0:row.state==='sent'?1:2;
+    };
+    const ordered=[...reminders].sort((a,b)=>{
+      const rank=priority(a)-priority(b);
+      if(rank)return rank;
+      const da=dateOf(a.scheduled_at).getTime(),db=dateOf(b.scheduled_at).getTime();
+      return priority(a)===0?da-db:db-da;
+    });
+    return ordered.map(row=>{
       const date=dateOf(row.scheduled_at);
       const status={pending:'Geplant',processing:'Wird versendet',sent:'An Push-Dienst gesendet',failed:'Versand fehlgeschlagen',cancelled:'Abgebrochen'}[row.state]||row.state;
       return '<article class="plano-reminder-v901" data-state="'+safe(row.state)+'">'
@@ -87,11 +98,11 @@
       +'<header class="plano-hero-v901"><span>DER PLAN GEGEN DAS CHAOS</span><h2>PLANONISIERUNG</h2>'
       +'<p>Deine nächsten Termine und Erinnerungen. Vollständig lesbar, auch wenn iOS die Push-Vorschau kürzt.</p></header>'
       +noteList()
-      +'<div class="plano-section-head-v901"><div><small>DEIN ZEITPLAN</small><h3>Was steht an?</h3></div><button type="button" data-plano-refresh-v901 '+(busy?'disabled':'')+'>↻ Aktualisieren</button></div>'
-      +(state==='loading'&&events.length===0?'<p class="plano-empty-v901">Termine werden geladen …</p>':agenda())
-      +'<div class="plano-section-head-v901"><div><small>BENACHRICHTIGUNGEN</small><h3>Erinnerungen im Klartext</h3></div></div>'
-      +'<p class="plano-explain-v901">Hier steht der vollständige Text der App-Erinnerung. „Gesendet“ bestätigt die Übergabe an den Push-Dienst, nicht das Lesen auf deinem iPhone.</p>'
+      +'<div class="plano-section-head-v901"><div><small>BENACHRICHTIGUNGEN</small><h3>Erinnerungen im Klartext</h3></div><button type="button" data-plano-refresh-v901 '+(busy?'disabled':'')+'>↻ Aktualisieren</button></div>'
+      +'<p class="plano-explain-v901">Der vollständige Text deiner App-Erinnerungen. „Gesendet“ bestätigt die Übergabe an den Push-Dienst, nicht das Lesen auf dem iPhone.</p>'
       +(state==='loading'&&reminders.length===0?'<p class="plano-empty-v901">Erinnerungen werden geladen …</p>':remindersMarkup())
+      +'<div class="plano-section-head-v901"><div><small>DEIN ZEITPLAN</small><h3>Was steht an?</h3></div></div>'
+      +(state==='loading'&&events.length===0?'<p class="plano-empty-v901">Termine werden geladen …</p>':agenda())
       +(errorMessage?'<p class="plano-error-v901" role="alert">'+safe(errorMessage)+'</p>':'')
       +'<p class="plano-footer-v901">Version 1 zeigt bestehende Termine und Meldungen. Kalenderansicht sowie Erstellen und Bearbeiten kommen später.</p>'
       +'</div>';
