@@ -27,6 +27,29 @@
     const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
     return `${p.year}-${p.month}-${p.day}`;
   };
+  // Feiertage Niedersachsen/Bremen: tatsächlichen Einkaufstag bestimmen, ohne Datenbankbuchung.
+  const effectiveShoppingDate=iso=>{
+    const value=String(iso||'').slice(0,10);
+    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return value;
+    const year=Number(value.slice(0,4));
+    const a=year%19,b=Math.floor(year/100),cc=year%100,d=Math.floor(b/4),e=b%4,
+      ff=Math.floor((b+8)/25),g=Math.floor((b-ff+1)/3),h=(19*a+b-d-g+15)%30,
+      i=Math.floor(cc/4),k=cc%4,l=(32+2*e+2*i-h-k)%7,
+      m=Math.floor((a+11*h+22*l)/451);
+    const p=h+l-7*m+114;
+    const easter=new Date(Date.UTC(year,Math.floor(p/31)-1,(p%31)+1,12));
+    const easterOffset=day=>Math.round((day.getTime()-easter.getTime())/86400000);
+    const publicHoliday=day=>{
+      const mm=String(day.getUTCMonth()+1).padStart(2,'0'),dd=String(day.getUTCDate()).padStart(2,'0');
+      return ['01-01','05-01','10-03','10-31','12-25','12-26'].includes(mm+'-'+dd)
+        ||[-2,1,39,50].includes(easterOffset(day));
+    };
+    const candidate=new Date(value+'T12:00:00Z');
+    if(Number.isNaN(candidate.getTime()))return value;
+    for(let n=0;n<8&&(candidate.getUTCDay()===0||publicHoliday(candidate));n++)
+      candidate.setUTCDate(candidate.getUTCDate()-1);
+    return candidate.toISOString().slice(0,10);
+  };
   const fmtDate=iso=>{
     if(!iso)return '';
     try{return new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(String(iso).slice(0,10)+'T12:00:00'));}
@@ -454,7 +477,8 @@
       const key=foodGapKey(item);
       if(pendingCheckoutKeys.has(key)||purchasedSubstitutionKeys.has(key))return;
       const inCart=cartSet.has(key);
-      const delayed=Boolean(item.buyFrom&&String(item.buyFrom)>todayIso());
+      const shoppingDate=effectiveShoppingDate(item.buyFrom);
+      const delayed=Boolean(shoppingDate&&shoppingDate>todayIso());
       const stockName=item.garlic?item.purchaseName:item.label;
       const stockQuantity=item.garlic?item.purchaseQuantity:item.missing;
       const stockUnit=item.garlic?item.purchaseUnit:item.unit;
@@ -497,7 +521,7 @@
             ?'\nFrischware: '+fmtDate(item.buyFrom)+' bis '+fmtDate(item.shortageDate)
              +' vor Verzehr kaufen (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)'
             :''),
-        buyFrom:item.buyFrom||null,neededDate:item.shortageDate||null,
+        buyFrom:shoppingDate||null,neededDate:item.shortageDate||null,
         category:'Lebensmittel',
         foodAction:{
           stockName,stockQuantity,stockUnit,stockId,cartKey:key
@@ -546,7 +570,9 @@
     (state.general||[]).forEach(item=>{
       // Food demand is derived live from meals + inventory. Audit snapshots must never become a second shopping source.
       if(item.source==='food-audit')return;
-      const section=item.status==='cart'?'cart':item.status==='later'?'later':item.status==='extra'?'extra':'now';
+      const shoppingDate=effectiveShoppingDate(item.needed_by);
+      const section=item.status==='cart'?'cart':item.status==='extra'?'extra'
+        :shoppingDate&&shoppingDate>todayIso()?'later':'now';
       const quantity=item.quantity!==null&&item.quantity!==undefined?fmtQty(item.quantity,item.unit||''):'';
       const isStockup=item.source==='food-stockup';
       const packageDetails=shoppingPackageSummary(item.purchase_data||{},item.unit);
@@ -569,7 +595,7 @@
         section,inCart:section==='cart',primary:section==='extra'?(quantity||item.category||'Wunsch'):(quantity?('Kaufen '+quantity):'Kaufen'),
         nextUseDate:null,packHint:'',
         secondary,timing,
-        buyFrom:item.status==='later'?(item.needed_by||null):null,neededDate:item.needed_by||null,
+        buyFrom:section==='later'?(shoppingDate||null):null,neededDate:item.needed_by||null,
         category:item.category||'Sonstiges',general:item,flags:{stockup:isStockup}
       });
     });
@@ -730,7 +756,7 @@
       const capacity=family?providerCapacity(row,family):null;
       return {row,family,capacity,remaining:capacity?.amount||0,
         unit:capacity?.unit||'',estimated:capacity?.estimated||false,
-        shopDate:String(row.general?.needed_by||todayIso())};
+        shopDate:effectiveShoppingDate(row.general?.needed_by)||todayIso()};
     });
     const dayDifference=(a,b)=>{
       const left=Date.parse(String(a)+'T12:00:00Z');
