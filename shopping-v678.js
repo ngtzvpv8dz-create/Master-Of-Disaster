@@ -909,6 +909,15 @@
     const lines=[];
     const when=row.nextUseDate||(!row.general&&row.neededDate)||null;
     if(when)lines.push('Nächster Bedarf: '+fmtDate(when));
+    if(row.general?.purchase_data?.measure_each_piece_gross_g===true){
+      const count=Number(row.general.quantity)||0;
+      const weights=Array.isArray(row.general.purchase_data.actual_piece_weights_g)
+        ?row.general.purchase_data.actual_piece_weights_g.filter(x=>Number(x)>0).map(Number):[];
+      lines.push('Stückware: '+fmtQty(count,'Stück')+' · jedes Stück separat komplett mit Schale/Kern/Strunk wiegen');
+      lines.push(weights.length
+        ?'Bruttogewichte: '+weights.map(x=>fmtQty(x,'g')).join(', ')
+        :'Bruttogewichte: nach dem Kauf einzeln erfassen');
+    }
     if(row.source==='food-gap'&&row.packHint)lines.push(row.packHint);
     if(row.general?.source==='food-month-audit'
       &&/monatsreserve/i.test(String(row.general.label||'')))
