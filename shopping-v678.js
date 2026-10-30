@@ -101,6 +101,7 @@
     if(/^paella langkornreis$/.test(n))return 'Paella-/Langkornreis (lose, trocken)';
     if(/^pfeffer(?: schwarz)?(?: gemahlen)?$/.test(n))return 'Pfeffer schwarz (für die Mühle)';
     if(/^schnittkase(?: frisch)?$/.test(n))return 'Schnittkäse';
+    if(/^gouda light(?: jung)?(?: mild)?(?: in scheiben)?$/.test(n))return 'Gouda Light jung in Scheiben';
     if(/^vollkornbrot(?: frisch)?$/.test(n))return 'Vollkornbrot';
     if(/^mozzarella(?: light| leicht)?$/.test(n))return 'Mozzarella Light';
     if(/^karotten(?: rohkost| warm| roh| frisch)?$/.test(n))return 'Karotten (frisch)';
@@ -650,7 +651,7 @@
       if(/^langkornreis/.test(n))return 'longgrain_rice';
       if(/^paella langkornreis/.test(n))return 'paella_rice';
       if(/^pfeffer schwarz/.test(n))return 'pepper';
-      if(/^schnittkase$/.test(n))return 'sliced_cheese';
+      if(/^schnittkase$|^gouda light(?: jung)?(?: mild)?(?: in scheiben)?$/.test(n))return 'sliced_cheese';
       if(/^korniger frischkase leicht$/.test(n))return 'cottage_cheese_light';
       if(/^mozzarella light/.test(n))return 'light_mozzarella';
       if(/^sojasauce$/.test(n))return 'soy_sauce';
