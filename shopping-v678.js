@@ -996,7 +996,7 @@
       +substitution
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
       +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701 has-stock-lines-v755':'')+'">'
-      +(row.flags?.unitMismatch?'<div class="shopping-unit-warning-v866" role="note">Einheit prüfen</div>':'')
+      +(row.flags?.unitMismatch?'<div class="shopping-unit-warning-v866" role="note">'+esc(row.general?.unit==='Stück'?'Stückware: Bruttogewicht je Stück erfassen':row.general?.unit==='Dose'?'Dose: Netto- und Abtropfgewicht erfassen':row.general?.unit==='Glas'?'Glas: Füllmenge in g oder ml erfassen':row.general?.unit==='Packung'?'Packung: Gesamtgewicht und Stückzahl erfassen':'Einheit prüfen')+'</div>':'')
       +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
       +(compactDescription?'<span class="shopping-secondary-v853">'+esc(compactDescription)+'</span>':'')
       +retailerLine
