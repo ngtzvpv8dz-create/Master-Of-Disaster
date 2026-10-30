@@ -719,6 +719,7 @@
           ||(item.family_name&&shoppingFamily(shoppingFamilyLabel(item.family_name))===family));
         const requestedUnit=String(row.general?.unit||'').trim();
         const amounts=new Map();
+        const verifiedPieces=[];
         for(const item of matches){
           const quantity=Math.max(0,Number(item.quantity)||0);
           const originalUnit=String(item.unit||'').trim();
@@ -729,11 +730,23 @@
           else if(originalUnit==='l'&&requestedUnit==='ml')converted=quantity*1000;
           else if(originalUnit==='ml'&&requestedUnit==='l')converted=quantity/1000;
           else targetUnit=originalUnit;
+          const grossWeights=(food.inventoryLots||[])
+            .filter(lot=>String(lot.inventory_id||'')===String(item.id))
+            .flatMap(lot=>Array.isArray(lot.batch_data?.remaining_piece_weights_g)
+              ?lot.batch_data.remaining_piece_weights_g.map(Number).filter(n=>Number.isFinite(n)&&n>0):[]);
+          if(requestedUnit==='Stück'&&grossWeights.length
+            &&((originalUnit==='g'&&Math.abs(grossWeights.reduce((sum,n)=>sum+n,0)-quantity)<0.1)
+              ||(originalUnit==='Stück'&&grossWeights.length===quantity))){
+            targetUnit='Stück';
+            converted=grossWeights.length;
+            verifiedPieces.push(...grossWeights);
+          }
           amounts.set(targetUnit,(amounts.get(targetUnit)||0)+converted);
         }
         if(!amounts.size)row.currentStock='Aktuell im Vorrat 0 '+requestedUnit;
         else row.currentStock='Aktuell im Vorrat '+[...amounts.entries()]
-          .map(([unit,qty])=>fmtQty(qty,unit)).join(' + ');
+          .map(([unit,qty])=>fmtQty(qty,unit)).join(' + ')
+          +(verifiedPieces.length?' · Einzelgewichte brutto: '+verifiedPieces.map(n=>fmtQty(n,'g')).join(', '):'');
       });
     const stockStable=new Set([
       'cumin','dried_mint','cinnamon','passata','tk_berries','frozen_spinach',
