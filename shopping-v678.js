@@ -30,7 +30,7 @@
   // Feiertage Niedersachsen/Bremen: tatsächlichen Einkaufstag bestimmen, ohne Datenbankbuchung.
   const effectiveShoppingDate=iso=>{
     const value=String(iso||'').slice(0,10);
-    if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return value;
     const year=Number(value.slice(0,4));
     const a=year%19,b=Math.floor(year/100),cc=year%100,d=Math.floor(b/4),e=b%4,
       ff=Math.floor((b+8)/25),g=Math.floor((b-ff+1)/3),h=(19*a+b-d-g+15)%30,
