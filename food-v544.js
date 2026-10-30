@@ -228,6 +228,8 @@
   const SHOPPING_OVERDUE_LOOKBACK_DAYS=7;
   const recentPlanningStartIso=()=>plusDays(todayIso(),-SHOPPING_OVERDUE_LOOKBACK_DAYS);
   const regularShoppingDate=(iso,mealType='')=>{
+    // Holiday advance: Friday breakfast precedes the Friday morning trip; later meals follow it.
+    if(iso==='2026-10-30'&&mealType!=='breakfast')return '2026-10-30';
     // A specifically rescheduled shopping day must win over the normal
     // Wednesday/Saturday window, including Saturday breakfast.
     if(SHOPPING_DATE_OVERRIDES[iso])return SHOPPING_DATE_OVERRIDES[iso];
