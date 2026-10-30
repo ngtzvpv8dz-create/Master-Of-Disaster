@@ -5266,6 +5266,7 @@
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
       inventory:(data.inventory||[]).map(item=>({...item})),
+      inventoryLots:(data.lots||[]).map(lot=>({id:lot.id,inventory_id:lot.inventory_id,batch_data:lot.batch_data||{},package_quantity:lot.package_quantity,package_unit:lot.package_unit,opened_remaining_quantity:lot.opened_remaining_quantity,unopened_packages:lot.unopened_packages})),
       inventoryAliases:(data.aliases||[]).map(item=>({...item})),
       overdueMeals
     };
