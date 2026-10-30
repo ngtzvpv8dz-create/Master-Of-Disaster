@@ -2928,7 +2928,7 @@
     const inventoryByIdForShopping=new Map((data.inventory||[]).map(stock=>[stock.id,stock]));
     const productsByInventoryId=new Map((data.products||[]).filter(product=>product.active!==false&&product.inventory_id).map(product=>[product.inventory_id,product]));
     data.meals
-      .filter(meal=>meal.meal_date>=recentPlanningStartIso()&&meal.meal_date<=planningHorizonIso()&&normalizedStatus(meal.status)==='planned')
+      .filter(meal=>meal.meal_date>=todayIso()&&meal.meal_date<=planningHorizonIso()&&normalizedStatus(meal.status)==='planned')
       .forEach(meal=>(meal.ingredients||[]).forEach(item=>{
         const quantity=num(item.quantity);
         if(quantity===null||quantity<=0)return;
