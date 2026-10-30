@@ -223,6 +223,17 @@
     const unit=String(item?.unit||'').trim();
     const byId=new Map(rows.map(row=>[String(row.id),row]));
 
+    const eggNeed=ingredientKey(name);
+    if(/^(ei|eier)(\s|$)/.test(eggNeed)&&/\bgröße\s*m\b/.test(eggNeed)){
+      const matches=rows.filter(row=>text(row.name)==='eier'
+        &&/größe\s*m/.test(text(row.catalog_variant_label||row.variant_label||'')));
+      if(matches.length===1)return exactRow(matches[0],unit,'egg-size-m');
+    }
+    if(!item?.inventory_id&&ingredientKey(name)==='knusperbrot'){
+      const matches=rows.filter(row=>text(row.catalog_family_name)==='knusperbrot');
+      if(matches.length===1)return exactRow(matches[0],unit,'crispbread-package');
+    }
+
     if(item?.inventory_id){
       const row=byId.get(String(item.inventory_id))||null;
       if(row?.family_name){
