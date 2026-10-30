@@ -515,10 +515,10 @@
           +(tomatoStockDetail?'\nVorhandene Tomatensorten:\n'+tomatoStockDetail:'')
           +(reservedNote?'\n'+reservedNote.trim():'')+(packSuggestion?'\n'+packSuggestion:''),
         timing:(item.shortageDate
-          ?((delayed?'Kaufen ab '+fmtDate(item.buyFrom)+'\n':'')+'Bedarf spätestens: '+fmtDate(item.shortageDate))
-          :(delayed?'Kaufen ab '+fmtDate(item.buyFrom):''))
+          ?((delayed?'Kaufen ab '+fmtDate(shoppingDate)+'\n':'')+'Bedarf spätestens: '+fmtDate(item.shortageDate))
+          :(delayed?'Kaufen ab '+fmtDate(shoppingDate):''))
           +(item.freshWindowDays&&item.shortageDate
-            ?'\nFrischware: '+fmtDate(item.buyFrom)+' bis '+fmtDate(item.shortageDate)
+            ?'\nFrischware: '+fmtDate(shoppingDate)+' bis '+fmtDate(item.shortageDate)
              +' vor Verzehr kaufen (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)'
             :''),
         buyFrom:shoppingDate||null,neededDate:item.shortageDate||null,
