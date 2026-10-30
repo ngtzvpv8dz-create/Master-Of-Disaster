@@ -640,7 +640,7 @@
       if(/^aubergine(?:n)?$/.test(n))return 'aubergine';
       if(/^salatgurke$|^gurke$/.test(n))return 'cucumber';
       if(/^blattsalat/.test(n))return 'lettuce';
-      if(/^tomaten(?: frisch)?/.test(n))return 'tomatoes';
+      if(/^tomaten(?: frisch)?(?: sorte prufen)?$/.test(n))return 'tomatoes';
       if(/^kiwi/.test(n))return 'kiwi';
       if(/^mandarinen/.test(n))return 'mandarin';
       if(/^apfel|^apfel fur snacks|^apfel snacks/.test(n))return 'apple';
