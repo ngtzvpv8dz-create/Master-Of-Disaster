@@ -651,6 +651,7 @@
       if(/^paella langkornreis/.test(n))return 'paella_rice';
       if(/^pfeffer schwarz/.test(n))return 'pepper';
       if(/^schnittkase$/.test(n))return 'sliced_cheese';
+      if(/^korniger frischkase leicht$/.test(n))return 'cottage_cheese_light';
       if(/^mozzarella light/.test(n))return 'light_mozzarella';
       if(/^sojasauce$/.test(n))return 'soy_sauce';
       if(/^edamame tk/.test(n))return 'frozen_edamame';
