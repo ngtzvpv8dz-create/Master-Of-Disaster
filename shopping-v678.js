@@ -785,7 +785,7 @@
         const notes=String(entry.row.general?.notes||'').toLocaleLowerCase('de-DE');
         const canFreeze=['chicken_breast','lean_beef_mince'].includes(family)
           &&/portion|einfrier|tk|tiefkühl|frost/.test(notes);
-        return days<=(stockStable.has(family)?45:canFreeze?7:['kiwi','plain_yogurt','greek_yogurt_2pct','apple'].includes(family)?7:3);
+        return days<=(stockStable.has(family)?45:canFreeze?7:['kiwi','plain_yogurt','greek_yogurt_2pct','apple','mandarin','cottage_cheese_light'].includes(family)?7:3);
       }).sort((a,b)=>b.shopDate.localeCompare(a.shopDate));
       for(const entry of candidates){
         if(uncovered<=0.0001)break;
