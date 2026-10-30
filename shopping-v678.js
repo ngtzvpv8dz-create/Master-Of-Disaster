@@ -800,6 +800,14 @@
         // A can/bottle/fruit pack is bought whole. Do not invent the drained
         // weight, density, or edible fruit weight: display an explicit check.
         if(entry.unit!==unit){
+          if(family==='red_pepper'&&entry.unit==='Stück'&&unit==='g'
+            &&/blockpaprika rot ganz/.test(shoppingNormalize(target.general?.label))){
+            target.secondary=[target.secondary,
+              '1 ganze frische rote Blockpaprika für ca. '+fmtQty(uncovered,unit)+' Rohkost; essbaren Anteil bei Verwendung wiegen'
+            ].filter(Boolean).join('\n');
+            uncovered=0;
+            break;
+          }
           target.secondary=[target.secondary,
             'Rezeptbedarf '+fmtDate(needed)+': '+fmtQty(uncovered,unit),
             'Packungs-/Abtropf-/Stückgewicht prüfen: '+fmtQty(entry.row.general.quantity,entry.row.general.unit)+' eingeplant'
