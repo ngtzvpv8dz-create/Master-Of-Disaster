@@ -631,7 +631,7 @@
       if(/^joghurt griechischer art/.test(n))return 'greek_yogurt_2pct';
       if(/^skyr natur$/.test(n))return 'skyr';
       if(/^(?:passata|passierte tomaten)/.test(n))return 'passata';
-      if(/^rote paprika$|^paprika rot$|^paprika frisch rot$/.test(n))return 'red_pepper';
+      if(/^rote paprika$|^paprika rot$|^paprika frisch rot$|^blockpaprika rot ganz(?: frische rohkost)?$/.test(n))return 'red_pepper';
       if(/^tk beeren(?:mischung|mix)?$|^tk beerenmischung$/.test(n))return 'tk_berries';
       if(/^tk blattspinat|^blattspinat tk/.test(n))return 'frozen_spinach';
       if(/^vollkornbrot(?: frisch)?$|^roggen vollkornbrot$/.test(n))return 'wholegrain_bread';
