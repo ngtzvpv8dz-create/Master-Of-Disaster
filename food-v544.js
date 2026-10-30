@@ -224,7 +224,7 @@
 
   const NON_SHOPPING_INGREDIENTS=new Set(['wasser','leitungswasser']);
   const isNonShoppingIngredient=name=>NON_SHOPPING_INGREDIENTS.has(String(name||'').trim().toLocaleLowerCase('de-DE'));
-  const SHOPPING_DATE_OVERRIDES={'2026-10-03':'2026-10-02','2026-10-17':'2026-10-16','2026-11-07':'2026-11-06'};
+  const SHOPPING_DATE_OVERRIDES={'2026-10-03':'2026-10-02','2026-10-17':'2026-10-16','2026-10-31':'2026-10-30','2026-11-07':'2026-11-06'};
   const SHOPPING_OVERDUE_LOOKBACK_DAYS=7;
   const recentPlanningStartIso=()=>plusDays(todayIso(),-SHOPPING_OVERDUE_LOOKBACK_DAYS);
   const regularShoppingDate=(iso,mealType='')=>{
