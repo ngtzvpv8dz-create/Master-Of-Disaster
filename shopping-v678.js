@@ -710,6 +710,11 @@
         if(row.currentStock)return;
         const family=shoppingFamily(row.label);
         if(!family)return;
+        if(family==='tomato_salsa'){
+          const salsa=inventory.filter(item=>shoppingNormalize(item.name)==='chio dip mild salsa'&&Number(item.quantity)>0);
+          row.currentStock='Tomatensalsa: 0 g im Vorrat'+(salsa.length?' · Alternative: '+salsa.map(item=>fmtQty(item.quantity,item.unit)+' '+item.name).join(', '):'');
+          return;
+        }
         const matches=inventory.filter(item=>shoppingFamily(shoppingFamilyLabel(item.name))===family
           ||(item.family_name&&shoppingFamily(shoppingFamilyLabel(item.family_name))===family));
         const requestedUnit=String(row.general?.unit||'').trim();
