@@ -2972,6 +2972,7 @@
         // Preserve the recipe ingredient itself for nutrition and cooking.
         const shoppingName=isIsoclearFamily?linkedStock.family_name
           :/^karotten (?:warm|rohkost|roh)$/i.test(name)?'Karotten'
+          :(/^körniger frischkäse$/i.test(name)&&/leicht/i.test(String(item.label||'')))?'Körniger Frischkäse leicht'
           :name;
         const stockId=isIsoclearFamily?null:(item.inventory_id||null);
         const canonical=normalizedIngredient(shoppingName,shoppingUnit);
