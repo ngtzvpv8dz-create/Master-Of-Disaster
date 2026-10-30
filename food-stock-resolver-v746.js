@@ -97,6 +97,10 @@
     if(source==='g'&&target==='kg')return {available:quantity/1000,unitMismatch:false,converted:true};
     if(source==='l'&&target==='ml')return {available:quantity*1000,unitMismatch:false,converted:true};
     if(source==='ml'&&target==='l')return {available:quantity/1000,unitMismatch:false,converted:true};
+    if(source==='Stück'&&target==='g'&&text(stock.name).startsWith('knusperbrot')){
+      const m=String(stock.quantity_label||'').match(/(\d+(?:[.,]\d+)?)\s*g\s*[·/]\s*(\d+)\s*Stück/i);
+      if(m&&Number(m[2])>0)return {available:quantity*Number(m[1].replace(',','.'))/Number(m[2]),unitMismatch:false,converted:true};
+    }
     if(target==='g'&&/^(Päckchen|Packung)$/i.test(source)){
       const match=String(stock.note||'').match(/([0-9]+(?:[.,][0-9]+)?)\s*g\s+pro\s+(?:Päckchen|Packung)/i);
       if(match){
