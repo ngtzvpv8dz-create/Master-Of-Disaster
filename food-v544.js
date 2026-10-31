@@ -1136,9 +1136,9 @@
           const shownName=av?'Avocados Hass'+origin+' · Nr. '+av[1]:ingredientName(item);
           const shownAmount=av?av[2]+' g brutto':fmtQty(source.quantity,source.unit);
           return '<li class="food-ingredient-has-allocation-v712"><span>'+esc(shownName)+'</span><b>'+esc(shownAmount)+'</b>'
-            +'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
+            +(av?'':'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
             +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
-            +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div></li>';
+            +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div>')+'</li>';
         });
       }
       return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+
