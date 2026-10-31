@@ -1195,7 +1195,15 @@
       const removeHtml=canRemove
         ?'<button type="button" class="food-ingredient-remove-v751" data-food-remove-meal-ingredient="'+esc(item.id)+'" aria-label="'+esc(ingredientName(item))+' nur aus dieser Mahlzeit entfernen" title="Nur aus dieser Mahlzeit entfernen">×</button>'
         :'';
-      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(ingredientName(item))+'</span>'+
+      // Presentation-only piece detail: keep the canonical name "Avocado" for
+      // nutrition, family matching and stock booking. The per-piece label may
+      // carry the actual whole-fruit weight, which must be visible in the UI.
+      const avocadoLabel=String(item?.label||'');
+      const avocadoMatch=/\bAvocado\s+Nr\.\s*(\d+)\b.*?\b(\d+(?:[.,]\d+)?)\s*g\s*(?:brutto|Bruttogewicht)/i.exec(avocadoLabel);
+      const displayName=String(item?.name||'').trim().toLowerCase()==='avocado'&&avocadoMatch
+        ?'Avocado Nr. '+avocadoMatch[1]+' · '+avocadoMatch[2]+' g brutto'
+        :ingredientName(item);
+      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(displayName)+'</span>'+
         quantityHtml+
         removeHtml+
         allocationHtml+'</li>';
