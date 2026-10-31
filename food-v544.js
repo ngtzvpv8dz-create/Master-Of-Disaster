@@ -1130,10 +1130,15 @@
           if(wasFrozen)label=label.replace(/\s*[·,-]\s*frisch\s*$/i,'').trim()+' · aufgetaut (TK)';
           const detail=familyText(label)===familyText(ingredientName(item))
             ?'Produkt/Charge bei Zubereitung nicht näher dokumentiert':label;
-          return '<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b>'
-            +'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
+          const av=String(item?.name||'').trim().toLowerCase()==='avocado'
+            ?/Avocado\s+Nr\.\s*(\d+).*?(\d+)\s*g\s*(?:brutto|Bruttogewicht)/i.exec(String(item.label||'')):null;
+          const origin=/\bChile\b/i.test(String(source.label||''))?' · Chile':'';
+          const shownName=av?'Avocados Hass'+origin+' · Nr. '+av[1]:ingredientName(item);
+          const shownAmount=av?av[2]+' g brutto':fmtQty(source.quantity,source.unit);
+          return '<li class="food-ingredient-has-allocation-v712"><span>'+esc(shownName)+'</span><b>'+esc(shownAmount)+'</b>'
+            +(av?'':'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
             +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
-            +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div></li>';
+            +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div>')+'</li>';
         });
       }
       return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+
@@ -1421,6 +1426,7 @@
   function visibleMealNote(note,{suppressGenericMealPrep=false,completed=false}={}){
     // Ein alter Auftau-Auftrag ist nach dem Verbrauch kein Mahlzeitenkommentar.
     if(completed&&/^\s*Auftauen\s*:/i.test(String(note||'')))return '';
+    if(String(note||'').includes('Avocado-Einzelstück Nr. 2'))return '';
     const parts=noteSentences(note)
       .filter(part=>!/einfrier/i.test(part)&&(!completed||!/auftau/i.test(part)))
       .map(part=>part.replace(/^Meal Prep:\s*/i,'').trim())
