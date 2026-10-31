@@ -53,7 +53,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261030-inventory-recheck',
-      './food-v544.js?v=20261031-avocado-gross-visible',
+      './food-v544.js?v=20261031-prepared-source-visible',
       './food-nutrition-v711.js?v=886-prepared-source-nutrition',
       './food-extra-snacks-v828.js?v=889-work-coffee','./food-planned-extras-v880.js?v=890-safe-anchor'
     ],
@@ -62,7 +62,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261030-inventory-recheck',
-      './food-v544.js?v=20261031-avocado-gross-visible',
+      './food-v544.js?v=20261031-prepared-source-visible',
       './food-nutrition-v711.js?v=886-prepared-source-nutrition',
       './shopping-v678.js?v=20261030-paprika-piece-weights'
     ],
@@ -151,9 +151,9 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=20261031-avocado-gross-visible',
+    food:['./food-v544.js?v=20261031-prepared-source-visible',
       './food-nutrition-v711.js?v=886-prepared-source-nutrition','./food-extra-snacks-v828.js?v=889-work-coffee','./food-planned-extras-v880.js?v=890-safe-anchor'],
-    shopping:['./food-v544.js?v=20261031-avocado-gross-visible',
+    shopping:['./food-v544.js?v=20261031-prepared-source-visible',
       './food-nutrition-v711.js?v=886-prepared-source-nutrition','./shopping-v678.js?v=20261030-paprika-piece-weights'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
