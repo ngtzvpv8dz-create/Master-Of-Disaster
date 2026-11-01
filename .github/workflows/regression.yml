@@ -65,6 +65,7 @@ jobs:
           node tests/dingsi-lab-icons-pastel-v47.test.cjs
           node tests/dingsi-lab-icons-pastel-used-v47.test.cjs
           node --check food-nutrition-v711.js
+          node --test tests/food-recipe-macro-nutrition-v843.test.cjs
           node --check shopping-v678.js
           node --check finance-data-v553.js
           node --check denkfabrik-v635.js
