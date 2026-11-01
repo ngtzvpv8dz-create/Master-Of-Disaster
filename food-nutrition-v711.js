@@ -929,8 +929,43 @@
       const context=plan.contexts.get(String(meal.id))||data;
       inspect('meal',meal,meal.food_meal_ingredients||[],context);
     }
+    // Real, currently usable packaging variants get checked even if not used
+    // in any recipe yet. Ignore archived brands, zero stock and unrelated lots.
+    const stocks=new Map((data.inventory||[])
+      .filter(row=>row.is_active!==false&&number(row.quantity)>0)
+      .map(row=>[String(row.id),row]));
+    for(const product of data.products||[]){
+      if(product.active===false)continue;
+      const stock=stocks.get(String(product.inventory_id||''));
+      if(!stock)continue;
+      const liveLots=(data.lots||[]).filter(lot=>
+        String(lot.inventory_id||'')===String(stock.id)&&
+        (number(lot.unopened_packages)>0||number(lot.opened_remaining_quantity)>0));
+      if(liveLots.some(lot=>lot.product_id)&&!liveLots.some(lot=>
+         String(lot.product_id)===String(product.id)))continue;
+      const n=nutritionOf(product);
+      const missing=[n.kcal===null?'Kalorien':null,n.protein===null?'Eiweiß':null,
+        n.fat===null?'Fett':null,n.carbs===null?'Kohlenhydrate':null].filter(Boolean);
+      const pd=product.product_data||{};
+      const provisional=pd.nutrition_reference_only===true
+        ||pd.nutrition_is_reference===true||pd.nutrition_estimated===true
+        ||pd.nutrition_review_needed===true||pd.nutrition_provisional===true
+        ||pd.nutrition_requires_packaging_check===true;
+      if(!missing.length&&!provisional)continue;
+      const values=n.kcal===null?'kein Kalorienwert':
+        formatNumber(n.kcal,1)+' kcal je 100 g/ml';
+      const reason=missing.length?'Fehlend: '+missing.join(', ')+'. Vorhanden: '+values+'.':
+        'Nur vorläufiger Vergleichswert, Herstelleretikett noch nicht vollständig bestätigt. '
+        +values+'.';
+      buckets.push({type:'product',id:String(stock.id),
+        title:[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
+          +' (Vorrat: '+stock.name+')',
+        date:null,issues:[{id:String(product.id),name:product.product_name,
+          reason,provisional:!missing.length}]});
+    }
     const sorted=buckets.sort((a,b)=>
-      (a.type==='meal'?0:1)-(b.type==='meal'?0:1)
+      (a.type==='meal'?0:a.type==='product'?1:2)
+        -(b.type==='meal'?0:b.type==='product'?1:2)
       ||String(a.date||'9999-12-31').localeCompare(String(b.date||'9999-12-31'))
       ||a.title.localeCompare(b.title,'de'));
     return {targets:sorted,
@@ -938,6 +973,7 @@
       blocking:sorted.reduce((sum,target)=>sum+target.issues.filter(x=>!x.provisional).length,0),
       review:sorted.reduce((sum,target)=>sum+target.issues.filter(x=>x.provisional).length,0),
       recipeTargets:sorted.filter(x=>x.type==='recipe').length,
+      productTargets:sorted.filter(x=>x.type==='product').length,
       plannedMealTargets:sorted.filter(x=>x.type==='meal').length,
       fromDate};
   }
@@ -946,14 +982,14 @@
     const title='Gesamter Nährwert-Check: '+audit.total+' Punkte';
     const sub=audit.blocking+' fehlend/widersprüchlich · '+audit.review
       +' Referenzen/prüfbedürftig · '+audit.plannedMealTargets
-      +' geplante Mahlzeiten · '+audit.recipeTargets+' Rezepte';
+      +' geplante Mahlzeiten · '+audit.productTargets+' Produkte · '+audit.recipeTargets+' Rezepte';
     return '<details class="food-nutrition-global-audit-v845" data-food-audit-details>'
       +'<summary><strong>'+alarmEscape(title)+'</strong><small>'+alarmEscape(sub)+'</small></summary>'
       +'<div class="food-nutrition-global-list-v845" role="list" aria-label="Alle derzeit prüfbaren Nährwertpunkte">'
       +(audit.targets.length?audit.targets.map(target=>
         '<div class="food-nutrition-global-row-v845" role="listitem">'
           +'<button type="button" data-food-audit-open="'+alarmEscape(target.id)+'" data-food-audit-type="'+alarmEscape(target.type)+'" data-food-audit-date="'+alarmEscape(target.date||'')+'">'
-            +'<strong>'+alarmEscape((target.type==='meal'?'Mahlzeit '+(target.date||''):'Rezept')
+            +'<strong>'+alarmEscape((target.type==='meal'?'Mahlzeit '+(target.date||''):target.type==='product'?'Vorrat/Produkt':'Rezept')
               +' · '+target.title)+'</strong>'
             +'<small>'+alarmEscape(target.issues.map(issue=>
                (issue.provisional?'Hinweis: ':'Fehler: ')+issue.name+': '+issue.reason).join(' | '))+'</small>'
@@ -1438,6 +1474,7 @@
         nutritionAlarmMeals:todayWarnings,
         nutritionAudit:{total:globalAudit.total,blocking:globalAudit.blocking,
           review:globalAudit.review,recipeTargets:globalAudit.recipeTargets,
+          productTargets:globalAudit.productTargets,
           plannedMealTargets:globalAudit.plannedMealTargets,
           targets:globalAudit.targets},
         refreshedAt:new Date().toISOString()
@@ -1494,17 +1531,20 @@
       if(date&&date!==todayIso())activateTab('plan');
       else activateTab('today');
     }else if(type==='recipe')activateTab('recipes');
+    else if(type==='product')activateTab('inventory');
     requestAnimationFrame(()=>{
       if(type==='meal'&&date){
         const group=[...(root.querySelectorAll('[data-food-plan-day]')||[])]
           .find(node=>String(node.dataset.foodPlanDay)===date);
         if(group)group.open=true;
       }
-      const selector=type==='recipe'?'[data-food-recipe-card]':'[data-food-meal-card]';
-      const attr=type==='recipe'?'foodRecipeCard':'foodMealCard';
+      const selector=type==='recipe'?'[data-food-recipe-card]'
+        :type==='product'?'[data-food-stock-card]':'[data-food-meal-card]';
+      const attr=type==='recipe'?'foodRecipeCard':type==='product'?'foodStockCard':'foodMealCard';
       const card=[...(root.querySelectorAll(selector)||[])]
         .find(node=>String(node.dataset[attr])===id);
-      const toggle=card?.querySelector(type==='recipe'?'[data-food-recipe-toggle]':'[data-food-meal-toggle]');
+      const toggle=type==='product'?null:
+        card?.querySelector(type==='recipe'?'[data-food-recipe-toggle]':'[data-food-meal-toggle]');
       if(toggle?.getAttribute('aria-expanded')==='false')toggle.click();
       card?.scrollIntoView?.({behavior:'smooth',block:'center'});
       toggle?.focus?.({preventScroll:true});
