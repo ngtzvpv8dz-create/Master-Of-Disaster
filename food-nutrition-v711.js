@@ -64,10 +64,10 @@
     "basilikumgetrocknet":{kcal:233,protein:23,fat:4.1,carbs:22.9,unit:"g",source:"Getrockneter Basilikum, allgemeine Gewürzreferenz",url:"generic-dried-basil"},
     "backpulver":{kcal:88,protein:0.09,fat:0.124,carbs:21.6,unit:"g",source:"BLS R421100 Backpulver, Standardpäckchen 16g angenommen",url:"https://blsdb.de/food?foodId=38326",pieceWeight:16},
     "nussmischung":{kcal:605,protein:18,fat:52,carbs:11,unit:"g",source:"Ungesalzene gemischte Nüsse, illustrative Referenz, Arten nicht bekannt",url:"generic-nuts-mix"},
-    "ajíamarillopaste":{kcal:50,protein:1,fat:0.5,carbs:10,unit:"g",source:"Gelbe Chilipaste ohne bestätigte Produktrezeptur; grober Richtwert",url:"generic-aji-pepper-paste"},
+    "ajamarillopaste":{kcal:50,protein:1,fat:0.5,carbs:10,unit:"g",source:"Gelbe Chilipaste ohne bestätigte Produktrezeptur; grober Richtwert",url:"generic-aji-pepper-paste"},
     "hummus":{kcal:324,protein:5.9,fat:28.5,carbs:8,unit:"g",source:"BLS H960000 Hummus; handelsüblicher Hummus kann stark abweichen",url:"https://blsdb.de/food?foodId=43318"},
     "haselnüsse":{kcal:657,protein:16.25,fat:63.3,carbs:4.2,unit:"g",source:"BLS H130100 rohe Haselnuss",url:"https://blsdb.de/food?foodId=38221"},
-    "edamametkohnenschote":{kcal:146,protein:13,fat:6.8,carbs:6.2,unit:"g",source:"BLS G750100 Edamame rohe Bohnen ohne Schote als TK-Näherung",url:"https://blsdb.de/food?foodId=38556"},
+    "edamametkohneschote":{kcal:146,protein:13,fat:6.8,carbs:6.2,unit:"g",source:"BLS G750100 Edamame rohe Bohnen ohne Schote als TK-Näherung",url:"https://blsdb.de/food?foodId=38556"},
     "frühlingszwiebel":{kcal:33,protein:0.9,fat:0.15,carbs:5.99,unit:"g",source:"BLS G486100 Frühlingszwiebel roh, ohne Laub; gesamt mögliche Abweichung",url:"https://blsdb.de/food?foodId=38545"},
     "ricotta":{kcal:158,protein:8.58,fat:12.3,carbs:3.43,unit:"g",source:"BLS M741600 Ricotta 45% Fett i.Tr.",url:"https://blsdb.de/food?foodId=39164"},
     "tkkirschen":{kcal:55,protein:1,fat:0.2,carbs:12,unit:"g",source:"TK-Kirschen, generischer Vergleich",url:"generic-frozen-cherries"},
@@ -84,7 +84,7 @@
     "schnittlauch":{kcal:29,protein:2.6,fat:0.74,carbs:1.54,unit:"g",source:"BLS G081100 Schnittlauch roh",url:"https://blsdb.de/food?foodId=38179"},
     "radieschen":{kcal:19,protein:1.05,fat:0.14,carbs:2.31,unit:"g",source:"BLS G691100 Radieschen roh",url:"https://blsdb.de/food?foodId=38952"},
     "halloumi":{kcal:321,protein:23,fat:25,carbs:2.3,unit:"g",source:"Halloumi, typischer Grillkäse; Herstellerwerte variieren",url:"generic-halloumi"},
-    "terasakisauce":{kcal:100,protein:2,fat:0.1,carbs:22,unit:"ml",source:"Teriyaki-Sauce, generische Rezeptur; Zucker und Salz je Marke variieren",url:"generic-teriyaki-sauce"}
+    "teriyakisauce":{kcal:100,protein:2,fat:0.1,carbs:22,unit:"ml",source:"Teriyaki-Sauce, generische Rezeptur; Zucker und Salz je Marke variieren",url:"generic-teriyaki-sauce"}
   };
   const originalAlias=name=>key(name);
   function referenceFor(item){
@@ -112,7 +112,7 @@
   function uniquelyPresentAlias(name,data){
     const aliases={
       'griechischer joghurt':stock=>/^griechischer joghurt (?:2 %|9,4 %)$/.test(text(stock.family_name)),
-      'tk-asiagemüse':stock=>text(stock.family_name)==='asia-gemüse'&&rowMode(stock)==='frozen'
+      'tk-asiagemüse':stock=>text(stock.family_name)==='asia-gemüse'&&(rowMode(stock)==='frozen'||text(stock.name).includes('gemüsepfanne'))
     };
     const rule=aliases[text(name)];
     if(!rule)return null;
