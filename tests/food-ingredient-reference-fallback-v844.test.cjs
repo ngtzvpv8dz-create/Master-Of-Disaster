@@ -8,10 +8,10 @@ const anchor='  schedule(450);\n})();';
 assert.ok(src.includes(anchor));
 const win={},doc={documentElement:{},addEventListener(){}};
 const instrumented=src.replace(anchor,
- '  window.__modFoodNutritionV711.__test={calculate,sourceFor,referenceFor,nutritionText};\n'+anchor);
+ '  window.__modFoodNutritionV711.__test={calculate,sourceFor,referenceFor,nutritionText,nutritionProblem};\n'+anchor);
 new Function('window','document','MutationObserver','setTimeout','clearTimeout',instrumented)(
  win,doc,class{observe(){}},()=>0,()=>0);
-const {calculate,sourceFor,referenceFor,nutritionText}=win.__modFoodNutritionV711.__test;
+const {calculate,sourceFor,referenceFor,nutritionText,nutritionProblem}=win.__modFoodNutritionV711.__test;
 const noStock={inventory:[],products:[],lots:[]};
 const calc=(name,quantity,unit='g',data=noStock)=>
  calculate([{name,quantity,unit}],1,data);
@@ -100,4 +100,12 @@ test('known product takes precedence over generic recipe comparison',()=>{
  const n=calc('Ricotta',110,'g',db);
  assert.equal(n.complete,true);near(n.kcal,209);
  assert.equal(n.estimated,false);
+});
+
+test('known reference suppresses false missing-label alarm, but real product gaps still warn',()=>{
+ const data={inventory:[stock('s','Hokkaido-Kürbis','Hokkaido-Kürbis',0)],products:[],lots:[]};
+ const ingredient={name:'Hokkaido-Kürbis',quantity:400,unit:'g'};
+ assert.equal(nutritionProblem(ingredient,data),null);
+ const broken={...data,inventory:[stock('s','Hokkaido-Kürbis','Hokkaido-Kürbis',400)]};
+ assert.ok(nutritionProblem(ingredient,broken)?.reason);
 });
