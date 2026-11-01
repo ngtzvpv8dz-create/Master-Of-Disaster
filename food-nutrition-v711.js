@@ -738,7 +738,7 @@
           stock.is_active!==false&&number(stock.quantity)>0&&
           familyMatch(itemName(item),stock.family_name));
         const unit=text(item.unit);
-        if(!ref||(hasPhysicalStock&&!(key(itemName(item))==='vollkornbrot'&&unit==='scheibe'))){
+        if(!ref||(hasPhysicalStock&&!(key(itemName(item))==='vollkornbrot'&&unit==='scheibe')&&key(itemName(item))!=='hokkaidokürbis')){
           missing.push(...(familyNutrition.missing||[itemName(item)]));continue;
         }
       }
@@ -833,8 +833,9 @@
       const hasPhysicalStock=(data?.inventory||[]).some(stock=>
         stock.is_active!==false&&number(stock.quantity)>0&&
         familyMatch(name,stock.family_name));
+      const fallbackForUnlabeledProduce=key(name)==='hokkaidokürbis';
       const specialBread=key(name)==='vollkornbrot'&&text(item.unit)==='scheibe';
-      if(ref&&(!hasPhysicalStock||specialBread)&&basisAmount(item,ref)!==null){
+      if(ref&&(!hasPhysicalStock||specialBread||fallbackForUnlabeledProduce)&&basisAmount(item,ref)!==null){
         // A documented public approximation is not a *missing* label:
         // show ca./Referenzwerte in the calculator, not a false emergency alert.
         return null;
