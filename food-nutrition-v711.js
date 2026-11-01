@@ -377,7 +377,7 @@
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
-      const amount=basisAmount({quantity:part.take,unit:item.unit},{product,stock});
+      const amount=basisAmount({...item,quantity:part.take,unit:item.unit},{product,stock});
       if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
       kcal+=nut.kcal*amount/100;
       protein+=nut.protein*amount/100;
@@ -401,7 +401,7 @@
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
-      const amount=basisAmount({quantity:remaining,unit:item.unit},{product,stock:pinned});
+      const amount=basisAmount({...item,quantity:remaining,unit:item.unit},{product,stock:pinned});
       if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
       kcal+=nut.kcal*amount/100;
       protein+=nut.protein*amount/100;
@@ -573,6 +573,18 @@
 
     const product=source?.product||{};
     const productData=product.product_data&&typeof product.product_data==='object'?product.product_data:{};
+    if(unit==='stück'&&Array.isArray(productData.individual_gross_piece_weights_g)){
+      // The user's explicitly labelled physical piece selects exactly one measured
+      // gross weight (including peel, according to the owner's weighing rule).
+      // Never average all remaining pieces or invent an edible-yield percentage.
+      const label=String(item.label||'');
+      const match=label.match(/(?:Nr\.?|Nummer)\s*(\d+)\b/i);
+      if(match){
+        const index=Number(match[1])-1;
+        const measured=number(productData.individual_gross_piece_weights_g[index]);
+        if(measured!==null&&measured>0)return qty*measured;
+      }
+    }
     const packageUnit=text(product.package_unit);
     const servingUnit=text(product.serving_unit);
     const values=[
