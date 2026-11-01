@@ -829,6 +829,16 @@
     const generic=genericFamilyNutrition(item,data,allocationOverride);
     if(generic?.complete)return null;
     if(generic&&!generic.complete){
+      const ref=referenceFor(item);
+      const hasPhysicalStock=(data?.inventory||[]).some(stock=>
+        stock.is_active!==false&&number(stock.quantity)>0&&
+        familyMatch(name,stock.family_name));
+      const specialBread=key(name)==='vollkornbrot'&&text(item.unit)==='scheibe';
+      if(ref&&(!hasPhysicalStock||specialBread)&&basisAmount(item,ref)!==null){
+        // A documented public approximation is not a *missing* label:
+        // show ca./Referenzwerte in the calculator, not a false emergency alert.
+        return null;
+      }
       return {...entry,reason:'Für diese Zutatenfamilie sind die Nährwerte nicht vollständig zugeordnet.'};
     }
     const source=sourceFor(item,data);
