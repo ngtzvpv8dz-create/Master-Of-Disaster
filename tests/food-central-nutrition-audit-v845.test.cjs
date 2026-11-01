@@ -9,11 +9,11 @@ const anchor='  schedule(450);\n})();';
 assert.ok(code.includes(anchor));
 assert.ok(html.includes('data-food-nutrition-audit'));
 const instrumented=code.replace(anchor,
- '  window.__modFoodNutritionV711.__test={collectNutritionAudit,auditMarkup};\n'+anchor);
+ '  window.__modFoodNutritionV711.__test={collectNutritionAudit,auditMarkup,calculate,plannedMealAllocationState,nutritionProblem};\n'+anchor);
 const win={},doc={documentElement:{},addEventListener(){}};
 new Function('window','document','MutationObserver','setTimeout','clearTimeout',instrumented)(
  win,doc,class{observe(){}},()=>0,()=>0);
-const {collectNutritionAudit,auditMarkup}=win.__modFoodNutritionV711.__test;
+const {collectNutritionAudit,auditMarkup,calculate,plannedMealAllocationState,nutritionProblem}=win.__modFoodNutritionV711.__test;
 const item=(id,name,quantity=100,unit='g')=>({id,name,quantity,unit});
 const stock=(id,name,quantity=100)=>({id,name,quantity,unit:'g',is_active:true});
 const product=(id,inventory_id,nutrition_per_100,product_data={})=>({
@@ -112,4 +112,64 @@ test('unlinked planned leftovers have a precise source-link error instead of fak
  assert.equal(result.blocking,1);
  assert.match(result.targets[0].issues[0].reason,/Ausgangsmahlzeit verknüpft/);
  assert.doesNotMatch(result.targets[0].issues[0].name,/Keine Zutaten/);
+});
+
+test('linked future meal-prep leftover is calculated from original dinner without a fake no-ingredients error',()=>{
+ const data=fresh();
+ data.inventory.push(stock('s','Tomaten',800));
+ data.products.push(product('p','s',{energy_kcal:20,protein_g:1,fat_g:0.2,carbohydrates_g:3}));
+ data.meals=[
+  {id:'source',meal_date:'2026-11-02',status:'planned',title:'Tomatenpfanne',meal_type:'dinner',
+    prepared_servings:2,eaten_servings:1,
+    food_meal_ingredients:[{...item('i','Tomaten',400),inventory_id:'s'}]},
+  {id:'left',source_meal_id:'source',meal_date:'2026-11-03',status:'planned',title:'Rest Tomatenpfanne vom 02.11.',meal_type:'lunch',
+    prepared_servings:1,eaten_servings:1,food_meal_ingredients:[]}
+ ];
+ const result=collectNutritionAudit(data,'2026-11-01');
+ assert.equal(result.plannedMealTargets,0);
+ assert.equal(result.blocking,0);
+});
+test('confirmed packet upper bounds for fat and protein are valid, not missing macros',()=>{
+ const data=fresh();
+ data.inventory.push(stock('s','Milkshake'));
+ data.products.push(product('p','s',{energy_kcal:228.57,
+   protein_g_lt:7.143,fat_g_lt:7.143,carbohydrates_g:20},
+   {nutrition_review_needed:false,nutrition_verified_with_original_user_photos:true}));
+ const result=collectNutritionAudit(data,'2026-11-01');
+ assert.equal(result.productTargets,0);
+ assert.equal(result.blocking,0);
+});
+test('coffee without mandatory dry nutrition remains informational, never an invented zero',()=>{
+ const data=fresh();data.inventory.push(stock('coffee','Kaffeekapseln'));
+ data.products.push(product('p','coffee',{},
+   {nutrition_audit_exception_type:'coffee_dry_nutrition_not_mandatory'}));
+ const result=collectNutritionAudit(data,'2026-11-01');
+ assert.equal(result.blocking,0);
+ assert.equal(result.review,1);
+ assert.match(result.targets[0].issues[0].reason,/Keine 0-kcal-Erfindung/);
+});
+test('real piece No. 1 and No. 2 retain their individual gross measured weights',()=>{
+ const data=fresh();
+ data.inventory.push({...stock('ki','KiKoKa Kiwi',2),family_name:'Kiwi',unit:'Stück'});
+ data.inventory.push({...stock('z','Zespri Kiwi',111),family_name:'Kiwi'});
+ data.products.push(product('p','ki',{energy_kcal:54,protein_g:0.9,fat_g:0.3,carbohydrates_g:11.1},
+  {individual_gross_piece_weights_g:[103,93]}));
+ data.products.push(product('zp','z',{energy_kcal:48,protein_g:1.2,fat_g:0.6,carbohydrates_g:9}));
+ data.meals=[
+  {id:'k1',meal_date:'2026-11-02',status:'planned',sort_order:2,meal_type:'snack',
+   food_meal_ingredients:[{...item('i1','Kiwi',1,'Stück'),
+     label:'1 ganze KiKoKa-Kiwi Nr. 1 (103 g brutto inkl. Schale)',
+     allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück'}]}]},
+  {id:'k2',meal_date:'2026-11-03',status:'planned',sort_order:2,meal_type:'snack',
+   food_meal_ingredients:[{...item('i2','Kiwi',1,'Stück'),
+     label:'1 ganze KiKoKa-Kiwi Nr. 2 (93 g brutto inkl. Schale)',
+     allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück'}]}]}
+ ];
+ const plan=plannedMealAllocationState(data);
+ const kc1=calculate(data.meals[0].food_meal_ingredients,1,plan.contexts.get('k1'),plan.allocations.get('k1'));
+ const kc2=calculate(data.meals[1].food_meal_ingredients,1,plan.contexts.get('k2'),plan.allocations.get('k2'));
+ assert.ok(kc1.complete);assert.ok(kc2.complete);
+ assert.ok(Math.abs(kc1.kcal-55.62)<1e-7);assert.ok(Math.abs(kc2.kcal-50.22)<1e-7);
+ const audit=collectNutritionAudit(data,'2026-11-01');
+ assert.equal(audit.blocking,0);
 });
