@@ -19,6 +19,7 @@ const dateToShopping={
 };
 const context={
   num:value=>{const n=Number(value);return Number.isFinite(n)?n:null;},
+  todayIso:()=> '2026-10-09',
   recentPlanningStartIso:()=> '2026-10-09',
   planningHorizonIso:()=> '2026-10-24',
   normalizedStatus:status=>status,

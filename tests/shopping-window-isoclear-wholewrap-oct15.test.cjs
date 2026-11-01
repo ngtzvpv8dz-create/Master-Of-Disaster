@@ -35,6 +35,7 @@ const end=source.indexOf('\n  function shoppingUsageTimeline(',begin);
 assert(begin>=0 && end>begin, 'shopping computation found');
 const context={
   num(value){const n=Number(value);return Number.isFinite(n)?n:null;},
+  todayIso:()=> '2026-10-15',
   recentPlanningStartIso:()=> '2026-10-13',
   planningHorizonIso:()=> '2026-10-25',
   normalizedStatus:status=>status,
