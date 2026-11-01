@@ -103,3 +103,13 @@ test('audit is strictly read-only for inventories and meal snapshots',()=>{
  collectNutritionAudit(data,'2026-11-01');
  assert.equal(JSON.stringify(data),prior);
 });
+
+test('unlinked planned leftovers have a precise source-link error instead of fake ingredients',()=>{
+ const data=fresh();
+ data.meals.push({id:'left',meal_date:'2026-11-03',status:'planned',title:'Rest Kartoffel-Ei-Tortilla vom 02.11.',food_meal_ingredients:[]});
+ const result=collectNutritionAudit(data,'2026-11-01');
+ assert.equal(result.plannedMealTargets,1);
+ assert.equal(result.blocking,1);
+ assert.match(result.targets[0].issues[0].reason,/Ausgangsmahlzeit verknüpft/);
+ assert.doesNotMatch(result.targets[0].issues[0].name,/Keine Zutaten/);
+});
