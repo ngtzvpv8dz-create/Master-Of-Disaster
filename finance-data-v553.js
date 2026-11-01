@@ -5,14 +5,14 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V878';
+  const VERSION='V900';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
   let visibleRefreshTimer=null;
   let rootObserver=null;
   let bodyObserver=null;
-  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[],plannedExpenses:[],plannedError:null};
+  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[],plannedExpenses:[],plannedError:null,recurringTransactions:[],recurringError:null};
   const expandedTransactions=new Set();
   const expandedCategories=new Set();
   // Separate section toggles for each period. In GESAMT the very long
@@ -431,38 +431,16 @@
   }
 
 
-  /* V826: geplante Ausgaben bleiben von tatsächlichen Bankbuchungen getrennt. */
+  /* V900: Prognose-Modell in eigenständigem Modul für prüfbare Hochrechnung. */
   function planningHtml(){
-    if(!state.loaded||state.error)return '';
-    const planned=(state.plannedExpenses||[]).filter(row=>row.status==='planned');
-    if(state.plannedError){
-      return '<section class="finance-panel-v552 finance-plan-panel-v826"><div class="finance-panel-head-v552"><div><span>03 · PROGNOSE</span><h3>Geplante Ausgaben</h3></div><small>FEHLER</small></div><div class="finance-plan-notice-v826">Planung konnte nicht geladen werden. Die übrigen Finanzwerte bleiben davon unberührt.</div></section>';
+    const forecast=window.__modFinanceForecastV900;
+    if(!forecast){
+      return panelSectionHtml('forecast','03 · PROGNOSE','Finanzvorschau','LADEFEHLER',
+        ()=>'<div class="finance-plan-notice-v826">Prognose-Modul konnte nicht geladen werden. Bitte Finanzbereich neu öffnen.</div>');
     }
-    const knownBank=openBalanceModel();
-    const plannedTotal=planned.reduce((sum,row)=>sum+num(row.amount),0);
-    const hasEstimate=planned.some(row=>row.amount_type==='estimate');
-    const projected=knownBank.afterAll-plannedTotal;
-    const rows=planned.map(row=>{
-      const estimate=row.amount_type==='estimate';
-      const kind=estimate?'GESCHÄTZT':'FEST';
-      const badgeClass=estimate?'':' is-plan-fixed';
-      return '<div class="finance-plan-row-v826"><div><strong>'+esc(row.title)+'</strong>'+
-        '<div class="finance-plan-meta-v827"><span>'+fmtDate(row.planned_date)+'</span>'+
-        '<small class="finance-booking-tag-v679'+badgeClass+'">'+kind+'</small></div>'+
-        '</div><b>−'+fmtMoney(row.amount)+'</b></div>';
-    }).join('');
-    const bankCount=knownBank.pendingCount+knownBank.notVisibleCount;
-    return '<section class="finance-panel-v552 finance-plan-panel-v826">'+
-      '<div class="finance-panel-head-v552"><div><span>03 · PROGNOSE</span><h3>Geplante Ausgaben</h3></div><small>VORSCHAU</small></div>'+
-      '<div class="finance-forecast-v826">'+
-        '<div class="finance-forecast-math-v826"><div><span>Gebuchter Kontostand</span><b>'+fmtMoney(state.currentBalance)+'</b></div>'+
-        '<div><span>'+bankCount+' bekannte offene Bankbewegung'+(bankCount===1?'':'en')+'</span><b>'+fmtImpact(knownBank.pendingImpact+knownBank.notVisibleImpact)+'</b></div>'+
-        '<div><span>'+planned.length+' geplante Ausgabe'+(planned.length===1?'':'n')+'</span><b>−'+fmtMoney(plannedTotal)+'</b></div></div>'+
-        '<div class="finance-forecast-result-v826"><span>PROGNOSE NACH BANK & PLANUNG</span><strong>'+(hasEstimate?'ca. ':'')+fmtMoney(projected)+'</strong></div>'+
-        '<p class="finance-forecast-disclaimer-v826">Planwerte sind keine Zahlungen. Schätzungen können abweichen. Nur bekannte offene Bankbewegungen berücksichtigt.</p>'+
-      '</div>'+
-      '<div class="finance-plan-list-v826">'+(rows||'<div class="finance-plan-empty-v826">Aktuell keine geplanten Ausgaben.</div>')+'</div>'+
-    '</section>';
+    return forecast.render(state,{
+      panelSectionHtml,fmtMoney,fmtDate,fmtImpact,num,esc,bookingImpact,todayIso
+    });
   }
 
   function shell(){
@@ -582,6 +560,29 @@
     return rows;
   }
 
+  async function fetchRecurringTransactions(supabase){
+    const today=todayIso(),p=today.split('-').map(Number);
+    const start=new Date(Date.UTC(p[0],p[1]-8,1)).toISOString().slice(0,10);
+    const rules=window.__modFinanceForecastV900?.rules||[];
+    if(!rules.length)throw new Error('Rhythmusregeln nicht geladen.');
+    const categories=[...new Set(rules.map(rule=>rule.category))];
+    const rows=[],pageSize=500;
+    for(let from=0;;from+=pageSize){
+      const query=supabase.from('finance_transactions')
+        .select('id,merchant,category,transaction_date,total_amount,transaction_type,booking_status')
+        .eq('transaction_type','expense').in('category',categories)
+        .gte('transaction_date',start)
+        .order('transaction_date',{ascending:false})
+        .range(from,from+pageSize-1);
+      const result=await withTimeout(query,'Wiederkehrende Abbuchungen laden',12000);
+      if(result?.error)throw result.error;
+      const page=result?.data||[];
+      rows.push(...page);
+      if(page.length<pageSize)break;
+    }
+    return rows;
+  }
+
   async function remoteData(){
     const supabase=client();
     if(!supabase)throw new Error('Supabase-Client ist nicht verfügbar.');
@@ -594,18 +595,20 @@
     const spec=periodSpec(mode);
     const periodPromise=fetchPeriodTransactions(supabase,spec);
     const planningPromise=fetchPlannedExpenses(supabase).then(data=>({data,error:null})).catch(error=>({data:[],error:String(error?.message||error)}));
+    const recurringPromise=fetchRecurringTransactions(supabase).then(data=>({data,error:null})).catch(error=>({data:[],error:String(error?.message||error)}));
     const balanceQuery=supabase.rpc('finance_current_balance');
     const openQuery=supabase.from('finance_transactions')
-      .select('id,transaction_date,bank_booking_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected')
+      .select('id,transaction_date,bank_booking_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,total_price,sort_order)')
       .in('booking_status',['pending','not_visible'])
       .order('transaction_date',{ascending:false})
       .order('created_at',{ascending:false});
 
-    const [periodTransactions,balanceResult,openResult,planningResult]=await Promise.all([
+    const [periodTransactions,balanceResult,openResult,planningResult,recurringResult]=await Promise.all([
       periodPromise,
       withTimeout(balanceQuery,'Kontostand'),
       withTimeout(openQuery,'Vorgemerkte Buchungen'),
-      planningPromise
+      planningPromise,
+      recurringPromise
     ]);
     if(balanceResult?.error)throw balanceResult.error;
     if(openResult?.error)throw openResult.error;
@@ -618,7 +621,9 @@
       pendingTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='pending'),
       notVisibleTransactions:(openResult?.data||[]).filter(row=>row.booking_status==='not_visible'),
       plannedExpenses:planningResult.data,
-      plannedError:planningResult.error
+      plannedError:planningResult.error,
+      recurringTransactions:recurringResult.data,
+      recurringError:recurringResult.error
     };
   }
 
@@ -694,7 +699,7 @@
       const sectionButton=event.target?.closest?.('[data-finance-section-toggle]');
       if(sectionButton&&root.contains(sectionButton)){
         const which=sectionButton.dataset.financeSectionToggle;
-        if(['bookings','categories'].includes(which)){
+        if(['forecast','bookings','categories'].includes(which)){
           const set=collapsedPanelsByPeriod[state.periodMode];
           if(set.has(which))set.delete(which);
           else set.add(which);
@@ -746,7 +751,7 @@
       if(saved&&typeof saved==='object'){
         for(const period of ['month','year','all']){
           if(Array.isArray(saved[period])){
-            collapsedPanelsByPeriod[period]=new Set(saved[period].filter(value=>['bookings','categories'].includes(value)));
+            collapsedPanelsByPeriod[period]=new Set(saved[period].filter(value=>['forecast','bookings','categories'].includes(value)));
           }
         }
       }
