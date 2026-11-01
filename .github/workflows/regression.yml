@@ -67,6 +67,7 @@ jobs:
           node --check food-nutrition-v711.js
           node --test tests/food-recipe-macro-nutrition-v843.test.cjs
           node --test tests/food-ingredient-reference-fallback-v844.test.cjs
+          node --test tests/food-central-nutrition-audit-v845.test.cjs
           node --check shopping-v678.js
           node --check finance-data-v553.js
           node --check denkfabrik-v635.js
