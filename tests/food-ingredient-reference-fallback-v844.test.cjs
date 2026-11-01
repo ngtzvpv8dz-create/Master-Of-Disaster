@@ -102,10 +102,15 @@ test('known product takes precedence over generic recipe comparison',()=>{
  assert.equal(n.estimated,false);
 });
 
-test('known reference suppresses false missing-label alarm, but real product gaps still warn',()=>{
+test('fresh unlabeled Hokkaido uses official reference; incompatible packaged products still warn',()=>{
  const data={inventory:[stock('s','Hokkaido-Kürbis','Hokkaido-Kürbis',0)],products:[],lots:[]};
  const ingredient={name:'Hokkaido-Kürbis',quantity:400,unit:'g'};
  assert.equal(nutritionProblem(ingredient,data),null);
- const broken={...data,inventory:[stock('s','Hokkaido-Kürbis','Hokkaido-Kürbis',400)]};
- assert.ok(nutritionProblem(ingredient,broken)?.reason);
+ const withRealVegetable={...data,inventory:[stock('s','Hokkaido-Kürbis','Hokkaido-Kürbis',400)]};
+ assert.equal(nutritionProblem(ingredient,withRealVegetable),null);
+ assert.equal(calc('Hokkaido-Kürbis',400,'g',withRealVegetable).complete,true);
+ const packaged={inventory:[stock('smoked','Räucherlachs','Räucherlachs',100)],
+  products:[prod('a','smoked',{energy_kcal:155,protein_g:20,fat_g:8,carbohydrates_g:0}),
+            prod('b','smoked',{energy_kcal:177,protein_g:22,fat_g:11,carbohydrates_g:0})],lots:[]};
+ assert.ok(nutritionProblem({name:'Räucherlachs',quantity:80,unit:'g'},packaged)?.reason);
 });
