@@ -43,12 +43,17 @@
 
   function nextAdvance(today){
     const p=today.split('-').map(Number);
-    let day=shiftMonths(p[0]+'-'+String(p[1]).padStart(2,'0')+'-20',p[2]>=20?1:0);
-    const weekday=new Date(day+'T12:00:00Z').getUTCDay();
-    // Abschlag normalerweise ca. 20.; am Wochenende nur vorsichtige Näherung.
-    if(weekday===6)day=shiftDays(day,-1);
-    if(weekday===0)day=shiftDays(day,-2);
-    return day;
+    const base=p[0]+'-'+String(p[1]).padStart(2,'0')+'-20';
+    // Beim Wochenende als Näherung der vorherige Freitag. Feiertage und
+    // tatsächliche Wertstellung können weiterhin abweichen.
+    const adjusted=iso=>{
+      const weekday=new Date(iso+'T12:00:00Z').getUTCDay();
+      return weekday===6?shiftDays(iso,-1):weekday===0?shiftDays(iso,-2):iso;
+    };
+    let monthShift=p[2]>=20?1:0;
+    let due=adjusted(shiftMonths(base,monthShift));
+    if(due<=today)due=adjusted(shiftMonths(base,++monthShift));
+    return due;
   }
 
   function recurringExpenses(rows,today,cutoff,planned,num){
