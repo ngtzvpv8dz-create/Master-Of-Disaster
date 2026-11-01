@@ -8,11 +8,19 @@ const start=js.indexOf('    const shoppingFamily=name=>');
 const end=js.indexOf('    return included;',start);
 assert.ok(start>=0&&end>start,'real shopping deduplication block exists');
 const originalBlock=js.slice(start,end+'    return included;'.length);
-const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','food','inventory','shoppingFamilyLabel','let rowMap;\n'+originalBlock);
+// The real shopping block depends on the adjacent date/normalization helpers.
+const holidayStart=js.indexOf('  const effectiveShoppingDate=iso=>');
+const holidayEnd=js.indexOf('  const fmtDate=iso=>',holidayStart);
+assert.ok(holidayStart>=0&&holidayEnd>holidayStart);
+const effectiveShoppingDate=new Function(js.slice(holidayStart,holidayEnd)+';return effectiveShoppingDate;')();
+const shoppingNormalize=value=>String(value||'').toLocaleLowerCase('de-DE')
+ .replace(/ß/g,'ss').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
+ .replace(/[^a-z0-9]+/g,' ').trim().replace(/\\s+/g,' ');
+const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','food','inventory','shoppingFamilyLabel','effectiveShoppingDate','shoppingNormalize','let rowMap;\\n'+originalBlock);
 const fmtDate=iso=>iso;
 const fmtQty=(n,u)=>n+' '+u;
 const collator=new Intl.Collator('de-DE');
-const simulate=rows=>run(rows,()=> '2026-10-24',fmtDate,fmtQty,collator,{plannedShoppingUses:[]},[],name=>name);
+const simulate=rows=>run(rows,()=> '2026-10-24',fmtDate,fmtQty,collator,{plannedShoppingUses:[]},[],name=>name,effectiveShoppingDate,shoppingNormalize);
 const general=(id,label,quantity,unit='g',status='now',neededBy='2026-10-24')=>({
  id,key:id,source:'general',section:status,label,secondary:'Einkauf geplant',
  general:{quantity,unit,needed_by:neededBy}
