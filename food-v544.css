@@ -2940,3 +2940,18 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-rating-note-v887 textarea{box-sizing:border-box;display:block;width:100%;min-height:75px;padding:10px;border:1px solid rgba(90,121,96,.3);border-radius:9px;background:rgba(255,255,255,.72);color:#334535;font:inherit;font-size:12px;line-height:1.5;resize:vertical}
 .food-rating-note-v887 button[type=submit]{align-self:flex-start;min-height:32px}
 .food-recipe-card-v544>.food-rating-note-v887{margin:5px 12px 9px}
+
+/* V845: Complete on-demand, mobile scrollable nutrition audit of recipes and future meals */
+.food-nutrition-global-v845{max-width:100%;min-width:0;margin:0 0 10px}
+.food-nutrition-global-audit-v845{border:1px solid rgba(116,102,142,.28);border-radius:10px;background:rgba(249,248,252,.98);overflow:hidden}
+.food-nutrition-global-audit-v845 summary{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px;padding:9px 11px;color:#654c7a;cursor:pointer;list-style-position:inside;overflow-wrap:anywhere}
+.food-nutrition-global-audit-v845 summary strong{font-size:12px;font-weight:850;line-height:1.3}
+.food-nutrition-global-audit-v845 summary small{font-size:10px;font-weight:650;line-height:1.4}
+.food-nutrition-global-list-v845{display:grid;gap:6px;max-height:440px;overflow-y:auto;overscroll-behavior:contain;padding:9px 9px 11px;border-top:1px solid rgba(116,102,142,.16)}
+.food-nutrition-global-row-v845{min-width:0}
+.food-nutrition-global-row-v845 button{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:3px;width:100%;padding:9px 10px;border:1px solid rgba(116,102,142,.22);border-radius:8px;background:#fff;text-align:left;color:#5c4a67;cursor:pointer}
+.food-nutrition-global-row-v845 button strong{min-width:0;font-size:11px;line-height:1.3;overflow-wrap:anywhere}
+.food-nutrition-global-row-v845 button small{grid-column:1;min-width:0;font-size:10px;line-height:1.45;overflow-wrap:anywhere;color:#705b7f}
+.food-nutrition-global-row-v845 button span{grid-row:1 / span 2;grid-column:2;align-self:center}
+.food-nutrition-global-row-v845 button:focus-visible{outline:2px solid #8164ab;outline-offset:2px}
+@media(max-width:400px){.food-nutrition-global-audit-v845 summary{padding:8px 9px}.food-nutrition-global-audit-v845 summary strong{font-size:11px}.food-nutrition-global-list-v845{max-height:380px}}
