@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V845';
+  const VERSION='V846';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -377,7 +377,7 @@
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
-      const amount=basisAmount({quantity:part.take,unit:item.unit},{product,stock});
+      const amount=basisAmount({...item,quantity:part.take,unit:item.unit},{product,stock});
       if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
       kcal+=nut.kcal*amount/100;
       protein+=nut.protein*amount/100;
@@ -401,7 +401,7 @@
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
-      const amount=basisAmount({quantity:remaining,unit:item.unit},{product,stock:pinned});
+      const amount=basisAmount({...item,quantity:remaining,unit:item.unit},{product,stock:pinned});
       if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
       kcal+=nut.kcal*amount/100;
       protein+=nut.protein*amount/100;
@@ -573,6 +573,18 @@
 
     const product=source?.product||{};
     const productData=product.product_data&&typeof product.product_data==='object'?product.product_data:{};
+    if(unit==='stück'&&Array.isArray(productData.individual_gross_piece_weights_g)){
+      // The user's explicitly labelled physical piece selects exactly one measured
+      // gross weight (including peel, according to the owner's weighing rule).
+      // Never average all remaining pieces or invent an edible-yield percentage.
+      const label=String(item.label||'');
+      const match=label.match(/(?:Nr\.?|Nummer)\s*(\d+)\b/i);
+      if(match){
+        const index=Number(match[1])-1;
+        const measured=number(productData.individual_gross_piece_weights_g[index]);
+        if(measured!==null&&measured>0)return qty*measured;
+      }
+    }
     const packageUnit=text(product.package_unit);
     const servingUnit=text(product.serving_unit);
     const values=[
@@ -889,12 +901,16 @@
   // Recipe-library entries and future planned meals are distinct audit targets.
   function collectNutritionAudit(data,fromDate=todayIso()){
     const buckets=[];
-    const inspect=(type,row,items,context)=>{
+    const recipeMap=new Map((data.recipes||[]).map(r=>[String(r.id),r]));
+    const mealMap=new Map((data.meals||[]).map(m=>[String(m.id),m]));
+    const plan=plannedMealAllocationState(data);
+    const inspect=(type,row,items,context,allocations=null)=>{
       const issues=[];
       for(const item of items||[]){
         if(ZERO_NAMES.has(text(itemName(item))))continue;
-        const problem=nutritionProblem(item,context);
-        const src=sourceFor(item,context);
+        const allocation=allocations?.get?.(String(item.id||''))||null;
+        const problem=nutritionProblem(item,context,allocation);
+        const src=sourceFor(item,context,allocation);
         if(problem){
           issues.push({...problem,unit:item.unit,quantity:item.quantity,
             provisional:!!problem.provisional});
@@ -910,7 +926,9 @@
               +': '+numbers+'. Bei anderer Packung neu zuordnen.'});
         }
       }
-      const n=calculate(items,type==='recipe'?row.servings||1:row.prepared_servings||1,context);
+      const n=type==='meal'
+        ?nutritionForMeal(row,recipeMap,mealMap,data,context,allocations)
+        :calculate(items,row.servings||1,context);
       if(!n.complete&&!issues.length){
         if(type==='meal'&&!(items||[]).length){
           issues.push({id:'',name:'Mahlzeit ohne Zutatenverknüpfung',
@@ -931,11 +949,11 @@
     for(const recipe of data.recipes||[]){
       inspect('recipe',recipe,recipe.food_recipe_ingredients||[],data);
     }
-    const plan=plannedMealAllocationState(data);
     for(const meal of data.meals||[]){
       if(String(meal.status)!=='planned'||String(meal.meal_date)<String(fromDate))continue;
       const context=plan.contexts.get(String(meal.id))||data;
-      inspect('meal',meal,meal.food_meal_ingredients||[],context);
+      const allocations=plan.allocations.get(String(meal.id))||null;
+      inspect('meal',meal,meal.food_meal_ingredients||[],context,allocations);
     }
     // Real, currently usable packaging variants get checked even if not used
     // in any recipe yet. Ignore archived brands, zero stock and unrelated lots.
@@ -952,9 +970,25 @@
       if(liveLots.some(lot=>lot.product_id)&&!liveLots.some(lot=>
          String(lot.product_id)===String(product.id)))continue;
       const n=nutritionOf(product);
-      const missing=[n.kcal===null?'Kalorien':null,n.protein===null?'Eiweiß':null,
-        n.fat===null?'Fett':null,n.carbs===null?'Kohlenhydrate':null].filter(Boolean);
+      const per=product.nutrition_per_100||{};
       const pd=product.product_data||{};
+      const fatBound=number(per.fat_g_lt);
+      const proteinBound=number(per.protein_g_lt);
+      const carbBound=number(per.carbohydrates_g_lt??per.carbs_g_lt);
+      // A manufacturer label saying "<0,5 g" is not an absent label.
+      // Preserve an upper limit, never silently replace it with 0 or 0,5 exact.
+      const limits=[
+        n.fat===null&&fatBound!==null?'Fett < '+formatNumber(fatBound,2)+' g':null,
+        n.protein===null&&proteinBound!==null?'Eiweiß < '+formatNumber(proteinBound,2)+' g':null,
+        n.carbs===null&&carbBound!==null?'Kohlenhydrate < '+formatNumber(carbBound,2)+' g':null
+      ].filter(Boolean);
+      const missing=[n.kcal===null?'Kalorien':null,
+        n.protein===null&&proteinBound===null?'Eiweiß':null,
+        n.fat===null&&fatBound===null?'Fett':null,
+        n.carbs===null&&carbBound===null?'Kohlenhydrate':null].filter(Boolean);
+      const exception=String(pd.nutrition_audit_exception_type||'');
+      const declarationException=['supplement_micronutrients_only',
+        'creatine_macros_only_on_package','coffee_dry_nutrition_not_mandatory'].includes(exception);
       const provisional=pd.nutrition_reference_only===true
         ||pd.nutrition_is_reference===true||pd.nutrition_estimated===true
         ||pd.nutrition_review_needed===true||pd.nutrition_provisional===true
@@ -962,14 +996,23 @@
       if(!missing.length&&!provisional)continue;
       const values=n.kcal===null?'kein Kalorienwert':
         formatNumber(n.kcal,1)+' kcal je 100 g/ml';
-      const reason=missing.length?'Fehlend: '+missing.join(', ')+'. Vorhanden: '+values+'.':
-        'Nur vorläufiger Vergleichswert, Herstelleretikett noch nicht vollständig bestätigt. '
-        +values+'.';
+      let reason;
+      if(declarationException){
+        reason=exception==='coffee_dry_nutrition_not_mandatory'
+          ?'Kaffeekapsel ohne verpflichtende Nährwerttabelle für trockenes Kaffeemehl; Aufguss und Milch getrennt bewerten. Keine 0-kcal-Erfindung.'
+          :'Nahrungsergänzung mit deklarierten Wirk-/Mikronährstoffen, aber ohne belegte vollständige Makrotabelle. Kalorien für tatsächlich konsumierte Portion gegebenenfalls gesondert prüfen; kein künstlicher Nullwert.';
+      }else if(missing.length){
+        reason='Fehlend: '+missing.join(', ')+'. Vorhanden: '+values+'.'
+          +(limits.length?' Hersteller-Grenzwerte: '+limits.join(', ')+'.':'');
+      }else{
+        reason='Verlässlicher Referenz- oder Vergleichswert, nicht als chargenspezifisches Etikett bestätigt. '
+          +values+'.'+(limits.length?' Hersteller-Grenzwerte: '+limits.join(', ')+'.':'');
+      }
       buckets.push({type:'product',id:String(stock.id),
         title:[product.brand,product.product_name,product.variant].filter(Boolean).join(' · ')
           +' (Vorrat: '+stock.name+')',
         date:null,issues:[{id:String(product.id),name:product.product_name,
-          reason,provisional:!missing.length}]});
+          reason,provisional:declarationException||!missing.length}]});
     }
     const sorted=buckets.sort((a,b)=>
       (a.type==='meal'?0:a.type==='product'?1:2)
