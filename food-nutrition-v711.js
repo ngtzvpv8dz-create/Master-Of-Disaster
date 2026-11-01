@@ -912,9 +912,17 @@
       }
       const n=calculate(items,type==='recipe'?row.servings||1:row.prepared_servings||1,context);
       if(!n.complete&&!issues.length){
-        for(const missing of n.missing||[])
-          issues.push({id:'',name:missing,provisional:false,
-            reason:'Zutat, Menge oder passende Produktquelle ungeklärt.'});
+        if(type==='meal'&&!(items||[]).length){
+          issues.push({id:'',name:'Mahlzeit ohne Zutatenverknüpfung',
+            provisional:false,
+            reason:/^Rest\s/i.test(String(row.title||''))
+              ?'Geplante Restportion ist noch nicht mit ihrer tatsächlich zubereiteten Ausgangsmahlzeit verknüpft. Quelle prüfen, nicht automatisch als neuen Verbrauch buchen.'
+              :'Für diese geplante Mahlzeit sind weder Zutaten noch eine gesicherte Nährwertquelle vorhanden.'});
+        }else{
+          for(const missing of n.missing||[])
+            issues.push({id:'',name:missing,provisional:false,
+              reason:'Zutat, Menge oder passende Produktquelle ungeklärt.'});
+        }
       }
       if(!issues.length)return;
       buckets.push({type,id:String(row.id),title:String(row.title||'Ohne Titel'),
