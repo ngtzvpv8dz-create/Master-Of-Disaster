@@ -87,7 +87,7 @@
     "schnittlauch":{kcal:29,protein:2.6,fat:0.74,carbs:1.54,unit:"g",source:"BLS G081100 Schnittlauch roh",url:"https://blsdb.de/food?foodId=38179"},
     "radieschen":{kcal:19,protein:1.05,fat:0.14,carbs:2.31,unit:"g",source:"BLS G691100 Radieschen roh",url:"https://blsdb.de/food?foodId=38952"},
     "halloumi":{kcal:321,protein:23,fat:25,carbs:2.3,unit:"g",source:"Halloumi, typischer Grillkäse; Herstellerwerte variieren",url:"generic-halloumi"},
-    "teriyakisauce":{kcal:100,protein:2,fat:0.1,carbs:22,unit:"ml",source:"Teriyaki-Sauce, generische Rezeptur; Zucker und Salz je Marke variieren",url:"generic-teriyaki-sauce"}
+    "teriyakisauce":{kcal:100,protein:2,fat:0.1,carbs:22,unit:"g",source:"Teriyaki-Sauce, generische Rezeptur; Zucker und Salz je Marke variieren",url:"generic-teriyaki-sauce"}
   };
   const originalAlias=name=>key(name);
   function referenceFor(item){
