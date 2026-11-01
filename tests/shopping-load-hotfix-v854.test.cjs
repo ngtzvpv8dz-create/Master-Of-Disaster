@@ -14,9 +14,9 @@ const holidayEnd=js.indexOf('  const fmtDate=iso=>',holidayStart);
 assert.ok(holidayStart>=0&&holidayEnd>holidayStart);
 const effectiveShoppingDate=new Function(js.slice(holidayStart,holidayEnd)+';return effectiveShoppingDate;')();
 const shoppingNormalize=value=>String(value||'').toLocaleLowerCase('de-DE')
- .replace(/ß/g,'ss').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
- .replace(/[^a-z0-9]+/g,' ').trim().replace(/\\s+/g,' ');
-const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','food','inventory','shoppingFamilyLabel','effectiveShoppingDate','shoppingNormalize','let rowMap;\\n'+originalBlock);
+ .replace(/ß/g,'ss').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+ .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','food','inventory','shoppingFamilyLabel','effectiveShoppingDate','shoppingNormalize','let rowMap;\n'+originalBlock);
 const fmtDate=iso=>iso;
 const fmtQty=(n,u)=>n+' '+u;
 const collator=new Intl.Collator('de-DE');
