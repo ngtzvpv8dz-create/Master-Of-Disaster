@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V843';
+  const VERSION='V844';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -37,12 +37,95 @@
 
   function nutritionOf(product){
     const n=product?.nutrition_per_100||{};
+    const carbsExact=nutrient(n,['carbohydrates_g','carbs_g']);
+    const carbsUpper=nutrient(n,['carbohydrates_g_lt','carbs_g_lt']);
     return {
       kcal:nutrient(n,['energy_kcal','calories_kcal','kcal']),
       protein:nutrient(n,['protein_g','protein']),
-      carbs:nutrient(n,['carbohydrates_g','carbs_g']),
+      carbs:carbsExact!==null?carbsExact:carbsUpper,
+      carbsBound:carbsExact===null&&carbsUpper!==null,
       fat:nutrient(n,['fat_g'])
     };
+  }
+
+
+  // V844: Ingredient-level public reference profiles, not purchases, brands or stocks.
+  // Source codes and approximations are explicit. Never manufacture stock or a historical lot.
+  // Source: Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0)
+  // and labelled generic comparisons for ingredients not covered by exact stock.
+  const GENERAL_REFERENCE_BY_KEY={
+    "sojasauce":{kcal:76.6,protein:7.3,fat:1.02,carbs:6.35,unit:"ml",source:"BLS R143000 (66kcal/100g), auf 100ml mit geschätzter Dichte 1,16g/ml umgerechnet",url:"https://blsdb.de/food?foodId=38320"},
+    "hokkaidokürbis":{kcal:31,protein:1.4,fat:0.2,carbs:5.298,unit:"g",source:"BLS G581000 Hokkaido roh (Kerne entfernt)",url:"https://blsdb.de/food?foodId=38550"},
+    "kichererbsenabgetropft":{kcal:148,protein:8.4,fat:3,carbs:17.4,unit:"g",source:"BLS G770432 Kichererbse reif gekocht; Konserve abgetropft Näherung",url:"https://blsdb.de/food?foodId=42409"},
+    "räucherlachs":{kcal:166,protein:21.25,fat:10,carbs:0.2,unit:"g",source:"Mittelwert zweier früher gelisteter Marken, 155–177 kcal; genaue Marke unbestimmt",url:"project-product-catalog"},
+    "tomatensalsa":{kcal:40,protein:1.2,fat:0.3,carbs:7,unit:"g",source:"Allgemeine ungesüßte Tomatensalsa, Rezepturvarianten stark abweichend",url:"general-reference"},
+    "buchweizenmehl":{kcal:354,protein:12.52,fat:3.12,carbs:65.08,unit:"g",source:"BLS C424000 Buchweizenmehl roh",url:"https://blsdb.de/food?foodId=38473"},
+    "tkerbsen":{kcal:78,protein:5.15,fat:0.27,carbs:10,unit:"g",source:"USDA 170017 grüne TK-Erbsen gegart als Näherung",url:"https://fdc.nal.usda.gov/food-details/170017/nutrients"},
+    "vollkornbrot":{kcal:210,protein:7.16,fat:1.01,carbs:38,unit:"g",source:"BLS B101000 Vollkornbrot, nur wenn konkrete Sorte/Einheit nicht zugeordnet werden kann",url:"https://blsdb.de/food?foodId=39581",pieceWeight:50},
+    "öl":{kcal:884,protein:0,fat:100,carbs:0,unit:"g",source:"Generisches Speiseöl, 100% Fett, Gewichts- statt Volumeneinheit",url:"generic-vegetable-oil"},
+    "mageresrindfleisch":{kcal:130,protein:21,fat:5,carbs:0,unit:"g",source:"Mageres Rindfleisch roh, generischer Zuschnitt",url:"generic-raw-lean-beef"},
+    "basilikumgetrocknet":{kcal:233,protein:23,fat:4.1,carbs:22.9,unit:"g",source:"Getrockneter Basilikum, allgemeine Gewürzreferenz",url:"generic-dried-basil"},
+    "backpulver":{kcal:88,protein:0.09,fat:0.124,carbs:21.6,unit:"g",source:"BLS R421100 Backpulver, Standardpäckchen 16g angenommen",url:"https://blsdb.de/food?foodId=38326",pieceWeight:16},
+    "nussmischung":{kcal:605,protein:18,fat:52,carbs:11,unit:"g",source:"Ungesalzene gemischte Nüsse, illustrative Referenz, Arten nicht bekannt",url:"generic-nuts-mix"},
+    "ajamarillopaste":{kcal:50,protein:1,fat:0.5,carbs:10,unit:"g",source:"Gelbe Chilipaste ohne bestätigte Produktrezeptur; grober Richtwert",url:"generic-aji-pepper-paste"},
+    "hummus":{kcal:324,protein:5.9,fat:28.5,carbs:8,unit:"g",source:"BLS H960000 Hummus; handelsüblicher Hummus kann stark abweichen",url:"https://blsdb.de/food?foodId=43318"},
+    "haselnüsse":{kcal:657,protein:16.25,fat:63.3,carbs:4.2,unit:"g",source:"BLS H130100 rohe Haselnuss",url:"https://blsdb.de/food?foodId=38221"},
+    "edamametkohneschote":{kcal:146,protein:13,fat:6.8,carbs:6.2,unit:"g",source:"BLS G750100 Edamame rohe Bohnen ohne Schote als TK-Näherung",url:"https://blsdb.de/food?foodId=38556"},
+    "frühlingszwiebel":{kcal:33,protein:0.9,fat:0.15,carbs:5.99,unit:"g",source:"BLS G486100 Frühlingszwiebel roh, ohne Laub; gesamt mögliche Abweichung",url:"https://blsdb.de/food?foodId=38545"},
+    "ricotta":{kcal:158,protein:8.58,fat:12.3,carbs:3.43,unit:"g",source:"BLS M741600 Ricotta 45% Fett i.Tr.",url:"https://blsdb.de/food?foodId=39164"},
+    "tkkirschen":{kcal:55,protein:1,fat:0.2,carbs:12,unit:"g",source:"TK-Kirschen, generischer Vergleich",url:"generic-frozen-cherries"},
+    "kokosraspeln":{kcal:660,protein:7,fat:65,carbs:7.4,unit:"g",source:"Getrocknete Kokosraspeln ungesüßt, allgemeine Referenz",url:"generic-unsweetened-desiccated-coconut"},
+    "ananas":{kcal:46,protein:0.5,fat:0.1,carbs:9.4,unit:"g",source:"BLS F501100 Ananas roh, essbarer Anteil",url:"https://blsdb.de/food?foodId=39149"},
+    "mandelmus":{kcal:558,protein:25.3,fat:46.6,carbs:4.51,unit:"g",source:"BLS H212800 Mandelmus ungesüßt",url:"https://blsdb.de/food?foodId=39154"},
+    "misopaste":{kcal:174,protein:10.6,fat:10.5,carbs:6.2,unit:"g",source:"BLS H862200 Miso Sojabohnenpaste",url:"https://blsdb.de/food?foodId=38242"},
+    "kürbisgewürz":{kcal:300,protein:7,fat:8,carbs:47,unit:"g",source:"Pumpkin-Spice Gewürzmischung, Rezeptur unbekannt, 1g nur Näherung",url:"generic-pumpkin-spice"},
+    "pita":{kcal:275,protein:9.1,fat:1.2,carbs:55.7,unit:"g",source:"Weizen-Pita-Brot, generischer Vergleich, genaue Rezeptur unbekannt",url:"generic-white-pita"},
+    "haferkeks":{kcal:450,protein:7,fat:17,carbs:62,unit:"g",source:"Haferkeks, generischer Richtwert, Rezeptur variiert",url:"generic-oat-biscuit"},
+    "limette":{kcal:28,protein:0.5,fat:0.2,carbs:1.9,unit:"g",source:"BLS F602100 Limette roh, essbarer Anteil",url:"https://blsdb.de/food?foodId=39150"},
+    "mangoessbar":{kcal:60,protein:0.7,fat:0.45,carbs:12,unit:"g",source:"BLS F516100 Mango roh, essbarer Anteil",url:"https://blsdb.de/food?foodId=38167"},
+    "zitrone":{kcal:40,protein:0.7,fat:0.4,carbs:3.16,unit:"g",source:"BLS F601100 Zitrone roh, essbarer Anteil",url:"https://blsdb.de/food?foodId=38946"},
+    "schnittlauch":{kcal:29,protein:2.6,fat:0.74,carbs:1.54,unit:"g",source:"BLS G081100 Schnittlauch roh",url:"https://blsdb.de/food?foodId=38179"},
+    "radieschen":{kcal:19,protein:1.05,fat:0.14,carbs:2.31,unit:"g",source:"BLS G691100 Radieschen roh",url:"https://blsdb.de/food?foodId=38952"},
+    "halloumi":{kcal:321,protein:23,fat:25,carbs:2.3,unit:"g",source:"Halloumi, typischer Grillkäse; Herstellerwerte variieren",url:"generic-halloumi"},
+    "teriyakisauce":{kcal:100,protein:2,fat:0.1,carbs:22,unit:"g",source:"Teriyaki-Sauce, generische Rezeptur; Zucker und Salz je Marke variieren",url:"generic-teriyaki-sauce"}
+  };
+  const originalAlias=name=>key(name);
+  function referenceFor(item){
+    const ref=GENERAL_REFERENCE_BY_KEY[originalAlias(itemName(item))];
+    if(!ref)return null;
+    const unit=text(item.unit);
+    if(ref.unit==='g'&&!['g','kg','stück','scheibe','päckchen','packung'].includes(unit))return null;
+    if(ref.unit==='ml'&&!['ml','l'].includes(unit))return null;
+    const product={
+      product_name:'Nährwertreferenz: '+itemName(item),
+      active:false,
+      category:'Nährwertreferenz (kein Einkauf)',
+      nutrition_per_100:{energy_kcal:ref.kcal,protein_g:ref.protein,
+        fat_g:ref.fat,carbohydrates_g:ref.carbs,basis:'per_100_'+ref.unit},
+      product_data:{nutrition_reference_only:true,nutrition_source:ref.source,
+        nutrition_source_url:ref.url,reference_prepared_by:'BLS4.0 + public generic comparisons',
+        ...(ref.pieceWeight?{unit_weight_g:ref.pieceWeight}:{})},
+      ...(ref.pieceWeight?{serving_quantity:ref.pieceWeight,serving_unit:'g'}:{})
+    };
+    return {nutrition:nutritionOf(product),product,stock:null,reference:true,
+      sourceName:ref.source,sourceUrl:ref.url};
+  }
+  // For broad recipe names, prefer the *single current physically present* variant.
+  // Never conflate distinct fat percentages, or a refrigerated and frozen ingredient.
+  function uniquelyPresentAlias(name,data){
+    const aliases={
+      'griechischer joghurt':stock=>/^griechischer joghurt (?:2 %|9,4 %)$/.test(text(stock.family_name)),
+      'tk-asiagemüse':stock=>text(stock.family_name)==='asia-gemüse'&&(rowMode(stock)==='frozen'||text(stock.name).includes('gemüsepfanne'))
+    };
+    const rule=aliases[text(name)];
+    if(!rule)return null;
+    const stocks=(data?.inventory||[]).filter(stock=>stock.is_active!==false&&number(stock.quantity)>0&&rule(stock));
+    if(stocks.length!==1)return null;
+    const p=productForStock(stocks[0],data);
+    const n=nutritionOf(p);
+    return p&&n.kcal!==null&&n.protein!==null
+      ?{nutrition:n,product:p,stock:stocks[0],reference:false,alias:true}
+      :null;
   }
 
   function signature(product){
@@ -60,12 +143,12 @@
     // Same kcal/protein does not imply same fat/carbohydrates.
     const profiles=new Set(usable.map(p=>{
       const n=nutritionOf(p);
-      return [n.fat,n.carbs].map(x=>x===null?'?':String(x)).join('|');
+      return [n.fat,n.carbs,n.carbsBound?'upper-bound':'exact'].map(x=>x===null?'?':String(x)).join('|');
     }));
     if(profiles.size>1){
       const first=usable[0];
       return {...first,nutrition_per_100:{
-        ...first.nutrition_per_100,fat_g:null,carbohydrates_g:null,carbs_g:null
+        ...first.nutrition_per_100,fat_g:null,carbohydrates_g:null,carbs_g:null,carbohydrates_g_lt:null,carbs_g_lt:null
       }};
     }
     return usable[0];
@@ -257,14 +340,14 @@
 
     const requested=number(item?.quantity);
     if(requested===null||requested<0)return {complete:false,missing:[name+' (Menge)']};
-    if(requested===0)return {complete:true,kcal:0,protein:0,fat:0,carbs:0,missing:[]};
+    if(requested===0)return {complete:true,kcal:0,protein:0,fat:0,carbs:0,carbsBound:false,missing:[]};
 
     // Die tatsächlich belegten FIFO-Teilmengen für unterschiedliche Produkte
     // berücksichtigen. Für eine noch fehlende Menge das zuletzt ausgewählte
     // Familienprodukt fortschreiben, nicht kcal=0 oder "Vorrat reicht nicht".
     const allocation=allocationOverride||genericFamilyAllocation(item,data);
     const parts=(allocation?.allocations||[]).filter(part=>number(part.take)>0);
-    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,used=0,lastProduct=null;
+    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,used=0,lastProduct=null;
     for(const part of parts){
       const stock=part.stock||familyStocks.find(row=>String(row.id)===String(part.inventoryId||''));
       // V877: Eine Zutatenfamilie kann mehrere reale Marken/Chargen IN EINEM
@@ -285,6 +368,7 @@
         protein+=lotMix.protein;
         if(lotMix.fat===null||lotMix.fat===undefined)fatKnown=false;else fat+=lotMix.fat;
         if(lotMix.carbs===null||lotMix.carbs===undefined)carbsKnown=false;else carbs+=lotMix.carbs;
+        if(lotMix.carbsBound)carbsBound=true;
         used+=Number(part.take);
         lastProduct=lotMix.lastProduct||lastProduct;
         continue;
@@ -299,6 +383,7 @@
       protein+=nut.protein*amount/100;
       if(nut.fat===null)fatKnown=false;else fat+=nut.fat*amount/100;
       if(nut.carbs===null)carbsKnown=false;else carbs+=nut.carbs*amount/100;
+      if(nut.carbsBound)carbsBound=true;
       used+=Number(part.take);
       lastProduct=product;
     }
@@ -322,8 +407,10 @@
       protein+=nut.protein*amount/100;
       if(nut.fat===null)fatKnown=false;else fat+=nut.fat*amount/100;
       if(nut.carbs===null)carbsKnown=false;else carbs+=nut.carbs*amount/100;
+      if(nut.carbsBound)carbsBound=true;
     }
-    return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,missing:[]};
+    return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
+      carbsBound:carbsKnown&&carbsBound,missing:[]};
   }
 
   function quantityInStockUnit(item,stock){
@@ -473,7 +560,8 @@
 
     if(product)return {nutrition:nutritionOf(product),product,stock};
     const fromNote=noteNutrition(stock);
-    return fromNote?{nutrition:fromNote,product:null,stock}:null;
+    if(fromNote)return {nutrition:fromNote,product:null,stock};
+    return uniquelyPresentAlias(name,data)||referenceFor(item);
   }
 
   function basisAmount(item,source){
@@ -551,11 +639,11 @@
     const quantity=number(item.quantity);
     if(quantity===null||quantity<0)return {complete:false,missing:[name+' (Menge)']};
     const required=quantity*multiplier;
-    if(required===0)return {complete:true,kcal:0,protein:0,missing:[]};
+    if(required===0)return {complete:true,kcal:0,protein:0,fat:0,carbs:0,carbsBound:false,missing:[]};
     const total=active.reduce((sum,v)=>sum+v.amount,0);
     const current=number(stock.quantity);
     if(current===null||current>total+.001)return {complete:false,missing:[name+' (nicht zugeordneter Altbestand)']};
-    let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,lastProduct=null;
+    let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,lastProduct=null;
     const isFrozen=v=>/(gefrier|tiefkühl|freezer|frozen)/.test(text(v.lot.storage_location));
     const isMeat=/(hähnchen|huhn|hackfleisch|rind|schwein|pute|fleisch)/.test(text(stock.name));
     const rank=v=>isMeat?0:v.open>0?0:isFrozen(v)?2:1;
@@ -595,22 +683,25 @@
       }
       if(n.fat===null)fatKnown=false;else fat+=n.fat*macroFactor;
       if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*macroFactor;
+      if(n.carbsBound)carbsBound=true;
       remaining-=taken;
       if(remaining<=.0001)break;
     }
     if(remaining>.0001)return {complete:false,missing:[name+' (Chargenzuordnung unvollständig)']};
-    return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,missing:[],lastProduct};
+    return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
+      carbsBound:carbsKnown&&carbsBound,missing:[],lastProduct};
   }
 
   function calculate(items,servings,data,allocationMap=null){
     const rows=Array.isArray(items)?items:[];
     if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
     const div=Math.max(.01,number(servings)||1);
-    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true;
+    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,referenceUsed=false;
     const missing=[];
     const addMacro=(n,scale)=>{
       if(n.fat===null||n.fat===undefined)fatKnown=false;else fat+=n.fat*scale;
       if(n.carbs===null||n.carbs===undefined)carbsKnown=false;else carbs+=n.carbs*scale;
+      if(n.carbsBound)carbsBound=true;
     };
     for(const item of rows){
       // Nährwertfreie Grundzutaten niemals per Familien-/FIFO-Produktlookup
@@ -633,12 +724,23 @@
       }
       const allocationOverride=item?.id&&allocationMap?.get?.(String(item.id))||null;
       const familyNutrition=genericFamilyNutrition(item,data,allocationOverride);
-      if(familyNutrition){
-        if(!familyNutrition.complete){missing.push(...(familyNutrition.missing||[itemName(item)]));continue;}
+      if(familyNutrition?.complete){
         kcal+=familyNutrition.kcal;
         protein+=familyNutrition.protein;
         addMacro(familyNutrition,1);
         continue;
+      }
+      if(familyNutrition&&!familyNutrition.complete){
+        // A completely absent stock can use a transparent dietary reference;
+        // never disguise a broken *physical* batch as a generic approximation.
+        const ref=referenceFor(item);
+        const hasPhysicalStock=(data?.inventory||[]).some(stock=>
+          stock.is_active!==false&&number(stock.quantity)>0&&
+          familyMatch(itemName(item),stock.family_name));
+        const unit=text(item.unit);
+        if(!ref||(hasPhysicalStock&&!(key(itemName(item))==='vollkornbrot'&&unit==='scheibe')&&key(itemName(item))!=='hokkaidokürbis')){
+          missing.push(...(familyNutrition.missing||[itemName(item)]));continue;
+        }
       }
       const mixed=mixedLotNutrition(item,data);
       if(mixed){
@@ -647,6 +749,7 @@
       }
       const source=sourceFor(item,data);
       if(!source){missing.push(itemName(item));continue;}
+      if(source.reference||source.alias)referenceUsed=true;
       const amount=basisAmount(item,source);
       if(amount===null){missing.push(itemName(item)+' ('+(item?.unit||'Einheit')+')');continue;}
       if(source.nutrition.kcal===null||source.nutrition.protein===null){missing.push(itemName(item));continue;}
@@ -665,7 +768,8 @@
     }
     if(missing.length)return {complete:false,missing:[...new Set(missing)]};
     return {complete:true,kcal:kcal/div,protein:protein/div,
-      fat:fatKnown?fat/div:null,carbs:carbsKnown?carbs/div:null,missing:[]};
+      fat:fatKnown?fat/div:null,carbs:carbsKnown?carbs/div:null,
+      carbsBound:carbsKnown&&carbsBound,estimated:referenceUsed,missing:[]};
   }
 
 
@@ -725,6 +829,17 @@
     const generic=genericFamilyNutrition(item,data,allocationOverride);
     if(generic?.complete)return null;
     if(generic&&!generic.complete){
+      const ref=referenceFor(item);
+      const hasPhysicalStock=(data?.inventory||[]).some(stock=>
+        stock.is_active!==false&&number(stock.quantity)>0&&
+        familyMatch(name,stock.family_name));
+      const fallbackForUnlabeledProduce=key(name)==='hokkaidokürbis';
+      const specialBread=key(name)==='vollkornbrot'&&text(item.unit)==='scheibe';
+      if(ref&&(!hasPhysicalStock||specialBread||fallbackForUnlabeledProduce)&&basisAmount(item,ref)!==null){
+        // A documented public approximation is not a *missing* label:
+        // show ca./Referenzwerte in the calculator, not a false emergency alert.
+        return null;
+      }
       return {...entry,reason:'Für diese Zutatenfamilie sind die Nährwerte nicht vollständig zugeordnet.'};
     }
     const source=sourceFor(item,data);
@@ -806,6 +921,7 @@
   const zeroNutrition=()=>({complete:true,kcal:0,protein:0,fat:0,carbs:0,missing:[]});
   const combine=(a,b)=>a?.complete&&b?.complete
     ?{complete:true,kcal:a.kcal+b.kcal,protein:a.protein+b.protein,
+      carbsBound:!!(a.carbsBound||b.carbsBound),estimated:!!(a.estimated||b.estimated),
       fat:a.fat===null||a.fat===undefined||b.fat===null||b.fat===undefined?null:a.fat+b.fat,
       carbs:a.carbs===null||a.carbs===undefined||b.carbs===null||b.carbs===undefined?null:a.carbs+b.carbs,
       missing:[]}
@@ -874,11 +990,11 @@
   }
   function nutritionText(n){
     if(!n?.complete)return '';
-    const base=Math.round(n.kcal)+' kcal · '+formatNumber(n.protein,1)+' g Protein';
+    const base=(n.estimated?'ca. ':'')+Math.round(n.kcal)+' kcal · '+formatNumber(n.protein,1)+' g Protein';
     // Display fat/carbs only when every contributing portion has reliable data.
     // Sugar and saturated fat are subsets, never additional calories.
     if(n.fat===null||n.fat===undefined||n.carbs===null||n.carbs===undefined)return base;
-    return base+' · '+formatNumber(n.fat,1)+' g Fett · '+formatNumber(n.carbs,1)+' g KH';
+    return base+' · '+formatNumber(n.fat,1)+' g Fett · '+(n.carbsBound?'< ':'')+formatNumber(n.carbs,1)+' g KH'+(n.estimated?' · Referenzwerte':'');
   }
 
   function ensureAllocationStyle(){
