@@ -1839,6 +1839,7 @@
     const meals=data.meals.filter(meal=>meal.meal_date===todayIso()).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     return '<div class="food-section-head-v544"><div><span>HEUTE</span><h3>Dein Tagesplan</h3></div><small>'+meals.length+' Mahlzeiten</small></div>'+
       '<div class="food-nutrition-alarm-v795" data-food-nutrition-alarm aria-live="polite" hidden></div>'+
+      '<div class="food-nutrition-global-v845" data-food-nutrition-audit aria-live="polite"></div>'+
       '<div class="food-day-summary-v778" data-food-day-summary-today aria-label="Kalorien und Protein des Tages">'+
         '<span class="food-day-summary-title-v778" data-food-day-summary-label>Tag gesamt</span>'+
         '<strong class="food-day-summary-value-v778" data-food-day-kcal>… kcal</strong>'+
