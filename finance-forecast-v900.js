@@ -7,8 +7,8 @@
   // Manuell bestätigte/aus Bankbuchungen abgeleitete Rhythmen.
   // Beträge und Ankerdaten stammen aus der Datenbank, nicht aus dieser Liste.
   const RULES=[
-    {key:'rent',label:'Kaltmiete',category:'Wohnen / Kaltmiete',merchant:'Michael Würger',months:1},
-    {key:'utilities',label:'Betriebskosten',category:'Wohnen / Betriebskosten',merchant:'Michael Würger',months:1},
+    {key:'rent',label:'Kaltmiete',category:'Wohnen / Kaltmiete',merchant:null,months:1},
+    {key:'utilities',label:'Betriebskosten',category:'Wohnen / Betriebskosten',merchant:null,months:1},
     {key:'electricity',label:'Strom (EWE)',category:'Energie / Strom',merchant:'EWE Vertrieb GmbH',months:1},
     {key:'internet',label:'Internet (Telefónica)',category:'Internet / Zuhause',merchant:'Telefonica Germany',months:1},
     {key:'prime',label:'Amazon Prime',category:'Abos & Streaming',merchant:'Amazon EU S.à r.l. (Amazon Prime)',months:1},
@@ -61,7 +61,7 @@
     RULES.forEach(rule=>{
       const list=rows.filter(row=>row.transaction_type==='expense'
         &&row.category===rule.category
-        &&String(row.merchant||'').toLocaleLowerCase('de-DE').includes(rule.merchant.toLocaleLowerCase('de-DE'))
+        &&(!rule.merchant||String(row.merchant||'').toLocaleLowerCase('de-DE').includes(rule.merchant.toLocaleLowerCase('de-DE')))
         &&['booked','pending','not_visible'].includes(row.booking_status))
         .sort((a,b)=>String(b.transaction_date).localeCompare(String(a.transaction_date)));
       if(!list.length)return;
