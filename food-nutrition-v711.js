@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V844';
+  const VERSION='V845';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -883,6 +883,98 @@
     if(panel.innerHTML!==html)panel.innerHTML=html;
     panel.hidden=false;
   }
+
+  // A complete read-only audit from Supabase rows, not from currently visible DOM cards.
+  // There is deliberately no stock/meal mutation, no auto-confirmation and no guessed batch.
+  // Recipe-library entries and future planned meals are distinct audit targets.
+  function collectNutritionAudit(data,fromDate=todayIso()){
+    const buckets=[];
+    const inspect=(type,row,items,context)=>{
+      const issues=[];
+      for(const item of items||[]){
+        if(ZERO_NAMES.has(text(itemName(item))))continue;
+        const problem=nutritionProblem(item,context);
+        const src=sourceFor(item,context);
+        if(problem){
+          issues.push({...problem,unit:item.unit,quantity:item.quantity,
+            provisional:!!problem.provisional});
+        }else if(src&&(src.reference||src.alias)){
+          const n=src.nutrition||{};
+          const basis=text(src.product?.nutrition_per_100?.basis).includes('100_ml')?'100 ml':'100 g';
+          const numbers=n.kcal!==null&&n.protein!==null
+            ?formatNumber(n.kcal,1)+' kcal, '+formatNumber(n.protein,1)+' g Eiweiß je '+basis
+            :'Nährwerte noch nicht vollständig geprüft';
+          issues.push({id:String(item.id||''),name:itemName(item),
+            provisional:true,unit:item.unit,quantity:item.quantity,
+            reason:(src.reference?'Referenz statt Verpackungswert':'Aktuell einzige passende Vorratsvariante')
+              +': '+numbers+'. Bei anderer Packung neu zuordnen.'});
+        }
+      }
+      const n=calculate(items,type==='recipe'?row.servings||1:row.prepared_servings||1,context);
+      if(!n.complete&&!issues.length){
+        for(const missing of n.missing||[])
+          issues.push({id:'',name:missing,provisional:false,
+            reason:'Zutat, Menge oder passende Produktquelle ungeklärt.'});
+      }
+      if(!issues.length)return;
+      buckets.push({type,id:String(row.id),title:String(row.title||'Ohne Titel'),
+        date:row.meal_date||null,mealType:String(row.meal_type||''),issues});
+    };
+    for(const recipe of data.recipes||[]){
+      inspect('recipe',recipe,recipe.food_recipe_ingredients||[],data);
+    }
+    const plan=plannedMealAllocationState(data);
+    for(const meal of data.meals||[]){
+      if(String(meal.status)!=='planned'||String(meal.meal_date)<String(fromDate))continue;
+      const context=plan.contexts.get(String(meal.id))||data;
+      inspect('meal',meal,meal.food_meal_ingredients||[],context);
+    }
+    const sorted=buckets.sort((a,b)=>
+      (a.type==='meal'?0:1)-(b.type==='meal'?0:1)
+      ||String(a.date||'9999-12-31').localeCompare(String(b.date||'9999-12-31'))
+      ||a.title.localeCompare(b.title,'de'));
+    return {targets:sorted,
+      total:sorted.reduce((sum,target)=>sum+target.issues.length,0),
+      blocking:sorted.reduce((sum,target)=>sum+target.issues.filter(x=>!x.provisional).length,0),
+      review:sorted.reduce((sum,target)=>sum+target.issues.filter(x=>x.provisional).length,0),
+      recipeTargets:sorted.filter(x=>x.type==='recipe').length,
+      plannedMealTargets:sorted.filter(x=>x.type==='meal').length,
+      fromDate};
+  }
+
+  function auditMarkup(audit){
+    const title='Gesamter Nährwert-Check: '+audit.total+' Punkte';
+    const sub=audit.blocking+' fehlend/widersprüchlich · '+audit.review
+      +' Referenzen/prüfbedürftig · '+audit.plannedMealTargets
+      +' geplante Mahlzeiten · '+audit.recipeTargets+' Rezepte';
+    return '<details class="food-nutrition-global-audit-v845" data-food-audit-details>'
+      +'<summary><strong>'+alarmEscape(title)+'</strong><small>'+alarmEscape(sub)+'</small></summary>'
+      +'<div class="food-nutrition-global-list-v845" role="list" aria-label="Alle derzeit prüfbaren Nährwertpunkte">'
+      +(audit.targets.length?audit.targets.map(target=>
+        '<div class="food-nutrition-global-row-v845" role="listitem">'
+          +'<button type="button" data-food-audit-open="'+alarmEscape(target.id)+'" data-food-audit-type="'+alarmEscape(target.type)+'" data-food-audit-date="'+alarmEscape(target.date||'')+'">'
+            +'<strong>'+alarmEscape((target.type==='meal'?'Mahlzeit '+(target.date||''):'Rezept')
+              +' · '+target.title)+'</strong>'
+            +'<small>'+alarmEscape(target.issues.map(issue=>
+               (issue.provisional?'Hinweis: ':'Fehler: ')+issue.name+': '+issue.reason).join(' | '))+'</small>'
+            +'<span aria-hidden="true">↗</span>'
+          +'</button>'
+        +'</div>').join(''):'<p>Keine offenen Nährwertpunkte in geplanten Mahlzeiten und Rezepten.</p>')
+      +'</div></details>';
+  }
+
+  function patchNutritionAudit(root,audit){
+    const panel=root.querySelector('[data-food-nutrition-audit]');
+    if(!panel)return;
+    const html=auditMarkup(audit);
+    if(panel.innerHTML!==html){
+      const previous=panel.querySelector('[data-food-audit-details]')?.open||false;
+      panel.innerHTML=html;
+      const details=panel.querySelector('[data-food-audit-details]');
+      if(details)details.open=previous;
+    }
+  }
+
   function patchMealNutritionProblems(card,issues){
     const ids=new Set(issues.map(issue=>issue.id).filter(Boolean));
     const names=new Set(issues.map(issue=>key(issue.name)));
@@ -1254,6 +1346,7 @@
       const dailyTotals=new Map();
       const todayWarnings=[];
       const unresolvedTargets=[];
+      const globalAudit=collectNutritionAudit(data);
 
       root.querySelectorAll('[data-food-recipe-card]').forEach(card=>{
         const recipe=recipeMap.get(String(card.dataset.foodRecipeCard||''));
@@ -1329,6 +1422,7 @@
 
       ensureDailyTotalStyle();
       patchNutritionAlarm(root,todayWarnings);
+      patchNutritionAudit(root,globalAudit);
       patchDailyTotals(root,dailyTotals,unresolvedTargets);
       lastStatus={
         todayUnresolvedTargets:unresolvedTargets,
@@ -1342,6 +1436,10 @@
         unresolvedRecipes,
         unresolvedMeals,
         nutritionAlarmMeals:todayWarnings,
+        nutritionAudit:{total:globalAudit.total,blocking:globalAudit.blocking,
+          review:globalAudit.review,recipeTargets:globalAudit.recipeTargets,
+          plannedMealTargets:globalAudit.plannedMealTargets,
+          targets:globalAudit.targets},
         refreshedAt:new Date().toISOString()
       };
     }catch(error){
@@ -1384,7 +1482,43 @@
     });
   }
 
+
+  function openAuditTarget(type,id,date){
+    const root=document.getElementById(ROOT_ID);
+    if(!root)return;
+    const activateTab=name=>{
+      const tab=root.querySelector('[data-food-tab="'+name+'"]');
+      if(tab&&!tab.classList.contains('active'))tab.click();
+    };
+    if(type==='meal'){
+      if(date&&date!==todayIso())activateTab('plan');
+      else activateTab('today');
+    }else if(type==='recipe')activateTab('recipes');
+    requestAnimationFrame(()=>{
+      if(type==='meal'&&date){
+        const group=[...(root.querySelectorAll('[data-food-plan-day]')||[])]
+          .find(node=>String(node.dataset.foodPlanDay)===date);
+        if(group)group.open=true;
+      }
+      const selector=type==='recipe'?'[data-food-recipe-card]':'[data-food-meal-card]';
+      const attr=type==='recipe'?'foodRecipeCard':'foodMealCard';
+      const card=[...(root.querySelectorAll(selector)||[])]
+        .find(node=>String(node.dataset[attr])===id);
+      const toggle=card?.querySelector(type==='recipe'?'[data-food-recipe-toggle]':'[data-food-meal-toggle]');
+      if(toggle?.getAttribute('aria-expanded')==='false')toggle.click();
+      card?.scrollIntoView?.({behavior:'smooth',block:'center'});
+      toggle?.focus?.({preventScroll:true});
+    });
+  }
+
   document.addEventListener('click',event=>{
+    const auditTarget=event.target?.closest?.('[data-food-audit-open]');
+    if(auditTarget){
+      openAuditTarget(String(auditTarget.dataset.foodAuditType||'recipe'),
+        String(auditTarget.dataset.foodAuditOpen||''),
+        String(auditTarget.dataset.foodAuditDate||''));
+      return;
+    }
     const target=event.target?.closest?.('[data-food-nutrition-goto],[data-food-extra-goto],[data-food-day-summary-goto]');
     if(target){
       if(target.hasAttribute('data-food-day-summary-goto')){
