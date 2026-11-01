@@ -77,7 +77,8 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './finance-v552.js?v=552-finance',
-      './finance-data-v553.js?v=878-finance-collapsible-sections'
+      './finance-forecast-v900.js?v=900',
+      './finance-data-v553.js?v=900-detailed-projection'
     ],
     denkfabrik:[
       SUPABASE,
