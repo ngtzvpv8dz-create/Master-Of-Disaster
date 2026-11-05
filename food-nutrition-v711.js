@@ -1544,8 +1544,17 @@
     timer=setTimeout(()=>refresh(),delay);
   }
 
+  // V891: The original document-wide observer refreshed nutrition after ANY
+  // inserted DOM node, including our own warning badges and unrelated areas.
+  // On mobile that caused repeated full Supabase reads and expensive audits.
+  // Only freshly rendered FOOD cards/content may schedule a new audit.
+  function isFoodRenderNode(node){
+    if(node?.nodeType!==1)return false;
+    if(node.matches?.('#'+ROOT_ID+', .food-content-v544, [data-food-meal-card], [data-food-recipe-card]'))return true;
+    return Boolean(node.querySelector?.('[data-food-meal-card], [data-food-recipe-card]'));
+  }
   const observer=new MutationObserver(mutations=>{
-    if(mutations.some(m=>m.type==='childList'&&m.addedNodes.length))schedule();
+    if(mutations.some(m=>m.type==='childList'&&Array.from(m.addedNodes||[]).some(isFoodRenderNode)))schedule();
   });
   observer.observe(document.documentElement,{subtree:true,childList:true});
 
