@@ -626,7 +626,7 @@
     if(!/^eier?$/.test(text(product?.product_name)))return null;
     const data=product?.product_data||{};
     const marked=String(data.egg_size||'').trim().toUpperCase();
-    const variantSize=String(product?.variant||'').match(/Größe\\s*([ML])\\b/i);
+    const variantSize=String(product?.variant||'').match(/Größe\s*([ML])\b/i);
     const size=marked==='M'||marked==='L'?marked:variantSize?.[1]?.toUpperCase();
     return size==='M'?54:size==='L'?63:null;
   }
