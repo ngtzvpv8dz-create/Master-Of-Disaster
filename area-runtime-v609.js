@@ -64,7 +64,7 @@
       './food-stock-resolver-v746.js?v=20261030-inventory-recheck',
       './food-v544.js?v=845-central-nutrition-ui',
       './food-nutrition-v711.js?v=20261105-food-observer-perf',
-      './shopping-v678.js?v=20261106-nonfood-today'
+      './shopping-v678.js?v=20261106-skyr-teriyaki-reconcile'
     ],
     kistology:[
       SUPABASE,
@@ -155,7 +155,7 @@
     food:['./food-v544.js?v=845-central-nutrition-ui',
       './food-nutrition-v711.js?v=20261105-food-observer-perf','./food-extra-snacks-v828.js?v=889-work-coffee','./food-planned-extras-v880.js?v=890-safe-anchor'],
     shopping:['./food-v544.js?v=845-central-nutrition-ui',
-      './food-nutrition-v711.js?v=20261105-food-observer-perf','./shopping-v678.js?v=20261106-nonfood-today'],
+      './food-nutrition-v711.js?v=20261105-food-observer-perf','./shopping-v678.js?v=20261106-skyr-teriyaki-reconcile'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
