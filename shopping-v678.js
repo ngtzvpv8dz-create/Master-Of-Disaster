@@ -464,6 +464,16 @@
       +(description?' ('+description+detail+')':'');
   }
 
+  function skyrPackPurchasePlan(item){
+    if(shoppingNormalize(item?.label||'')!=='skyr natur'||String(item?.unit||'')!=='g')return null;
+    const missing=Number(item?.missing)||0;
+    if(!(missing>0))return null;
+    const stocks=(state.food?.inventory||[]).filter(row=>row.is_active!==false&&familyText(row.family_name||'')==='skyr natur');
+    const known=(state.products||[]).some(p=>p.active!==false&&p.package_unit==='g'&&Number(p.package_quantity)===500&&stocks.some(row=>String(row.id)===String(p.inventory_id)));
+    if(!known)return null;
+    const packs=Math.ceil(missing/500-1e-8);
+    return {quantity:packs*500,packs};
+  }
   function buildRows(){
     const rows=[];
     const food=state.food||{gaps:[],manualFood:[],cartKeys:[],inventory:[]};
@@ -481,10 +491,11 @@
       const shoppingDate=effectiveShoppingDate(item.buyFrom);
       const delayed=Boolean(shoppingDate&&shoppingDate>todayIso());
       const stockName=item.garlic?item.purchaseName:item.label;
-      const stockQuantity=item.garlic?item.purchaseQuantity:item.missing;
+      const skyrPack=skyrPackPurchasePlan(item);
+      const stockQuantity=item.garlic?item.purchaseQuantity:(skyrPack?.quantity??item.missing);
       const stockUnit=item.garlic?item.purchaseUnit:item.unit;
       const stockId=item.garlic?item.purchaseInventoryId:item.inventory_id;
-      const buyQuantity=item.garlic?item.purchaseQuantity:item.missing;
+      const buyQuantity=stockQuantity;
       const buyUnit=item.garlic?item.purchaseUnit:item.unit;
       derivedKeys.add(normalizedIngredient(item.label,item.unit)+'|'+String(item.unit||'').toLocaleLowerCase('de-DE'));
       const usePlan=foodUsageTimeline(item.uses,item.unit);
@@ -509,7 +520,7 @@
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),
         section:inCart?'cart':(delayed?'later':'now'),inCart,
-        primary:'Kaufen '+fmtQty(buyQuantity,buyUnit),
+        primary:'Kaufen '+fmtQty(buyQuantity,buyUnit)+(skyrPack?' ('+skyrPack.packs+' Becher)':''),
         currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
         nextUseDate:firstUpcomingUse,packHint:packSuggestion,
         secondary:(usePlan?'Rezeptbedarf:\n'+usePlan.replace(/ · /g,'\n'):'Planbedarf: '+fmtQty(item.required,item.unit))
@@ -804,7 +815,7 @@
         const notes=String(entry.row.general?.notes||'').toLocaleLowerCase('de-DE');
         const canFreeze=['chicken_breast','lean_beef_mince'].includes(family)
           &&/portion|einfrier|tk|tiefkühl|frost/.test(notes);
-        return days<=(stockStable.has(family)?45:canFreeze?7:['kiwi','plain_yogurt','greek_yogurt_2pct','apple','mandarin','cottage_cheese_light','red_pepper'].includes(family)?7:3);
+        return days<=(stockStable.has(family)?45:canFreeze?7:['kiwi','skyr','plain_yogurt','greek_yogurt_2pct','apple','mandarin','cottage_cheese_light','red_pepper'].includes(family)?7:3);
       }).sort((a,b)=>b.shopDate.localeCompare(a.shopDate));
       for(const entry of candidates){
         if(uncovered<=0.0001)break;
