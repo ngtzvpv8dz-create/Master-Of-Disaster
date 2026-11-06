@@ -10,7 +10,7 @@
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
-  const CATEGORIES=['Lebensmittel','Getränke','Haushalt','Drogerie','Technik','Sonstiges'];
+  const CATEGORIES=['Lebensmittel','Getränke','Non-Food','Haushalt','Drogerie','Technik','Sonstiges'];
 
   let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],checkouts:[],checkoutItems:[],checkoutReceipts:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
   let loadPromise=null;
@@ -1477,6 +1477,8 @@
   function shell(){
     const rows=buildRows();
     const now=rows.filter(row=>row.section==='now');
+    const nonFoodNow=now.filter(row=>row.category==='Non-Food');
+    const regularNow=now.filter(row=>row.category!=='Non-Food');
     const extra=rows.filter(row=>row.section==='extra');
     const later=rows.filter(row=>row.section==='later');
     const cart=rows.filter(row=>row.section==='cart');
@@ -1491,7 +1493,8 @@
       +warning
       +overdueFoodWarningMarkup()
       +'<div class="shopping-sections-v643">'
-      +sectionMarkup('now','PHASE 1 · EINKAUFEN','jetzt relevant',now,addEntryActionMarkup())
+      +sectionMarkup('now','PHASE 1 · EINKAUFEN','jetzt relevant',regularNow,addEntryActionMarkup())
+      +(nonFoodNow.length?sectionMarkup('nonfood','NON-FOOD · HEUTE','Haushalt · Pflege · Reinigung',nonFoodNow,addEntryActionMarkup()):'')
       +sectionMarkup('extra','EXTRAS · OHNE KAUFTERMIN','Nicht Food · dauerhaft gesammelt',extra,addEntryActionMarkup())
       +laterSectionMarkup(later)
       +sectionMarkup('cart','PHASE 2 · IM EINKAUFSWAGEN','liegt schon drin',cart,cart.length?checkoutActionMarkup():'')
