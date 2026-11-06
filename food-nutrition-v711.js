@@ -591,6 +591,7 @@
       unit==='stück'?productData.edible_weight_per_piece_g:null,
       unit==='stück'?productData.edible_weight_per_piece_estimated_g:null,
       productData.piece_weight_g,
+      unit==='stück'?eggEdibleWeightFromKnownSize(product):null,
       productData.unit_weight_g,
       productData.slice_weight_g,
       (servingUnit==='g'||servingUnit==='ml')?product.serving_quantity:null,
@@ -617,6 +618,19 @@
   // product values. Calculate the portion across actual lots, never guess a
   // single arbitrary product. Inventory quantities can be reduced by earlier
   // planned meals, so skip the already reserved amount before allocating.
+  // Eggs are sold by size, not individually weighed. Keep the established
+  // nominal standard M=60 g / L=70 g (including shell). As in the existing
+  // size-M catalogue entry, nutrition uses approx. 90% edible portion.
+  // Only apply to explicitly size-labelled eggs; never to produce or wraps.
+  function eggEdibleWeightFromKnownSize(product){
+    if(!/^eier?$/.test(text(product?.product_name)))return null;
+    const data=product?.product_data||{};
+    const marked=String(data.egg_size||'').trim().toUpperCase();
+    const variantSize=String(product?.variant||'').match(/Größe\\s*([ML])\\b/i);
+    const size=marked==='M'||marked==='L'?marked:variantSize?.[1]?.toUpperCase();
+    return size==='M'?54:size==='L'?63:null;
+  }
+
   function mixedLotNutrition(item,data){
     const stocks=data?.inventory||[];
     const name=itemName(item);
@@ -684,7 +698,8 @@
         // product_data war bislang vorhanden, wurde hier aber ignoriert.
         const each=number(product?.product_data?.edible_weight_per_piece_g)
           ||number(product?.product_data?.edible_weight_per_piece_estimated_g)
-          ||(text(product.serving_unit)==='g'?number(product.serving_quantity):null);
+          ||(text(product.serving_unit)==='g'?number(product.serving_quantity):null)
+          ||eggEdibleWeightFromKnownSize(product);
         if(!each)return {complete:false,missing:[name+' (Stückgewicht fehlt)']};
         kcal+=n.kcal*each*taken/100;
         protein+=n.protein*each*taken/100;
