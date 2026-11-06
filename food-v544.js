@@ -1208,7 +1208,12 @@
       const displayName=String(item?.name||'').trim().toLowerCase()==='avocado'&&avocadoMatch
         ?'Avocado Nr. '+avocadoMatch[1]+' · '+avocadoMatch[2]+' g brutto'
         :ingredientName(item);
-      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(displayName)+'</span>'+
+      const paprikaDetailHtml=/paprika/i.test(String(item?.name||''))
+        &&String(item?.unit||'').trim().toLocaleLowerCase('de-DE')==='stück'
+        &&String(item?.label||'').trim()
+        ?'<small style="display:block;margin-top:3px;font-size:10px;line-height:1.45;color:#617764;">'+esc(String(item.label).trim())+'</small>'
+        :'';
+      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(displayName)+paprikaDetailHtml+'</span>'+
         quantityHtml+
         removeHtml+
         allocationHtml+'</li>';
