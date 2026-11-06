@@ -631,6 +631,57 @@
     return size==='M'?54:size==='L'?63:null;
   }
 
+  // Use the user's recorded individual paprika weights and exact purchased lot
+  // instead of a guessed per-piece average. Applied only to "Paprika rot".
+  function measuredPaprikaNutrition(item,data){
+    if(text(itemName(item))!=='paprika rot'||text(item?.unit)!=='stück')return null;
+    let parts=Array.isArray(item?.allocation_override)?item.allocation_override:null;
+    if(!parts?.length&&item?.recipe_id){
+      // Recipe previews may use the uniquely matching planned meal's verified
+      // physical pieces. Never borrow weights from an unrelated recipe use.
+      const matches=(data?.meals||[])
+        .filter(meal=>String(meal.recipe_id||'')===String(item.recipe_id))
+        .flatMap(meal=>(meal.food_meal_ingredients||[])
+          .filter(row=>String(row.label||'')===String(item.label||'')
+            &&text(row.name)===text(item.name)
+            &&text(row.unit)===text(item.unit)
+            &&number(row.quantity)===number(item.quantity)
+            &&Array.isArray(row.allocation_override)
+            &&row.allocation_override.length)
+          .map(row=>row.allocation_override));
+      if(matches.length===1)parts=matches[0];
+    }
+    const requested=number(item?.quantity);
+    if(!Array.isArray(parts)||!parts.length||requested===null||requested<=0)return null;
+    const selected=new Set();
+    let used=0,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false;
+    for(const part of parts){
+      const take=number(part?.quantity);
+      const grams=number(part?.piece_weight_g);
+      const identity=String(part?.piece_id||'');
+      if(!identity||selected.has(identity)||text(part?.unit)!=='stück'
+        ||take===null||take<=0||grams===null||grams<=0)return null;
+      selected.add(identity);
+      const lot=(data?.lots||[]).find(row=>String(row.id)===String(part.lot_id||'')
+        &&String(row.inventory_id)===String(part.inventory_id||''));
+      const product=lot&&(data?.products||[]).find(row=>String(row.id)===String(lot.product_id||''));
+      if(!product)return null;
+      const n=nutritionOf(product);
+      if(n.kcal===null||n.protein===null)return null;
+      const factor=grams*take/100;
+      kcal+=n.kcal*factor;
+      protein+=n.protein*factor;
+      if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
+      if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*factor;
+      if(n.carbsBound)carbsBound=true;
+      used+=take;
+    }
+    if(Math.abs(used-requested)>.0001)return null;
+    return {complete:true,kcal,protein,
+      fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
+      carbsBound:carbsKnown&&carbsBound,missing:[]};
+  }
+
   function mixedLotNutrition(item,data){
     const stocks=data?.inventory||[];
     const name=itemName(item);
@@ -749,6 +800,13 @@
         }
         continue;
       }
+      const measuredPaprika=measuredPaprikaNutrition(item,data);
+      if(measuredPaprika?.complete){
+        kcal+=measuredPaprika.kcal;
+        protein+=measuredPaprika.protein;
+        addMacro(measuredPaprika,1);
+        continue;
+      }
       const allocationOverride=item?.id&&allocationMap?.get?.(String(item.id))||null;
       const familyNutrition=genericFamilyNutrition(item,data,allocationOverride);
       if(familyNutrition?.complete){
@@ -814,6 +872,7 @@
     const entry={id:String(item.id||''),name,reason:''};
     if(qty===null||qty<0)return {...entry,reason:'Die Zutatenmenge ist ungültig oder fehlt.'};
     if(qty===0)return null;
+    if(measuredPaprikaNutrition(item,data)?.complete)return null;
     const inventory=data.inventory||[];
     const products=data.products||[];
     const lots=data.lots||[];
@@ -1372,8 +1431,8 @@
     const from=plusDays(todayIso(),-45);
     const to=plusDays(todayIso(),60);
     const results=await Promise.all([
-      supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
-      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,prepared_sources_snapshot,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
+      supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,recipe_id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
+      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,prepared_sources_snapshot,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,allocation_override,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active'),
       supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit'),
