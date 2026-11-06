@@ -1009,8 +1009,11 @@
         ||pd.nutrition_review_needed===true||pd.nutrition_provisional===true
         ||pd.nutrition_requires_packaging_check===true;
       if(!missing.length&&!provisional)continue;
+      const nutritionBasis=String(pd.nutrition_basis||per.basis||'').toLowerCase();
+      const nutritionUnit=nutritionBasis.includes('100_ml')?'ml':nutritionBasis.includes('100_g')?'g':
+        /^(ml|l)$/i.test(String(product.package_unit||''))?'ml':'g';
       const values=n.kcal===null?'kein Kalorienwert':
-        formatNumber(n.kcal,1)+' kcal je 100 g/ml';
+        formatNumber(n.kcal,1)+' kcal je 100 '+nutritionUnit;
       let reason;
       if(declarationException){
         reason=exception==='coffee_dry_nutrition_not_mandatory'
