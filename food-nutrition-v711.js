@@ -573,6 +573,18 @@
 
     const product=source?.product||{};
     const productData=product.product_data&&typeof product.product_data==='object'?product.product_data:{};
+    // Bread is physically stored as whole slices, while its label provides
+    // per-100-g nutrition. Use the owner's exact weighing of the SELECTED
+    // numbered slice, never a 500g/9-slices average or a weight from another slice.
+    if((unit==='scheibe'||unit==='scheiben')&&Array.isArray(productData.numbered_slices)){
+      const selection=String(item?.label||'').match(/\\bscheibe(?:n)?\\s*(?:nr\\.?\\s*)?(\\d+)\\b/i);
+      if(selection){
+        const chosen=Number(selection[1]);
+        const stored=productData.numbered_slices.find(row=>Number(row.slice_number)===chosen);
+        const measured=number(stored?.gross_weight_g);
+        return measured!==null&&measured>0?qty*measured:null;
+      }
+    }
     if(unit==='stück'&&Array.isArray(productData.individual_gross_piece_weights_g)){
       // The user's explicitly labelled physical piece selects exactly one measured
       // gross weight (including peel, according to the owner's weighing rule).
