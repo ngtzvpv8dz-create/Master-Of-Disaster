@@ -30,6 +30,6 @@ test('Missing numbered slice is NOT silently substituted with an average',()=>{
   assert.equal(amount(10),null);
 });
 test('Exact per-slice nutrition is referenced by the app loader and fresh cache key',()=>{
-  assert.equal((runtime.match(/food-nutrition-v711\\.js\\?v=20261107-harry-exact-slice-weights/g)||[]).length,4);
-  assert.match(html,/area-runtime-v609\\.js\\?v=20261107-harry-exact-slice-weights/);
+  assert.equal(runtime.split('food-nutrition-v711.js?v=20261107-harry-exact-slice-weights').length-1,4);
+  assert.ok(html.includes('area-runtime-v609.js?v=20261107-harry-exact-slice-weights'));
 });
