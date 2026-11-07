@@ -577,7 +577,7 @@
     // per-100-g nutrition. Use the owner's exact weighing of the SELECTED
     // numbered slice, never a 500g/9-slices average or a weight from another slice.
     if((unit==='scheibe'||unit==='scheiben')&&Array.isArray(productData.numbered_slices)){
-      const selection=String(item?.label||'').match(/\\bscheibe(?:n)?\\s*(?:nr\\.?\\s*)?(\\d+)\\b/i);
+      const selection=String(item?.label||'').match(/\bscheibe(?:n)?\s*(?:nr\.?\s*)?(\d+)\b/i);
       if(selection){
         const chosen=Number(selection[1]);
         const stored=productData.numbered_slices.find(row=>Number(row.slice_number)===chosen);
