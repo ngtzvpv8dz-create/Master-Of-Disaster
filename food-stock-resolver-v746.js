@@ -96,6 +96,13 @@
     if(source==='kg'&&target==='g')return {available:quantity*1000,unitMismatch:false,converted:true};
     if(source==='g'&&target==='kg')return {available:quantity/1000,unitMismatch:false,converted:true};
     if(source==='l'&&target==='ml')return {available:quantity*1000,unitMismatch:false,converted:true};
+    // Shopping-only mass equivalence: a counted sample of 8 dry lasagne sheets weighs 139 g.
+    // This is NOT used for nutrition or actual recipe consumption.
+    if(source==='Stück'&&target==='g'&&/lasagneplatten/i.test(String(stock.name||''))){
+      const sample=String(stock.note||'').match(/8\\s+(?:gezaehlte|gezählte)?\\s*(?:Platten|Lasagneplatten)[^\\n]{0,120}?139\\s*g/i)
+        || String(stock.note||'').match(/8\\s+Platten\\s*\\/\\s*139\\s*g/i);
+      if(sample)return {available:quantity*(139/8),unitMismatch:false,converted:true};
+    }
     if(source==='ml'&&target==='l')return {available:quantity/1000,unitMismatch:false,converted:true};
     if(source==='Stück'&&target==='g'&&text(stock.name).startsWith('knusperbrot')){
       const m=String(stock.quantity_label||'').match(/(\d+(?:[.,]\d+)?)\s*g\s*[·/]\s*(\d+)\s*Stück/i);
