@@ -12,7 +12,7 @@
   const SURFACE_CLASS='mod-shopping-surface-v643';
   const CATEGORIES=['Lebensmittel','Getränke','Non-Food','Haushalt','Drogerie','Technik','Sonstiges'];
 
-  let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],checkouts:[],checkoutItems:[],checkoutReceipts:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
+  let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],skips:[],skippedRows:[],checkouts:[],checkoutItems:[],checkoutReceipts:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
   let loadPromise=null;
   let rowMap=new Map();
   let hubPatched=false;
@@ -83,6 +83,12 @@
   const shoppingNormalize=value=>String(value||'').toLocaleLowerCase('de-DE')
     .replace(/ß/g,'ss').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
     .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+  // Einkaufsverzicht wird pro Tag gespeichert, niemals als verbuchter Verbrauch.
+  const shoppingSkipKey=row=>{
+    const n=shoppingNormalize(row?.label||'');
+    if(/^zwiebeln?(?: |$)/.test(n))return 'zwiebel';
+    return 'gap:'+String(row?.key||'');
+  };
   function shoppingFamilyLabel(value){
     const n=shoppingNormalize(value);
     if(/^(?:gurke|salatgurke)(?: frisch)?$/.test(n))return 'Salatgurke';
@@ -217,6 +223,12 @@
         .order('created_at',{ascending:true});
       if(substitutionResult.error)throw substitutionResult.error;
       state.substitutions=Array.isArray(substitutionResult.data)?substitutionResult.data:[];
+      const skipsResult=await supabase.from('shopping_day_skips')
+        .select('shopping_date,label_key')
+        .eq('user_id',user.id)
+        .eq('shopping_date',todayIso());
+      if(skipsResult.error)throw skipsResult.error;
+      state.skips=Array.isArray(skipsResult.data)?skipsResult.data:[];
 
       const reviewFinanceIds=state.reviews.map(item=>item.finance_item_id).filter(Boolean);
       if(reviewFinanceIds.length){
@@ -889,8 +901,14 @@
     included.filter(row=>row.unmatchedPlannedPurchase&&row.source==='general')
       .forEach(row=>{row.primary='Plan prüfen: '+fmtQty(row.general.quantity,row.general.unit);});
     included.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
+    // Nicht kaufen ist eine bewusste Entscheidung für HEUTE, keine falsche
+    // Inventur und kein gelöschter Rezeptbedarf. Einkauf morgen neu prüfen.
+    const skipKeys=new Set((state.skips||[]).map(item=>String(item.label_key||'')));
+    const hidden=row=>row.source==='food-gap'
+      &&['now','cart'].includes(row.section)&&skipKeys.has(shoppingSkipKey(row));
+    state.skippedRows=included.filter(hidden);
     rowMap=new Map(included.map(row=>[row.id,row]));
-    return included;
+    return included.filter(row=>!hidden(row));
   }
 
   function cartIcon(){
@@ -1007,6 +1025,9 @@
     const postpone='';
     // Only persisted user-edited entries can be deleted. Recipe deficits
     // are calculated and would reappear if silently removed.
+    const skipAction=row.source==='food-gap'&&['now','cart'].includes(row.section)
+      ?'<button type="button" class="is-quiet" data-shopping-skip="'+esc(row.id)+'">Heute nicht kaufen</button>'
+      :'';
     const remove=row.source==='general'
       ?'<button type="button" class="is-quiet" data-shopping-delete="'+esc(row.id)+'">Entfernen</button>'
       :'';
@@ -1029,7 +1050,7 @@
       +(compactDescription?'<span class="shopping-secondary-v853">'+esc(compactDescription)+'</span>':'')
       +retailerLine
       +'</div>'
-      +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+remove+'</div></div>'
+      +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+skipAction+remove+'</div></div>'
       +'</article>';
   }
 
@@ -1516,6 +1537,11 @@
       +sectionMarkup('extra','EXTRAS · OHNE KAUFTERMIN','Nicht Food · dauerhaft gesammelt',extra,addEntryActionMarkup())
       +laterSectionMarkup(later)
       +sectionMarkup('cart','PHASE 2 · IM EINKAUFSWAGEN','liegt schon drin',cart,cart.length?checkoutActionMarkup():'')
+      +((state.skippedRows||[]).length
+        ?'<section class="shopping-section-v643 is-day-skipped"><header><div><span>HEUTE NICHT KAUFEN</span><small>Nur heute ausgeblendet · Rezeptbedarf bleibt bestehen</small></div><strong>'+state.skippedRows.length+'</strong></header><div class="shopping-list-v643">'
+          +state.skippedRows.map(row=>'<article class="shopping-item-v643"><div class="shopping-item-main-v643"><strong>'+esc(row.label)+'</strong><b>Aus Einkauf gestrichen</b></div><div class="shopping-item-foot-v643"><div class="shopping-actions-v643"><button type="button" data-shopping-unskip="'+esc(row.id)+'">Wieder anzeigen</button></div></div></article>').join('')
+          +'</div></section>'
+        :'')
       +'</div>'
       +purchasedMarkup()
       +reviewMarkup();
@@ -2757,6 +2783,23 @@
     }
   }
 
+  async function changeShoppingDaySkip(row,skip){
+    if(!row||row.source!=='food-gap')return;
+    const supabase=client();
+    const session=await supabase.auth.getSession();
+    const user=session?.data?.session?.user;
+    if(session?.error||!user?.id)throw new Error('Cloud-Sitzung fehlt.');
+    const day=todayIso(),labelKey=shoppingSkipKey(row);
+    const req=skip
+      ?supabase.from('shopping_day_skips').upsert(
+          {user_id:user.id,shopping_date:day,label_key:labelKey,note:'Nutzer hat diesen geplanten Bedarf heute vom Einkauf ausgenommen.'},
+          {onConflict:'user_id,shopping_date,label_key'})
+      :supabase.from('shopping_day_skips').delete()
+          .eq('user_id',user.id).eq('shopping_date',day).eq('label_key',labelKey);
+    const result=await req;
+    if(result.error)throw result.error;
+    await reload({refreshFood:false});
+  }
   function bind(root){
     root.querySelector('[data-shopping-add]')?.addEventListener('click',openModal);
     root.querySelector('[data-shopping-checkout]')?.addEventListener('click',openCheckoutModal);
@@ -2777,6 +2820,14 @@
     root.querySelectorAll('[data-shopping-later]').forEach(button=>button.addEventListener('click',async()=>{
       const row=rowMap.get(button.dataset.shoppingLater);if(!row)return;
       try{await toggleLater(row);}catch(error){alert(error?.message||'Eintrag konnte nicht verschoben werden.');}
+    }));
+    root.querySelectorAll('[data-shopping-skip]').forEach(button=>button.addEventListener('click',async()=>{
+      const row=rowMap.get(button.dataset.shoppingSkip);if(!row)return;
+      try{await changeShoppingDaySkip(row,true);}catch(error){alert(error?.message||'Eintrag konnte nicht ausgeblendet werden.');}
+    }));
+    root.querySelectorAll('[data-shopping-unskip]').forEach(button=>button.addEventListener('click',async()=>{
+      const row=rowMap.get(button.dataset.shoppingUnskip);if(!row)return;
+      try{await changeShoppingDaySkip(row,false);}catch(error){alert(error?.message||'Eintrag konnte nicht wiederhergestellt werden.');}
     }));
     root.querySelectorAll('[data-shopping-delete]').forEach(button=>button.addEventListener('click',async()=>{
       const row=rowMap.get(button.dataset.shoppingDelete);if(!row?.general)return;
