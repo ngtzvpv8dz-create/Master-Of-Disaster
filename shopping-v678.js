@@ -299,8 +299,8 @@
     // Shopping-only mass equivalence: a counted sample of 8 dry lasagne sheets weighs 139 g.
     // This is NOT used for nutrition or actual recipe consumption.
     if(sourceUnit==='Stück'&&target==='g'&&/lasagneplatten/i.test(String(stock.name||''))){
-      const sample=String(stock.note||'').match(/8\\s+(?:gezaehlte|gezählte)?\\s*(?:Platten|Lasagneplatten)[^\\n]{0,120}?139\\s*g/i)
-        || String(stock.note||'').match(/8\\s+Platten\\s*\\/\\s*139\\s*g/i);
+      const sample=String(stock.note||'').match(/8\s+(?:gezaehlte|gezählte)?\s*(?:Platten|Lasagneplatten)[^\n]{0,120}?139\s*g/i)
+        || String(stock.note||'').match(/8\s+Platten\s*\/\s*139\s*g/i);
       if(sample)return {available:quantity*(139/8),unitMismatch:false,converted:true};
     }
     if(sourceUnit==='ml'&&target==='l')return {available:quantity/1000,unitMismatch:false,converted:true};
