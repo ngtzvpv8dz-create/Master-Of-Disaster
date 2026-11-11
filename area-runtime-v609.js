@@ -64,7 +64,7 @@
       './food-stock-resolver-v746.js?v=20261030-inventory-recheck',
       './food-v544.js?v=20261106-paprika-piece-detail',
       './food-nutrition-v711.js?v=20261107-harry-exact-slice-weights',
-      './shopping-v678.js?v=20261106-skyr-teriyaki-reconcile'
+      './shopping-v678.js?v=20261111-day-skip-v1'
     ],
     kistology:[
       SUPABASE,
@@ -155,7 +155,7 @@
     food:['./food-v544.js?v=20261106-paprika-piece-detail',
       './food-nutrition-v711.js?v=20261107-harry-exact-slice-weights','./food-extra-snacks-v828.js?v=889-work-coffee','./food-planned-extras-v880.js?v=890-safe-anchor'],
     shopping:['./food-v544.js?v=20261106-paprika-piece-detail',
-      './food-nutrition-v711.js?v=20261107-harry-exact-slice-weights','./shopping-v678.js?v=20261106-skyr-teriyaki-reconcile'],
+      './food-nutrition-v711.js?v=20261107-harry-exact-slice-weights','./shopping-v678.js?v=20261111-day-skip-v1'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
