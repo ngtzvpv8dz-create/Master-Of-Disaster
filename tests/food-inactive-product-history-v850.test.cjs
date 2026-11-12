@@ -37,8 +37,11 @@ test('Nutrition warning is not raised for inactive but existing product with val
     text:x=>String(x||'').toLowerCase(),
     itemName:x=>x.name,
     number:x=>Number(x),
-    nutritionOf:p=>({kcal:p.nutrition_per_100?.energy_kcal??null,protein:p.nutrition_per_100?.protein_g??null}),
-    mixedLotNutrition:()=>({complete:true}),
+    nutritionOf:p=>({kcal:p.nutrition_per_100?.energy_kcal??null,protein:p.nutrition_per_100?.protein_g??null,
+      fat:p.nutrition_per_100?.fat_g??null,carbs:p.nutrition_per_100?.carbohydrates_g??null}),
+    measuredPaprikaNutrition:()=>null,
+    confirmedAllocationNutrition:()=>null,
+    mixedLotNutrition:()=>({complete:true,fat:0,carbs:0}),
     genericFamilyNutrition:()=>null,
     sourceFor:()=>null,
     basisAmount:()=>100
