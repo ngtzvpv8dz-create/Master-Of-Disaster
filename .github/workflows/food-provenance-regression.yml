@@ -1,0 +1,29 @@
+name: Food Provenance Regression
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'food-nutrition-v711.js'
+      - 'tests/food-confirmed-provenance-20261112.test.cjs'
+      - 'tests/food-inactive-product-history-v850.test.cjs'
+      - '.github/workflows/food-provenance-regression.yml'
+permissions:
+  contents: read
+jobs:
+  nutrition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax
+        run: |
+          node --check food-nutrition-v711.js
+          node --check tests/food-confirmed-provenance-20261112.test.cjs
+      - name: Confirm product and lot provenance, complete macros and slice weights
+        run: |
+          node --test tests/food-confirmed-provenance-20261112.test.cjs
+          node --test tests/food-recipe-macro-nutrition-v843.test.cjs
+          node --test tests/food-inactive-product-history-v850.test.cjs
+          node --test tests/food-central-nutrition-audit-v845.test.cjs

@@ -449,6 +449,30 @@
     return true;
   }
 
+  // Planned shopping/recipe forecasts must reserve the SAME chosen products
+  // that confirmed consumption and nutrition will use.
+  function reserveConfirmedAllocation(item,quantities,data){
+    const parts=Array.isArray(item?.allocation_override)?item.allocation_override:null;
+    if(!parts?.length)return false;
+    const reservations=[];
+    let total=0;
+    for(const part of parts){
+      const stock=(data?.inventory||[]).find(row=>String(row.id)===String(part.inventory_id||''));
+      const amount=number(part.quantity);
+      if(!stock||amount===null||amount<=0)return true; // invalid saved split: do not switch silently
+      const need=quantityInStockUnit({quantity:amount,unit:part.unit||item.unit},stock);
+      if(need===null)return true;
+      total+=amount;
+      reservations.push({id:String(stock.id),need});
+    }
+    if(Math.abs(total-(number(item.quantity)||0))>0.001)return true;
+    for(const {id,need} of reservations){
+      const before=number(quantities.get(id));
+      if(before!==null)quantities.set(id,Math.max(0,before-need));
+    }
+    return true;
+  }
+
   function reserveGenericAllocation(allocation,quantities,data){
     for(const part of allocation?.allocations||[]){
       const id=String(part.inventoryId||'');
@@ -483,6 +507,9 @@
       const perIngredient=new Map();
       const items=[...(meal.food_meal_ingredients||[])].sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
       for(const item of items){
+        // Explicitly chosen stock is authoritative; never reserve a second,
+        // potentially different generic variant for the same ingredient.
+        if(reserveConfirmedAllocation(item,quantities,data))continue;
         const live=cloneDataWithStock(data,quantities);
         const allocation=genericFamilyAllocation(item,live);
         if(allocation){
@@ -577,13 +604,24 @@
     // per-100-g nutrition. Use the owner's exact weighing of the SELECTED
     // numbered slice, never a 500g/9-slices average or a weight from another slice.
     if((unit==='scheibe'||unit==='scheiben')&&Array.isArray(productData.numbered_slices)){
-      const selection=String(item?.label||'').match(/\bscheibe(?:n)?\s*(?:nr\.?\s*)?(\d+)\b/i);
-      if(selection){
-        const chosen=Number(selection[1]);
-        const stored=productData.numbered_slices.find(row=>Number(row.slice_number)===chosen);
-        const measured=number(stored?.gross_weight_g);
-        return measured!==null&&measured>0?qty*measured:null;
+      // Numbered slices have different weights. Never multiply the weight of
+      // one slice by a multi-slice count or reuse an old pack's average.
+      const label=String(item?.label||'');
+      let selected=[...label.matchAll(/\bnr\.?\s*(\d+)(?:\s*(?:\+|&|,|und)\s*(?:nr\.?\s*)?(\d+))?/gi)]
+        .flatMap(match=>[match[1],match[2]].filter(Boolean).map(Number));
+      if(!selected.length){
+        const single=label.match(/\bscheibe\s*(\d+)\b/i);
+        if(single)selected=[Number(single[1])];
       }
+      if(selected.length){
+        if(!Number.isInteger(qty)||selected.length!==qty||
+           new Set(selected).size!==selected.length)return null;
+        const weights=selected.map(index=>number(productData.numbered_slices
+          .find(row=>Number(row.slice_number)===index)?.gross_weight_g));
+        return weights.every(weight=>weight!==null&&weight>0)
+          ?weights.reduce((sum,weight)=>sum+weight,0):null;
+      }
+      return null;
     }
     if(unit==='stück'&&Array.isArray(productData.individual_gross_piece_weights_g)){
       // The user's explicitly labelled physical piece selects exactly one measured
@@ -782,6 +820,70 @@
       carbsBound:carbsKnown&&carbsBound,missing:[],lastProduct};
   }
 
+  // V901: A user's saved physical product/lot allocation is authoritative.
+  // Nutrition must match the exact stock that booking will consume, even
+  // after the meal is completed and the original lot is empty.
+  function confirmedAllocationNutrition(item,data){
+    const parts=Array.isArray(item?.allocation_override)?item.allocation_override:null;
+    if(!parts?.length)return null;
+    const name=itemName(item);
+    const invalid=reason=>({complete:false,missing:[name+' ('+reason+')']});
+    const wanted=number(item.quantity);
+    if(wanted===null||wanted<=0)return invalid('Menge');
+    let covered=0,kcal=0,protein=0,fat=0,carbs=0;
+    let fatKnown=true,carbsKnown=true,carbsBound=false;
+    for(const part of parts){
+      const count=number(part.quantity);
+      if(count===null||count<=0||text(part.unit||item.unit)!==text(item.unit))
+        return invalid('gespeicherte Zutatenaufteilung');
+      covered+=count;
+      const stock=(data?.inventory||[]).find(row=>String(row.id)===String(part.inventory_id||''));
+      const lot=part.lot_id
+        ?(data?.lots||[]).find(row=>String(row.id)===String(part.lot_id)
+          &&String(row.inventory_id)===String(part.inventory_id))
+        :null;
+      if(part.lot_id&&!lot)return invalid('gespeicherte Charge fehlt');
+      if(lot?.product_id&&part.product_id&&String(lot.product_id)!==String(part.product_id))
+        return invalid('Produkt und Charge widersprechen sich');
+      const productId=part.product_id||lot?.product_id;
+      const product=productId
+        ?(data?.products||[]).find(row=>String(row.id)===String(productId))
+        :(stock?productForStock(stock,data):null);
+      if(!product)return invalid('konkretes Nährwertprodukt fehlt');
+      const n=nutritionOf(product);
+      if(n.kcal===null||n.protein===null)return invalid('Kalorien oder Protein fehlen');
+
+      let amount=null;
+      const unit=text(item.unit);
+      if((unit==='scheibe'||unit==='scheiben')&&
+          part.estimated_not_measured!==true){
+        // A verified weighing overrides stale product-level weights.
+        const grams=number(part.actual_weight_g);
+        const sliceWeights=Array.isArray(part.slice_weights_g)?part.slice_weights_g.map(number):null;
+        if(grams!==null&&grams>0)amount=grams;
+        else if(sliceWeights?.length===count&&sliceWeights.every(weight=>weight!==null&&weight>0))
+          amount=sliceWeights.reduce((sum,weight)=>sum+weight,0);
+      }
+      if(amount===null){
+        // Prevent reusing weights from last month's pack for a new lot.
+        const measuredOn=String(product.product_data?.measurement_date||'');
+        const boughtOn=String(lot?.purchased_on||'');
+        if((unit==='scheibe'||unit==='scheiben')&&boughtOn&&measuredOn&&boughtOn>measuredOn)
+          return invalid('neue Brotscheiben nicht einzeln gewogen');
+        amount=basisAmount({...item,quantity:count,label:String(part.label||item.label||'')},{product,stock});
+      }
+      if(amount===null)return invalid('gesichertes Stückgewicht fehlt');
+      const factor=amount/100;
+      kcal+=n.kcal*factor;protein+=n.protein*factor;
+      if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
+      if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*factor;
+      if(n.carbsBound)carbsBound=true;
+    }
+    if(Math.abs(covered-wanted)>0.001)return invalid('Aufteilungsmenge passt nicht zum Rezept');
+    return {complete:true,kcal,protein,fat:fatKnown?fat:null,
+      carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,missing:[]};
+  }
+
   function calculate(items,servings,data,allocationMap=null){
     const rows=Array.isArray(items)?items:[];
     if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
@@ -817,6 +919,12 @@
         kcal+=measuredPaprika.kcal;
         protein+=measuredPaprika.protein;
         addMacro(measuredPaprika,1);
+        continue;
+      }
+      const confirmed=confirmedAllocationNutrition(item,data);
+      if(confirmed){
+        if(!confirmed.complete){missing.push(...confirmed.missing);continue;}
+        kcal+=confirmed.kcal;protein+=confirmed.protein;addMacro(confirmed,1);
         continue;
       }
       const allocationOverride=item?.id&&allocationMap?.get?.(String(item.id))||null;
@@ -885,6 +993,13 @@
     if(qty===null||qty<0)return {...entry,reason:'Die Zutatenmenge ist ungültig oder fehlt.'};
     if(qty===0)return null;
     if(measuredPaprikaNutrition(item,data)?.complete)return null;
+    const confirmed=confirmedAllocationNutrition(item,data);
+    if(confirmed){
+      if(!confirmed.complete)return {...entry,reason:confirmed.missing.join(', ')};
+      if(confirmed.fat===null||confirmed.carbs===null)
+        return {...entry,reason:'Fett- oder Kohlenhydratwerte der zugewiesenen Packung fehlen.'};
+      return null;
+    }
     const inventory=data.inventory||[];
     const products=data.products||[];
     const lots=data.lots||[];
@@ -922,10 +1037,18 @@
       }
     }
     const mixed=mixedLotNutrition(item,data);
-    if(mixed?.complete)return null;
+    if(mixed?.complete){
+      if(mixed.fat===null||mixed.carbs===null)
+        return {...entry,reason:'Fett oder Kohlenhydrate der verwendeten Chargen fehlen.'};
+      return null;
+    }
     if(mixed&&!mixed.complete)return {...entry,reason:(mixed.missing||[name]).join(', ')};
     const generic=genericFamilyNutrition(item,data,allocationOverride);
-    if(generic?.complete)return null;
+    if(generic?.complete){
+      if(generic.fat===null||generic.carbs===null)
+        return {...entry,reason:'Fett oder Kohlenhydrate der verwendeten Zutatenfamilie fehlen.'};
+      return null;
+    }
     if(generic&&!generic.complete){
       const ref=referenceFor(item);
       const hasPhysicalStock=(data?.inventory||[]).some(stock=>
@@ -949,6 +1072,8 @@
     if(basisAmount(item,source)===null){
       return {...entry,reason:'Für die Einheit '+String(item.unit||'')+' fehlt ein verlässliches Stückgewicht bzw. eine Umrechnung.'};
     }
+    if(source.nutrition.fat===null||source.nutrition.carbs===null)
+      return {...entry,reason:'Fett oder Kohlenhydrate fehlen im zugewiesenen Nährwertprofil.'};
     return null;
   }
 
