@@ -1036,10 +1036,18 @@
       }
     }
     const mixed=mixedLotNutrition(item,data);
-    if(mixed?.complete)return null;
+    if(mixed?.complete){
+      if(mixed.fat===null||mixed.carbs===null)
+        return {...entry,reason:'Fett oder Kohlenhydrate der verwendeten Chargen fehlen.'};
+      return null;
+    }
     if(mixed&&!mixed.complete)return {...entry,reason:(mixed.missing||[name]).join(', ')};
     const generic=genericFamilyNutrition(item,data,allocationOverride);
-    if(generic?.complete)return null;
+    if(generic?.complete){
+      if(generic.fat===null||generic.carbs===null)
+        return {...entry,reason:'Fett oder Kohlenhydrate der verwendeten Zutatenfamilie fehlen.'};
+      return null;
+    }
     if(generic&&!generic.complete){
       const ref=referenceFor(item);
       const hasPhysicalStock=(data?.inventory||[]).some(stock=>
