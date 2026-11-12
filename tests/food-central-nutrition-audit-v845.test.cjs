@@ -156,11 +156,11 @@ test('real piece No. 1 and No. 2 retain their individual gross measured weights'
   {individual_gross_piece_weights_g:[103,93]}));
  data.products.push(product('zp','z',{energy_kcal:48,protein_g:1.2,fat_g:0.6,carbohydrates_g:9}));
  data.meals=[
-  {id:'k1',meal_date:'2026-11-02',status:'planned',sort_order:2,meal_type:'snack',
+  {id:'k1',meal_date:'2099-11-02',status:'planned',sort_order:2,meal_type:'snack',
    food_meal_ingredients:[{...item('i1','Kiwi',1,'Stück'),
      label:'1 ganze KiKoKa-Kiwi Nr. 1 (103 g brutto inkl. Schale)',
      allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück'}]}]},
-  {id:'k2',meal_date:'2026-11-03',status:'planned',sort_order:2,meal_type:'snack',
+  {id:'k2',meal_date:'2099-11-03',status:'planned',sort_order:2,meal_type:'snack',
    food_meal_ingredients:[{...item('i2','Kiwi',1,'Stück'),
      label:'1 ganze KiKoKa-Kiwi Nr. 2 (93 g brutto inkl. Schale)',
      allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück'}]}]}
@@ -170,6 +170,6 @@ test('real piece No. 1 and No. 2 retain their individual gross measured weights'
  const kc2=calculate(data.meals[1].food_meal_ingredients,1,plan.contexts.get('k2'),plan.allocations.get('k2'));
  assert.ok(kc1.complete);assert.ok(kc2.complete);
  assert.ok(Math.abs(kc1.kcal-55.62)<1e-7);assert.ok(Math.abs(kc2.kcal-50.22)<1e-7);
- const audit=collectNutritionAudit(data,'2026-11-01');
+ const audit=collectNutritionAudit(data,'2099-11-01');
  assert.equal(audit.blocking,0);
 });
