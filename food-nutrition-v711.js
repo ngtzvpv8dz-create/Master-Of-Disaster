@@ -607,7 +607,8 @@
       // Numbered slices have different weights. Never multiply the weight of
       // one slice by a multi-slice count or reuse an old pack's average.
       const label=String(item?.label||'');
-      let selected=[...label.matchAll(/\bnr\.?\s*(\d+)\b/gi)].map(match=>Number(match[1]));
+      let selected=[...label.matchAll(/\bnr\.?\s*(\d+)(?:\s*(?:\+|&|,|und)\s*(?:nr\.?\s*)?(\d+))?/gi)]
+        .flatMap(match=>[match[1],match[2]].filter(Boolean).map(Number));
       if(!selected.length){
         const single=label.match(/\bscheibe\s*(\d+)\b/i);
         if(single)selected=[Number(single[1])];
