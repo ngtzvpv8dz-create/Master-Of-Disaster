@@ -1508,6 +1508,9 @@
     for(const target of meals){
       const map=allocationMaps.get(String(target.id||''))||new Map();
       for(const item of (target.ingredients||[])){
+        // TK-Zwiebeln und TK-Paprika werden direkt aus dem Frost gegart;
+        // für sie niemals eine Kühlschrank-Auftau-Erinnerung erzeugen.
+        if(/(?:zwiebel|paprika)/i.test(ingredientName(item)))continue;
         const allocation=item?.id?map.get(String(item.id)):null;
         const frozen=(allocation?.allocations||[]).filter(part=>part.frozen===true);
         const linkedParts=(state?.freezer||[]).filter(portion=>
