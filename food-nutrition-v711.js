@@ -867,9 +867,12 @@
     let fatKnown=true,carbsKnown=true,carbsBound=false;
     for(const part of parts){
       const count=number(part.quantity);
-      if(count===null||count<=0||text(part.unit||item.unit)!==text(item.unit))
+      const partUnit=text(part.unit||item.unit);
+      const recipeUnit=text(item.unit);
+      const measuredProduceGrams=recipeUnit==='g'&&partUnit==='stück'&&number(part.actual_weight_g)>0;
+      if(count===null||count<=0||(partUnit!==recipeUnit&&!measuredProduceGrams))
         return invalid('gespeicherte Zutatenaufteilung');
-      covered+=count;
+      covered+=measuredProduceGrams?number(part.actual_weight_g):count;
       const stock=(data?.inventory||[]).find(row=>String(row.id)===String(part.inventory_id||''));
       const lot=part.lot_id
         ?(data?.lots||[]).find(row=>String(row.id)===String(part.lot_id)
@@ -886,7 +889,7 @@
       const n=nutritionOf(product);
       if(n.kcal===null||n.protein===null)return invalid('Kalorien oder Protein fehlen');
 
-      let amount=null;
+      let amount=measuredProduceGrams?number(part.actual_weight_g):null;
       const unit=text(item.unit);
       if((unit==='scheibe'||unit==='scheiben')&&
           part.estimated_not_measured!==true){
