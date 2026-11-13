@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V837';
+  const VERSION='V838';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -184,8 +184,22 @@
   // Physical bread slices remain whole in the kitchen. Grams stay in the
   // database for nutrition, lot quantities and consumption calculations.
   // Only show the piece quantity if the saved label explicitly confirms it.
+  // V838: Sojasauce wird beim Kochen auf einer Waage abgewogen.
+  // Interne ml-Werte bleiben absichtlich unverändert: Vorrat/Chargen und
+  // Etikett-Nährwerte basieren auf ml (pro 100 ml). Nur die Küchenanzeige
+  // rechnet mit einem Näherungsfaktor 1,08 g pro ml auf ganze Gramm um.
+  const soySauceScaleGrams=item=>{
+    const name=String(item?.name||item?.label||'').trim();
+    if(!/(?:sojasauce|sojasoße|sojasosse)/i.test(name))return null;
+    if(String(item?.unit||'').trim().toLowerCase()!=='ml')return null;
+    const volume=num(item?.quantity);
+    return volume!==null&&Number.isFinite(volume)&&volume>=0
+      ?Math.round(volume*1.08):null;
+  };
   const ingredientQuantityForDisplay=item=>{
     const stored=fmtQty(item?.quantity,item?.unit);
+    const soyGrams=soySauceScaleGrams(item);
+    if(soyGrams!==null)return fmtQty(soyGrams,'g');
     if(String(item?.unit||'').trim().toLowerCase()!=='g')return stored;
     const name=String(item?.name||'').trim();
     if(!/(brot|toast|pita|fladen)/i.test(name))return stored;
