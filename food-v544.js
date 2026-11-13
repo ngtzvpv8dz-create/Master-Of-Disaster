@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V840';
+  const VERSION='V841';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -369,8 +369,15 @@
     return 'generic';
   };
   const inventoryFamilyRowsInfo=(familyName,targetUnit,rows=state?.inventory||[],mode='generic')=>{
+    // V841: For generic cooked onions, the remaining frozen sliced onions
+    // are interchangeable with fresh onions. A specifically "frisch" need
+    // is never allowed to consume frozen onions.
+    const onionCookingFallback=familyText(familyName)==='zwiebel'&&mode==='generic';
     let matches=(rows||[]).filter(item=>
-      item?.is_active!==false&&item?.family_name&&familyText(item.family_name)===familyText(familyName)
+      item?.is_active!==false&&item?.family_name&&(
+        familyText(item.family_name)===familyText(familyName)
+        ||(onionCookingFallback&&familyText(item.family_name)==='zwiebeln tk')
+      )
     );
     if(mode==='egg_m'||mode==='egg_l'){
       const needSize=mode.slice(-1);
