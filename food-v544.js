@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V839';
+  const VERSION='V840';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -318,9 +318,18 @@
   const familyAliases=value=>[familyText(value),...String(value||'')
     .split(/\s*[/|]\s*/)
     .map(familyText)].filter((alias,index,all)=>alias&&all.indexOf(alias)===index);
+  // Eiersorten nach bestätigter Größe auf die Vorratsfamilie "Eier"
+  // abbilden, ohne M- und L-Eier stillschweigend auszutauschen.
+  const eggSizeNeed=name=>{
+    const match=familyText(name).match(/^(?:ei|eier)\s+(?:größe|groesse)\s+([ml])$/);
+    return match?match[1]:null;
+  };
   const familyNeedMatch=(name,familyName)=>{
     const need=familyText(name);
     if(!need)return null;
+    const eggSize=eggSizeNeed(name);
+    if(eggSize&&familyText(familyName)==='eier')
+      return {matched:true,mode:'egg_'+eggSize,alias:'eier'};
     for(const alias of familyAliases(familyName)){
       if(need===alias)return {matched:true,mode:'generic',alias};
       const prefix=need.startsWith(alias+' ')?need.slice(alias.length).trim():'';
@@ -352,6 +361,8 @@
     ].some(token=>text.includes(token));
   };
   const familyNeedModeFromName=name=>{
+    const eggSize=eggSizeNeed(name);
+    if(eggSize)return 'egg_'+eggSize;
     const text=' '+familyText(name)+' ';
     if(/\s(?:tk|tiefkühl|tiefgekühlt|tiefgefroren|gefroren)\s/.test(text))return 'frozen';
     if(/\s(?:frisch|frische|frischer|frisches|bio)\s/.test(text))return 'fresh';
@@ -361,7 +372,13 @@
     let matches=(rows||[]).filter(item=>
       item?.is_active!==false&&item?.family_name&&familyText(item.family_name)===familyText(familyName)
     );
-    if(mode==='fresh'){
+    if(mode==='egg_m'||mode==='egg_l'){
+      const needSize=mode.slice(-1);
+      matches=matches.filter(item=>{
+        const variant=familyText([item.variant_label,item.catalog_variant_label].filter(Boolean).join(' '));
+        return new RegExp('(?:^|\\s)(?:größe|groesse)\\s*'+needSize+'(?:\\s|$)').test(variant);
+      });
+    }else if(mode==='fresh'){
       const explicitFresh=matches.filter(item=>familyRowMode(item)==='fresh');
       matches=explicitFresh.length?explicitFresh:matches.filter(item=>familyRowMode(item)!=='frozen');
     }else if(mode==='frozen'){
