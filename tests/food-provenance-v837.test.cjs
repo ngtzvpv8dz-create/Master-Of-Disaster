@@ -53,6 +53,7 @@ test('planned Feta displays the actual catalog product, lot status and source ar
     num:value=>Number(value),
     ingredientName:item=>item.name,
     fmtQty:(value,unit)=>value+' '+unit,
+    soySauceScaleGrams:()=>null,
     editableAllocationContext:()=>null,
     manualAllocationForItem:()=>null,
     specificAllocationForItem:()=>null,
