@@ -54,7 +54,7 @@
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261113-onion-partial-v747',
       './food-v544.js?v=20261113-onion-partial-v841',
-      './food-nutrition-v711.js?v=20261113-onion-partial-v849',
+      './food-nutrition-v711.js?v=20261113-weighed-produce-v850',
       './food-extra-snacks-v828.js?v=889-work-coffee','./food-planned-extras-v880.js?v=890-safe-anchor'
     ],
     shopping:[
