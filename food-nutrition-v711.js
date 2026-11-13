@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V846';
+  const VERSION='V847';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -72,6 +72,7 @@
     "haselnüsse":{kcal:657,protein:16.25,fat:63.3,carbs:4.2,unit:"g",source:"BLS H130100 rohe Haselnuss",url:"https://blsdb.de/food?foodId=38221"},
     "edamametkohneschote":{kcal:146,protein:13,fat:6.8,carbs:6.2,unit:"g",source:"BLS G750100 Edamame rohe Bohnen ohne Schote als TK-Näherung",url:"https://blsdb.de/food?foodId=38556"},
     "frühlingszwiebel":{kcal:33,protein:0.9,fat:0.15,carbs:5.99,unit:"g",source:"BLS G486100 Frühlingszwiebel roh, ohne Laub; gesamt mögliche Abweichung",url:"https://blsdb.de/food?foodId=38545"},
+    "lauchzwiebeln":{kcal:32,protein:1.83,fat:0.19,carbs:4.74,unit:"g",source:"USDA FDC 170005 Frühlingszwiebeln roh, mit Grün; verfügbare KH 7.34 minus 2.6 g Ballaststoffe",url:"https://fdc.nal.usda.gov/food-details/170005/nutrients"},
     "ricotta":{kcal:158,protein:8.58,fat:12.3,carbs:3.43,unit:"g",source:"BLS M741600 Ricotta 45% Fett i.Tr.",url:"https://blsdb.de/food?foodId=39164"},
     "tkkirschen":{kcal:55,protein:1,fat:0.2,carbs:12,unit:"g",source:"TK-Kirschen, generischer Vergleich",url:"generic-frozen-cherries"},
     "kokosraspeln":{kcal:660,protein:7,fat:65,carbs:7.4,unit:"g",source:"Getrocknete Kokosraspeln ungesüßt, allgemeine Referenz",url:"generic-unsweetened-desiccated-coconut"},
@@ -179,6 +180,24 @@
     return 'neutral';
   }
 
+  // Eier der Größen M und L nur mit einem explizit passenden Packungsnachweis
+  // verknüpfen. Kein Übergang von "Eier Größe M" auf eine L-Charge.
+  const eggSizeNeed=name=>{
+    const match=text(name).match(/^(?:ei|eier)\s+(?:größe|groesse)\s+([ml])$/);
+    return match?match[1]:null;
+  };
+  const stockMatchesEggSize=(name,stock,data)=>{
+    const size=eggSizeNeed(name);
+    if(!size)return true;
+    const variant=text([stock?.variant_label,stock?.catalog_variant_label].filter(Boolean).join(' '));
+    if(new RegExp('(?:^|\\s)(?:größe|groesse)\\s*'+size+'(?:\\s|$)').test(variant))return true;
+    const lotIds=new Set((data?.lots||[]).filter(l=>String(l.inventory_id||'')===String(stock?.id||'')
+      &&((Number(l.opened_remaining_quantity)||0)>0||(Number(l.unopened_packages)||0)>0))
+      .map(l=>String(l.product_id||'')).filter(Boolean));
+    if(!lotIds.size)return false;
+    return [...lotIds].every(id=>(data?.products||[]).some(p=>String(p.id||'')===id
+      &&text(p.product_data?.egg_size)===size));
+  };
   function familyMatch(name,family){
     const need=text(name);
     const base=text(family);
@@ -279,6 +298,7 @@
     const inventory=(data?.inventory||[])
       .filter(row=>row?.is_active!==false)
       .filter(row=>familyMatch(name,row.family_name)==='generic')
+      .filter(row=>stockMatchesEggSize(name,row,data))
       .filter(row=>number(row.quantity)>0);
 
     if(!inventory.length)return null;
@@ -334,6 +354,7 @@
     const familyStocks=(data?.inventory||[])
       .filter(row=>row?.is_active!==false)
       .filter(row=>familyMatch(name,row.family_name)==='generic')
+      .filter(row=>stockMatchesEggSize(name,row,data))
       .filter(row=>stockAmountInBaseUnit({...row,quantity:1},unit)!==null)
       .sort((a,b)=>familyStockOrder(a,b,data,name));
     if(!familyStocks.length)return null;
@@ -568,7 +589,8 @@
       if(item?.inventory_id){
         product=chooseProduct(products.filter(row=>String(row.inventory_id||'')===String(item.inventory_id)));
       }
-      const familyRows=inventory.filter(row=>familyMatch(name,row.family_name));
+      const familyRows=inventory.filter(row=>familyMatch(name,row.family_name)
+        &&stockMatchesEggSize(name,row,data));
       if(!product&&familyRows.length){
         const requested=familyMatch(name,familyRows[0].family_name);
         let related=familyRows;
@@ -595,6 +617,13 @@
     const qty=number(item?.quantity);
     if(qty===null||qty<0)return null;
     const unit=text(item?.unit);
+    // Kikkoman pack and manufacturer nutrition are per 100 ml, while current
+    // meal instructions and ingredient quantities use grams on the kitchen scale.
+    // Never count grams as millilitres. 1 ml ~ 1.08 g, same as inventory migration.
+    const soyByVolume=/(?:sojasauce|sojasoße|sojasosse)/i.test(itemName(item))
+      &&text(source?.product?.nutrition_per_100?.basis)==='per_100_ml';
+    if(unit==='g'&&soyByVolume)return qty/1.08;
+    if(unit==='kg'&&soyByVolume)return qty*1000/1.08;
     if(unit==='g'||unit==='ml')return qty;
     if(unit==='kg'||unit==='l')return qty*1000;
 
