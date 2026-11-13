@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V847';
+  const VERSION='V848';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -74,6 +74,7 @@
     "frühlingszwiebel":{kcal:33,protein:0.9,fat:0.15,carbs:5.99,unit:"g",source:"BLS G486100 Frühlingszwiebel roh, ohne Laub; gesamt mögliche Abweichung",url:"https://blsdb.de/food?foodId=38545"},
     "lauchzwiebeln":{kcal:32,protein:1.83,fat:0.19,carbs:4.74,unit:"g",source:"USDA FDC 170005 Frühlingszwiebeln roh, mit Grün; verfügbare KH 7.34 minus 2.6 g Ballaststoffe",url:"https://fdc.nal.usda.gov/food-details/170005/nutrients"},
     "ricotta":{kcal:158,protein:8.58,fat:12.3,carbs:3.43,unit:"g",source:"BLS M741600 Ricotta 45% Fett i.Tr.",url:"https://blsdb.de/food?foodId=39164"},
+    "körnigerfrischkäse":{kcal:72,protein:12.7,fat:0.4,carbs:4,unit:"g",source:"Vorläufiger Planwert: zuletzt dokumentierter Milbona Körniger Frischkäse leicht, 72 kcal/100g (Produktfoto 16.10.2026); aktuell 0 g Bestand, neue Marke beim Einkauf prüfen",url:"project-product-catalog"},
     "tkkirschen":{kcal:55,protein:1,fat:0.2,carbs:12,unit:"g",source:"TK-Kirschen, generischer Vergleich",url:"generic-frozen-cherries"},
     "kokosraspeln":{kcal:660,protein:7,fat:65,carbs:7.4,unit:"g",source:"Getrocknete Kokosraspeln ungesüßt, allgemeine Referenz",url:"generic-unsweetened-desiccated-coconut"},
     "ananas":{kcal:46,protein:0.5,fat:0.1,carbs:9.4,unit:"g",source:"BLS F501100 Ananas roh, essbarer Anteil",url:"https://blsdb.de/food?foodId=39149"},
