@@ -53,7 +53,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261113-onion-partial-v747',
-      './food-v544.js?v=20261113-onion-partial-v841',
+      './food-v544.js?v=20261113-thaw-veg-fix-v842',
       './food-nutrition-v711.js?v=20261113-weighed-produce-v850',
       './food-extra-snacks-v828.js?v=889-work-coffee','./food-planned-extras-v880.js?v=890-safe-anchor'
     ],
@@ -62,7 +62,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261113-onion-partial-v747',
-      './food-v544.js?v=20261113-onion-partial-v841',
+      './food-v544.js?v=20261113-thaw-veg-fix-v842',
       './food-nutrition-v711.js?v=20261113-onion-partial-v849',
       './shopping-v678.js?v=20261111-day-skip-v1'
     ],
@@ -152,9 +152,9 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-v544.js?v=20261113-onion-partial-v841',
+    food:['./food-v544.js?v=20261113-thaw-veg-fix-v842',
       './food-nutrition-v711.js?v=20261113-onion-partial-v849','./food-extra-snacks-v828.js?v=889-work-coffee','./food-planned-extras-v880.js?v=890-safe-anchor'],
-    shopping:['./food-v544.js?v=20261113-onion-partial-v841',
+    shopping:['./food-v544.js?v=20261113-thaw-veg-fix-v842',
       './food-nutrition-v711.js?v=20261113-onion-partial-v849','./shopping-v678.js?v=20261111-day-skip-v1'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
