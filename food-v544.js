@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V838';
+  const VERSION='V839';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -184,10 +184,10 @@
   // Physical bread slices remain whole in the kitchen. Grams stay in the
   // database for nutrition, lot quantities and consumption calculations.
   // Only show the piece quantity if the saved label explicitly confirms it.
-  // V838: Sojasauce wird beim Kochen auf einer Waage abgewogen.
-  // Interne ml-Werte bleiben absichtlich unverändert: Vorrat/Chargen und
-  // Etikett-Nährwerte basieren auf ml (pro 100 ml). Nur die Küchenanzeige
-  // rechnet mit einem Näherungsfaktor 1,08 g pro ml auf ganze Gramm um.
+  // V839: Sojasauce wird in neuen Rezepten und im Vorrat in g gefuehrt.
+  // Historische abgeschlossene Mahlzeiten enthalten teilweise noch ml;
+  // diese erhalten nur eine grammbasierte Kuechenanzeige (1,08 g/ml).
+  // Original-Kikkoman-Etikettwerte bleiben pro 100 ml, nie als pro 100 g lesen.
   const soySauceScaleGrams=item=>{
     const name=String(item?.name||item?.label||'').trim();
     if(!/(?:sojasauce|sojasoße|sojasosse)/i.test(name))return null;
