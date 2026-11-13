@@ -59,6 +59,7 @@
     "kichererbsenabgetropft":{kcal:148,protein:8.4,fat:3,carbs:17.4,unit:"g",source:"BLS G770432 Kichererbse reif gekocht; Konserve abgetropft Näherung",url:"https://blsdb.de/food?foodId=42409"},
     "räucherlachs":{kcal:166,protein:21.25,fat:10,carbs:0.2,unit:"g",source:"Mittelwert zweier früher gelisteter Marken, 155–177 kcal; genaue Marke unbestimmt",url:"project-product-catalog"},
     "tomatensalsa":{kcal:40,protein:1.2,fat:0.3,carbs:7,unit:"g",source:"Allgemeine ungesüßte Tomatensalsa, Rezepturvarianten stark abweichend",url:"general-reference"},
+    "tomatenmark":{kcal:96,protein:4.8,fat:1,carbs:14.5,unit:"g",source:"EDEKA Bio Tomatenmark zweifach konzentriert, vorläufige Referenz bis die tatsächliche Packung erfasst ist",url:"https://www.edeka.de/sortiment/4311501446232/"},
     "buchweizenmehl":{kcal:354,protein:12.52,fat:3.12,carbs:65.08,unit:"g",source:"BLS C424000 Buchweizenmehl roh",url:"https://blsdb.de/food?foodId=38473"},
     "tkerbsen":{kcal:78,protein:5.15,fat:0.27,carbs:10,unit:"g",source:"USDA 170017 grüne TK-Erbsen gegart als Näherung",url:"https://fdc.nal.usda.gov/food-details/170017/nutrients"},
     "vollkornbrot":{kcal:210,protein:7.16,fat:1.01,carbs:38,unit:"g",source:"BLS B101000 Vollkornbrot, nur wenn konkrete Sorte/Einheit nicht zugeordnet werden kann",url:"https://blsdb.de/food?foodId=39581",pieceWeight:50},
