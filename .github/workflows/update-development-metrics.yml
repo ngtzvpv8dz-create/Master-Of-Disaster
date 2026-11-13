@@ -2,6 +2,11 @@ name: Update Development Metrics
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'food-*.js'
+      - 'area-runtime-v609.js'
+      - 'index.html'
+      - 'tests/food-*'
 permissions:
   contents: write
   pull-requests: read
