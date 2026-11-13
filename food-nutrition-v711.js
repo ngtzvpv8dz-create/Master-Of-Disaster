@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V848';
+  const VERSION='V849';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -206,6 +206,9 @@
     // V830: "Frischkäse leicht" darf NICHT aus dem getrennten körnigen
     // Frischkäse-Familienvorrat bedient werden. Exakte Sorte hat Vorrang.
     if(need==='frischkäse leicht'&&base!=='frischkäse leicht')return null;
+    // V849: Ordinary onions in cooked recipes also allow a TK partial
+    // allocation; cooked/fresh provenance and per-lot nutrition stay exact.
+    if(need==='zwiebel'&&base==='zwiebeln tk')return 'generic';
     // Match both the full food family and every slash-separated synonym.
     // e.g. "Feta / Hirtenkäse" and "Feta" resolve to the same stock.
     const aliases=[base,...base.split(/\s*[/|]\s*/)].filter(Boolean);
