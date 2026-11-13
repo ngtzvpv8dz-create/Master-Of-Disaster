@@ -9,7 +9,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const VERSION='V746';
+  const VERSION='V747';
   const FRESH=new Set(['frisch','frische','frischer','frisches','bio']);
   const FROZEN=new Set(['tk','tiefkühl','tiefgekühlt','tiefgefroren','gefroren']);
 
@@ -146,8 +146,14 @@
 
   function familyRows(familyName,inventoryRows,targetUnit,mode='generic'){
     const familyKey=text(familyName);
+    // V747: Cooking onions may use genuine fresh and TK stock in priority
+    // order. A specifically fresh request keeps the frozen stock excluded.
+    const onionCookingFallback=familyKey==='zwiebel'&&mode==='generic';
     const matches=(inventoryRows||[]).filter(row=>
-      row?.is_active!==false&&row?.family_name&&text(row.family_name)===familyKey
+      row?.is_active!==false&&row?.family_name&&(
+        text(row.family_name)===familyKey
+        ||(onionCookingFallback&&text(row.family_name)==='zwiebeln tk')
+      )
     );
     return {
       ...sumRows(matches,targetUnit,mode),
