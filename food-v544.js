@@ -865,10 +865,25 @@
     if(!info?.family)return [];
     const generic=info.familyMode==='generic';
     const meatPurchaseFirst=familyFrozenFirstFor({name,family_name:info.familyName});
+    const mealContext=item?.id?mealIngredientContext(item.id):null;
+    const breadTopping=familyText(info.familyName)==='tomaten'&&
+      /(?:brot|brötchen|toast|sandwich|stulle)/i.test(String(mealContext?.meal?.title||''));
+    const tomatoSizeRank=stock=>{
+      const label=familyText((stock.name||'')+' '+(stock.variant_label||''));
+      if(/(?:fleisch|rispen|strauch|groß)/.test(label)&&!/cherry|mini|dattel/.test(label))return 0;
+      if(/cherry|mini|dattel/.test(label))return 2;
+      return 1;
+    };
     return (info.rows||[])
       .map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
       .filter(entry=>!entry.info.unitMismatch&&Number(entry.info.available)>0)
       .sort((a,b)=>{
+        // For bread toppings use larger tomatoes first when available;
+        // other dishes retain purchase-date FIFO.
+        if(breadTopping){
+          const sizeDiff=tomatoSizeRank(a.stock)-tomatoSizeRank(b.stock);
+          if(sizeDiff)return sizeDiff;
+        }
         // Vegetables: matching fresh stock before TK. Meat: purchase age
         // decides across storage modes, never a global frozen-first rank.
         const pa=generic&&!meatPurchaseFirst&&familyRowMode(a.stock)==='frozen'?1:0;
