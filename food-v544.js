@@ -798,7 +798,11 @@
         :freezer?.status==='thawing'?' · Auftauen läuft'
         :entry.frozen?' · TK-Portion'
         :entry.kind==='opened'?' · angebrochene Packung':' · neue Packung';
-      segments.push({quantity:entry.quantity,label:physicalLabel+status,
+      const lotDate=String(entry.lot.purchased_on||'').slice(0,10);
+      const lotDateLabel=lotDate?' · Kauf '+fmtDate(lotDate):' · Kaufdatum unbekannt';
+      segments.push({quantity:entry.quantity,label:physicalLabel+status+
+        (chicken?'':lotDateLabel),
+        lotId:String(entry.lot.id||''),
         // 'previously frozen and already thawed' is not a new thaw task.
         frozen:entry.frozen});
     }
@@ -815,8 +819,9 @@
       const quantity=Math.min(available,remaining);
       if(quantity<=0)continue;
       const previous=parts[parts.length-1];
-      if(previous&&previous.label===segment.label&&previous.frozen===segment.frozen)previous.quantity+=quantity;
-      else parts.push({label:segment.label,quantity,frozen:segment.frozen});
+      if(previous&&previous.label===segment.label&&previous.frozen===segment.frozen&&
+         previous.lotId===segment.lotId)previous.quantity+=quantity;
+      else parts.push({label:segment.label,quantity,frozen:segment.frozen,lotId:segment.lotId||null});
       remaining-=quantity;
     }
 
@@ -918,7 +923,8 @@
           label:part.label,
           quantity:part.quantity,
           unit:item?.unit||unit,
-          frozen:part.frozen===true
+          frozen:part.frozen===true,
+          lotId:part.lotId||null
         }));
       }else{
         allocations.push({
