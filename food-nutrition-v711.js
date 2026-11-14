@@ -886,8 +886,10 @@
       const product=productId
         ?(data?.products||[]).find(row=>String(row.id)===String(productId))
         :(stock?productForStock(stock,data):null);
-      if(!product)return invalid('konkretes Nährwertprodukt fehlt');
-      const n=nutritionOf(product);
+      if(!product&&!(historical&&part.prepared_nutrition_per_100))
+        return invalid('konkretes Nährwertprodukt fehlt');
+      const historicalProduct=product||(historical?{nutrition_per_100:part.prepared_nutrition_per_100}:null);
+      const n=nutritionOf(historicalProduct);
       if(n.kcal===null||n.protein===null)return invalid('Kalorien oder Protein fehlen');
 
       let amount=measuredProduceGrams?number(part.actual_weight_g):null;
@@ -1377,14 +1379,27 @@
     const sources=meal?.prepared_sources_snapshot?.sources;
     if(!Array.isArray(sources))return items;
     return items.map(item=>{
+      // Attach the exact nutrition profile of every consumed lot to its saved
+      // allocation. Never depend on today's remaining stock or product catalog.
+      const parts=Array.isArray(item.allocation_override)?item.allocation_override:null;
+      const enrichedParts=parts?.map(part=>{
+        const matched=sources.filter(source=>source?.nutrition_per_100
+          &&String(source.inventory_id||'')===String(part.inventory_id||'')
+          &&text(source.unit)===text(part.unit||item.unit)
+          &&number(source.quantity)===number(part.quantity));
+        return matched.length===1
+          ?{...part,prepared_nutrition_per_100:matched[0].nutrition_per_100}
+          :part;
+      });
       const matches=sources.filter(source=>source?.nutrition_per_100&&
-        // A generic recipe ingredient has no pinned inventory_id. Match its
-        // unique recorded source by name, unit and quantity, never by today's stock.
         (!item.inventory_id||String(source.inventory_id||'')===String(item.inventory_id))&&
         text(source.name)===text(itemName(item))&&
         text(source.unit)===text(item.unit)&&
         number(source.quantity)===number(item.quantity));
-      return matches.length===1?{...item,prepared_nutrition_per_100:matches[0].nutrition_per_100}:item;
+      const enriched={...item,...(enrichedParts?{allocation_override:enrichedParts}:{})};
+      return matches.length===1
+        ?{...enriched,prepared_nutrition_per_100:matches[0].nutrition_per_100}
+        :enriched;
     });
   }
 
