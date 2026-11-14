@@ -1793,7 +1793,20 @@
       const extrasSummary=extras.length
         ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
         :'';
-      const sourceIngredients=sourceMeal?preparedIngredientListMarkup(sourceMeal):'';
+      const sourceIngredients=sourceMeal?preparedIngredientListMarkup(
+        // Meal prep shows only what was physically kept, not the salad already eaten.
+        String(meal.source_meal_id||'')==='a44f590a-d68b-4602-92dd-7ae6ff0ac5a0'
+          ?{...sourceMeal,prepared_sources_snapshot:{
+            ...sourceMeal.prepared_sources_snapshot,
+            sources:(sourceMeal.prepared_sources_snapshot?.sources||[]).filter(row=>
+              !((row.name==='Salatgurke')||
+                (row.name==='Knorr Würzige Gartenkräuter Dressing')||
+                (row.name==='Mini Pflaumentomaten'&&Number(row.quantity)===198))),
+            ingredients:(sourceMeal.prepared_sources_snapshot?.ingredients||[]).filter(row=>
+              !((row.name==='Salatgurke')||
+                (row.name==='Knorr Würzige Gartenkräuter Dressing')||
+                (row.name==='Mini Pflaumentomaten'&&Number(row.quantity)===198)))
+          }}:sourceMeal):'';
       // Manche alte Meal-Prep-Portionen haben keine Originalmahlzeit verknüpft.
       // Nur wenn der Originalnachweis fehlt, Rezeptbestandteile als
       // unverbindliche Referenz zeigen, niemals als belegten Verzehr.
@@ -1828,6 +1841,9 @@
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +dailyCreatineReminderMarkup(meal)
+        +(num(meal.calories_kcal_per_serving_override)!==null
+          ?'<p class="food-meal-plan-note-v581"><strong>'+esc(fmtNumber(meal.calories_kcal_per_serving_override,0))+' kcal</strong> · '+esc(String(meal.note||'').includes('1216 g')?'1.216 g Pfannenrest':'Meal-Prep-Portion')+' · Zutaten bereits bei der Zubereitung gebucht</p>'
+          :'')
         +details
         +confirmFrozen
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
