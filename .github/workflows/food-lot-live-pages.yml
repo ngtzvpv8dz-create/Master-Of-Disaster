@@ -43,9 +43,9 @@ jobs:
           fi
       - name: Install browser engines
         run: |
-          npm init -y >/dev/null 2>&1
-          npm install playwright@1.48.2 >/dev/null 2>&1
-          npx playwright install --with-deps chromium webkit >/dev/null 2>&1
+          npm init -y
+          npm install --no-audit --no-fund --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium webkit
       - name: Verify each Food lot on actual published website
         env:
           FOOD_LOT_TEST_BASE_URL: https://ngtzvpv8dz-create.github.io/Master-Of-Disaster
