@@ -3083,12 +3083,23 @@
           :/^karotten (?:warm|rohkost|roh)$/i.test(name)?'Karotten'
           :(/^körniger frischkäse$/i.test(name)&&/leicht/i.test(String(item.label||'')))?'Körniger Frischkäse leicht'
           :name;
-        const stockId=isIsoclearFamily?null:(item.inventory_id||null);
-        const canonical=normalizedIngredient(shoppingName,shoppingUnit);
-        const key=isIsoclearFamily
+        const resolvedFamily=ingredientStockInfo(
+          {inventory_id:item.inventory_id||null,name:shoppingName,unit:shoppingUnit},
+          data.inventory||[],inventoryByIdForShopping,
+          new Map((data.inventory||[]).map(row=>[normalizedIngredient(row.name,row.unit),row]))
+        );
+        // All generic family demands share one stock ledger. Otherwise two
+        // recipe variants can each incorrectly count the same 500 g twice.
+        const sharedFamily=isIsoclearFamily
+          ?linkedStock.family_name
+          :resolvedFamily?.family?resolvedFamily.familyName:null;
+        const stockId=sharedFamily?null:(item.inventory_id||null);
+        const normalizedFamily=sharedFamily?normalizedIngredient(sharedFamily,shoppingUnit):null;
+        const canonical=normalizedFamily||normalizedIngredient(shoppingName,shoppingUnit);
+        const key=sharedFamily
           ?'family|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE')
           :(stockId?'stock|'+stockId+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE'));
-        const current=needs.get(key)||{inventory_id:stockId,label:shoppingName,canonical,unit:shoppingUnit,required:0,uses:[]};
+        const current=needs.get(key)||{inventory_id:stockId,label:sharedFamily||shoppingName,canonical,unit:shoppingUnit,required:0,uses:[]};
         current.required+=shoppingQuantity;
         current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
