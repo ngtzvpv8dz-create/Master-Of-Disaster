@@ -1397,7 +1397,7 @@
         text(source.unit)===text(item.unit)&&
         number(source.quantity)===number(item.quantity));
       const enriched={...item,...(enrichedParts?{allocation_override:enrichedParts}:{})};
-      return matches.length===1
+      return matches.length===1&&['g','ml'].includes(text(item.unit))
         ?{...enriched,prepared_nutrition_per_100:matches[0].nutrition_per_100}
         :enriched;
     });
