@@ -875,6 +875,13 @@
         const pb=generic&&!meatPurchaseFirst&&familyRowMode(b.stock)==='frozen'?1:0;
         if(pa!==pb)return pa-pb;
         if(!meatPurchaseFirst){
+          // For interchangeable tomato varieties, older purchases are used
+          // first even if the newer pack happens to be opened.
+          if(familyText(info.familyName)==='tomaten'){
+            const da=familyAllocationLotDate(a.stock.id);
+            const db=familyAllocationLotDate(b.stock.id);
+            if(da!==db)return da.localeCompare(db);
+          }
           const active=stock=>(state?.lots||[])
             .filter(lot=>String(lot.inventory_id||'')===String(stock.id))
             .filter(lot=>Number(lot.unopened_packages||0)>0||Number(lot.opened_remaining_quantity||0)>0);
