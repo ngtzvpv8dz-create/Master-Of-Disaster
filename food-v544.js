@@ -2092,18 +2092,55 @@
     }).join('')+'</div>';
   }
 
+  // Photo-inventory rule V906: an MHD must be stored on a physical lot,
+  // not just inside notes. Month-only expiry 0827 means 08/2027, never a made-up day.
+  function normalizeInventoryMhdLabel(value){
+    const raw=String(value||'').trim();
+    const compact=/^(0[1-9]|1[0-2])(\d{2})$/.exec(raw);
+    if(compact)return compact[1]+'/20'+compact[2];
+    const month=/^(0?[1-9]|1[0-2])[./-](20\d{2}|\d{2})$/.exec(raw);
+    if(month)return month[1].padStart(2,'0')+'/'+(month[2].length===2?'20'+month[2]:month[2]);
+    if(/^\d{4}$/.test(raw))throw new Error('MHD bitte als MM/JJJJ angeben, z. B. 08/2027.');
+    return raw;
+  }
   function inventoryMhdMarkup(item,data=state){
-    const lots=(data?.lots||[]).filter(lot=>String(lot.inventory_id)===String(item.id));
-    const activeLots=lots.filter(lot=>{
-      const unopened=Math.max(0,Number(lot.unopened_packages)||0);
-      const opened=Math.max(0,Number(lot.opened_packages)||0);
-      const openedRemaining=num(lot.opened_remaining_quantity);
-      return unopened>0||opened>0||(openedRemaining!==null&&openedRemaining>0);
-    });
-    const dates=[...new Set(activeLots.map(lot=>String(lot.best_before_date||'').trim()).filter(Boolean))].sort();
-    if(!dates.length)return '';
-    const label=dates.length>1?'Nächstes MHD':'MHD';
-    return '<span class="food-stock-mhd-v707">'+label+' '+esc(fmtDate(dates[0]))+'</span>';
+    const activeLots=(data?.lots||[]).filter(lot=>
+      String(lot.inventory_id||'')===String(item.id)&&
+      (Number(lot.unopened_packages)>0||Number(lot.opened_packages)>0||Number(lot.opened_remaining_quantity)>0));
+    const expiry=activeLots.map(lot=>{
+      const printed=normalizeInventoryMhdLabel(lot.best_before_label);
+      const date=String(lot.best_before_date||'').slice(0,10);
+      const display=printed||(date?fmtDate(date):'');
+      const month=/^(0[1-9]|1[0-2])\/(20\d{2})$/.exec(printed);
+      const sort=date||(month?month[2]+'-'+month[1]+'-01':'9999-12-31');
+      return {display,sort};
+    }).filter(v=>v.display).sort((a,b)=>a.sort.localeCompare(b.sort));
+    if(!expiry.length)return '';
+    const unique=new Set(expiry.map(v=>v.display));
+    return '<span class="food-stock-mhd-v707">'+(unique.size>1?'Nächstes MHD':'MHD')+' '+esc(expiry[0].display)+'</span>';
+  }
+  // A note containing product details never counts as a structured product/lot.
+  function inventoryTraceabilityIssues(item,data=state){
+    if(item?.is_active===false||item?.pending_weighing===true||!(Number(item?.quantity)>0))return [];
+    const lots=(data?.lots||[]).filter(lot=>String(lot.inventory_id||'')===String(item.id)
+      &&(Number(lot.unopened_packages)>0||Number(lot.opened_packages)>0||Number(lot.opened_remaining_quantity)>0));
+    if(!lots.length)return ['Chargenzuordnung fehlt'];
+    const products=new Map((data?.products||[]).map(p=>[String(p.id||''),p]));
+    const issues=[];
+    if(lots.some(lot=>!lot.product_id||!products.has(String(lot.product_id))))
+      issues.push('Produktzuordnung fehlt');
+    const packaged=/päckchen|packung|dose|glas|flasche|beutel|riegel|stick/i
+      .test(String(item.unit||'')+' '+lots.map(lot=>String(lot.package_label||'')).join(' '));
+    const branded=lots.some(lot=>Boolean(products.get(String(lot.product_id||''))?.brand));
+    if((packaged||branded)&&lots.some(lot=>!String(lot.best_before_label||'').trim()&&!String(lot.best_before_date||'').trim()))
+      issues.push('MHD fehlt');
+    return issues;
+  }
+  function inventoryTraceabilityMarkup(item,data=state){
+    const issues=inventoryTraceabilityIssues(item,data);
+    if(!issues.length)return '';
+    return '<div class="food-stock-lot-untracked-v848" role="note"><b>Erfassung noch prüfen</b><span>'+
+      esc(issues.join(' · '))+'</span><small>Produkt, Charge und MHD strukturiert hinterlegen. Nicht nur in Notizen.</small></div>';
   }
 
   // V848: product families remain grouped, but every physical lot gets a separate row.
@@ -2292,13 +2329,14 @@
     // Product IDs and batch data remain available for booking and history.
     const isIsoclearFlavor=String(item.catalog_family_name||item.family_name||'').trim().toLocaleLowerCase('de-DE')==='esn isoclear whey protein isolate';
     const currentProduct=inventoryCurrentProductMarkup(item);
+    const traceability=inventoryTraceabilityMarkup(item);
     const visualTone=empty?'empty':(item.tone==='priority'?'priority':'stock');
 
     const hasTrackedLots=(state?.lots||[]).some(lot=>String(lot.inventory_id||'')===String(item.id) && (Number(lot.unopened_packages)>0||Number(lot.opened_remaining_quantity)>0));
     const storageAction=!empty&&!hasTrackedLots?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
     const quantityAction=hasTrackedLots?'':'<button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>';
     const addLotAction='<button type="button" data-food-add-lot="'+esc(item.id)+'">+ Charge</button>';
-    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+pieceDescription+grossWeightDetail+currentProduct+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544">'+pieceConsumeAction+quantityAction+addLotAction+weighAction+storageAction+'</div></article>';
+    return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+pieceDescription+grossWeightDetail+currentProduct+traceability+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544">'+pieceConsumeAction+quantityAction+addLotAction+weighAction+storageAction+'</div></article>';
   }
 
   function garlicParts(data=state){
@@ -4722,7 +4760,9 @@
     const products=(state?.products||[]).filter(p=>p.active!==false&&String(p.inventory_id||'')===String(item.id));
     const existing=(state?.lots||[]).find(l=>String(l.inventory_id)===String(item.id)&&
       Number(l.package_quantity)>0&&String(l.package_unit||item.unit)===String(item.unit));
-    const packageSize=Number(existing?.package_quantity)||Number(item.usage_content_quantity)||0;
+    // 16 g per Päckchen means ONE Päckchen, not 16 Päckchen per lot.
+    const countedUnit=/^(päckchen|stück|scheibe[n]?|riegel|stick[s]?|kapsel[n]?|tablette[n]?|portion[en]?|beutel)$/i.test(String(item.unit||'').trim());
+    const packageSize=Number(existing?.package_quantity)||(countedUnit?1:Number(item.usage_content_quantity)||0);
     const productSelect=products.length
       ?'<label>Produkt<select name="product_id"><option value="">Ohne Produktzuordnung</option>'+
         products.map(p=>'<option value="'+esc(p.id)+'" '+(products.length===1?'selected':'')+'>'+esc(lotProductTitle(p)||item.name)+'</option>').join('')+
