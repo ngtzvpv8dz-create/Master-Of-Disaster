@@ -1842,7 +1842,7 @@
         +'</button>'
         +dailyCreatineReminderMarkup(meal)
         +(num(meal.calories_kcal_per_serving_override)!==null
-          ?'<p class="food-meal-plan-note-v581"><strong>'+esc(fmtNumber(meal.calories_kcal_per_serving_override,0))+' kcal</strong> · '+esc(String(meal.note||'').includes('1216 g')?'1.216 g Pfannenrest':'Meal-Prep-Portion')+' · Zutaten bereits bei der Zubereitung gebucht</p>'
+          ?'<p class="food-meal-plan-note-v581"><strong>'+esc(Math.round(Number(meal.calories_kcal_per_serving_override)).toLocaleString('de-DE'))+' kcal</strong> · '+esc(String(meal.note||'').includes('1216 g')?'1.216 g Pfannenrest':'Meal-Prep-Portion')+' · Zutaten bereits bei der Zubereitung gebucht</p>'
           :'')
         +details
         +confirmFrozen
