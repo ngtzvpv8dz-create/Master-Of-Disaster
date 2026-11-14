@@ -1793,20 +1793,24 @@
       const extrasSummary=extras.length
         ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
         :'';
-      const sourceIngredients=sourceMeal?preparedIngredientListMarkup(
-        // Meal prep shows only what was physically kept, not the salad already eaten.
-        String(meal.source_meal_id||'')==='a44f590a-d68b-4602-92dd-7ae6ff0ac5a0'
-          ?{...sourceMeal,prepared_sources_snapshot:{
-            ...sourceMeal.prepared_sources_snapshot,
-            sources:(sourceMeal.prepared_sources_snapshot?.sources||[]).filter(row=>
-              !((row.name==='Salatgurke')||
-                (row.name==='Knorr Würzige Gartenkräuter Dressing')||
-                (row.name==='Mini Pflaumentomaten'&&Number(row.quantity)===198))),
-            ingredients:(sourceMeal.prepared_sources_snapshot?.ingredients||[]).filter(row=>
-              !((row.name==='Salatgurke')||
-                (row.name==='Knorr Würzige Gartenkräuter Dressing')||
-                (row.name==='Mini Pflaumentomaten'&&Number(row.quantity)===198)))
-          }}:sourceMeal):'';
+      const excludedSourceIds=new Set(
+        (meal.prepared_sources_snapshot?.nutrition_portion?.exclude_ingredient_ids||[]).map(String));
+      const excludedSourceIngredients=(sourceMeal?.ingredients||[])
+        .filter(row=>excludedSourceIds.has(String(row.id)));
+      const isExcludedFromPrep=row=>excludedSourceIngredients.some(excluded=>
+        String(row.name||'').toLowerCase()===String(excluded.name||'').toLowerCase()
+        &&Number(row.quantity)===Number(excluded.quantity));
+      const sourceIngredients=sourceMeal?preparedIngredientListMarkup({
+        ...sourceMeal,
+        prepared_sources_snapshot:{
+          ...(sourceMeal.prepared_sources_snapshot||{}),
+          sources:(sourceMeal.prepared_sources_snapshot?.sources||[])
+            .filter(row=>!isExcludedFromPrep(row)),
+          ingredients:(sourceMeal.prepared_sources_snapshot?.ingredients||[])
+            .filter(row=>!isExcludedFromPrep(row))
+        },
+        ingredients:(sourceMeal.ingredients||[]).filter(row=>!excludedSourceIds.has(String(row.id)))
+      }):'';
       // Manche alte Meal-Prep-Portionen haben keine Originalmahlzeit verknüpft.
       // Nur wenn der Originalnachweis fehlt, Rezeptbestandteile als
       // unverbindliche Referenz zeigen, niemals als belegten Verzehr.
