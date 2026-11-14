@@ -857,7 +857,7 @@
   // V901: A user's saved physical product/lot allocation is authoritative.
   // Nutrition must match the exact stock that booking will consume, even
   // after the meal is completed and the original lot is empty.
-  function confirmedAllocationNutrition(item,data){
+  function confirmedAllocationNutrition(item,data,historical=false){
     const parts=Array.isArray(item?.allocation_override)?item.allocation_override:null;
     if(!parts?.length)return null;
     const name=itemName(item);
@@ -879,7 +879,7 @@
         ?(data?.lots||[]).find(row=>String(row.id)===String(part.lot_id)
           &&String(row.inventory_id)===String(part.inventory_id))
         :null;
-      if(part.lot_id&&!lot)return invalid('gespeicherte Charge fehlt');
+      if(part.lot_id&&!lot&&!(historical&&part.product_id))return invalid('gespeicherte Charge fehlt');
       if(lot?.product_id&&part.product_id&&String(lot.product_id)!==String(part.product_id))
         return invalid('Produkt und Charge widersprechen sich');
       const productId=part.product_id||lot?.product_id;
@@ -921,7 +921,7 @@
       carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,missing:[]};
   }
 
-  function calculate(items,servings,data,allocationMap=null){
+  function calculate(items,servings,data,allocationMap=null,historical=false){
     const rows=Array.isArray(items)?items:[];
     if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
     const div=Math.max(.01,number(servings)||1);
@@ -958,7 +958,7 @@
         addMacro(measuredPaprika,1);
         continue;
       }
-      const confirmed=confirmedAllocationNutrition(item,data);
+      const confirmed=confirmedAllocationNutrition(item,data,historical);
       if(confirmed){
         if(!confirmed.complete){missing.push(...confirmed.missing);continue;}
         kcal+=confirmed.kcal;protein+=confirmed.protein;addMacro(confirmed,1);
@@ -1392,22 +1392,43 @@
     const estimate=estimatedNutritionForMeal(meal);
     if(estimate)return estimate;
     const items=withPreparedNutrition(meal.food_meal_ingredients||[],meal);
-    // A completed source meal has already consumed its ingredient lots.
-    // A physically weighed, calorie-confirmed leftover is not a new recipe
-    // and must not be recalculated from deleted/depleted historic lots.
     const storedPrepKcal=number(meal.calories_kcal_per_serving_override);
-    if((meal.source_meal_id||meal.leftover_id)&&
-       storedPrepKcal!==null&&storedPrepKcal>=0&&
-       preparedOnly(items).length===0&&eatenOnly(items).length===0){
-      return {complete:true,kcal:storedPrepKcal,protein:null,
-        fat:null,carbs:null,missing:[],storedMealPrep:true};
+    const portion=meal.prepared_sources_snapshot?.nutrition_portion;
+    const portionFraction=number(portion?.fraction);
+    const portionExclusions=new Set(Array.isArray(portion?.exclude_ingredient_ids)
+      ?portion.exclude_ingredient_ids.map(String):[]);
+    // Explicitly measured cooked portion: source composition is fixed at cooking.
+    // Exclude separately eaten side dishes, then scale ALL nutrients by weight.
+    if(meal.source_meal_id&&portionFraction!==null&&portionFraction>0&&portionFraction<=1){
+      const source=mealMap.get(String(meal.source_meal_id));
+      if(source&&String(portion.source_meal_id||'')===String(source.id)){
+        const sourceItems=preparedOnly(withPreparedNutrition(source.food_meal_ingredients||[],source))
+          .filter(item=>!portionExclusions.has(String(item.id)));
+        const original=calculate(sourceItems,1,data,null,true);
+        if(original.complete){
+          const extras=preparedOnly(items).length
+            ?calculate(preparedOnly(items),1,context,allocations):zeroNutrition();
+          const once=eatenOnly(items).length
+            ?calculate(eatenOnly(items),1,context,allocations):zeroNutrition();
+          const result=combine(combine({
+            ...original,kcal:original.kcal*portionFraction,
+            protein:original.protein*portionFraction,
+            fat:original.fat===null?null:original.fat*portionFraction,
+            carbs:original.carbs===null?null:original.carbs*portionFraction
+          },extras),once);
+          return result.complete&&storedPrepKcal!==null
+            ?{...result,kcal:storedPrepKcal}:result;
+        }
+        return original; // Surface actual missing data, never invent macros.
+      }
     }
+    // No complete portion snapshot: do not hide missing macros with kcal-only.
     let base;
     if(meal.leftover_id||meal.source_meal_id){
       const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
       const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
       const original=source
-        ?calculate(preparedOnly(withPreparedNutrition(source.food_meal_ingredients||[],source)),source.prepared_servings||1,data)
+        ?calculate(preparedOnly(withPreparedNutrition(source.food_meal_ingredients||[],source)),source.prepared_servings||1,data,null,true)
         :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data):{complete:false,missing:['Meal-Prep-Basis']});
       const extras=preparedOnly(items).length
         ?calculate(preparedOnly(items),meal.eaten_servings||meal.prepared_servings||1,context,allocations)
