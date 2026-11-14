@@ -1,6 +1,6 @@
-/* V834 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
+/* V901 · Zusatz-Snacks / Getränke im FOOD-Heute-Bereich.
    Bestätigte Portionen ohne erneute Gewichtsabfrage; fehlende Makros bleiben unbekannt.
-   Referenzwerte aus Produktstamm nutzen; die Erfassung verändert NICHT den Vorrat. */
+   Katalog-Snacks mit Vorratszuordnung buchen Bestand atomar per Datenbanktrigger. */
 (function(){
   'use strict';
   if(window.__modFoodExtrasV828)return;
@@ -13,6 +13,8 @@
   const decimal=x=>Number(String(x??'').trim().replace(',','.'));
   const client=()=>window.getSupabaseClient?.();
   const autoCounted=row=>String(row?.source_reference||'').startsWith('food-counted-v873-');
+  const stockLinkedExtra=row=>String(row?.source_reference||'').startsWith('food-ui-v832-')
+    &&(Boolean(row?.product_id)||/^food-ui-v832-inventory-[0-9a-f-]{36}-/.test(String(row?.source_reference||'')));
   function productName(p){return p?._inventoryOnly?'Vorrat · '+p.product_name:[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');}
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
   // Stückprodukte mit dokumentierter essbarer Portionsmenge: kein erneutes Wiegen verlangen.
@@ -270,7 +272,10 @@
     editing=row.id;requestId=null;
     // Produkt-ID beim Korrigieren von Makros erhalten: die alte manuelle
     // Bearbeitung hat den Produktstamm sonst mit product_id:null geloescht.
-    const linked=products.find(product=>String(product.id)===String(row.product_id));
+    const sourceInventoryId=String(row.source_reference||'')
+      .match(/^food-ui-v832-inventory-([0-9a-f-]{36})-/)?.[1]||null;
+    const linked=products.find(product=>String(product.id)===String(row.product_id)
+      ||(sourceInventoryId&&String(product.inventory_id)===sourceInventoryId));
     mode=linked?'catalog':'manual';
     selected=linked?String(linked.id):'';
     term='';
@@ -351,6 +356,8 @@
       const pieceWeight=countedPieceWeight(product);
       const updateBooked=autoCounted(oldRow);
       const newBooked=!editing&&Boolean(pieceWeight);
+      const stockLinked=mode==='catalog'&&Boolean(product?.inventory_id);
+      const oldStockLinked=stockLinkedExtra(oldRow);
       if(updateBooked||newBooked){
         if(!product||!pieceWeight||(oldRow&&String(oldRow.product_id)!==String(product.id)))
           throw new Error('Zum Bearbeiten das ursprüngliche Pralinenprodukt verwenden.');
@@ -377,10 +384,13 @@
       }
       if(res.error)throw res.error;
       formOpen=false;editing=null;requestId=null;
-      if(!updateBooked&&!newBooked)notice='✓ Gespeichert und in die Tagesbilanz übernommen.';
+      if(!updateBooked&&!newBooked)notice=stockLinked
+        ?'✓ Gespeichert, Tagesbilanz und Vorrat gemeinsam gebucht.'
+        :'✓ Gespeichert und in die Tagesbilanz übernommen (kein zugeordneter Vorrat).';
       error='';await refresh();
       window.__modFoodNutritionV711?.refresh?.();
-      if(updateBooked||newBooked)await window.__modFoodV544?.reload?.();
+      if(updateBooked||newBooked||stockLinked||oldStockLinked)
+        await window.__modFoodV544?.reload?.();
     }finally{busy=false;if(submit)submit.disabled=false;}
   }
   async function remove(id){
@@ -407,10 +417,12 @@
         ?await supabase.rpc('save_counted_food_extra_v873',{p_action:'delete',p_extra_id:id})
         :await supabase.from('food_extra_consumptions').delete().eq('id',id).eq('user_id',uid).select('id').single();
       if(res.error)throw res.error;
-      notice=booked?'✓ Snack und Vorratsverbrauch gemeinsam zurückgenommen.':'✓ Zusatz entfernt.';
+      notice=(booked||stockLinkedExtra(row))
+        ?'✓ Snack und Vorratsverbrauch gemeinsam zurückgenommen.'
+        :'✓ Zusatz entfernt.';
       error='';await refresh();
       window.__modFoodNutritionV711?.refresh?.();
-      if(booked)await window.__modFoodV544?.reload?.();
+      if(booked||stockLinkedExtra(row))await window.__modFoodV544?.reload?.();
     }finally{busy=false;}
   }
   function styles(){
