@@ -1407,6 +1407,43 @@
     const estimate=estimatedNutritionForMeal(meal);
     if(estimate)return estimate;
     const items=withPreparedNutrition(meal.food_meal_ingredients||[],meal);
+    // A prepared source meal can have weighed leftovers and a separately
+    // consumed side. Its consumed macros are the physical remainder, not
+    // eaten_servings / prepared_servings applied to the whole recipe.
+    if(text(meal.status)==='completed'&&!meal.source_meal_id&&!meal.leftover_id){
+      const children=[...mealMap.values()].filter(child=>
+        String(child.source_meal_id||'')===String(meal.id)&&
+        child.prepared_sources_snapshot?.nutrition_portion?.basis==='measured_prepared_weight');
+      if(children.length){
+        const portions=children.map(child=>child.prepared_sources_snapshot.nutrition_portion);
+        const fraction=portions.reduce((sum,p)=>sum+(number(p.fraction)||0),0);
+        const exclusions=portions[0].exclude_ingredient_ids||[];
+        const sameExclusions=portions.every(p=>
+          JSON.stringify([...(p.exclude_ingredient_ids||[])].sort())===
+          JSON.stringify([...exclusions].sort()));
+        if(sameExclusions&&fraction>=0&&fraction<=1.00000001){
+          const excluded=new Set(exclusions.map(String));
+          const panItems=preparedOnly(items).filter(i=>!excluded.has(String(i.id)));
+          const sideItems=preparedOnly(items).filter(i=>excluded.has(String(i.id)));
+          const pan=panItems.length?calculate(panItems,1,data,null,true):zeroNutrition();
+          const side=sideItems.length?calculate(sideItems,1,data,null,true):zeroNutrition();
+          if(pan.complete&&side.complete){
+            const left=Math.max(0,1-fraction);
+            const consumed=combine({
+              ...pan,kcal:pan.kcal*left,protein:pan.protein*left,
+              fat:pan.fat===null?null:pan.fat*left,
+              carbs:pan.carbs===null?null:pan.carbs*left
+            },side);
+            const div=Math.max(.01,number(meal.eaten_servings)||1);
+            return {...consumed,kcal:consumed.kcal/div,protein:consumed.protein/div,
+              fat:consumed.fat===null?null:consumed.fat/div,
+              carbs:consumed.carbs===null?null:consumed.carbs/div};
+          }
+          return pan.complete?side:pan;
+        }
+        return {complete:false,missing:['Meal-Prep-Gewichte oder Beilagen-Zuordnung widersprüchlich']};
+      }
+    }
     const storedPrepKcal=number(meal.calories_kcal_per_serving_override);
     const portion=meal.prepared_sources_snapshot?.nutrition_portion;
     const savedMacros=portion?.macros;
