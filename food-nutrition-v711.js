@@ -1392,6 +1392,16 @@
     const estimate=estimatedNutritionForMeal(meal);
     if(estimate)return estimate;
     const items=withPreparedNutrition(meal.food_meal_ingredients||[],meal);
+    // A completed source meal has already consumed its ingredient lots.
+    // A physically weighed, calorie-confirmed leftover is not a new recipe
+    // and must not be recalculated from deleted/depleted historic lots.
+    const storedPrepKcal=number(meal.calories_kcal_per_serving_override);
+    if((meal.source_meal_id||meal.leftover_id)&&
+       storedPrepKcal!==null&&storedPrepKcal>=0&&
+       preparedOnly(items).length===0&&eatenOnly(items).length===0){
+      return {complete:true,kcal:storedPrepKcal,protein:null,
+        fat:null,carbs:null,missing:[],storedMealPrep:true};
+    }
     let base;
     if(meal.leftover_id||meal.source_meal_id){
       const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
@@ -1420,7 +1430,8 @@
   }
   function nutritionText(n){
     if(!n?.complete)return '';
-    const base=(n.estimated?'ca. ':'')+Math.round(n.kcal)+' kcal · '+formatNumber(n.protein,1)+' g Protein';
+    const base=(n.estimated?'ca. ':'')+Math.round(n.kcal)+' kcal'+
+      (n.protein===null||n.protein===undefined?'':' · '+formatNumber(n.protein,1)+' g Protein');
     // Display fat/carbs only when every contributing portion has reliable data.
     // Sugar and saturated fat are subsets, never additional calories.
     if(n.fat===null||n.fat===undefined||n.carbs===null||n.carbs===undefined)return base;
