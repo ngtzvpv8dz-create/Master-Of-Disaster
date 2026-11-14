@@ -816,9 +816,10 @@
       const segmentQty=Math.max(0,Number(segment.quantity)||0);
       if(skip>=segmentQty-.0001){skip=Math.max(0,skip-segmentQty);continue;}
       const available=Math.max(0,segmentQty-skip);
+      const partiallyConsumed=skip>0.0001;
       skip=0;
       // Frozen physical packs cannot be split before thawing.
-      if(segment.indivisible&&(skip>0.0001||available>remaining+0.0001))continue;
+      if(segment.indivisible&&(partiallyConsumed||available>remaining+0.0001))continue;
       const quantity=Math.min(available,remaining);
       if(quantity<=0)continue;
       const previous=parts[parts.length-1];
@@ -933,9 +934,7 @@
           unit:item?.unit||unit
         });
       }
-      remaining-=parts.length
-        ?parts.reduce((sum,part)=>sum+(Number(part.quantity)||0),0)
-        :take;
+      remaining-=parts.reduce((sum,part)=>sum+(Number(part.quantity)||0),0);
     }
     return allocations.length?{allocations,remaining:Math.max(0,remaining)}:null;
   }
