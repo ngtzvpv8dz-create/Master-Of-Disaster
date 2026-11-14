@@ -1407,6 +1407,17 @@
     const estimate=estimatedNutritionForMeal(meal);
     if(estimate)return estimate;
     const items=withPreparedNutrition(meal.food_meal_ingredients||[],meal);
+    const consumedMacros=meal.prepared_sources_snapshot?.nutrition_consumed;
+    if(text(meal.status)==='completed'&&!meal.source_meal_id&&!meal.leftover_id&&consumedMacros){
+      const kcal=number(consumedMacros.kcal),protein=number(consumedMacros.protein_g);
+      const fat=number(consumedMacros.fat_g),carbs=number(consumedMacros.carbs_g);
+      if([kcal,protein,fat,carbs].every(value=>value!==null&&value>=0)){
+        const servings=Math.max(.01,number(meal.eaten_servings)||1);
+        return {complete:true,kcal:kcal/servings,protein:protein/servings,
+          fat:fat/servings,carbs:carbs/servings,missing:[],
+          source:'cooked_meal_consumption_snapshot'};
+      }
+    }
     // A prepared source meal can have weighed leftovers and a separately
     // consumed side. Its consumed macros are the physical remainder, not
     // eaten_servings / prepared_servings applied to the whole recipe.
