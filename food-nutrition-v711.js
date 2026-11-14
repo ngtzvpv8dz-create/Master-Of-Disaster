@@ -1034,7 +1034,17 @@
     if(measuredPaprikaNutrition(item,data)?.complete)return null;
     const confirmed=confirmedAllocationNutrition(item,data);
     if(confirmed){
-      if(!confirmed.complete)return {...entry,reason:confirmed.missing.join(', ')};
+      if(!confirmed.complete){
+        const missing=confirmed.missing.join(', ');
+        // The current red pepper has a complete nutrient profile but only
+        // GROSS weights (with stem/seeds). Ask for edible net grams, not for
+        // another manufacturer nutrition label or a fabricated 268g serving.
+        if(text(name)==='paprika rot'&&text(item.unit)==='stück'
+           &&/gesichertes Stückgewicht fehlt|Stückgewicht fehlt/.test(missing))
+          return {...entry,needsWeight:true,
+            reason:'Nährwertprofil ist bereits zugeordnet. Bitte nach dem Entkernen das essbare Nettogewicht der roten Paprika wiegen. 268 g brutto sind keine essbare Nährwertmenge.'};
+        return {...entry,reason:missing};
+      }
       if(confirmed.fat===null||confirmed.carbs===null)
         return {...entry,reason:'Fett- oder Kohlenhydratwerte der zugewiesenen Packung fehlen.'};
       return null;
@@ -1061,7 +1071,10 @@
       const liveLots=lots.filter(lot=>String(lot.inventory_id||'')===String(stock.id))
         .filter(lot=>number(lot.unopened_packages)>0||number(lot.opened_remaining_quantity)>0);
       for(const lot of liveLots){
-        if(!lot.product_id)continue;
+        // Never silently substitute a different red pepper or an old batch
+        // when today's physical lot has lost its product foreign key.
+        if(!lot.product_id)return {...entry,
+          reason:'Aktuelle Vorratscharge ohne Produktzuordnung. Die Charge muss mit dem vorhandenen Produktstamm verknüpft werden, statt Nährwerte erneut zu erfassen.'};
         const product=products.find(row=>String(row.id)===String(lot.product_id));
         if(!product)return {...entry,reason:'Die aktuelle Vorratscharge hat keinen gültigen Produktstamm-Eintrag.'};
         const n=nutritionOf(product);
@@ -1296,7 +1309,7 @@
             +'<strong>'+alarmEscape((target.type==='meal'?'Mahlzeit '+(target.date||''):target.type==='product'?'Vorrat/Produkt':'Rezept')
               +' · '+target.title)+'</strong>'
             +'<small>'+alarmEscape(target.issues.map(issue=>
-               (issue.provisional?'Hinweis: ':'Fehler: ')+issue.name+': '+issue.reason).join(' | '))+'</small>'
+               (issue.needsWeight?'Mengenprüfung: ':issue.provisional?'Hinweis: ':'Fehler: ')+issue.name+': '+issue.reason).join(' | '))+'</small>'
             +'<span aria-hidden="true">↗</span>'
           +'</button>'
         +'</div>').join(''):'<p>Keine offenen Nährwertpunkte in geplanten Mahlzeiten und Rezepten.</p>')
@@ -1338,7 +1351,9 @@
     let note=card.querySelector('[data-food-nutrition-card-warning]');
     if(!issues.length){card.classList.remove('food-nutrition-meal-bad-v795');if(note)note.remove();return;}
     card.classList.add('food-nutrition-meal-bad-v795');
-    const summary='⚠ Nährwerte prüfen: '+[...names].map(name=>issues.find(issue=>key(issue.name)===name)?.name||name).join(', ');
+    const onlyEdibleWeight=issues.length>0&&issues.every(issue=>issue.needsWeight===true);
+    const summary=(onlyEdibleWeight?'⚖ Essbares Nettogewicht noch wiegen: ':'⚠ Nährwerte prüfen: ')
+      +[...names].map(name=>issues.find(issue=>key(issue.name)===name)?.name||name).join(', ');
     if(!note){
       note=document.createElement('div');
       note.className='food-nutrition-card-warning-v795';
