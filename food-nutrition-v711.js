@@ -1753,7 +1753,9 @@
           const allocation=mealAllocations?.get?.(String(item.id||''))||null;
           // Aktuelle Chargen sind für noch geplante Mahlzeiten maßgeblich.
           // Abgeschlossene Mahlzeiten nie wegen späterer Einkäufe umbuchen.
-          if(isBooked&&n?.complete)continue;
+          if(n?.complete&&(isBooked||
+            (meal.source_meal_id&&text(mealMap.get(String(meal.source_meal_id))?.status)==='completed')))
+            continue;
           const problem=nutritionProblem(item,mealContext,allocation);
           if(problem&&!issues.some(issue=>issue.id===problem.id&&issue.name===problem.name))issues.push(problem);
         }
