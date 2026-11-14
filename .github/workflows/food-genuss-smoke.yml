@@ -30,6 +30,8 @@ jobs:
         run: node --test tests/food-inventory-mhd-traceability-v906.test.cjs
       - name: Red paprika product-source and edible-weight regressions
         run: node --test tests/food-red-paprika-link-and-net-weight-v907.test.cjs
+      - name: ELO Frost product protein and current lot nutrition regression
+        run: node --test tests/food-elo-frost-protein-provenance-v909.test.cjs
       - name: Loader and database wiring
         run: |
           grep -Eq 'food-planned-extras-v880[.]js[?]v=[0-9]+-' area-runtime-v609.js
