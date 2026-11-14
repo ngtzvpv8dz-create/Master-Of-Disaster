@@ -1460,7 +1460,7 @@
         :zeroNutrition();
       base=combine(original,extras);
     }else{
-      base=calculate(preparedOnly(items),meal.prepared_servings||meal.eaten_servings||1,context,allocations);
+      base=calculate(preparedOnly(items),meal.prepared_servings||meal.eaten_servings||1,context,allocations,text(meal.status)==='completed');
     }
     // One-off foods are divided only by the servings actually eaten TODAY.
     const once=eatenOnly(items);
