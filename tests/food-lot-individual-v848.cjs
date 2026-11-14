@@ -120,6 +120,28 @@ async function scenario(browser,label){
   assert.equal(created.q,580);
   assert.equal(errors.length,0,'javascript errors: '+errors.join('; '));
   console.log('FOOD INDIVIDUAL LOT UI PASS '+label+': two rows, independent MHD, discard opened 280, preserve unopened 400, edit selected, add new');
+
+  // V906 real published-browser regression: monthly MHD and brand show on the stock card.
+  // Fixture replaces local sample data; this does NOT touch the user's actual inventory.
+  await page.evaluate(async()=>{
+    const t=window.__foodLotTest;
+    Object.assign(t.stock,{name:'Backpulver',family_name:'Backpulver',quantity:9,unit:'Päckchen',
+      quantity_label:'9 Päckchen',catalog_variant_label:'Backpulver',opened:false});
+    t.fixture.shopping_products=[{...t.fixture.shopping_products[0],brand:'Dr. Oetker',
+      product_name:'Original Backin Backpulver',variant:'16-g-Päckchen'}];
+    t.fixture.food_inventory_lots=[{...t.closed,id:'backin-0827',unopened_packages:9,
+      opened_packages:0,opened_remaining_quantity:null,package_quantity:1,
+      package_unit:'Päckchen',best_before_date:null,best_before_label:'08/2027'}];
+    await window.__modFoodV544.reload();
+  });
+  await page.locator('[data-food-tab="inventory"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-food-stock-card="beans"]')?.textContent.includes('MHD 08/2027'));
+  const backinText=await page.locator('[data-food-stock-card="beans"]').innerText();
+  assert(backinText.includes('Dr. Oetker'),'backpulver brand missing from live stock card');
+  assert(backinText.includes('MHD 08/2027'),'monthly expiry invisible on live stock card');
+  assert(!backinText.includes('Erfassung noch prüfen'),'confirmed product and MHD should not trigger incomplete warning');
+  assert(!backinText.includes('Ohne Chargenzuordnung'),'nine packets must be allocated to their lot');
+  console.log('FOOD MONTH-ONLY MHD LIVE UI PASS '+label+': 9 Dr. Oetker Backin packets, expiry 08/2027, fully linked');
  } finally{await ctx.close();}
 }
 (async()=>{
