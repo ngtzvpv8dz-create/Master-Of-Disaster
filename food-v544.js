@@ -1846,6 +1846,9 @@
           :'')
         +details
         +confirmFrozen
+        +(sourceMeal&&status==='planned'
+          ?'<div class="food-meal-plan-actions-v630"><button type="button" class="food-action-v544 compact" data-food-mealprep-weight="'+esc(meal.id)+'">⚖️ Portionsgewicht &amp; Bestandteile</button></div>'
+          :'')
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
@@ -5054,6 +5057,46 @@
       activeRecipeCategory=String(button.dataset.foodRecipeCategory||'breakfast');
       expandedRecipes.clear();
       renderState();
+    }));
+    root.querySelectorAll('[data-food-mealprep-weight]').forEach(button=>button.addEventListener('click',()=>{
+      const meal=(state?.meals||[]).find(row=>String(row.id)===String(button.dataset.foodMealprepWeight));
+      const source=meal&&mealPrepSource(meal);
+      if(!meal||!source||normalizedStatus(source.status)!=='completed'){
+        alert('Bitte erst die ursprüngliche Mahlzeit zubereiten und abschließen.');return;
+      }
+      const current=meal.prepared_sources_snapshot?.nutrition_portion||{};
+      const excluded=new Set((current.exclude_ingredient_ids||[]).map(String));
+      const options=(source.ingredients||[]).filter(row=>Number(row.quantity)>0)
+        .map(row=>'<label style="display:block"><input type="checkbox" name="exclude" value="'+esc(row.id)+'"'+
+          (excluded.has(String(row.id))?' checked':'')+'> '+esc(String(row.name||'Zutat')+
+          ' · '+fmtQty(row.quantity,row.unit))+'</label>').join('');
+      addModal('⚖️ Meal Prep exakt aufteilen',
+        '<form><p class="food-modal-copy-v544">Gewicht des fertigen HAUPTGERICHTS und dieser Restportion eintragen. Zutaten einer separat gegessenen Beilage unten ausschließen. Keine erneute Vorratsbuchung.</p>'
+        +'<label>Gesamtes fertiges Hauptgericht (g)<input name="total" type="number" min="1" step="0.01" required value="'+esc(current.source_total_weight_g||'')+'"></label>'
+        +'<label>Gewicht dieser Portion (g)<input name="portion" type="number" min="1" step="0.01" required value="'+esc(current.portion_weight_g||'')+'"></label>'
+        +'<p class="food-modal-copy-v544"><strong>Nur separat gegessene Beilagen ausschließen:</strong></p>'
+        +'<div style="max-height:220px;overflow:auto">'+options+'</div>'
+        +'<button type="submit" class="food-action-v544">Gewichte &amp; Nährwertverteilung speichern</button></form>',
+        async form=>{
+          const total=Number(form.get('total')),portion=Number(form.get('portion'));
+          if(!Number.isFinite(total)||!Number.isFinite(portion)||total<=0||portion<=0||portion>total)
+            throw new Error('Portionsgewicht muss positiv und höchstens so groß wie das Gesamtgewicht sein.');
+          const fraction=portion/total;
+          const next={...(meal.prepared_sources_snapshot||{}),nutrition_portion:{
+            source_meal_id:String(source.id),source_total_weight_g:total,
+            portion_weight_g:portion,fraction,basis:'measured_prepared_weight',
+            exclude_ingredient_ids:form.getAll('exclude').map(String)
+          }};
+          const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+          const result=await sb.from('food_meals')
+            .update({prepared_sources_snapshot:next,calories_kcal_per_serving_override:null})
+            .eq('id',meal.id).eq('status','planned')
+            .select('id,prepared_sources_snapshot,calories_kcal_per_serving_override').single();
+          if(result.error)throw result.error;
+          meal.prepared_sources_snapshot=result.data.prepared_sources_snapshot;
+          meal.calories_kcal_per_serving_override=null;
+          await mutate(()=>result.data);
+        });
     }));
     root.querySelectorAll('[data-food-complete]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await completeMeal(button.dataset.foodComplete);}catch(error){alert(error?.message||'Mahlzeit konnte nicht abgeschlossen werden.');button.disabled=false;}}));
     root.querySelectorAll('[data-food-reopen-skipped]').forEach(button=>button.addEventListener('click',async event=>{
