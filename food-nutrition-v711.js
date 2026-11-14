@@ -1394,6 +1394,16 @@
     const items=withPreparedNutrition(meal.food_meal_ingredients||[],meal);
     const storedPrepKcal=number(meal.calories_kcal_per_serving_override);
     const portion=meal.prepared_sources_snapshot?.nutrition_portion;
+    const savedMacros=portion?.macros;
+    if((meal.source_meal_id||meal.leftover_id)&&savedMacros){
+      const kcal=number(savedMacros.kcal),protein=number(savedMacros.protein_g);
+      const fat=number(savedMacros.fat_g),carbs=number(savedMacros.carbs_g);
+      if(kcal!==null&&kcal>=0&&protein!==null&&protein>=0&&
+         fat!==null&&fat>=0&&carbs!==null&&carbs>=0){
+        return {complete:true,kcal,protein,fat,carbs,missing:[],
+          source:'cooked_portion_nutrition_snapshot'};
+      }
+    }
     const portionFraction=number(portion?.fraction);
     const portionExclusions=new Set(Array.isArray(portion?.exclude_ingredient_ids)
       ?portion.exclude_ingredient_ids.map(String):[]);
