@@ -24,14 +24,16 @@ jobs:
           for retry in {1..18}; do
             if curl -fsSL --max-time 18 "$base/food-v544.js?ci=$GITHUB_SHA-$retry" -o /tmp/food-live.js \
               && curl -fsSL --max-time 18 "$base/shopping-v678.js?ci=$GITHUB_SHA-$retry" -o /tmp/shopping-live.js \
+              && curl -fsSL --max-time 18 "$base/food-nutrition-v711.js?ci=$GITHUB_SHA-$retry" -o /tmp/nutrition-live.js \
               && curl -fsSL --max-time 18 "$base/area-runtime-v609.js?ci=$GITHUB_SHA-$retry" -o /tmp/area-live.js \
               && curl -fsSL --max-time 18 "$base/index.html?ci=$GITHUB_SHA-$retry" -o /tmp/index-live.html \
               && cmp -s food-v544.js /tmp/food-live.js \
               && cmp -s shopping-v678.js /tmp/shopping-live.js \
+              && cmp -s food-nutrition-v711.js /tmp/nutrition-live.js \
               && cmp -s area-runtime-v609.js /tmp/area-live.js \
               && cmp -s index.html /tmp/index-live.html; then
               ready=1
-              echo "LIVE GitHub Pages serves current FOOD, SHOPPING and loader files"
+              echo "LIVE GitHub Pages serves current FOOD, NUTRITION, SHOPPING and loader files"
               break
             fi
             echo "Waiting for published current build $retry"
