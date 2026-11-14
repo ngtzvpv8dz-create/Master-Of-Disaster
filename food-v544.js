@@ -3161,8 +3161,15 @@
       );
       const stock=stockInfo.stock||null;
 
-      if(stock?.shopping_excluded===true)return;
-      if(stock?.pending_weighing===true)return;
+      // V1 14.11.2026: Die Familienauflösung liefert stock:null und die
+      // einzelnen Produktvarianten nur in rows. Bei einem noch zu prüfenden
+      // oder vom Einkauf ausgeschlossenen Gesamtbestand keinen Scheineinkauf
+      // erzeugen. Gemischte Familien mit kaufbaren Varianten bleiben planbar.
+      const familyRows=Array.isArray(stockInfo.rows)
+        ?stockInfo.rows.filter(row=>row?.is_active!==false):[];
+      if(stock?.shopping_excluded===true||stock?.pending_weighing===true
+        ||(familyRows.length>0&&familyRows.every(row=>
+          row?.shopping_excluded===true||row?.pending_weighing===true)))return;
 
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
