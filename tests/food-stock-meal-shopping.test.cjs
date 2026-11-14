@@ -106,3 +106,20 @@ test('Generic tomato family demand from different linked variants is not double-
   assert.equal(gaps[0].missing,48);
   assert.equal(gaps[0].required,400);
 });
+
+test('Bread topping prefers large tomatoes, regular meals retain FIFO',()=>{
+  const cherry=stock('ch','Cherrytomaten','Tomaten',100);
+  const large=stock('large','Fleischtomaten','Tomaten',300);
+  const item={id:'topping',name:'Tomaten',quantity:100,unit:'g'};
+  setState({inventory:[cherry,large],lots:[
+    lot('ch-old','ch',100,'2026-11-09'),lot('large-new','large',300,'2026-11-13')
+  ],products:[],freezer:[],meals:[{id:'m',title:'Vollkornbrot mit Tomaten',
+    status:'planned',meal_date:'2026-11-14',ingredients:[item]}]});
+  const topping=familyAllocationForItem(item);
+  assert.equal(topping.allocations[0].inventoryId,'large');
+  setState({inventory:[cherry,large],lots:[
+    lot('ch-old','ch',100,'2026-11-09'),lot('large-new','large',300,'2026-11-13')
+  ],products:[],freezer:[],meals:[]});
+  const cooking=familyAllocationForItem(ingredient('Tomaten',100));
+  assert.equal(cooking.allocations[0].inventoryId,'ch');
+});
