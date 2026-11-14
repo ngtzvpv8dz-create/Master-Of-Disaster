@@ -1031,6 +1031,18 @@
     const entry={id:String(item.id||''),name,reason:''};
     if(qty===null||qty<0)return {...entry,reason:'Die Zutatenmenge ist ungültig oder fehlt.'};
     if(qty===0)return null;
+    // A saved ingredient override must never conceal a product_id missing
+    // on the REAL physical lot. Checking only the override's product_id would
+    // reproduce the recurring "Paprika rot" provenance regression.
+    const savedParts=Array.isArray(item?.allocation_override)?item.allocation_override:[];
+    for(const part of savedParts){
+      if(!part?.lot_id)continue;
+      const physical=(data?.lots||[]).find(lot=>
+        String(lot.id||'')===String(part.lot_id)
+        &&String(lot.inventory_id||'')===String(part.inventory_id||''));
+      if(physical&&!physical.product_id)return {...entry,
+        reason:'Aktuelle Vorratscharge ohne Produktzuordnung. Die Charge muss mit dem vorhandenen Produktstamm verknüpft werden, statt Nährwerte erneut zu erfassen.'};
+    }
     if(measuredPaprikaNutrition(item,data)?.complete)return null;
     const confirmed=confirmedAllocationNutrition(item,data);
     if(confirmed){
