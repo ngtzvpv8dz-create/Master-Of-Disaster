@@ -94,3 +94,15 @@ test('Unavailable ingredient is explicitly visible',()=>{
   assert.match(html,/Noch nicht im Vorrat vorhanden/);
   assert.match(html,/100 g/);
 });
+
+test('Generic tomato family demand from different linked variants is not double-stocked',()=>{
+  const a=stock('ch','Cherrytomaten','Tomaten',35);
+  const b=stock('dat','Datteltomaten','Tomaten',317);
+  const gaps=deriveShopping({inventory:[a,b],products:[],meals:[
+    meal('2026-11-14',[ingredient('Tomaten',200,'ch')]),
+    meal('2026-11-16',[ingredient('Tomaten',200,'dat')])
+  ]});
+  assert.equal(gaps.length,1);
+  assert.equal(gaps[0].missing,48);
+  assert.equal(gaps[0].required,400);
+});
