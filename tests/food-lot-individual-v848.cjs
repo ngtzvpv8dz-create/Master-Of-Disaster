@@ -17,7 +17,23 @@ async function scenario(browser,label){
   await page.waitForTimeout(1000);
   await page.waitForFunction(()=>window.__modAreaRuntimeV609,{timeout:30000});
   page.on('requestfailed',request=>{if(/food-v544|area-runtime/.test(request.url()))errors.push('REQUEST '+request.url()+' '+request.failure()?.errorText);});
-  const preloaded=await page.evaluate(()=>window.__modAreaRuntimeV609.preloadAll());
+  // A transient GitHub Pages / service-worker script load must not be confused
+  // with a FOOD UI regression. Retry preloading twice with a fresh URL;
+  // persistent failures still fail the browser test and remain visible in logs.
+  let preloaded=false;
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      preloaded=await page.evaluate(()=>window.__modAreaRuntimeV609.preloadAll());
+      if(preloaded===true)break;
+      throw new Error('Staged preload returned '+String(preloaded));
+    }catch(error){
+      if(attempt===2)throw new Error('Staged module loader failed after 3 attempts: '+error.message+' '+JSON.stringify(errors));
+      console.log('Transient module preload retry '+(attempt+1)+' '+label+': '+error.message);
+      await page.goto(base+'/?check=food-lot-v848-'+label+'&retry='+attempt,{waitUntil:'networkidle',timeout:60000});
+      await page.waitForFunction(()=>window.__modAreaRuntimeV609,{timeout:30000});
+      errors.length=0;
+    }
+  }
   if(preloaded!==true)throw new Error('Staged module loader not ready: '+JSON.stringify(errors));
   const openResult=await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('food'));
   await page.waitForTimeout(500);
