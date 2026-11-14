@@ -76,3 +76,14 @@ test('Cooking-time nutrition survives deletion of both lot and product',()=>{
   assert.equal(n.kcal,26.95);
   assert.equal(n.protein,.7546);
 });
+
+test('Completed source meal uses consumed grams plus separately eaten sides',()=>{
+  const source={id:'source',status:'completed',eaten_servings:.84,
+    food_meal_ingredients:[],prepared_sources_snapshot:{nutrition_consumed:{
+      kcal:1896.83,protein_g:101.58,fat_g:96.66,carbs_g:140.5}}};
+  const n=nutritionForMeal(source,new Map(),new Map([['source',source]]),
+    data,data,null);
+  assert.equal(n.complete,true);
+  assert.ok(Math.abs(n.kcal*.84-1896.83)<1e-9);
+  assert.ok(Math.abs(n.protein*.84-101.58)<1e-9);
+});
