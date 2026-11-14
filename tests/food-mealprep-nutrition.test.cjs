@@ -60,3 +60,19 @@ test('Separate side dishes are excluded before proportional scaling',()=>{
   assert.equal(n.complete,true);
   assert.ok(Math.abs(n.kcal-53.9*1216/2090)<1e-9);
 });
+
+test('Cooking-time nutrition survives deletion of both lot and product',()=>{
+  const sourceMeal={id:'source',status:'completed',prepared_servings:2,
+    food_meal_ingredients:[ingredient],prepared_sources_snapshot:{sources:[{
+      name:'Blockpaprika grün',inventory_id:'stock',unit:'Stück',quantity:1,
+      nutrition_per_100:{energy_kcal:35,protein_g:.98,fat_g:.21,carbohydrates_g:5.92}
+    }]}};
+  const meal={source_meal_id:'source',food_meal_ingredients:[],
+    prepared_sources_snapshot:{nutrition_portion:{source_meal_id:'source',
+      fraction:.5,exclude_ingredient_ids:[]}}};
+  const n=nutritionForMeal(meal,new Map(),new Map([['source',sourceMeal]]),
+    {inventory:[],lots:[],products:[]},{inventory:[],lots:[],products:[]},null);
+  assert.equal(n.complete,true);
+  assert.equal(n.kcal,26.95);
+  assert.equal(n.protein,.7546);
+});
