@@ -1097,7 +1097,7 @@
 
   function allocationMarkup(allocation,item){
     const parts=Array.isArray(allocation?.allocations)?allocation.allocations:[];
-    const missing=Math.max(0,Number(allocation?.remaining)||0);
+    const missing=Math.max(0,Number(allocation?.remaining??item?.quantity)||0);
     if(!parts.length&&missing<=0.0001)return '';
 
     const generic=familyText(ingredientName(item));
@@ -1126,7 +1126,7 @@
     if(missing>0.0001){
       html+='<div class="food-ingredient-allocation-line-v712 is-missing">'
         +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
-        +'<span class="food-allocation-copy-v741">fehlt im Vorrat</span>'
+        +'<span class="food-allocation-copy-v741">Noch nicht im Vorrat vorhanden</span>'
         +'<b>'+esc(fmtQty(missing,item?.unit))+'</b>'
         +'</div>';
     }
