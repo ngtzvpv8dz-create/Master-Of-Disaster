@@ -20,26 +20,25 @@ jobs:
           set -euo pipefail
           base="https://ngtzvpv8dz-create.github.io/Master-Of-Disaster"
           ready=0
-          for retry in {1..24}; do
+          # Test the deployed bytes rather than obsolete hardcoded version labels.
+          for retry in {1..18}; do
             if curl -fsSL --max-time 18 "$base/food-v544.js?ci=$GITHUB_SHA-$retry" -o /tmp/food-live.js \
+              && curl -fsSL --max-time 18 "$base/shopping-v678.js?ci=$GITHUB_SHA-$retry" -o /tmp/shopping-live.js \
               && curl -fsSL --max-time 18 "$base/area-runtime-v609.js?ci=$GITHUB_SHA-$retry" -o /tmp/area-live.js \
               && curl -fsSL --max-time 18 "$base/index.html?ci=$GITHUB_SHA-$retry" -o /tmp/index-live.html \
-              && grep -Fq 'data-food-discard-lot' /tmp/food-live.js \
-              && grep -Fq 'data-food-reopen-skipped' /tmp/food-live.js \
-              && grep -Fq 'manage_food_inventory_lot_v848' /tmp/food-live.js \
-              && grep -Fq '848-individual-lots' /tmp/area-live.js \
-              && grep -Fq '849-reopen' /tmp/area-live.js \
-              && grep -Fq '848-individual-lots' /tmp/index-live.html \
-              && grep -Fq '849-reopen' /tmp/index-live.html; then
+              && cmp -s food-v544.js /tmp/food-live.js \
+              && cmp -s shopping-v678.js /tmp/shopping-live.js \
+              && cmp -s area-runtime-v609.js /tmp/area-live.js \
+              && cmp -s index.html /tmp/index-live.html; then
               ready=1
-              echo "LIVE GitHub Pages serves Food individual lot version"
+              echo "LIVE GitHub Pages serves current FOOD, SHOPPING and loader files"
               break
             fi
-            echo "Waiting for live Food code $retry"
-            sleep 12
+            echo "Waiting for published current build $retry"
+            sleep 8
           done
           if [ "$ready" != 1 ]; then
-            echo "::error::Published Food version did not update"
+            echo "::error::Published FOOD/SHOPPING build does not match repository sources"
             exit 1
           fi
       - name: Install browser engines
