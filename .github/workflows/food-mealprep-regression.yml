@@ -1,0 +1,27 @@
+name: Food meal-prep regression tests
+on:
+  push:
+    paths:
+      - 'food-nutrition-v711.js'
+      - 'food-v544.js'
+      - 'tests/food-mealprep-nutrition.test.cjs'
+      - '.github/workflows/food-mealprep-regression.yml'
+  pull_request:
+    paths:
+      - 'food-nutrition-v711.js'
+      - 'food-v544.js'
+      - 'tests/food-mealprep-nutrition.test.cjs'
+jobs:
+  nutrition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JS syntax
+        run: |
+          node --check food-v544.js
+          node --check food-nutrition-v711.js
+      - name: Run nutrition regression tests
+        run: node --test tests/food-mealprep-nutrition.test.cjs
