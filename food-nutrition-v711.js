@@ -905,11 +905,11 @@
       }
       if(amount===null){
         // Prevent reusing weights from last month's pack for a new lot.
-        const measuredOn=String(product.product_data?.measurement_date||'');
+        const measuredOn=String(historicalProduct.product_data?.measurement_date||'');
         const boughtOn=String(lot?.purchased_on||'');
         if((unit==='scheibe'||unit==='scheiben')&&boughtOn&&measuredOn&&boughtOn>measuredOn)
           return invalid('neue Brotscheiben nicht einzeln gewogen');
-        amount=basisAmount({...item,quantity:count,label:String(part.label||item.label||'')},{product,stock});
+        amount=basisAmount({...item,quantity:count,label:String(part.label||item.label||'')},{product:historicalProduct,stock});
       }
       if(amount===null)return invalid('gesichertes Stückgewicht fehlt');
       const factor=amount/100;
