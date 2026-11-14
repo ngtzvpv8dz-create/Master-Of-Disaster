@@ -403,7 +403,9 @@
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
-      const amount=basisAmount({...item,quantity:part.take,unit:item.unit},{product,stock});
+      const gross=unambiguousCurrentStockGross(item,stock,data,Number(part.take));
+      const amount=gross!==null?gross:
+        basisAmount({...item,quantity:part.take,unit:item.unit},{product,stock});
       if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
       kcal+=nut.kcal*amount/100;
       protein+=nut.protein*amount/100;
@@ -427,7 +429,9 @@
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
-      const amount=basisAmount({...item,quantity:remaining,unit:item.unit},{product,stock:pinned});
+      const gross=pinned?unambiguousCurrentStockGross(item,pinned,data,remaining):null;
+      const amount=gross!==null?gross:
+        basisAmount({...item,quantity:remaining,unit:item.unit},{product,stock:pinned});
       if(amount===null)return {complete:false,missing:[name+' (Einheit)']};
       kcal+=nut.kcal*amount/100;
       protein+=nut.protein*amount/100;
@@ -715,6 +719,51 @@
     return size==='M'?54:size==='L'?63:null;
   }
 
+
+  // V908: One purchase weighing only. For whole fruit/vegetables nutrition uses
+  // the ORIGINAL GROSS weight, including peel, seeds, stems and cut-off tips.
+  // This intentionally overestimates edible calories; never demand net weighing.
+  function wholeProduceGrossPolicy(item,stock=null){
+    const label=text([itemName(item),stock?.name,stock?.family_name].filter(Boolean).join(' '));
+    if(/(?:tk|tiefkühl|gefroren|pulver|getrocknet|gewürfelt|streifen|saft|püree|mus|konserve|abgetropft)/.test(label))return false;
+    return /(?:paprika|banane|gurke|zucchini|möhre|möhren|karotte|aubergine|zwiebel|kiwi|apfel|äpfel|birne|avocado|mango|orange|zitrone|limette|melone|kürbis|radieschen|tomate|kartoffel)/.test(label);
+  }
+  function purchaseGrossWeightForPart(part,lot,item,stock){
+    if(!wholeProduceGrossPolicy(item,stock)||text(part?.unit||item?.unit)!=='stück')return null;
+    const count=number(part?.quantity);
+    if(count===null||count<=0)return null;
+    const gross=number(part?.gross_weight_g);
+    if(gross!==null&&gross>0)return gross*count;
+    // Read physical CURRENT lot weights, never historical product weights.
+    const batch=lot?.batch_data||{};
+    const weights=Array.isArray(batch.gross_weights_g)?batch.gross_weights_g:
+      Array.isArray(batch.remaining_piece_weights_g)?batch.remaining_piece_weights_g:null;
+    const ix=String(part?.piece_id||'').match(/:(\d+)$/);
+    if(Array.isArray(weights)&&ix){
+      const g=number(weights[Number(ix[1])-1]);
+      if(g!==null&&g>0)return g*count;
+    }
+    if(Array.isArray(weights)&&weights.length===1&&count===1){
+      const g=number(weights[0]);if(g!==null&&g>0)return g;
+    }
+    if(Array.isArray(weights)&&Number.isInteger(count)&&weights.length===count
+      &&weights.every(g=>number(g)!==null&&number(g)>0))
+      return weights.reduce((sum,g)=>sum+number(g),0);
+    const previous=number(part?.piece_weight_g);
+    return previous!==null&&previous>0?previous*count:null;
+  }
+  function unambiguousCurrentStockGross(item,stock,data,count){
+    if(!wholeProduceGrossPolicy(item,stock)||text(item?.unit)!=='stück')return null;
+    const total=number(stock?.quantity);
+    if(total===null||total<=0||count!==total)return null;
+    const live=(data?.lots||[]).filter(lot=>String(lot.inventory_id||'')===String(stock?.id)
+      &&(number(lot.unopened_packages)>0||number(lot.opened_remaining_quantity)>0));
+    if(live.length!==1)return null;
+    const weights=live[0]?.batch_data?.gross_weights_g||live[0]?.batch_data?.remaining_piece_weights_g;
+    if(!Array.isArray(weights)||weights.length!==count||!weights.every(g=>number(g)>0))return null;
+    return weights.reduce((sum,g)=>sum+number(g),0);
+  }
+
   // Use the user's recorded individual paprika weights and exact purchased lot
   // instead of a guessed per-piece average. Applied only to "Paprika rot".
   function measuredPaprikaNutrition(item,data){
@@ -741,13 +790,14 @@
     let used=0,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false;
     for(const part of parts){
       const take=number(part?.quantity);
-      const grams=number(part?.piece_weight_g);
+      const lot=(data?.lots||[]).find(row=>String(row.id)===String(part.lot_id||'')
+        &&String(row.inventory_id)===String(part.inventory_id||''));
+      const stock=(data?.inventory||[]).find(row=>String(row.id)===String(part.inventory_id||''));
+      const grams=purchaseGrossWeightForPart(part,lot,item,stock);
       const identity=String(part?.piece_id||'');
       if(!identity||selected.has(identity)||text(part?.unit)!=='stück'
         ||take===null||take<=0||grams===null||grams<=0)return null;
       selected.add(identity);
-      const lot=(data?.lots||[]).find(row=>String(row.id)===String(part.lot_id||'')
-        &&String(row.inventory_id)===String(part.inventory_id||''));
       const product=lot&&(data?.products||[]).find(row=>String(row.id)===String(lot.product_id||''));
       if(!product)return null;
       const n=nutritionOf(product);
@@ -894,6 +944,10 @@
 
       let amount=measuredProduceGrams?number(part.actual_weight_g):null;
       const unit=text(item.unit);
+      if(unit==='stück'){
+        const gross=purchaseGrossWeightForPart(part,lot,item,stock);
+        if(gross!==null)amount=gross;
+      }
       if((unit==='scheibe'||unit==='scheiben')&&
           part.estimated_not_measured!==true){
         // A verified weighing overrides stale product-level weights.
@@ -902,6 +956,9 @@
         if(grams!==null&&grams>0)amount=grams;
         else if(sliceWeights?.length===count&&sliceWeights.every(weight=>weight!==null&&weight>0))
           amount=sliceWeights.reduce((sum,weight)=>sum+weight,0);
+      }
+      if(amount===null&&unit==='stück'&&wholeProduceGrossPolicy(item,stock)){
+        return invalid('Bruttogewicht aus der Einkaufswiegung fehlt');
       }
       if(amount===null){
         // Prevent reusing weights from last month's pack for a new lot.
@@ -1048,13 +1105,11 @@
     if(confirmed){
       if(!confirmed.complete){
         const missing=confirmed.missing.join(', ');
-        // The current red pepper has a complete nutrient profile but only
-        // GROSS weights (with stem/seeds). Ask for edible net grams, not for
-        // another manufacturer nutrition label or a fabricated 268g serving.
-        if(text(name)==='paprika rot'&&text(item.unit)==='stück'
-           &&/gesichertes Stückgewicht fehlt|Stückgewicht fehlt/.test(missing))
-          return {...entry,needsWeight:true,
-            reason:'Nährwertprofil ist bereits zugeordnet. Bitte nach dem Entkernen das essbare Nettogewicht der roten Paprika wiegen. 268 g brutto sind keine essbare Nährwertmenge.'};
+        // Never ask for a second, cleaned/net weighing of whole produce.
+        if(wholeProduceGrossPolicy(item)&&text(item.unit)==='stück'
+           &&/Bruttogewicht aus der Einkaufswiegung fehlt|gesichertes Stückgewicht fehlt|Stückgewicht fehlt/.test(missing))
+          return {...entry,missingPurchaseWeight:true,
+            reason:'Nährwertprofil ist vorhanden. Bruttogewicht vom Einkauf nicht dokumentiert; keine zweite Nettowiegung beim Kochen.'};
         return {...entry,reason:missing};
       }
       if(confirmed.fat===null||confirmed.carbs===null)
@@ -1321,7 +1376,7 @@
             +'<strong>'+alarmEscape((target.type==='meal'?'Mahlzeit '+(target.date||''):target.type==='product'?'Vorrat/Produkt':'Rezept')
               +' · '+target.title)+'</strong>'
             +'<small>'+alarmEscape(target.issues.map(issue=>
-               (issue.needsWeight?'Mengenprüfung: ':issue.provisional?'Hinweis: ':'Fehler: ')+issue.name+': '+issue.reason).join(' | '))+'</small>'
+               (issue.missingPurchaseWeight?'Gewichtsdokumentation: ':issue.provisional?'Hinweis: ':'Fehler: ')+issue.name+': '+issue.reason).join(' | '))+'</small>'
             +'<span aria-hidden="true">↗</span>'
           +'</button>'
         +'</div>').join(''):'<p>Keine offenen Nährwertpunkte in geplanten Mahlzeiten und Rezepten.</p>')
@@ -1363,8 +1418,8 @@
     let note=card.querySelector('[data-food-nutrition-card-warning]');
     if(!issues.length){card.classList.remove('food-nutrition-meal-bad-v795');if(note)note.remove();return;}
     card.classList.add('food-nutrition-meal-bad-v795');
-    const onlyEdibleWeight=issues.length>0&&issues.every(issue=>issue.needsWeight===true);
-    const summary=(onlyEdibleWeight?'⚖ Essbares Nettogewicht noch wiegen: ':'⚠ Nährwerte prüfen: ')
+    const onlyPurchaseWeight=issues.length>0&&issues.every(issue=>issue.missingPurchaseWeight===true);
+    const summary=(onlyPurchaseWeight?'⚖ Einkaufs-Bruttogewicht nicht dokumentiert: ':'⚠ Nährwerte prüfen: ')
       +[...names].map(name=>issues.find(issue=>key(issue.name)===name)?.name||name).join(', ');
     if(!note){
       note=document.createElement('div');
