@@ -112,6 +112,7 @@ async function scenario(browser,label){
   await modal.locator('input[name="package_quantity"]').fill('400');
   await modal.locator('input[name="unopened"]').fill('1');
   await modal.locator('input[name="opened_remaining"]').fill('0');
+  await modal.locator('input[name="best_before_label"]').fill('10/2030');
   await modal.locator('button[type="submit"]').click();
   await page.waitForFunction(()=>window.__foodLotTest.actions.length===3,{timeout:10000});
   await page.waitForFunction(()=>document.querySelectorAll('[data-food-lot-id]').length===2,{timeout:10000});
