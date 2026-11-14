@@ -4764,16 +4764,18 @@
     const countedUnit=/^(päckchen|stück|scheibe[n]?|riegel|stick[s]?|kapsel[n]?|tablette[n]?|portion[en]?|beutel)$/i.test(String(item.unit||'').trim());
     const packageSize=Number(existing?.package_quantity)||(countedUnit?1:Number(item.usage_content_quantity)||0);
     const productSelect=products.length
-      ?'<label>Produkt<select name="product_id"><option value="">Ohne Produktzuordnung</option>'+
+      ?'<label>Produkt<select name="product_id" required><option value="">Produkt auswählen</option>'+
         products.map(p=>'<option value="'+esc(p.id)+'" '+(products.length===1?'selected':'')+'>'+esc(lotProductTitle(p)||item.name)+'</option>').join('')+
         '</select></label>'
       :'';
     const html='<form><p class="food-modal-copy-v544">Neue physische Charge von <strong>'+esc(item.name)+'</strong> anlegen. Bestehende Chargen bleiben unverändert.</p>'+
       productSelect+
+      (!products.length?'<p class="food-modal-copy-v544">⚠ Produktstamm fehlt. Die neue Charge bleibt bis zur Produktzuordnung ausdrücklich unvollständig.</p>':'')+
       '<label>Packungsgröße ('+esc(item.unit||'Einheit')+')<input name="package_quantity" type="number" min="0.001" step="any" inputmode="decimal" value="'+esc(packageSize||'')+'" required></label>'+
       '<label>Anzahl ungeöffneter Packungen<input name="unopened" type="number" min="0" step="1" value="1" required></label>'+
       '<label>Restmenge angebrochen ('+esc(item.unit||'Einheit')+')<input name="opened_remaining" type="number" min="0" step="any" inputmode="decimal" value="0" required></label>'+
-      '<label>MHD (z. B. 10/2030)<input name="best_before_label" placeholder="MM/JJJJ oder TT.MM.JJJJ"></label>'+
+      '<label>MHD (z. B. 0827 = 08/2027)<input name="best_before_label" placeholder="MM/JJJJ oder TT.MM.JJJJ"></label>'+
+      '<label><input type="checkbox" name="mhd_unknown"> MHD unbekannt / nicht lesbar, bewusst offen lassen</label>'+
       '<label>Lagerort<input name="storage_location" placeholder="z. B. Vorratsschrank, Kühlschrank"></label>'+
       '<label>Notiz<input name="note" placeholder="optional"></label>'+
       '<p class="food-modal-copy-v544">Für eine angebrochene Dose: ungeöffnet = 0 und die tatsächliche Restmenge eintragen.</p>'+
@@ -4783,11 +4785,16 @@
       const pack=Number(form.get('package_quantity'));
       if(!Number.isInteger(unopened)||unopened<0||!Number.isFinite(opened)||opened<0||!Number.isFinite(pack)||pack<=0)
         throw new Error('Bitte gültige Chargenmengen eingeben.');
+      if(products.length&&!String(form.get('product_id')||'').trim())
+        throw new Error('Bitte das bekannte Produkt zuordnen.');
+      const expiry=normalizeInventoryMhdLabel(form.get('best_before_label'));
+      if(!expiry&&form.get('mhd_unknown')!=='on')
+        throw new Error('MHD eingeben oder ausdrücklich als unbekannt markieren.');
       return saveLotAction({
         p_action:'create',p_inventory_id:item.id,p_lot_id:null,p_expected_updated_at:null,
         p_unopened:unopened,p_opened_remaining:opened,p_package_quantity:pack,
         p_product_id:String(form.get('product_id')||'')||null,
-        p_best_before_label:String(form.get('best_before_label')||''),
+        p_best_before_label:expiry,
         p_storage_location:String(form.get('storage_location')||''),
         p_note:String(form.get('note')||''),p_reason:'Neue Charge einzeln hinzugefügt'
       });
@@ -4806,7 +4813,8 @@
       '<label>Packungsgröße ('+esc(packUnit)+')<input name="package_quantity" type="number" min="0.001" step="any" inputmode="decimal" value="'+esc(lot.package_quantity||'')+'" required></label>'+
       '<label>Ungeöffnete Packungen<input name="unopened" type="number" min="0" step="1" value="'+esc(lot.unopened_packages||0)+'" required></label>'+
       '<label>Angebrochene Restmenge ('+esc(openUnit)+')<input name="opened_remaining" type="number" min="0" step="any" inputmode="decimal" value="'+esc(lot.opened_remaining_quantity||0)+'" required></label>'+
-      '<label>MHD<input name="best_before_label" value="'+esc(lot.best_before_label||'')+'" placeholder="MM/JJJJ"></label>'+
+      '<label>MHD<input name="best_before_label" value="'+esc(lot.best_before_label||'')+'" placeholder="MM/JJJJ (0827 möglich)"></label>'+
+      '<label><input type="checkbox" name="mhd_unknown"> MHD unbekannt / nicht lesbar, bewusst offen lassen</label>'+
       '<label>Lagerort<input name="storage_location" value="'+esc(lot.storage_location||'')+'" placeholder="z. B. Kühlschrank"></label>'+
       '<label>Notiz<input name="note" value="'+esc(lot.note||'')+'"></label>'+
       '<p class="food-modal-copy-v544">Packung geöffnet? Anzahl ungeöffneter Packungen entsprechend reduzieren und tatsächliche Restmenge eintragen.</p>'+
@@ -4815,10 +4823,13 @@
       const unopened=Number(form.get('unopened')),opened=Number(form.get('opened_remaining')),pack=Number(form.get('package_quantity'));
       if(!Number.isInteger(unopened)||unopened<0||!Number.isFinite(opened)||opened<0||!Number.isFinite(pack)||pack<=0)
         throw new Error('Bitte gültige Chargenmengen eintragen.');
+      const expiry=normalizeInventoryMhdLabel(form.get('best_before_label'));
+      if(!expiry&&form.get('mhd_unknown')!=='on')
+        throw new Error('MHD eingeben oder ausdrücklich als unbekannt markieren.');
       return saveLotAction({
         p_action:'update',p_inventory_id:item.id,p_lot_id:lot.id,p_expected_updated_at:lot.updated_at,
         p_unopened:unopened,p_opened_remaining:opened,p_package_quantity:pack,
-        p_product_id:null,p_best_before_label:String(form.get('best_before_label')||''),
+        p_product_id:lot.product_id||null,p_best_before_label:expiry,
         p_storage_location:String(form.get('storage_location')||''),
         p_note:String(form.get('note')||''),p_reason:'Charge manuell bearbeitet'
       });
