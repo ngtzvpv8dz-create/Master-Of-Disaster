@@ -49,4 +49,6 @@ jobs:
       - name: Verify each Food lot on actual published website
         env:
           FOOD_LOT_TEST_BASE_URL: https://ngtzvpv8dz-create.github.io/Master-Of-Disaster
-        run: node tests/food-lot-individual-v848.cjs
+        run: |
+          node tests/food-lot-individual-v848.cjs
+          node tests/shopping-live-mobile-v905.cjs
