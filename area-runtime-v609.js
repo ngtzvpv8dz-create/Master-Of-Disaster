@@ -54,7 +54,7 @@
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261113-onion-partial-v747',
       './food-v544.js?v=20261114-mhd-traceability-v906',
-      './food-nutrition-v711.js?v=20261114-redpaprika-net-v907',
+      './food-nutrition-v711.js?v=20261114-once-gross-v908',
       './food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'
     ],
     shopping:[
@@ -63,7 +63,7 @@
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261113-onion-partial-v747',
       './food-v544.js?v=20261114-mhd-traceability-v906',
-      './food-nutrition-v711.js?v=20261114-redpaprika-net-v907',
+      './food-nutrition-v711.js?v=20261114-once-gross-v908',
       './shopping-v678.js?v=20261114-shopping-dedupe-v904'
     ],
     kistology:[
@@ -153,9 +153,9 @@
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-v544.js?v=20261114-mhd-traceability-v906',
-      './food-nutrition-v711.js?v=20261114-redpaprika-net-v907','./food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'],
+      './food-nutrition-v711.js?v=20261114-once-gross-v908','./food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'],
     shopping:['./food-v544.js?v=20261114-mhd-traceability-v906',
-      './food-nutrition-v711.js?v=20261114-redpaprika-net-v907','./shopping-v678.js?v=20261114-shopping-dedupe-v904'],
+      './food-nutrition-v711.js?v=20261114-once-gross-v908','./shopping-v678.js?v=20261114-shopping-dedupe-v904'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
