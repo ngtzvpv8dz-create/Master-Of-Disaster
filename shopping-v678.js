@@ -94,7 +94,7 @@
     if(/^(?:gurke|salatgurke)(?: frisch)?$/.test(n))return 'Salatgurke';
     if(/^blattsalat(?: frisch| roh)?$/.test(n))return 'Blattsalat (frisch)';
     if(/^hahnchenbrust(?:filet)?(?: frisch)?$/.test(n))return 'Hähnchenbrustfilet';
-    if(/^(?:mageres? )?(?:rinderhack(?:fleisch)?|hackfleisch)(?: 5(?: fett)?)?$/.test(n))return 'Mageres Rinderhack (ca. 5 % Fett)';
+    if(/^(?:mageres? )?(?:rinderhack(?:fleisch)?|hackfleisch)(?: light)?(?: 5(?: fett)?)?$/.test(n))return 'Mageres Rinderhack (ca. 5 % Fett)';
     if(/^joghurt griechischer art(?: 2)?$/.test(n))return 'Joghurt griechischer Art (2 % Fett)';
     if(/^naturjoghurt(?: fettarm)?(?: 1 5)?$/.test(n))return 'Naturjoghurt mild (1,5 % Fett)';
     if(/^kiwi(?: essbar)?$/.test(n))return 'Kiwi';
@@ -132,7 +132,7 @@
     if(/^zitronen?$/.test(n))return 'Zitrone';
     if(/^avocado(?: hass frisch)?$/.test(n))return 'Avocado Hass (Stück)';
     if(/^tk blattspinat(?: monatsreserve)?$|^blattspinat tk$/.test(n))return 'Blattspinat TK';
-    if(/^tomaten(?: warm| roh| frisch)?$/.test(n))return 'Tomaten (frisch, Sorte prüfen)';
+    if(/^tomaten(?: warm| roh| frisch)?$/.test(n))return 'Tomaten (frisch)';
     if(/^paprika roh$/.test(n))return 'Paprika (frisch)';
     if(/^paprika bunt$/.test(n))return 'Paprika bunt (frisch)';
     if(/^senf$/.test(n))return 'Senf (scharf)';
@@ -529,7 +529,7 @@
         ?' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' für diesen Einkaufsblock übrig'
         :'';
       const packSuggestion=shoppingPackSuggestion(item);
-      const tomatoStockDetail=shoppingFamilyLabel(item.label)==='Tomaten (frisch, Sorte prüfen)'
+      const tomatoStockDetail=shoppingFamilyLabel(item.label)==='Tomaten (frisch)'
         ?inventory.filter(stock=>shoppingNormalize(stock.family_name)==='tomaten'
           &&Number(stock.quantity)>0&&stock.unit==='g')
           .map(stock=>fmtQty(stock.quantity,'g')+' '+String(stock.name||'Tomaten'))
@@ -655,7 +655,7 @@
       if(/^h milch(?: 1 5)?$|^milch(?: 1 5)?$/.test(n))return 'milk_15';
       if(/eier? (gro(?:ss)e )?m$/.test(n))return 'eggs_m';
       if(/hahnchenbrust(?:filet)?/.test(n))return 'chicken_breast';
-      if(/mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5/.test(n))return 'lean_beef_mince';
+      if(/mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5|rinderhack.*light/.test(n))return 'lean_beef_mince';
       if(/^karotten(?: frisch| warm| roh| rohkost)?$/.test(n))return 'carrots';
       if(/^naturjoghurt/.test(n))return 'plain_yogurt';
       if(/^frischkase(?: leicht)?$/.test(n))return 'cream_cheese';
@@ -958,7 +958,7 @@
     if(row.general?.source==='food-month-audit'
       &&/monatsreserve/i.test(String(row.general.label||'')))
       lines.push('Optionaler Vorratskauf');
-    if(row.label==='Tomaten (frisch, Sorte prüfen)'&&row.source==='food-gap'){
+    if(row.label==='Tomaten (frisch)'&&row.source==='food-gap'){
       const available=(state.food?.inventory||[])
         .filter(item=>item.is_active!==false&&shoppingNormalize(item.family_name)==='tomaten'
           &&Number(item.quantity)>0)
