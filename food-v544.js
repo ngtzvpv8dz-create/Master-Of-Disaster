@@ -804,7 +804,8 @@
         (chicken?'':lotDateLabel),
         lotId:String(entry.lot.id||''),
         // 'previously frozen and already thawed' is not a new thaw task.
-        frozen:entry.frozen});
+        frozen:entry.frozen,
+        indivisible:entry.frozen&&!entry.thaw});
     }
 
     let skip=Math.max(0,Number(consumedBefore)||0);
@@ -816,6 +817,8 @@
       if(skip>=segmentQty-.0001){skip=Math.max(0,skip-segmentQty);continue;}
       const available=Math.max(0,segmentQty-skip);
       skip=0;
+      // Frozen physical packs cannot be split before thawing.
+      if(segment.indivisible&&(skip>0.0001||available>remaining+0.0001))continue;
       const quantity=Math.min(available,remaining);
       if(quantity<=0)continue;
       const previous=parts[parts.length-1];
@@ -825,12 +828,8 @@
       remaining-=quantity;
     }
 
-    if(remaining>0.0001){
-      const label=familyAllocationProductLabel(stock);
-      const previous=parts[parts.length-1];
-      if(previous&&previous.label===label&&previous.frozen===false)previous.quantity+=remaining;
-      else parts.push({label,quantity:remaining,frozen:false});
-    }
+    // No imaginary fallback quantity: untracked legacy stock is already
+    // represented by an explicit segment above.
     return parts;
   }
 
@@ -934,7 +933,9 @@
           unit:item?.unit||unit
         });
       }
-      remaining-=take;
+      remaining-=parts.length
+        ?parts.reduce((sum,part)=>sum+(Number(part.quantity)||0),0)
+        :take;
     }
     return allocations.length?{allocations,remaining:Math.max(0,remaining)}:null;
   }
@@ -982,16 +983,11 @@
           unit:item?.unit||unit,
           frozen:part.frozen===true
         }))
-      :(take>0?[{
-          inventoryId:String(stock.id),
-          label:familyAllocationProductLabel(stock),
-          quantity:take,
-          unit:item?.unit||unit
-        }]:[]);
+      :[];
 
     return {
       allocations,
-      remaining:Math.max(0,q-take),
+      remaining:Math.max(0,q-allocations.reduce((sum,part)=>sum+(Number(part.quantity)||0),0)),
       specific:true
     };
   }
