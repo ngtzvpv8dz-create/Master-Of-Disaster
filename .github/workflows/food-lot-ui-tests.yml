@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   lot-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -15,9 +15,9 @@ jobs:
           node-version: '20'
       - name: Install Chromium and iPhone WebKit
         run: |
-          npm init -y >/dev/null 2>&1
-          npm install playwright@1.48.2 >/dev/null 2>&1
-          npx playwright install --with-deps chromium webkit >/dev/null 2>&1
+          npm init -y
+          npm install --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium webkit
       - name: Test independent Food lot rendering, update, removal and creation
         run: node tests/food-lot-individual-v848.cjs
       - name: Test recipe instructions, water and fixed drink mixtures
