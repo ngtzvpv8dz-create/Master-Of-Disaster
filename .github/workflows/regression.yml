@@ -8,6 +8,9 @@ permissions:
 jobs:
   browser:
     runs-on: ubuntu-24.04
+    # Browsers AND Linux dependencies preinstalled; avoid flaky/slow apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
     steps:
       - uses: actions/checkout@v4
         with:
@@ -166,7 +169,7 @@ jobs:
         run: |
           npm init -y
           npm install --no-save playwright@1.48.2
-          npx playwright install --with-deps chromium webkit
+          node -e "const p=require('playwright'); console.log('Chromium:',p.chromium.executablePath(),'WebKit:',p.webkit.executablePath())"
           python3 -m http.server 8787 >/tmp/mod-http.log 2>&1 &
           node <<'NODE'
           const {chromium,webkit}=require('playwright');
