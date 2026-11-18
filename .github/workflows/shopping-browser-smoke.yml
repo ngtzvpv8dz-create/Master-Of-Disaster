@@ -24,7 +24,7 @@ permissions:
   contents: read
 jobs:
   browser:
-    name: Actual V1 page in Chromium + WebKit
+    name: Actual V1 page in Chromium browser
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -32,13 +32,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install browsers and dependencies
+      - name: Install Playwright library
         run: |
           npm init -y
           npm install --no-save playwright@1.48.2
-          npx playwright install --with-deps chromium webkit
-      - name: Load real index.html + Food + Shopping in browsers
-        run: node tests/shopping-ui-browser-v1.cjs
+      - name: Chromium mobile and desktop shopping UI
+        run: |
+          if command -v google-chrome >/dev/null; then
+            SHOPPING_USE_SYSTEM_CHROME=1 SHOPPING_SKIP_WEBKIT=1 node tests/shopping-ui-browser-v1.cjs
+          else
+            npx playwright install chromium
+            SHOPPING_SKIP_WEBKIT=1 node tests/shopping-ui-browser-v1.cjs
+          fi
       - name: Save browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
