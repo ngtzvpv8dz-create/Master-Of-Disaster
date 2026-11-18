@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V815';
+  const VERSION='V816';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
@@ -539,7 +539,8 @@
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),
         section:inCart?'cart':(delayed?'later':'now'),inCart,
-        primary:'Kaufen '+fmtQty(buyQuantity,buyUnit)+(skyrPack?' ('+skyrPack.packs+' Becher)':''),
+        primary:(item.stockUnverified?'Bestand prüfen · ggf. kaufen ':'Kaufen ')
+          +fmtQty(buyQuantity,buyUnit)+(skyrPack?' ('+skyrPack.packs+' Becher)':''),
         currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
         nextUseDate:firstUpcomingUse,packHint:packSuggestion,
         secondary:(usePlan?'Rezeptbedarf:\n'+usePlan.replace(/ · /g,'\n'):'Planbedarf: '+fmtQty(item.required,item.unit))
@@ -557,7 +558,8 @@
         foodAction:{
           stockName,stockQuantity,stockUnit,stockId,cartKey:key
         },
-        flags:{converted:!!item.convertedStock,unitMismatch:!!item.unitMismatch}
+        flags:{converted:!!item.convertedStock,unitMismatch:!!item.unitMismatch,
+          stockUnverified:!!item.stockUnverified}
       });
     });
 
@@ -600,7 +602,21 @@
 
     (state.general||[]).forEach(item=>{
       // Food demand is derived live from meals + inventory. Audit snapshots must never become a second shopping source.
-      if(item.source==='food-audit')return;
+      if(['food-audit','food-plan-audit','food_plan_audit','food-month-audit']
+        .includes(String(item.source||'')))return;
+      // V1/V816: Historical automatic recipe purchases are not independent
+      // purchase orders. Once stock, meals or a checkout changes, show them
+      // only if a CURRENT dynamic deficit still exists in the same buying
+      // window. Preserve deliberate cart choices, extras and all manual rows.
+      if(/^food-(?:plan|plan-adjustment|verified)$/.test(String(item.source||''))
+        &&item.status!=='cart'&&item.status!=='extra'){
+        const plannedDate=effectiveShoppingDate(item.needed_by)||todayIso();
+        const label=shoppingFamilyLabel(item.label||'');
+        const stillNeeded=(food.gaps||[]).some(gap=>
+          shoppingFamilyLabel(gap.label||'')===label
+          &&(effectiveShoppingDate(gap.buyFrom)||todayIso())===plannedDate);
+        if(!stillNeeded)return;
+      }
       const shoppingDate=effectiveShoppingDate(item.needed_by);
       const section=item.status==='cart'?'cart':item.status==='extra'?'extra'
         :shoppingDate&&shoppingDate>todayIso()?'later':'now';
@@ -943,6 +959,10 @@
     }
     if(row.unmatchedPlannedPurchase)return 'Kein passender Rezeptbedarf gefunden · Kauf prüfen';
     const lines=[];
+    if(row.flags?.stockUnverified)
+      lines.push('⚠️ Bestand nicht gewogen: vor Einkauf prüfen oder passende Packung mitnehmen');
+    if(row.flags?.unitMismatch)
+      lines.push('⚠️ Packungsinhalt bzw. verfügbares Gewicht prüfen');
     const when=row.nextUseDate||(!row.general&&row.neededDate)||null;
     if(when)lines.push('Nächster Bedarf: '+fmtDate(when));
     if(row.general?.purchase_data?.measure_each_piece_gross_g===true){
