@@ -7,7 +7,10 @@ permissions:
 jobs:
   lot-browser:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    # Browsers AND Linux dependencies preinstalled; avoid flaky/slow apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +20,7 @@ jobs:
         run: |
           npm init -y
           npm install --no-save playwright@1.48.2
-          npx playwright install --with-deps chromium webkit
+          node -e "const p=require('playwright'); console.log('Chromium:',p.chromium.executablePath(),'WebKit:',p.webkit.executablePath())"
       - name: Test independent Food lot rendering, update, removal and creation
         run: node tests/food-lot-individual-v848.cjs
       - name: Test recipe instructions, water and fixed drink mixtures
