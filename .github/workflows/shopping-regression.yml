@@ -1,0 +1,27 @@
+name: V1 Shopping Regression
+on:
+  push:
+    branches:
+      - main
+      - fix/v1-shopping-planner-20261118
+    paths:
+      - food-v544.js
+      - shopping-v678.js
+      - tests/shopping-v1.test.cjs
+      - .github/workflows/shopping-regression.yml
+  pull_request:
+    paths:
+      - food-v544.js
+      - shopping-v678.js
+      - tests/shopping-v1.test.cjs
+      - .github/workflows/shopping-regression.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    name: Verify shopping planner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node.js test suite
+        run: node --test tests/shopping-v1.test.cjs
