@@ -9,7 +9,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const port=8897;
-const base=String(process.env.SHOPPING_TEST_BASE_URL||('http://127.0.0.1:'+port)).replace(/\\/$/,'');
+const base=String(process.env.SHOPPING_TEST_BASE_URL||('http://127.0.0.1:'+port)).replace(/[/]$/,'');
 const server=process.env.SHOPPING_TEST_BASE_URL?null:
   spawn('python3',['-m','http.server',String(port)],{stdio:'ignore'});
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
