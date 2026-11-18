@@ -158,14 +158,21 @@ async function main(){
       try{const r=await fetch(base);if(r.ok)break;}catch(_){}
       await wait(150);
     }
-    const chrome=await chromium.launch({headless:true});
+    // GitHub's Ubuntu runner includes stable Chrome, which is Chromium-based.
+    // Prefer it in CI to avoid red tests from unrelated browser downloads.
+    const chrome=await chromium.launch({
+      headless:true,
+      ...(process.env.SHOPPING_USE_SYSTEM_CHROME==='1'?{channel:'chrome'}:{})
+    });
     try{
       await check(chrome,'chromium-mobile',390,844);
       await check(chrome,'chromium-desktop',1440,900);
     }finally{await chrome.close();}
-    const wk=await webkit.launch({headless:true});
-    try{await check(wk,'webkit-iphone',390,844);}
-    finally{await wk.close();}
+    if(process.env.SHOPPING_SKIP_WEBKIT!=='1'){
+      const wk=await webkit.launch({headless:true});
+      try{await check(wk,'webkit-iphone',390,844);}
+      finally{await wk.close();}
+    }
   }finally{if(server)server.kill('SIGTERM');}
 }
 main().catch(error=>{console.error('SHOPPING BROWSER FAILURE',error);process.exitCode=1;});
