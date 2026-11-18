@@ -604,6 +604,19 @@
       // Food demand is derived live from meals + inventory. Audit snapshots must never become a second shopping source.
       if(['food-audit','food-plan-audit','food_plan_audit','food-month-audit']
         .includes(String(item.source||'')))return;
+      // V1/V816: Historical automatic recipe purchases are not independent
+      // purchase orders. Once stock, meals or a checkout changes, show them
+      // only if a CURRENT dynamic deficit still exists in the same buying
+      // window. Preserve deliberate cart choices, extras and all manual rows.
+      if(/^food-(?:plan|plan-adjustment|verified)$/.test(String(item.source||''))
+        &&item.status!=='cart'&&item.status!=='extra'){
+        const plannedDate=effectiveShoppingDate(item.needed_by)||todayIso();
+        const label=shoppingFamilyLabel(item.label||'');
+        const stillNeeded=(food.gaps||[]).some(gap=>
+          shoppingFamilyLabel(gap.label||'')===label
+          &&(effectiveShoppingDate(gap.buyFrom)||todayIso())===plannedDate);
+        if(!stillNeeded)return;
+      }
       const shoppingDate=effectiveShoppingDate(item.needed_by);
       const section=item.status==='cart'?'cart':item.status==='extra'?'extra'
         :shoppingDate&&shoppingDate>todayIso()?'later':'now';
