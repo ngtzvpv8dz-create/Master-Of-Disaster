@@ -112,6 +112,10 @@ async function check(browser,label,width,height){
       const x=window.__modShoppingV678?.getState?.();
       return Array.isArray(x?.food?.gaps)&&x.food.gaps.length>=3;
     },{timeout:20000});
+    // Later shopping dates are collapsed by default. Open the actual
+    // date group as a user would, then verify its visible purchase amounts.
+    const later=page.locator('#modShoppingV643 details.shopping-date-group-v678');
+    if(await later.count())await later.first().locator('summary').click();
     const text=await root.innerText();
     assert.match(text,/EINKAUFSLISTE/);
     assert.match(text,/Hähnchenbrustfilet/);
