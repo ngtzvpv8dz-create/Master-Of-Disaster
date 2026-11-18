@@ -7,7 +7,10 @@ permissions:
   pull-requests: read
 jobs:
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    # Browsers AND Linux dependencies preinstalled; avoid flaky/slow apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,40 +39,41 @@ jobs:
           node --check remote-historical-archive-import-v541.js
           node --check food-stock-resolver-v746.js
           node --check food-v544.js
-          node --test tests/food-plan-cutoff-v852.test.cjs
-          node tests/food-reopen-skipped-v849.test.cjs
+          failed=0
+          node --test tests/food-plan-cutoff-v852.test.cjs || failed=1
+          node tests/food-reopen-skipped-v849.test.cjs || failed=1
           grep -q 'data-food-remove-meal-ingredient' food-v544.js
           grep -q 'removeMealIngredient' food-v544.js
           grep -q 'food-ingredient-remove-v751' food-v544.css
           grep -q 'saveMealIngredientAllocationDirect' food-v544.js
           ! grep -Fq "supabase.rpc('set_food_meal_ingredient_allocation'" food-v544.js
-          node tests/v746-food-stock-resolver.test.cjs
-          node tests/banana-shopping-units-20261009.test.cjs
-          node tests/shopping-window-isoclear-wholewrap-oct15.test.cjs
-          node --test tests/shopping-retailer-badge-v851.test.cjs
-          node --test tests/shopping-readable-dedupe-v853.test.cjs
-          node --test tests/shopping-load-hotfix-v854.test.cjs
-          node --test tests/shopping-monthly-coherence-v855.test.cjs
-          node tests/food-nutrition-alarm-v795.test.cjs
-          node tests/asia-vegetable-family-v796.test.cjs
-          node tests/dingsi-lab-v31.test.cjs
-          node tests/dingsi-lab-home-v32.test.cjs
-          node tests/dingsi-lab-home-comic-v48.test.cjs
-          node tests/dingsi-lab-icon-variacionen-v1.test.cjs
-          node tests/dingsi-lab-icon-cloud-v41.test.cjs
-          node tests/dingsi-lab-icon-cloud-v43.test.cjs
-          node tests/dingsi-lab-icon-cloud-v44.test.cjs
-          node tests/dingsi-lab-icons-fullset-v45.test.cjs
-          node tests/dingsi-lab-icons-approved-v46.test.cjs
-          node tests/dingsi-lab-icons-exact-v46.test.cjs
-          node tests/dingsi-lab-icons-pastel-v47.test.cjs
-          node tests/dingsi-lab-icons-pastel-used-v47.test.cjs
+          node tests/v746-food-stock-resolver.test.cjs || failed=1
+          node tests/banana-shopping-units-20261009.test.cjs || failed=1
+          node tests/shopping-window-isoclear-wholewrap-oct15.test.cjs || failed=1
+          node --test tests/shopping-retailer-badge-v851.test.cjs || failed=1
+          node --test tests/shopping-readable-dedupe-v853.test.cjs || failed=1
+          node --test tests/shopping-load-hotfix-v854.test.cjs || failed=1
+          node --test tests/shopping-monthly-coherence-v855.test.cjs || failed=1
+          node tests/food-nutrition-alarm-v795.test.cjs || failed=1
+          node tests/asia-vegetable-family-v796.test.cjs || failed=1
+          node tests/dingsi-lab-v31.test.cjs || failed=1
+          node tests/dingsi-lab-home-v32.test.cjs || failed=1
+          node tests/dingsi-lab-home-comic-v48.test.cjs || failed=1
+          node tests/dingsi-lab-icon-variacionen-v1.test.cjs || failed=1
+          node tests/dingsi-lab-icon-cloud-v41.test.cjs || failed=1
+          node tests/dingsi-lab-icon-cloud-v43.test.cjs || failed=1
+          node tests/dingsi-lab-icon-cloud-v44.test.cjs || failed=1
+          node tests/dingsi-lab-icons-fullset-v45.test.cjs || failed=1
+          node tests/dingsi-lab-icons-approved-v46.test.cjs || failed=1
+          node tests/dingsi-lab-icons-exact-v46.test.cjs || failed=1
+          node tests/dingsi-lab-icons-pastel-v47.test.cjs || failed=1
+          node tests/dingsi-lab-icons-pastel-used-v47.test.cjs || failed=1
           node --check food-nutrition-v711.js
-          node --test tests/food-observer-performance-v891.test.cjs
-          node --test tests/food-recipe-macro-nutrition-v843.test.cjs
-          node --test tests/food-confirmed-provenance-20261112.test.cjs
-          node --test tests/food-ingredient-reference-fallback-v844.test.cjs
-          node --test tests/food-central-nutrition-audit-v845.test.cjs
+          node --test tests/food-observer-performance-v891.test.cjs || failed=1
+          node --test tests/food-recipe-macro-nutrition-v843.test.cjs || failed=1
+          node --test tests/food-confirmed-provenance-20261112.test.cjs || failed=1
+          node --test tests/food-ingredient-reference-fallback-v844.test.cjs || failed=1
+          node --test tests/food-central-nutrition-audit-v845.test.cjs || failed=1
           node --check shopping-v678.js
           node --check finance-data-v553.js
           node --check denkfabrik-v635.js
@@ -85,7 +89,7 @@ jobs:
           node --check archive-weight-layout-v508.js
           node --check summary-weight-due-polish-v494.js
           node --check build-freshness-v502.js
-          node tests/v503-today-interaction.test.cjs
+          node tests/v503-today-interaction.test.cjs || failed=1
           grep -q 'service-worker-gate-v611.js?v=612-network-first-code' index.html
           grep -q 'area-runtime-v609.js?v=' index.html
           grep -q 'sport-circuit-v682.js?v=683-active-priority' area-runtime-v609.js
@@ -160,11 +164,12 @@ jobs:
           grep -q 'knownOnlySuggestions:true' task-title-library-v507.js
           grep -q 'archiveUsesTaskSegmentHierarchy:true' archive-weight-layout-v508.js
           grep -q 'noStoreFetch:true' build-freshness-v502.js
+          test "$failed" -eq 0
       - name: Browser regression current build
         run: |
-          npm init -y >/dev/null 2>&1
-          npm install playwright@1.48.2 >/dev/null 2>&1
-          npx playwright install --with-deps chromium webkit >/dev/null 2>&1
+          npm init -y
+          npm install --no-save playwright@1.48.2
+          node -e "const p=require('playwright'); console.log('Chromium:',p.chromium.executablePath(),'WebKit:',p.webkit.executablePath())"
           python3 -m http.server 8787 >/tmp/mod-http.log 2>&1 &
           node <<'NODE'
           const {chromium,webkit}=require('playwright');

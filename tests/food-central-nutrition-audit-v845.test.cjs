@@ -148,7 +148,7 @@ test('coffee without mandatory dry nutrition remains informational, never an inv
  assert.equal(result.review,1);
  assert.match(result.targets[0].issues[0].reason,/Keine 0-kcal-Erfindung/);
 });
-test('real piece No. 1 and No. 2 retain their individual gross measured weights',()=>{
+test('real piece No. 1 and No. 2 retain their individually confirmed purchase gross weights',()=>{
  const data=fresh();
  data.inventory.push({...stock('ki','KiKoKa Kiwi',2),family_name:'Kiwi',unit:'Stück'});
  data.inventory.push({...stock('z','Zespri Kiwi',111),family_name:'Kiwi'});
@@ -159,11 +159,11 @@ test('real piece No. 1 and No. 2 retain their individual gross measured weights'
   {id:'k1',meal_date:'2099-11-02',status:'planned',sort_order:2,meal_type:'snack',
    food_meal_ingredients:[{...item('i1','Kiwi',1,'Stück'),
      label:'1 ganze KiKoKa-Kiwi Nr. 1 (103 g brutto inkl. Schale)',
-     allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück'}]}]},
+     allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück',product_id:'p',gross_weight_g:103}]}]},
   {id:'k2',meal_date:'2099-11-03',status:'planned',sort_order:2,meal_type:'snack',
    food_meal_ingredients:[{...item('i2','Kiwi',1,'Stück'),
      label:'1 ganze KiKoKa-Kiwi Nr. 2 (93 g brutto inkl. Schale)',
-     allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück'}]}]}
+     allocation_override:[{inventory_id:'ki',quantity:1,unit:'Stück',product_id:'p',gross_weight_g:93}]}]}
  ];
  const plan=plannedMealAllocationState(data);
  const kc1=calculate(data.meals[0].food_meal_ingredients,1,plan.contexts.get('k1'),plan.allocations.get('k1'));
