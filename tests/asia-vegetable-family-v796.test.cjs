@@ -28,6 +28,7 @@ const ctx={
   familyAllocationProductLabel:stock=>stock.name
 };
 vm.createContext(ctx);
+vm.runInContext("  const familyText=value=>String(value||'')\n    .trim()\n    .toLocaleLowerCase('de-DE')\n    .replace(/[·_]+/g,' ')\n    .replace(/\\s+/g,' ');"+'\nthis.familyText=familyText;',ctx);
 vm.runInContext(food.slice(a,b)+'\nthis.allocate=familyAllocationForItem;this.date=familyAllocationLotDate;',ctx);
 assert.equal(ctx.date('old'),'0001-01-01','Untracked older normal vegetable must be prioritized');
 assert.equal(ctx.date('bio'),'2026-10-10');
