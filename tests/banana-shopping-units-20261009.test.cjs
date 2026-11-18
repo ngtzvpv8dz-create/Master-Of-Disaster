@@ -115,12 +115,23 @@ const nutritionSource=fs.readFileSync(path.join(__dirname,'..','food-nutrition-v
 const basisStart=nutritionSource.indexOf('  function basisAmount(item,source){');
 const basisEnd=nutritionSource.indexOf('\n  function calculate(',basisStart);
 assert(basisStart>=0&&basisEnd>basisStart);
+// The extracted production function now calls itemName() and
+// eggEdibleWeightFromKnownSize(). Keep its original helpers available in
+// the isolated test context rather than changing production nutrition.
+const eggStart=nutritionSource.indexOf('  function eggEdibleWeightFromKnownSize(product){');
+const eggEnd=nutritionSource.indexOf('\n  // V908:',eggStart);
+assert(eggStart>basisStart&&eggEnd>eggStart,'original egg helper must be available');
 const nctx={
   number:value=>{const n=Number(value);return Number.isFinite(n)?n:null;},
-  text:value=>String(value||'').trim().toLocaleLowerCase('de-DE')
+  text:value=>String(value||'').trim().toLocaleLowerCase('de-DE'),
+  itemName:item=>String(item?.name||item?.label||'').trim()
 };
 vm.createContext(nctx);
-vm.runInContext(nutritionSource.slice(basisStart,basisEnd)+'\nthis.basisAmount=basisAmount;',nctx);
+vm.runInContext(
+  nutritionSource.slice(basisStart,basisEnd)+'\n'+nutritionSource.slice(eggStart,eggEnd)
+    +'\nthis.basisAmount=basisAmount;',
+  nctx
+);
 assert.equal(nctx.basisAmount({quantity:1,unit:'Stück'},{product:{product_data:{edible_weight_per_piece_g:118}}}),118,
   'One banana must contribute 118 g to per-100g nutrition');
 assert.equal(nctx.basisAmount({quantity:2.5,unit:'Stück'},{product:{product_data:{edible_weight_per_piece_g:118}}}),295,

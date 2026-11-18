@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../shopping-v678.js'),'utf8');
 const start=source.indexOf('    const shoppingFamily=name=>');
-const stop=source.indexOf('    return included;',start);
+const stop=source.indexOf('    // Nicht kaufen ist eine bewusste',start);
 assert.ok(start>0&&stop>start,'purchase deduplication in production source');
 const datesStart=source.indexOf('  const effectiveShoppingDate=iso=>');
 const datesStop=source.indexOf('  const fmtDate=iso=>',datesStart);
@@ -14,7 +14,7 @@ const normalizeStop=source.indexOf('  function shoppingFamilyLabel(',normalizeSt
 assert.ok(datesStart>=0&&datesStop>datesStart&&normalizeStart>=0&&normalizeStop>normalizeStart);
 const shoppingDependencies=source.slice(datesStart,datesStop)+source.slice(normalizeStart,normalizeStop);
 const run=new Function('rows','todayIso','fmtDate','fmtQty','collator',
-  shoppingDependencies+'\nlet rowMap; const food={plannedShoppingUses:[]}; const inventory=[]; const shoppingFamilyLabel=x=>x;\n'+source.slice(start,stop+'    return included;'.length));
+  shoppingDependencies+'\nlet rowMap; const food={plannedShoppingUses:[]}; const inventory=[]; const shoppingFamilyLabel=x=>x;\n'+source.slice(start,stop)+'\nreturn included;');
 const date='2026-10-24',fmtDate=s=>s,fmtQty=(q,u)=>q+' '+u;
 const simulate=rows=>run(rows,()=>date,fmtDate,fmtQty,new Intl.Collator('de-DE'));
 const general=(label,quantity,unit,when=date,section='now')=>({

@@ -5,9 +5,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 const js=fs.readFileSync(path.join(__dirname,'../shopping-v678.js'),'utf8');
 const start=js.indexOf('    const shoppingFamily=name=>');
-const end=js.indexOf('    return included;',start);
+// V1 Shopping now applies daily skip filtering after deduplication.
+const end=js.indexOf('    // Nicht kaufen ist eine bewusste',start);
 assert.ok(start>=0&&end>start,'real shopping deduplication block exists');
-const originalBlock=js.slice(start,end+'    return included;'.length);
+const originalBlock=js.slice(start,end)+'\nreturn included;';
 // The real shopping block depends on the adjacent date/normalization helpers.
 const holidayStart=js.indexOf('  const effectiveShoppingDate=iso=>');
 const holidayEnd=js.indexOf('  const fmtDate=iso=>',holidayStart);

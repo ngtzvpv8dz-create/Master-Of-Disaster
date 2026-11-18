@@ -21,6 +21,13 @@ const context={
   // This regression isolates visible nutrition alarms, not mixed-lot
   // nutrient-weighting, whose helper is outside the extracted test span.
   mixedLotNutrition:()=>null,
+  // Newer nutrition diagnostics consult physical-piece and allocation helpers.
+  // This isolated fixture has neither measured paprika nor an allocation.
+  measuredPaprikaNutrition:()=>null,
+  confirmedAllocationNutrition:()=>null,
+  wholeProduceGrossPolicy:()=>false,
+  referenceFor:()=>null,
+  familyMatch:()=>false,
   // Simulate an old catalogue product with valid nutrition, currently chosen
   // as fallback. A new package in the SAME inventory must still raise an alarm.
   sourceFor:()=>({nutrition:{kcal:63,protein:2.2},product:null,stock:null}),
