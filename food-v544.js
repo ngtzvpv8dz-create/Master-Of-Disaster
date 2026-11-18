@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V841';
+  const VERSION='V842';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -3193,10 +3193,46 @@
         return;
       }
 
-      const stockInfo=ingredientStockInfo(
+      let stockInfo=ingredientStockInfo(
         {inventory_id:need.inventory_id||null,name:need.label,unit:need.unit},
         inventoryRows,inventoryById,inventoryByName
       );
+      // V1/V842: Verified product-family aliases for the grocery forecast only.
+      // This never changes recipes, nutrition, lots, or physical inventory.
+      // Preserve white/brown almond butter and light/regular cheese identity.
+      if(!(Number(stockInfo?.available)>0)){
+        const aliases={
+          'mandelmus':'mandelmus weiß',
+          'körniger frischkäse leicht':'körniger frischkäse'
+        };
+        const target=aliases[normalizedNeed]||null;
+        if(target){
+          const candidates=inventoryRows.filter(row=>
+            normalizedIngredient(row.family_name||'',need.unit)===target);
+          const isConfirmedLight=target!=='körniger frischkäse'||candidates.every(row=>{
+            const products=(data.products||[]).filter(product=>product.active!==false
+              &&String(product.inventory_id||'')===String(row.id));
+            return products.length>0&&products.every(product=>
+              /leicht|0[,.]4\s*%|0[,.]5\s*%/i.test(
+                String(product.variant||'')+' '+String(product.product_name||'')));
+          });
+          if(candidates.length&&isConfirmedLight){
+            let available=0,compatible=0,converted=false;
+            candidates.forEach(row=>{
+              const measured=inventoryQuantityInUnit(row,need.unit);
+              if(!measured.unitMismatch){
+                available+=Math.max(0,Number(measured.available)||0);
+                compatible++;
+                converted=converted||measured.converted;
+              }
+            });
+            if(compatible)stockInfo={
+              ...stockInfo,available,family:true,familyName:candidates[0].family_name,
+              rows:candidates,stock:null,converted,unitMismatch:false
+            };
+          }
+        }
+      }
       const stock=stockInfo.stock||null;
 
       // V1 14.11.2026: Die Familienauflösung liefert stock:null und die
@@ -3205,9 +3241,13 @@
       // erzeugen. Gemischte Familien mit kaufbaren Varianten bleiben planbar.
       const familyRows=Array.isArray(stockInfo.rows)
         ?stockInfo.rows.filter(row=>row?.is_active!==false):[];
-      if(stock?.shopping_excluded===true||stock?.pending_weighing===true
-        ||(familyRows.length>0&&familyRows.every(row=>
-          row?.shopping_excluded===true||row?.pending_weighing===true)))return;
+      // V1/V842: An unweighed quantity is UNKNOWN, not a reason to
+      // suppress the recipe ingredient from the shopping list.
+      const stockUnverified=Boolean(stock?.pending_weighing===true
+        ||(familyRows.length>0&&familyRows.every(row=>row?.pending_weighing===true)));
+      if((stock?.shopping_excluded===true&&!stockUnverified)
+        ||(familyRows.length>0&&familyRows.every(row=>row?.shopping_excluded===true)
+          &&!stockUnverified))return;
 
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
@@ -3253,6 +3293,7 @@
           label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
           convertedStock:stockInfo.converted,
+          stockUnverified:stockUnverified&&!(Number(stockInfo.available)>0),
           shortageDate:actualShortageDate||window.shortageDate,
           buyFrom:window.buyFrom,
           freshWindowDays:shortFreshWindowDays||null
