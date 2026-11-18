@@ -6,10 +6,13 @@ const path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'..','food-v544.js'),'utf8');
 
 const start=source.indexOf('  const ingredientQuantityForDisplay=item=>{');
+const soyStart=source.indexOf('  const soySauceScaleGrams=item=>{');
 const end=source.indexOf('  const ingredientDisplay=item=>{',start);
-assert.ok(start>0&&end>start,'whole slice UI formatter exists');
+assert.ok(soyStart>0&&start>soyStart&&end>start,'original formatting helpers exist');
 const fmtQty=(amount,unit)=>String(amount)+' '+String(unit||'');
-const display=new Function('fmtQty',source.slice(start,end)+'return ingredientQuantityForDisplay;')(fmtQty);
+const num=value=>value===null||value===undefined||value===''?null:Number(value);
+const display=new Function('fmtQty','num',
+  source.slice(soyStart,end)+'return ingredientQuantityForDisplay;')(fmtQty,num);
 
 test('single whole bread slice displays as one slice, not grams',()=>{
   assert.equal(display({name:'Vollkornbrot',quantity:56,unit:'g',label:'1 Scheibe Vollkornbrot (ca. 56 g)'}),'1 Scheibe');
