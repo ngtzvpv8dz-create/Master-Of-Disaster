@@ -6,6 +6,11 @@ on:
       - 'food-v544.js'
       - 'food-stock-resolver-v746.js'
       - 'tests/food-stock-meal-shopping.test.cjs'
+      - 'tests/food-lot-provenance-retention-v912.test.cjs'
+      - 'supabase/migrations/20261121092300_food_preserve_consumed_lot_provenance_v912.sql'
+      - 'tests/food-v912-cache-activation.test.cjs'
+      - 'area-runtime-v609.js'
+      - 'index.html'
       - '.github/workflows/food-physical-produce-regression.yml'
   push:
     branches: [main]
@@ -13,6 +18,11 @@ on:
       - 'food-v544.js'
       - 'food-stock-resolver-v746.js'
       - 'tests/food-stock-meal-shopping.test.cjs'
+      - 'tests/food-lot-provenance-retention-v912.test.cjs'
+      - 'supabase/migrations/20261121092300_food_preserve_consumed_lot_provenance_v912.sql'
+      - 'tests/food-v912-cache-activation.test.cjs'
+      - 'area-runtime-v609.js'
+      - 'index.html'
       - '.github/workflows/food-physical-produce-regression.yml'
 permissions:
   contents: read
@@ -29,7 +39,11 @@ jobs:
           node --check food-v544.js
           node --check food-stock-resolver-v746.js
           node --check tests/food-stock-meal-shopping.test.cjs
+          node --check tests/food-lot-provenance-retention-v912.test.cjs
+          node --check tests/food-v912-cache-activation.test.cjs
       - name: Stock, meal, and shopping regression
         run: |
           node --test tests/food-stock-meal-shopping.test.cjs
           node tests/v746-food-stock-resolver.test.cjs
+          node --test tests/food-lot-provenance-retention-v912.test.cjs
+          node --test tests/food-v912-cache-activation.test.cjs
