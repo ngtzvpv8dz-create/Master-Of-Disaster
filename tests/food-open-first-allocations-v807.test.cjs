@@ -27,6 +27,9 @@ function arrange(stock,lots,freezer=[]){
     frozenStorageLocation:s=>/tiefkühl|gefrier|frozen/i.test(String(s||'')),
     familyAllocationProductLabel:s=>s.name,
     familyAllocationProductText:()=>stock.name,
+    // The extracted production helper calls fmtDate; supply its real date formatter
+    // in the isolated test VM rather than failing with a missing harness global.
+    fmtDate:iso=>new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00')),
   };
   vm.createContext(ctx);
   vm.runInContext(source.slice(a,b)+'\nthis.split=familyAllocationStockParts;',ctx);
