@@ -1,0 +1,35 @@
+name: Food physical produce stock regression
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'food-v544.js'
+      - 'food-stock-resolver-v746.js'
+      - 'tests/food-stock-meal-shopping.test.cjs'
+      - '.github/workflows/food-physical-produce-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'food-v544.js'
+      - 'food-stock-resolver-v746.js'
+      - 'tests/food-stock-meal-shopping.test.cjs'
+      - '.github/workflows/food-physical-produce-regression.yml'
+permissions:
+  contents: read
+jobs:
+  stock-and-shopping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Syntax checks
+        run: |
+          node --check food-v544.js
+          node --check food-stock-resolver-v746.js
+          node --check tests/food-stock-meal-shopping.test.cjs
+      - name: Stock, meal, and shopping regression
+        run: |
+          node --test tests/food-stock-meal-shopping.test.cjs
+          node tests/v746-food-stock-resolver.test.cjs
