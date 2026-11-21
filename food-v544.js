@@ -1146,11 +1146,34 @@
         +'</div>';
     });
     if(missing>0.0001){
-      html+='<div class="food-ingredient-allocation-line-v712 is-missing">'
-        +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
-        +'<span class="food-allocation-copy-v741">Noch nicht im Vorrat vorhanden</span>'
-        +'<b>'+esc(fmtQty(missing,item?.unit))+'</b>'
-        +'</div>';
+      // A counted, physically present fruit cannot be labelled "not in stock"
+      // just because its recipe requires edible grams rather than whole pieces.
+      // Gross fruit weights are NOT silently converted into edible grams.
+      const info=ingredientStockInfo(item,state?.inventory||[],
+        new Map((state?.inventory||[]).map(row=>[String(row.id),row])),
+        new Map((state?.inventory||[]).map(row=>[normalizedIngredient(row.name,row.unit),row])));
+      const unconverted=(info?.unitMismatch===true
+        ?(info.rows||[]).filter(row=>row?.is_active!==false&&Number(row.quantity)>0):[]);
+      if(!parts.length&&unconverted.length){
+        const units=new Map();
+        unconverted.forEach(row=>{
+          const unit=String(row.unit||'Stück');
+          units.set(unit,(units.get(unit)||0)+Number(row.quantity));
+        });
+        const physical=[...units].map(([unit,qty])=>fmtQty(qty,unit)).join(' + ');
+        html+='<div class="food-ingredient-allocation-line-v712 is-unit-unconverted-v912">'
+          +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
+          +'<span class="food-allocation-copy-v741">Vorrat vorhanden: '+esc(physical)
+          +' · benötigte '+esc(fmtQty(missing,item?.unit))
+          +' noch nicht in Vorratseinheit umgerechnet bzw. als essbare Menge bestätigt</span>'
+          +'</div>';
+      }else{
+        html+='<div class="food-ingredient-allocation-line-v712 is-missing">'
+          +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
+          +'<span class="food-allocation-copy-v741">Noch nicht im Vorrat vorhanden</span>'
+          +'<b>'+esc(fmtQty(missing,item?.unit))+'</b>'
+          +'</div>';
+      }
     }
     return html+'</div>';
   }
@@ -3248,6 +3271,13 @@
       if((stock?.shopping_excluded===true&&!stockUnverified)
         ||(familyRows.length>0&&familyRows.every(row=>row?.shopping_excluded===true)
           &&!stockUnverified))return;
+      // A fruit recorded as whole pieces with unknown edible yield is already
+      // physically stocked. Do not invent zero stock or auto-order edible grams.
+      // Keep the measurement reminder on the recipe ingredient instead.
+      const measuredProducePending=stockInfo.unitMismatch===true
+        &&normalizedNeed==='avocado'
+        &&familyRows.some(row=>row.unit==='Stück'&&Number(row.quantity)>0);
+      if(measuredProducePending)return;
 
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
@@ -3760,9 +3790,16 @@
       }
       const stockInfo=ingredientStockInfo(item,inventoryRows,inventoryById,inventoryByName);
       const available=stockInfo.available;
+      const presentWithDifferentUnit=stockInfo.unitMismatch===true
+        ?(stockInfo.rows||[]).filter(row=>row?.is_active!==false&&Number(row.quantity)>0):[];
+      const physicalStock=presentWithDifferentUnit
+        .map(row=>fmtQty(row.quantity,row.unit)).join(' + ');
       const missing=required===null?null:Math.max(0,required-available);
-      const stateLabel=required===null?'Menge offen':missing>0?'Kaufen '+fmtQty(missing,item.unit):'Vorrat reicht';
-      return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+' · vorhanden '+esc(fmtQty(available,item.unit))+'</small></span><b class="'+(missing>0?'is-missing':'is-ok')+'">'+esc(stateLabel)+'</b></div>';
+      const stateLabel=required===null?'Menge offen'
+        :physicalStock?'Vorrat da · Mengenprüfung offen'
+        :missing>0?'Kaufen '+fmtQty(missing,item.unit):'Vorrat reicht';
+      const availableText=physicalStock||fmtQty(available,item.unit);
+      return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+' · vorhanden '+esc(availableText)+'</small></span><b class="'+(physicalStock?'':missing>0?'is-missing':'is-ok')+'">'+esc(stateLabel)+'</b></div>';
     }).join('')+'</div>';
   }
 

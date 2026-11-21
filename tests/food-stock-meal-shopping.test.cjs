@@ -14,9 +14,9 @@ const window={addEventListener(){}};
 const document={addEventListener(){},documentElement:{},body:{classList:{contains(){return false;}}}};
 new Function('window','document','MutationObserver','Date',
   code.slice(0,cut)+
-  'window.__tests={deriveShopping,familyAllocationForItem,regularShoppingDate,allocationMarkup,setState:v=>{state=v;plannedAllocationCacheState=null;plannedAllocationCache=null;}};})();'
+  'window.__tests={deriveShopping,familyAllocationForItem,regularShoppingDate,allocationMarkup,recipeNeedPreview,setState:v=>{state=v;plannedAllocationCacheState=null;plannedAllocationCache=null;}};})();'
 )(window,document,class{},FixedDate);
-const {deriveShopping,familyAllocationForItem,regularShoppingDate,allocationMarkup,setState}=window.__tests;
+const {deriveShopping,familyAllocationForItem,regularShoppingDate,allocationMarkup,recipeNeedPreview,setState}=window.__tests;
 const stock=(id,name,family,quantity)=>({id,name,family_name:family,quantity,unit:'g',is_active:true});
 const ingredient=(name,quantity,inventory_id=null)=>({name,quantity,unit:'g',inventory_id});
 const meal=(date,items,type='dinner')=>({id:date+'-'+type,meal_date:date,meal_type:type,status:'planned',ingredients:items});
@@ -122,4 +122,32 @@ test('Bread topping prefers large tomatoes, regular meals retain FIFO',()=>{
   ],products:[],freezer:[],meals:[]});
   const cooking=familyAllocationForItem(ingredient('Tomaten',100));
   assert.equal(cooking.allocations[0].inventoryId,'ch');
+});
+
+test('5 physically stocked avocado pieces do not display a false missing-stock warning for edible grams',()=>{
+  const avocado={id:'avocado-stock',name:'Avocados Hass',family_name:'Avocado',
+    quantity:5,unit:'Stück',is_active:true};
+  const item={name:'Avocado',label:'70 g Avocado (essbar)',quantity:70,unit:'g',inventory_id:null};
+  setState({inventory:[avocado],lots:[],products:[],freezer:[],aliases:[],meals:[]});
+  const html=allocationMarkup(null,item);
+  assert.match(html,/Vorrat vorhanden: 5 Stück/);
+  assert.match(html,/70 g/);
+  assert.doesNotMatch(html,/Noch nicht im Vorrat vorhanden/);
+  const preview=recipeNeedPreview({servings:1,food_recipe_ingredients:[item]},1);
+  assert.match(preview,/Vorrat da · Mengenprüfung offen/);
+  assert.doesNotMatch(preview,/Kaufen 70 g/);
+});
+
+test('unmeasured edible avocado yield cannot be an automatic grocery order; zero fruit still is',()=>{
+  const avocado={id:'avocado-stock',name:'Avocados Hass',family_name:'Avocado',
+    quantity:5,unit:'Stück',is_active:true};
+  const item={name:'Avocado',quantity:70,unit:'g',inventory_id:null};
+  const data={inventory:[avocado],products:[{
+    id:'avocado-18-11',inventory_id:avocado.id,active:true,
+    product_data:{edible_mass_unconfirmed:true,individual_gross_weights_g:[146,151,140,142,146]}
+  }],meals:[meal('2026-11-16',[item],'breakfast')]};
+  setState({...data,lots:[],aliases:[],freezer:[]});
+  assert.equal(deriveShopping(data).filter(gap=>/avocado/i.test(gap.label)).length,0);
+  avocado.quantity=0;
+  assert.ok(deriveShopping(data).some(gap=>/avocado/i.test(gap.label)&&gap.missing>0));
 });
