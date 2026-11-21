@@ -212,7 +212,7 @@ begin
     'untracked_consumed',v_untracked_consumed+greatest(v_remaining,0)
   );
 end;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.consume_food_inventory_lots_for_meal(p_inventory_id uuid, p_quantity numeric, p_unit text, p_ingredient_id uuid)
  RETURNS jsonb
@@ -261,7 +261,7 @@ BEGIN
  IF pending<-.000001 THEN RAISE EXCEPTION 'Mehr Teilstücke verknüpft als Rezeptmenge';END IF;
  IF pending>.000001 THEN extra:=public.consume_food_inventory_lots(p_inventory_id,pending,p_unit);END IF;
  RETURN jsonb_build_object('linked_consumed',p_quantity-pending,'other',extra);
-END $function$
+END $function$;
 
 DO $validation$
 BEGIN
