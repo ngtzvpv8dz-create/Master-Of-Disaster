@@ -1,0 +1,21 @@
+{
+  "status": "FAIL",
+  "version": "V912",
+  "live": false,
+  "bootstrap": false,
+  "preloadOnly": false,
+  "reentry": false,
+  "home": false,
+  "todo": false,
+  "sport": false,
+  "food": false,
+  "shopping": false,
+  "kistology": false,
+  "backstage": false,
+  "log": false,
+  "backup": false,
+  "serviceWorker": false,
+  "errors": [
+    "Error: Current build not deployed: expected V912, metrics=V912\n    at /home/runner/work/Master-Of-Disaster/Master-Of-Disaster/smoke.js:29:24"
+  ]
+}
