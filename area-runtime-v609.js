@@ -66,7 +66,7 @@
       './food-freshness-v913.js?v=20261122-food-rules-917',
       './food-v544.js?v=20261122-tasteprep-918',
       './food-nutrition-v711.js?v=20261122-spice-918',
-      './shopping-v678.js?v=20261118-shopping-corrections-v910'
+      './shopping-v678.js?v=20261122-optional-treats-v919'
     ],
     kistology:[
       SUPABASE,
@@ -159,7 +159,7 @@
       './food-nutrition-v711.js?v=20261122-spice-918','./food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'],
     shopping:['./food-freshness-v913.js?v=20261122-food-rules-917',
       './food-v544.js?v=20261122-tasteprep-918',
-      './food-nutrition-v711.js?v=20261122-spice-918','./shopping-v678.js?v=20261118-shopping-corrections-v910'],
+      './food-nutrition-v711.js?v=20261122-spice-918','./shopping-v678.js?v=20261122-optional-treats-v919'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
