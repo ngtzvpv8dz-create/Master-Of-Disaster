@@ -6,7 +6,9 @@ on:
       - fix/v1-shopping-planner-20261118
     paths:
       - food-v544.js
+      - food-freshness-v913.js
       - shopping-v678.js
+      - tests/food-freshness-v913.test.cjs
       - tests/shopping-v1.test.cjs
       - food-freshness-v913.js
       - tests/food-freshness-v913.test.cjs
@@ -14,7 +16,9 @@ on:
   pull_request:
     paths:
       - food-v544.js
+      - food-freshness-v913.js
       - shopping-v678.js
+      - tests/food-freshness-v913.test.cjs
       - tests/shopping-v1.test.cjs
       - food-freshness-v913.js
       - tests/food-freshness-v913.test.cjs
