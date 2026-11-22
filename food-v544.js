@@ -1154,7 +1154,9 @@
 
   function allocationMarkup(allocation,item){
     const parts=Array.isArray(allocation?.allocations)?allocation.allocations:[];
-    const missing=Math.max(0,Number(allocation?.remaining??item?.quantity)||0);
+    const allocated=parts.reduce((sum,part)=>sum+Math.max(0,Number(part.quantity)||0),0);
+    const requested=Math.max(0,Number(item?.quantity)||0);
+    const missing=Math.max(0,Math.min(Number(allocation?.remaining??requested)||0,requested-allocated));
     if(!parts.length&&missing<=0.0001)return '';
 
     const generic=familyText(ingredientName(item));
@@ -1289,6 +1291,7 @@
   function missingIngredientSourceMarkup(item,historical=false){
     const name=ingredientName(item);
     const isWater=/^(wasser|leitungswasser)$/i.test(name);
+    if(isWater||seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben')return '';
     let label='';
     if(isWater){
       label='Leitungswasser · keine Handelscharge';
@@ -1316,8 +1319,10 @@
   function ingredientListMarkup(items,allocationMap=null,prepMealId=null){
     return '<ul>'+items.map(item=>{
       const q=num(item.quantity);
-      const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item);
-      const allocationHtml=allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item);
+      const isTapWater=/^(wasser|leitungswasser)$/i.test(ingredientName(item));
+      const isOptionalSeasoning=seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben';
+      const allocation=isTapWater?null:((item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item));
+      const allocationHtml=isTapWater?'':(allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item));
       const editable=editableAllocationContext(item);
       const canRemove=Boolean(editable);
       const quantityHtml=seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben'
