@@ -1,0 +1,47 @@
+name: Food V918 Chromium and WebKit Functional Browser Test
+on:
+  push:
+    branches: [main]
+    paths:
+      - food-v544.js
+      - food-v544.css
+      - food-nutrition-v711.js
+      - index.html
+      - area-runtime-v609.js
+      - tests/food-v918-browser.cjs
+      - .github/workflows/food-v918-browser.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - food-v544.js
+      - food-v544.css
+      - food-nutrition-v711.js
+      - tests/food-v918-browser.cjs
+      - .github/workflows/food-v918-browser.yml
+permissions:
+  contents: read
+jobs:
+  food-browser:
+    name: Actual V1 FOOD UI in Chromium and WebKit
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install matching Playwright client
+        run: |
+          npm init -y
+          npm install --no-save playwright@1.48.2
+      - name: Click through real V1 FOOD UI using fictitious fixture data
+        run: node tests/food-v918-browser.cjs
+      - name: Upload browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: food-v918-browser-screenshots
+          path: test-results/*.png
+          if-no-files-found: ignore
