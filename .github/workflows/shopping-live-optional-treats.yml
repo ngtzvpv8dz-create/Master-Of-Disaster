@@ -1,0 +1,35 @@
+name: V1 Shopping Public GitHub Pages Browser Smoke
+on:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shopping-pages-browser:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install matching Playwright library
+        run: |
+          npm init -y
+          npm install --no-save playwright@1.48.2
+      - name: Test actual published V1 shopping resources in Chromium and WebKit
+        env:
+          SHOPPING_TEST_BASE_URL: https://ngtzvpv8dz-create.github.io/Master-Of-Disaster
+        run: node tests/shopping-ui-browser-v1.cjs
+      - name: Capture browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopping-public-pages-browser-screenshots
+          path: test-results/*.png
+          if-no-files-found: ignore
