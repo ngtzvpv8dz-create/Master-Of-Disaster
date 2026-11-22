@@ -134,7 +134,7 @@ async function check(browser,label,width,height){
       return {version:window.__modShoppingV678.version,
         gaps:d.food.gaps.map(g=>({name:g.label,missing:g.missing,buyFrom:g.buyFrom,unverified:g.stockUnverified}))};
     });
-    assert.equal(api.version,'V816','real merged shopping JS must be loaded');
+    assert.equal(api.version,'V919','real merged shopping JS must be loaded');
     const actual=api.gaps.find(g=>g.name==='Buchweizen');
     assert(actual?.unverified===true,'unweighed stock warning must survive browser rendering');
     const dir=path.join(process.cwd(),'test-results');
