@@ -6,13 +6,13 @@
   'use strict';
   if(window.__modShoppingV678)return;
 
-  const VERSION='V816';
+  const VERSION='V919';
   const ROOT_ID='modShoppingV643';
   const BODY_CLASS='mod-shopping-v643';
   const SURFACE_CLASS='mod-shopping-surface-v643';
   const CATEGORIES=['Lebensmittel','Getränke','Non-Food','Haushalt','Drogerie','Technik','Sonstiges'];
 
-  let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],skips:[],skippedRows:[],checkouts:[],checkoutItems:[],checkoutReceipts:[],receipts:[],financeItems:[],loading:false,error:'',foodError:''};
+  let state={general:[],food:null,reviews:[],products:[],aliases:[],substitutions:[],skips:[],skippedRows:[],checkouts:[],checkoutItems:[],checkoutReceipts:[],receipts:[],financeItems:[],treatDecisions:[],loading:false,error:'',foodError:''};
   let loadPromise=null;
   let rowMap=new Map();
   let hubPatched=false;
@@ -26,6 +26,13 @@
     const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
     const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
     return `${p.year}-${p.month}-${p.day}`;
+  };
+  // One optional-snack decision per shopping week, reset next Monday.
+  const treatWeekStart=iso=>{
+    const d=new Date(String(iso)+'T12:00:00Z');
+    if(Number.isNaN(d.getTime()))return '';
+    d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));
+    return d.toISOString().slice(0,10);
   };
   // Feiertage Niedersachsen/Bremen: tatsächlichen Einkaufstag bestimmen, ohne Datenbankbuchung.
   const effectiveShoppingDate=iso=>{
@@ -196,7 +203,7 @@
       if(generalResult.error)throw generalResult.error;
       state.general=Array.isArray(generalResult.data)?generalResult.data:[];
 
-      const [reviewResult,productResult,aliasResult]=await Promise.all([
+      const [reviewResult,productResult,aliasResult,treatResult]=await Promise.all([
         supabase.from('shopping_receipt_reviews')
           .select('id,finance_item_id,checkout_id,checkout_item_id,retailer,receipt_label,normalized_label,status,product_id,notes,inventory_applied_at,created_at,updated_at,resolved_at')
           .in('status',['pending','new_product_pending'])
@@ -208,14 +215,19 @@
           .order('product_name',{ascending:true}),
         supabase.from('shopping_receipt_aliases')
           .select('id,retailer,receipt_label,normalized_label,product_id,is_default,active')
-          .eq('active',true)
+          .eq('active',true),
+        supabase.from('shopping_optional_treat_decisions')
+          .select('week_start,idea_key,status,shopping_item_id')
+          .eq('user_id',user.id).eq('week_start',treatWeekStart(todayIso()))
       ]);
       if(reviewResult.error)throw reviewResult.error;
       if(productResult.error)throw productResult.error;
       if(aliasResult.error)throw aliasResult.error;
+      if(treatResult.error)throw treatResult.error;
       state.reviews=Array.isArray(reviewResult.data)?reviewResult.data:[];
       state.products=Array.isArray(productResult.data)?productResult.data:[];
       state.aliases=Array.isArray(aliasResult.data)?aliasResult.data:[];
+      state.treatDecisions=Array.isArray(treatResult.data)?treatResult.data:[];
 
       const substitutionResult=await supabase.from('shopping_substitutions')
         .select('id,shopping_key,source,original_label,original_quantity,original_unit,replacement_label,replacement_quantity,replacement_unit,replacement_inventory_id,replacement_product_id,status,note,purchase_data,created_at,updated_at')
@@ -1555,6 +1567,86 @@
       +'</section>';
   }
 
+  // V919: Optional shopping ideas are NOT a meal, purchase, or consumed extra.
+  // Only a deliberate RPC click creates a manual shopping wish.
+  const TREAT_IDEAS=[
+    {key:'chips',name:'Chips für den Filmabend',search:/(^| )(chips|kartoffelchips|tortilla chips|crisps)( |$)/,portion:50,unit:'g',defaultName:'Kartoffelchips · Sorte auswählen',category:'Lebensmittel'},
+    {key:'chocolate',name:'Schokolade oder Pralinen',search:/(schokolade|pralinen|milka)/,portion:25,unit:'g',defaultName:'Schokolade · Sorte auswählen',category:'Lebensmittel'},
+    {key:'ice',name:'Eis zum Naschen',search:/(speiseeis|eiscreme|eisbecher|magnum)/,portion:100,unit:'g',defaultName:'Eis · Sorte auswählen',category:'Lebensmittel'},
+    {key:'energy',name:'Energy-Drink (z. B. Monster)',search:/(monster energy|red bull|energy drink)/,portion:500,unit:'ml',defaultName:'Energy-Drink · Sorte auswählen',category:'Getränke'},
+    {key:'salty',name:'Salziger Knabbersnack',search:/(salzstangen|popcorn|flips|cracker)/,portion:50,unit:'g',defaultName:'Salziger Snack · Sorte auswählen',category:'Lebensmittel'}
+  ];
+  const treatProductForIdea=idea=>{
+    const candidates=(state.products||[]).filter(p=>p.active!==false
+      &&idea.search.test(shoppingNormalize([p.brand,p.product_name,p.category].join(' ')))
+      &&String(p.package_unit||'').toLowerCase()===idea.unit
+      &&Number(p.package_quantity)>0);
+    return candidates.sort((a,b)=>{
+      // Prefer actual user-linked catalogue entries and store-verified products.
+      const score=p=>Number(Boolean(p.retailer&&/^(rewe|lidl|edeka)/i.test(p.retailer)))*3
+        +Number(Boolean(p.inventory_id))*2+Number(Boolean(p.nutrition_per_100?.energy_kcal!=null));
+      return score(b)-score(a)||String(a.product_name).localeCompare(String(b.product_name),'de');
+    })[0]||null;
+  };
+  function treatIdeaCards(){
+    const week=treatWeekStart(todayIso());
+    const hidden=new Set((state.treatDecisions||[]).filter(x=>x.week_start===week||!x.week_start).map(x=>x.idea_key));
+    const usedKeys=new Set((state.general||[]).map(x=>String(x.source_key||'')));
+    const inventory=state.food?.inventory||[];
+    return TREAT_IDEAS.filter(idea=>!hidden.has(idea.key)
+      &&!usedKeys.has('optional-treat:'+week+':'+idea.key)).map(idea=>{
+      const product=treatProductForIdea(idea);
+      const linked=product?.inventory_id?inventory.find(i=>String(i.id)===String(product.inventory_id)&&i.is_active!==false):null;
+      const stock=Number(linked?.quantity)||0;
+      const inStock=stock>0;
+      const label=product?[product.brand,product.product_name,product.variant].filter(Boolean).join(' · '):idea.defaultName;
+      const k100=product?.nutrition_per_100?.energy_kcal;
+      const pack=Number(product?.package_quantity)||null;
+      const portion=pack?Math.min(pack,idea.portion):idea.portion;
+      const kcal=k100!=null&&Number.isFinite(Number(k100))
+        ?Number((portion*Number(k100)/100).toFixed(0)):null;
+      const retailer=product?.retailer?String(product.retailer):'';
+      return {key:idea.key,title:label,idea:idea.name,portion,unit:idea.unit,kcal,
+        retailer,stock,stockUnit:linked?.unit||'',inStock,productId:product?.id||null,verifiedProduct:Boolean(product)};
+    });
+  }
+  function optionalTreatMarkup(){
+    const cards=treatIdeaCards();
+    return '<section class="shopping-optional-treats-v919" aria-label="Optionale Genuss-Snacks">'
+      +'<header><div><span>🍿 OPTIONAL · GENUSS-SNACKS</span>'
+      +'<small>Werktags etwa 100 kcal freiwilliger Spielraum · Wochenende bis etwa 400–500 kcal zusätzlich innerhalb von maximal 2.200 kcal Tagesgesamt</small></div></header>'
+      +'<p class="shopping-treat-help-v919">Nur Ideen, kein Pflichtkauf. Geprüfte Produkte zeigen Beispielportionen; unbekannte Sorten bleiben ohne erfundene Kalorien. Erst „Auf Einkaufsliste“ erzeugt einen Einkaufswunsch, erst der spätere Kauf verändert den Vorrat.</p>'
+      +(cards.length?'<div class="shopping-treat-list-v919">'+cards.map(row=>
+        '<article class="shopping-treat-card-v919" data-treat-idea="'+esc(row.key)+'">'
+          +'<strong>'+esc(row.idea)+'</strong><span>'+esc(row.title)+'</span>'
+          +'<small>Beispielportion '+esc(fmtQty(row.portion,row.unit))
+            +(row.kcal===null?' · kcal erst nach Produktwahl':' · ca. '+esc(row.kcal)+' kcal')
+            +(row.retailer?' · Im Produktstamm: '+esc(row.retailer)+' (keine Filialverfügbarkeit bestätigt)':'')
+          +'</small>'
+          +(row.inStock?'<small class="shopping-treat-in-stock-v919">✓ Bereits im Vorrat: '+esc(fmtQty(row.stock,row.stockUnit))+' · erst aufbrauchen</small>':'')
+          +'<div class="shopping-treat-actions-v919">'
+          +(row.inStock?'<span>Kein zusätzlicher Kauf nötig</span>'
+            :'<button type="button" data-treat-add="'+esc(row.key)+'" data-treat-product="'+esc(row.productId||'')+'">＋ Auf Einkaufsliste</button>')
+          +'<button type="button" class="is-quiet" data-treat-dismiss="'+esc(row.key)+'">Diese Woche ausblenden</button>'
+          +'</div>'
+        +'</article>').join('')+'</div>'
+        :'<p class="shopping-treat-help-v919">Für diese Woche sind alle Vorschläge berücksichtigt oder ausgeblendet. Nächste Woche kommen neue Ideen.</p>')
+      +'</section>';
+  }
+  async function handleTreatAction(ideaKey,action,productId=null){
+    if(!TREAT_IDEAS.some(i=>i.key===ideaKey))throw new Error('Unbekannte Genussidee');
+    const supabase=client();
+    if(!supabase)throw new Error('Cloud-Verbindung fehlt');
+    const params=action==='add'
+      ?{p_idea_key:ideaKey,p_product_id:productId||null}
+      :{p_idea_key:ideaKey};
+    const result=await supabase.rpc(action==='add'
+      ?'add_optional_treat_to_shopping_v1':'dismiss_optional_treat_shopping_v1',params);
+    if(result.error)throw result.error;
+    await reload({refreshFood:false});
+    return result.data;
+  }
+
   function shell(){
     const rows=buildRows();
     const now=rows.filter(row=>row.section==='now');
@@ -1575,6 +1667,7 @@
       +overdueFoodWarningMarkup()
       +'<div class="shopping-sections-v643">'
       +sectionMarkup('now','PHASE 1 · EINKAUFEN','jetzt relevant',regularNow,addEntryActionMarkup())
+      +optionalTreatMarkup()
       +(nonFoodNow.length?sectionMarkup('nonfood','NON-FOOD · HEUTE','Haushalt · Pflege · Reinigung',nonFoodNow,addEntryActionMarkup()):'')
       +sectionMarkup('extra','EXTRAS · OHNE KAUFTERMIN','Nicht Food · dauerhaft gesammelt',extra,addEntryActionMarkup())
       +laterSectionMarkup(later)
@@ -2852,6 +2945,14 @@
     await reload({refreshFood:false});
   }
   function bind(root){
+    root.querySelectorAll('[data-treat-add],[data-treat-dismiss]').forEach(button=>button.addEventListener('click',async()=>{
+      const add=button.hasAttribute('data-treat-add');
+      const key=button.dataset.treatAdd||button.dataset.treatDismiss;
+      const productId=button.dataset.treatProduct||null;
+      button.disabled=true;
+      try{await handleTreatAction(key,add?'add':'dismiss',productId);}
+      catch(error){button.disabled=false;alert(error?.message||'Genussvorschlag konnte nicht aktualisiert werden.');}
+    }));
     root.querySelector('[data-shopping-add]')?.addEventListener('click',openModal);
     root.querySelector('[data-shopping-checkout]')?.addEventListener('click',openCheckoutModal);
     root.querySelectorAll('[data-checkout-attach-receipt]').forEach(button=>button.addEventListener('click',()=>openReceiptAttachModal(button.dataset.checkoutAttachReceipt)));
@@ -2975,6 +3076,7 @@
       food:state.food?structuredClone(state.food):null,
       reviews:state.reviews.map(item=>({...item})),
       products:state.products.map(item=>({...item})),
+      treatDecisions:state.treatDecisions.map(item=>({...item})),
       substitutions:state.substitutions.map(item=>({...item})),
       checkoutReceipts:state.checkoutReceipts.map(item=>({...item}))
     }),
