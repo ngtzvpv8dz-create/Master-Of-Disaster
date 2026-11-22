@@ -122,21 +122,11 @@
     const from=iso(today)||new Date().toISOString().slice(0,10);
     const uses=plannedUses(meals,from),issues=[],stocks=new Map(inventory.map(i=>[String(i.id),i]));
     const emitted=new Set();
-    // Legacy opening dates were not stored. Warn visibly but never assign a
-    // guessed date, because a guessed deadline could silently approve stale food.
-    for(const lot of lots){
-      if(!(Number(lot.opened_remaining_quantity)>0))continue;
-      const stock=stocks.get(String(lot.inventory_id));
-      if(!stock||!(Number(stock.quantity)>0))continue;
-      const kind=classify(stock);
-      if(!['fruit','vegetable','dairy','bread','canned','meat'].includes(kind))continue;
-      if(/tk|tiefkuhl|gefrier|freezer/i.test(String(lot.storage_location||'')))continue;
-      if(iso(lot.batch_data?.opened_on||lot.batch_data?.opened_at||lot.opened_at))continue;
-      const key='opening|'+lot.inventory_id;
-      if(emitted.has(key))continue;
-      emitted.add(key);
-      issues.push(makeIssue('opening',stock.name,'Angebrochene Packung, aber kein Öffnungsdatum erfasst. Die 7-Tage-Frist ist nicht prüfbar. Datum und tatsächliche Haltbarkeit bitte klären.'));
-    }
+    // V916: A legacy opened remainder is NOT proof the user has failed to
+    // review that product. Opening and purchase metadata may exist in notes,
+    // prior user decisions, or pre-tracking stock; do not re-open a blanket
+    // missing-date warning for every old lot. Future opening transitions are
+    // dated at write time. Known MHD / time conflicts remain checked below.
     for(const use of uses){
       if(!use.inventory_id)continue;
       const stock=stocks.get(String(use.inventory_id));
