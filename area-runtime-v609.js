@@ -53,7 +53,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261113-onion-partial-v747',
-      './food-freshness-v913.js?v=20261122-914',
+      './food-freshness-v913.js?v=20261122-915',
       './food-v544.js?v=20261122-opening-914',
       './food-nutrition-v711.js?v=20261114-once-gross-v908',
       './food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'
@@ -63,7 +63,7 @@
       './supabase-config.js?v=609',
       './supabase-client-lite-v593.js?v=593',
       './food-stock-resolver-v746.js?v=20261113-onion-partial-v747',
-      './food-freshness-v913.js?v=20261122-914',
+      './food-freshness-v913.js?v=20261122-915',
       './food-v544.js?v=20261122-opening-914',
       './food-nutrition-v711.js?v=20261114-once-gross-v908',
       './shopping-v678.js?v=20261118-shopping-corrections-v910'
@@ -154,10 +154,10 @@
       './todo-stability-v603.js?v=609-current'
     ],
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
-    food:['./food-freshness-v913.js?v=20261122-914',
+    food:['./food-freshness-v913.js?v=20261122-915',
       './food-v544.js?v=20261122-opening-914',
       './food-nutrition-v711.js?v=20261114-once-gross-v908','./food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'],
-    shopping:['./food-freshness-v913.js?v=20261122-914',
+    shopping:['./food-freshness-v913.js?v=20261122-915',
       './food-v544.js?v=20261122-opening-914',
       './food-nutrition-v711.js?v=20261114-once-gross-v908','./shopping-v678.js?v=20261118-shopping-corrections-v910'],
     kistology:['./kistology-v603.js?v=609-current'],
