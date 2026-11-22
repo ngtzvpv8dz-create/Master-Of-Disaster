@@ -1241,15 +1241,36 @@
     // V830: Gespeicherte Zutatenliste ist VOLLSTÄNDIG; snapshot.sources
     // enthält nur chargengenau aufgelöste Vorratsanteile und darf die
     // anderen Zutaten (Knusperbrot, Frischkäse, Gewürze) nie verdrängen.
-    const usedSources=new Set();
-    const itemRows=original.filter(item=>item?.eaten_only_extra!==true).flatMap(item=>{
+    // V930: A stored product name can differ from the recipe ingredient name
+    // (for example "Haferkeks" vs "ja! Hafergebäck"). Match names first;
+    // use a UNIQUE snapshot amount+unit only for otherwise unmatched entries.
+    // Never consult today's stock or silently guess between equal-sized items.
+    const originalItems=original.filter(item=>item?.eaten_only_extra!==true);
+    const matchesName=(item,source)=>{
       const name=familyText(ingredientName(item));
-      const matches=ordered.filter(source=>{
-        const candidates=[source.name,source.label].map(familyText).filter(Boolean);
-        return name&&candidates.some(candidate=>candidate===name
-          ||candidate.includes(name)||name.includes(candidate));
-      });
-      const fresh=matches.filter(source=>!usedSources.has(source));
+      const candidates=[source?.name,source?.label].map(familyText).filter(Boolean);
+      return Boolean(name)&&candidates.some(candidate=>candidate===name
+        ||candidate.includes(name)||name.includes(candidate));
+    };
+    const nameReserved=new Set(ordered.filter(source=>originalItems.some(item=>matchesName(item,source))));
+    const sameSnapshotAmount=(a,b)=>{
+      const x=Number(a?.quantity),y=Number(b?.quantity);
+      const ua=String(a?.unit||'').trim().toLocaleLowerCase('de-DE');
+      const ub=String(b?.unit||'').trim().toLocaleLowerCase('de-DE');
+      return Number.isFinite(x)&&x>0&&Number.isFinite(y)&&y>0&&ua&&ua===ub&&Math.abs(x-y)<0.001;
+    };
+    const unmatchedItems=originalItems.filter(item=>!ordered.some(source=>matchesName(item,source)));
+    const uniqueSnapshotSource=item=>{
+      if(!unmatchedItems.includes(item)
+        ||unmatchedItems.filter(other=>sameSnapshotAmount(item,other)).length!==1)return null;
+      const candidates=ordered.filter(source=>!nameReserved.has(source)&&sameSnapshotAmount(item,source));
+      return candidates.length===1?candidates[0]:null;
+    };
+    const usedSources=new Set();
+    const itemRows=originalItems.flatMap(item=>{
+      const matches=ordered.filter(source=>matchesName(item,source));
+      const fresh=(matches.length?matches:[uniqueSnapshotSource(item)].filter(Boolean))
+        .filter(source=>!usedSources.has(source));
       if(fresh.length){
         fresh.forEach(source=>usedSources.add(source));
         return fresh.map(source=>{
