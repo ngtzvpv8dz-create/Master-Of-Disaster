@@ -4415,9 +4415,10 @@
     const rows=items.map((item,index)=>{
       const quantity=num(item.quantity);
       const value=quantity===null||Number.isNaN(quantity)?'':String(quantity);
+      const optionalSeasoning=String(item.unit||'').toLowerCase()==='nach belieben'&&seasoningByTaste(item);
       return '<div class="food-planned-qty-row-v630" data-food-planned-qty-row data-ingredient-id="'+esc(item.id)+'" data-food-planned-removed="false">'
         +'<span><strong>'+esc(ingredientName(item))+'</strong><small data-food-planned-qty-note>Nur diese Einplanung</small></span>'
-        +'<span class="food-planned-qty-controls-v729"><input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(value)+'" '+(value?'':'placeholder="offen"')+'><b>'+esc(item.unit||'')+'</b><button type="button" class="food-planned-remove-v729" data-food-planned-remove aria-pressed="false">Entfernen</button></span>'
+        +'<span class="food-planned-qty-controls-v729">'+(optionalSeasoning?'<small>Nach Belieben · keine Gramm-Buchung</small>':'<input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(value)+'" '+(value?'':'placeholder="offen"')+'>')+'<b>'+esc(item.unit||'')+'</b><button type="button" class="food-planned-remove-v729" data-food-planned-remove aria-pressed="false">Entfernen</button></span>'
       +'</div>';
     }).join('');
 
