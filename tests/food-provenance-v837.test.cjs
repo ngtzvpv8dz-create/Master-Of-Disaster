@@ -52,6 +52,8 @@ test('planned Feta displays the actual catalog product, lot status and source ar
     esc:value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;'),
     num:value=>Number(value),
     ingredientName:item=>item.name,
+    seasoningByTaste:item=>/^(salz|pfeffer|chili|curry|paprikapulver)/i.test(String(item?.name||'')),
+    prepDoneSet:new Set(),
     fmtQty:(value,unit)=>value+' '+unit,
     soySauceScaleGrams:()=>null,
     editableAllocationContext:()=>null,
