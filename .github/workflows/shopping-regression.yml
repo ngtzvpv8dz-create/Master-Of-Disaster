@@ -12,6 +12,7 @@ on:
       - tests/food-prep-checklist-v916.test.cjs
       - tests/food-spice-taste-prep-v918.test.cjs
       - tests/shopping-v1.test.cjs
+      - tests/shopping-optional-treats-v919.test.cjs
       - .github/workflows/shopping-regression.yml
   pull_request:
     paths:
@@ -34,6 +35,7 @@ jobs:
       - name: Node.js test suite
         run: |
           node --test tests/shopping-v1.test.cjs
+          node --test tests/shopping-optional-treats-v919.test.cjs
           node --test tests/food-freshness-v913.test.cjs
           node --test tests/food-prep-checklist-v916.test.cjs
           node --test tests/food-spice-taste-prep-v918.test.cjs
