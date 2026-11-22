@@ -1267,7 +1267,7 @@
       return candidates.length===1?candidates[0]:null;
     };
     const usedSources=new Set();
-    const itemRows=originalItems.flatMap(item=>{
+    const itemRows=original.filter(item=>item?.eaten_only_extra!==true).flatMap(item=>{
       const matches=ordered.filter(source=>matchesName(item,source));
       const fresh=(matches.length?matches:[uniqueSnapshotSource(item)].filter(Boolean))
         .filter(source=>!usedSources.has(source));
