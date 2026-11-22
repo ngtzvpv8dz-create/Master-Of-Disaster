@@ -71,9 +71,9 @@ test('weekday and weekend guidance follows the exact local calendar day, without
  assert.equal(helpers.weekendTreatDay('2026-11-22'),true,'Sunday is weekend');
  assert.equal(helpers.weekendTreatDay('2026-11-21'),true,'Saturday is weekend');
  assert.equal(helpers.weekendTreatDay('2026-11-23'),false,'Monday is weekday');
- assert.match(helpers.treatGuidance('2026-11-22'),/2\\.200 kcal/);
+ assert(helpers.treatGuidance('2026-11-22').includes('2.200 kcal'));
  assert.match(helpers.treatGuidance('2026-11-22'),/400–500 kcal/);
  assert.doesNotMatch(helpers.treatGuidance('2026-11-22'),/100 kcal/);
  assert.match(helpers.treatGuidance('2026-11-23'),/100 kcal/);
- assert.match(proposed,/esc\\(treatGuidance\\(day\\|\\|berlinDay\\(\\)\\)\\)/);
+ assert(proposed.includes('esc(treatGuidance(day||berlinDay()))'));
 });
