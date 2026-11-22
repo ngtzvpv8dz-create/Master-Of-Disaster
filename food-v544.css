@@ -2955,3 +2955,51 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
 .food-nutrition-global-row-v845 button span{grid-row:1 / span 2;grid-column:2;align-self:center}
 .food-nutrition-global-row-v845 button:focus-visible{outline:2px solid #8164ab;outline-offset:2px}
 @media(max-width:400px){.food-nutrition-global-audit-v845 summary{padding:8px 9px}.food-nutrition-global-audit-v845 summary strong{font-size:11px}.food-nutrition-global-list-v845{max-height:380px}}
+
+/* V915: Ingredient cooking checklist. Display state only, no stock movement. */
+.food-recipe-detail-block-v572 ul li.food-prep-track-v915{
+  position:relative!important;
+  min-height:35px;
+  padding:6px 5px 6px 39px;
+  border-radius:10px;
+  transition:background .15s ease;
+}
+.food-recipe-detail-block-v572 ul li.food-prep-checked-v915{
+  background:rgba(50,133,93,.12);
+  border-left:3px solid #359268;
+}
+.food-recipe-detail-block-v572 ul li.food-prep-checked-v915>span{
+  color:#287354;
+  font-weight:750;
+}
+.food-prep-check-v915{
+  position:absolute;
+  left:6px;
+  top:50%;
+  transform:translateY(-50%);
+  display:grid;
+  place-items:center;
+  height:28px;
+  width:28px;
+  min-width:28px;
+  padding:0;
+  border:1px solid rgba(70,105,80,.34);
+  border-radius:8px;
+  background:rgba(255,255,255,.8);
+  color:#476a50;
+  font-weight:900;
+  font-size:19px;
+  cursor:pointer;
+  z-index:2;
+}
+.food-prep-check-v915[aria-pressed="true"]{
+  background:#35876b;
+  border-color:#35876b;
+  color:white;
+}
+.food-prep-check-v915:disabled{opacity:.55;cursor:wait}
+.food-cloud-warning-v548[data-food-freshness-audit-details]>summary{
+  cursor:pointer;
+  padding:8px 10px;
+  font-weight:700;
+}
