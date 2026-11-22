@@ -25,8 +25,10 @@
   let plannedAllocationCache=null;
   let plannedThawCacheState=null;
   let plannedThawCache=null;
+  let prepDoneSet=new Set();
+  let freshnessAuditExpanded=false;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras','prepChecks'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -607,6 +609,22 @@
     throw new Error('Die Zusatzverzehr-Historie ist größer als 10.000 Einträge und benötigt eine weitere Seitennavigation.');
   }
 
+  // Paginated, bounded checklist read. Never confuse checked ingredients with
+  // consumption or stock movements. Only recent preparation progress matters.
+  async function loadPrepChecks(supabase){
+    const rows=[],size=750;
+    for(let offset=0;offset<15000;offset+=size){
+      const response=await supabase.from('food_meal_ingredient_prep_checks')
+        .select('ingredient_id,checked_at').gte('checked_at',plusDays(todayIso(),-45)+'T00:00:00Z')
+        .order('checked_at',{ascending:false}).range(offset,offset+size-1);
+      if(response.error)throw response.error;
+      const chunk=response.data||[];
+      rows.push(...chunk);
+      if(chunk.length<size)return {data:rows};
+    }
+    throw new Error('Die Zubereitungs-Checkliste ist größer als 15.000 Einträge; bitte Bereich einschränken.');
+  }
+
   async function remoteData(){
     const supabase=client();
     if(!supabase)return unavailableSnapshot('Cloud-Verbindung fehlt.');
@@ -634,7 +652,8 @@
       safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('TK-Meal-Prep',supabase.from('food_mealprep_freezer_portions').select('id,leftover_id,meal_id,servings,status,frozen_on,needed_on,thaw_started_at,thawed_at,note,created_at').in('status',['frozen','thawing','thawed']).order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3))),
-      safeQuery('Zusatzverzehr-Historie',loadExtraHistory(supabase,user.id),12000)
+      safeQuery('Zusatzverzehr-Historie',loadExtraHistory(supabase,user.id),12000),
+      safeQuery('Zubereitungs-Checkliste',loadPrepChecks(supabase),12000)
     ]);
 
     cloudIssues=[];
@@ -663,7 +682,8 @@
       freezer:take('freezer',10,rows=>rows),
       mealPrepFreezer:take('mealPrepFreezer',11,rows=>rows),
       pendingCheckout:take('pendingCheckout',12,rows=>rows),
-      extras:take('extras',13,rows=>rows)
+      extras:take('extras',13,rows=>rows),
+      prepChecks:take('prepChecks',14,rows=>rows)
     };
   }
 
@@ -1280,7 +1300,7 @@
       +'<span class="food-allocation-copy-v741">'+esc(label)+'</span></div></div>';
   }
 
-  function ingredientListMarkup(items,allocationMap=null){
+  function ingredientListMarkup(items,allocationMap=null,prepMealId=null){
     return '<ul>'+items.map(item=>{
       const q=num(item.quantity);
       const allocation=(item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item);
@@ -1306,7 +1326,12 @@
         &&String(item?.label||'').trim()
         ?'<small style="display:block;margin-top:3px;font-size:10px;line-height:1.45;color:#617764;">'+esc(String(item.label).trim())+'</small>'
         :'';
-      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751':'')+'"><span>'+esc(displayName)+paprikaDetailHtml+'</span>'+
+      const canCheck=Boolean(prepMealId&&item.id&&sourceIsReal('prepChecks'));
+      const isChecked=canCheck&&prepDoneSet.has(String(item.id));
+      const checkButton=canCheck
+        ?'<button type="button" class="food-prep-check-v915" data-food-prep-check="'+esc(item.id)+'" data-food-prep-meal="'+esc(prepMealId)+'" aria-pressed="'+isChecked+'" aria-label="'+esc(displayName)+(isChecked?' bereits verwendet':' als verwendet markieren')+'" title="Nur Zubereitungsfortschritt, kein Vorratsabzug">'+(isChecked?'✓':'○')+'</button>'
+        :'';
+      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751 ':'')+(isChecked?'food-prep-checked-v915':'')+'"><span>'+esc(displayName)+paprikaDetailHtml+'</span>'+checkButton+
         quantityHtml+
         removeHtml+
         allocationHtml+'</li>';
@@ -1333,7 +1358,7 @@
     return {prep,fresh};
   }
 
-  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true){
+  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true,prepMealId=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
     const instructions=recipeInstructions(recipe);
@@ -1344,7 +1369,7 @@
       num(recipe.calories_kcal_per_serving)!==null?Math.round(Number(recipe.calories_kcal_per_serving))+' kcal':null,
       num(recipe.protein_g_per_serving)!==null?fmtQty(recipe.protein_g_per_serving,'g')+' Protein':null
     ].filter(Boolean).join(' · '):'';
-    const ingredientBlocks=preparedMeal?preparedIngredientListMarkup(preparedMeal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items,allocationMap)+'</div>';
+    const ingredientBlocks=preparedMeal?preparedIngredientListMarkup(preparedMeal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items,allocationMap,prepMealId)+'</div>';
     const details=expanded
       ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
       :'';
@@ -1883,7 +1908,7 @@
         ?'<div class="food-recipe-details-v572">'
           +(detailNote?'<p class="food-recipe-note-v572">'+esc(detailNote)+'</p>':'')
           +originalPreparedMeta+sourceIngredients+referenceIngredients
-          +(extras.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
+          +(extras.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Frisch dazu an diesem Tag</strong>'+ingredientListMarkup(extras,plannedFamilyAllocationMaps().get(String(meal.id))||null,status==='planned'?meal.id:null)+'</div>'):'')
           +(!sourceIngredients&&!referenceIngredients&&!extras.length&&!detailNote?'<p class="food-recipe-note-v572">Für diese Meal-Prep-Portion sind keine Zutatendetails gespeichert.</p>':'')
         +'</div>'
         :'';
@@ -1911,7 +1936,7 @@
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
       const allocationMap=plannedFamilyAllocationMaps().get(String(meal.id))||null;
-      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null,false);
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null,false,status==='planned'?meal.id:null);
       const note=visibleMealNote(meal.note,{completed:status==='completed'});
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
       const freezeHint=status==='planned'?mealPrepStorageMarkup(meal):'';
@@ -1940,7 +1965,7 @@
     const note=visibleMealNote(meal.note,{completed:status==='completed'});
     const details=expanded
       ?'<div class="food-recipe-details-v572">'
-        +(items.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong>'+ingredientListMarkup(items,plannedFamilyAllocationMaps().get(String(meal.id))||null)+'</div>'):'')
+        +(items.length?(status==='completed'?preparedIngredientListMarkup(meal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten</strong>'+ingredientListMarkup(items,plannedFamilyAllocationMaps().get(String(meal.id))||null,status==='planned'?meal.id:null)+'</div>'):'')
         +(status==='completed'?'':mealPrepStorageMarkup(meal))
         +(note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'')
         +(!items.length&&!note&&!freezeInstruction(meal.note)?'<p class="food-recipe-note-v572">Für diese Mahlzeit sind keine weiteren Details hinterlegt.</p>':'')
@@ -1992,10 +2017,10 @@
       ...data,gaps:deriveShopping(data),today:todayIso()
     })||[];
     const freshnessMarkup=freshness.length
-      ?'<section class="food-cloud-warning-v548" role="alert"><div><strong>Frische- und MHD-Planprüfung: '+freshness.length+' Hinweise</strong><span>Vor dem nächsten Einkauf diese Punkte klären. Keine Mengen oder Mahlzeiten wurden stillschweigend geändert.</span>'
+      ?'<details class="food-cloud-warning-v548" data-food-freshness-audit-details '+(freshnessAuditExpanded?'open':'')+'><summary><strong>Frische- und MHD-Prüfung: '+freshness.length+' Punkte</strong> · Details anzeigen</summary><div><span>Vor dem nächsten Einkauf diese Punkte klären. Keine Mengen oder Mahlzeiten wurden stillschweigend geändert.</span>'
         +'<ul>'+freshness.slice(0,8).map(issue=>'<li><strong>'+esc(issue.subject)+'</strong> · '+esc(issue.message)+'</li>').join('')+'</ul>'
         +(freshness.length>8?'<span>Weitere '+(freshness.length-8)+' Hinweise. Details im aktuellen Einkauf prüfen.</span>':'')
-        +'</div></section>'
+        +'</div></details>'
       :'<section class="food-priority-strip-v544"><strong>Frische-Check</strong><span>Für die auswertbaren Plan- und Chargendaten keine Fristüberschreitung erkannt. Fehlende Öffnungsdaten bleiben ungeprüft.</span></section>';
     return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Geplant bis '+esc(fmtDate(horizon))+'</h3></div><small>Heute bleibt bei Heute</small></div>'+
       freshnessMarkup+
@@ -5155,6 +5180,32 @@
     await mutate(()=>result.data);
   }
 
+  async function togglePrepCheck(ingredientId,mealId,checked){
+    if(!sourceIsReal('prepChecks')||!sourceIsReal('meals'))
+      throw new Error('Die Zubereitungs-Checkliste ist nicht sicher mit V1 synchronisiert.');
+    const meal=(state?.meals||[]).find(m=>String(m.id)===String(mealId));
+    if(!meal||normalizedStatus(meal.status)!=='planned'
+      ||!(meal.ingredients||[]).some(i=>String(i.id)===String(ingredientId)))
+      throw new Error('Die Zutat gehört nicht mehr zu einer offenen geplanten Mahlzeit.');
+    const supabase=client();
+    if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+    const session=await withTimeout(supabase.auth.getSession(),'Anmeldung',3500);
+    const user=session?.data?.session?.user;
+    if(!user?.id)throw new Error('Nicht angemeldet.');
+    const result=checked
+      ?await withTimeout(supabase.from('food_meal_ingredient_prep_checks')
+        .upsert({user_id:user.id,ingredient_id:ingredientId,checked_at:new Date().toISOString()},
+          {onConflict:'user_id,ingredient_id'}),'Zutat abhaken',9000)
+      :await withTimeout(supabase.from('food_meal_ingredient_prep_checks')
+        .delete().eq('ingredient_id',ingredientId).eq('user_id',user.id),'Zutat zurücksetzen',9000);
+    if(result.error)throw result.error;
+    const old=state.prepChecks||[];
+    state.prepChecks=checked
+      ?[...old.filter(x=>String(x.ingredient_id)!==String(ingredientId)),{ingredient_id:ingredientId,checked_at:new Date().toISOString()}]
+      :old.filter(x=>String(x.ingredient_id)!==String(ingredientId));
+    prepDoneSet=new Set(state.prepChecks.map(x=>String(x.ingredient_id)));
+  }
+
   function wire(root){
     root.querySelectorAll('[data-food-inventory-mode]').forEach(button=>button.addEventListener('click',()=>{
       inventoryLocationTab=String(button.dataset.foodInventoryMode||'alle');
@@ -5344,6 +5395,21 @@
       event.stopPropagation();
       allocationQuantityModal(button.dataset.foodAllocationEdit,button.dataset.foodAllocationIndex);
     }));
+    root.querySelectorAll('[data-food-prep-check]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();
+      const checked=button.getAttribute('aria-pressed')!=='true';
+      button.disabled=true;
+      try{
+        await togglePrepCheck(button.dataset.foodPrepCheck,button.dataset.foodPrepMeal,checked);
+        button.setAttribute('aria-pressed',String(checked));
+        button.textContent=checked?'✓':'○';
+        button.closest('li')?.classList.toggle('food-prep-checked-v915',checked);
+      }catch(error){alert(error?.message||'Zutaten-Haken konnte nicht gespeichert werden.');}
+      finally{button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-freshness-audit-details]').forEach(details=>details.addEventListener('toggle',()=>{
+      freshnessAuditExpanded=details.open;
+    }));
     root.querySelectorAll('[data-food-remove-meal-ingredient]').forEach(button=>button.addEventListener('click',async event=>{
       event.stopPropagation();
       button.disabled=true;
@@ -5421,6 +5487,7 @@
   }
 
   function paint(root,data){
+    prepDoneSet=new Set((data.prepChecks||[]).map(x=>String(x.ingredient_id)));
     const target=root.querySelector('.food-content-v544');
     if(target)target.innerHTML=cloudNotice()+content(data);
     root.querySelectorAll('.food-section-head-v544>div>span').forEach(label=>label.remove());
