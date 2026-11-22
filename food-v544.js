@@ -206,8 +206,10 @@
     if(/^(?:salz|meersalz|steinsalz|pfeffer(?:\s|$)|chiliflocken|chilipulver|cayenne(?:pfeffer)?|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|getrocknete minze|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat(?:nuss)?|muskatblüte|fenchelsamen|piment|nelken|curry(?:pulver)?|gewürzmischung|italienische kräuter|provence kräuter)(?:\b|$)/i.test(n))return true;
     return false;
   };
+  const spiceInstructionsByTaste=steps=>steps.map(step=>String(step)
+    .replace(/\b\d+(?:[.,]\d+)?\s*g\s+(Salz|Meersalz|Pfeffer schwarz|Paprikapulver edelsüß|Paprikapulver|Oregano gerebelt|Oregano|Kreuzkümmel gemahlen|Kreuzkümmel|Currypulver|Chiliflocken|Chilipulver|Cayennepfeffer|Zimt gemahlen|Zimt|Kurkuma|Muskatnuss|Thymian|Rosmarin|Basilikum)\b/gi,'$1 nach Belieben'));
   const ingredientQuantityForDisplay=item=>{
-    if(seasoningByTaste(item))return 'nach Belieben';
+    if(seasoningByTaste(item)||String(item?.unit||'').toLocaleLowerCase('de-DE')==='nach belieben')return 'nach Belieben';
     const stored=fmtQty(item?.quantity,item?.unit);
     const soyGrams=soySauceScaleGrams(item);
     if(soyGrams!==null)return fmtQty(soyGrams,'g');
@@ -1316,7 +1318,9 @@
       const allocationHtml=allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item);
       const editable=editableAllocationContext(item);
       const canRemove=Boolean(editable);
-      const quantityHtml=q===null||Number.isNaN(q)
+      const quantityHtml=seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben'
+        ?'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">nach Belieben</b>'
+        :q===null||Number.isNaN(q)
         ?''
         :'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">'+esc(ingredientQuantityForDisplay(item))+'</b>';
       const removeHtml=canRemove
@@ -1370,7 +1374,7 @@
   function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true,prepMealId=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
-    const instructions=recipeInstructions(recipe);
+    const instructions=preparedMeal?recipeInstructions(recipe):spiceInstructionsByTaste(recipeInstructions(recipe));
     // Stored recipe kcal are a historical catalog estimate. Meal cards use
     // the current ingredient quantities/products from food-nutrition-v711.js.
     // Avoid flashing outdated kcal before that authoritative calculation runs.
@@ -4581,6 +4585,7 @@
       '<label>Aus Vorrat wählen<select data-food-recipe-inventory><option value="">Eigene Zutat eingeben</option>'+options+'</select></label>'+
       '<label>Name<input data-food-recipe-name placeholder="z. B. Paprika" required></label>'+
       '<div class="food-form-grid-v544"><label>Menge<input data-food-recipe-quantity type="number" min="0.01" step="0.01" inputmode="decimal" required></label><label>Einheit<input data-food-recipe-unit value="g" placeholder="g, ml, Stück …" required></label></div>'+
+      '<small data-food-recipe-spice-hint hidden>Gewürz nach Belieben, keine Gramm nötig. Kräftige Gewürze am besten zuerst sparsam dosieren und abschmecken.</small>'+
       '</div>';
   }
 
@@ -4588,6 +4593,23 @@
     const select=row.querySelector('[data-food-recipe-inventory]');
     const name=row.querySelector('[data-food-recipe-name]');
     const unit=row.querySelector('[data-food-recipe-unit]');
+    const qty=row.querySelector('[data-food-recipe-quantity]');
+    const hint=row.querySelector('[data-food-recipe-spice-hint]');
+    const updateSpice=()=>{
+      const spice=seasoningByTaste({name:name?.value||''});
+      row.dataset.foodSeasoning=String(spice);
+      if(spice){
+        if(qty){qty.value='';qty.disabled=true;qty.required=false;qty.placeholder='nach Belieben';}
+        if(unit){unit.value='nach Belieben';unit.readOnly=true;}
+      }else{
+        if(qty){qty.disabled=false;qty.required=true;qty.placeholder='';}
+        if(unit){
+          if(unit.value==='nach Belieben')unit.value=String((state?.inventory||[]).find(i=>i.id===select?.value)?.unit||'g');
+          unit.readOnly=Boolean(select?.value);
+        }
+      }
+      if(hint)hint.hidden=!spice;
+    };
     const sync=()=>{
       const item=(state?.inventory||[]).find(entry=>entry.id===select?.value);
       if(item){
@@ -4596,12 +4618,14 @@
         if(item.unit)unit.value=item.unit;
         unit.readOnly=true;
       }else{
-        name.readOnly=false;
-        unit.readOnly=false;
+        name.readOnly=false;unit.readOnly=false;
         if(select?.value==='')name.value='';
       }
+      updateSpice();
     };
     select?.addEventListener('change',sync);
+    name?.addEventListener('input',updateSpice);
+    updateSpice();
   }
 
   function addRecipeModal(){
@@ -4639,18 +4663,20 @@
         const inventoryId=String(row.querySelector('[data-food-recipe-inventory]')?.value||'')||null;
         const inventoryItem=inventoryId?(state?.inventory||[]).find(item=>item.id===inventoryId):null;
         const name=String(row.querySelector('[data-food-recipe-name]')?.value||'').trim();
-        const quantity=Number(row.querySelector('[data-food-recipe-quantity]')?.value);
-        const unit=String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
         if(!name)throw new Error('Bei Zutat '+(index+1)+' fehlt der Name.');
-        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
-        if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
         if(inventoryId&&!inventoryItem)throw new Error('Die ausgewählte Vorratszutat ist nicht mehr verfügbar.');
         const family=String(inventoryItem?.family_name||'').trim();
         const storedName=family||name;
-        return {user_id:user.id,inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit,sort_order:index+1};
+        const spice=seasoningByTaste({name:storedName});
+        const rawQuantity=String(row.querySelector('[data-food-recipe-quantity]')?.value||'').trim();
+        const quantity=spice?null:Number(rawQuantity);
+        const unit=spice?'nach Belieben':String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
+        if(!spice&&(!rawQuantity||!Number.isFinite(quantity)||quantity<=0))throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
+        if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
+        return {user_id:user.id,inventory_id:family?null:inventoryId,name:storedName,label:spice?storedName+' nach Belieben':fmtQty(quantity,unit)+' '+storedName,quantity,unit,sort_order:index+1};
       });
 
-      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients,title);
+      const validatedInstructions=checkedFoodRecipeInstructions(spiceInstructionsByTaste(String(instructions||'').split('\n')).join('\n'),ingredients,title);
       if(validatedInstructions===null)return false;
 
       let recipe=null;
@@ -4741,18 +4767,20 @@
         const inventoryId=String(row.querySelector('[data-food-recipe-inventory]')?.value||'')||null;
         const inventoryItem=inventoryId?(state?.inventory||[]).find(item=>item.id===inventoryId):null;
         const name=String(row.querySelector('[data-food-recipe-name]')?.value||'').trim();
-        const quantity=Number(row.querySelector('[data-food-recipe-quantity]')?.value);
-        const unit=String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
         if(!name)throw new Error('Bei Zutat '+(index+1)+' fehlt der Name.');
-        if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
-        if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
         if(inventoryId&&!inventoryItem)throw new Error('Die ausgewählte Vorratszutat ist nicht mehr verfügbar.');
         const family=String(inventoryItem?.family_name||'').trim();
         const storedName=family||name;
-        return {inventory_id:family?null:inventoryId,name:storedName,label:fmtQty(quantity,unit)+' '+storedName,quantity,unit};
+        const spice=seasoningByTaste({name:storedName});
+        const rawQuantity=String(row.querySelector('[data-food-recipe-quantity]')?.value||'').trim();
+        const quantity=spice?null:Number(rawQuantity);
+        const unit=spice?'nach Belieben':String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
+        if(!spice&&(!rawQuantity||!Number.isFinite(quantity)||quantity<=0))throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
+        if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
+        return {inventory_id:family?null:inventoryId,name:storedName,label:spice?storedName+' nach Belieben':fmtQty(quantity,unit)+' '+storedName,quantity,unit};
       });
 
-      const validatedInstructions=checkedFoodRecipeInstructions(instructions,ingredients,title);
+      const validatedInstructions=checkedFoodRecipeInstructions(spiceInstructionsByTaste(String(instructions||'').split('\n')).join('\n'),ingredients,title);
       if(validatedInstructions===null)return false;
 
       const result=await withTimeout(
