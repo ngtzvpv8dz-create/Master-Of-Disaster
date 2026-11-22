@@ -61,3 +61,22 @@ Verifiziert direkt in V1:
 
 ## Übergabe / Abschlusskriterien
 Codex soll zuerst **nur eine kurze Bestandsanalyse und einen Vorschlag zur sicheren Review-UI/Datenhaltung** vorlegen. Danach Review-Oberfläche und belastbare Tests erstellen, ohne individuelle Zutatenpräferenzen automatisch zu ändern. Review-Status, unbearbeitete Anzahl, fachliche Konflikte und zukünftige Vorschläge mit eindeutigen Datensatz-IDs nachhalten. Der Nutzer entscheidet gruppenweise; erst danach Monatsplan erstellen.
+
+
+## Verbindliche Excel-Übergabe (Nutzerentscheidung 22.11.2026)
+Der Nutzer hat eine lokale Excel-Datei **Zutatenreview_V1_1000_627plus373_20261122.xlsx** erhalten. Sie muss für die Ausführung separat vom Nutzer an Codex gegeben werden; **NICHT** mit personenbezogenen Geschmacksurteilen ins öffentliche GitHub-Repo committen.
+
+Die Datei wurde aus einer Live-Supabase-V1-Abfrage vorbereitet. Im Arbeitsblatt **1000 Zutaten**:
+- Tabellenüberschrift in Zeile 5, Nutzdaten Zeile 6 bis 1005.
+- **627 existierende Einträge in Zeilen 6–632**, mit Kategorie, exaktem Originalnamen, originaler Bewertung und einem **12-stelligen eindeutigen UUID-Präfix**. Stimmt mit den sieben Präferenzzählungen aus dem Live-Audit überein. V1-Originalnoten verbleiben im Datenbankbestand, beim Abgleich je Zutat hinzuziehen.
+- **373 leere neue Rechercheplätze in Zeilen 633–1005**: Codex soll **genau 373** vielfältige, zuvor nicht im Zutatenstamm vorhandene Kandidaten mit REWE-/Lidl-/EDEKA-Beleg hinzufügen. **Vor der Recherche gibt es nicht bereits 1000 vollständig benannte Zutaten.**
+- Spalten A Nummer, B Typ (V1/NEU), C Referenzpräfix, D Kategorie, E Zutatenname, F unveränderter alter Geschmacksstatus, G Nutzerbewertung, H Nutzerhäufigkeit, I Freigabe, J Händler, K Produktbeleg-URL, L Nutzerkommentar, M abgeleiteter Prüfstatus.
+- **G, H, I nur durch den Nutzer freigeben lassen.** Bereits bekannte 627 Werte sind in G zunächst identisch mit F; neue in G „Noch offen“. I beginnt immer „Offen“, nie automatisch als bestätigt. Unbestätigte Änderungen und importierte Kandidaten bleiben ausschließlich Arbeitsvorschläge.
+- Tastatursteuerung für Microsoft Excel Desktop über separat gelieferte Makro-Datei **MOD_Zutaten_Leertaste.bas**: Pfeile wechseln Zellen, Leertaste schaltet G/H/I vorwärts, Umschalt+Leertaste zurück. Ohne Makro Excel-Auswahl Alt+Pfeil runter/Pfeile/Enter. Normale XLSX-Datei enthält kein ausführbares Makro. Codex soll die Datei für den Nutzer nach der Recherche unverändert kompatibel behalten.
+- Geschmacksoptionen G: Noch offen, Würde ich probieren, Nur wenn es passt, Ab und zu, Gern, Sehr gern, Mag ich nicht, Nie. Bestehende V1-Klassen bleiben exakt erhalten.
+- Frequenzen H: Noch offen, Täglich, Alle 2–3 Tage, 1× pro Woche, Alle 2 Wochen, 1× pro Monat, Seltener, Nur bei passenden Rezepten, Nicht einplanen. Frequenz ist **nicht** gleich Geschmacksstatus und darf bei 627 bestehenden Einträgen nicht automatisch abgeleitet werden.
+- Beim späteren Import von bestätigten Excel-Änderungen: 12-stelligen Präfix UND unveränderten Originalnamen gegen vollständige UUID in aktueller V1-DB auf Eindeutigkeit und aktuelle Version prüfen. Keine Schreibaktion allein aufgrund eines Präfixes.
+- Recherche abgleichen mit *allen* bisherigen 627 Namen, 19 Aliasen, 310 Familien, 588 Familienbegriffen und bereits aktiven Shopping-Produkten. Neue Kandidaten dürfen keine Varianten-/Namensdubletten sein. Reale Händlerbelege aus REWE/Lidl/EDEKA in J/K und überprüfte Quellen eintragen; keine erfundenen EAN, Nährwert- oder Filialverfügbarkeitsangaben.
+- Freigabe „Bestätigt“ pro Zeile ist Bedingung für **jede** spätere Präferenzänderung. Zusätzliche Änderungen an Rohbestand, Produktstammdaten, Rezepten, Kaufbelegen oder Monatsplan sind durch diese Tabelle **nicht** autorisiert.
+
+**Akzeptanztests:** exakte 627 + 373 = 1000 Positionen; 627 alte Präferenzen unverändert erhalten; alle 373 neuen Kandidaten tatsächlich recherchiert, quellenbelegt, keine Dubletten; alle 1000 IDs/Zeilen nach Speichern und Wiederöffnen konsistent; Filter und Tastaturauswahl auf 1000 Zeilen skalierbar. Eintrag „NEU“ in Zeile 633 ist **keine** gekaufte Ware.
