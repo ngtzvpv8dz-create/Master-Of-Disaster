@@ -3003,3 +3003,32 @@ html body.mod-food-v544 .food-modal-card-v544 button[type=submit]{font-size:17px
   padding:8px 10px;
   font-weight:700;
 }
+
+/* V918: lightweight taste feedback, optional recipe seasonings and evening prep. */
+.food-recipe-ingredient-row-v549 [data-food-recipe-spice-hint]{
+  display:block;margin:4px 2px 7px;
+  color:#54705e;font-size:10px;line-height:1.5;
+}
+.food-recipe-ingredient-row-v549 [data-food-recipe-spice-hint][hidden]{display:none}
+.food-taste-prompt-v918{display:flex;justify-content:flex-start;padding:7px 12px 10px}
+.food-taste-prompt-v918 button{font-size:11px}
+.food-taste-form-v918{display:grid;gap:12px}
+.food-taste-form-v918 label{display:grid;gap:5px}
+.food-taste-form-v918 p{font-size:12px;line-height:1.45}
+.food-taste-form-v918 select,
+.food-taste-form-v918 textarea{width:100%;max-width:100%;min-height:34px}
+.food-taste-form-v918 .food-taste-confirm-v918{display:flex;align-items:center;gap:9px;font-size:12px}
+.food-taste-confirm-v918 input{width:18px;height:18px;flex:none}
+.food-prep-ahead-v918{
+  border:1px solid rgba(89,112,88,.18);
+  border-radius:12px;background:rgba(240,244,228,.84);
+  margin:10px 0;padding:0 11px;
+}
+.food-prep-ahead-v918>summary{
+  padding:11px 3px;cursor:pointer;color:#3a6446;font-size:12px;font-weight:850;
+}
+.food-prep-ahead-v918 ul{display:grid;gap:8px;margin:0 0 12px;padding:0;list-style:none}
+.food-prep-ahead-v918 li{display:grid;gap:3px;padding:9px;border-radius:9px;background:rgba(255,255,255,.7)}
+.food-prep-ahead-v918 li strong{font-size:11px;color:#34553c}
+.food-prep-ahead-v918 li span{font-size:11px;color:#4c6750}
+.food-prep-ahead-v918 li small{font-size:9px;color:#6c8172}
