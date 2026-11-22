@@ -276,7 +276,9 @@
     const explicit=linked.map(p=>Number(p.product_data?.fresh_use_within_days))
       .find(n=>Number.isInteger(n)&&n>0&&n<=14);
     if(explicit)return explicit;
-    if(/himbeer|erdbeer|brombeer|heidelbeer|blaubeer|johannisbeer|stachelbeer/.test(name))return 2;
+    const kind=window.ModFoodFreshnessV913?.classify?.({name:stock?.name||need?.label||''});
+    // V913: User-confirmed max. one-week window for fresh fruit, vegetables and dairy.
+    if(['fruit','vegetable','dairy'].includes(kind))return 7;
     return null;
   };
   const fmtShortDate=iso=>iso?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00')):'';
@@ -1986,7 +1988,17 @@
         +'<button type="button" class="food-action-v544 compact" data-food-mealprep-action="register"'
         +' data-leftover-id="'+esc(item.id)+'" data-servings="1" title="Nur bei tatsächlich eingefrorener Portion">🧊 1 Portion eingefroren bestätigen</button></article>';}).join('')+'</div></section>'
       :'';
+    const freshness=window.ModFoodFreshnessV913?.auditPlan?.({
+      ...data,gaps:deriveShopping(data),today:todayIso()
+    })||[];
+    const freshnessMarkup=freshness.length
+      ?'<section class="food-cloud-warning-v548" role="alert"><div><strong>Frische- und MHD-Planprüfung: '+freshness.length+' Hinweise</strong><span>Vor dem nächsten Einkauf diese Punkte klären. Keine Mengen oder Mahlzeiten wurden stillschweigend geändert.</span>'
+        +'<ul>'+freshness.slice(0,8).map(issue=>'<li><strong>'+esc(issue.subject)+'</strong> · '+esc(issue.message)+'</li>').join('')+'</ul>'
+        +(freshness.length>8?'<span>Weitere '+(freshness.length-8)+' Hinweise. Details im aktuellen Einkauf prüfen.</span>':'')
+        +'</div></section>'
+      :'<section class="food-priority-strip-v544"><strong>Frische-Check</strong><span>Für die auswertbaren Plan- und Chargendaten keine Fristüberschreitung erkannt. Fehlende Öffnungsdaten bleiben ungeprüft.</span></section>';
     return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Geplant bis '+esc(fmtDate(horizon))+'</h3></div><small>Heute bleibt bei Heute</small></div>'+
+      freshnessMarkup+
       '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
       leftoverBlock+
       (groups.length?'<div class="food-plan-days-v685">'+groups.map(group=>'<details class="food-day-group-v544 food-plan-day-v685" data-food-plan-day="'+esc(group.date)+'" '+(expandedPlanDays.has(group.date)?'open':'')+'><summary class="food-day-label-v544"><span class="food-plan-day-title-v685"><strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em><span class="food-plan-day-summary-v778" data-food-day-summary-plan>Kalorien &amp; Protein werden berechnet …</span></span><b class="food-plan-day-count-v685">'+esc(group.meals.length)+'</b></summary><div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></div></details>').join('')+'</div>':'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
@@ -5565,6 +5577,7 @@
         .map(ingredient=>({
           name:String(ingredient.name||ingredient.label||'').trim(),
           date:String(meal.meal_date),
+          mealType:String(meal.meal_type||''),
           unit:String(ingredient.unit||'')
         })));
     return {
@@ -5575,7 +5588,7 @@
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
       inventory:(data.inventory||[]).map(item=>({...item})),
-      inventoryLots:(data.lots||[]).map(lot=>({id:lot.id,inventory_id:lot.inventory_id,batch_data:lot.batch_data||{},package_quantity:lot.package_quantity,package_unit:lot.package_unit,opened_remaining_quantity:lot.opened_remaining_quantity,unopened_packages:lot.unopened_packages})),
+      inventoryLots:(data.lots||[]).map(lot=>({id:lot.id,inventory_id:lot.inventory_id,batch_data:lot.batch_data||{},package_quantity:lot.package_quantity,package_unit:lot.package_unit,opened_remaining_quantity:lot.opened_remaining_quantity,unopened_packages:lot.unopened_packages,best_before_date:lot.best_before_date,purchased_on:lot.purchased_on,storage_location:lot.storage_location})),
       inventoryAliases:(data.aliases||[]).map(item=>({...item})),
       overdueMeals
     };
