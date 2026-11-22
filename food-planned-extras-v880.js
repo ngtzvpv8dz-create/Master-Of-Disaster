@@ -8,6 +8,12 @@
   const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const nf=x=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:1}).format(Number(x)||0);
   const berlinDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Berlin',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  // The optional treat buffer follows the plan date, never an unconditional 100 kcal hard cap.
+  // Noon UTC avoids timezone rollover when getting the calendar weekday.
+  const weekendTreatDay=iso=>{const dow=new Date(String(iso)+'T12:00:00Z').getUTCDay();return dow===0||dow===6;};
+  const treatGuidance=iso=>weekendTreatDay(iso)
+    ?'Wochenende: Grundmahlzeiten etwa 1.700–1.800 kcal; zusätzliche Genuss-Extras freiwillig bis zu insgesamt etwa 2.200 kcal am Tag (typisch bis zu 400–500 kcal extra). Nur bestätigte Extras zählen in Tagesbilanz und Vorrat.'
+    :'Werktags: etwa 100 kcal freiwilliger Genuss-Spielraum innerhalb von 1.500–1.800 kcal am Tag. Nur bestätigte Extras zählen in Tagesbilanz und Vorrat.';
   let day='',rows=[],ready=false,busy=false,error='',note='',mounting=false,uid='',editingId='',loading=false;
   const client=()=>window.getSupabaseClient?.();
   function box(){return document.getElementById(ID);}
@@ -138,7 +144,7 @@
     const pending=visibleRows.filter(r=>r.status==='planned'),confirmed=visibleRows.filter(r=>r.status==='confirmed');
     const kcal=pending.reduce((sum,r)=>sum+(Number(r.calories_kcal)||0),0);
     el.innerHTML='<h3>🍬 Geplante Genuss-Extras</h3>'+
-      '<p>Flexibler Richtwert: 100 kcal/Tag innerhalb von 1.800 kcal. Nur mit ✓ bestätigte Extras zählen in Tagesbilanz und Vorrat. Vorschläge sind freiwillig.</p>'+
+      '<p>'+esc(treatGuidance(day||berlinDay()))+' Vorschläge sind freiwillig.</p>'+
       (error?'<p role="alert" class="food-treat-error-v880">'+esc(error)+'</p>':'')+
       (note?'<p role="status" class="food-treat-success-v880">'+esc(note)+'</p>':'')+
       (!ready?'<p>Geplante Extras werden geladen …</p>':
