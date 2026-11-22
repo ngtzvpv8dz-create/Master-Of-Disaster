@@ -55,7 +55,7 @@
     const end=deadline(purchaseDate,kind,extras);
     if(!end||!iso(mealDate))return false;
     if(mealDate>end)return true;
-    if(mealDate===end&&kind==='dairy'){
+    if(mealDate===end&&kind==='dairy'&&iso(purchaseDate)&&shift(purchaseDate,7)===end){
       const day=new Date(end+'T12:00:00Z').getUTCDay();
       if(day===6)return mealType!=='breakfast';
       if(day===3)return mealType==='dinner';
