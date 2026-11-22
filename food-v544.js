@@ -1650,6 +1650,43 @@
     return tasks;
   }
 
+  // V918: Preparatory reminders from explicit recipe/meal instructions.
+  // An optional marinade is a suggestion, never a false safety requirement.
+  function plannedAheadPrepTasks(){
+    const result=[],today=todayIso();
+    for(const meal of state?.meals||[]){
+      if(normalizedStatus(meal.status)!=='planned'||meal.inventory_booked_at||
+        !/^\d{4}-\d{2}-\d{2}$/.test(String(meal.meal_date||''))||
+        meal.meal_date<today)continue;
+      const recipe=(state?.recipes||[]).find(r=>String(r.id)===String(meal.recipe_id||''));
+      const directions=String(recipe?.instructions||'')+' '+String(meal.note||'');
+      const explicit=/über\s*nacht|am\s+vortag|am\s+vorabend|am\s+abend\s+davor|(?:mindestens|ca\.|rund)\s*(?:[2-9]|1\d|2\d)\s*stunden/i.test(directions);
+      const tasks=[];
+      if(/marinier|marinade|einlegen|durchziehen/i.test(directions))
+        tasks.push(explicit?'Marinieren oder einlegen nach Rezept rechtzeitig starten':'Marinade prüfen und bei Bedarf heute Abend vorbereiten');
+      if(/einweich|quell(?:en|zeit)|einweck|trockenbohnen|trockenlinsen|kichererbsen\s+getrocknet/i.test(directions))
+        tasks.push(explicit?'Einweich- und Quellzeiten heute einplanen':'Einweichen bzw. Quellen nach Rezept prüfen');
+      if(/vorteig|teigruhe|gehen\s+lassen|ruhen\s+lassen|kalte\s+gare/i.test(directions))
+        tasks.push(explicit?'Vorteig oder Teigruhe heute beginnen':'Teigvorbereitung für morgen prüfen');
+      if(!tasks.length)continue;
+      result.push({mealId:String(meal.id),dueDate:plusDays(meal.meal_date,-1),
+        mealDate:meal.meal_date,title:meal.title||recipe?.title||'Mahlzeit',
+        tasks:[...new Set(tasks)]});
+    }
+    return result;
+  }
+
+  function prepAheadAlertMarkup(){
+    const today=todayIso();
+    const tasks=plannedAheadPrepTasks().filter(t=>t.dueDate===today);
+    if(!tasks.length)return '';
+    return '<details class="food-prep-ahead-v918">'+
+      '<summary>🧂 Für morgen vorbereiten · '+tasks.length+' '+(tasks.length===1?'Gericht':'Gerichte')+' · Details öffnen</summary>'+
+      '<ul>'+tasks.map(t=>'<li><strong>'+esc(t.title)+'</strong><span>'+esc(t.tasks.join(' · '))+
+        '</span><small>Für '+esc(fmtDate(t.mealDate))+' · nur notwendige Schritte laut Rezept sind verpflichtend</small></li>').join('')+'</ul>'+
+      '</details>';
+  }
+
   function thawReminderMarkupForMeal(){
     return '';
   }
@@ -2016,7 +2053,7 @@
         '<strong class="food-day-summary-value-v778" data-food-day-protein>… g Protein</strong>'+
         '<button type="button" class="food-day-summary-note-v778 food-day-summary-goto-v838" data-food-day-summary-note data-food-day-summary-goto hidden aria-label="Offenen Tageswert prüfen"></button>'+
       '</div>'+
-      thawTodayAlertsMarkup()+
+      thawTodayAlertsMarkup()+prepAheadAlertMarkup()+
       (meals.length?'<div class="food-meal-list-v544">'+meals.map(mealCard).join('')+'</div>':'<div class="food-empty-card-v544"><h4>Heute ist noch nichts eingeplant.</h4><p>Ein Rezept kann direkt aus dem Rezeptgarten eingeplant werden.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezepte öffnen</button></div>');
   }
 
@@ -2043,7 +2080,7 @@
         +'</div></details>'
       :'<section class="food-priority-strip-v544"><strong>Frische-Check</strong><span>Für die auswertbaren Plan- und Chargendaten keine Fristüberschreitung erkannt. Fehlende Öffnungsdaten bleiben ungeprüft.</span></section>';
     return '<div class="food-section-head-v544"><div><span>PLAN</span><h3>Geplant bis '+esc(fmtDate(horizon))+'</h3></div><small>Heute bleibt bei Heute</small></div>'+
-      freshnessMarkup+
+      freshnessMarkup+prepAheadAlertMarkup()+
       '<div class="food-priority-strip-v544"><strong>Als Nächstes im Blick</strong><span>'+esc(priority.map(item=>item.name).join(' · ')||'Noch keine Prioritäten')+'</span></div>'+
       leftoverBlock+
       (groups.length?'<div class="food-plan-days-v685">'+groups.map(group=>'<details class="food-day-group-v544 food-plan-day-v685" data-food-plan-day="'+esc(group.date)+'" '+(expandedPlanDays.has(group.date)?'open':'')+'><summary class="food-day-label-v544"><span class="food-plan-day-title-v685"><strong>'+esc(fmtDay(group.date))+'</strong><em>'+esc(fmtDate(group.date))+'</em><span class="food-plan-day-summary-v778" data-food-day-summary-plan>Kalorien &amp; Protein werden berechnet …</span></span><b class="food-plan-day-count-v685">'+esc(group.meals.length)+'</b></summary><div class="food-plan-day-body-v685"><div class="food-meal-list-v544">'+group.meals.map(mealCard).join('')+'</div></div></details>').join('')+'</div>':'<div class="food-empty-card-v544"><h4>Noch kein weiterer Tag geplant.</h4><p>Wähle bei einem Rezept „Einplanen“, dann landet es hier – mit dem Vorrat abgeglichen.</p><button type="button" class="food-action-v544" data-food-jump="recipes">Rezept einplanen</button></div>');
