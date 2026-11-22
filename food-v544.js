@@ -2205,14 +2205,17 @@
       else if(lot.best_before_date)meta.push('MHD '+fmtDate(lot.best_before_date));
       if(lot.purchased_on)meta.push('Kauf '+fmtDate(String(lot.purchased_on).slice(0,10)));
       if(lot.storage_location)meta.push(lot.storage_location);
+      const openedOn=String(lot.batch_data?.opened_on||lot.batch_data?.opened_at||'').slice(0,10);
+      if(opened>0)meta.push(openedOn?'Geöffnet '+fmtDate(openedOn):'⚠ Öffnungsdatum unbekannt');
       const frozen=frozenStorageLocation(lot.storage_location);
       const edit='<button type="button" data-food-edit-lot="'+esc(lot.id)+'">Bearbeiten</button>';
+      const setOpenedDate=opened>0?'<button type="button" data-food-opened-date-lot="'+esc(lot.id)+'">'+(openedOn?'Öffnungsdatum korrigieren':'Öffnungsdatum eintragen')+'</button>':'';
       const remove='<button type="button" data-food-discard-lot="'+esc(lot.id)+'">Entfernen</button>';
       return '<div class="food-stock-lot-v848 '+(opened>0?'is-open-v848':'is-closed-v848')+(frozen?' is-frozen-v848':'')+'" data-food-lot-id="'+esc(lot.id)+'">'+
         '<div class="food-stock-lot-top-v848"><b>'+esc(label)+'</b><span>'+esc(opened>0?'Angebrochen':'Ungeöffnet')+'</span></div>'+
         '<strong>'+esc(parts.join(' + '))+'</strong>'+
         (meta.length?'<small>'+esc(meta.join(' · '))+'</small>':'')+
-        '<div class="food-stock-lot-actions-v848">'+edit+remove+'</div></div>';
+        '<div class="food-stock-lot-actions-v848">'+edit+setOpenedDate+remove+'</div></div>';
     });
     const aggregate=Math.max(0,Number(item.quantity)||0);
     const untracked=Math.max(0,aggregate-tracked);
@@ -4926,6 +4929,34 @@
     });
   }
 
+  function openedDateInventoryLotModal(lotId){
+    const lot=editableLot(lotId);if(!lot||!(Number(lot.opened_remaining_quantity)>0))return;
+    try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    const original=String(lot.batch_data?.opened_on||lot.batch_data?.opened_at||'').slice(0,10);
+    const html='<form><p class="food-modal-copy-v544">Trage das tatsächliche Datum ein, an dem du diese Packung geöffnet hast. Wenn du es nicht weißt, abbrechen. Die App erfindet kein Datum.</p>'
+      +'<label>Öffnungsdatum<input name="opened_on" type="date" max="'+esc(todayIso())+'" value="'+esc(original)+'" required></label>'
+      +'<button class="food-action-v544" type="submit">Öffnungsdatum speichern</button></form>';
+    addModal('Öffnungsdatum erfassen',html,async form=>{
+      const openedOn=String(form.get('opened_on')||'').trim();
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(openedOn)||openedOn>todayIso())
+        throw new Error('Bitte das tatsächliche, nicht zukünftige Öffnungsdatum eintragen.');
+      if(lot.purchased_on&&openedOn<String(lot.purchased_on).slice(0,10))
+        throw new Error('Das Öffnungsdatum kann nicht vor dem bestätigten Kaufdatum liegen.');
+      const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
+      const metadata={...(lot.batch_data||{}),opened_on:openedOn};
+      const result=await withTimeout(supabase.from('food_inventory_lots')
+        .update({batch_data:metadata,updated_at:new Date().toISOString()})
+        .eq('id',lot.id).eq('inventory_id',lot.inventory_id)
+        .eq('updated_at',lot.updated_at)
+        .gt('opened_remaining_quantity',0)
+        .select('id,batch_data').maybeSingle(),'Öffnungsdatum speichern',15000);
+      if(result?.error)throw result.error;
+      if(!result?.data)throw new Error('Charge wurde inzwischen verändert. Bitte FOOD neu laden.');
+      await mutate(()=>result.data);
+      return result.data;
+    });
+  }
+
   function discardInventoryLotModal(lotId){
     const lot=editableLot(lotId);if(!lot)return;
     const item=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));if(!item)return;
@@ -5369,6 +5400,9 @@
     }));
     root.querySelectorAll('[data-food-edit-lot]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();editInventoryLotModal(button.dataset.foodEditLot);
+    }));
+    root.querySelectorAll('[data-food-opened-date-lot]').forEach(button=>button.addEventListener('click',event=>{
+      event.stopPropagation();openedDateInventoryLotModal(button.dataset.foodOpenedDateLot);
     }));
     root.querySelectorAll('[data-food-discard-lot]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();discardInventoryLotModal(button.dataset.foodDiscardLot);
