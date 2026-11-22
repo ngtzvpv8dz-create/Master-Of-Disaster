@@ -34,6 +34,7 @@ test('Existing lot may resolve archived product while untracked stock only choos
 test('Nutrition warning is not raised for inactive but existing product with valid nutrients',()=>{
   const ctx={
     ZERO_NAMES:new Set(),
+    toTasteSeasoning:item=>String(item?.unit||'').toLowerCase()==='nach belieben',
     text:x=>String(x||'').toLowerCase(),
     itemName:x=>x.name,
     number:x=>Number(x),
