@@ -105,3 +105,16 @@ test('V1 opening date is shown or explicitly unknown and editable without guesse
   assert.match(food,/\.eq\('updated_at',lot\.updated_at\)/);
   assert.match(food,/openedOn>todayIso\(\)/);
 });
+
+test('refrigerated meat only up to two days, frozen meat is handled separately',()=>{
+  assert.equal(p.classify({name:'Hähnchenbrustfilet'}),'meat');
+  assert.equal(p.deadline('2026-11-21','meat'),'2026-11-23');
+  const gap={label:'Hähnchenbrustfilet',buyFrom:'2026-11-21',missing:300,unit:'g',
+    uses:[{date:'2026-11-25',mealType:'dinner',quantity:300}]};
+  assert(p.gapIssues(gap,[]).some(i=>i.type==='freeze'&&!i.block));
+});
+
+test('shelf-stable automatic buffer is not mistaken for unused fresh food',()=>{
+  assert.equal(p.stockupIssues({label:'Langkornreis trocken',general:{source:'food-stockup',needed_by:'2026-11-25'}},[]).length,0);
+  assert.equal(p.stockupIssues({label:'Avocado Hass',general:{source:'food-stockup',needed_by:'2026-11-25'}},[])[0].block,true);
+});
