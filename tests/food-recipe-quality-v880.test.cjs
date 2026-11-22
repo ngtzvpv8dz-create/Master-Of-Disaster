@@ -69,5 +69,5 @@ test('protein-coffee powder in pancake batter is not treated as drink',()=>{
 test('save points use validator for both create and edit',()=>{
   assert.match(src,/insert\(\{user_id:user.id,title,meal_type:mealType,description,servings,prep_minutes:prepMinutes,instructions:validatedInstructions/);
   assert.match(src,/p_instructions:validatedInstructions/);
-  assert.equal((src.match(/checkedFoodRecipeInstructions\(instructions,ingredients,title\)/g)||[]).length,2);
+  assert.equal((src.match(/checkedFoodRecipeInstructions\(spiceInstructionsByTaste\(String\(instructions\|\|''\)\.split\('\\n'\)\)\.join\('\\n'\),ingredients,title\)/g)||[]).length,2);
 });
