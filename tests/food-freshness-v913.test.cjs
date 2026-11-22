@@ -95,3 +95,13 @@ test('V1 uses one policy in both area loaders and displays actionable warnings',
   assert.match(shopping,/row\.blockPurchase/);
   assert.match(shopping,/Einkauf gestoppt/);
 });
+
+test('V1 opening date is shown or explicitly unknown and editable without guessed dates',()=>{
+  const food=read('food-v544.js');
+  assert.match(food,/Öffnungsdatum unbekannt/);
+  assert.match(food,/data-food-opened-date-lot/);
+  assert.match(food,/openedDateInventoryLotModal/);
+  assert.match(food,/batch_data:metadata/);
+  assert.match(food,/\.eq\('updated_at',lot\.updated_at\)/);
+  assert.match(food,/openedOn>todayIso\(\)/);
+});
