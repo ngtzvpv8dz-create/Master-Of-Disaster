@@ -203,7 +203,7 @@
   // the full recipe-stem review has its own task (#478).
   const seasoningByTaste=item=>{
     const n=String(item?.name||item?.label||'').trim().toLocaleLowerCase('de-DE');
-    if(/^(?:salz|meersalz|steinsalz|pfeffer(?:\\s|$)|chiliflocken|chilipulver|cayenne(?:pfeffer)?|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|getrocknete minze|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat(?:nuss)?|muskatblüte|fenchelsamen|piment|nelken|curry(?:pulver)?|gewürzmischung|italienische kräuter|provence kräuter)(?:\\b|$)/i.test(n))return true;
+    if(/^(?:salz|meersalz|steinsalz|pfeffer(?:\s|$)|chiliflocken|chilipulver|cayenne(?:pfeffer)?|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|getrocknete minze|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat(?:nuss)?|muskatblüte|fenchelsamen|piment|nelken|curry(?:pulver)?|gewürzmischung|italienische kräuter|provence kräuter)(?:\b|$)/i.test(n))return true;
     return false;
   };
   const ingredientQuantityForDisplay=item=>{
