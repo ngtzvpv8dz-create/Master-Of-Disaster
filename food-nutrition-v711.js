@@ -1205,24 +1205,29 @@
     const incomplete=warnings.some(meal=>meal.issues.some(issue=>!issue.provisional));
     const headline=incomplete?'WICHTIG: NÄHRWERTE FEHLEN':'WICHTIG: NÄHRWERTE UNBESTÄTIGT';
     const message=incomplete?'Bitte Produktdaten nachtragen. Der Tageswert ist unvollständig.':'Vorläufige Produktwerte bitte anhand der Packung bestätigen.';
-    return '<section class="food-nutrition-alarm-inner-v795" role="alert" aria-label="Nährwerte prüfen">'
-      +'<div class="food-nutrition-alarm-head-v795"><span class="food-nutrition-alarm-flame-v795" aria-hidden="true">🔥</span>'
+    return '<details class="food-nutrition-alarm-inner-v795" data-food-nutrition-alert-details aria-label="Nährwerte prüfen">'
+      +'<summary class="food-nutrition-alarm-head-v795"><span class="food-nutrition-alarm-flame-v795" aria-hidden="true">🔥</span>'
       +'<div><strong>'+headline+'</strong><small>'+message+'</small></div>'
-      +'<span class="food-nutrition-alarm-count-v795">'+count+'</span></div>'
+      +'<span class="food-nutrition-alarm-count-v795">'+count+'</span></summary>'
       +'<div class="food-nutrition-alarm-list-v795">'
       +warnings.map(meal=>'<button type="button" class="food-nutrition-alarm-link-v795" '+(meal.extra?'data-food-extra-goto':'data-food-nutrition-goto')+'="'+alarmEscape(meal.id)+'">'
         +'<span class="food-nutrition-alarm-meal-v795">'+alarmEscape(mealTypeForAlarm(meal.type))+' · '+alarmEscape(meal.title)+'</span>'
         +'<span class="food-nutrition-alarm-issue-v795">'+meal.issues.map(issue=>'⚠ '+alarmEscape(issue.name)+': '+alarmEscape(issue.reason)).join('<span class="food-nutrition-alarm-break-v795"></span>')+'</span>'
         +'<span class="food-nutrition-alarm-arrow-v795" aria-hidden="true">↗</span>'
         +'</button>').join('')
-      +'</div></section>';
+      +'</div></details>';
   }
   function patchNutritionAlarm(root,warnings){
     const panel=root.querySelector('[data-food-nutrition-alarm]');
     if(!panel)return;
     if(!warnings.length){panel.hidden=true;if(panel.innerHTML)panel.innerHTML='';return;}
     const html=mealNutritionWarningMarkup(warnings);
-    if(panel.innerHTML!==html)panel.innerHTML=html;
+    if(panel.innerHTML!==html){
+      const expanded=panel.querySelector('[data-food-nutrition-alert-details]')?.open||false;
+      panel.innerHTML=html;
+      const details=panel.querySelector('[data-food-nutrition-alert-details]');
+      if(details)details.open=expanded;
+    }
     panel.hidden=false;
   }
 
