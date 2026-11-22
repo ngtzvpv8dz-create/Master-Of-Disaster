@@ -25,7 +25,7 @@
     if(/wrap|tortilla/.test(n))return 'wrap';
     if(/brot|brotchen|toast|pita|pide|baguette/.test(n))return 'bread';
     if(/hahnchen|pute|rind|schwein|mett|hackfleisch|huhner|geflugel/.test(n))return 'meat';
-    if(/quark|skyr|joghurt|yoghurt|frischkase|hutte nkase|hirtenkase|feta|mozzarella|ricotta|milch|kefir|ayran|schmand|sahne/.test(n))return 'dairy';
+    if(/quark|skyr|joghurt|yoghurt|frischkase|huttenkase|hirtenkase|feta|mozzarella|ricotta|milch|kefir|ayran|schmand|sahne/.test(n))return 'dairy';
     if(/\b(dose|konserve|glas)\b/.test(n)&&/\b(mais|bohnen|kichererbsen|erbsen|ananas|tomaten|salsa|passata)\b/.test(n))return 'canned';
     if(/kartoffel|zwiebel|knoblauch/.test(n))return 'durable';
     if(/apfel|birne|kiwi|mango|maracuja|passionsfrucht|passion fruit|kaki|avocado|banane|orange|mandarine|clementine|limette|zitrone|ananas|beere|himbeere|erdbeere|traube|pfirsich|nektarine|pflaume|melone/.test(n))return 'fruit';
@@ -37,6 +37,7 @@
     const constraints=[];
     if(purchased&&['fruit','vegetable','dairy'].includes(kind))constraints.push(shift(purchased,7));
     if(purchased&&kind==='bread')constraints.push(shift(purchased,14));
+    if(purchased&&kind==='meat')constraints.push(shift(purchased,2));
     if(open)constraints.push(shift(open,7));
     if(bestBefore)constraints.push(bestBefore);
     return constraints.sort()[0]||null;
@@ -73,7 +74,12 @@
       if(!purchaseAllowed(buy,date,use?.mealType)){
         issues.push(makeIssue('slot',gap.label,'Einkaufszeitpunkt '+buy+' liegt nach der geplanten '+date+'-Mahlzeit. Erst Einkaufsslot oder Rezept korrigieren.',true));
       }else if(afterDeadline(buy,kind,date,use?.mealType)){
-        issues.push(makeIssue('window',gap.label,'Verbrauch am '+date+' liegt außerhalb der zulässigen Frischefrist ab '+buy+'. Kauf aufteilen oder Mahlzeit verschieben.',true));
+        const frozenOption=kind==='meat';
+        issues.push(makeIssue(frozenOption?'freeze':'window',gap.label,
+          frozenOption
+            ?'Fleisch für '+date+' ist länger als zwei Tage ab geplantem Einkauf '+buy+' eingeteilt: sofort portionieren und einfrieren oder später frisch kaufen.'
+            :'Verbrauch am '+date+' liegt außerhalb der zulässigen Frischefrist ab '+buy+'. Kauf aufteilen oder Mahlzeit verschieben.',
+          !frozenOption));
       }
     }
     if(['fruit','vegetable','dairy','bread'].includes(kind)){
@@ -162,6 +168,9 @@
   function stockupIssues(row,uses){
     const general=row?.general||{};
     if(general.source!=='food-stockup')return [];
+    const kind=classify(row);
+    // Confirmed shelf-stable staples / frozen reserve are a separate long-term stock policy (#200).
+    if(!['fruit','vegetable','dairy','bread','meat','canned'].includes(kind))return [];
     const label=norm(row.label),future=(uses||[]).filter(u=>u.date&&u.date>=(iso(general.needed_by)||'0000-00-00'));
     const comparable=future.filter(use=>{
       const n=norm(use.name);
