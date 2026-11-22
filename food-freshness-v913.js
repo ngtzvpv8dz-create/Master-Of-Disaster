@@ -98,7 +98,7 @@
         const packs=Math.ceil((quantity-1e-8)/smallest);
         const surplus=packs*smallest-quantity;
         if(surplus>0.0001){
-          issues.push(makeIssue('pack',gap.label,'Kleinste bekannte Packung: '+smallest+' '+(gap.unit||'')+'; geplanter Bedarf nur '+quantity+' '+(gap.unit||'')+'. Rest '+Number(surplus.toFixed(2))+' nicht verplant. Kleinere Packung/Einzelware wählen oder Restverbrauch innerhalb der Frist einplanen.'));
+          issues.push(makeIssue('pack',gap.label,'Kleinste bekannte Packung: '+smallest+' '+(gap.unit||'')+'; geplanter Bedarf nur '+quantity+' '+(gap.unit||'')+'. Rest '+Number(surplus.toFixed(2))+' nicht verplant. Kleinere Packung/Einzelware wählen oder Restverbrauch innerhalb der Frist einplanen.',true));
         }
       }
     }
