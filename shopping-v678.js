@@ -916,6 +916,22 @@
     }
     included.filter(row=>row.unmatchedPlannedPurchase&&row.source==='general')
       .forEach(row=>{row.primary='Plan prüfen: '+fmtQty(row.general.quantity,row.general.unit);});
+    // V913: Food- and shopping-side audits share the same concrete deadlines.
+    // Only proven slot violations / unused automatic stockups are checkout-blocking.
+    const freshness=window.ModFoodFreshnessV913;
+    included.forEach(row=>{
+      if(!freshness)return;
+      const gap=row.source==='food-gap'
+        ?(food.gaps||[]).find(item=>foodGapKey(item)===row.key):null;
+      const issues=[
+        ...(gap?freshness.gapIssues(gap,state.products||[]):[]),
+        ...freshness.stockupIssues(row,food.plannedShoppingUses||[])
+      ];
+      row.freshnessIssues=issues;
+      row.blockPurchase=issues.some(issue=>issue.block)||Boolean(row.unmatchedPlannedPurchase);
+      if(row.unmatchedPlannedPurchase&&!issues.length)
+        row.freshnessIssues=[{subject:row.label,message:'Kein zukünftiger Rezeptbedarf für diese automatische Vorratsplanung nachgewiesen.',block:true}];
+    });
     included.sort((a,b)=>collator.compare(String(a.label||''),String(b.label||'')));
     // Nicht kaufen ist eine bewusste Entscheidung für HEUTE, keine falsche
     // Inventur und kein gelöschter Rezeptbedarf. Einkauf morgen neu prüfen.
@@ -1060,15 +1076,21 @@
       ?'<div class="shopping-substitute-v698"><span aria-hidden="true">↳</span><div><small>ERSATZ GEKAUFT</small><strong>'+esc(row.substitution.replacement_label||'Ersatzartikel')+'</strong></div><b>'+esc(fmtQty(row.substitution.replacement_quantity,row.substitution.replacement_unit||''))+'</b></div>'
       :'';
 
+    const freshnessNote=(row.freshnessIssues||[]).length
+      ?'<div class="shopping-warning-v643" role="alert"><strong>'+(row.blockPurchase?'Vor dem Kauf prüfen':'Frische-/Packungsprüfung')+'</strong>'
+        +(row.freshnessIssues||[]).map(issue=>'<span>'+esc(issue.message)+'</span>').join('')
+        +'</div>'
+      :'';
     return '<article class="shopping-item-v643 '+(row.inCart?'is-cart ':'')+(row.substitution?'has-substitution-v698':'')+'">'
       +'<div class="shopping-item-main-v643"><strong>'+esc(row.label)+'</strong><b>'+esc(row.primary||'')+'</b></div>'
       +substitution
-      +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'">'+cartIcon()+'</button>'
+      +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':row.blockPurchase?'Kauf zunächst gesperrt':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'" '+(row.blockPurchase&&!row.inCart?'disabled title="Zuerst Frische-/Verbrauchsplanung korrigieren"':'')+'>'+cartIcon()+'</button>'
       +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701 has-stock-lines-v755':'')+'">'
       +(row.flags?.unitMismatch?'<div class="shopping-unit-warning-v866" role="note">'+esc(row.general?.unit==='Stück'?'Stückware: Bruttogewicht je Stück erfassen':row.general?.unit==='Dose'?'Dose: Netto- und Abtropfgewicht erfassen':row.general?.unit==='Glas'?'Glas: Füllmenge in g oder ml erfassen':row.general?.unit==='Packung'?'Packung: Gesamtgewicht und Stückzahl erfassen':'Einheit prüfen')+'</div>':'')
       +(row.currentStock?'<span class="shopping-current-stock-v701">'+esc(row.currentStock)+'</span>':'')
       +(compactDescription?'<span class="shopping-secondary-v853">'+esc(compactDescription)+'</span>':'')
       +retailerLine
+      +freshnessNote
       +'</div>'
       +'<div class="shopping-item-foot-v643"><div class="shopping-badges-v643">'+badges+'</div><div class="shopping-actions-v643">'+postpone+substituteAction+completeAction+skipAction+remove+'</div></div>'
       +'</article>';
@@ -2063,6 +2085,13 @@
   function openCheckoutModal(){
     const cart=checkoutSnapshot();
     if(!cart.length)return;
+    const blocked=cart.map(item=>rowMap?.get(item.id)||[...rowMap.values()].find(row=>row.key===item.key))
+      .filter(row=>row?.blockPurchase);
+    if(blocked.length){
+      alert('Einkauf gestoppt: Erst Frischefrist oder fehlenden Rezeptbedarf für '
+        +blocked.map(row=>row.label).join(', ')+' klären. Betroffene Artikel kannst du aus dem Warenkorb entfernen.');
+      return;
+    }
     document.getElementById('shoppingCheckoutV645')?.remove();
     const modal=document.createElement('div');
     modal.id='shoppingCheckoutV645';
@@ -2746,6 +2775,8 @@
   }
 
   async function toggleCart(row){
+    if(row.blockPurchase&&!row.inCart)
+      throw new Error('Einkauf gesperrt: Frischefenster oder tatsächlichen Rezeptbedarf zuerst klären.');
     if(row.inCart&&row.substitution){
       await removeSubstitution(row,{refresh:false});
       row.substitution=null;
