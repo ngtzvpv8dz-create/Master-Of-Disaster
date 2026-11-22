@@ -28,7 +28,7 @@
   let prepDoneSet=new Set();
   let freshnessAuditExpanded=false;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras','prepChecks'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras','prepChecks','preferences'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -664,7 +664,8 @@
       safeQuery('TK-Meal-Prep',supabase.from('food_mealprep_freezer_portions').select('id,leftover_id,meal_id,servings,status,frozen_on,needed_on,thaw_started_at,thawed_at,note,created_at').in('status',['frozen','thawing','thawed']).order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3))),
       safeQuery('Zusatzverzehr-Historie',loadExtraHistory(supabase,user.id),12000),
-      safeQuery('Zubereitungs-Checkliste',loadPrepChecks(supabase),12000)
+      safeQuery('Zubereitungs-Checkliste',loadPrepChecks(supabase),12000),
+      safeQuery('Zutatenvorlieben',supabase.from('food_ingredient_preferences').select('id,ingredient_name,preference,note').eq('is_current_selection',true).order('ingredient_name'),12000)
     ]);
 
     cloudIssues=[];
@@ -694,7 +695,8 @@
       mealPrepFreezer:take('mealPrepFreezer',11,rows=>rows),
       pendingCheckout:take('pendingCheckout',12,rows=>rows),
       extras:take('extras',13,rows=>rows),
-      prepChecks:take('prepChecks',14,rows=>rows)
+      prepChecks:take('prepChecks',14,rows=>rows),
+      preferences:take('preferences',15,rows=>rows)
     };
   }
 
@@ -1854,6 +1856,11 @@
       ?'<div class="food-history-rating-v851">'+(historyRecipe?recipeRatingControl(historyRecipe):recipeRatingControl(meal,'meal'))
         +ratingNoteControl(historyRecipe||meal,historyRecipe?'recipe':'meal')+'</div>'
       :'';
+    const pendingTastes=sourceIsReal('preferences')
+      ?(state?.preferences||[]).filter(row=>row.preference==='Würde ich probieren'):[];
+    const tasteAction=status==='completed'&&pendingTastes.length
+      ?'<div class="food-taste-prompt-v918"><button type="button" class="food-action-v544 compact" data-food-taste-feedback="'+esc(meal.id)+'">🍽️ Neue Zutat probiert? Bewerten</button></div>'
+      :'';
     const isMealPrep=Boolean(meal.leftover_id||meal.source_meal_id);
     const sourceLabel=mealPrepSourceLabel(meal);
     const frozenPrep=(state?.mealPrepFreezer||[]).find(item=>String(item.meal_id||'')===String(meal.id));
@@ -1942,7 +1949,7 @@
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
-        +mealRatingMarkup
+        +mealRatingMarkup+tasteAction
         +'</article>';
     }
 
@@ -1966,7 +1973,7 @@
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
         +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
-        +mealRatingMarkup
+        +mealRatingMarkup+tasteAction
         +'</article>';
     }
 
@@ -1993,7 +2000,7 @@
       +dailyCreatineReminderMarkup(meal)
       +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
       +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
-      +mealRatingMarkup
+      +mealRatingMarkup+tasteAction
       +'</article>';
   }
 
@@ -3827,6 +3834,46 @@
     return modal;
   }
 
+  function tasteFeedbackModal(mealId){
+    if(!sourceIsReal('meals')||!sourceIsReal('preferences')){
+      alert('Bitte zuerst FOOD mit V1 synchronisieren.');return;
+    }
+    const meal=(state?.meals||[]).find(m=>String(m.id)===String(mealId));
+    if(!meal||normalizedStatus(meal.status)!=='completed'){
+      alert('Erst nach einer abgeschlossenen Mahlzeit ist Zutatenfeedback möglich.');return;
+    }
+    const rows=(state?.preferences||[]).filter(row=>row.preference==='Würde ich probieren')
+      .sort((a,b)=>String(a.ingredient_name||'').localeCompare(String(b.ingredient_name||''),'de'));
+    if(!rows.length){alert('Aktuell sind keine neuen Zutaten mehr als „Würde ich probieren“ markiert.');return;}
+    const body='<form class="food-taste-form-v918">'+
+      '<p>Nur wenn du die Zutat wirklich gegessen hast. Rezeptbewertung und Zutatenvorliebe bleiben getrennt.</p>'+
+      '<label>Welche Zutat hast du probiert?<select name="preference_id" required>'+
+      '<option value="">Zutat wählen</option>'+
+      rows.map(row=>'<option value="'+esc(row.id)+'">'+esc(row.ingredient_name)+'</option>').join('')+
+      '</select></label>'+
+      '<label>Wie schmeckt sie dir?<select name="new_preference" required>'+
+        ['Sehr gern','Gern','Ab und zu','Nur wenn es passt','Mag ich nicht','Nie']
+          .map(status=>'<option value="'+esc(status)+'">'+esc(status)+'</option>').join('')+
+      '</select></label>'+
+      '<label>Optional: Was möchtest du dazu merken?<textarea name="note" rows="3" maxlength="500" placeholder="z. B. schön würzig, künftig öfter im Wok"></textarea></label>'+
+      '<label class="food-taste-confirm-v918"><input type="checkbox" name="really_tasted" required> Ich habe die gewählte Zutat tatsächlich probiert.</label>'+
+      '<button class="food-action-v544" type="submit">Zutatenvorliebe dauerhaft speichern</button></form>';
+    addModal('Zutat nach dem Probieren bewerten',body,async form=>{
+      if(form.get('really_tasted')!=='on')throw new Error('Bitte bestätigen, dass du die Zutat wirklich probiert hast.');
+      const prefId=String(form.get('preference_id')||'');
+      if(!rows.some(row=>String(row.id)===prefId))throw new Error('Bitte eine aktuelle unprobierte Zutat auswählen.');
+      const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await withTimeout(sb.rpc('record_food_ingredient_taste_feedback',{
+        p_preference_id:prefId,p_meal_id:mealId,
+        p_new_preference:String(form.get('new_preference')||''),
+        p_note:String(form.get('note')||'').trim()||null
+      }),'Zutatenfeedback speichern',10000);
+      if(result?.error)throw result.error;
+      await mutate(()=>result.data);
+      return result.data;
+    });
+  }
+
   function recipeNeedPreview(recipe,preparedServings){
     const base=Math.max(.01,Number(recipe?.servings)||1);
     const factor=Math.max(.01,Number(preparedServings)||base)/base;
@@ -5482,6 +5529,9 @@
       if(button)button.disabled=true;
       try{await saveRatingNote(form.dataset.foodNoteKind,form.dataset.foodNoteId,form.elements.rating_note.value);}
       catch(error){alert(error?.message||'Anmerkung konnte nicht gespeichert werden.');if(button)button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-taste-feedback]').forEach(button=>button.addEventListener('click',event=>{
+      event.preventDefault();event.stopPropagation();tasteFeedbackModal(button.dataset.foodTasteFeedback);
     }));
     root.querySelectorAll('[data-food-edit-recipe]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();editRecipeModal(button.dataset.foodEditRecipe);}));
     root.querySelectorAll('[data-food-schedule]').forEach(button=>button.addEventListener('click',event=>{event.stopPropagation();scheduleModal(button.dataset.foodSchedule);}));
