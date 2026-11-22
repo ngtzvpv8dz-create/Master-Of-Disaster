@@ -9,6 +9,7 @@ on:
       - food-freshness-v913.js
       - shopping-v678.js
       - tests/food-freshness-v913.test.cjs
+      - tests/food-prep-checklist-v916.test.cjs
       - tests/shopping-v1.test.cjs
       - .github/workflows/shopping-regression.yml
   pull_request:
@@ -17,6 +18,7 @@ on:
       - food-freshness-v913.js
       - shopping-v678.js
       - tests/food-freshness-v913.test.cjs
+      - tests/food-prep-checklist-v916.test.cjs
       - tests/shopping-v1.test.cjs
       - .github/workflows/shopping-regression.yml
 permissions:
@@ -31,3 +33,4 @@ jobs:
         run: |
           node --test tests/shopping-v1.test.cjs
           node --test tests/food-freshness-v913.test.cjs
+          node --test tests/food-prep-checklist-v916.test.cjs
