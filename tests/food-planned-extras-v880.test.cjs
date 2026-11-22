@@ -61,3 +61,19 @@ test('historical meal prep with missing original shows labeled recipe reference'
  assert.match(food,/Rezept-Zutaten \(historische Mengen nicht belegt\)/);
  assert.match(food,/referenceIngredients/);
 });
+
+
+test('weekday and weekend guidance follows the exact local calendar day, without a 100 kcal weekend cap',()=>{
+ const start=proposed.indexOf('  const weekendTreatDay=');
+ const end=proposed.indexOf('  let day=',start);
+ assert(start>0&&end>start,'weekend treat helper exists');
+ const helpers=new Function(proposed.slice(start,end)+';return {weekendTreatDay,treatGuidance};')();
+ assert.equal(helpers.weekendTreatDay('2026-11-22'),true,'Sunday is weekend');
+ assert.equal(helpers.weekendTreatDay('2026-11-21'),true,'Saturday is weekend');
+ assert.equal(helpers.weekendTreatDay('2026-11-23'),false,'Monday is weekday');
+ assert.match(helpers.treatGuidance('2026-11-22'),/2\\.200 kcal/);
+ assert.match(helpers.treatGuidance('2026-11-22'),/400–500 kcal/);
+ assert.doesNotMatch(helpers.treatGuidance('2026-11-22'),/100 kcal/);
+ assert.match(helpers.treatGuidance('2026-11-23'),/100 kcal/);
+ assert.match(proposed,/esc\\(treatGuidance\\(day\\|\\|berlinDay\\(\\)\\)\\)/);
+});
