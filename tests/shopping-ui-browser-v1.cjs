@@ -33,11 +33,16 @@ const fixture={
     {id:'almond',name:'REWE Bio Mandelmus weiß',family_name:'Mandelmus weiß',quantity:250,unit:'g',is_active:true},
     {id:'cottage',name:'Körniger Frischkäse',family_name:'Körniger Frischkäse',quantity:300,unit:'g',is_active:true},
     {id:'buckwheat',name:'Buchweizenkörner (Menge noch prüfen)',family_name:'Buchweizen',quantity:0,unit:'g',is_active:true,shopping_excluded:true,pending_weighing:true},
-    {id:'chicken',name:'Hähnchenbrustfilet',family_name:'Hähnchenbrustfilet',quantity:281,unit:'g',is_active:true}
+    {id:'chicken',name:'Hähnchenbrustfilet',family_name:'Hähnchenbrustfilet',quantity:281,unit:'g',is_active:true},
+    {id:'milka-stock',name:'Milka Danke Pralinen',family_name:'Schokolade',quantity:68.4,unit:'g',is_active:true},
+    {id:'salty-stock',name:'Lidl Salzstangen',family_name:'Salzstangen',quantity:250,unit:'g',is_active:true}
   ],
   products:[
     {id:'cottage-light',inventory_id:'cottage',active:true,brand:'Milbona',product_name:'Körniger Frischkäse',variant:'leicht · 0,4 % Fett',
-      category:'Milchprodukte',package_unit:'g',package_quantity:300,product_data:{}}
+      category:'Milchprodukte',package_unit:'g',package_quantity:300,product_data:{}},
+    {id:'milka',inventory_id:'milka-stock',active:true,brand:'Milka',product_name:'Danke Pralinen',category:'Süßigkeiten',package_unit:'g',package_quantity:114,nutrition_per_100:{energy_kcal:503}},
+    {id:'salty',inventory_id:'salty-stock',active:true,brand:'Snack Day',product_name:'Salzstangen',category:'Salzige Snacks',package_unit:'g',package_quantity:250,nutrition_per_100:{energy_kcal:395},retailer:'Lidl'},
+    {id:'monster',active:true,brand:'Monster Energy',product_name:'Monster Energy Zero Sugar Original 500 ml',category:'Getränke',package_unit:'ml',package_quantity:500,nutrition_per_100:{energy_kcal:3.4},retailer:'ALDI Nord'}
   ],
   general:[
     {id:'obsolete',label:'Naturjoghurt mild (1,5 % Fett)',quantity:500,unit:'g',
@@ -76,11 +81,36 @@ async function check(browser,label,width,height){
         shopping_receipt_aliases:[],
         shopping_substitutions:[],
         shopping_day_skips:[],
+        shopping_optional_treat_decisions:[],
         shopping_checkouts:[],
         finance_transactions:[]
       };
+      window.__treatShoppingFakeDb=fakeDb;
       window.getSupabaseClient=()=>({
         auth:{getSession:async()=>({data:{session:{user:{id:'test-user'}}},error:null})},
+        async rpc(name,params){
+          const key=String(params.p_idea_key||'');
+          if(!['add_optional_treat_to_shopping_v1','dismiss_optional_treat_shopping_v1'].includes(name))
+            return {data:null,error:{message:'Unexpected RPC '+name}};
+          const week='2026-11-16';
+          const found=fakeDb.shopping_optional_treat_decisions.find(x=>x.idea_key===key&&x.week_start===week);
+          if(name==='add_optional_treat_to_shopping_v1'){
+            const sourceKey='optional-treat:'+week+':'+key;
+            let entry=fakeDb.shopping_items.find(x=>x.source_key===sourceKey);
+            if(!entry){
+              entry={id:'test-'+key,label:key==='chips'?'Kartoffelchips · Sorte auswählen':'Monster Energy Zero Sugar Original 500 ml',
+                quantity:1,unit:key==='energy'?'Dose':'Packung',category:key==='energy'?'Getränke':'Lebensmittel',
+                status:'now',source:'manual',source_key:sourceKey,product_id:params.p_product_id||null,notes:'Optionale Genussidee'};
+              fakeDb.shopping_items.push(entry);
+            }
+            if(found){found.status='added';found.shopping_item_id=entry.id;}
+            else fakeDb.shopping_optional_treat_decisions.push({week_start:week,idea_key:key,status:'added',shopping_item_id:entry.id});
+            return {data:{added:true,shopping_item_id:entry.id},error:null};
+          }
+          if(found){if(found.status!=='added')found.status='dismissed';}
+          else fakeDb.shopping_optional_treat_decisions.push({week_start:week,idea_key:key,status:'dismissed'});
+          return {data:{dismissed:true},error:null};
+        },
         from(table){
           const result={data:fakeDb[table]||[],error:null};
           let q;
@@ -137,6 +167,37 @@ async function check(browser,label,width,height){
     assert.equal(api.version,'V919','real merged shopping JS must be loaded');
     const actual=api.gaps.find(g=>g.name==='Buchweizen');
     assert(actual?.unverified===true,'unweighed stock warning must survive browser rendering');
+    // V919: Real shopping page, mock DB writes: deliberate optional snacks only.
+    const treatPanel=root.locator('.shopping-optional-treats-v919');
+    await treatPanel.waitFor({state:'visible',timeout:10000});
+    assert.match(await treatPanel.innerText(),/Chips für den Filmabend/);
+    assert.match(await treatPanel.innerText(),/Energy-Drink/);
+    assert.match(await treatPanel.innerText(),/17 kcal/,'actual catalog nutrition 500 ml × 3.4 kcal per 100ml');
+    assert.match(await treatPanel.innerText(),/68[,.]4 g/,'existing Milka stock must be visible');
+    assert.equal(await treatPanel.locator('[data-treat-add="chocolate"]').count(),0,'do not rebuy stocked Milka automatically');
+    assert.equal(await treatPanel.locator('[data-treat-add="salty"]').count(),0,'do not rebuy stocked Salzstangen automatically');
+    await treatPanel.locator('[data-treat-add="chips"]').click();
+    await page.waitForFunction(()=>window.__treatShoppingFakeDb.shopping_items.some(x=>x.source_key==='optional-treat:2026-11-16:chips'));
+    await treatPanel.locator('[data-treat-add="energy"]').click();
+    await page.waitForFunction(()=>window.__treatShoppingFakeDb.shopping_items.some(x=>x.source_key==='optional-treat:2026-11-16:energy'));
+    await treatPanel.locator('[data-treat-dismiss="ice"]').click();
+    await page.waitForFunction(()=>window.__treatShoppingFakeDb.shopping_optional_treat_decisions.some(x=>x.idea_key==='ice'&&x.status==='dismissed'));
+    const snap=await page.evaluate(()=>({
+      added:window.__treatShoppingFakeDb.shopping_items.filter(x=>x.source_key?.startsWith('optional-treat:')),
+      dismissed:window.__treatShoppingFakeDb.shopping_optional_treat_decisions.filter(x=>x.status==='dismissed'),
+      inventory:window.__modShoppingV678.getState().food.inventory,
+      foodExtras:window.__treatShoppingFakeDb.food_extra_consumptions||[]
+    }));
+    assert.equal(snap.added.length,2,'exactly 2 selected wishlist requests');
+    assert.equal(snap.dismissed.length,1);
+    assert.equal(snap.added.find(x=>x.source_key?.endsWith(':energy')).product_id,'monster');
+    assert.equal(snap.added.find(x=>x.source_key?.endsWith(':chips')).product_id,null);
+    assert.equal(snap.inventory.find(x=>x.id==='milka-stock').quantity,68.4,'no stock debit without buying');
+    assert.equal(snap.foodExtras.length,0,'shopping suggestion must not become consumed snack');
+    assert.equal(await treatPanel.locator('[data-treat-add="chips"]').count(),0,'accepted suggestion cannot be re-added');
+    assert.equal(await treatPanel.locator('[data-treat-add="energy"]').count(),0,'accepted suggestion cannot be re-added');
+    assert.equal(await treatPanel.locator('[data-treat-dismiss="ice"]').count(),0,'dismissed suggestion stays hidden');
+    console.log('PASS '+label+' optional treats wishlist: chip + Monster selected, ice dismissed, no inventory/consumption mutation.');
     const dir=path.join(process.cwd(),'test-results');
     fs.mkdirSync(dir,{recursive:true});
     await page.screenshot({path:path.join(dir,'shopping-v1-'+label+'.png'),fullPage:true});
