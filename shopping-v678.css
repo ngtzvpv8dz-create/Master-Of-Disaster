@@ -879,3 +879,50 @@
   overflow-wrap:break-word;
 }
 .shopping-item-v643 .shopping-actions-v643:empty{display:none}
+
+
+/* V919: optional treat shopping ideas, deliberately separate from real purchases. */
+.shopping-optional-treats-v919{
+  margin:15px 0 18px;
+  border:1px solid rgba(249,191,116,.33);
+  border-radius:15px;
+  padding:12px;
+  background:linear-gradient(145deg,#30271f,#202a33);
+  color:#f8f0e6;
+  overflow:hidden;
+}
+.shopping-optional-treats-v919>header{display:flex;align-items:flex-start;gap:10px;margin-bottom:5px}
+.shopping-optional-treats-v919>header span{
+  display:block;color:#f3c485;font-size:.73rem;line-height:1.3;font-weight:850;letter-spacing:.035em
+}
+.shopping-optional-treats-v919>header small,
+.shopping-treat-help-v919{display:block;margin:5px 0 10px;color:#e1d4c5;font-size:.67rem;line-height:1.55}
+.shopping-treat-list-v919{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:9px}
+.shopping-treat-card-v919{
+  background:rgba(255,255,255,.045);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:12px;
+  padding:11px;
+  display:flex;flex-direction:column;gap:5px;min-width:0;
+}
+.shopping-treat-card-v919>strong{font-size:.78rem;overflow-wrap:anywhere}
+.shopping-treat-card-v919>span{font-size:.7rem;color:#f0d7bc;overflow-wrap:anywhere}
+.shopping-treat-card-v919>small{color:#d5c9b9;font-size:.65rem;line-height:1.55;overflow-wrap:anywhere}
+.shopping-treat-card-v919 .shopping-treat-in-stock-v919{color:#a6e5bb;font-weight:720}
+.shopping-treat-actions-v919{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:auto;padding-top:8px}
+.shopping-treat-actions-v919 button{
+  border:1px solid rgba(253,215,163,.47);
+  border-radius:9px;
+  padding:9px 10px;
+  min-height:39px;
+  font-size:.67rem;
+  font-weight:740;
+  line-height:1.2;
+  background:#f1c184;
+  color:#282017;
+  cursor:pointer;
+}
+.shopping-treat-actions-v919 button.is-quiet{background:transparent;color:#fae5ca;border-color:rgba(255,255,255,.3)}
+.shopping-treat-actions-v919 button:disabled{cursor:wait;opacity:.65}
+.shopping-treat-actions-v919 span{color:#a6e5bb;font-size:.67rem;font-weight:750}
+@media(max-width:410px){.shopping-optional-treats-v919{padding:10px}.shopping-treat-actions-v919 button{flex:1 1 auto}}
