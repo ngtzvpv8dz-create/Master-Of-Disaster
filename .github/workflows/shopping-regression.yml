@@ -10,8 +10,6 @@ on:
       - shopping-v678.js
       - tests/food-freshness-v913.test.cjs
       - tests/shopping-v1.test.cjs
-      - food-freshness-v913.js
-      - tests/food-freshness-v913.test.cjs
       - .github/workflows/shopping-regression.yml
   pull_request:
     paths:
@@ -20,8 +18,6 @@ on:
       - shopping-v678.js
       - tests/food-freshness-v913.test.cjs
       - tests/shopping-v1.test.cjs
-      - food-freshness-v913.js
-      - tests/food-freshness-v913.test.cjs
       - .github/workflows/shopping-regression.yml
 permissions:
   contents: read
