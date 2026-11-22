@@ -80,7 +80,7 @@ test('planned Feta displays the actual catalog product, lot status and source ar
   assert.match(html,/food-allocation-arrow-v741/);
   assert.doesNotMatch(html,/nicht eindeutig zugeordnet/);
   assert.match(c.missing({name:'Feta / Hirtenkäse',unit:'g'},true),/Zubereitungszeitpunkt nicht dokumentiert/);
-  assert.match(c.missing({name:'Wasser',unit:'ml'}),/keine Handelscharge/);
+  assert.equal(c.missing({name:'Wasser',unit:'ml'}),'', 'Leitungswasser erzeugt keinen Fehlbestands- oder Produktalarm');
 });
 
 test('unresolved sources are visibly flagged rather than disappearing',()=>{
