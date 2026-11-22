@@ -1331,7 +1331,7 @@
       const checkButton=canCheck
         ?'<button type="button" class="food-prep-check-v915" data-food-prep-check="'+esc(item.id)+'" data-food-prep-meal="'+esc(prepMealId)+'" aria-pressed="'+isChecked+'" aria-label="'+esc(displayName)+(isChecked?' bereits verwendet':' als verwendet markieren')+'" title="Nur Zubereitungsfortschritt, kein Vorratsabzug">'+(isChecked?'✓':'○')+'</button>'
         :'';
-      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751 ':'')+(isChecked?'food-prep-checked-v915':'')+'"><span>'+esc(displayName)+paprikaDetailHtml+'</span>'+checkButton+
+      return '<li data-food-ingredient-id="'+esc(item.id||'')+'" class="'+(allocationHtml?'food-ingredient-has-allocation-v712 ':'')+(canRemove?'has-remove-v751 ':'')+(canCheck?'food-prep-track-v915 ':'')+(isChecked?'food-prep-checked-v915':'')+'"><span>'+esc(displayName)+paprikaDetailHtml+'</span>'+checkButton+
         quantityHtml+
         removeHtml+
         allocationHtml+'</li>';
