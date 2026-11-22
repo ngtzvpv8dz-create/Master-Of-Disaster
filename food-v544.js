@@ -3922,6 +3922,8 @@
     return '<div class="food-recipe-preview-v572">'+items.map(item=>{
       const required=num(item.quantity)===null?null:Number(item.quantity)*factor;
       const name=ingredientName(item);
+      if(seasoningByTaste(item)&&String(item?.unit||'').toLowerCase()==='nach belieben')
+        return '<div><span><strong>'+esc(name)+'</strong><small>Nach Belieben würzen · kein Gramm-Zwang</small></span><b class="is-ok">Keine Mengenbuchung</b></div>';
       if(isNonShoppingIngredient(name)){
         return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+'</small></span><b class="is-ok">Kein Einkauf nötig</b></div>';
       }
