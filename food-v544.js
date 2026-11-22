@@ -1893,8 +1893,15 @@
       ?'<div class="food-history-rating-v851">'+(historyRecipe?recipeRatingControl(historyRecipe):recipeRatingControl(meal,'meal'))
         +ratingNoteControl(historyRecipe||meal,historyRecipe?'recipe':'meal')+'</div>'
       :'';
+    // A finished meal is a prerequisite, but don't nag after unrelated food.
+    // Match only ingredient names from this meal; the user still confirms tasting.
+    const tasteTokens=value=>String(value||'').toLocaleLowerCase('de-DE')
+      .replace(/[^a-zäöüß0-9]+/g,' ').trim().split(/\s+/)
+      .filter(word=>word.length>=4&&!['dose','glas','ohne','schote','konserve','frisch','leicht','natur','tiefgekühlte','gemahlen','getrocknet','tiefgekuhlt','tiefkühl'].includes(word));
+    const mealTasteTokens=new Set((meal.ingredients||[]).flatMap(item=>tasteTokens(ingredientName(item))));
     const pendingTastes=sourceIsReal('preferences')
-      ?(state?.preferences||[]).filter(row=>row.preference==='Würde ich probieren'):[];
+      ?(state?.preferences||[]).filter(row=>row.preference==='Würde ich probieren'
+        &&tasteTokens(row.ingredient_name).some(word=>mealTasteTokens.has(word))):[];
     const tasteAction=status==='completed'&&pendingTastes.length
       ?'<div class="food-taste-prompt-v918"><button type="button" class="food-action-v544 compact" data-food-taste-feedback="'+esc(meal.id)+'">🍽️ Neue Zutat probiert? Bewerten</button></div>'
       :'';
