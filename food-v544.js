@@ -198,7 +198,16 @@
     return volume!==null&&Number.isFinite(volume)&&volume>=0
       ?Math.round(volume*1.08):null;
   };
+  // V916: Spices are suggestions, not weighable 1-g prescriptions.
+  // Keep existing source quantities untouched for historical nutrition/bookings;
+  // the full recipe-stem review has its own task (#478).
+  const seasoningByTaste=item=>{
+    const n=String(item?.name||item?.label||'').trim().toLocaleLowerCase('de-DE');
+    if(/^(?:salz|meersalz|steinsalz|pfeffer(?:\\s|$)|chiliflocken|chilipulver|cayenne(?:pfeffer)?|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|getrocknete minze|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat(?:nuss)?|muskatblüte|fenchelsamen|piment|nelken|curry(?:pulver)?|gewürzmischung|italienische kräuter|provence kräuter)(?:\\b|$)/i.test(n))return true;
+    return false;
+  };
   const ingredientQuantityForDisplay=item=>{
+    if(seasoningByTaste(item))return 'nach Belieben';
     const stored=fmtQty(item?.quantity,item?.unit);
     const soyGrams=soySauceScaleGrams(item);
     if(soyGrams!==null)return fmtQty(soyGrams,'g');
