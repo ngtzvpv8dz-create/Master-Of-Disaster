@@ -25,6 +25,11 @@
     return raw==='schwarzerpfeffer'?'pfefferschwarz':raw;
   };
   const itemName=item=>String(item?.name||item?.label||'Zutat').trim();
+  // Unweighed kitchen seasonings are explicitly non-quantifiable.
+  // Do not invent nutrients or flag missing gram values for these alone.
+  // Energetically relevant pastes, sauces, oils and fresh vegetables still need measured amounts.
+  const toTasteSeasoning=item=>text(item?.unit)==='nach belieben'&&
+    /^(salz|meersalz|steinsalz|pfeffer|chili|cayenne|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat|fenchelsamen|piment|nelken|currypulver|curry|gewürzmischung|italienische kräuter|provence kräuter)(\s|$)/i.test(itemName(item));
 
   function nutrient(source,names){
     const data=source&&typeof source==='object'?source:{};
@@ -992,6 +997,7 @@
       if(n.carbsBound)carbsBound=true;
     };
     for(const item of rows){
+      if(toTasteSeasoning(item))continue;
       // Nährwertfreie Grundzutaten niemals per Familien-/FIFO-Produktlookup
       // auflösen. Fehlende Herstellerdaten dürfen Salz nicht blockieren.
       if(ZERO_NAMES.has(text(itemName(item))))continue;
@@ -1078,7 +1084,7 @@
   // nicht, wenn eine alte Packung des gleichen Vorrats Werte hatte: jede
   // aktive, aktuell verwendbare Packung muss eigene Nährwerte besitzen.
   function nutritionProblem(item,data,allocationOverride=null){
-    if(!item||ZERO_NAMES.has(text(itemName(item))))return null;
+    if(!item||toTasteSeasoning(item)||ZERO_NAMES.has(text(itemName(item))))return null;
     const name=itemName(item);
     if(item.prepared_nutrition_per_100){
       const source=sourceFor(item,data);
@@ -1242,7 +1248,7 @@
     const inspect=(type,row,items,context,allocations=null)=>{
       const issues=[];
       for(const item of items||[]){
-        if(ZERO_NAMES.has(text(itemName(item))))continue;
+        if(toTasteSeasoning(item)||ZERO_NAMES.has(text(itemName(item))))continue;
         const allocation=allocations?.get?.(String(item.id||''))||null;
         const problem=nutritionProblem(item,context,allocation);
         const src=sourceFor(item,context,allocation);
