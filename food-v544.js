@@ -1322,7 +1322,7 @@
       const isTapWater=/^(wasser|leitungswasser)$/i.test(ingredientName(item));
       const isOptionalSeasoning=seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben';
       const allocation=isTapWater?null:((item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item));
-      const allocationHtml=isTapWater?'':(allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item));
+      const allocationHtml=isTapWater?'':(isOptionalSeasoning&&!allocation?.allocations?.length?'':(allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item)));
       const editable=editableAllocationContext(item);
       const canRemove=Boolean(editable);
       const quantityHtml=seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben'
