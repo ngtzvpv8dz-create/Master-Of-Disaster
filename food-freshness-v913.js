@@ -22,14 +22,14 @@
     const n=textName(item);
     if(!n)return null;
     if(/\b(tk|tiefkuhl|tiefgekuhlt|gefroren|tiefgefroren|frozen|getrocknet|trocken|pulver)\b/.test(n))return null;
-    if(/\b(wrap|tortilla)\b/.test(n))return 'wrap';
-    if(/\b(brot|brotchen|toast|pita|pide|baguette)\b/.test(n))return 'bread';
-    if(/\b(hahnchen|pute|rind|schwein|mett|hackfleisch|huhner|geflugel)\b/.test(n))return 'meat';
-    if(/\b(quark|skyr|joghurt|yoghurt|frischkase|hutt enkase|hirtenkase|feta|mozzarella|ricotta|milch|kefir|ayran|schmand|sahne)\b/.test(n))return 'dairy';
+    if(/wrap|tortilla/.test(n))return 'wrap';
+    if(/brot|brotchen|toast|pita|pide|baguette/.test(n))return 'bread';
+    if(/hahnchen|pute|rind|schwein|mett|hackfleisch|huhner|geflugel/.test(n))return 'meat';
+    if(/quark|skyr|joghurt|yoghurt|frischkase|hutte nkase|hirtenkase|feta|mozzarella|ricotta|milch|kefir|ayran|schmand|sahne/.test(n))return 'dairy';
     if(/\b(dose|konserve|glas)\b/.test(n)&&/\b(mais|bohnen|kichererbsen|erbsen|ananas|tomaten|salsa|passata)\b/.test(n))return 'canned';
-    if(/\b(kartoffel|zwiebel|knoblauch)\b/.test(n))return 'durable';
-    if(/\b(apfel|apfel|birne|kiwi|mango|maracuja|passionsfrucht|passion fruit|kaki|avocado|banane|orange|mandarine|clementine|limette|zitrone|ananas|beere|himbeere|erdbeere|traube|pfirsich|nektarine|pflaume|melone)\b/.test(n))return 'fruit';
-    if(/\b(tomate|paprika|gurke|karotte|mohre|zucchini|aubergine|brokkoli|salat|champignon|pilz|radieschen|kohl|spinat|sellerie|kurbis|lauch|krauter|petersilie|schnittlauch)\b/.test(n))return 'vegetable';
+    if(/kartoffel|zwiebel|knoblauch/.test(n))return 'durable';
+    if(/apfel|birne|kiwi|mango|maracuja|passionsfrucht|passion fruit|kaki|avocado|banane|orange|mandarine|clementine|limette|zitrone|ananas|beere|himbeere|erdbeere|traube|pfirsich|nektarine|pflaume|melone/.test(n))return 'fruit';
+    if(/tomate|paprika|gurke|karotte|mohre|zucchini|aubergine|brokkoli|salat|champignon|pilz|radieschen|kohl|spinat|sellerie|kurbis|lauch|krauter|petersilie|schnittlauch/.test(n))return 'vegetable';
     return null;
   }
   function deadline(purchaseDate,kind,{openedOn=null,mhd=null}={}){
