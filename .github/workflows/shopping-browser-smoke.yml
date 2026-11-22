@@ -24,8 +24,10 @@ permissions:
   contents: read
 jobs:
   browser:
-    name: Actual V1 page in Chromium browser
+    name: Actual V1 page in Chromium and iPhone WebKit
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -36,14 +38,8 @@ jobs:
         run: |
           npm init -y
           npm install --no-save playwright@1.48.2
-      - name: Chromium mobile and desktop shopping UI
-        run: |
-          if command -v google-chrome >/dev/null; then
-            SHOPPING_USE_SYSTEM_CHROME=1 SHOPPING_SKIP_WEBKIT=1 node tests/shopping-ui-browser-v1.cjs
-          else
-            npx playwright install chromium
-            SHOPPING_SKIP_WEBKIT=1 node tests/shopping-ui-browser-v1.cjs
-          fi
+      - name: Chromium mobile, desktop and iPhone WebKit shopping UI
+        run: node tests/shopping-ui-browser-v1.cjs
       - name: Save browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
