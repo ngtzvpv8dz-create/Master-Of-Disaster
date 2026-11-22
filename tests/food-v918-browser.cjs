@@ -37,7 +37,13 @@ async function run(browser,label){
         food_recipes:[{id:'r-prep',title:'Mariniertes Testgericht',meal_type:'dinner',servings:1,active:true,
           instructions:'1. Gemüse über Nacht marinieren. 2. Am Folgetag kurz garen.',food_recipe_ingredients:[]}],
         food_ingredient_preferences:[{id:'p-tempeh',ingredient_name:'Tempeh',preference:'Würde ich probieren',is_current_selection:true}],
-        food_meal_ingredient_prep_checks:[]
+        food_meal_ingredient_prep_checks:[],
+        // Three independent confirmed extras on the same calendar day.
+        food_extra_consumptions:[
+          {id:'extra-drink',user_id:'test-user',consumption_date:today,kind:'drink',title:'Demo Energy Drink',quantity:1,unit:'Dose',calories_kcal:20,protein_g:0,source_reference:'fixture-drink'},
+          {id:'extra-chips',user_id:'test-user',consumption_date:today,kind:'snack',title:'Demo Chips',quantity:40,unit:'g',calories_kcal:210,protein_g:3,source_reference:'fixture-chips'},
+          {id:'extra-choc',user_id:'test-user',consumption_date:today,kind:'snack',title:'Demo Schokolade',quantity:20,unit:'g',calories_kcal:110,protein_g:2,source_reference:'fixture-choc'}
+        ]
       };
       const actions=[];
       const selectRows=(table,filters=[])=>{
@@ -130,10 +136,22 @@ async function run(browser,label){
     assert.deepEqual(actions.slice(0,2).map(x=>x.type),['upsert','delete']);
     assert(actions.some(x=>x.type==='rpc'&&x.name==='record_food_ingredient_taste_feedback'&&x.payload.p_meal_id==='m-done'),'tasting should use designated RPC');
     assert(actions.every(x=>x.table!=='food_inventory'&&x.table!=='food_inventory_lots'),'checkbox must not debit food');
+    // Real extra-snack panel: the ordinary meal must remain, and 3 extras show separately.
+    await page.addScriptTag({url:base+'/food-extra-snacks-v828.js?food-browser-test'});
+    const extraPanel=page.locator('#food-extra-snacks-v828');
+    await extraPanel.waitFor({state:'visible',timeout:15000});
+    await page.waitForFunction(()=>window.__modFoodExtrasV828?.getStatus?.().ready===true,{timeout:15000});
+    const extraText=await extraPanel.innerText();
+    assert.match(extraText,/3 Zusatz-Snacks/);
+    assert.match(extraText,/340 kcal/);
+    assert.match(extraText,/Demo Energy Drink/);
+    assert.match(extraText,/Demo Chips/);
+    assert.match(extraText,/Demo Schokolade/);
+    assert(await page.locator('[data-food-meal-card="m-planned"]').count(),'ordinary meal must not be replaced by extras');
     const dir=path.join(process.cwd(),'test-results');
     fs.mkdirSync(dir,{recursive:true});
     await page.screenshot({path:path.join(dir,'food-v918-'+label+'.png'),fullPage:true});
-    console.log('PASS FOOD '+label+' Today/Plan prep reminder, spice display, clickable ingredient check/undo, taste feedback with explicit confirmation.');
+    console.log('PASS FOOD '+label+' prep reminder, spice display, ingredient check/undo, taste feedback, 3 independent extras including drink+chips+chocolate.');
   }catch(e){
     if(page){try{fs.mkdirSync('test-results',{recursive:true});await page.screenshot({path:'test-results/food-v918-fail-'+label+'.png',fullPage:true});}catch(_){}}
     throw e;
