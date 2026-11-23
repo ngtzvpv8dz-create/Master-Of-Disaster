@@ -60,3 +60,23 @@ test('labelled exact manufacturer macros are not marked as reference or estimate
  assert.equal(n.kcal,21);
  assert.equal(n.estimated,false);
 });
+
+test('fresh chives in an existing pot give reference nutrition for measured grams, without claiming a gram stock balance',()=>{
+ const data=sample('Schnittlauch','Schnittlauch',29,{nutrition_reference_only:true});
+ data.inventory[0].name='REWE Schnittlauch im Topf';
+ data.inventory[0].unit='Topf';
+ data.inventory[0].quantity=1;
+ data.products[0].package_unit='Topf';
+ data.products[0].package_quantity=1;
+ data.products[0].nutrition_per_100={energy_kcal:29,protein_g:2.6,fat_g:0.74,carbohydrates_g:1.54};
+ data.lots[0].package_unit='Topf';
+ data.lots[0].package_quantity=1;
+ const item={id:'herb',name:'Schnittlauch',quantity:15,unit:'g'};
+ const calc=calculate([item],1,data);
+ assert.equal(calc.complete,true);
+ assert.equal(calc.kcal,4.35);
+ assert.equal(calc.protein,0.39);
+ assert.equal(calc.estimated,true);
+ assert.equal(nutritionProblem(item,data),null);
+ assert.equal(data.inventory[0].quantity,1,'do not invent 15 g available from an unweighed pot');
+});
