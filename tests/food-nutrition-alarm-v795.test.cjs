@@ -11,11 +11,13 @@ const end=nutrition.indexOf('\n  function patchNutritionAlarm(',start);
 assert(start>0&&end>start,'Nutrition problem diagnostics and warning markup must exist');
 const context={
   ZERO_NAMES:new Set(['wasser','leitungswasser','salz']),
+  toTasteSeasoning:()=>false,
   text:x=>String(x||'').trim().toLocaleLowerCase('de-DE'),
   key:x=>String(x||'').toLocaleLowerCase('de-DE').replace(/[^a-z0-9äöüß]+/g,''),
   number:x=>x===null||x===undefined||x===''?null:(Number.isFinite(Number(x))?Number(x):null),
   itemName:x=>String(x.name||x.label||'Zutat'),
-  nutritionOf:p=>({kcal:p?.nutrition_per_100?.energy_kcal??null,protein:p?.nutrition_per_100?.protein_g??null}),
+  nutritionOf:p=>({kcal:p?.nutrition_per_100?.energy_kcal??null,protein:p?.nutrition_per_100?.protein_g??null,
+    fat:p?.nutrition_per_100?.fat_g??null,carbs:p?.nutrition_per_100?.carbohydrates_g??null}),
   genericFamilyAllocation:()=>null,
   genericFamilyNutrition:()=>null,
   // This regression isolates visible nutrition alarms, not mixed-lot
@@ -30,7 +32,7 @@ const context={
   familyMatch:()=>false,
   // Simulate an old catalogue product with valid nutrition, currently chosen
   // as fallback. A new package in the SAME inventory must still raise an alarm.
-  sourceFor:()=>({nutrition:{kcal:63,protein:2.2},product:null,stock:null}),
+  sourceFor:()=>({nutrition:{kcal:63,protein:2.2,fat:0.3,carbs:4},product:null,stock:null}),
   basisAmount:item=>Number(item.quantity)
 };
 vm.createContext(context);
@@ -58,11 +60,11 @@ assert.match(html,/Gemüsepfanne Asiatische Art/);
 assert.match(html,/data-food-nutrition-goto="meal-1"/);
 
 // Updating nutrition MUST clear the warning on the next refresh.
-data.products=[oldProduct,{...newProduct,nutrition_per_100:{energy_kcal:46,protein_g:1.6}}];
+data.products=[oldProduct,{...newProduct,nutrition_per_100:{energy_kcal:46,protein_g:1.6,fat_g:0.2,carbohydrates_g:3}}];
 assert.equal(context.audit(ingredient,data),null,'Known complete product must stop alarming');
 // Provisional product nutrition still triggers a visible warning, without
 // treating an estimated energy total as a missing numeric value.
-data.products=[oldProduct,{...newProduct,nutrition_per_100:{energy_kcal:46,protein_g:1.6},
+data.products=[oldProduct,{...newProduct,nutrition_per_100:{energy_kcal:46,protein_g:1.6,fat_g:0.2,carbohydrates_g:3},
   product_data:{nutrition_provisional:true,nutrition_requires_packaging_check:true}}];
 const provisional=context.audit(ingredient,data);
 assert.equal(provisional.provisional,true);

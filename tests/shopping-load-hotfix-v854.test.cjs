@@ -17,11 +17,11 @@ const effectiveShoppingDate=new Function(js.slice(holidayStart,holidayEnd)+';ret
 const shoppingNormalize=value=>String(value||'').toLocaleLowerCase('de-DE')
  .replace(/ß/g,'ss').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
  .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
-const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','food','inventory','shoppingFamilyLabel','effectiveShoppingDate','shoppingNormalize','let rowMap;\n'+originalBlock);
+const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','food','inventory','shoppingFamilyLabel','effectiveShoppingDate','shoppingNormalize','window','let rowMap;\n'+originalBlock);
 const fmtDate=iso=>iso;
 const fmtQty=(n,u)=>n+' '+u;
 const collator=new Intl.Collator('de-DE');
-const simulate=rows=>run(rows,()=> '2026-10-24',fmtDate,fmtQty,collator,{plannedShoppingUses:[]},[],name=>name,effectiveShoppingDate,shoppingNormalize);
+const simulate=rows=>run(rows,()=> '2026-10-24',fmtDate,fmtQty,collator,{plannedShoppingUses:[]},[],name=>name,effectiveShoppingDate,shoppingNormalize,{});
 const general=(id,label,quantity,unit='g',status='now',neededBy='2026-10-24')=>({
  id,key:id,source:'general',section:status,label,secondary:'Einkauf geplant',
  general:{quantity,unit,needed_by:neededBy}

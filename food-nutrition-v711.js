@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V849';
+  const VERSION='V931';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -93,7 +93,8 @@
     "mangoessbar":{kcal:60,protein:0.7,fat:0.45,carbs:12,unit:"g",source:"BLS F516100 Mango roh, essbarer Anteil",url:"https://blsdb.de/food?foodId=38167"},
     "zitrone":{kcal:40,protein:0.7,fat:0.4,carbs:3.16,unit:"g",source:"BLS F601100 Zitrone roh, essbarer Anteil",url:"https://blsdb.de/food?foodId=38946"},
     "schnittlauch":{kcal:29,protein:2.6,fat:0.74,carbs:1.54,unit:"g",source:"BLS G081100 Schnittlauch roh",url:"https://blsdb.de/food?foodId=38179"},
-    "radieschen":{kcal:19,protein:1.05,fat:0.14,carbs:2.31,unit:"g",source:"BLS G691100 Radieschen roh",url:"https://blsdb.de/food?foodId=38952"},
+    "radieschen":{kcal:18,protein:1.05,fat:0.14,carbs:2.31,unit:"g",source:"BLS G691100 Radieschen roh",url:"https://blsdb.de/food?foodId=38952"},
+    "feldsalat":{kcal:18,protein:1.9,fat:0.36,carbs:0.808,unit:"g",source:"BLS G104100 Feldsalat/Rapunzel roh",url:"https://blsdb.de/food?foodId=38181"},
     "halloumi":{kcal:321,protein:23,fat:25,carbs:2.3,unit:"g",source:"Halloumi, typischer Grillkäse; Herstellerwerte variieren",url:"generic-halloumi"},
     "teriyakisauce":{kcal:100,protein:2,fat:0.1,carbs:22,unit:"g",source:"Teriyaki-Sauce, generische Rezeptur; Zucker und Salz je Marke variieren",url:"generic-teriyaki-sauce"}
   };
@@ -378,7 +379,7 @@
     // Familienprodukt fortschreiben, nicht kcal=0 oder "Vorrat reicht nicht".
     const allocation=allocationOverride||genericFamilyAllocation(item,data);
     const parts=(allocation?.allocations||[]).filter(part=>number(part.take)>0);
-    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,used=0,lastProduct=null;
+    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,used=0,lastProduct=null,referenceUsed=false;
     for(const part of parts){
       const stock=part.stock||familyStocks.find(row=>String(row.id)===String(part.inventoryId||''));
       // V877: Eine Zutatenfamilie kann mehrere reale Marken/Chargen IN EINEM
@@ -402,6 +403,7 @@
         if(lotMix.carbsBound)carbsBound=true;
         used+=Number(part.take);
         lastProduct=lotMix.lastProduct||lastProduct;
+        if(lotMix.lastProduct?.product_data?.nutrition_reference_only===true)referenceUsed=true;
         continue;
       }
       const product=productForStock(stock,data);
@@ -419,6 +421,7 @@
       if(nut.carbsBound)carbsBound=true;
       used+=Number(part.take);
       lastProduct=product;
+      if(product.product_data?.nutrition_reference_only===true)referenceUsed=true;
     }
     const remaining=Math.max(0,requested-used);
     if(remaining>0.0001){
@@ -434,6 +437,7 @@
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
+      if(product.product_data?.nutrition_reference_only===true)referenceUsed=true;
       const gross=pinned?unambiguousCurrentStockGross(item,pinned,data,remaining):null;
       const amount=gross!==null?gross:
         basisAmount({...item,quantity:remaining,unit:item.unit},{product,stock:pinned});
@@ -445,7 +449,7 @@
       if(nut.carbsBound)carbsBound=true;
     }
     return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
-      carbsBound:carbsKnown&&carbsBound,missing:[]};
+      carbsBound:carbsKnown&&carbsBound,estimated:referenceUsed,missing:[]};
   }
 
   function quantityInStockUnit(item,stock){
@@ -621,7 +625,8 @@
       if(!product&&!familyRows.length)product=chooseProduct(products.filter(row=>row.active!==false&&key(row.product_name)===key(name)));
     }
 
-    if(product)return {nutrition:nutritionOf(product),product,stock};
+    if(product)return {nutrition:nutritionOf(product),product,stock,
+      reference:product.product_data?.nutrition_reference_only===true};
     const fromNote=noteNutrition(stock);
     if(fromNote)return {nutrition:fromNote,product:null,stock};
     return uniquelyPresentAlias(name,data)||referenceFor(item);
@@ -1035,6 +1040,7 @@
         kcal+=familyNutrition.kcal;
         protein+=familyNutrition.protein;
         addMacro(familyNutrition,1);
+        if(familyNutrition.estimated)referenceUsed=true;
         continue;
       }
       if(familyNutrition&&!familyNutrition.complete){

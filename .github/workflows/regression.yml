@@ -74,6 +74,7 @@ jobs:
           node --test tests/food-confirmed-provenance-20261112.test.cjs || failed=1
           node --test tests/food-ingredient-reference-fallback-v844.test.cjs || failed=1
           node --test tests/food-central-nutrition-audit-v845.test.cjs || failed=1
+          node --test tests/food-raw-produce-nutrition-v931.test.cjs || failed=1
           node --check shopping-v678.js
           node --check finance-data-v553.js
           node --check denkfabrik-v635.js
