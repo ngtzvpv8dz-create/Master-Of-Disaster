@@ -25,7 +25,7 @@ test('retailer recommendations are normalized and allowlisted',()=>{
 });
 test('recommendation is placed on a dedicated compact secondary row, never into label',()=>{
   assert.match(js,/const retailerLine=retailer/);
-  assert.match(js,/\+retailerLine\s*\+freshnessNote\s*\+'<\\/div>'/);
+  assert.ok(js.includes("      +retailerLine\n      +freshnessNote\n      +'</div>'"));
   assert.match(js,/HÄNDLER-TIPP/);
   assert.match(js,/Empfehlung, keine bestätigte Filialverfügbarkeit/);
   assert.match(js,/esc\(retailer\)/);
