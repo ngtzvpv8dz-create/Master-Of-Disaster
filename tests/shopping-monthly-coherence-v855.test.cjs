@@ -13,10 +13,10 @@ const normalizeStart=source.indexOf('  const shoppingNormalize=value=>');
 const normalizeStop=source.indexOf('  function shoppingFamilyLabel(',normalizeStart);
 assert.ok(datesStart>=0&&datesStop>datesStart&&normalizeStart>=0&&normalizeStop>normalizeStart);
 const shoppingDependencies=source.slice(datesStart,datesStop)+source.slice(normalizeStart,normalizeStop);
-const run=new Function('rows','todayIso','fmtDate','fmtQty','collator',
+const run=new Function('rows','todayIso','fmtDate','fmtQty','collator','window',
   shoppingDependencies+'\nlet rowMap; const food={plannedShoppingUses:[]}; const inventory=[]; const shoppingFamilyLabel=x=>x;\n'+source.slice(start,stop)+'\nreturn included;');
 const date='2026-10-24',fmtDate=s=>s,fmtQty=(q,u)=>q+' '+u;
-const simulate=rows=>run(rows,()=>date,fmtDate,fmtQty,new Intl.Collator('de-DE'));
+const simulate=rows=>run(rows,()=>date,fmtDate,fmtQty,new Intl.Collator('de-DE'),{});
 const general=(label,quantity,unit,when=date,section='now')=>({
   id:'G'+label,source:'general',section,label,secondary:'Einkauf vorgesehen',
   general:{quantity,unit,needed_by:when}
