@@ -66,7 +66,7 @@
       './food-freshness-v913.js?v=20261125-fresh-three-days-932-family-fix',
       './food-v544.js?v=20261125-fresh-three-days-932',
       './food-nutrition-v711.js?v=20261123-raw-reference-931',
-      './shopping-v678.js?v=20261125-stockup-family-933'
+      './shopping-v678.js?v=20261125-stockup-family-933-next-use'
     ],
     kistology:[
       SUPABASE,
@@ -159,7 +159,7 @@
       './food-nutrition-v711.js?v=20261123-raw-reference-931','./food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'],
     shopping:['./food-freshness-v913.js?v=20261125-fresh-three-days-932-family-fix',
       './food-v544.js?v=20261125-fresh-three-days-932',
-      './food-nutrition-v711.js?v=20261123-raw-reference-931','./shopping-v678.js?v=20261125-stockup-family-933'],
+      './food-nutrition-v711.js?v=20261123-raw-reference-931','./shopping-v678.js?v=20261125-stockup-family-933-next-use'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
