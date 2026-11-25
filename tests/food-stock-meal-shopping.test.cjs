@@ -168,3 +168,13 @@ test('fresh stock expires after purchase plus two; future stock is not consumed 
  assert.equal(deriveShopping({inventory:[chicken],products:[],lots:[],meals:[meal('2026-11-16',[ingredient('Hähnchenbrustfilet',300,'ch')]),meal('2026-11-20',[ingredient('Hähnchenbrustfilet',300,'ch')])]}).length,0);
  }finally{delete window.ModFoodFreshnessV913;}
 });
+
+test('frozen family stays frozen in shopping and is not subject to fresh-stock expiry',()=>{
+ window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
+ try{
+ const frozen=stock('s','Blattspinat TK','Spinat',800);
+ const fresh=stock('sf','Spinat frisch','Spinat',200);
+ const data={inventory:[frozen,fresh],products:[],lots:[lot('s1','s',800,'2026-10-01',true),lot('sf1','sf',200,'2026-11-10')],meals:[meal('2026-11-16',[ingredient('Spinat TK',500)]),meal('2026-11-17',[ingredient('Spinat TK',400)])]};
+ const gaps=deriveShopping(data);assert.equal(gaps.length,1);assert.equal(gaps[0].missing,100);assert.equal(gaps[0].freshWindowDays,null);assert.match(gaps[0].label,/TK/);
+ }finally{delete window.ModFoodFreshnessV913;}
+});

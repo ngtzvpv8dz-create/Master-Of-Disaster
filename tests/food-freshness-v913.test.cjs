@@ -130,3 +130,5 @@ test('Three inclusive days for fresh produce; MHD may shorten, not extend',()=>{
   assert.equal(p.deadline('2026-11-25','shelf_milk',{mhd:'2027-02-01'}),'2027-02-01');
   assert.equal(p.deadline('2026-11-25','shelf_milk',{openedOn:'2026-11-25'}),'2026-12-02');
 });
+
+test('Flavoured drinks are not fresh fruit',()=>{assert.equal(p.classify({name:'HOLY Hydration Orange'}),null);});

@@ -21,6 +21,7 @@
   function classify(item){
     const n=textName(item);
     if(!n)return null;
+    if(/\b(holy|hydration|isoclear|protein|energy drink|eistee|fruchtpulver|aroma)\b/.test(n))return null;
     if(/\b(tk|tiefkuhl|tiefgekuhlt|gefroren|tiefgefroren|frozen|getrocknet|trocken|pulver)\b/.test(n))return null;
     if(/wrap|tortilla/.test(n))return 'wrap';
     if(/brot|brotchen|toast|pita|pide|baguette/.test(n))return 'bread';

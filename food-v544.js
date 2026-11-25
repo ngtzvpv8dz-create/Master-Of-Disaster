@@ -3339,6 +3339,7 @@
           ==='esn isoclear whey protein isolate';
         // V861: Preparation qualifiers are not separate grocery products.
         // Preserve the recipe ingredient itself for nutrition and cooking.
+        const frozenNeed=/\b(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)\b/i.test(name);
         const shoppingName=isIsoclearFamily?linkedStock.family_name
           :/^karotten (?:warm|rohkost|roh)$/i.test(name)?'Karotten'
           :(/^körniger frischkäse$/i.test(name)&&/leicht/i.test(String(item.label||'')))?'Körniger Frischkäse leicht'
@@ -3350,16 +3351,21 @@
         );
         // All generic family demands share one stock ledger. Otherwise two
         // recipe variants can each incorrectly count the same 500 g twice.
+        const requestedProduce=window.ModFoodFreshnessV913?.classify?.({name:shoppingName});
+        const unrelatedProduceFamily=['fruit','vegetable'].includes(requestedProduce)&&resolvedFamily?.family
+          &&window.ModFoodFreshnessV913?.classify?.({name:resolvedFamily.familyName})!==requestedProduce;
         const sharedFamily=isIsoclearFamily
           ?linkedStock.family_name
-          :resolvedFamily?.family?resolvedFamily.familyName:null;
+          :resolvedFamily?.family&&!unrelatedProduceFamily?resolvedFamily.familyName:null;
         const stockId=sharedFamily?null:(item.inventory_id||null);
-        const normalizedFamily=sharedFamily?normalizedIngredient(sharedFamily,shoppingUnit):null;
+        // Do not collapse an explicitly frozen ingredient into the fresh family.
+        const familyLabel=sharedFamily&&frozenNeed&&!/\b(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)\b/i.test(sharedFamily)?sharedFamily+' TK':sharedFamily;
+        const normalizedFamily=familyLabel?normalizedIngredient(familyLabel,shoppingUnit):null;
         const canonical=normalizedFamily||normalizedIngredient(shoppingName,shoppingUnit);
         const key=sharedFamily
           ?'family|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE')
           :(stockId?'stock|'+stockId+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE'));
-        const current=needs.get(key)||{inventory_id:stockId,label:sharedFamily||shoppingName,canonical,unit:shoppingUnit,required:0,uses:[]};
+        const current=needs.get(key)||{inventory_id:stockId,label:familyLabel||shoppingName,canonical,unit:shoppingUnit,required:0,uses:[]};
         current.required+=shoppingQuantity;
         current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
