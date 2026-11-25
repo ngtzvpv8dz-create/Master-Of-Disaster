@@ -20,10 +20,11 @@ begin
  end if;
  -- Explicit Miso variants are not interchangeable. Preserve exact inventory linkage.
  if lower(btrim(new.name)) in ('miso-paste hell','misopaste, hell','miso-paste dunkel','misopaste, dunkel') then
-   select id,name into new.inventory_id,new.name from public.food_inventory
-   where user_id=new.user_id and is_active and unit=new.unit
-   and lower(name)=case when lower(new.name) like '%hell%' then 'miso-paste hell' else 'miso-paste dunkel' end;
-   if new.inventory_id is null then raise exception 'Ausdrückliche Misopaste-Variante fehlt im Vorratsstamm'; end if;
+   v_name:=case when lower(new.name) like '%hell%' then 'Miso-Paste hell' else 'Miso-Paste dunkel' end;
+   select id into new.inventory_id from public.food_inventory
+   where user_id=new.user_id and is_active and unit=new.unit and lower(name)=lower(v_name);
+   -- A missing inventory row must not block future recipe planning.
+   new.name:=v_name;
    return new;
  end if;
  if new.inventory_id is not null then
