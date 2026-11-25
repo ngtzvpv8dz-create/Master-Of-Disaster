@@ -2106,7 +2106,7 @@
         +' data-leftover-id="'+esc(item.id)+'" data-servings="1" title="Nur bei tatsächlich eingefrorener Portion">🧊 1 Portion eingefroren bestätigen</button></article>';}).join('')+'</div></section>'
       :'';
     const freshness=window.ModFoodFreshnessV913?.auditPlan?.({
-      ...data,gaps:deriveShopping(data),today:todayIso()
+      ...data,gaps:deriveShopping(data),today:todayIso(),resolveStock:use=>window.__modFoodStockResolverV746?.resolve({item:{name:use.name,unit:use.unit},inventoryRows:data.inventory||[],inventoryAliases:data.aliases||[]})
     })||[];
     const freshnessMarkup=freshness.length
       ?'<details class="food-cloud-warning-v548" data-food-freshness-audit-details '+(freshnessAuditExpanded?'open':'')+'><summary><strong>Frische- und MHD-Prüfung: '+freshness.length+' Punkte</strong> · Details anzeigen</summary><div><span>Vor dem nächsten Einkauf diese Punkte klären. Keine Mengen oder Mahlzeiten wurden stillschweigend geändert.</span>'
@@ -3261,8 +3261,15 @@
         const product=(data.products||[]).find(p=>p.id===lot.product_id);
         const declared=Number(product?.product_data?.fresh_use_within_days);
         const end=policy.deadline(bought,kind,{mhd:lot.best_before_date,openedOn:lot.batch_data?.opened_on||lot.batch_data?.opened_at||lot.opened_at});
-        const until=Number.isInteger(declared)&&declared>0&&declared<2? [end,plusDays(bought,declared)].sort()[0]:end;
-        if(!until||until<todayIso())continue;
+        const plannedUntil=Number.isInteger(declared)&&declared>0&&declared<2?[end,plusDays(bought,declared)].sort()[0]:end;
+        if(!plannedUntil||bought>todayIso())continue;
+        // The scheduling window is not a discard date for physical produce.
+        // Tentatively use existing stock promptly; the audit asks for a condition check.
+        // Never assume it covers a distant future recipe or override a dated MHD.
+        const near=plusDays(todayIso(),2);
+        const softEnd=plannedUntil<near?near:plannedUntil;
+        const until=lot.best_before_date&&lot.best_before_date<softEnd?lot.best_before_date:softEnd;
+        if(until<todayIso())continue;
         const q=(value,unit)=>inventoryQuantityInUnit({...stock,quantity:Number(value)||0,unit:unit||stock.unit},need.unit).available;
         const available=q((Number(lot.unopened_packages)||0)*(Number(lot.package_quantity)||0),lot.package_unit)+q(lot.opened_remaining_quantity,lot.opened_remaining_unit);
         if(available>0)entries.push({bought,end:until,available});
@@ -3312,7 +3319,7 @@
         const fruitFamily=unit==='g'&&!item.inventory_id
           ?(['apfel','äpfel'].includes(namedFruit)?'apfel'
             :namedFruit==='mandarine'?'mandarinen/clementinen'
-            :namedFruit==='avocado'?'avocado':null)
+            :namedFruit==='avocado'?'avocado':/^(?:mango|mango frisch|mango, frisch|mango \(essbar\))$/.test(namedFruit)?'mango':null)
           :null;
         const fruitFamilyStock=fruitFamily
           ?(data.inventory||[])
@@ -3326,11 +3333,14 @@
           ||pieceData.edible_weight_per_piece_estimated_g||pieceData.piece_weight_g);
         const gramsToPieces=unit==='g'&&pieceStock?.unit==='Stück'
           &&Number.isFinite(pieceWeight)&&pieceWeight>0;
-        const shoppingUnit=gramsToPieces?'Stück':unit;
+        // Mango is recorded as a whole fruit, not measured edible grams.
+        // One fruit per recipe is a provisional grocery count, never a nutrition conversion.
+        const wholeMango=unit==='g'&&fruitFamily==='mango'&&(!pieceStock||pieceStock.unit==='Stück');
+        const shoppingUnit=gramsToPieces||wholeMango?'Stück':unit;
         // The saved 150 g Pink Lady weight is estimated. A 160 g snack is
         // one fruit, not two; allow 10% size variation when budgeting pieces.
         // Linked products keep their existing exact gram-to-piece behaviour.
-        const shoppingQuantity=gramsToPieces
+        const shoppingQuantity=wholeMango?(gramsToPieces?Math.max(1,Math.ceil(quantity/pieceWeight)):1):gramsToPieces
           ?(fruitFamily?Math.max(1,Math.ceil(quantity/(pieceWeight*1.1)-1e-8)):quantity/pieceWeight)
           :quantity;
         // Isoclear flavours share availability but not nutritional metadata.
@@ -3343,7 +3353,7 @@
         const shoppingName=isIsoclearFamily?linkedStock.family_name
           :/^karotten (?:warm|rohkost|roh)$/i.test(name)?'Karotten'
           :(/^körniger frischkäse$/i.test(name)&&/leicht/i.test(String(item.label||'')))?'Körniger Frischkäse leicht'
-          :name;
+          :fruitFamily==='mango'?'Mango frisch':name;
         const resolvedFamily=ingredientStockInfo(
           {inventory_id:item.inventory_id||null,name:shoppingName,unit:shoppingUnit},
           data.inventory||[],inventoryByIdForShopping,
@@ -3359,7 +3369,7 @@
           :resolvedFamily?.family&&!unrelatedProduceFamily?resolvedFamily.familyName:null;
         const stockId=sharedFamily?null:(item.inventory_id||null);
         // Do not collapse an explicitly frozen ingredient into the fresh family.
-        const familyLabel=sharedFamily&&frozenNeed&&!/\b(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)\b/i.test(sharedFamily)?sharedFamily+' TK':sharedFamily;
+        const familyLabel=sharedFamily&&(frozenNeed||resolvedFamily?.familyMode==='frozen')&&!/\b(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)\b/i.test(sharedFamily)?sharedFamily+' TK':sharedFamily&&resolvedFamily?.familyMode==='fresh'&&!/\bfrisch\b/i.test(sharedFamily)?sharedFamily+' frisch':sharedFamily;
         const normalizedFamily=familyLabel?normalizedIngredient(familyLabel,shoppingUnit):null;
         const canonical=normalizedFamily||normalizedIngredient(shoppingName,shoppingUnit);
         const key=sharedFamily
@@ -3489,6 +3499,7 @@
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
       const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,(data.products||[]).filter(product=>product.active!==false));
+      const isFreshProduce=['fruit','vegetable'].includes(window.ModFoodFreshnessV913?.classify?.({name:need.label}));
 
       need.uses.forEach(use=>{
         const routineBuyFrom=regularShoppingDate(use.date,use.mealType);
@@ -3496,7 +3507,9 @@
         // For fresh berries planned beyond the normal shopping's freshness
         // window, defer to the first suitable date. Buying on meal day
         // before consumption is also valid (e.g. Wed morning snack shop).
-        const buyFrom=freshBuyFrom&&routineBuyFrom<freshBuyFrom?freshBuyFrom:routineBuyFrom;
+        // Preserve the agreed Wednesday/Saturday slots. A fresh-produce recipe
+        // outside the slot's window is flagged, not silently assigned an extra shopping trip.
+        const buyFrom=isFreshProduce?routineBuyFrom:(freshBuyFrom&&routineBuyFrom<freshBuyFrom?freshBuyFrom:routineBuyFrom);
         const current=windows.get(buyFrom)||{buyFrom,required:0,uses:[],shortageDate:use.date};
         current.required+=use.quantity;
         current.uses.push(use);
