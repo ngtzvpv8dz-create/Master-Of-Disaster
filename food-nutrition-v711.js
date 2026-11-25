@@ -297,6 +297,7 @@
   }
 
   function genericFamilyAllocation(item,data){
+    if(window.__modFoodStockResolverV746?.explicitVariantStockName?.(item))return null;
     const name=itemName(item);
     const unit=text(item?.unit);
     if(item?.inventory_id){
@@ -351,6 +352,7 @@
   // momentan verfügbarem Vorrat. Der FIFO-Vorrat bestimmt nur, welches
   // konkrete Produkt bei generischen Familien zuerst verwendet werden soll.
   function genericFamilyNutrition(item,data,allocationOverride=null){
+    if(window.__modFoodStockResolverV746?.explicitVariantStockName?.(item))return null;
     const name=itemName(item);
     // Salz und Wasser bleiben null-kcal, auch wenn ein Vorratseintrag
     // oder eine Vorratsfamilie mit genau diesem Namen existiert.
@@ -583,6 +585,19 @@
 
     const inventory=data.inventory;
     const products=data.products;
+    const shared=window.__modFoodStockResolverV746;
+    const explicit=shared?.explicitVariantStockName?.(item);
+    if(explicit){
+      const selected=shared.resolve({item,inventoryRows:inventory});
+      const stock=selected.stock;
+      const product=stock?productForStock(stock,data):null;
+      if(product)return {nutrition:nutritionOf(product),product,stock,reference:product.product_data?.nutrition_reference_only===true};
+      const known=noteNutrition(stock);
+      if(known)return {nutrition:known,product:null,stock};
+      // An absent specific product is not permission to borrow nutrition from
+      // another wrap, salsa or mushroom variant.
+      return referenceFor({...item,name:explicit});
+    }
     let stock=item?.inventory_id?inventory.find(row=>String(row.id)===String(item.inventory_id)):null;
 
     if(!stock){
