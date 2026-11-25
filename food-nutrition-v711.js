@@ -934,7 +934,7 @@
     const wanted=number(item.quantity);
     if(wanted===null||wanted<=0)return invalid('Menge');
     let covered=0,kcal=0,protein=0,fat=0,carbs=0;
-    let fatKnown=true,carbsKnown=true,carbsBound=false;
+    let fatKnown=true,carbsKnown=true,carbsBound=false,estimated=false;
     for(const part of parts){
       const count=number(part.quantity);
       const partUnit=text(part.unit||item.unit);
@@ -989,6 +989,7 @@
         amount=basisAmount({...item,quantity:count,label:String(part.label||item.label||'')},{product:historicalProduct,stock});
       }
       if(amount===null)return invalid('gesichertes Stückgewicht fehlt');
+      if(wholeProduceGrossPolicy(item,stock)&&!/(essbar|netto)/i.test(itemName(item)))estimated=true;
       const factor=amount/100;
       kcal+=n.kcal*factor;protein+=n.protein*factor;
       if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
@@ -997,7 +998,7 @@
     }
     if(Math.abs(covered-wanted)>0.001)return invalid('Aufteilungsmenge passt nicht zum Rezept');
     return {complete:true,kcal,protein,fat:fatKnown?fat:null,
-      carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,missing:[]};
+      carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,estimated,missing:[]};
   }
 
   // Immutable lot evidence takes priority over the current catalogue.
@@ -1919,7 +1920,7 @@
       supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,prepared_sources_snapshot,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,allocation_override,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active'),
-      supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit'),
+      supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,batch_data'),
       // Extra-Konsum wird als eigene, bereits gegessene Tagesposition gezählt.
       supabase.from('food_extra_consumptions').select('id,consumption_date,title,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g').gte('consumption_date',from).lte('consumption_date',to).limit(1500)
     ]);
@@ -1950,7 +1951,7 @@
     const mealMap=new Map(proposed.map(meal=>[String(meal.id),meal]));
     let total=0,complete=true;
     const missing=[];
-    for(const meal of proposed.filter(row=>String(row.meal_date)===String(target.meal_date))){
+    for(const meal of proposed.filter(row=>String(row.meal_date)===String(target.meal_date)&&text(row.status)!=='skipped')){
       const items=meal.food_meal_ingredients||[];
       const context=plan.contexts.get(String(meal.id))||testData;
       const allocations=plan.allocations.get(String(meal.id))||null;
@@ -1964,8 +1965,11 @@
       }
     }
     // Die Vorschau muss dieselben zusätzlichen Tageskcal wie die Live-Bilanz enthalten.
-    total+=(data.extras||[]).filter(x=>x.consumption_date===target.meal_date)
-      .reduce((sum,x)=>sum+(number(x.calories_kcal)||0),0);
+    for(const extra of (data.extras||[]).filter(x=>x.consumption_date===target.meal_date)){
+      const kcal=number(extra.calories_kcal);
+      if(kcal===null||kcal<0){complete=false;missing.push(extra.title||'Zusatzsnack');}
+      else total+=kcal;
+    }
     return {complete,kcal:complete?(exact?total:Math.round(total)):null,missing:[...new Set(missing)],date:target.meal_date};
   }
 

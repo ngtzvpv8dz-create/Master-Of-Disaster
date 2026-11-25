@@ -113,3 +113,26 @@ test('planner handles 520 distinct items without losing entries',()=>{
   }
   assert.equal(food().deriveShopping(d).length,520);
 });
+
+test('measured fruit receipt: exact individual gross weights, fail closed',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'..','shopping-v678.js'),'utf8');
+  const a=src.indexOf('  function requiresMeasuredPurchase('),b=src.indexOf('  function purchaseDetailsForReview(',a);
+  const {parseMeasuredPurchaseWeights:parse,measuredPurchaseReady:ready}=new Function(src.slice(a,b)+';return {parseMeasuredPurchaseWeights,measuredPurchaseReady};')();
+  assert.deepEqual(parse('153; 147,5',2,'Stück',1),[153,147.5]);
+  assert.deepEqual(parse('153\n147',2,'Stück',2),[153,147]);
+  for(const args of [['150;0',2,'Stück',1],['150',2,'Stück',1],['150;160',2,'g',1],['150;160;170',3,'Stück',2],['1e2',1,'Stück',1]])assert.throws(()=>parse(...args));
+  assert.equal(ready({quantity:2,unit:'Stück',purchase_data:{gross_piece_weights_g:[150]}},{ingredient_family_name:'Apfel'}),false);
+  assert.equal(ready({quantity:2,unit:'Stück',purchase_data:{gross_piece_weights_g:[150,160]}},{ingredient_family_name:'Avocado'}),true);
+  assert.equal(ready(null,{ingredient_family_name:'Milch'}),true);
+  assert.equal(ready({inventory_applied_at:'old'},{ingredient_family_name:'Apfel'}),true);
+});
+test('meal preview excludes skipped meals and rejects unknown snack calories',()=>{
+  const src=fs.readFileSync(path.join(__dirname,'..','food-nutrition-v711.js'),'utf8');
+  const a=src.indexOf('  function dayCaloriesWithProposedMeal('),b=src.indexOf('  async function previewMealDayCalories(',a);
+  const calc=new Function('number','text','plannedMealAllocationState','nutritionForMeal',src.slice(a,b)+';return dayCaloriesWithProposedMeal;')(x=>x==null||x===''?null:Number(x),x=>String(x||'').toLowerCase(),()=>({contexts:new Map(),allocations:new Map()}),m=>({complete:true,kcal:m.id==='one'?150:999}));
+  const data={meals:[{id:'one',meal_date:'2026-11-25',status:'planned',eaten_servings:1},{id:'two',meal_date:'2026-11-25',status:'skipped'}],recipes:[],extras:[{consumption_date:'2026-11-25',calories_kcal:0}]};
+  assert.equal(calc(data,'one',[],true).kcal,150);
+  const invalid=calc({...data,extras:[{consumption_date:'2026-11-25',title:'Unknown',calories_kcal:null}]},'one',[],true);
+  assert.equal(invalid.complete,false);
+  assert.equal(invalid.kcal,null);
+});
