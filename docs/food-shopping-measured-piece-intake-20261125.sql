@@ -1,5 +1,6 @@
+-- Additional rollback test: two lot groups with different pack contents 140g and 150+160g; missing mapping rejected; exact group assignment and rollback verified.
 -- REVIEW ONLY. Requires UI to capture gross weights and handle pending receipt review.
--- Scope: apple/avocado, one checkout lot group, up to 500 whole measured pieces. Never guess weight-to-lot assignments.
+-- Scope: apple/avocado, up to 500 whole measured pieces. Multiple lot groups require explicitly assigned arrays keyed by checkout lot ID.
 -- Tests: valid 153+147g, idempotency, missing/count mismatch/negative/string/split group rejected and rollback verified.
 DO $guard$ BEGIN IF md5(pg_get_functiondef('public.apply_shopping_checkout_item_inventory(uuid)'::regprocedure))<>'dc86fcc9bba7dd1496f208e176e110cd' THEN RAISE EXCEPTION 'Source changed';END IF;END $guard$;
 INSERT INTO mod_ingredient_import_20261125.nutrition_function_backup(function_name,definition) VALUES('apply_shopping_checkout_item_inventory_pre_measured_pieces',pg_get_functiondef('public.apply_shopping_checkout_item_inventory(uuid)'::regprocedure));
@@ -24,6 +25,9 @@ declare
   v_has_child_lots boolean:=false;
   v_measured_fruit boolean:=false;
   v_weights jsonb;
+  v_group_weights jsonb;
+  v_groups jsonb;
+  v_group_count integer;
   v_weight numeric;
   v_physical_lot record;
   v_offset integer:=0;
@@ -85,8 +89,19 @@ begin
       RAISE EXCEPTION 'Anzahl oder Bruttogewichte der Einzelstücke ungültig';
     END IF;
     IF EXISTS (SELECT 1 FROM public.food_inventory_lots l WHERE l.user_id=v_user AND l.checkout_item_id=v_item.id) THEN RAISE EXCEPTION 'Einkauf hat bereits eine Charge ohne Buchungsbestätigung; zuerst prüfen'; END IF;
-    -- Child lot grouping needs explicitly measured per-group weights, not guessed slices.
-    IF (SELECT count(*) FROM public.shopping_checkout_item_lots WHERE checkout_item_id=v_item.id AND user_id=v_user)>1 THEN RAISE EXCEPTION 'Mehrere Chargen benötigen getrennte Einkaufspositionen mit eigenen Stückgewichten';END IF;
+    PERFORM id FROM public.shopping_checkout_item_lots WHERE checkout_item_id=v_item.id AND user_id=v_user ORDER BY id FOR UPDATE;
+    SELECT count(*) INTO v_group_count FROM public.shopping_checkout_item_lots WHERE checkout_item_id=v_item.id AND user_id=v_user;
+    IF v_group_count>1 THEN
+      v_groups:=v_item.purchase_data->'gross_piece_weights_by_checkout_lot';
+      IF jsonb_typeof(v_groups) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'Einzelgewichte pro Charge erforderlich';END IF;
+      IF (SELECT count(*) FROM jsonb_object_keys(v_groups))<>v_group_count THEN RAISE EXCEPTION 'Chargengruppen stimmen nicht überein';END IF;
+      FOR v_lot IN SELECT * FROM public.shopping_checkout_item_lots WHERE checkout_item_id=v_item.id AND user_id=v_user LOOP
+        v_group_weights:=v_groups->v_lot.id::text;
+        IF jsonb_typeof(v_group_weights) IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'Einzelgewichte pro Charge erforderlich';END IF;
+        IF v_lot.package_count<1 OR jsonb_array_length(v_group_weights)<1 OR mod(jsonb_array_length(v_group_weights),v_lot.package_count)<>0 OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_group_weights) w WHERE jsonb_typeof(w)<>'number' OR CASE WHEN jsonb_typeof(w)='number' THEN w::text::numeric<=0 ELSE true END) THEN RAISE EXCEPTION 'Stückgewichte und Packungszahl der Charge widersprechen sich';END IF;
+      END LOOP;
+      IF (SELECT coalesce(jsonb_agg(x ORDER BY x::text),'[]'::jsonb) FROM jsonb_each(v_groups) g CROSS JOIN LATERAL jsonb_array_elements(g.value) x) IS DISTINCT FROM (SELECT jsonb_agg(x ORDER BY x::text) FROM jsonb_array_elements(v_weights) x) THEN RAISE EXCEPTION 'Chargengewichte stimmen nicht mit Gesamtwiegung überein';END IF;
+    END IF;
   END IF;
   v_before:=coalesce(v_inventory.quantity,0);
   v_after:=v_before+v_item.quantity;
@@ -121,6 +136,7 @@ begin
       where checkout_item_id=v_item.id and user_id=v_user
       order by created_at,id
     loop
+      IF v_measured_fruit AND v_group_count>1 THEN v_package_qty:=jsonb_array_length(v_groups->v_lot.id::text)::numeric/v_lot.package_count;END IF;
       v_label:=trim(to_char(v_package_qty,'FM999999990.##')||
         case when coalesce(v_item.unit,'')<>'' then ' '||v_item.unit else '' end);
 
@@ -176,12 +192,14 @@ begin
   end if;
 
   IF v_measured_fruit THEN
-    FOR v_physical_lot IN SELECT id,unopened_packages,package_quantity FROM public.food_inventory_lots WHERE user_id=v_user AND checkout_item_id=v_item.id AND inventory_id=v_inventory.id ORDER BY id FOR UPDATE LOOP
+    FOR v_physical_lot IN SELECT id,unopened_packages,package_quantity,checkout_item_lot_id FROM public.food_inventory_lots WHERE user_id=v_user AND checkout_item_id=v_item.id AND inventory_id=v_inventory.id ORDER BY id FOR UPDATE LOOP
       IF v_physical_lot.package_quantity<>trunc(v_physical_lot.package_quantity) THEN RAISE EXCEPTION 'Packung enthält keine ganze Stückzahl';END IF;
       v_count:=(v_physical_lot.unopened_packages*v_physical_lot.package_quantity)::integer;
       IF v_count<=0 OR v_offset+v_count>jsonb_array_length(v_weights) THEN RAISE EXCEPTION 'Chargenstückzahl widerspricht Einkaufswiegung';END IF;
+      IF v_group_count>1 THEN v_group_weights:=v_groups->v_physical_lot.checkout_item_lot_id::text;
+      ELSE v_group_weights:=v_weights;END IF;
       FOR v_ix IN 1..v_count LOOP
-        v_weight:=(v_weights->(v_offset+v_ix-1))::text::numeric;
+        v_weight:=(v_group_weights->(CASE WHEN v_group_count>1 THEN v_ix-1 ELSE v_offset+v_ix-1 END))::text::numeric;
         INSERT INTO public.food_inventory_pieces(user_id,inventory_id,lot_id,piece_index,produce_kind,color,weight_g,remaining_weight_g,status,weight_source,measured_on,note)
         VALUES(v_user,v_inventory.id,v_physical_lot.id,v_ix,CASE WHEN v_inventory.family_name='Avocado' THEN 'avocado' ELSE 'apple' END,CASE WHEN v_inventory.family_name='Avocado' THEN 'grün' ELSE 'nicht erfasst' END,v_weight,v_weight,'whole','user_scale',(now() AT TIME ZONE 'Europe/Berlin')::date,'Bruttogewicht aus bestätigter Einkaufswiegung, ohne Schalen-/Kernabzug');
       END LOOP;
