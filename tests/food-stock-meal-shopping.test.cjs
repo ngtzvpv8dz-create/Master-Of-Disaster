@@ -152,13 +152,13 @@ test('unmeasured edible avocado yield cannot be an automatic grocery order; zero
   assert.ok(deriveShopping(data).some(gap=>/avocado/i.test(gap.label)&&gap.missing>0));
 });
 
-test('fresh stock expires after purchase plus two; future stock is not consumed early',()=>{
+test('existing fresh stock remains provisionally available near-term; future stock is not consumed early',()=>{
  window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
  try{
  const tomato=stock('tom','Tomaten','Tomaten',500);
  const data={inventory:[tomato],products:[],lots:[lot('fresh','tom',500,'2026-11-14')],meals:[meal('2026-11-16',[ingredient('Tomaten',300,'tom')]),meal('2026-11-17',[ingredient('Tomaten',200,'tom')])]};
  const gaps=deriveShopping(data);assert.equal(gaps.length,1);assert.equal(gaps[0].missing,200);assert.equal(gaps[0].shortageDate,'2026-11-17');
- data.lots=[lot('old','tom',500,'2026-11-10')];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),500);
+ data.lots=[lot('old','tom',500,'2026-11-10')];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),200);
  data.lots=[lot('new','tom',500,'2026-11-17')];const prior=deriveShopping(data);assert.equal(prior.length,1);assert.equal(prior[0].missing,300);
  data.lots=[{...lot('fresh','tom',500,'2026-11-14'),best_before_date:'2026-11-15'}];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),500);
  const avocado={id:'a',name:'Avocados Hass',family_name:'Avocado',quantity:3,unit:'Stück',is_active:true};
