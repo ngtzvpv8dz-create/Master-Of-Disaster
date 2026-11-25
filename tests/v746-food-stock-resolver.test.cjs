@@ -64,3 +64,7 @@ r=resolver.resolve({item:{name:'Spinat TK',unit:'g'},inventoryRows:rows});
 assert.equal(r.available,802,'TK excludes fresh');
 r=resolver.resolve({item:{name:'Mango (essbar)',unit:'g'},inventoryRows:[{id:'cola',name:'Cola Zero Mango',family_name:'Pepsi Zero Mango',quantity:5,unit:'l'}]});
 assert.equal(r.rows.length,0,'flavour is not fruit');
+
+const riceRows=[{id:'parboiled',name:'Parboiled Spitzenreis',family_name:'Reis',catalog_family_name:'Reis',catalog_group_label:'Parboiled Reis',unit:'g',quantity:1000},{id:'basmati',name:'Basmati Reis',family_name:'Reis',unit:'g',quantity:192},{id:'express',name:'Express-Reis Asiatische Art',family_name:'Express-Reis',unit:'g',quantity:500}];
+r=resolver.resolve({item:{name:'Reis',unit:'g'},inventoryRows:riceRows});
+assert.equal(r.available,1192,'generic dry rice uses the approved rice family, not precooked express rice');

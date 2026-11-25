@@ -3490,7 +3490,7 @@
       const physicalRows=(stockInfo.stock?[stockInfo.stock]:familyRows).filter(row=>Number(row.quantity)>0);
       const physicalUnits=new Map();
       for(const row of physicalRows)physicalUnits.set(row.unit,(physicalUnits.get(row.unit)||0)+Number(row.quantity));
-      const physicalStockLabel=physicalUnits.size?[...physicalUnits].map(([unit,q])=>fmtQty(q,unit)).join(' + '):null;
+      const physicalStockLabel=physicalUnits.size?[...physicalUnits].map(([unit,q])=>Number(q.toFixed(3)).toLocaleString('de-DE')+' '+String(unit||'')).join(' + '):null;
       const physicalReview=Boolean(physicalRows.length&&(stockInfo.unitMismatch||(datedAvailable!==null&&datedAvailable+1e-8<Math.max(0,stockInfo.available||0))));
       const stockReviewNote=physicalReview?'Physisch vorhanden · anrechenbaren Bestand, Frische bzw. essbare Menge prüfen.':null;
       let remaining=Math.max(0,stockInfo.available||0);
@@ -3540,7 +3540,8 @@
           label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
           convertedStock:stockInfo.converted,
-          stockUnverified:physicalReview||(stockUnverified&&!(Number(stockInfo.available)>0)),
+          stockReview:physicalReview,
+          stockUnverified:stockUnverified&&!(Number(stockInfo.available)>0),
           shortageDate:actualShortageDate||window.shortageDate,
           buyFrom:window.buyFrom,
           freshWindowDays:shortFreshWindowDays||null

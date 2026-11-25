@@ -551,7 +551,7 @@
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),
         section:inCart?'cart':(delayed?'later':'now'),inCart,
-        primary:(item.stockUnverified?'Bestand prüfen · ggf. kaufen ':'Kaufen ')
+        primary:((item.stockReview||item.stockUnverified)?'Bestand prüfen · ggf. kaufen ':'Kaufen ')
           +fmtQty(buyQuantity,buyUnit)+(skyrPack?' ('+skyrPack.packs+' Becher)':''),
         currentStock:'Aktuell im Vorrat '+(item.physicalStockLabel||fmtQty(item.currentAvailable??currentAvailable,item.unit)),
         nextUseDate:firstUpcomingUse,packHint:packSuggestion,
@@ -571,7 +571,7 @@
           stockName,stockQuantity,stockUnit,stockId,cartKey:key
         },
         flags:{converted:!!item.convertedStock,unitMismatch:!!item.unitMismatch,
-          stockUnverified:!!item.stockUnverified}
+          stockReview:!!item.stockReview,stockUnverified:!!item.stockUnverified}
       });
     });
 
@@ -988,7 +988,9 @@
     if(row.unmatchedPlannedPurchase)return 'Kein passender Rezeptbedarf gefunden · Kauf prüfen';
     const lines=[];
     if(row.flags?.stockUnverified)
-      lines.push('⚠️ Vorhandenen Bestand, Gewicht bzw. Verwendbarkeit vor Einkauf prüfen');
+      lines.push('⚠️ Bestand nicht gewogen: vor Einkauf prüfen oder passende Packung mitnehmen');
+    if(row.flags?.stockReview)
+      lines.push('⚠️ Physisch vorhanden · Frische bzw. essbare Menge prüfen');
     if(row.flags?.unitMismatch)
       lines.push('⚠️ Packungsinhalt bzw. verfügbares Gewicht prüfen');
     const when=row.nextUseDate||(!row.general&&row.neededDate)||null;
