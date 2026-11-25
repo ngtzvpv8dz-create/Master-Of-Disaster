@@ -2526,6 +2526,43 @@
       ?'Pralinen':'Stück';
   }
 
+  function isMeasuredFruitStock(item){
+    return item?.unit==='Stück'&&['Apfel','Avocado'].includes(item?.family_name);
+  }
+
+  async function openMeasuredFruitWithdrawal(id,lotId=null,defaultKind='consume'){
+    requireFreshLotStock();
+    const item=(state.inventory||[]).find(x=>String(x.id)===String(id));
+    if(!isMeasuredFruitStock(item)||item.is_active===false||!(Number(item.quantity)>0))throw new Error('Geeigneter Stückvorrat fehlt.');
+    const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+    const response=await withTimeout(sb.rpc('food_available_measured_whole_pieces',{p_inventory_id:item.id}),'Einzelgewichte prüfen',10000);
+    if(response.error)throw response.error;
+    const all=response.data;
+    if(!Array.isArray(all)||all.length!==Number(item.quantity)||new Set(all.map(x=>x.piece_id)).size!==all.length||all.some(x=>!x.piece_id||!x.lot_id||!Number.isFinite(Number(x.gross_weight_g))||Number(x.gross_weight_g)<=0)){
+      addModal('Stückbestand prüfen','<p>Die einzelnen Gewichte und der Bestand sind noch nicht eindeutig zugeordnet. Keine Entnahme ohne Klärung.</p>');return;
+    }
+    const pieces=all.filter(x=>!lotId||String(x.lot_id)===String(lotId));
+    if(!pieces.length){addModal('Stückbestand prüfen','<p>Keine eindeutig verfügbaren Stücke dieser Charge.</p>');return;}
+    const reasonLabels={consume:'Gegessen',spoilage:'Verdorben',remove:'Anderweitig entfernt'};
+    const modal=addModal('Ganze Früchte entnehmen','<form><p>'+esc(item.name)+' · gespeicherte Bruttogewichte</p>'+pieces.map(x=>'<label><input type="checkbox" name="piece" value="'+esc(x.piece_id)+'"> Stück '+esc(x.piece_index)+' · '+esc(fmtQty(x.gross_weight_g,'g'))+'</label>').join('')+'<label>Grund<select name="kind">'+Object.entries(reasonLabels).map(([key,label])=>'<option value="'+key+'" '+(key===defaultKind?'selected':'')+'>'+label+'</option>').join('')+'</select></label><p data-food-fruit-withdraw-summary></p><p>Nur Vorratsabgang. Kein zusätzlicher Kalorientagebuch-Eintrag.</p><button class="food-action-v544" type="submit">Ausgewählte Stücke entnehmen</button></form>',async form=>{
+      const ids=form.getAll('piece').map(String),kind=String(form.get('kind'));
+      if(!ids.length||new Set(ids).size!==ids.length||ids.some(id=>!pieces.some(x=>String(x.piece_id)===id))||!Object.hasOwn(reasonLabels,kind))throw new Error('Bitte eindeutige Stücke und einen gültigen Grund auswählen.');
+      requireFreshLotStock();
+      const saved=await withTimeout(sb.rpc('food_withdraw_measured_whole_pieces',{p_inventory_id:item.id,p_piece_ids:ids,p_expected_quantity:Number(item.quantity),p_kind:kind}),'Stückentnahme speichern',12000);
+      if(saved.error)throw saved.error;
+      if(String(saved.data?.inventory_id)!==String(item.id)||saved.data?.kind!==kind||Number(saved.data?.remaining_pieces)!==Number(item.quantity)-ids.length)throw new Error('Buchung nicht eindeutig bestätigt; bitte FOOD neu laden.');
+      await mutate(()=>saved.data);
+    });
+    const summary=modal?.querySelector('[data-food-fruit-withdraw-summary]');
+    const sync=()=>{
+      const ids=new Set([...(modal?.querySelectorAll('input[name="piece"]:checked')||[])].map(x=>x.value));
+      const picked=pieces.filter(x=>ids.has(String(x.piece_id)));
+      if(summary)summary.textContent=picked.length+' Stück · '+fmtQty(picked.reduce((s,x)=>s+Number(x.gross_weight_g),0),'g')+' brutto';
+    };
+    modal?.querySelectorAll('input[name="piece"]').forEach(input=>input.addEventListener('change',sync));
+    sync();
+  }
+
   function inventoryCard(item,nextUses){
     const expanded=expandedInventory.has(String(item.id));
     const pieceInfo=inventoryCountedPieces(item);
@@ -2543,7 +2580,7 @@
         +' · 1 '+esc(pieceInfo.unitLabel==='Pralinen'?'Praline':'Stück')
         +': '+esc(fmtQty(pieceInfo.weight,'g'))
         +' · Rest: '+esc(fmtQty(pieceInfo.stockGrams,'g'))+'</div>':'';
-    const measuredGrossWeights=(state?.lots||[])
+    const measuredGrossWeights=(isMeasuredFruitStock(item)?[]:(state?.lots||[]))
       .filter(lot=>String(lot.inventory_id||'')===String(item.id))
       .flatMap(lot=>Array.isArray(lot.batch_data?.remaining_piece_weights_g)
         ?lot.batch_data.remaining_piece_weights_g.filter(g=>Number.isFinite(Number(g))&&Number(g)>0).map(Number):[]);
@@ -2551,7 +2588,7 @@
       ?'<div class="food-stock-piece-info-v869">Einzelstücke brutto (mit Schale/Kern/Strunk): '
         +esc(measuredGrossWeights.map(g=>fmtQty(g,'g')).join(' · '))+'</div>'
       :'';
-    const pieceConsumeAction=pieceInfo&&!empty
+    const pieceConsumeAction=isMeasuredFruitStock(item)&&!empty?'<button type="button" data-food-measured-fruit-withdraw="'+esc(item.id)+'">Einzelstücke entnehmen</button>':pieceInfo&&!empty
       ?'<button type="button" data-food-piece-consume="'+esc(item.id)+'">'+esc(pieceInfo.unitLabel)+' verbrauchen</button>'
       :'';
     const freezePlanned=!empty&&/einfrier/i.test(String(item.forecast_label||''));
@@ -2589,7 +2626,7 @@
 
     const hasTrackedLots=(state?.lots||[]).some(lot=>String(lot.inventory_id||'')===String(item.id) && (Number(lot.unopened_packages)>0||Number(lot.opened_remaining_quantity)>0));
     const storageAction=!empty&&!hasTrackedLots?'<button type="button" data-food-storage="'+esc(item.id)+'">Zustand &amp; Verwendung</button>':'';
-    const quantityAction=hasTrackedLots?'':'<button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>';
+    const quantityAction=hasTrackedLots||isMeasuredFruitStock(item)?'':'<button type="button" data-food-adjust="'+esc(item.id)+'">Menge ändern</button>';
     const addLotAction='<button type="button" data-food-add-lot="'+esc(item.id)+'">+ Charge</button>';
     return '<article class="food-stock-card-v544 food-stock-variant-v736 tone-'+esc(visualTone)+tomorrowClass+freezePlanClass+(expanded?' is-details-open-v697':'')+'" data-food-stock-card="'+esc(item.id)+'"><div class="food-stock-top-v544"><div><h4>'+esc(displayName)+'</h4><strong>'+esc(quantity)+'</strong></div><span class="food-stock-open-v544 '+(empty?'is-empty-v629':(item.opened?'is-opened-v704':'is-unopened-v704'))+'">'+status+'</span></div>'+mhd+pieceDescription+grossWeightDetail+currentProduct+traceability+nextUse+weighing+priority+forecast+sliceMarkup+chickenPieces+details+'<div class="food-stock-actions-v544">'+pieceConsumeAction+quantityAction+addLotAction+weighAction+storageAction+'</div></article>';
   }
@@ -5182,6 +5219,7 @@
   function editInventoryLotModal(lotId){
     const lot=editableLot(lotId);if(!lot)return;
     const item=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));if(!item)return;
+    if(isMeasuredFruitStock(item)){alert('Mengen einzeln gewogener Früchte nur über die Stückverwaltung ändern.');return;}
     try{requireFreshLotStock();}catch(error){alert(error.message);return;}
     const product=(state?.products||[]).find(p=>String(p.id)===String(lot.product_id))||null;
     const title=lotProductTitle(product)||item.name;
@@ -5245,6 +5283,7 @@
   function discardInventoryLotModal(lotId){
     const lot=editableLot(lotId);if(!lot)return;
     const item=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));if(!item)return;
+    if(isMeasuredFruitStock(item)){void openMeasuredFruitWithdrawal(item.id,lot.id,'spoilage').catch(error=>alert(error.message));return;}
     try{requireFreshLotStock();}catch(error){alert(error.message);return;}
     const qty=lotQuantityForInventory(lot,item);
     const product=(state?.products||[]).find(p=>String(p.id)===String(lot.product_id))||null;
@@ -5265,6 +5304,7 @@
 
   function adjustModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
+    if(isMeasuredFruitStock(item)){alert('Einzeln gewogene Früchte nur über eindeutige Stückentnahme oder gewogene Einkaufscharge ändern.');return;}
     addModal('Menge ändern','<form><p class="food-modal-copy-v544">'+esc(item.name)+'</p><label>Neue Menge<input name="quantity" type="number" min="0" step="0.01" value="'+esc(item.quantity??0)+'" required></label><label>Notiz (optional)<input name="note" placeholder="z. B. verschüttet"></label><button class="food-action-v544" type="submit">Menge speichern</button></form>',async form=>{
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
       const result=await supabase.rpc('adjust_food_inventory',{p_inventory_id:id,p_new_quantity:Number(form.get('quantity')),p_reason:'Menge manuell geändert',p_note:String(form.get('note')||'')||null});
@@ -5330,6 +5370,7 @@
 
   function consumeModal(id){
     const item=state?.inventory.find(row=>row.id===id);if(!item)return;
+    if(isMeasuredFruitStock(item)){void openMeasuredFruitWithdrawal(id).catch(error=>alert(error.message));return;}
     if(num(item.quantity)===null){alert('Bitte zuerst die vorhandene Menge eintragen.');return;}
     const pieces=inventoryCountedPieces(item);
     const bottle=item.name==='Pepsi Zero Cherry'&&item.unit==='l';
@@ -5747,6 +5788,12 @@
     }));
     root.querySelectorAll('[data-food-discard-lot]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();discardInventoryLotModal(button.dataset.foodDiscardLot);
+    }));
+    root.querySelectorAll('[data-food-measured-fruit-withdraw]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();button.disabled=true;
+      try{await openMeasuredFruitWithdrawal(button.dataset.foodMeasuredFruitWithdraw);}
+      catch(error){alert(error?.message||'Stückentnahme fehlgeschlagen.');}
+      finally{button.disabled=false;}
     }));
     root.querySelectorAll('[data-food-piece-consume]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();

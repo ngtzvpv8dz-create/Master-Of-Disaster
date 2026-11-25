@@ -126,3 +126,25 @@ test('Fruit planning interaction: only explicit, current and calorie-safe confir
    }
  }
 });
+
+test('Manual fruit stock withdrawal uses exact piece IDs, selected reason and current count',async()=>{
+ const begin=code.indexOf('  function isMeasuredFruitStock('),end=code.indexOf('  function inventoryCard(',begin);
+ const state={inventory:[{id:'stock',name:'Avocado',family_name:'Avocado',unit:'Stück',quantity:2}]};
+ for(const scenario of ['consume','spoilage','remove','duplicate','wrong_piece','ambiguous','lot_filter','stale']){
+  const calls=[],modals=[];let reloads=0,fresh=true;
+  const sb={rpc:async(name,args)=>{calls.push({name,args});return {data:name==='food_available_measured_whole_pieces'?(scenario==='ambiguous'?[{piece_id:'a',lot_id:'l1',gross_weight_g:151}]:[{piece_id:'a',lot_id:'l1',piece_index:1,gross_weight_g:151},{piece_id:'b',lot_id:'l2',piece_index:2,gross_weight_g:142}]):{inventory_id:'stock',kind:args.p_kind,remaining_pieces:1}};}};
+  const api=new Function('state','requireFreshLotStock','client','withTimeout','esc','fmtQty','addModal','mutate',code.slice(begin,end)+';return {openMeasuredFruitWithdrawal,isMeasuredFruitStock};')(state,()=>{if(!fresh)throw new Error('stale');},()=>sb,p=>p,x=>String(x),(q,u)=>q+' '+u,(title,body,submit)=>{modals.push({title,body,submit});return null;},async fn=>{reloads++;return fn();});
+  await api.openMeasuredFruitWithdrawal('stock',scenario==='lot_filter'?'l1':null);
+  assert.equal(calls.length,1);
+  if(scenario==='ambiguous'){assert.equal(modals[0].submit,undefined);continue;}
+  const selected=scenario==='duplicate'?['a','a']:scenario==='wrong_piece'?['z']:scenario==='lot_filter'?['b']:['a'];
+  const kind=['consume','spoilage','remove'].includes(scenario)?scenario:'consume';
+  if(scenario==='stale')fresh=false;
+  const form={getAll:()=>selected,get:()=>kind};
+  if(['duplicate','wrong_piece','lot_filter','stale'].includes(scenario)){
+   await assert.rejects(()=>modals[0].submit(form),/eindeutige|stale/);assert.equal(calls.length,1);
+  }else{
+   await modals[0].submit(form);assert.equal(calls.length,2);assert.equal(calls[1].name,'food_withdraw_measured_whole_pieces');assert.equal(calls[1].args.p_expected_quantity,2);assert.equal(calls[1].args.p_piece_ids[0],'a');assert.equal(calls[1].args.p_kind,kind);assert.equal(reloads,1);
+  }
+ }
+});
