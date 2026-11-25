@@ -30,3 +30,17 @@ test('catalogue refresh applies new matches; ambiguous names are not guessed',()
  assert.equal(display({name:'Eier Größe M'}),'Hühnereier, Größe M');
  assert.equal(display({name:'Mango (essbar)'}),'Mango, frisch');
 });
+
+test('position-level recipe selection and actual historical source override shared generic name',()=>{
+ setState({ingredientIdentities:[
+  {source_name:'Kartoffeln',canonical_name:'Kartoffeln, Kochtyp offen',resolution:'variant_open'},
+  {ingredient_id:'historic',original_name:'Kartoffeln',canonical_name:'Kartoffeln, festkochend',resolution:'historical_documented'},
+  {ingredient_id:'future',original_name:'Kartoffeln',canonical_name:'Kartoffeln, festkochend oder vorwiegend festkochend',resolution:'flexible'}
+ ]});
+ assert.equal(display({id:'historic',name:'Kartoffeln'}),'Kartoffeln, festkochend');
+ assert.equal(display({id:'future',name:'Kartoffeln'}),'Kartoffeln, festkochend oder vorwiegend festkochend');
+ assert.equal(display({id:'historic',name:'Kartoffeln'},{name:'Kartoffeln',label:'Gala · vorwiegend festkochend'}),'Kartoffeln, vorwiegend festkochend');
+ assert.equal(display({name:'Miso-Paste',label:'35 g Miso-Paste hell'}),'Misopaste, hell');
+ assert.equal(display({name:'Miso-Paste'},{name:'Miso-Paste dunkel'}),'Misopaste, dunkel');
+ assert.equal(display({name:'Zwiebel'},{name:'Zwiebel',label:'Speisezwiebeln',frozen:false}),'Zwiebeln, frisch, Farbe nicht dokumentiert');
+});
