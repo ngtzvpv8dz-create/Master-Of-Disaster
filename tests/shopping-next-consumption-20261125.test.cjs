@@ -1,0 +1,12 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const src=fs.readFileSync(path.join(__dirname,'..','shopping-v678.js'),'utf8');
+const start=src.indexOf('  function shoppingCompactDescription(row){');
+const end=src.indexOf('\n  // V866:',start);
+const render=new Function('todayIso','fmtDate','fmtQty','state',src.slice(start,end)+'\nreturn shoppingCompactDescription;')(()=> '2026-11-25',d=>d, (q,u)=>q+' '+u,{});
+const row={section:'now',source:'general',nextUseDate:'2026-11-26',general:{source:'food-stockup',needed_by:'2026-11-25',notes:'Nächster Rezeptverbrauch: 26.11. · 265 ml | Bis Sa., 28.11., nach Frühstück: 313 ml (Gesamtverbrauch, vor Bestandsabzug; Stand 25.11.2026)\nOriginal note'}};
+test('today shows the saved next-use quantity and pre-stock consumption',()=>{assert.equal(render(row),'Nächster Bedarf: 26.11. · 265 ml\nBis Sa., 28.11., nach Frühstück: 313 ml (vor Bestandsabzug)');});
+test('future or stale snapshots do not replace live next use',()=>{assert.equal(render({...row,section:'later'}),'Nächster Bedarf: 2026-11-26');assert.equal(render({...row,general:{...row.general,needed_by:'2026-11-24'}}),'Nächster Bedarf: 2026-11-26');});
+test('no note retains existing fallback',()=>{assert.equal(render({...row,general:{...row.general,notes:'original'}}),'Nächster Bedarf: 2026-11-26');});

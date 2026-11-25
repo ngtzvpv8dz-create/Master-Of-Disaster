@@ -992,7 +992,16 @@
     if(row.flags?.unitMismatch)
       lines.push('⚠️ Packungsinhalt bzw. verfügbares Gewicht prüfen');
     const when=row.nextUseDate||(!row.general&&row.neededDate)||null;
-    if(when)lines.push('Nächster Bedarf: '+fmtDate(when));
+    // Temporary, explicitly dated snapshot for today's approved monthly basket.
+    // Preserve the live date fallback and never reuse yesterday's snapshot.
+    const todayNote=row.section==='now'&&row.general?.source==='food-stockup'
+      &&row.general?.needed_by===todayIso()
+      ?String(row.general.notes||'').split(/\r?\n/).find(line=>line.startsWith('Nächster Rezeptverbrauch: ')&&line.endsWith('Stand 25.11.2026)')):null;
+    if(todayNote){
+      const [next,through]=todayNote.split(' | ');
+      lines.push(next.replace('Nächster Rezeptverbrauch:','Nächster Bedarf:'));
+      if(through)lines.push(through.replace(' (Gesamtverbrauch, vor Bestandsabzug; Stand 25.11.2026)',' (vor Bestandsabzug)'));
+    }else if(when)lines.push('Nächster Bedarf: '+fmtDate(when));
     if(row.general?.purchase_data?.measure_each_piece_gross_g===true){
       const count=Number(row.general.quantity)||0;
       const weights=Array.isArray(row.general.purchase_data.actual_piece_weights_g)
