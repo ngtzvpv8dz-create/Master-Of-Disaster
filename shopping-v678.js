@@ -209,7 +209,7 @@
           .in('status',['pending','new_product_pending'])
           .order('created_at',{ascending:false}),
         supabase.from('shopping_products')
-          .select('id,retailer,brand,product_name,variant,category,package_quantity,package_unit,barcode,inventory_id,nutrition_per_100,product_data,notes,active,servings_per_package,serving_quantity,serving_unit')
+          .select('id,retailer,brand,product_name,variant,category,package_quantity,package_unit,barcode,inventory_id,nutrition_per_100,product_data,notes,active,servings_per_package,serving_quantity,serving_unit,ingredient_family_name')
           .eq('active',true)
           .order('retailer',{ascending:true})
           .order('product_name',{ascending:true}),
@@ -1335,6 +1335,36 @@
     return !['haushalt','drogerie','technik','sonstiges','dienstleistung'].includes(String(product.category||'').toLocaleLowerCase('de-DE'));
   }
 
+  function requiresMeasuredPurchase(candidate){
+    return ['Apfel','Avocado'].includes(candidate?.ingredient_family_name);
+  }
+
+  function parseMeasuredPurchaseWeights(raw,quantity,unit,packageCount){
+    if(!Number.isInteger(quantity)||quantity<1||quantity>500||unit!=='Stück'
+      ||!Number.isInteger(packageCount)||packageCount<1||quantity%packageCount!==0)
+      throw new Error('Ganze Stückzahl und passende Packungszahl erforderlich.');
+    const parts=String(raw||'').trim().split(/[;\n]+/).map(x=>x.trim());
+    if(parts.length!==quantity||parts.some(x=>!/^\d+(?:[,.]\d+)?$/.test(x)))
+      throw new Error('Bitte für jedes Stück genau ein Bruttogewicht angeben.');
+    const weights=parts.map(x=>Number(x.replace(',','.')));
+    if(weights.some(x=>!Number.isFinite(x)||x<=0))throw new Error('Alle Bruttogewichte müssen größer als null sein.');
+    return weights;
+  }
+
+  function storedMeasuredPurchaseWeights(data){
+    return Array.isArray(data?.gross_piece_weights_g)?data.gross_piece_weights_g
+      :data?.measure_each_piece_gross_g===true&&Array.isArray(data.actual_piece_weights_g)?data.actual_piece_weights_g:[];
+  }
+
+  function measuredPurchaseReady(item,candidate){
+    if(!requiresMeasuredPurchase(candidate)||item?.inventory_applied_at)return true;
+    const weights=storedMeasuredPurchaseWeights(item?.purchase_data);
+    if(weights.some(x=>typeof x!=='number'))return false;
+    try{
+      return parseMeasuredPurchaseWeights(weights.join(';'),Number(item?.quantity),item?.unit,Number(item?.package_count||1)).length>0;
+    }catch(_){return false;}
+  }
+
   function purchaseDetailsForReview(review,candidate){
     const item=checkoutItemForReview(review);
     const productData=candidate?.product_data||{};
@@ -1353,9 +1383,11 @@
     if(status==='date'&&item?.best_before_date)parts.push('MHD '+fmtDate(item.best_before_date));
     else if(status==='none')parts.push('kein MHD vorhanden');
     else if(tracksFoodInventory(candidate))parts.push('MHD offen');
+    const measuredReady=measuredPurchaseReady(item,candidate);
+    if(requiresMeasuredPurchase(candidate)&&!item?.inventory_applied_at)parts.push(measuredReady?'Einzelgewichte erfasst':'Bruttogewichte fehlen');
     return {
       item,purchaseData,status,innerCount,innerQty,innerUnit,
-      ready:!tracksFoodInventory(candidate)||status==='date'||status==='none',
+      ready:(!tracksFoodInventory(candidate)||status==='date'||status==='none')&&measuredReady,
       summary:parts.join(' · ')
     };
   }
@@ -1428,6 +1460,7 @@
         +'<label>Einzelpackungen<input data-purchase-packages type="number" min="1" step="1" inputmode="numeric" value="'+esc(packageCount)+'"></label>'
       +'</div>'
       +weight
+      +(requiresMeasuredPurchase(candidate)?'<label>Bruttogewichte je Stück (g)<textarea data-purchase-gross-weights rows="4" placeholder="153; 147">'+esc(storedMeasuredPurchaseWeights(oldPurchase).join('; '))+'</textarea><small>Ein Gewicht pro Stück, mit Schale, Kern oder Strunk. Durch Semikolon oder Zeilenumbruch trennen. Unterschiedliche Chargen getrennt erfassen.</small></label>':'')
       +'<fieldset class="shopping-purchase-mhd-v756"><legend>MHD</legend>'
         +'<label class="shopping-purchase-mhd-choice-v756"><input type="radio" name="purchaseMhdMode" value="date" '+(mhdStatus==='date'?'checked':'')+'><span>MHD vorhanden</span></label>'
         +'<input data-purchase-mhd-date type="date" value="'+esc(mhdDate)+'">'
@@ -1460,6 +1493,14 @@
         if(mode==='date'&&!date)throw new Error('Bitte das MHD-Datum eintragen.');
 
         const purchaseData={...oldPurchase};
+        if(requiresMeasuredPurchase(candidate)){
+          const weights=parseMeasuredPurchaseWeights(form.querySelector('[data-purchase-gross-weights]')?.value,q,u,pc);
+          purchaseData.gross_piece_weights_g=weights;
+          purchaseData.gross_total_g=weights.reduce((a,b)=>a+b,0);
+          purchaseData.measure_each_piece_gross_g=true;
+          purchaseData.actual_piece_weights_g=weights;
+          purchaseData.actual_weight_pending=false;
+        }
         if(weightKeys.length){
           const selected=form.querySelector('input[name="purchaseWeightClass"]:checked')?.value||'';
           if(!selected)throw new Error('Bitte die Gewichtsklasse auswählen.');
