@@ -186,7 +186,7 @@
   // Catalogue identity is the shared presentation name, never a stock conversion.
   const ingredientName=item=>String(item?.name||item?.label||'Zutat').trim();
   const identityKey=(name,id)=>String(name||'').trim().toLocaleLowerCase('de-DE')+'|'+String(id||'');
-  let identityCacheRows=null,identityIndex=new Map(),identityUnique=new Map();
+  let identityCacheRows=null,identityIndex=new Map(),identityUnique=new Map(),positionIdentityIndex=new Map();
   function canonicalIngredientName(item,source=null){
     const original=ingredientName(item);
     const raw=original.toLocaleLowerCase('de-DE');
@@ -197,16 +197,41 @@
         if(source.frozen===false||/\b(?:frisch|babyspinat)\b/i.test(evidence))return 'Blattspinat, frisch';
       }
     }
+    // The saved historical source takes priority over present-day recipe defaults.
+    if(source){
+      const evidence=String(source.name||'')+' '+String(source.label||'');
+      if(raw==='kartoffeln'&&/kartoffel/i.test(evidence)){
+        if(/vorwiegend festkochend/i.test(evidence))return 'Kartoffeln, vorwiegend festkochend';
+        if(/mehlig/i.test(evidence))return 'Kartoffeln, mehligkochend';
+        if(/festkochend/i.test(evidence))return 'Kartoffeln, festkochend';
+      }
+      if(raw==='zwiebel'&&/(?:speisezwiebeln|zwiebelwürfel|zwiebeln tk|\bzwiebel\b)/i.test(evidence)){
+        if(source.frozen===true||/\b(?:tk|tiefgekühlt|tiefgefroren)\b/i.test(evidence))return 'Zwiebeln, tiefgekühlt';
+        if(source.frozen===false)return 'Zwiebeln, frisch, Farbe nicht dokumentiert';
+      }
+      if(raw==='miso-paste'&&/miso/i.test(evidence)){
+        if(/dunkel/i.test(evidence))return 'Misopaste, dunkel';
+        if(/hell|weiße/i.test(evidence))return 'Misopaste, hell';
+      }
+    }
     const rows=state?.ingredientIdentities;
     if(rows!==identityCacheRows){
-      identityCacheRows=rows;identityIndex=new Map();identityUnique=new Map();
+      identityCacheRows=rows;identityIndex=new Map();identityUnique=new Map();positionIdentityIndex=new Map();
       for(const row of rows||[]){
+        if(row.ingredient_id){positionIdentityIndex.set(String(row.ingredient_id),row);continue;}
         const name=String(row.source_name||'').trim().toLocaleLowerCase('de-DE');
         identityIndex.set(identityKey(name,row.inventory_id),row);
         const prior=identityUnique.get(name);
         if(!prior)identityUnique.set(name,row);
         else if(prior.canonical_name!==row.canonical_name)identityUnique.set(name,{canonical_name:null});
       }
+    }
+    const specific=positionIdentityIndex.get(String(item?.id||''));
+    if(specific?.canonical_name)return String(specific.canonical_name);
+    if(raw==='miso-paste'||raw==='miso-paste hell'||raw==='miso-paste dunkel'){
+      const evidence=original+' '+String(item?.label||'');
+      if(/dunkl/i.test(evidence))return 'Misopaste, dunkel';
+      if(/hell/i.test(evidence))return 'Misopaste, hell';
     }
     const found=identityIndex.get(identityKey(original,item?.inventory_id))||identityUnique.get(raw);
     let canonical=String(found?.canonical_name||original);
@@ -699,9 +724,21 @@
         .eq('user_id',userId).order('source_name').order('inventory_id').range(offset,offset+size-1);
       if(result.error)throw result.error;
       const chunk=result.data||[];rows.push(...chunk);
+      if(chunk.length<size)break;
+      if(offset+size>=25000)throw new Error('Zutatenstamm-Zuordnungen überschreiten den Ladebereich.');
+    }
+    // Position-specific evidence is only necessary for the formerly ambiguous
+    // variants; fetch them in stable, bounded pages alongside the common index.
+    for(let offset=0;offset<25000;offset+=size){
+      const result=await supabase.from('food_catalog_recipe_positions_v1')
+        .select('ingredient_id,original_name,canonical_name,resolution')
+        .eq('user_id',userId).in('original_name',['Zwiebel','Kartoffeln','Spinat','Blattspinat','Miso-Paste'])
+        .order('ingredient_id').range(offset,offset+size-1);
+      if(result.error)throw result.error;
+      const chunk=result.data||[];rows.push(...chunk);
       if(chunk.length<size)return {data:rows};
     }
-    throw new Error('Zutatenstamm-Zuordnungen überschreiten den Ladebereich.');
+    throw new Error('Rezeptpositions-Zuordnungen überschreiten den Ladebereich.');
   }
 
   async function remoteData(){
