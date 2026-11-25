@@ -39,7 +39,7 @@ test('client date fetch, upcoming Plan and food priority use same horizon', () =
 
 // Whole-unit review uses the original gross-weight convention.
 {
- const begin=code.indexOf('  function wholeUnitReviewAction('),end=code.indexOf('  function mealCard(',begin);
+ const begin=code.indexOf('  function measuredFruitChoices('),end=code.indexOf('  function mealCard(',begin);
  assert.ok(begin>=0&&end>begin);
  const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
  const calls=[],modals=[];
@@ -71,3 +71,24 @@ test('client date fetch, upcoming Plan and food priority use same horizon', () =
    assert.match(modals[0].body,/Bruttogewicht/);
  });
 }
+
+test('Whole fruit proposal checks exact IDs and original gross weight; no silent partial allocation',()=>{
+ const begin=code.indexOf('  function measuredFruitChoices('),end=code.indexOf('  function mealCard(',begin);
+ const sourceState={meals:'cloud',inventory:'cloud',lots:'cloud'};
+ const state={inventory:[{id:'stock',name:'Avocados Hass',family_name:'Avocado',unit:'Stück',quantity:4}]};
+ const api=new Function('state','sourceState','normalizedStatus','esc',code.slice(begin,end)+';return {measuredFruitChoices,verifiedFruitProposal,measuredFruitPlanAction};')(state,sourceState,s=>s,s=>String(s));
+ const meal={id:'m',status:'planned',ingredients:[{id:'i',name:'Avocado',quantity:100,unit:'g'}]};
+ assert.equal(api.measuredFruitChoices(meal).length,1);
+ assert.match(api.measuredFruitPlanAction(meal),/data-food-fruit-plan/);
+ assert.equal(api.measuredFruitChoices({...meal,status:'completed'}).length,0);
+ assert.equal(api.measuredFruitChoices({...meal,calories_kcal_per_serving_override:12}).length,0);
+ assert.equal(api.measuredFruitChoices({...meal,ingredients:[{...meal.ingredients[0],allocation_override:[{piece_id:'p'}]}]}).length,0);
+ const a={piece_id:'p',lot_id:'l',product_id:'prod',inventory_id:'stock',quantity:1,unit:'Stück',gross_weight_g:151,actual_weight_g:151};
+ const data={status:'proposal_only',gross_g:151,allocation:[a]};
+ assert.equal(api.verifiedFruitProposal(data,'stock',1).gross,151);
+ assert.equal(api.verifiedFruitProposal({status:'insufficient_verified_fresh_pieces'},'stock',1),null);
+ assert.throws(()=>api.verifiedFruitProposal({...data,gross_g:150},'stock',1));
+ assert.throws(()=>api.verifiedFruitProposal({...data,gross_g:302,allocation:[a,a]},'stock',2));
+ assert.throws(()=>api.verifiedFruitProposal(data,'different',1));
+ sourceState.lots='stale';assert.equal(api.measuredFruitChoices(meal).length,0);
+});

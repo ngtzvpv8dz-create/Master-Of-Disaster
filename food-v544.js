@@ -1908,9 +1908,77 @@
   }
 
   // On-demand planning review: the catalogue remains the only rule authority.
+  function measuredFruitChoices(meal){
+    if(!meal||normalizedStatus(meal.status)!=='planned'||meal.inventory_booked_at||meal.source_meal_id||meal.leftover_id||meal.calories_kcal_per_serving_override!=null||sourceState.meals!=='cloud'||sourceState.inventory!=='cloud'||sourceState.lots!=='cloud')return [];
+    const fold=s=>String(s||'').trim().toLocaleLowerCase('de-DE');
+    return (meal.ingredients||[]).flatMap(ingredient=>{
+      if(ingredient.allocation_override?.length||!ingredient.id||!(Number(ingredient.quantity)>0)||!['g','stück'].includes(fold(ingredient.unit)))return [];
+      return (state.inventory||[]).filter(stock=>stock.is_active!==false&&stock.unit==='Stück'&&Number(stock.quantity)>0
+        &&['Apfel','Avocado'].includes(stock.family_name)&&[fold(stock.family_name),fold(stock.name)].includes(fold(ingredient.name))
+        &&(!ingredient.inventory_id||String(ingredient.inventory_id)===String(stock.id))).map(stock=>({ingredient,stock}));
+    });
+  }
+
+  function measuredFruitPlanAction(meal){
+    return measuredFruitChoices(meal).length?'<button type="button" class="food-action-v544 compact" data-food-fruit-plan="'+esc(meal.id)+'">Ganze Früchte planen</button>':'';
+  }
+
+  function verifiedFruitProposal(data,stockId,count){
+    if(data?.status!=='proposal_only')return null;
+    const a=data.allocation;
+    if(!Array.isArray(a)||a.length!==count||new Set(a.map(p=>p.piece_id)).size!==count||a.some(p=>!p.piece_id||!p.lot_id||!p.product_id||String(p.inventory_id)!==String(stockId)||p.unit!=='Stück'||Number(p.quantity)!==1||!Number.isFinite(Number(p.gross_weight_g))||Number(p.gross_weight_g)<=0||Number(p.actual_weight_g)!==Number(p.gross_weight_g)))throw new Error('Ungültiger Stückvorschlag aus der Datenbank.');
+    const gross=a.reduce((sum,p)=>sum+Number(p.gross_weight_g),0);
+    if(gross!==Number(data.gross_g))throw new Error('Bruttogewichte stimmen nicht überein.');
+    return {gross,ids:a.map(p=>p.piece_id),allocation:a.map(p=>({inventory_id:p.inventory_id,piece_id:p.piece_id,lot_id:p.lot_id,product_id:p.product_id,piece_index:p.piece_index,quantity:1,unit:'Stück',gross_weight_g:Number(p.gross_weight_g),actual_weight_g:Number(p.gross_weight_g)}))};
+  }
+
+  async function measuredFruitDayPreview(meal,ingredient,proposal,sb){
+    const api=window.__modFoodNutritionV711;
+    if(!api?.previewMealDayCalories)throw new Error('Kalorienkontrolle nicht geladen.');
+    const proposed=(meal.ingredients||[]).map(i=>String(i.id)===String(ingredient.id)?{...i,quantity:proposal.gross,unit:'g',allocation_override:proposal.allocation}:i);
+    const preview=await api.previewMealDayCalories(meal.id,proposed);
+    const extra=await withTimeout(sb.from('food_planned_extras').select('calories_kcal').eq('plan_date',meal.meal_date).eq('status','planned'),'Geplante Extras prüfen',10000);
+    if(extra.error)throw extra.error;
+    if(!Array.isArray(extra.data)||extra.data.some(x=>x.calories_kcal==null||!Number.isFinite(Number(x.calories_kcal))||Number(x.calories_kcal)<0))return {complete:false};
+    const added=extra.data.reduce((sum,x)=>sum+Number(x.calories_kcal),0);
+    const day=new Date(String(meal.meal_date)+'T12:00:00Z').getUTCDay();
+    const limit=day===0||day===6?2200:1800;
+    if(!preview?.after?.complete||!Number.isFinite(preview.after.kcal))return {complete:false,limit};
+    return {complete:true,after:preview.after.kcal+added,before:preview.before?.complete?preview.before.kcal+added:null,limit};
+  }
+
+  async function openMeasuredFruitPlan(mealId){
+    const meal=(state.meals||[]).find(x=>String(x.id)===String(mealId));
+    const choices=measuredFruitChoices(meal);
+    if(!choices.length)throw new Error('Keine eindeutig planbare Fruchtzutat gefunden.');
+    const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+    addModal('Ganze Früchte planen','<form><p>Aus vorhandenen, einzeln gewogenen Früchten auswählen. Bruttogewicht inklusive Schale und Kern; keine Vorratsabbuchung.</p><label>Zutat und Vorrat<select name="choice" required>'+choices.map((x,i)=>'<option value="'+i+'">'+esc(x.ingredient.name+' · '+x.stock.name)+'</option>').join('')+'</select></label><label>Ganze Stücke<input name="count" type="number" min="1" max="100" step="1" value="1" required></label><button class="food-action-v544" type="submit">Vorschlag berechnen</button></form>',async form=>{
+      const choice=choices[Number(form.get('choice'))],count=Number(form.get('count'));
+      if(!choice||!Number.isInteger(count)||count<1||count>100)throw new Error('Ungültige Stückauswahl.');
+      const {ingredient,stock}=choice;
+      const response=await withTimeout(sb.rpc('food_propose_measured_fruit_pieces',{p_inventory_id:stock.id,p_meal_date:meal.meal_date,p_piece_count:count,p_ingredient_id:ingredient.id}),'Fruchtvorschlag berechnen',10000);
+      if(response.error)throw response.error;
+      const proposal=verifiedFruitProposal(response.data,stock.id,count);
+      if(!proposal){addModal('Kein passender Vorschlag','<p>Zu wenige eindeutig gewogene, frische und noch nicht eingeplante Stücke. Es wurde nichts geändert.</p>');return;}
+      const day=await measuredFruitDayPreview(meal,ingredient,proposal,sb);
+      const allowed=day.complete&&day.after<=day.limit;
+      const body='<p>'+esc(ingredient.name)+': '+esc(fmtQty(ingredient.quantity,ingredient.unit))+' → <strong>'+esc(proposal.gross)+' g brutto</strong></p><ul>'+proposal.allocation.map(p=>'<li>Stück '+esc(p.piece_index)+' · '+esc(p.gross_weight_g)+' g</li>').join('')+'</ul><p>'+(!day.complete?'Tageskalorien nicht vollständig berechenbar. Keine Übernahme.':esc(day.before==null?'Tageswert vorher unbekannt':day.before+' kcal vorher')+' · '+esc(day.after+' kcal danach · Obergrenze '+day.limit+' kcal'))+'</p>';
+      if(!allowed){addModal('Fruchtvorschlag prüfen',body+'<p>Bitte zuerst den übrigen Speiseplan prüfen. Es wurde nichts geändert.</p>');return;}
+      addModal('Fruchtvorschlag übernehmen','<form>'+body+'<p>Nur diese geplante Zutat ändern. Die Vorräte bleiben bis zum Mahlzeitenabschluss unverändert.</p><button class="food-action-v544" type="submit">Vorschlag übernehmen</button></form>',async()=>{
+        const latest=await measuredFruitDayPreview(meal,ingredient,proposal,sb);
+        if(!latest.complete||latest.after>latest.limit||latest.after!==day.after)throw new Error('Tagesplanung geändert; bitte neuen Vorschlag berechnen.');
+        const saved=await withTimeout(sb.rpc('food_apply_measured_fruit_proposal',{p_ingredient_id:ingredient.id,p_inventory_id:stock.id,p_expected_piece_ids:proposal.ids,p_expected_gross_g:proposal.gross,p_expected_quantity:ingredient.quantity,p_expected_unit:ingredient.unit}),'Fruchtvorschlag übernehmen',10000);
+        if(saved.error)throw saved.error;
+        if(saved.data?.status!=='planned_not_consumed')throw new Error('Übernahme nicht bestätigt; bitte Speiseplan neu laden.');
+        expandedMeals.add(String(meal.id));
+        await mutate(()=>saved.data);
+      });
+    });
+  }
+
   function wholeUnitReviewAction(meal){
     return normalizedStatus(meal.status)==='planned'&&!meal.inventory_booked_at&&meal.ingredients?.length
-      ?'<button type="button" class="food-action-v544 compact" data-food-whole-review="'+esc(meal.id)+'">Verbrauchsregeln prüfen</button>':'';
+      ?'<button type="button" class="food-action-v544 compact" data-food-whole-review="'+esc(meal.id)+'">Verbrauchsregeln prüfen</button>'+measuredFruitPlanAction(meal):'';
   }
 
   function wholeUnitReviewMarkup(rows){
@@ -4193,6 +4261,7 @@
   };
 
   async function saveMealIngredientAllocationDirect(meal,ingredient,allocations){
+    if(ingredient?.allocation_override?.some(p=>p.piece_id))throw new Error('Einzeln gewogene Stücke dürfen nicht über eine allgemeine Quellenmenge geändert werden.');
     if(!sourceIsReal('meals')||!sourceIsReal('inventory')){
       throw new Error('Mahlzeit oder Vorrat sind gerade nicht sicher mit der Cloud synchronisiert. Bitte FOOD einmal neu laden.');
     }
@@ -5658,6 +5727,12 @@
     }));
     root.querySelectorAll('[data-food-add-lot]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();addInventoryLotModal(button.dataset.foodAddLot);
+    }));
+    root.querySelectorAll('[data-food-fruit-plan]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();button.disabled=true;
+      try{await openMeasuredFruitPlan(button.dataset.foodFruitPlan);}
+      catch(error){alert(error?.message||'Fruchtplanung fehlgeschlagen.');}
+      finally{button.disabled=false;}
     }));
     root.querySelectorAll('[data-food-whole-review]').forEach(button=>button.addEventListener('click',async event=>{
       event.preventDefault();event.stopPropagation();button.disabled=true;
