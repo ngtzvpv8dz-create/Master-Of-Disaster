@@ -32,7 +32,7 @@ test('declared piece weight must match grams stored for inventory accounting',()
   assert.equal(display({name:'Vollkornbrot',quantity:56,unit:'g',label:'1,5 Scheiben Vollkornbrot (ca. 56 g)'}),'56 g');
 });
 test('recipe and meal ingredient renderers use piece-aware formatter',()=>{
-  assert.match(source,/return ingredientQuantityForDisplay\(item\)\+' '\+ingredientName\(item\)/);
+  assert.match(source,/return ingredientQuantityForDisplay\(item\)\+' '\+canonicalIngredientName\(item\)/);
   assert.match(source,/esc\(num\(item\.quantity\)===null\?'Menge offen':ingredientQuantityForDisplay\(item\)\)/);
   assert.match(source,/esc\(ingredientQuantityForDisplay\(item\)\)\+'<\/b>'/);
 });
