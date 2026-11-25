@@ -564,7 +564,7 @@
           :(delayed?'Kaufen ab '+fmtDate(shoppingDate):''))
           +(item.freshWindowDays&&item.shortageDate
             ?'\nFrischware: '+fmtDate(shoppingDate)+' bis '+fmtDate(item.shortageDate)
-             +' vor Verzehr kaufen (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)'
+             +' vor Verzehr kaufen'+(item.freshDeadline?' (geplanter Verbrauch bis '+fmtDate(item.freshDeadline)+')':' (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)')
             :''),
         buyFrom:shoppingDate||null,neededDate:item.shortageDate||null,
         category:'Lebensmittel',
