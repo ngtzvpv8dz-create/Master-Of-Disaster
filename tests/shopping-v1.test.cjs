@@ -117,7 +117,7 @@ test('planner handles 520 distinct items without losing entries',()=>{
 test('measured fruit receipt: exact individual gross weights, fail closed',()=>{
   const src=fs.readFileSync(path.join(__dirname,'..','shopping-v678.js'),'utf8');
   const a=src.indexOf('  function requiresMeasuredPurchase('),b=src.indexOf('  function purchaseDetailsForReview(',a);
-  const {parseMeasuredPurchaseWeights:parse,measuredPurchaseReady:ready}=new Function(src.slice(a,b)+';return {parseMeasuredPurchaseWeights,measuredPurchaseReady};')();
+  const {parseMeasuredPurchaseWeights:parse,measuredPurchaseReady:ready}=new Function('state',src.slice(a,b)+';return {parseMeasuredPurchaseWeights,measuredPurchaseReady};')({checkoutItemLots:[]});
   assert.deepEqual(parse('153; 147,5',2,'Stück',1),[153,147.5]);
   assert.deepEqual(parse('153\n147',2,'Stück',2),[153,147]);
   for(const args of [['150;0',2,'Stück',1],['150',2,'Stück',1],['150;160',2,'g',1],['150;160;170',3,'Stück',2],['1e2',1,'Stück',1]])assert.throws(()=>parse(...args));
@@ -135,4 +135,19 @@ test('meal preview excludes skipped meals and rejects unknown snack calories',()
   const invalid=calc({...data,extras:[{consumption_date:'2026-11-25',title:'Unknown',calories_kcal:null}]},'one',[],true);
   assert.equal(invalid.complete,false);
   assert.equal(invalid.kcal,null);
+});
+
+test('measured fruit purchase groups retain exact individual assignment',()=>{
+ const src=fs.readFileSync(path.join(__dirname,'..','shopping-v678.js'),'utf8');
+ const a=src.indexOf('  function requiresMeasuredPurchase('),b=src.indexOf('  function purchaseDetailsForReview(',a);
+ const groups=[{id:'a',checkout_item_id:'i',package_count:1},{id:'b',checkout_item_id:'i',package_count:1}];
+ const api=new Function('state',src.slice(a,b)+';return {parseGroupedMeasuredWeights,measuredPurchaseReady};')({checkoutItemLots:groups});
+ const r=api.parseGroupedMeasuredWeights(groups,{a:'140',b:'150;160'},3,'Stück',2);
+ assert.deepEqual(r.flat,[140,150,160]);
+ assert.deepEqual(r.mapped,{a:[140],b:[150,160]});
+ const item={id:'i',quantity:3,unit:'Stück',package_count:2,purchase_data:{gross_piece_weights_g:r.flat,gross_piece_weights_by_checkout_lot:r.mapped}};
+ const product={ingredient_family_name:'Avocado'};
+ assert.equal(api.measuredPurchaseReady(item,product),true);
+ assert.equal(api.measuredPurchaseReady({...item,purchase_data:{gross_piece_weights_g:r.flat}},product),false);
+ assert.throws(()=>api.parseGroupedMeasuredWeights(groups,{a:'140',b:'150'},3,'Stück',2));
 });
