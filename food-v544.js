@@ -5167,10 +5167,43 @@
   }
   const lotProductTitle=p=>[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');
 
+  function parseManualFruitWeights(raw){
+    const parts=String(raw||'').trim().split(/[;\n]+/).map(x=>x.trim());
+    if(!parts.length||parts.length>500||parts.some(x=>!/^\d+(?:[,.]\d+)?$/.test(x)))throw new Error('Ein Bruttogewicht je Stück, getrennt durch Semikolon oder Zeilenumbruch.');
+    const weights=parts.map(x=>Number(x.replace(',','.')));
+    if(weights.some(x=>!Number.isFinite(x)||x<=0))throw new Error('Nur positive gewogene Bruttogewichte.');
+    return weights;
+  }
+
+  function addMeasuredFruitLotModal(item){
+    const products=(state.products||[]).filter(p=>p.active!==false&&String(p.inventory_id||'')===String(item.id));
+    if(!products.length){alert('Zuerst den konkreten Handelsartikel zuordnen.');return;}
+    if(!globalThis.crypto?.randomUUID){alert('Sichere Anfrage-ID nicht verfügbar. Bitte App aktualisieren.');return;}
+    const requestId=globalThis.crypto.randomUUID();
+    const html='<form><p>'+esc(item.name)+' · eine neue physische Charge. Alle Gewichte mit Schale, Kern oder Strunk, ohne Verpackung.</p>'
+      +'<label>Produkt<select name="product_id" required><option value="">Bitte wählen</option>'+products.map(p=>'<option value="'+esc(p.id)+'" '+(products.length===1?'selected':'')+'>'+esc(lotProductTitle(p)||item.name)+'</option>').join('')+'</select></label>'
+      +'<label>Tatsächliches Kaufdatum<input type="date" name="purchased_on" max="'+esc(todayIso())+'" required></label>'
+      +'<label>Bruttogewichte je Stück (g)<textarea name="gross_weights" rows="4" placeholder="141; 159" required></textarea></label>'
+      +'<label>MHD (falls vorhanden)<input type="date" name="best_before"></label><label>Lagerort<input name="storage" placeholder="Kühlschrank"></label>'
+      +'<button class="food-action-v544" type="submit">Gewogene Charge hinzufügen</button></form>';
+    addModal('Gewogene Früchte hinzufügen',html,async form=>{
+      requireFreshLotStock();
+      const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+      const weights=parseManualFruitWeights(form.get('gross_weights'));
+      const prod=String(form.get('product_id')||''),purchase=String(form.get('purchased_on')||''),mhd=String(form.get('best_before')||'');
+      if(!products.some(p=>String(p.id)===prod)||!purchase||purchase>todayIso()||(mhd&&mhd<purchase))throw new Error('Produkt oder Datum ungültig.');
+      const result=await withTimeout(sb.rpc('food_add_measured_fruit_lot',{p_inventory_id:item.id,p_product_id:prod,p_request_id:requestId,p_expected_quantity:Number(item.quantity),p_gross_weights:weights,p_purchased_on:purchase,p_best_before:mhd||null,p_storage:String(form.get('storage')||'')}),'Gewogene Charge speichern',15000);
+      if(result.error)throw result.error;
+      if(String(result.data?.lot_id)!==requestId||String(result.data?.inventory_id)!==String(item.id))throw new Error('Bestätigung fehlt. Bitte Bestand kontrollieren.');
+      await mutate(()=>result.data);
+    });
+  }
+
   function addInventoryLotModal(inventoryId){
     const item=(state?.inventory||[]).find(row=>String(row.id)===String(inventoryId));
     if(!item)return;
     try{requireFreshLotStock();}catch(error){alert(error.message);return;}
+    if(isMeasuredFruitStock(item)){addMeasuredFruitLotModal(item);return;}
     // Archived catalogue entries remain resolvable for old lots but cannot be selected for a new one.
     const products=(state?.products||[]).filter(p=>p.active!==false&&String(p.inventory_id||'')===String(item.id));
     const existing=(state?.lots||[]).find(l=>String(l.inventory_id)===String(item.id)&&
