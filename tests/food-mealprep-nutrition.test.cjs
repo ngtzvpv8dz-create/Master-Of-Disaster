@@ -124,6 +124,11 @@ test('Completed source meal uses consumed grams plus separately eaten sides',()=
  ['No unrelated piece weight',item([row([lot(1,35,'stück')],'stück')],1,'Stück','Paprika rot',{allocation_override:[{lot_id:'other',product_id:'pl',quantity:1,unit:'Stück',gross_weight_g:154}]}),n=>!n.complete],
  ['Size L eggs with established nominal edible weight',item([row([{...lot(2,150,'stück'),product_name:'Eier',product_variant:'Größe L'}],'stück')],2,'Stück','Eier'),n=>n.complete&&near(n.kcal,189)&&n.estimated],
  ['Recipe grams from explicitly measured piece',item([row([lot(1,35,'stück')],'stück')],154,'g','Paprika rot',{allocation_override:[{lot_id:'l',product_id:'pl',quantity:1,unit:'Stück',actual_weight_g:154}]}),n=>n.complete&&near(n.kcal,53.9)],
+ ['Whole mango recorded gross weight',item([row([{...lot(1,60,'stück','per_100_g_reference'),nutrition_weight_basis:'gross_conservative',gross_weight_per_piece_g:753}],'stück')],1,'Stück','Mango'),n=>n.complete&&near(n.kcal,451.8)&&n.estimated],
+ ['Whole lime recipe uses recorded gross grams',item([row([{...lot(1,28,'stück','per_100_g_reference'),nutrition_weight_basis:'gross_conservative',gross_weight_per_piece_g:98}],'stück')],98,'g','Limette'),n=>n.complete&&near(n.kcal,27.44)&&n.estimated],
+ ['Mismatched gross recipe amount rejected',item([row([{...lot(1,60,'stück','per_100_g_reference'),nutrition_weight_basis:'gross_conservative',gross_weight_per_piece_g:753}],'stück')],170,'g','Mango'),n=>!n.complete],
+ ['No gross substitution into an old explicit edible recipe',item([row([{...lot(1,60,'stück','per_100_g_reference'),nutrition_weight_basis:'gross_conservative',gross_weight_per_piece_g:753}],'stück')],1,'Stück','Mango (essbar)'),n=>!n.complete],
+ ['Missing measured gross never guessed',item([row([{...lot(1,60,'stück','per_100_g_reference'),nutrition_weight_basis:'gross_conservative'}],'stück')],1,'Stück','Mango'),n=>!n.complete],
  ['Water stays zero',{id:'water',name:'Wasser',quantity:250,unit:'ml',prepared_lot_evidence:[]},n=>n.complete&&n.kcal===0]
  ];
  for(const [name,x,predicate] of cases)test('Lot evidence: '+name,()=>{

@@ -746,6 +746,11 @@
     if(gross!==null&&gross>0)return gross*count;
     // Read physical CURRENT lot weights, never historical product weights.
     const batch=lot?.batch_data||{};
+    const singleGross=number(batch.reported_weight_gross_g);
+    if(count===1&&lot?.package_unit==='Stück'&&number(lot.package_quantity)===1
+      &&(number(lot.unopened_packages)||0)+(number(lot.opened_remaining_quantity)||0)===1
+      &&['gross_including_peel','gross_including_peel_stone','gross_including_core'].includes(batch.weight_kind)
+      &&singleGross!==null&&singleGross>0)return singleGross;
     const weights=Array.isArray(batch.gross_weights_g)?batch.gross_weights_g:
       Array.isArray(batch.remaining_piece_weights_g)?batch.remaining_piece_weights_g:null;
     const ix=String(part?.piece_id||'').match(/:(\d+)$/);
@@ -769,6 +774,10 @@
     const live=(data?.lots||[]).filter(lot=>String(lot.inventory_id||'')===String(stock?.id)
       &&(number(lot.unopened_packages)>0||number(lot.opened_remaining_quantity)>0));
     if(live.length!==1)return null;
+    if(count===1){
+      const gross=purchaseGrossWeightForPart({quantity:1,unit:'Stück'},live[0],item,stock);
+      if(gross!==null)return gross;
+    }
     const weights=live[0]?.batch_data?.gross_weights_g||live[0]?.batch_data?.remaining_piece_weights_g;
     if(!Array.isArray(weights)||weights.length!==count||!weights.every(g=>number(g)>0))return null;
     return weights.reduce((sum,g)=>sum+number(g),0);
@@ -1023,7 +1032,7 @@
         if(!measure&&['per_100_g_drained','abgetropft_pro_100g','per_100_g_drained_fruit_reference'].includes(basis)&&/abgetropft/i.test(itemName(item)))measure='g';
         if(!measure)return invalid('Nährwert-Bezugsmenge gesondert prüfen');
         let amount=null,recipeAmount=null;
-        if(gram.has(stockUnit)&&measure==='g')amount=q*(stockUnit==='kg'?1000:1);
+        if(gram.has(stockUnit)&&measure==='g'){amount=q*(stockUnit==='kg'?1000:1);if(grossPolicy)estimated=true;}
         if(volume.has(stockUnit)&&measure==='ml')amount=q*(stockUnit==='l'?1000:1);
         if(gram.has(stockUnit)&&measure==='ml'&&/sojasauce|sojasoße|sojasosse/i.test(itemName(item))){
           amount=q*(stockUnit==='kg'?1000:1)/1.08;estimated=true;
@@ -1031,6 +1040,12 @@
         if(stockUnit===unit)recipeAmount=q;
         else if(gram.has(stockUnit)&&gram.has(unit))recipeAmount=q*(stockUnit==='kg'?1000:1)/(unit==='kg'?1000:1);
         else if(volume.has(stockUnit)&&volume.has(unit))recipeAmount=q*(stockUnit==='l'?1000:1)/(unit==='l'?1000:1);
+        if(amount===null&&measure==='g'&&stockUnit==='stück'&&lot.nutrition_weight_basis==='gross_conservative'){
+          const g=number(lot.gross_weight_per_piece_g);
+          if(!grossPolicy||q!==1||g===null||g<=0)return invalid('Bruttogewicht der konkreten Frucht fehlt oder Rezeptbasis widerspricht');
+          amount=g;estimated=true;
+          if(gram.has(unit))recipeAmount=g/(unit==='kg'?1000:1);
+        }
         if(amount===null&&measure==='g'&&/^(stück|scheibe|scheiben)$/.test(stockUnit)){
           const matches=saved.map((part,index)=>({part,index})).filter(({part,index})=>!usedParts.has(index)&&String(part.lot_id||'')===String(lot.lot_id)&&(!part.product_id||String(part.product_id)===String(lot.product_id))&&text(part.unit||item.unit)===stockUnit&&near(number(part.quantity)??-1,q));
           if(matches.length===1){
