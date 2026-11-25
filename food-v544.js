@@ -3446,6 +3446,14 @@
           }
         }
       }
+      // Do not let a brand flavour / unrelated alias satisfy a fruit or vegetable.
+      const needKind=window.ModFoodFreshnessV913?.classify?.({name:need.label});
+      if(['fruit','vegetable'].includes(needKind)){
+        const candidates=stockInfo.stock?[stockInfo.stock]:(stockInfo.rows||[]);
+        if(candidates.length&&!candidates.some(row=>window.ModFoodFreshnessV913.classify(row)===needKind)){
+          stockInfo={available:0,unitMismatch:false,converted:false,rows:[],stock:null,family:false};
+        }
+      }
       const stock=stockInfo.stock||null;
 
       // V1 14.11.2026: Die Familienauflösung liefert stock:null und die

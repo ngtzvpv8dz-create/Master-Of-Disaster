@@ -178,3 +178,12 @@ test('frozen family stays frozen in shopping and is not subject to fresh-stock e
  const gaps=deriveShopping(data);assert.equal(gaps.length,1);assert.equal(gaps[0].missing,100);assert.equal(gaps[0].freshWindowDays,null);assert.match(gaps[0].label,/TK/);
  }finally{delete window.ModFoodFreshnessV913;}
 });
+
+test('an orange cannot be supplied by a drink flavour with an unrelated alias',()=>{
+ window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
+ const old=window.__modFoodStockResolverV746;
+ const holy={id:'holy',name:'HOLY Hydration Orange',family_name:'HOLY Hydration Orange',quantity:50,unit:'Stück',is_active:true};
+ window.__modFoodStockResolverV746={resolve:()=>({available:50,unitMismatch:false,family:true,familyName:holy.family_name,rows:[holy],stock:null})};
+ try{const g=deriveShopping({inventory:[holy],products:[],lots:[],meals:[meal('2026-11-16',[{name:'Orange',quantity:2,unit:'Stück'}])]});assert.equal(g[0].label,'Orange');assert.equal(g[0].missing,2);}
+ finally{delete window.ModFoodFreshnessV913;window.__modFoodStockResolverV746=old;}
+});

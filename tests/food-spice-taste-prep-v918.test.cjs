@@ -79,8 +79,8 @@ test('taste feedback only after a completed meal and explicit user confirmation'
   assert.match(food,/preferences:take\('preferences',15/);
 });
 test('V1 food, nutrition and style assets are cache-busted in each import context',()=>{
-  assert.equal(runtime.split('./food-v544.js?v=20261122-tasteprep-918').length-1,4);
-  assert.equal(runtime.split('./food-nutrition-v711.js?v=20261122-spice-918').length-1,4);
+  assert.equal(runtime.split('./food-v544.js?v=20261125-fresh-three-days-932').length-1,4);
+  assert.equal(runtime.split('./food-nutrition-v711.js?v=20261123-raw-reference-931').length-1,4);
   assert.match(index,/food-v544\.css\?v=20261122-tasteprep-918/);
-  assert.match(index,/area-runtime-v609\.js\?v=20261122-(?:tasteprep-918|shopping-treats-919)/);
+  assert.match(index,/area-runtime-v609\.js\?v=20261125-fresh-three-days-932/);
 });
