@@ -26,6 +26,7 @@ const context={
   // Newer nutrition diagnostics consult physical-piece and allocation helpers.
   // This isolated fixture has neither measured paprika nor an allocation.
   measuredPaprikaNutrition:()=>null,
+  numberedBreadPlan:()=>null,
   confirmedAllocationNutrition:()=>null,
   wholeProduceGrossPolicy:()=>false,
   referenceFor:()=>null,

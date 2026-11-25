@@ -1299,7 +1299,7 @@
       const candidates=inventory.filter(row=>row.is_active!==false&&(key(row.name)===key(name)||familyMatch(name,row.family_name)));
       const physical=candidates.some(row=>number(row.quantity)>0);
       const known=candidates.some(row=>products.some(p=>String(p.inventory_id)===String(row.id)&&p.active!==false));
-      if(!physical&&!known&&!item.inventory_id)return {...entry,provisional:true,awaitingPurchase:true,reason:'Noch nicht gekauft: Produkt und Nährwertetikett beim Einkauf erfassen. Kein vorhandener Datensatz beschädigt.'};
+      if(!physical&&!known&&!item.inventory_id&&data.purchaseExpectedIds?.has?.(String(item.id||'')))return {...entry,provisional:true,awaitingPurchase:true,reason:'Noch nicht gekauft: Produkt und Nährwertetikett beim Einkauf erfassen. Kein vorhandener Datensatz beschädigt.'};
       return {...entry,reason:'Kein passender Nährwert-Datensatz im Produktstamm gefunden.'};
     }
     if(source.nutrition.kcal===null||source.nutrition.protein===null){
@@ -1927,7 +1927,21 @@
     ]);
     const bad=results.find(result=>result.error);
     if(bad?.error)throw bad.error;
+    // Only a validated catalogue position in a recipe/planned meal may be
+    // labelled as an unpurchased product. An arbitrary typo remains an error.
+    const purchaseExpectedIds=new Set();
+    const plannedIds=(results[1].data||[]).filter(m=>m.status==='planned').flatMap(m=>(m.food_meal_ingredients||[]).map(i=>i.id)).filter(Boolean);
+    for(let offset=0;offset<plannedIds.length;offset+=80){
+      try{
+        const result=await supabase.from('food_catalog_recipe_positions_v1').select('ingredient_id,resolution')
+          .eq('source_kind','meal').in('ingredient_id',plannedIds.slice(offset,offset+80));
+        if(!result.error)for(const row of result.data||[]){
+          if(['matched','flexible','named_product'].includes(row.resolution))purchaseExpectedIds.add(String(row.ingredient_id));
+        }
+      }catch(_){/* Missing validation never silently clears a warning. */}
+    }
     return {
+      purchaseExpectedIds,
       recipes:results[0].data||[],
       meals:results[1].data||[],
       inventory:results[2].data||[],

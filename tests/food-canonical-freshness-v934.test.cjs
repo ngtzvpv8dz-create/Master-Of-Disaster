@@ -104,6 +104,6 @@ test('measured bread uses remaining numbered slices and only future missing slic
  assert(Math.abs(second.kcal-56*2.41)<1e-8);
  const future=n.numberedBreadPlan(item,{...data,inventory:[{...inventory[0],quantity:0}]});
  assert.equal(future.estimated,true);assert(Math.abs(future.kcal-500/9*2.41)<1e-8);
- const missing=n.nutritionProblem({name:'Mandu TK',unit:'g',quantity:120},{inventory:[],products:[],lots:[]});
+ const missing=n.nutritionProblem({id:'new-mandu',name:'Mandu TK',unit:'g',quantity:120},{inventory:[],products:[],lots:[],purchaseExpectedIds:new Set(['new-mandu'])});
  assert.equal(missing.awaitingPurchase,true);assert.equal(missing.provisional,true);
 });
