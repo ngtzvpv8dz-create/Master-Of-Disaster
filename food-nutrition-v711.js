@@ -605,7 +605,7 @@
 
     for(const meal of meals){
       const id=String(meal.id||'');
-      const before=cloneDataWithStock(data,quantities);
+      const before={...cloneDataWithStock(data,quantities),forecastDate:String(meal.meal_date||''),isPlanningForecast:text(meal.status)==='planned'};
       contexts.set(id,before);
 
       if(text(meal.status)!=='planned'||meal.inventory_booked_at)continue;
@@ -622,7 +622,7 @@
           if(need!==null&&need>=0)quantities.set(id,Math.max(0,(number(quantities.get(id))||0)-need));
           continue;
         }
-        const live=cloneDataWithStock(data,quantities);
+        const live={...cloneDataWithStock(data,quantities),forecastDate:String(meal.meal_date||''),isPlanningForecast:true};
         const allocation=genericFamilyAllocation(item,live);
         if(allocation){
           if(item?.id)perIngredient.set(String(item.id),allocation);
@@ -996,9 +996,27 @@
       remaining-=taken;
       if(remaining<=.0001)break;
     }
+    let estimated=false;
+    if(remaining>.0001&&data.isPlanningForecast&&/^eier?$/.test(text(name))&&stockUnit==='stück'){
+      // There is no broken physical lot: these future eggs exceed today's
+      // stock. Use the last actually verified generic egg product as a plan
+      // reference, never as an actual consumed package or new stock.
+      const p=lastProduct||[...active].sort((a,b)=>dateKey(b).localeCompare(dateKey(a)))
+        .map(v=>(data.products||[]).find(p=>String(p.id)===String(v.lot.product_id)))
+        .find(p=>p&&eggEdibleWeightFromKnownSize(p));
+      const each=number(p?.product_data?.edible_weight_per_piece_estimated_g)||eggEdibleWeightFromKnownSize(p);
+      const n=nutritionOf(p);
+      if(each>0&&n.kcal!==null&&n.protein!==null){
+        const factor=each*remaining/100;kcal+=n.kcal*factor;protein+=n.protein*factor;
+        if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
+        if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*factor;
+        if(n.carbsBound)carbsBound=true;
+        remaining=0;estimated=true;lastProduct=p;
+      }
+    }
     if(remaining>.0001)return {complete:false,missing:[name+' (Chargenzuordnung unvollständig)']};
     return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
-      carbsBound:carbsKnown&&carbsBound,missing:[],lastProduct};
+      carbsBound:carbsKnown&&carbsBound,missing:[],lastProduct,estimated};
   }
 
   // V901: A user's saved physical product/lot allocation is authoritative.
@@ -1152,7 +1170,9 @@
       const mixed=mixedLotNutrition(item,data);
       if(mixed){
         if(!mixed.complete){missing.push(...(mixed.missing||[itemName(item)]));continue;}
-        kcal+=mixed.kcal;protein+=mixed.protein;addMacro(mixed,1);continue;
+        kcal+=mixed.kcal;protein+=mixed.protein;addMacro(mixed,1);
+        if(mixed.estimated)referenceUsed=true;
+        continue;
       }
       const source=sourceFor(item,data);
       if(!source){missing.push(itemName(item));continue;}
@@ -1269,6 +1289,7 @@
     }
     const mixed=mixedLotNutrition(item,data);
     if(mixed?.complete){
+      if(mixed.estimated)return {...entry,awaitingPurchase:true,provisional:true,reason:'Planwert für noch zu kaufende Eier, auf Basis der zuletzt belegten Packung. Neue Charge beim Einkauf erfassen.'};
       if(mixed.fat===null||mixed.carbs===null)
         return {...entry,reason:'Fett oder Kohlenhydrate der verwendeten Chargen fehlen.'};
       return null;
@@ -1281,6 +1302,8 @@
       return null;
     }
     if(generic&&!generic.complete){
+      if(data.isPlanningForecast&&/^avocado(?:s)?$/i.test(name)&&text(item.unit)==='stück'&&String(data.forecastDate||'')>plusDays(todayIso(),2))
+        return {...entry,awaitingPurchase:true,provisional:true,reason:'Für diese spätere Frischobst-Mahlzeit wird das Bruttogewicht der neuen Avocado beim Einkauf erfasst; heutige Stückgewichte nicht wiederverwenden.'};
       const ref=referenceFor(item);
       const hasPhysicalStock=(data?.inventory||[]).some(stock=>
         stock.is_active!==false&&number(stock.quantity)>0&&
@@ -1296,7 +1319,9 @@
     }
     const source=sourceFor(item,data);
     if(!source){
-      const candidates=inventory.filter(row=>row.is_active!==false&&(key(row.name)===key(name)||familyMatch(name,row.family_name)));
+      const shared=typeof window==='undefined'?null:window.__modFoodStockResolverV746;
+      const resolved=shared?.resolve?.({item,inventoryRows:inventory});
+      const candidates=resolved?(resolved.rows||[]):inventory.filter(row=>row.is_active!==false&&(key(row.name)===key(name)||familyMatch(name,row.family_name)));
       const physical=candidates.some(row=>number(row.quantity)>0);
       const known=candidates.some(row=>products.some(p=>String(p.inventory_id)===String(row.id)&&p.active!==false));
       if(!physical&&!known&&!item.inventory_id&&data.purchaseExpectedIds?.has?.(String(item.id||'')))return {...entry,provisional:true,awaitingPurchase:true,reason:'Noch nicht gekauft: Produkt und Nährwertetikett beim Einkauf erfassen. Kein vorhandener Datensatz beschädigt.'};
