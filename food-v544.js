@@ -28,7 +28,7 @@
   let prepDoneSet=new Set();
   let freshnessAuditExpanded=false;
   const REQUEST_TIMEOUT_MS=3500;
-  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras','prepChecks','preferences'];
+  const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras','prepChecks','preferences','ingredientIdentities'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
   const cardArcs=new Map();
@@ -182,7 +182,60 @@
     const text=new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(n);
     return text+' '+(Math.abs(n-1)<.0001?'Portion':'Portionen')+' zubereitet';
   };
+  // Original names remain operational keys for allocation and historical booking.
+  // Catalogue identity is the shared presentation name, never a stock conversion.
   const ingredientName=item=>String(item?.name||item?.label||'Zutat').trim();
+  const identityKey=(name,id)=>String(name||'').trim().toLocaleLowerCase('de-DE')+'|'+String(id||'');
+  let identityCacheRows=null,identityIndex=new Map(),identityUnique=new Map();
+  function canonicalIngredientName(item,source=null){
+    const original=ingredientName(item);
+    const raw=original.toLocaleLowerCase('de-DE');
+    if(source&&/^(?:baby)?(?:blatt)?spinat(?:[ ,].*)?$/i.test(original)){
+      const evidence=String(source.name||'')+' '+String(source.label||'');
+      if(/spinat/i.test(evidence)){
+        if(source.frozen===true||/\b(?:tk|tiefgekühlt|tiefgefroren)\b/i.test(evidence))return 'Blattspinat, tiefgekühlt';
+        if(source.frozen===false||/\b(?:frisch|babyspinat)\b/i.test(evidence))return 'Blattspinat, frisch';
+      }
+    }
+    const rows=state?.ingredientIdentities;
+    if(rows!==identityCacheRows){
+      identityCacheRows=rows;identityIndex=new Map();identityUnique=new Map();
+      for(const row of rows||[]){
+        const name=String(row.source_name||'').trim().toLocaleLowerCase('de-DE');
+        identityIndex.set(identityKey(name,row.inventory_id),row);
+        const prior=identityUnique.get(name);
+        if(!prior)identityUnique.set(name,row);
+        else if(prior.canonical_name!==row.canonical_name)identityUnique.set(name,{canonical_name:null});
+      }
+    }
+    const found=identityIndex.get(identityKey(original,item?.inventory_id))||identityUnique.get(raw);
+    let canonical=String(found?.canonical_name||original);
+    if(/^eier größe [ml]$/i.test(original))return 'Hühnereier, '+original.slice(5);
+    if(/^mango \(essbar\)$/i.test(original))return 'Mango, frisch';
+    if(/^(?:tk[- ](?:blatt)?spinat|(?:blatt)?spinat[, ]+(?:tk|tiefgekühlt|tiefgefroren))$/i.test(original))return 'Blattspinat, tiefgekühlt';
+    if(/^(?:babyspinat frisch|(?:blatt)?spinat[, ]+frisch)$/i.test(original))return 'Blattspinat, frisch';
+    if(/^(?:spinat|blattspinat)$/i.test(original))return 'Blattspinat, Zustand offen';
+    if(found?.resolution==='family_only'){
+      canonical=canonical.replace(/^TK[- ](.+)$/i,'$1, tiefgekühlt').replace(/ (?:TK|tiefgefroren)$/i,', tiefgekühlt');
+    }
+    return canonical;
+  }
+  function canonicalInstructionText(steps,items){
+    const aliases=new Map();
+    for(const item of items||[]){
+      const old=ingredientName(item),next=canonicalIngredientName(item);
+      if(old!==next&&old.length>2&&!/Zustand offen|Farbe offen|Kochtyp offen/.test(next))aliases.set(old,next);
+    }
+    const entries=[...aliases].sort((a,b)=>b[0].length-a[0].length);
+    return steps.map(step=>{
+      let value=String(step);
+      for(const [old,next] of entries){
+        const escaped=Array.from(old).map(ch=>'\\^$.*+?()[]{}|'.includes(ch)?'\\'+ch:ch).join('');
+        value=value.replace(new RegExp('(?<![\\p{L}\\p{N},-])'+escaped+'(?![\\p{L}\\p{N},-])','giu'),()=>next);
+      }
+      return value;
+    });
+  }
   // Physical bread slices remain whole in the kitchen. Grams stay in the
   // database for nutrition, lot quantities and consumption calculations.
   // Only show the piece quantity if the saved label explicitly confirms it.
@@ -230,8 +283,8 @@
   };
   const ingredientDisplay=item=>{
     const q=num(item?.quantity);
-    if(q===null||Number.isNaN(q))return ingredientName(item);
-    return ingredientQuantityForDisplay(item)+' '+ingredientName(item);
+    if(q===null||Number.isNaN(q))return canonicalIngredientName(item);
+    return ingredientQuantityForDisplay(item)+' '+canonicalIngredientName(item);
   };
   const normalizedIngredient=(name,unit='')=>{
     const normalized=String(name||'').trim().toLocaleLowerCase('de-DE');
@@ -638,6 +691,19 @@
     throw new Error('Die Zubereitungs-Checkliste ist größer als 15.000 Einträge; bitte Bereich einschränken.');
   }
 
+  async function loadIngredientIdentities(supabase,userId){
+    const rows=[],size=500;
+    for(let offset=0;offset<25000;offset+=size){
+      const result=await supabase.from('food_catalog_recipe_identity_v1')
+        .select('source_name,inventory_id,canonical_name,family_name,resolution')
+        .eq('user_id',userId).order('source_name').order('inventory_id').range(offset,offset+size-1);
+      if(result.error)throw result.error;
+      const chunk=result.data||[];rows.push(...chunk);
+      if(chunk.length<size)return {data:rows};
+    }
+    throw new Error('Zutatenstamm-Zuordnungen überschreiten den Ladebereich.');
+  }
+
   async function remoteData(){
     const supabase=client();
     if(!supabase)return unavailableSnapshot('Cloud-Verbindung fehlt.');
@@ -667,7 +733,8 @@
       safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3))),
       safeQuery('Zusatzverzehr-Historie',loadExtraHistory(supabase,user.id),12000),
       safeQuery('Zubereitungs-Checkliste',loadPrepChecks(supabase),12000),
-      safeQuery('Zutatenvorlieben',supabase.from('food_ingredient_preferences').select('id,ingredient_name,preference,note').eq('is_current_selection',true).order('ingredient_name'),12000)
+      safeQuery('Zutatenvorlieben',supabase.from('food_ingredient_preferences').select('id,ingredient_name,preference,note').eq('is_current_selection',true).order('ingredient_name'),12000),
+      safeQuery('Zutatenstamm-Zuordnungen',loadIngredientIdentities(supabase,user.id),12000)
     ]);
 
     cloudIssues=[];
@@ -698,7 +765,8 @@
       pendingCheckout:take('pendingCheckout',12,rows=>rows),
       extras:take('extras',13,rows=>rows),
       prepChecks:take('prepChecks',14,rows=>rows),
-      preferences:take('preferences',15,rows=>rows)
+      preferences:take('preferences',15,rows=>rows),
+      ingredientIdentities:take('ingredientIdentities',16,rows=>rows)
     };
   }
 
@@ -1284,7 +1352,7 @@
           const av=String(item?.name||'').trim().toLowerCase()==='avocado'
             ?/Avocado\s+Nr\.\s*(\d+).*?(\d+)\s*g\s*(?:brutto|Bruttogewicht)/i.exec(String(item.label||'')):null;
           const origin=/\bChile\b/i.test(String(source.label||''))?' · Chile':'';
-          const shownName=av?'Avocados Hass'+origin+' · Nr. '+av[1]:ingredientName(item);
+          const shownName=av?'Avocados Hass'+origin+' · Nr. '+av[1]:canonicalIngredientName(item,source);
           const shownAmount=av?av[2]+' g brutto':fmtQty(source.quantity,source.unit);
           return '<li class="food-ingredient-has-allocation-v712"><span>'+esc(shownName)+'</span><b>'+esc(shownAmount)+'</b>'
             +(av?'':'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
@@ -1292,7 +1360,7 @@
             +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div>')+'</li>';
         });
       }
-      return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(ingredientName(item))+'</span><b>'+
+      return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(canonicalIngredientName(item))+'</span><b>'+
         esc(num(item.quantity)===null?'Menge offen':ingredientQuantityForDisplay(item))+'</b></li>'];
     });
     const unassigned=ordered.filter(source=>!usedSources.has(source))
@@ -1301,7 +1369,7 @@
     const rows=[...itemRows,...unassigned];
     const extraMarkup=eatenExtras.length
       ?'<div class="food-recipe-detail-block-v572 food-meal-eaten-extras-v809"><strong>Zusätzlich an diesem Tag gegessen (nicht Teil des Meal Prep)</strong><ul>'
-        +eatenExtras.map(item=>'<li><span>'+esc(ingredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')
+        +eatenExtras.map(item=>'<li><span>'+esc(canonicalIngredientName(item))+'</span><b>'+esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')
         +'</ul></div>'
       :'';
     return '<div class="food-recipe-detail-block-v572 food-prepared-ingredients-v761">'
@@ -1354,7 +1422,7 @@
         ?''
         :'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">'+esc(ingredientQuantityForDisplay(item))+'</b>';
       const removeHtml=canRemove
-        ?'<button type="button" class="food-ingredient-remove-v751" data-food-remove-meal-ingredient="'+esc(item.id)+'" aria-label="'+esc(ingredientName(item))+' nur aus dieser Mahlzeit entfernen" title="Nur aus dieser Mahlzeit entfernen">×</button>'
+        ?'<button type="button" class="food-ingredient-remove-v751" data-food-remove-meal-ingredient="'+esc(item.id)+'" aria-label="'+esc(canonicalIngredientName(item))+' nur aus dieser Mahlzeit entfernen" title="Nur aus dieser Mahlzeit entfernen">×</button>'
         :'';
       // Presentation-only piece detail: keep the canonical name "Avocado" for
       // nutrition, family matching and stock booking. The per-piece label may
@@ -1363,7 +1431,7 @@
       const avocadoMatch=/\bAvocado\s+Nr\.\s*(\d+)\b.*?\b(\d+(?:[.,]\d+)?)\s*g\s*(?:brutto|Bruttogewicht)/i.exec(avocadoLabel);
       const displayName=String(item?.name||'').trim().toLowerCase()==='avocado'&&avocadoMatch
         ?'Avocado Nr. '+avocadoMatch[1]+' · '+avocadoMatch[2]+' g brutto'
-        :ingredientName(item);
+        :canonicalIngredientName(item);
       const paprikaDetailHtml=/paprika/i.test(String(item?.name||''))
         &&String(item?.unit||'').trim().toLocaleLowerCase('de-DE')==='stück'
         &&String(item?.label||'').trim()
@@ -1404,7 +1472,7 @@
   function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true,prepMealId=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
-    const instructions=preparedMeal?recipeInstructions(recipe):spiceInstructionsByTaste(recipeInstructions(recipe));
+    const instructions=canonicalInstructionText(preparedMeal?recipeInstructions(recipe):spiceInstructionsByTaste(recipeInstructions(recipe)),items);
     // Stored recipe kcal are a historical catalog estimate. Meal cards use
     // the current ingredient quantities/products from food-nutrition-v711.js.
     // Avoid flashing outdated kcal before that authoritative calculation runs.
@@ -1956,7 +2024,7 @@
       const extras=meal.ingredients||[];
       const detailNote=visibleMealNote(meal.note,{suppressGenericMealPrep:true,completed:status==='completed'});
       const extrasSummary=extras.length
-        ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+ingredientName(item)).join(' · ')
+        ?extras.map(item=>fmtQty(item.quantity,item.unit)+' '+canonicalIngredientName(item)).join(' · ')
         :'';
       const excludedSourceIds=new Set(
         (meal.prepared_sources_snapshot?.nutrition_portion?.exclude_ingredient_ids||[]).map(String));
@@ -1982,7 +2050,7 @@
       const referenceIngredients=!sourceIngredients&&historyRecipe
         ?'<div class="food-recipe-detail-block-v572 food-mealprep-reference-v882"><strong>Rezept-Zutaten (historische Mengen nicht belegt)</strong>'+
           '<ul>'+(historyRecipe.food_recipe_ingredients||[]).map(item=>
-            '<li><span>'+esc(ingredientName(item))+'</span><b>'+
+            '<li><span>'+esc(canonicalIngredientName(item))+'</span><b>'+
             esc(fmtQty(item.quantity,item.unit))+'</b></li>').join('')+'</ul></div>'
         :'';
       const originalPreparedMeta=sourceMeal
@@ -3605,7 +3673,7 @@
         ?'Aktuell '+fmtQty(currentAvailable,item.unit)+' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' übrig'
         :'Aktuell '+fmtQty(currentAvailable,item.unit);
       const conversion=item.convertedStock?'<em>Vorrat passend umgerechnet</em>':'';
-      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(item.label)+'</strong><span><small>'+esc(stockText)+(usePlan?' · Bedarf '+esc(usePlan):'')+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing+freshTiming)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
+      const html='<li class="food-shopping-gap-v572 '+(delayed?'is-later-v638 ':'')+(inCart?'is-in-cart-v639':'')+'"><strong>'+esc(canonicalIngredientName({name:item.label,inventory_id:item.inventory_id}))+'</strong><span><small>'+esc(stockText)+(usePlan?' · Bedarf '+esc(usePlan):'')+'</small><b>'+esc(buyText)+'</b>'+(timing?'<em>'+esc(timing+freshTiming)+'</em>':'')+conversion+(item.unitMismatch?'<em>Einheit prüfen</em>':'')+'<button type="button" data-food-stock-gap data-food-stock-name="'+esc(stockName)+'" data-food-stock-quantity="'+esc(stockQty)+'" data-food-stock-unit="'+esc(stockUnit||'')+'" data-food-stock-id="'+esc(stockId||'')+'" data-food-cart-key="'+esc(key)+'">Vorhanden / eingekauft</button></span>'+shoppingCartButton(key,inCart)+'</li>';
       pushRow(inCart?cartRows:(delayed?laterRows:nowRows),{label:item.label||'',html});
     });
 
@@ -4049,10 +4117,11 @@
     return '<div class="food-recipe-preview-v572">'+items.map(item=>{
       const required=num(item.quantity)===null?null:Number(item.quantity)*factor;
       const name=ingredientName(item);
+      const shownName=canonicalIngredientName(item);
       if(seasoningByTaste(item)&&String(item?.unit||'').toLowerCase()==='nach belieben')
-        return '<div><span><strong>'+esc(name)+'</strong><small>Nach Belieben würzen · kein Gramm-Zwang</small></span><b class="is-ok">Keine Mengenbuchung</b></div>';
+        return '<div><span><strong>'+esc(shownName)+'</strong><small>Nach Belieben würzen · kein Gramm-Zwang</small></span><b class="is-ok">Keine Mengenbuchung</b></div>';
       if(isNonShoppingIngredient(name)){
-        return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+'</small></span><b class="is-ok">Kein Einkauf nötig</b></div>';
+        return '<div><span><strong>'+esc(shownName)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+'</small></span><b class="is-ok">Kein Einkauf nötig</b></div>';
       }
       const stockInfo=ingredientStockInfo(item,inventoryRows,inventoryById,inventoryByName);
       const available=stockInfo.available;
@@ -4065,7 +4134,7 @@
         :physicalStock?'Vorrat da · Mengenprüfung offen'
         :missing>0?'Kaufen '+fmtQty(missing,item.unit):'Vorrat reicht';
       const availableText=physicalStock||fmtQty(available,item.unit);
-      return '<div><span><strong>'+esc(name)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+' · vorhanden '+esc(availableText)+'</small></span><b class="'+(physicalStock?'':missing>0?'is-missing':'is-ok')+'">'+esc(stateLabel)+'</b></div>';
+      return '<div><span><strong>'+esc(shownName)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+' · vorhanden '+esc(availableText)+'</small></span><b class="'+(physicalStock?'':missing>0?'is-missing':'is-ok')+'">'+esc(stateLabel)+'</b></div>';
     }).join('')+'</div>';
   }
 
@@ -4544,7 +4613,7 @@
       const value=quantity===null||Number.isNaN(quantity)?'':String(quantity);
       const optionalSeasoning=String(item.unit||'').toLowerCase()==='nach belieben'&&seasoningByTaste(item);
       return '<div class="food-planned-qty-row-v630" data-food-planned-qty-row data-ingredient-id="'+esc(item.id)+'" data-food-planned-removed="false">'
-        +'<span><strong>'+esc(ingredientName(item))+'</strong><small data-food-planned-qty-note>Nur diese Einplanung</small></span>'
+        +'<span><strong>'+esc(canonicalIngredientName(item))+'</strong><small data-food-planned-qty-note>Nur diese Einplanung</small></span>'
         +'<span class="food-planned-qty-controls-v729">'+(optionalSeasoning?'<small>Nach Belieben · keine Gramm-Buchung</small>':'<input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(value)+'" '+(value?'':'placeholder="offen"')+'>')+'<b>'+esc(item.unit||'')+'</b><button type="button" class="food-planned-remove-v729" data-food-planned-remove aria-pressed="false">Entfernen</button></span>'
       +'</div>';
     }).join('');
@@ -5794,7 +5863,7 @@
       +'<small>'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small>'
       +'<h4>'+esc(meal.title||'Mahlzeit')+'</h4>'
       +((meal.ingredients||[]).length
-        ?'<ul>'+(meal.ingredients||[]).map(item=>'<li>'+esc(fmtQty(item.quantity,item.unit)+' '+ingredientName(item))+'</li>').join('')+'</ul>'
+        ?'<ul>'+(meal.ingredients||[]).map(item=>'<li>'+esc(fmtQty(item.quantity,item.unit)+' '+canonicalIngredientName(item))+'</li>').join('')+'</ul>'
         :'')
       +'</article>').join('');
     target.innerHTML='<section class="food-cloud-warning-v548" role="alert">'
@@ -5939,7 +6008,7 @@
       plannedShoppingUses,
       plannedIngredientUses,
       mealPlanVerified:sourceIsReal('meals'),
-      gaps:gaps.map(item=>({...item,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
+      gaps:gaps.map(item=>({...item,canonicalLabel:((state?.ingredientIdentities||[]).length||canonicalIngredientName({name:item.label,inventory_id:item.inventory_id})!==item.label)?canonicalIngredientName({name:item.label,inventory_id:item.inventory_id}):null,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
       inventory:(data.inventory||[]).map(item=>({...item})),

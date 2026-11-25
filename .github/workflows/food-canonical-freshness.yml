@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '20'
       - name: Logic and existing freshness tests
-        run: node --test tests/food-canonical-freshness-v934.test.cjs tests/food-freshness-v913.test.cjs
+        run: node --test tests/food-canonical-freshness-v934.test.cjs tests/food-freshness-v913.test.cjs tests/food-catalog-display-v935.test.cjs
       - name: Install matching Playwright
         run: |
           npm init -y

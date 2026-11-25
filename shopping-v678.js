@@ -550,7 +550,7 @@
         :'';
 
       rows.push({
-        id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),
+        id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),canonicalLabel:item.canonicalLabel||null,
         section:inCart?'cart':(delayed?'later':'now'),inCart,
         primary:(item.stockUnverified?'Bestand prüfen · ggf. kaufen ':'Kaufen ')
           +fmtQty(buyQuantity,buyUnit)+(skyrPack?' ('+skyrPack.packs+' Becher)':''),
@@ -1105,7 +1105,7 @@
         +'</div>'
       :'';
     return '<article class="shopping-item-v643 '+(row.inCart?'is-cart ':'')+(row.substitution?'has-substitution-v698':'')+'">'
-      +'<div class="shopping-item-main-v643"><strong>'+esc(row.label)+'</strong><b>'+esc(row.primary||'')+'</b></div>'
+      +'<div class="shopping-item-main-v643"><strong>'+esc(row.canonicalLabel||row.label)+'</strong><b>'+esc(row.primary||'')+'</b></div>'
       +substitution
       +'<button type="button" class="shopping-cart-v643 '+(row.inCart?'is-active':'')+'" data-shopping-cart="'+esc(row.id)+'" aria-label="'+(row.inCart?'Aus dem Einkaufswagen':row.blockPurchase?'Kauf zunächst gesperrt':'In den Einkaufswagen')+'" aria-pressed="'+row.inCart+'" '+(row.blockPurchase&&!row.inCart?'disabled title="Zuerst Frische-/Verbrauchsplanung korrigieren"':'')+'>'+cartIcon()+'</button>'
       +'<div class="shopping-item-meta-v643 '+(row.currentStock?'has-stock-lines-v701 has-stock-lines-v755':'')+'">'
@@ -1685,7 +1685,7 @@
       +sectionMarkup('cart','PHASE 2 · IM EINKAUFSWAGEN','liegt schon drin',cart,cart.length?checkoutActionMarkup():'')
       +((state.skippedRows||[]).length
         ?'<section class="shopping-section-v643 is-day-skipped"><header><div><span>HEUTE NICHT KAUFEN</span><small>Nur heute ausgeblendet · Rezeptbedarf bleibt bestehen</small></div><strong>'+state.skippedRows.length+'</strong></header><div class="shopping-list-v643">'
-          +state.skippedRows.map(row=>'<article class="shopping-item-v643"><div class="shopping-item-main-v643"><strong>'+esc(row.label)+'</strong><b>Aus Einkauf gestrichen</b></div><div class="shopping-item-foot-v643"><div class="shopping-actions-v643"><button type="button" data-shopping-unskip="'+esc(row.id)+'">Wieder anzeigen</button></div></div></article>').join('')
+          +state.skippedRows.map(row=>'<article class="shopping-item-v643"><div class="shopping-item-main-v643"><strong>'+esc(row.canonicalLabel||row.label)+'</strong><b>Aus Einkauf gestrichen</b></div><div class="shopping-item-foot-v643"><div class="shopping-actions-v643"><button type="button" data-shopping-unskip="'+esc(row.id)+'">Wieder anzeigen</button></div></div></article>').join('')
           +'</div></section>'
         :'')
       +'</div>'
@@ -2049,9 +2049,9 @@
     const modal=document.createElement('div');
     modal.id='shoppingSubstitutionV698';
     modal.className='shopping-modal-v643 shopping-substitution-modal-v698';
-    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-substitution-card-v698"><div class="shopping-modal-head-v643"><div><span>ERSATZARTIKEL</span><strong>'+esc(row.label)+'</strong></div><button type="button" data-substitution-close>✕</button></div>'
+    modal.innerHTML='<div class="shopping-modal-card-v643 shopping-substitution-card-v698"><div class="shopping-modal-head-v643"><div><span>ERSATZARTIKEL</span><strong>'+esc(row.canonicalLabel||row.label)+'</strong></div><button type="button" data-substitution-close>✕</button></div>'
       +'<p class="shopping-checkout-copy-v645">Wenn du etwas anderes mitnimmst, egal ob bewusst gewählt oder weil der geplante Artikel fehlt, erfasse hier den tatsächlich gekauften Artikel.</p>'
-      +'<div class="shopping-substitution-preview-v698"><strong>'+esc(row.label)+'</strong><span>↳</span><b data-substitution-preview>'+esc(initialLabel||'Ersatz auswählen')+'</b></div>'
+      +'<div class="shopping-substitution-preview-v698"><strong>'+esc(row.canonicalLabel||row.label)+'</strong><span>↳</span><b data-substitution-preview>'+esc(initialLabel||'Ersatz auswählen')+'</b></div>'
       +'<form data-substitution-form>'
       +'<label>Bekanntes Produkt<select data-substitution-product><option value="">Anderes / neues Produkt</option>'
       +(state.products||[]).map(product=>'<option value="'+esc(product.id)+'" '+(String(product.id)===String(selectedProductId)?'selected':'')+'>'+esc(productLabel(product))+'</option>').join('')

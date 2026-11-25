@@ -41,13 +41,13 @@ const preparedStart=food.indexOf('  function preparedIngredientListMarkup(meal){
 const preparedEnd=food.indexOf('  // A missing product link is visible',preparedStart);
 assert(preparedStart>=0&&preparedEnd>preparedStart,'Prepared source renderer exists');
 Object.assign(context,{
-  ingredientName:item=>item?.name||item?.label||'',
+  state:{ingredientIdentities:[]},
   fmtQty:(n,u)=>n+' '+u,
   num:n=>n===null||n===undefined?null:Number(n),
   ingredientQuantityForDisplay:item=>item.quantity+' '+item.unit,
   esc:v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 });
-vm.runInContext(food.slice(preparedStart,preparedEnd)+'\nthis.renderPrepared=preparedIngredientListMarkup;',context);
+vm.runInContext(food.slice(food.indexOf('  const ingredientName=item=>'),food.indexOf('  // Physical bread slices remain whole'))+'\n'+food.slice(preparedStart,preparedEnd)+'\nthis.renderPrepared=preparedIngredientListMarkup;',context);
 const snackHtml=context.renderPrepared({
   ingredients:[],
   prepared_sources_snapshot:{
