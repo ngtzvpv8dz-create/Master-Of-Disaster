@@ -6008,7 +6008,7 @@
       plannedShoppingUses,
       plannedIngredientUses,
       mealPlanVerified:sourceIsReal('meals'),
-      gaps:gaps.map(item=>({...item,canonicalLabel:canonicalIngredientName({name:item.label,inventory_id:item.inventory_id}),uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
+      gaps:gaps.map(item=>({...item,canonicalLabel:((state?.ingredientIdentities||[]).length||canonicalIngredientName({name:item.label,inventory_id:item.inventory_id})!==item.label)?canonicalIngredientName({name:item.label,inventory_id:item.inventory_id}):null,uses:Array.isArray(item.uses)?item.uses.map(use=>({...use})):[]})),
       manualFood:manualFood.map(item=>({...item})),
       cartKeys:[...cartKeys],
       inventory:(data.inventory||[]).map(item=>({...item})),
