@@ -3262,12 +3262,12 @@
         const declared=Number(product?.product_data?.fresh_use_within_days);
         const end=policy.deadline(bought,kind,{mhd:lot.best_before_date,openedOn:lot.batch_data?.opened_on||lot.batch_data?.opened_at||lot.opened_at});
         const plannedUntil=Number.isInteger(declared)&&declared>0&&declared<2?[end,plusDays(bought,declared)].sort()[0]:end;
-        if(!plannedUntil||bought>todayIso())continue;
+        if(!plannedUntil)continue;
         // The scheduling window is not a discard date for physical produce.
         // Tentatively use existing stock promptly; the audit asks for a condition check.
         // Never assume it covers a distant future recipe or override a dated MHD.
         const near=plusDays(todayIso(),2);
-        const softEnd=plannedUntil<near?near:plannedUntil;
+        const softEnd=bought<=todayIso()&&plannedUntil<near?near:plannedUntil;
         const until=lot.best_before_date&&lot.best_before_date<softEnd?lot.best_before_date:softEnd;
         if(until<todayIso())continue;
         const q=(value,unit)=>inventoryQuantityInUnit({...stock,quantity:Number(value)||0,unit:unit||stock.unit},need.unit).available;
@@ -3499,7 +3499,9 @@
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
       const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,(data.products||[]).filter(product=>product.active!==false));
-      const isFreshProduce=['fruit','vegetable'].includes(window.ModFoodFreshnessV913?.classify?.({name:need.label}));
+      const freshnessPolicy=window.ModFoodFreshnessV913;
+      const produceKind=freshnessPolicy?.classify?.({name:need.label});
+      const isFreshProduce=['fruit','vegetable'].includes(produceKind);
 
       need.uses.forEach(use=>{
         const routineBuyFrom=regularShoppingDate(use.date,use.mealType);
@@ -3547,6 +3549,7 @@
           stockUnverified:stockUnverified&&!(Number(stockInfo.available)>0),
           shortageDate:actualShortageDate||window.shortageDate,
           buyFrom:window.buyFrom,
+          freshDeadline:isFreshProduce?freshnessPolicy.deadline(window.buyFrom,produceKind):null,
           freshWindowDays:shortFreshWindowDays||null
         });
       });
@@ -3593,7 +3596,7 @@
         ?(delayed?'Kaufen ab '+fmtShortDate(item.buyFrom)+' · fehlt ab '+fmtShortDate(item.shortageDate):'Fehlt ab '+fmtShortDate(item.shortageDate))
         :(delayed?'Kaufen ab '+fmtShortDate(item.buyFrom):'');
       const freshTiming=item.freshWindowDays&&item.shortageDate
-        ?' · Frischware: möglichst kurz vor Verzehr kaufen ('+fmtShortDate(item.buyFrom)+'–'+fmtShortDate(item.shortageDate)+'), innerhalb von '+item.freshWindowDays+' Tagen verbrauchen'
+        ?' · Frischware: möglichst kurz vor Verzehr kaufen ('+fmtShortDate(item.buyFrom)+'–'+fmtShortDate(item.shortageDate)+'), geplanter Verbrauch bis '+fmtShortDate(item.freshDeadline||plusDays(item.buyFrom,item.freshWindowDays))
         :'';
       const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
       const windowAvailable=Math.max(0,Number(item.available)||0);
