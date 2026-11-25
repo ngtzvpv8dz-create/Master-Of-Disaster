@@ -3486,6 +3486,13 @@
 
       const datedLedger=datedProduceShoppingLedger(data,stockInfo,need);
       const datedAvailable=datedLedger?datedLedger.reduce((s,l)=>s+l.available,0):null;
+      // Physical inventory and eligible recipe supply are separate facts.
+      const physicalRows=(stockInfo.stock?[stockInfo.stock]:familyRows).filter(row=>Number(row.quantity)>0);
+      const physicalUnits=new Map();
+      for(const row of physicalRows)physicalUnits.set(row.unit,(physicalUnits.get(row.unit)||0)+Number(row.quantity));
+      const physicalStockLabel=physicalUnits.size?[...physicalUnits].map(([unit,q])=>Number(q.toFixed(3)).toLocaleString('de-DE')+' '+String(unit||'')).join(' + '):null;
+      const physicalReview=Boolean(physicalRows.length&&(stockInfo.unitMismatch||(datedAvailable!==null&&datedAvailable+1e-8<Math.max(0,stockInfo.available||0))));
+      const stockReviewNote=physicalReview?'Physisch vorhanden · anrechenbaren Bestand, Frische bzw. essbare Menge prüfen.':null;
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
       const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,(data.products||[]).filter(product=>product.active!==false));
@@ -3526,11 +3533,14 @@
           uses:window.uses,
           inventory_id:stockInfo.family?null:(need.inventory_id||stock?.id||null),
           available,
-          currentAvailable:datedAvailable??Math.max(0,stockInfo.available||0),
+          currentAvailable:Math.max(0,stockInfo.available||0),
+          eligibleAvailable:datedAvailable??Math.max(0,stockInfo.available||0),
+          physicalStockLabel,stockReviewNote,
           missing:purchaseMissing,
           label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
           convertedStock:stockInfo.converted,
+          stockReview:physicalReview,
           stockUnverified:stockUnverified&&!(Number(stockInfo.available)>0),
           shortageDate:actualShortageDate||window.shortageDate,
           buyFrom:window.buyFrom,
@@ -3582,10 +3592,10 @@
       const freshTiming=item.freshWindowDays&&item.shortageDate
         ?' · Frischware: möglichst kurz vor Verzehr kaufen ('+fmtShortDate(item.buyFrom)+'–'+fmtShortDate(item.shortageDate)+'), innerhalb von '+item.freshWindowDays+' Tagen verbrauchen'
         :'';
-      const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
+      const currentAvailable=Math.max(0,Number(item.eligibleAvailable??item.currentAvailable??item.available)||0);
       const windowAvailable=Math.max(0,Number(item.available)||0);
       const preWindowPlanned=Math.max(0,currentAvailable-windowAvailable);
-      const stockText=currentAvailable>windowAvailable+.0001
+      const stockText=item.stockReviewNote&&item.physicalStockLabel?'Aktuell '+item.physicalStockLabel+' · '+item.stockReviewNote:currentAvailable>windowAvailable+.0001
         ?'Aktuell '+fmtQty(currentAvailable,item.unit)+' · davor bereits '+fmtQty(preWindowPlanned,item.unit)+' eingeplant · danach '+fmtQty(windowAvailable,item.unit)+' übrig'
         :'Aktuell '+fmtQty(currentAvailable,item.unit);
       const conversion=item.convertedStock?'<em>Vorrat passend umgerechnet</em>':'';

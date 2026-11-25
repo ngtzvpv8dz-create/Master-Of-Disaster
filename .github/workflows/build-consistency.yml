@@ -99,6 +99,10 @@ jobs:
           node --test tests/food-daily-warning-v838.test.cjs
           node --test tests/food-extras-v828.test.cjs
           node --test tests/food-inactive-product-history-v850.test.cjs
+          node --check food-stock-resolver-v746.js
+          node --check shopping-v678.js
+          node tests/v746-food-stock-resolver.test.cjs
+          node tests/shopping-physical-stock-v934.test.cjs
           node --check sw.js
 
       - name: Generator follows highest current version

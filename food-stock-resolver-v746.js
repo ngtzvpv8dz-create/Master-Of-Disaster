@@ -232,7 +232,9 @@
 
   function resolve({item={},inventoryRows=[],inventoryAliases=[]}={}){
     const rows=(inventoryRows||[]).filter(row=>row?.is_active!==false);
-    const name=String(item?.name||item?.label||'').trim();
+    const rawName=String(item?.name||item?.label||'').trim();
+    // Edible amount is a measurement qualifier, not a different grocery family.
+    const name=/^(mango|avocado|kiwi|banane|apfel|birne|orange|ananas)\s+\(essbar\)$/i.test(rawName)?rawName.replace(/\s+\(essbar\)$/i,''):rawName;
     const unit=String(item?.unit||'').trim();
     const byId=new Map(rows.map(row=>[String(row.id),row]));
 

@@ -105,7 +105,7 @@
     if(/^joghurt griechischer art(?: 2)?$/.test(n))return 'Joghurt griechischer Art (2 % Fett)';
     if(/^naturjoghurt(?: fettarm)?(?: 1 5)?$/.test(n))return 'Naturjoghurt mild (1,5 % Fett)';
     if(/^kiwi(?: essbar)?$/.test(n))return 'Kiwi';
-    if(/^mango(?: essbar)?$/.test(n))return 'Mango';
+    if(/^mango(?: essbar| frisch)?$/.test(n))return 'Mango';
     if(/^pide ?fladen(?:brot)?$/.test(n))return 'Pide-Fladenbrot';
     if(/^pita(?: taschen)?$/.test(n))return 'Pita-Taschen';
     if(/^reis fit naturreis$|^naturreis$/.test(n))return 'Naturreis (lose, trocken)';
@@ -138,7 +138,7 @@
     if(/^limetten?$/.test(n))return 'Limette';
     if(/^zitronen?$/.test(n))return 'Zitrone';
     if(/^avocado(?: hass frisch)?$/.test(n))return 'Avocado Hass (Stück)';
-    if(/^tk blattspinat(?: monatsreserve)?$|^blattspinat tk$/.test(n))return 'Blattspinat TK';
+    if(/^(?:tk (?:blatt)?spinat|(?:blatt)?spinat tk)(?: monatsreserve)?$/.test(n))return 'Blattspinat TK';
     if(/^tomaten(?: warm| roh| frisch)?$/.test(n))return 'Tomaten (frisch)';
     if(/^paprika roh$/.test(n))return 'Paprika (frisch)';
     if(/^paprika bunt$/.test(n))return 'Paprika bunt (frisch)';
@@ -534,7 +534,7 @@
         .map(use=>String(use.date||''))
         .filter(date=>date>=todayIso())
         .sort()[0]||item.shortageDate||null;
-      const currentAvailable=Math.max(0,Number(item.currentAvailable??item.available)||0);
+      const currentAvailable=Math.max(0,Number(item.eligibleAvailable??item.currentAvailable??item.available)||0);
       const windowAvailable=Math.max(0,Number(item.available)||0);
       const preWindowPlanned=Math.max(0,currentAvailable-windowAvailable);
       const reservedNote=currentAvailable>windowAvailable+.0001
@@ -551,13 +551,13 @@
       rows.push({
         id:'food-gap:'+key,key,source:'food-gap',label:shoppingFamilyLabel(item.label||'Lebensmittel'),
         section:inCart?'cart':(delayed?'later':'now'),inCart,
-        primary:(item.stockUnverified?'Bestand prüfen · ggf. kaufen ':'Kaufen ')
+        primary:((item.stockReview||item.stockUnverified)?'Bestand prüfen · ggf. kaufen ':'Kaufen ')
           +fmtQty(buyQuantity,buyUnit)+(skyrPack?' ('+skyrPack.packs+' Becher)':''),
-        currentStock:'Aktuell im Vorrat '+fmtQty(currentAvailable,item.unit),
+        currentStock:'Aktuell im Vorrat '+(item.physicalStockLabel||fmtQty(item.currentAvailable??currentAvailable,item.unit)),
         nextUseDate:firstUpcomingUse,packHint:packSuggestion,
         secondary:(usePlan?'Rezeptbedarf:\n'+usePlan.replace(/ · /g,'\n'):'Planbedarf: '+fmtQty(item.required,item.unit))
           +(tomatoStockDetail?'\nVorhandene Tomatensorten:\n'+tomatoStockDetail:'')
-          +(reservedNote?'\n'+reservedNote.trim():'')+(packSuggestion?'\n'+packSuggestion:''),
+          +(item.stockReviewNote?'\n'+item.stockReviewNote:'')+(reservedNote?'\n'+reservedNote.trim():'')+(packSuggestion?'\n'+packSuggestion:''),
         timing:(item.shortageDate
           ?((delayed?'Kaufen ab '+fmtDate(shoppingDate)+'\n':'')+'Bedarf spätestens: '+fmtDate(item.shortageDate))
           :(delayed?'Kaufen ab '+fmtDate(shoppingDate):''))
@@ -571,7 +571,7 @@
           stockName,stockQuantity,stockUnit,stockId,cartKey:key
         },
         flags:{converted:!!item.convertedStock,unitMismatch:!!item.unitMismatch,
-          stockUnverified:!!item.stockUnverified}
+          stockReview:!!item.stockReview,stockUnverified:!!item.stockUnverified}
       });
     });
 
@@ -692,7 +692,7 @@
       if(/^(?:passata|passierte tomaten)/.test(n))return 'passata';
       if(/^rote paprika$|^paprika rot$|^paprika frisch rot$|^blockpaprika rot ganz(?: frische rohkost)?$/.test(n))return 'red_pepper';
       if(/^tk beeren(?:mischung|mix)?$|^tk beerenmischung$/.test(n))return 'tk_berries';
-      if(/^tk blattspinat|^blattspinat tk/.test(n))return 'frozen_spinach';
+      if(/^(?:tk (?:blatt)?spinat|(?:blatt)?spinat tk)(?: monatsreserve)?$/.test(n))return 'frozen_spinach';
       if(/^vollkornbrot(?: frisch| geschnitten abgepackt)?$|^roggen vollkornbrot$/.test(n))return 'wholegrain_bread';
       if(/^zucchini(?: frisch)?$/.test(n))return 'zucchini';
       if(/^magerquark/.test(n))return 'quark';
@@ -989,6 +989,8 @@
     const lines=[];
     if(row.flags?.stockUnverified)
       lines.push('⚠️ Bestand nicht gewogen: vor Einkauf prüfen oder passende Packung mitnehmen');
+    if(row.flags?.stockReview)
+      lines.push('⚠️ Physisch vorhanden · Frische bzw. essbare Menge prüfen');
     if(row.flags?.unitMismatch)
       lines.push('⚠️ Packungsinhalt bzw. verfügbares Gewicht prüfen');
     const when=row.nextUseDate||(!row.general&&row.neededDate)||null;
