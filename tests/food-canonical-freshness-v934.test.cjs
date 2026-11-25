@@ -107,3 +107,30 @@ test('measured bread uses remaining numbered slices and only future missing slic
  const missing=n.nutritionProblem({id:'new-mandu',name:'Mandu TK',unit:'g',quantity:120},{inventory:[],products:[],lots:[],purchaseExpectedIds:new Set(['new-mandu'])});
  assert.equal(missing.awaitingPurchase,true);assert.equal(missing.provisional,true);
 });
+
+test('manufacturer macro upper bounds are calculable but never exact',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'..','food-nutrition-v711.js'),'utf8');
+ const cut=source.lastIndexOf("  document.addEventListener('click',event=>{");
+ const w={addEventListener(){},__modFoodStockResolverV746:r};
+ vm.runInNewContext(source.slice(0,cut)+"window.__testNutrition={nutritionOf,nutritionProblem,calculate,nutritionText};})();",{window:w,document:{readyState:'loading',addEventListener(){},querySelector(){return null}},MutationObserver:class{observe(){}},setTimeout(){},clearTimeout(){},Intl,console});
+ const n=w.__testNutrition;
+ const inventory=[{id:'glass',name:'Glasnudeln',family_name:'Glasnudeln',unit:'g',quantity:300}];
+ const products=[{id:'p',inventory_id:'glass',active:true,package_quantity:100,package_unit:'g',nutrition_per_100:{energy_kcal:358,protein_g_lt:.5,fat_g_lt:.5,carbohydrates_g:87}}];
+ const lots=[{id:'l',inventory_id:'glass',product_id:'p',unopened_packages:3,package_quantity:100,package_unit:'g'}];
+ const item={name:'Glasnudeln',label:'120 g Glasnudeln (Erbsen- und Mungobohnenstärke)',inventory_id:'glass',quantity:120,unit:'g'};
+ const data={inventory,products,lots};
+ assert.equal(n.nutritionProblem(item,data),null);
+ const out=n.calculate([item],1,data);
+ assert.equal(out.complete,true);
+ assert.equal(out.proteinBound,true);assert.equal(out.fatBound,true);
+ assert(Math.abs(out.protein-.6)<1e-8);
+ assert(n.nutritionText(out).includes('≤ 0,6 g Protein'));
+ assert.equal(products[0].nutrition_per_100.protein_g,undefined);
+ assert.equal(r.resolve({item:{name:'Brokkoli TK',unit:'g'},inventoryRows:[{id:'a',name:'Brokkoli',family_name:'Brokkoli',unit:'g',quantity:100},{id:'b',name:'Brokkoli TK',family_name:'Brokkoli',unit:'g',quantity:0}]}).available,0);
+});
+
+test('a drink flavour is not a standalone food identity',()=>{
+ const inventory=[{id:'holy',name:'HOLY Hydration Orange',family_name:'HOLY Hydration Orange',catalog_family_name:'HOLY Hydration',catalog_variant_label:'Orange',unit:'Portion',quantity:1}];
+ assert.equal(r.resolve({item:{name:'Orange',unit:'Stück'},inventoryRows:inventory}).resolution,'none');
+ assert.equal(r.resolve({item:{name:'HOLY Hydration Orange',unit:'Portion'},inventoryRows:inventory}).available,1);
+});
