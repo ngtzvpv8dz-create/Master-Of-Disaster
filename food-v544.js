@@ -1907,6 +1907,84 @@
     return res.data;
   }
 
+  // On-demand planning review: the catalogue remains the only rule authority.
+  function wholeUnitReviewAction(meal){
+    return normalizedStatus(meal.status)==='planned'&&!meal.inventory_booked_at&&meal.ingredients?.length
+      ?'<button type="button" class="food-action-v544 compact" data-food-whole-review="'+esc(meal.id)+'">Verbrauchsregeln prüfen</button>':'';
+  }
+
+  function wholeUnitReviewMarkup(rows){
+    if(!Array.isArray(rows))throw new Error('Keine verlässliche Antwort zur Verbrauchsprüfung.');
+    const messages={
+      flexible:'Flexible Menge',
+      whole_piece_planned:'Ganze Stückzahl eingeplant',
+      whole_egg_planned:'Ganze Eier eingeplant',
+      whole_egg_required_review:'Nur ganze Eier: Menge und Einheit korrigieren',
+      whole_use_check_required:'Ganzverbrauch bevorzugt: tatsächliches Stückgewicht und Restplanung prüfen',
+      quantity_missing:'Menge fehlt',
+      unresolved:'Zutatenregel nicht eindeutig zugeordnet',
+      review_required:'Unterschiedliche Verbrauchsregeln: Variante prüfen'
+    };
+    const warnings=new Set(['whole_egg_required_review','whole_use_check_required','quantity_missing','unresolved','review_required']);
+    return '<p class="food-modal-copy-v544">Nur Prüfung der aktuellen Einplanung. Es werden keine Mengen verändert und keine Vorräte abgebucht.</p>'
+      +(rows.length?'<ul>'+rows.map(row=>'<li><strong>'+esc(row.ingredient_name||'Zutat')+'</strong> · '+esc(fmtQty(row.quantity,row.unit))+'<br><small>'
+        +(warnings.has(row.review_status)?'⚠ ':'')+esc(messages[row.review_status]||'Unbekannter Prüfstatus: manuell prüfen')+'</small></li>').join('')+'</ul>'
+        :'<p>Keine prüfbaren Zutaten gefunden. Bitte aktuelle Einplanung kontrollieren.</p>');
+  }
+
+  async function openWholeUnitReview(mealId){
+    if(sourceState.meals!=='cloud')throw new Error('Bitte zunächst den aktuellen Speiseplan laden.');
+    const meal=(state?.meals||[]).find(x=>String(x.id)===String(mealId));
+    if(!meal||normalizedStatus(meal.status)!=='planned'||meal.inventory_booked_at)throw new Error('Nur ungekochte geplante Mahlzeiten können geprüft werden.');
+    const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+    const response=await withTimeout(sb.rpc('food_plan_whole_unit_review',{p_meal_id:meal.id}),'Verbrauchsregeln prüfen',10000);
+    if(response.error)throw response.error;
+    addModal('Verbrauchsregeln prüfen',wholeUnitReviewMarkup(response.data));
+  }
+
+  // Only supported whole-fruit lots may be offered for conversion.
+  function measuredProduceGross(item,lot){
+    if(!item||!lot||!['Mango','Limette'].includes(item.family_name)||item.unit!=='Stück'||item.is_active===false||
+      String(lot.inventory_id)!==String(item.id)||!lot.product_id||Number(lot.unopened_packages)!==1||
+      Number(lot.opened_packages||0)!==0||Number(lot.opened_remaining_quantity||0)!==0||
+      Number(lot.package_quantity)!==1||lot.package_unit!=='Stück'||lot.batch_data?.converted_edible_lot_id)return null;
+    const raw=String(lot.batch_data?.reported_weight_gross_g??'');
+    const gross=Number(raw);
+    return /^[0-9]+(\.[0-9]+)?$/.test(raw)&&Number.isFinite(gross)&&gross>0?gross:null;
+  }
+
+  function measuredProduceAction(item,lot){
+    return measuredProduceGross(item,lot)!==null
+      ?'<button type="button" data-food-measure-produce="'+esc(lot.id)+'">Essbaren Anteil wiegen</button>':'';
+  }
+
+  function validateMeasuredProduceWeight(value,gross){
+    const raw=String(value??'').trim(),weight=Number(raw);
+    if(!raw||!Number.isFinite(weight)||weight<=0||weight>gross)
+      throw new Error('Bitte das tatsächlich gewogene essbare Gewicht in Gramm eingeben. Es darf das Bruttogewicht nicht überschreiten.');
+    return weight;
+  }
+
+  function measuredProduceModal(lotId){
+    if(sourceState.inventory!=='cloud'||sourceState.lots!=='cloud')throw new Error('Bitte zuerst die aktuellen Vorrats- und Chargendaten laden.');
+    const lot=(state?.lots||[]).find(x=>String(x.id)===String(lotId));
+    const item=(state?.inventory||[]).find(x=>String(x.id)===String(lot?.inventory_id));
+    const gross=measuredProduceGross(item,lot);
+    if(gross===null)throw new Error('Diese Charge kann nicht in gewogenen essbaren Anteil umgewandelt werden.');
+    const body='<form class="food-recipe-form-v549"><p class="food-modal-copy-v544"><strong>'+esc(item.name)+'</strong><br>Bruttogewicht beim Einkauf: '+esc(fmtQty(gross,'g'))+'. Erst nach dem tatsächlichen Vorbereiten den gesamten essbaren Anteil wiegen. Schale und Stein nicht mitwiegen. Es entsteht kein neuer Einkauf und noch kein Verzehr.</p>'
+      +'<label>Gesamter gewogener essbarer Anteil (g)<input type="number" name="edible" min="0.01" max="'+esc(gross)+'" step="0.01" inputmode="decimal" required></label>'
+      +'<p class="food-modal-copy-v544">Das ganze Stück wird in eine offene Grammcharge umgewandelt. Erst die spätere Mahlzeitenbuchung zieht den Verbrauch ab.</p>'
+      +'<button type="submit" class="food-action-v544">Gewogenen Anteil übernehmen</button></form>';
+    addModal('Essbaren Anteil erfassen',body,async form=>{
+      if(sourceState.inventory!=='cloud'||sourceState.lots!=='cloud')throw new Error('Bitte zuerst die Bestandsdaten neu laden.');
+      const weight=validateMeasuredProduceWeight(form.get('edible'),gross);
+      const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+      const result=await withTimeout(sb.rpc('food_convert_measured_produce_piece',{p_lot_id:lot.id,p_edible_g:weight}),'Gewogenen Anteil übernehmen',15000);
+      if(result.error)throw result.error;
+      await mutate(()=>result.data);
+    });
+  }
+
   function mealCard(meal,inHistory=false){
     const status=normalizedStatus(meal.status);
     const expanded=expandedMeals.has(String(meal.id));
@@ -2017,7 +2095,7 @@
           ?'<div class="food-meal-plan-actions-v630"><button type="button" class="food-action-v544 compact" data-food-mealprep-weight="'+esc(meal.id)+'">⚖️ Portionsgewicht &amp; Bestandteile</button></div>'
           :'')
         +(status==='completed'?'<p class="food-meal-plan-note-v581">'+esc(statusMeta)+'</p>':'')
-        +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
+        +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+wholeUnitReviewAction(meal)+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
         +mealRatingMarkup+tasteAction
         +'</article>';
@@ -2041,7 +2119,7 @@
         +dailyCreatineReminderMarkup(meal)
         +freezeHint+view.details+planNote
         +'<p class="food-meal-plan-note-v581">'+esc(mealPlanMeta(meal)+' · '+statusMeta)+'</p>'
-        +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+action+skipAction+'</div>':'')
+        +(status==='planned'?'<div class="food-meal-plan-actions-v630">'+quantityAction+wholeUnitReviewAction(meal)+action+skipAction+'</div>':'')
         +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
         +mealRatingMarkup+tasteAction
         +'</article>';
@@ -2068,7 +2146,7 @@
         +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
       +'</button>'
       +dailyCreatineReminderMarkup(meal)
-      +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+action+skipAction+'</div>':'')
+      +details+(status==='planned'?'<div class="food-meal-plan-actions-v630">'+wholeUnitReviewAction(meal)+action+skipAction+'</div>':'')
       +(status==='skipped'?'<div class="food-meal-plan-actions-v630">'+reopenAction+'</div>':'')
       +mealRatingMarkup+tasteAction
       +'</article>';
@@ -2330,7 +2408,7 @@
         '<div class="food-stock-lot-top-v848"><b>'+esc(label)+'</b><span>'+esc(opened>0?'Angebrochen':'Ungeöffnet')+'</span></div>'+
         '<strong>'+esc(parts.join(' + '))+'</strong>'+
         (meta.length?'<small>'+esc(meta.join(' · '))+'</small>':'')+
-        '<div class="food-stock-lot-actions-v848">'+edit+setOpenedDate+remove+'</div></div>';
+        '<div class="food-stock-lot-actions-v848">'+edit+measuredProduceAction(item,lot)+setOpenedDate+remove+'</div></div>';
     });
     const aggregate=Math.max(0,Number(item.quantity)||0);
     const untracked=Math.max(0,aggregate-tracked);
@@ -5623,6 +5701,17 @@
     }));
     root.querySelectorAll('[data-food-add-lot]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();addInventoryLotModal(button.dataset.foodAddLot);
+    }));
+    root.querySelectorAll('[data-food-whole-review]').forEach(button=>button.addEventListener('click',async event=>{
+      event.preventDefault();event.stopPropagation();button.disabled=true;
+      try{await openWholeUnitReview(button.dataset.foodWholeReview);}
+      catch(error){alert(error?.message||'Verbrauchsprüfung fehlgeschlagen.');}
+      finally{button.disabled=false;}
+    }));
+    root.querySelectorAll('[data-food-measure-produce]').forEach(button=>button.addEventListener('click',event=>{
+      event.preventDefault();event.stopPropagation();
+      try{measuredProduceModal(button.dataset.foodMeasureProduce);}
+      catch(error){alert(error?.message||'Gewichtserfassung nicht verfügbar.');}
     }));
     root.querySelectorAll('[data-food-edit-lot]').forEach(button=>button.addEventListener('click',event=>{
       event.stopPropagation();editInventoryLotModal(button.dataset.foodEditLot);
