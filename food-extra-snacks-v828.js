@@ -13,9 +13,11 @@
   const decimal=x=>Number(String(x??'').trim().replace(',','.'));
   const client=()=>window.getSupabaseClient?.();
   const autoCounted=row=>String(row?.source_reference||'').startsWith('food-counted-v873-');
-  const stockLinkedExtra=row=>String(row?.source_reference||'').startsWith('food-ui-v832-')
-    &&(Boolean(row?.product_id)||/^food-ui-v832-inventory-[0-9a-f-]{36}-/.test(String(row?.source_reference||'')));
+  const measuredExtra=row=>String(row?.source_reference||'').startsWith('food-measured-fruit-extra-v1-');
+  const stockLinkedExtra=row=>measuredExtra(row)||(String(row?.source_reference||'').startsWith('food-ui-v832-')
+    &&(Boolean(row?.product_id)||/^food-ui-v832-inventory-[0-9a-f-]{36}-/.test(String(row?.source_reference||''))));
   function productName(p){return p?._inventoryOnly?'Vorrat · '+p.product_name:[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');}
+  const measuredFruitProduct=p=>p?.inventory_unit==='Stück'&&['Apfel','Avocado','Banane','Mango','Limette'].includes(p?.inventory_family_name);
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
   // Stückprodukte mit dokumentierter essbarer Portionsmenge: kein erneutes Wiegen verlangen.
   // Für Eier die explizite Schätzung verwenden, niemals das Schalengewicht.
@@ -55,6 +57,7 @@
   }
   function bases(p){
     if(!p)return 'g';
+    if(measuredFruitProduct(p))return 'Stück';
     // Einheiten ohne belastbare 100-g-Nährwertbasis (z. B. Brausetabletten).
     const stockUnit=String(p.inventory_unit||'');
     if(countedPieceWeight(p)||(stockUnit==='Stück'&&ediblePieceWeight(p)))return 'Stück';
@@ -150,7 +153,7 @@
         (valid(r.protein_g)?nf(r.protein_g)+' g Protein':'Protein unbekannt')+
         (r.carbohydrates_g!==null?' · KH '+nf(r.carbohydrates_g)+' g':'')+
         (r.fat_g!==null?' · Fett '+nf(r.fat_g)+' g':'')+'</small></div>'+
-        '<div class="food-extra-row-actions-v828">'+(String(r.source_reference||'').startsWith('food-planned-extra-v1-')?'':'<button type="button" data-extra-edit="'+esc(r.id)+'" aria-label="'+esc(r.title)+' bearbeiten" title="Bearbeiten">✎</button>')+
+        '<div class="food-extra-row-actions-v828">'+(measuredExtra(r)||String(r.source_reference||'').startsWith('food-planned-extra-v1-')?'':'<button type="button" data-extra-edit="'+esc(r.id)+'" aria-label="'+esc(r.title)+' bearbeiten" title="Bearbeiten">✎</button>')+
         '<button type="button" data-extra-delete="'+esc(r.id)+'" aria-label="'+esc(r.title)+' löschen" title="Entfernen">✕</button></div></li>').join('')+'</ul>':
       '<p class="food-extra-empty-v828">Noch kein zusätzlicher Snack eingetragen.</p>');
   }
@@ -169,17 +172,18 @@
     const p=chosen(),output=form.querySelector('[data-extra-preview]');
     form.querySelector('[data-extra-unit]').textContent=bases(p);
     const counted=countedPieceWeight(p);
+    const measured=measuredFruitProduct(p);
     const caption=form.querySelector('[data-extra-quantity-caption]');
-    if(caption)caption.textContent=counted?'Anzahl Pralinen':'Menge';
+    if(caption)caption.textContent=measured?'Anzahl Früchte':counted?'Anzahl Pralinen':'Menge';
     const amount=form.elements.quantity;
     if(amount){
-      amount.step=counted?'1':'0.1';
-      amount.min=counted?'1':'0.1';
-      amount.inputMode=counted?'numeric':'decimal';
+      amount.step=(counted||measured)?'1':'0.1';
+      amount.min=(counted||measured)?'1':'0.1';
+      amount.inputMode=(counted||measured)?'numeric':'decimal';
     }
     const hint=form.querySelector('[data-extra-piece-note]');
     if(hint){
-      const note=counted?'1 Praline = '+nf(counted)+' g'
+      const note=measured?'Gespeicherte individuelle Bruttogewichte auswählen':counted?'1 Praline = '+nf(counted)+' g'
         :bases(p)==='Stück'&&ediblePieceWeight(p)?edibleWeightNote(p)
         :bases(p)==='Stück'&&Number(p?.product_data?.weight_per_tablet_g)>0
           ?nf(p.product_data.weight_per_tablet_g)+' g je Tablette (hinterlegt)':'';
@@ -187,10 +191,11 @@
       hint.hidden=!note;
     }
     const missing=form.querySelector('[data-extra-missing-macros]');
-    if(missing)missing.hidden=!p||hasMacros(p);
+    if(missing)missing.hidden=!p||hasMacros(p)||measured;
     if(!p){output.textContent='Bitte ein Produkt aus dem gesamten Vorrat oder Produktstamm auswählen.';return;}
     const qty=decimal(form.elements.quantity.value);
     if(!(qty>0)){output.textContent='Bitte eine gültige Menge eingeben.';return;}
+    if(measured){output.textContent=Number.isInteger(qty)?'Kalorien erst nach Auswahl der konkreten gewogenen Früchte.':'Bitte ganze Stückzahlen eingeben.';return;}
     if(countedPieceWeight(p)&&!Number.isInteger(qty)){output.textContent='Bitte ganze Pralinen eingeben.';return;}
     if(!hasMacros(p)){
       output.textContent='Menge: '+nf(qty)+' '+bases(p)+(countedPieceWeight(p)?' = '+nf(qty*countedPieceWeight(p))+' g':'')+(bases(p)==='Stück'&&Number(p.product_data?.weight_per_tablet_g)>0?' à '+nf(p.product_data.weight_per_tablet_g)+' g':'')+'. Nicht belegte Nährwerte bleiben offen; Speichern ist trotzdem möglich.';
@@ -219,15 +224,15 @@
     const [a,catalog,stock]=await Promise.all([
       supabase.from('food_extra_consumptions').select('id,consumption_date,product_id,title,kind,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g,sugars_g,salt_g,caffeine_mg,nutrition_source,source_reference').eq('user_id',uid).eq('consumption_date',date).order('created_at',{ascending:true}).limit(500),
       fetchPages((start,end)=>supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,serving_quantity,serving_unit,nutrition_per_100,product_data').eq('active',true).order('id',{ascending:true}).range(start,end)),
-      fetchPages((start,end)=>supabase.from('food_inventory').select('id,name,quantity,unit').eq('user_id',uid).eq('is_active',true).order('id',{ascending:true}).range(start,end))
+      fetchPages((start,end)=>supabase.from('food_inventory').select('id,name,quantity,unit,family_name').eq('user_id',uid).eq('is_active',true).order('id',{ascending:true}).range(start,end))
     ]);
     if(a.error)throw a.error;
     rows=a.data||[];
     const stockById=new Map(stock.map(i=>[i.id,i]));
-    const primary=catalog.map(p=>({...p,_inventoryOnly:false,inventory_unit:stockById.get(p.inventory_id)?.unit||null}));
+    const primary=catalog.map(p=>({...p,_inventoryOnly:false,inventory_unit:stockById.get(p.inventory_id)?.unit||null,inventory_family_name:stockById.get(p.inventory_id)?.family_name||null}));
     const linked=new Set(primary.map(p=>p.inventory_id).filter(Boolean));
     const missing=stock.filter(i=>!linked.has(i.id)).map(i=>({
-      id:'inventory:'+i.id,inventory_id:i.id,inventory_unit:i.unit,
+      id:'inventory:'+i.id,inventory_id:i.id,inventory_unit:i.unit,inventory_family_name:i.family_name,
       product_name:i.name,brand:null,variant:null,package_unit:i.unit,
       serving_quantity:null,package_quantity:null,nutrition_per_100:{},product_data:{},_inventoryOnly:true
     }));
@@ -266,6 +271,7 @@
     if(!ready&&!loading)refresh();
   }
   function editingRow(row){
+    if(measuredExtra(row)){formOpen=false;notice='Gewogenen Snack zuerst zurückbuchen und die richtigen Stücke neu auswählen.';draw();return;}
     if(String(row.source_reference||'').startsWith('food-planned-extra-v1-')){
       formOpen=false;notice='Bitte die Bestätigung beim geplanten Genuss-Extra rückgängig machen, bevor du es änderst.';draw();return;
     }
@@ -309,6 +315,18 @@
     const uid=auth.data?.session?.user?.id;if(auth.error||!uid)throw new Error('Keine aktive Supabase-Anmeldung.');
     const qty=decimal(form.elements.quantity.value);
     if(!Number.isFinite(qty)||qty<=0)throw new Error('Die Menge muss größer als null sein.');
+    const selectedProduct=mode==='catalog'?chosen():null;
+    if(measuredFruitProduct(selectedProduct)){
+      if(editing)throw new Error('Gewogenen Snack zuerst zurückbuchen.');
+      if(!Number.isInteger(qty)||qty<1)throw new Error('Bitte ganze Früchte auswählen.');
+      const open=window.__modFoodV544?.openMeasuredFruitExtra;
+      if(!open)throw new Error('Stückauswahl nicht verfügbar. Keine geschätzte Buchung.');
+      busy=true;
+      try{await open(selectedProduct.inventory_id,{date,count:qty,productId:selectedProduct._inventoryOnly?null:selectedProduct.id,onSaved:async()=>{
+        formOpen=false;editing=null;requestId=null;notice='✓ Gewogene Früchte und Kalorien gemeinsam gebucht.';error='';await refresh();window.__modFoodNutritionV711?.refresh?.();
+      }});}finally{busy=false;}
+      return;
+    }
     let entry;
     if(mode==='catalog'){
       const p=chosen();if(!p)throw new Error('Bitte ein Produkt auswählen.');

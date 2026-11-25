@@ -196,7 +196,7 @@
       uid=session?.session?.user?.id||'';
       if(sessionError||!uid)throw new Error('Bitte zuerst anmelden');
       const result=await withTimeout(api.from('food_planned_extras')
-        .select('id,plan_date,source_key,title,kind,quantity,unit,calories_kcal,caffeine_mg,note,status')
+        .select('id,plan_date,source_key,title,kind,quantity,unit,calories_kcal,caffeine_mg,note,status,inventory_id,product_id')
         .eq('user_id',uid).eq('plan_date',requestedDay)
         .order('created_at',{ascending:true}).limit(100),'Genuss-Extras');
       if(result.error)throw result.error;
@@ -245,6 +245,16 @@
     const api=client();if(!api)return;
     busy=true;note='';error='';render();
     try{
+      const measured=row.inventory_id&&window.__modFoodV544?.isMeasuredFruitInventory?.(row.inventory_id);
+      if(measured&&what==='confirm'){
+        const open=window.__modFoodV544?.openMeasuredFruitExtra;
+        if(!open)throw new Error('Stückauswahl nicht verfügbar.');
+        busy=false;render();
+        await open(row.inventory_id,{date:row.plan_date,count:row.unit==='Stück'?Number(row.quantity):null,productId:row.product_id||null,planId:row.id,onSaved:async()=>{
+          note='✓ Gewogenen Snack und Vorrat bestätigt.';await refresh();await window.__modFoodExtrasV828?.refresh?.();window.__modFoodNutritionV711?.refresh?.();
+        }});return;
+      }
+      if(measured&&what==='edit'&&row.status==='confirmed')throw new Error('Gewogenen Snack zuerst zurückbuchen und neue Stücke auswählen.');
       let result;
       if(what==='edit')result=await api.rpc('edit_food_planned_extra_v1',{p_plan_id:id,p_quantity:newQuantity});
       else if(what==='confirm')result=await api.rpc('confirm_food_planned_extra_v1',{p_plan_id:id});

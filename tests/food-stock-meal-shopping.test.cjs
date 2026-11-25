@@ -151,3 +151,17 @@ test('unmeasured edible avocado yield cannot be an automatic grocery order; zero
   avocado.quantity=0;
   assert.ok(deriveShopping(data).some(gap=>/avocado/i.test(gap.label)&&gap.missing>0));
 });
+
+test('dated fresh stock cannot cover later meals beyond purchase + 2',()=>{
+  window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
+  try{
+    const tomato=stock('tom','Tomaten','Tomaten',500);
+    const data={inventory:[tomato],products:[],lots:[lot('fresh','tom',500,'2026-11-14')],meals:[meal('2026-11-16',[ingredient('Tomaten',300,'tom')]),meal('2026-11-17',[ingredient('Tomaten',200,'tom')])]};
+    const gaps=deriveShopping(data);assert.equal(gaps.length,1);assert.equal(gaps[0].missing,200);assert.equal(gaps[0].shortageDate,'2026-11-17');
+    const avocado={id:'a',name:'Avocado',family_name:'Avocado',quantity:3,unit:'Stück',is_active:true};
+    const p={inventory_id:'a',piece_id:'piece1',lot_id:'a1',quantity:1,unit:'Stück',gross_weight_g:142};
+    const allocated={name:'Avocado',quantity:142,unit:'g',inventory_id:'a',allocation_override:[p]};
+    const rows={inventory:[avocado],products:[],lots:[{...lot('a1','a',3,'2026-11-14'),package_unit:'Stück',opened_remaining_unit:'Stück'}],meals:[meal('2026-11-16',[allocated]),meal('2026-11-17',[{name:'Avocado',quantity:1,unit:'Stück',inventory_id:'a'}])]};
+    const gaps2=deriveShopping(rows);assert.equal(gaps2.length,1);assert.equal(gaps2[0].unit,'Stück');assert.equal(gaps2[0].missing,1);
+  }finally{delete window.ModFoodFreshnessV913;}
+});

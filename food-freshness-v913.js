@@ -35,7 +35,8 @@
   function deadline(purchaseDate,kind,{openedOn=null,mhd=null}={}){
     const purchased=iso(purchaseDate),open=iso(openedOn),bestBefore=iso(mhd);
     const constraints=[];
-    if(purchased&&['fruit','vegetable','dairy'].includes(kind))constraints.push(shift(purchased,7));
+    if(purchased&&['fruit','vegetable'].includes(kind))constraints.push(shift(purchased,2)); // purchase day + two calendar days
+    if(purchased&&kind==='dairy')constraints.push(shift(purchased,7));
     if(purchased&&kind==='bread')constraints.push(shift(purchased,14));
     if(purchased&&kind==='meat')constraints.push(shift(purchased,2));
     if(open)constraints.push(shift(open,7));

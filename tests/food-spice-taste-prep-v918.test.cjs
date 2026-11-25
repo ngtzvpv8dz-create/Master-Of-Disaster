@@ -79,8 +79,16 @@ test('taste feedback only after a completed meal and explicit user confirmation'
   assert.match(food,/preferences:take\('preferences',15/);
 });
 test('V1 food, nutrition and style assets are cache-busted in each import context',()=>{
-  assert.equal(runtime.split('./food-v544.js?v=20261122-tasteprep-918').length-1,4);
-  assert.equal(runtime.split('./food-nutrition-v711.js?v=20261122-spice-918').length-1,4);
-  assert.match(index,/food-v544\.css\?v=20261122-tasteprep-918/);
-  assert.match(index,/area-runtime-v609\.js\?v=20261122-(?:tasteprep-918|shopping-treats-919)/);
+  // The runtime is the actual loader for all four FOOD entry points.
+  // Use its active cache token instead of an obsolete release's fixed tag.
+  const loader=index.match(/area-runtime-v609\.js\?v=([^"' ]+)/);
+  assert.ok(loader,'Versioned area runtime missing');
+  const tag=loader[1];
+  assert.equal(runtime.split('./food-v544.js?v='+tag+"'").length-1,4);
+  assert.equal(runtime.split('./food-nutrition-v711.js?v='+tag+"'").length-1,4);
+  const foodTags=[...runtime.matchAll(/food-v544\.js\?v=([^']+)'/g)].map(m=>m[1]);
+  const nutritionTags=[...runtime.matchAll(/food-nutrition-v711\.js\?v=([^']+)'/g)].map(m=>m[1]);
+  assert.deepEqual(foodTags,Array(4).fill(tag));
+  assert.deepEqual(nutritionTags,Array(4).fill(tag));
+  assert.match(index,/food-v544\.css\?v=[^" ]+/);
 });
