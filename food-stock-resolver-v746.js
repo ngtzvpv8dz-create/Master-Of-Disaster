@@ -9,7 +9,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const VERSION='V747';
+  const VERSION='V934';
   const FRESH=new Set(['frisch','frische','frischer','frisches','bio']);
   const FROZEN=new Set(['tk','tiefkühl','tiefgekühlt','tiefgefroren','gefroren']);
 
@@ -48,6 +48,12 @@
   }
 
   function familyNeedMatch(name,familyName){
+    const spinach=ingredientKey(name).replace(/[,()]/g,' ').replace(/\s+/g,' ').trim();
+    if(['spinat','blattspinat'].includes(text(familyName))){
+      if(/^(?:tk |tiefgekühlt )?(?:blattspinat|spinat)(?: tk| tiefgekühlt| tiefkühl| gefroren| tiefgefroren)?$/.test(spinach)&&/(?:^| )(?:tk|tiefgekühlt|tiefkühl|gefroren|tiefgefroren)(?: |$)/.test(spinach))return {matched:true,mode:'frozen',alias:text(familyName)};
+      if(/^(?:frisch )?(?:blattspinat|spinat)(?: frisch)?$/.test(spinach)&&/\bfrisch\b/.test(spinach))return {matched:true,mode:'fresh',alias:text(familyName)};
+    }
+    if(text(familyName)==='mango'&&/^(?:mango frisch|mango essbar)$/.test(spinach))return {matched:true,mode:'fresh',alias:'mango'};
     const needs=familyForms(name);
     const families=familyForms(familyName);
     if(!needs.length||!families.length)return null;
