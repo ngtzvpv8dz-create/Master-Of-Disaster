@@ -9,7 +9,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const VERSION='V937';
+  const VERSION='V939';
   const FRESH=new Set(['frisch','frische','frischer','frisches','bio']);
   const FROZEN=new Set(['tk','tiefkühl','tiefgekühlt','tiefgefroren','gefroren']);
 
@@ -258,6 +258,9 @@
       if(/normal|45 %/i.test(evidence))return 'Hirtenkäse normal';
     }
     if(['schnittkäse','käseaufschnitt leicht','schnittkäse, fettreduziert'].includes(name)&&/leicht|fettreduziert/i.test(evidence))return 'Käseaufschnitt leicht';
+    if(['gefüllte teigwaren','gyoza kimchi & hähnchen tk','gyoza, kimchi & hähnchen, tiefgekühlt'].includes(name)&&/gyoza/i.test(evidence)&&/kimchi/i.test(evidence)&&/hähnchen|chicken/i.test(evidence))return 'Gyoza Kimchi & Hähnchen TK';
+    if(['brokkoli tk','brokkoli, tiefgekühlt','tk brokkoli'].includes(name))return 'Brokkoli TK';
+    if(name==='glasnudeln'&&/erbsen.*mungobohnenstärke/i.test(item.label||''))return 'Glasnudeln';
     return null;
   }
 
