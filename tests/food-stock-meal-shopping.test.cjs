@@ -187,3 +187,9 @@ test('an orange cannot be supplied by a drink flavour with an unrelated alias',(
  try{const g=deriveShopping({inventory:[holy],products:[],lots:[],meals:[meal('2026-11-16',[{name:'Orange',quantity:2,unit:'Stück'}])]});assert.equal(g[0].label,'Orange');assert.equal(g[0].missing,2);}
  finally{delete window.ModFoodFreshnessV913;window.__modFoodStockResolverV746=old;}
 });
+
+test('a freshly purchased named apple variety counts against the apple family',()=>{
+ window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
+ try{const apple={id:'a',name:'Pink Lady',family_name:'Apfel',quantity:2,unit:'Stück',is_active:true};const data={inventory:[apple],products:[],lots:[{...lot('a1','a',2,'2026-11-14'),package_unit:'Stück',opened_remaining_unit:'Stück'}],meals:[meal('2026-11-16',[{name:'Apfel',quantity:2,unit:'Stück'}])]};assert.equal(deriveShopping(data).length,0);}
+ finally{delete window.ModFoodFreshnessV913;}
+});

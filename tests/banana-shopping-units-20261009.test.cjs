@@ -4,7 +4,7 @@ const path=require('node:path');
 const vm=require('node:vm');
 
 const source=fs.readFileSync(path.join(__dirname,'..','food-v544.js'),'utf8');
-const begin=source.indexOf('  function deriveShopping(data){');
+const begin=source.indexOf('  function datedProduceShoppingLedger(');
 const end=source.indexOf('\n  function shoppingUsageTimeline(',begin);
 assert(begin>=0&&end>begin,'Shopping derivation must be present');
 
@@ -18,6 +18,8 @@ const dateToShopping={
   '2026-10-22':'2026-10-21'
 };
 const context={
+  // Legacy unit-conversion tests deliberately mock shopping windows, with no lot data.
+  window:{},
   num:value=>{const n=Number(value);return Number.isFinite(n)?n:null;},
   todayIso:()=> '2026-10-09',
   recentPlanningStartIso:()=> '2026-10-09',

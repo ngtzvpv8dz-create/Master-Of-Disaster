@@ -30,10 +30,12 @@ assert.equal(regularShoppingDate('2026-10-17','dinner'),'2026-10-16',
 assert.equal(regularShoppingDate('2026-10-15','dinner'),'2026-10-14',
   'Normal Thursday dinner belongs to Wednesday evening shopping');
 
-const begin=source.indexOf('  function deriveShopping(data){');
+const begin=source.indexOf('  function datedProduceShoppingLedger(');
 const end=source.indexOf('\n  function shoppingUsageTimeline(',begin);
 assert(begin>=0 && end>begin, 'shopping computation found');
 const context={
+  // Legacy unit-conversion tests deliberately mock shopping windows, with no lot data.
+  window:{},
   num(value){const n=Number(value);return Number.isFinite(n)?n:null;},
   todayIso:()=> '2026-10-15',
   recentPlanningStartIso:()=> '2026-10-13',
