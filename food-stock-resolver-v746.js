@@ -253,6 +253,11 @@
       if(/mild/i.test(evidence))return 'Chio Dip Mild Salsa';
       if(/scharf|hot/i.test(evidence))return 'Chio Dip Hot Salsa';
     }
+    if(['feta / hirtenkäse','feta / hirtenkäse leicht','hirtenkäse','hirtenkäse leicht','hirtenkäse, leicht','hirtenkäse normal','hirtenkäse, normal'].includes(name)){
+      if(/leicht|light|fettreduziert|27 %/i.test(evidence))return 'Hirtenkäse';
+      if(/normal|45 %/i.test(evidence))return 'Hirtenkäse normal';
+    }
+    if(['schnittkäse','käseaufschnitt leicht','schnittkäse, fettreduziert'].includes(name)&&/leicht|fettreduziert/i.test(evidence))return 'Käseaufschnitt leicht';
     return null;
   }
 

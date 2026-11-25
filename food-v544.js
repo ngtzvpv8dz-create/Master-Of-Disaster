@@ -214,6 +214,26 @@
         if(/hell|weiße/i.test(evidence))return 'Misopaste, hell';
       }
     }
+    if(raw==='kartoffeln'&&/vorwiegend festkochend/i.test(String(item?.label||'')))return 'Kartoffeln, vorwiegend festkochend';
+    if(source){
+      const evidence=String(source.name||'')+' '+String(source.label||'');
+      if(raw==='wraps'&&/wrap/i.test(evidence)){
+        if(/vollkorn/i.test(evidence))return 'Wraps, Vollkorn';
+        if(/karotten/i.test(evidence))return 'Wraps, Karotte';
+        if(/rote.bete/i.test(evidence))return 'Wraps, Rote Bete';
+      }
+      if(raw==='chio dip salsa'&&/salsa/i.test(evidence)){
+        if(/mild/i.test(evidence))return 'Salsa, mild';
+        if(/hot|scharf/i.test(evidence))return 'Salsa, scharf';
+      }
+      if(/feta|hirtenkäse/i.test(raw)&&/hirtenkäse/i.test(evidence)){
+        if(/leicht|27 %/i.test(evidence))return 'Hirtenkäse, leicht';
+        if(/normal|45 %/i.test(evidence))return 'Hirtenkäse, normal';
+      }
+    }
+    if(raw==='hirtenkäse'&&/leicht|light|fettreduziert|27 %/i.test(String(item?.label||'')))return 'Hirtenkäse, leicht';
+    if(raw==='hirtenkäse normal')return 'Hirtenkäse, normal';
+    if(raw==='käseaufschnitt leicht')return 'Schnittkäse, fettreduziert';
     const rows=state?.ingredientIdentities;
     if(rows!==identityCacheRows){
       identityCacheRows=rows;identityIndex=new Map();identityUnique=new Map();positionIdentityIndex=new Map();
@@ -732,7 +752,7 @@
     for(let offset=0;offset<25000;offset+=size){
       const result=await supabase.from('food_catalog_recipe_positions_v1')
         .select('ingredient_id,original_name,canonical_name,resolution')
-        .eq('user_id',userId).in('original_name',['Zwiebel','Kartoffeln','Spinat','Blattspinat','Miso-Paste'])
+        .eq('user_id',userId).in('resolution',['historical_documented','historical_recorded','flexible','matched_position','named_product'])
         .order('ingredient_id').range(offset,offset+size-1);
       if(result.error)throw result.error;
       const chunk=result.data||[];rows.push(...chunk);
@@ -3488,7 +3508,7 @@
         const key=sharedFamily
           ?'family|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE')
           :(stockId?'stock|'+stockId+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE'));
-        const current=needs.get(key)||{inventory_id:stockId,label:familyLabel||shoppingName,canonical,unit:shoppingUnit,explicitVariant:Boolean(explicitName),required:0,uses:[]};
+        const current=needs.get(key)||{inventory_id:stockId,label:familyLabel||shoppingName,canonical,unit:shoppingUnit,explicitVariant:Boolean(explicitName),variantEvidence:explicitName?String(item.label||name):null,required:0,uses:[]};
         current.required+=shoppingQuantity;
         current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
@@ -3532,7 +3552,7 @@
       }
 
       let stockInfo=ingredientStockInfo(
-        {inventory_id:need.inventory_id||null,name:need.label,unit:need.unit},
+        {inventory_id:need.inventory_id||null,name:need.label,label:need.variantEvidence||need.label,unit:need.unit},
         inventoryRows,inventoryById,inventoryByName
       );
       // V1/V842: Verified product-family aliases for the grocery forecast only.

@@ -76,3 +76,13 @@ test('explicit variety and genuinely flexible family share physical stock once',
  assert(gaps.some(g=>g.label==='Sonnenmais Konserve'&&g.missing===100));
  assert.equal(variants[0].quantity,5,'planning never mutates physical stock');
 });
+
+test('reduced-fat cheese never counts normal-fat sibling inventory',()=>{
+ const variants=[
+ {id:'light',name:'Hirtenkäse',family_name:'Feta / Hirtenkäse',quantity:0,unit:'g'},
+ {id:'normal',name:'Hirtenkäse normal',family_name:'Feta / Hirtenkäse',quantity:200,unit:'g'}
+ ];
+ assert.equal(r.resolve({item:{name:'Feta / Hirtenkäse leicht',label:'65 g Feta / Hirtenkäse leicht',unit:'g'},inventoryRows:variants}).available,0);
+ assert.equal(r.resolve({item:{name:'Feta / Hirtenkäse',unit:'g'},inventoryRows:variants}).available,200);
+ assert.equal(r.resolve({item:{name:'Hirtenkäse normal',unit:'g'},inventoryRows:variants}).available,200);
+});
