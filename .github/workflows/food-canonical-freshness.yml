@@ -1,0 +1,33 @@
+name: V934 Canonical food identity and freshness
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'food-stock-resolver-v746.js'
+      - 'food-v544.js'
+      - 'food-freshness-v913.js'
+      - 'shopping-v678.js'
+      - 'tests/food-canonical-freshness-v934.test.cjs'
+      - 'tests/food-canonical-freshness-browser.cjs'
+      - '.github/workflows/food-canonical-freshness.yml'
+permissions:
+  contents: read
+jobs:
+  canonical-food:
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Logic and existing freshness tests
+        run: node --test tests/food-canonical-freshness-v934.test.cjs tests/food-freshness-v913.test.cjs
+      - name: Install matching Playwright
+        run: |
+          npm init -y
+          npm install --no-save playwright@1.48.2
+      - name: Test production forecast in both browser engines
+        run: node tests/food-canonical-freshness-browser.cjs
