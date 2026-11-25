@@ -993,7 +993,7 @@
     const name=ingredientName(item);
     const unit=String(item?.unit||'').trim();
     let info=null;
-    const shared=window.__modFoodStockResolverV746;
+    const shared=typeof window==='undefined'?null:window.__modFoodStockResolverV746;
     if(shared?.explicitVariantStockName?.(item)){
       const exact=shared.resolve({item,inventoryRows});
       return (exact.rows||[]).map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
