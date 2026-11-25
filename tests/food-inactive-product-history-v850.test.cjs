@@ -41,6 +41,7 @@ test('Nutrition warning is not raised for inactive but existing product with val
     nutritionOf:p=>({kcal:p.nutrition_per_100?.energy_kcal??null,protein:p.nutrition_per_100?.protein_g??null,
       fat:p.nutrition_per_100?.fat_g??null,carbs:p.nutrition_per_100?.carbohydrates_g??null}),
     measuredPaprikaNutrition:()=>null,
+    numberedBreadPlan:()=>null,
     confirmedAllocationNutrition:()=>null,
     mixedLotNutrition:()=>({complete:true,fat:0,carbs:0}),
     genericFamilyNutrition:()=>null,

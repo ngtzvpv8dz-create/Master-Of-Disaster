@@ -68,8 +68,8 @@ test('nutrient and freshness warnings are compact collapsible summaries',()=>{
   assert.match(food,/Frische- und MHD-Prüfung: '\+freshness.length\+' Punkte/);
 });
 test('active app URL bypasses stale food, nutrition and stylesheet cache',()=>{
-  assert.equal(runtime.split('./food-v544.js?v=20261125-v937-explicit-variants').length-1,4);
-  assert.equal(runtime.split('./food-nutrition-v711.js?v=20261125-v937-explicit-variants').length-1,4);
+  assert.equal(runtime.split('./food-v544.js?v=20261125-v938-purchase-nutrition').length-1,4);
+  assert.equal(runtime.split('./food-nutrition-v711.js?v=20261125-v938-purchase-nutrition').length-1,4);
   assert.match(index,/food-v544\.css\?v=20261122-tasteprep-918/);
-  assert.match(index,/area-runtime-v609\.js\?v=20261125-v937-explicit-variants/);
+  assert.match(index,/area-runtime-v609\.js\?v=20261125-v938-purchase-nutrition/);
 });

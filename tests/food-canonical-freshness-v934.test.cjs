@@ -86,3 +86,24 @@ test('reduced-fat cheese never counts normal-fat sibling inventory',()=>{
  assert.equal(r.resolve({item:{name:'Feta / Hirtenkäse',unit:'g'},inventoryRows:variants}).available,200);
  assert.equal(r.resolve({item:{name:'Hirtenkäse normal',unit:'g'},inventoryRows:variants}).available,200);
 });
+
+test('measured bread uses remaining numbered slices and only future missing slices use a declared plan weight',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'..','food-nutrition-v711.js'),'utf8');
+ const cut=source.lastIndexOf("  document.addEventListener('click',event=>{");
+ const w={addEventListener(){}};
+ vm.runInNewContext(source.slice(0,cut)+"window.__testNutrition={numberedBreadPlan,nutritionProblem,plannedMealAllocationState};})();",{window:w,document:{readyState:'loading',addEventListener(){},querySelector(){return null}},MutationObserver:class{observe(){}},setTimeout(){},clearTimeout(){},Intl,console});
+ const n=w.__testNutrition;
+ const inventory=[{id:'bread',name:'Harry Vital+fit Brot',family_name:'Vollkornbrot',unit:'Scheiben',quantity:4}];
+ const products=[{id:'p',inventory_id:'bread',active:true,package_quantity:500,package_unit:'g',nutrition_per_100:{energy_kcal:241,protein_g:7.7,fat_g:4.9,carbohydrates_g:38},product_data:{numbered_slices:[{slice_number:6,gross_weight_g:57},{slice_number:7,gross_weight_g:56},{slice_number:8,gross_weight_g:55},{slice_number:9,gross_weight_g:55}],latest_package_slice_count_declared:9}}];
+ const lots=[{id:'l',inventory_id:'bread',product_id:'p',opened_remaining_quantity:4,unopened_packages:0,package_quantity:9,package_unit:'Scheiben',batch_data:{numbered_slices:products[0].product_data.numbered_slices,remaining_slice_numbers:[6,7,8,9]}}];
+ const item={name:'Vollkornbrot',label:'1 Scheiben Harry Vital+fit Brot',quantity:1,unit:'Scheiben'};
+ const data={inventory,products,lots};
+ const one=n.numberedBreadPlan(item,data);
+ assert.equal(one.estimated,false);assert(Math.abs(one.kcal-57*2.41)<1e-8);
+ const second=n.numberedBreadPlan(item,{...data,inventory:[{...inventory[0],quantity:3}]});
+ assert(Math.abs(second.kcal-56*2.41)<1e-8);
+ const future=n.numberedBreadPlan(item,{...data,inventory:[{...inventory[0],quantity:0}]});
+ assert.equal(future.estimated,true);assert(Math.abs(future.kcal-500/9*2.41)<1e-8);
+ const missing=n.nutritionProblem({id:'new-mandu',name:'Mandu TK',unit:'g',quantity:120},{inventory:[],products:[],lots:[],purchaseExpectedIds:new Set(['new-mandu'])});
+ assert.equal(missing.awaitingPurchase,true);assert.equal(missing.provisional,true);
+});

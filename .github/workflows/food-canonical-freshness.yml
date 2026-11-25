@@ -5,6 +5,7 @@ on:
     paths:
       - 'food-stock-resolver-v746.js'
       - 'food-v544.js'
+      - 'food-nutrition-v711.js'
       - 'food-freshness-v913.js'
       - 'shopping-v678.js'
       - 'tests/food-canonical-freshness-v934.test.cjs'
