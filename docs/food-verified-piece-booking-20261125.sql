@@ -1,7 +1,8 @@
 -- REVIEW CANDIDATE: do not apply until the app's explicit whole-piece selection is integrated and tested.
 -- Verified against current v1 using rollback-only tests: selected 151g avocado, wrong weight and missing selection rejected, actual stock restored.
 -- Scope: meal completion with individually measured Avocado/Apfel rows. Other paths preserved.
--- Open: multiple pieces in one ingredient, cross-lot selections, duplicate/stale and cross-owner cases, manual inventory consumption, app integration.
+-- Additional rollback tests 2026-11-25 09:29 Europe/Berlin: two whole pieces in one ingredient (151+142 g), same lot and a synthetic second lot; both leave exactly two pieces and capture 293 g, 468.8 kcal gross estimate in the actual candidate nutrition JS. Duplicate selection, consumed piece, wrong lot and wrong product all rejected atomically; original rows and function hash verified unchanged.
+-- Open: cross-owner and direct-RPC bypass checks, manual inventory consumption, UI integration, multi-piece gram recipe conversion (current wrapper only converts a single allocation). Do not deploy yet.
 DO $guard$ BEGIN
  IF md5(pg_get_functiondef('public.consume_food_inventory_lots_for_meal(uuid,numeric,text,uuid)'::regprocedure))<>'1c936136680a913bf30def1ebf529b60' THEN RAISE EXCEPTION 'Live source changed; review and retest'; END IF;
 END $guard$;
