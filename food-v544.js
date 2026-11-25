@@ -5256,6 +5256,44 @@
     });
   }
 
+  function isMeasuredFruitInventory(id){
+    return isMeasuredFruitStock((state?.inventory||[]).find(x=>String(x.id)===String(id)));
+  }
+
+  async function openMeasuredFruitExtra(id,options={}){
+    requireFreshLotStock();
+    const item=(state?.inventory||[]).find(x=>String(x.id)===String(id));
+    if(!isMeasuredFruitStock(item)||item.is_active===false||!(Number(item.quantity)>0))throw new Error('Geeigneter Stückvorrat fehlt.');
+    if(!globalThis.crypto?.randomUUID)throw new Error('Sichere Anfrage-ID nicht verfügbar.');
+    const sb=client(),requestId=globalThis.crypto.randomUUID(),date=options.date||todayIso();
+    if(!sb||date>todayIso())throw new Error('Nur tatsächlichen, nicht zukünftigen Verzehr buchen.');
+    const response=await withTimeout(sb.rpc('food_available_measured_whole_pieces',{p_inventory_id:item.id}),'Gewogene Snackstücke laden',10000);
+    if(response.error)throw response.error;
+    const all=response.data;
+    if(!Array.isArray(all)||all.length!==Number(item.quantity)||new Set(all.map(x=>x.piece_id)).size!==all.length||all.some(x=>!x.piece_id||!x.lot_id||!x.product_id||!(Number(x.gross_weight_g)>0)||!Number.isFinite(Number(x.gross_weight_g))))throw new Error('Stückbestand nicht eindeutig; keine geschätzte Snackbuchung.');
+    const pieces=all.filter(x=>!options.productId||String(x.product_id)===String(options.productId));
+    const expected=options.count==null?null:Number(options.count);
+    if(!pieces.length||(expected!==null&&(!Number.isInteger(expected)||expected<1||expected>pieces.length)))throw new Error('Nicht genug eindeutig gewogene Stücke des gewünschten Produkts.');
+    const modal=addModal('Gewogenen Zusatzsnack buchen','<form><p>'+esc(item.name)+' · '+esc(date)+(expected!==null?' · '+expected+' ganze Stücke':'')+'</p>'+pieces.map(x=>'<label><input type="checkbox" name="piece" value="'+esc(x.piece_id)+'" '+(pieces.length===1?'checked':'')+'> Stück '+esc(x.piece_index)+' · '+esc(fmtQty(x.gross_weight_g,'g'))+' brutto</label>').join('')+'<p data-food-fruit-extra-summary></p><p>Die Kalorien werden aus den ausgewählten Bruttogewichten und den zugehörigen Produktwerten berechnet. Vorrat und Tagesbilanz werden gemeinsam gebucht. Eine Korrektur erfolgt durch Rückbuchung und neue Auswahl.</p><button class="food-action-v544" type="submit">Tatsächlichen Verzehr buchen</button></form>',async form=>{
+      const ids=form.getAll('piece').map(String);
+      if(!ids.length||new Set(ids).size!==ids.length||ids.some(id=>!pieces.some(x=>String(x.piece_id)===id))||(expected!==null&&ids.length!==expected))throw new Error('Bitte die erforderliche Zahl eindeutiger Stücke auswählen.');
+      requireFreshLotStock();
+      const saved=await withTimeout(sb.rpc('food_record_measured_fruit_extra',{p_inventory_id:item.id,p_piece_ids:ids,p_expected_quantity:Number(item.quantity),p_day:date,p_request_id:requestId,p_product_id:options.productId||null,p_plan_id:options.planId||null}),'Gewogenen Zusatzsnack buchen',15000);
+      if(saved.error)throw saved.error;
+      if(String(saved.data)!==requestId)throw new Error('Buchung nicht eindeutig bestätigt.');
+      await mutate(()=>saved.data);
+      if(typeof options.onSaved==='function')await options.onSaved(saved.data);
+      else {await window.__modFoodExtrasV828?.refresh?.();await window.__modFoodTreatsV880?.refresh?.();}
+    });
+    const summary=modal?.querySelector('[data-food-fruit-extra-summary]');
+    const sync=()=>{
+      const ids=new Set([...(modal?.querySelectorAll('input[name="piece"]:checked')||[])].map(x=>x.value));
+      const picked=pieces.filter(x=>ids.has(String(x.piece_id)));
+      if(summary)summary.textContent=picked.length+' Stück · '+fmtQty(picked.reduce((s,x)=>s+Number(x.gross_weight_g),0),'g')+' brutto';
+    };
+    modal?.querySelectorAll('input[name="piece"]').forEach(input=>input.addEventListener('change',sync));sync();
+  }
+
   function addInventoryLotModal(inventoryId){
     const item=(state?.inventory||[]).find(row=>String(row.id)===String(inventoryId));
     if(!item)return;
@@ -6149,6 +6187,8 @@
     resolveIngredientStock,
     toggleShoppingCart,
     openShoppingStockModal,
+    isMeasuredFruitInventory,
+    openMeasuredFruitExtra,
     checkShopping
   };
   window.__modFoodV544=api;

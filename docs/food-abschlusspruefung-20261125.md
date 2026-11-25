@@ -35,3 +35,6 @@ Gemeinsamer Rollback-Test: vorhandene Mango 753 g und Limette 98 g, manuelle neu
 
 ## Fortschritt: Paket 6
 Zutateneditor im Rezeptbereich mit paginiertem Laden, Suche, individueller Bewertung/Häufigkeit und Grundzutaten-/Varianten-Verbrauchsregel. DB-RPC unter authentifizierter Rolle erfolgreich: alte und neue Katalogzeilen, Regel-Normalisierung, Ausschluss, Variantenänderung, veralteter Stand und fremde Nutzer-ID; Rollback nachgewiesen. 1.251 synthetische Zeilen im UI-Ladetest vollständig geladen. Bestehende 123 abweichende Legacy-Bewertungen werden nicht pauschal überschrieben; der konsolidierte Katalog ist maßgeblich, Synchronisierung erfolgt bei ausdrücklicher Einzeländerung. Bisherige Geschmacksmeldung aktualisiert nach der Migration auch die Katalogbewertung. Browser-Abnahme und vollständige Planungskopplung bleiben Paket 4/8.
+
+## Fortschritt: Paket 3
+Gewogener Zusatzsnack und Rückbuchung im DB-Test erfolgreich: Mango 753 g / 451,8 kcal, Wiederholung derselben Anfrage ohne Doppelbuchung, direkte Mengenänderung gesperrt, exakt dasselbe Stück in dieselbe Charge zurückgegeben; geplanter Snack bestätigt und zurückgebucht; gesamter Datenbestand nach Rollback unverändert. App-Zusatzsnacks und geplante Extras öffnen konkrete Stückauswahl; Korrektur durch Rückbuchung und Neuauswahl. Noch keine Produktivinstallation oder Browser-Abnahme dieses neuen Codes.
