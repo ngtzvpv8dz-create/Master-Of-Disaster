@@ -76,6 +76,7 @@ test('Milka Pralinen use whole pieces in Heute extra snack, not manual 5.7g',()=
   const lib=make([product],(v,d=1)=>Number(v).toLocaleString('de-DE',{maximumFractionDigits:d}),
     v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))&&Number(v)>=0);
   assert.equal(lib.bases(product),'Stück');
+  assert.equal(lib.bases({inventory_unit:'Stück',inventory_family_name:'Mango',nutrition_per_100:{energy_kcal:60,protein_g:.7}}),'Stück');
   assert.equal(lib.countedPieceWeight(product),5.7);
   assert.equal(lib.initialQty(product),1);
   assert.equal(lib.valuesFromCatalog(product,1).calories_kcal,28.67);

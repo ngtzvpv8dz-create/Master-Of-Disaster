@@ -14,10 +14,10 @@
   const client=()=>window.getSupabaseClient?.();
   const autoCounted=row=>String(row?.source_reference||'').startsWith('food-counted-v873-');
   const measuredExtra=row=>String(row?.source_reference||'').startsWith('food-measured-fruit-extra-v1-');
-  const measuredFruitProduct=p=>p?.inventory_unit==='Stück'&&['Apfel','Avocado','Banane','Mango','Limette'].includes(p?.inventory_family_name);
   const stockLinkedExtra=row=>measuredExtra(row)||(String(row?.source_reference||'').startsWith('food-ui-v832-')
     &&(Boolean(row?.product_id)||/^food-ui-v832-inventory-[0-9a-f-]{36}-/.test(String(row?.source_reference||''))));
   function productName(p){return p?._inventoryOnly?'Vorrat · '+p.product_name:[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');}
+  const measuredFruitProduct=p=>p?.inventory_unit==='Stück'&&['Apfel','Avocado','Banane','Mango','Limette'].includes(p?.inventory_family_name);
   function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
   // Stückprodukte mit dokumentierter essbarer Portionsmenge: kein erneutes Wiegen verlangen.
   // Für Eier die explizite Schätzung verwenden, niemals das Schalengewicht.
