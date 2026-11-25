@@ -25,8 +25,12 @@
     if(/wrap|tortilla/.test(n))return 'wrap';
     if(/brot|brotchen|toast|pita|pide|baguette/.test(n))return 'bread';
     if(/hahnchen|pute|rind|schwein|mett|hackfleisch|huhner|geflugel/.test(n))return 'meat';
+    if(/^(?:h milch|haltbare milch|haltbarmilch)\b/.test(n))return 'shelf_milk';
     if(/quark|skyr|joghurt|yoghurt|frischkase|huttenkase|hirtenkase|feta|mozzarella|ricotta|milch|kefir|ayran|schmand|sahne/.test(n))return 'dairy';
     if(/\b(dose|konserve|glas)\b/.test(n)&&/\b(mais|bohnen|kichererbsen|erbsen|ananas|tomaten|salsa|passata)\b/.test(n))return 'canned';
+    if(/glasnudel|susskartoffel.*nudel|sußkartoffel.*nudel/.test(n))return null;
+    if(/passierte tomaten|passata|tomatenmark|kichererbsen abgetropft/.test(n))return 'canned';
+    if(/batate|su(?:ss|ß)kartoffel/.test(n))return 'vegetable';
     if(/kartoffel|zwiebel|knoblauch/.test(n))return 'durable';
     if(/apfel|birne|kiwi|mango|maracuja|passionsfrucht|passion fruit|kaki|avocado|banane|orange|mandarine|clementine|limette|zitrone|ananas|beere|himbeere|erdbeere|traube|pfirsich|nektarine|pflaume|melone/.test(n))return 'fruit';
     if(/tomate|paprika|gurke|karotte|mohre|zucchini|aubergine|brokkoli|salat|champignon|pilz|radieschen|kohl|spinat|sellerie|kurbis|lauch|krauter|petersilie|schnittlauch/.test(n))return 'vegetable';
@@ -35,7 +39,8 @@
   function deadline(purchaseDate,kind,{openedOn=null,mhd=null}={}){
     const purchased=iso(purchaseDate),open=iso(openedOn),bestBefore=iso(mhd);
     const constraints=[];
-    if(purchased&&['fruit','vegetable','dairy'].includes(kind))constraints.push(shift(purchased,7));
+    if(purchased&&['fruit','vegetable'].includes(kind))constraints.push(shift(purchased,2)); // Kauftag + 2 Kalendertage
+    if(purchased&&kind==='dairy')constraints.push(shift(purchased,7));
     if(purchased&&kind==='bread')constraints.push(shift(purchased,14));
     if(purchased&&kind==='meat')constraints.push(shift(purchased,2));
     if(open)constraints.push(shift(open,7));

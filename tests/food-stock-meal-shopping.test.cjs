@@ -151,3 +151,20 @@ test('unmeasured edible avocado yield cannot be an automatic grocery order; zero
   avocado.quantity=0;
   assert.ok(deriveShopping(data).some(gap=>/avocado/i.test(gap.label)&&gap.missing>0));
 });
+
+test('fresh stock expires after purchase plus two; future stock is not consumed early',()=>{
+ window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
+ try{
+ const tomato=stock('tom','Tomaten','Tomaten',500);
+ const data={inventory:[tomato],products:[],lots:[lot('fresh','tom',500,'2026-11-14')],meals:[meal('2026-11-16',[ingredient('Tomaten',300,'tom')]),meal('2026-11-17',[ingredient('Tomaten',200,'tom')])]};
+ const gaps=deriveShopping(data);assert.equal(gaps.length,1);assert.equal(gaps[0].missing,200);assert.equal(gaps[0].shortageDate,'2026-11-17');
+ data.lots=[lot('old','tom',500,'2026-11-10')];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),500);
+ data.lots=[lot('new','tom',500,'2026-11-17')];const prior=deriveShopping(data);assert.equal(prior.length,1);assert.equal(prior[0].missing,300);
+ data.lots=[{...lot('fresh','tom',500,'2026-11-14'),best_before_date:'2026-11-15'}];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),500);
+ const avocado={id:'a',name:'Avocados Hass',family_name:'Avocado',quantity:3,unit:'Stück',is_active:true};
+ const a={inventory:[avocado],products:[],lots:[{...lot('a1','a',3,'2026-11-14'),package_unit:'Stück',opened_remaining_unit:'Stück'}],meals:[meal('2026-11-17',[{name:'Avocado',quantity:1,unit:'Stück'}])]};
+ assert.equal(deriveShopping(a).find(x=>/avocado/i.test(x.label)).missing,1);
+ const chicken=stock('ch','Hähnchenbrustfilet','Hähnchenbrustfilet',5000);
+ assert.equal(deriveShopping({inventory:[chicken],products:[],lots:[],meals:[meal('2026-11-16',[ingredient('Hähnchenbrustfilet',300,'ch')]),meal('2026-11-20',[ingredient('Hähnchenbrustfilet',300,'ch')])]}).length,0);
+ }finally{delete window.ModFoodFreshnessV913;}
+});

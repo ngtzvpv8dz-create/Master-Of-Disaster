@@ -118,3 +118,15 @@ test('shelf-stable automatic buffer is not mistaken for unused fresh food',()=>{
   assert.equal(p.stockupIssues({label:'Langkornreis trocken',general:{source:'food-stockup',needed_by:'2026-11-25'}},[]).length,0);
   assert.equal(p.stockupIssues({label:'Avocado Hass',general:{source:'food-stockup',needed_by:'2026-11-25'}},[])[0].block,true);
 });
+
+test('Three inclusive days for fresh produce; MHD may shorten, not extend',()=>{
+  assert.equal(p.deadline('2026-11-25','fruit'),'2026-11-27');
+  assert.equal(p.deadline('2026-11-25','vegetable',{mhd:'2026-12-02'}),'2026-11-27');
+  assert.equal(p.deadline('2026-11-25','fruit',{mhd:'2026-11-26'}),'2026-11-26');
+  assert.equal(p.afterDeadline('2026-11-25','vegetable','2026-11-28','breakfast'),true);
+  assert.equal(p.classify({name:'Glasnudeln'}),null);
+  assert.equal(p.classify({name:'Passierte Tomaten'}),'canned');
+  assert.equal(p.classify({name:'H-Milch 1,5 %'}),'shelf_milk');
+  assert.equal(p.deadline('2026-11-25','shelf_milk',{mhd:'2027-02-01'}),'2027-02-01');
+  assert.equal(p.deadline('2026-11-25','shelf_milk',{openedOn:'2026-11-25'}),'2026-12-02');
+});
