@@ -51,7 +51,6 @@ test('planned Feta displays the actual catalog product, lot status and source ar
     state:{inventory:[stock],products:[product],lots:[lot]},
     esc:value=>String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;'),
     num:value=>Number(value),
-    ingredientName:item=>item.name,
     seasoningByTaste:item=>/^(salz|pfeffer|chili|curry|paprikapulver)/i.test(String(item?.name||'')),
     prepDoneSet:new Set(),
     fmtQty:(value,unit)=>value+' '+unit,
@@ -70,6 +69,7 @@ test('planned Feta displays the actual catalog product, lot status and source ar
   });
   vm.runInContext(between(food,'  function allocationMarkup(','  // Verbrauchsbuchungen')+
     '\nthis.renderAllocation=allocationMarkup;',c);
+  vm.runInContext(between(food,'  const ingredientName=item=>','  // Physical bread slices remain whole'),c);
   vm.runInContext(between(food,'  const ingredientQuantityForDisplay=item=>{','  const ingredientDisplay=item=>{'),c);
   vm.runInContext(between(food,'  function missingIngredientSourceMarkup(','  function splitMealIngredients(')+
     '\nthis.renderList=ingredientListMarkup;this.missing=missingIngredientSourceMarkup;',c);
