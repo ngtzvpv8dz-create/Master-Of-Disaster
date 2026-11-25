@@ -948,7 +948,8 @@
         :(stock?productForStock(stock,data):null);
       if(!product&&!(historical&&part.prepared_nutrition_per_100))
         return invalid('konkretes Nährwertprodukt fehlt');
-      const historicalProduct=product||(historical?{nutrition_per_100:part.prepared_nutrition_per_100}:null);
+      const historicalProduct=historical&&part.prepared_nutrition_per_100
+        ?{...(product||{}),nutrition_per_100:part.prepared_nutrition_per_100}:product;
       const n=nutritionOf(historicalProduct);
       if(n.kcal===null||n.protein===null)return invalid('Kalorien oder Protein fehlen');
 
@@ -990,6 +991,81 @@
       carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,missing:[]};
   }
 
+  // Immutable lot evidence takes priority over the current catalogue.
+  function capturedLotNutrition(item){
+    if(!Array.isArray(item?.prepared_lot_evidence))return null;
+    const invalid=reason=>({complete:false,missing:[itemName(item)+' ('+reason+')']});
+    const wanted=number(item.quantity),unit=text(item.unit),near=(a,b)=>Math.abs(a-b)<.00001;
+    if(wanted===null||wanted<=0)return invalid('Verzehrmenge fehlt');
+    const gram=new Set(['g','kg']),volume=new Set(['ml','l']);
+    const massBasis=new Set(['per_100_g','per_100g','100_g','100g','per_100_g_dry_product','per_100_g_powder','per_100_g_powder_from_packaging','per_100_g_raw','per_100_g_uncooked','per_100_g_powder_calculated_from_7g_prepared_with_water','per_100_g_powder_from_7g_water_preparation']);
+    const volBasis=new Set(['per_100_ml','per_100ml','100_ml','100ml','per_100_ml_concentrate']);
+    const refBasis=new Set(['per_100_g_reference','per_100_g_raw_reference','per_100_g_raw_edible','per_100_g_raw_edible_reference','per_100_g_edible_reference','per_100_g_edible_portion','per_100_g_edible_banana','per_100_g_edible_yellow_kiwi_reference','per_100_g_reference_same_branded_product','per_100_g_raw_edible_equal_share_estimate']);
+    const saved=Array.isArray(item.allocation_override)?item.allocation_override:[];
+    const grossPolicy=wholeProduceGrossPolicy(item)&&!/essbar|netto/i.test(itemName(item));
+    let covered=0,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,estimated=false;
+    const usedParts=new Set();
+    for(const row of item.prepared_lot_evidence){
+      const qty=number(row.quantity),tracked=number(row.tracked_quantity),stockUnit=text(row.unit);
+      if(qty===null||qty<=0||tracked===null||!near(qty,tracked)||!Array.isArray(row.lot_sources)||!row.lot_sources.length)return invalid('Chargenmenge nicht vollständig belegt');
+      let lotTotal=0;
+      for(const lot of row.lot_sources){
+        const q=number(lot.quantity),p=lot.nutrition_per_100;
+        if(q===null||q<=0||text(lot.unit)!==stockUnit||lot.resolution!=='profile_captured'||!lot.lot_id||!lot.product_id||!p||typeof p!=='object'||Array.isArray(p)||lot.nutrition_reference_pending_edible_weight===true)return invalid('Chargen-Nährwerte oder Verzehrgewicht fehlen');
+        lotTotal+=q;
+        // Technical enum: do not use text(), which replaces underscores.
+        const basis=String(p.basis||'').trim().toLowerCase(),packUnit=text(lot.package_unit);
+        let measure=massBasis.has(basis)||refBasis.has(basis)?'g':volBasis.has(basis)?'ml':null;
+        if(!basis&&(gram.has(packUnit)||volume.has(packUnit))){
+          measure=gram.has(packUnit)?'g':'ml';estimated=true;
+        }
+        if(refBasis.has(basis)||lot.nutrition_reference_only===true)estimated=true;
+        if(!measure&&['per_100_g_drained','abgetropft_pro_100g','per_100_g_drained_fruit_reference'].includes(basis)&&/abgetropft/i.test(itemName(item)))measure='g';
+        if(!measure)return invalid('Nährwert-Bezugsmenge gesondert prüfen');
+        let amount=null,recipeAmount=null;
+        if(gram.has(stockUnit)&&measure==='g')amount=q*(stockUnit==='kg'?1000:1);
+        if(volume.has(stockUnit)&&measure==='ml')amount=q*(stockUnit==='l'?1000:1);
+        if(gram.has(stockUnit)&&measure==='ml'&&/sojasauce|sojasoße|sojasosse/i.test(itemName(item))){
+          amount=q*(stockUnit==='kg'?1000:1)/1.08;estimated=true;
+        }
+        if(stockUnit===unit)recipeAmount=q;
+        else if(gram.has(stockUnit)&&gram.has(unit))recipeAmount=q*(stockUnit==='kg'?1000:1)/(unit==='kg'?1000:1);
+        else if(volume.has(stockUnit)&&volume.has(unit))recipeAmount=q*(stockUnit==='l'?1000:1)/(unit==='l'?1000:1);
+        if(amount===null&&measure==='g'&&/^(stück|scheibe|scheiben)$/.test(stockUnit)){
+          const matches=saved.map((part,index)=>({part,index})).filter(({part,index})=>!usedParts.has(index)&&String(part.lot_id||'')===String(lot.lot_id)&&(!part.product_id||String(part.product_id)===String(lot.product_id))&&text(part.unit||item.unit)===stockUnit&&near(number(part.quantity)??-1,q));
+          if(matches.length===1){
+            const {part,index}=matches[0];usedParts.add(index);
+            if(part.estimated_not_measured!==true){
+              const actual=number(part.actual_weight_g),gross=number(part.gross_weight_g);
+              const slices=Array.isArray(part.slice_weights_g)?part.slice_weights_g.map(number):null;
+              if(stockUnit==='stück'&&grossPolicy&&gross!==null&&gross>0){amount=gross*q;estimated=true;}
+              else if(actual!==null&&actual>0){amount=actual;if(grossPolicy)estimated=true;}
+              else if(slices?.length===q&&slices.every(w=>w!==null&&w>0))amount=slices.reduce((a,b)=>a+b,0);
+            }
+          }
+          if(amount===null&&stockUnit==='stück'){
+            const weight=eggEdibleWeightFromKnownSize({product_name:lot.product_name,variant:lot.product_variant});
+            if(weight!==null&&weight>0){amount=weight*q;estimated=true;}
+          }
+          if(amount!==null&&gram.has(unit))recipeAmount=amount/(unit==='kg'?1000:1);
+        }
+        if(amount===null||amount<=0||recipeAmount===null)return invalid('Verzehrmenge / Einheit nicht eindeutig belegt');
+        const n=nutritionOf({nutrition_per_100:p});
+        if(n.kcal===null||n.kcal<0||n.protein===null||n.protein<0)return invalid('Kalorien oder Protein fehlen');
+        if([n.fat,n.carbs].some(x=>x!==null&&x<0))return invalid('Ungültiges Nährwertprofil');
+        const factor=amount/100;
+        covered+=recipeAmount;kcal+=n.kcal*factor;protein+=n.protein*factor;
+        if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
+        if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*factor;
+        if(n.carbsBound)carbsBound=true;
+      }
+      if(!near(lotTotal,qty))return invalid('Chargenaufteilung widersprüchlich');
+    }
+    if(!near(covered,wanted))return invalid('Entnahme und Rezeptmenge stimmen nicht überein');
+    return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
+      carbsBound:carbsKnown&&carbsBound,estimated,missing:[]};
+  }
+
   function calculate(items,servings,data,allocationMap=null,historical=false){
     const rows=Array.isArray(items)?items:[];
     if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
@@ -1006,6 +1082,13 @@
       // Nährwertfreie Grundzutaten niemals per Familien-/FIFO-Produktlookup
       // auflösen. Fehlende Herstellerdaten dürfen Salz nicht blockieren.
       if(ZERO_NAMES.has(text(itemName(item))))continue;
+      if(Array.isArray(item?.prepared_lot_evidence)){
+        const captured=capturedLotNutrition(item);
+        if(!captured.complete){missing.push(...captured.missing);continue;}
+        kcal+=captured.kcal;protein+=captured.protein;addMacro(captured,1);
+        if(captured.estimated)referenceUsed=true;
+        continue;
+      }
       // Nach dem Kochen ist die dokumentierte Originalpackung maßgeblich.
       // Keine heute verfügbaren Chargen oder generischen Familien über einen
       // bestehenden, verifizierten Zubereitungs-Snapshot stellen.
@@ -1092,6 +1175,12 @@
   function nutritionProblem(item,data,allocationOverride=null){
     if(!item||toTasteSeasoning(item)||ZERO_NAMES.has(text(itemName(item))))return null;
     const name=itemName(item);
+    if(Array.isArray(item.prepared_lot_evidence)){
+      const captured=capturedLotNutrition(item);
+      const reason=!captured.complete?captured.missing.join(', '):
+        captured.fat===null||captured.carbs===null?'Fett- oder Kohlenhydratwerte der verbrauchten Chargen fehlen.':null;
+      return reason?{id:String(item.id||''),name,reason}:null;
+    }
     if(item.prepared_nutrition_per_100){
       const source=sourceFor(item,data);
       if(source?.nutrition?.kcal!==null&&source?.nutrition?.protein!==null&&basisAmount(item,source)!==null)return null;
@@ -1476,6 +1565,8 @@
   function withPreparedNutrition(items,meal){
     if(text(meal?.status)!=='completed')return items;
     const sources=meal?.prepared_sources_snapshot?.sources;
+    const evidence=meal?.prepared_sources_snapshot?.nutrition_evidence_v2;
+    if(Array.isArray(evidence))return items.map(item=>({...item,prepared_lot_evidence:evidence.filter(e=>String(e.ingredient_id||'')===String(item.id||''))}));
     if(!Array.isArray(sources))return items;
     return items.map(item=>{
       // Attach the exact nutrition profile of every consumed lot to its saved
