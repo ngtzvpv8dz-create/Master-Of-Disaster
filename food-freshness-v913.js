@@ -40,7 +40,8 @@
   function deadline(purchaseDate,kind,{openedOn=null,mhd=null}={}){
     const purchased=iso(purchaseDate),open=iso(openedOn),bestBefore=iso(mhd);
     const constraints=[];
-    if(purchased&&['fruit','vegetable'].includes(kind))constraints.push(shift(purchased,2)); // Kauftag + 2 Kalendertage
+    // Wednesday evening: next three days (Thu-Sat); Saturday: Sat-Mon.
+    if(purchased&&['fruit','vegetable'].includes(kind))constraints.push(shift(purchased,new Date(purchased+'T12:00:00Z').getUTCDay()===3?3:2));
     if(purchased&&kind==='dairy')constraints.push(shift(purchased,7));
     if(purchased&&kind==='bread')constraints.push(shift(purchased,14));
     if(purchased&&kind==='meat')constraints.push(shift(purchased,2));
@@ -124,7 +125,7 @@
     }
     return result;
   }
-  function planIssues({meals=[],inventory=[],lots=[],today=null}={}){
+  function planIssues({meals=[],inventory=[],lots=[],today=null,resolveStock=null}={}){
     const from=iso(today)||new Date().toISOString().slice(0,10);
     const uses=plannedUses(meals,from),issues=[],stocks=new Map(inventory.map(i=>[String(i.id),i]));
     const emitted=new Set();
@@ -134,12 +135,13 @@
     // missing-date warning for every old lot. Future opening transitions are
     // dated at write time. Known MHD / time conflicts remain checked below.
     for(const use of uses){
-      if(!use.inventory_id)continue;
-      const stock=stocks.get(String(use.inventory_id));
-      if(!stock||!(Number(stock.quantity)>0))continue;
+      const candidates=(use.inventory_id?[stocks.get(String(use.inventory_id))]:(typeof resolveStock==='function'?resolveStock(use)?.rows||[]:[])).filter(row=>row&&Number(row.quantity)>0);
+      const stock=candidates[0];
+      if(!stock)continue;
       const kind=classify(stock)||classify(use);
       if(!kind||kind==='durable'||kind==='wrap')continue;
-      const relevant=lots.filter(l=>String(l.inventory_id)===String(use.inventory_id)
+      const candidateIds=new Set(candidates.map(row=>String(row.id)));
+      const relevant=lots.filter(l=>candidateIds.has(String(l.inventory_id))
         &&((Number(l.unopened_packages)>0)||(Number(l.opened_remaining_quantity)>0)));
       if(!relevant.length)continue;
       const eligibility=relevant.map(lot=>{
@@ -154,10 +156,13 @@
           &&(!iso(bought)||purchaseAllowed(bought,use.date,use.mealType)),known:true};
       });
       if(eligibility.some(x=>x.safe)||eligibility.some(x=>!x.known))continue;
-      const key=use.inventory_id+'|'+use.date;
+      const key=(use.inventory_id||stock.id)+'|'+use.date;
       if(emitted.has(key))continue;
       emitted.add(key);
-      issues.push(makeIssue('lot',stock.name||use.name,'Am '+use.date+' geplant, aber alle datierten vorhandenen Chargen überschreiten Frischefrist/MHD oder wurden erst später gekauft. Charge und Einkauf vor der Zubereitung prüfen.',true));
+      const produce=['fruit','vegetable'].includes(kind);
+      issues.push(makeIssue('lot',stock.name||use.name,produce
+        ?'Am '+use.date+' geplant; vorhandene Frischware liegt außerhalb der Einkaufs-Planungsfrist oder des MHD. Vor Verwendung Zustand prüfen; die Planungsfrist ist kein Verfallsdatum.'
+        :'Am '+use.date+' geplant, aber alle datierten vorhandenen Chargen überschreiten Frischefrist/MHD oder wurden erst später gekauft. Charge und Einkauf vor der Zubereitung prüfen.',!produce));
     }
     return issues;
   }
@@ -178,7 +183,12 @@
       if(typeof familyKey==='function')return keys.includes(familyKey(use.name));
       return label.includes(n)&&n.length>=5||n.includes(label)&&label.length>=5;
     });
-    if(comparable.length)return [];
+    if(comparable.length){
+      const purchase=iso(general.needed_by);
+      if(purchase&&['fruit','vegetable'].includes(kind)&&!comparable.some(use=>!afterDeadline(purchase,kind,use.date,use.mealType)&&(!use.mealType||purchaseAllowed(purchase,use.date,use.mealType))))
+        return [makeIssue('window',row.label,'Geplanter Frischwarenkauf liegt außerhalb des Verbrauchsfensters. Einkauf oder Mahlzeit neu einplanen.',true)];
+      return [];
+    }
     return [makeIssue('unused',row.label,'Dieser automatische Vorratskauf hat keinen nachgewiesenen zukünftigen Rezeptbedarf. Nicht in den Wagen legen, bis ein passender Verbrauch eingeplant ist.',true)];
   }
   function auditPlan(data){
