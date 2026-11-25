@@ -161,16 +161,22 @@
     }
     return issues;
   }
-  function stockupIssues(row,uses){
+  function stockupIssues(row,uses,familyKey){
     const general=row?.general||{};
     if(general.source!=='food-stockup')return [];
     const kind=classify(row);
     // Confirmed shelf-stable staples / frozen reserve are a separate long-term stock policy (#200).
     if(!['fruit','vegetable','dairy','bread','meat','canned'].includes(kind))return [];
-    const label=norm(row.label),future=(uses||[]).filter(u=>u.date&&u.date>=(iso(general.needed_by)||'0000-00-00'));
+    const label=norm(row.label),original=norm(general.label),future=(uses||[]).filter(u=>u.date&&u.date>=(iso(general.needed_by)||'0000-00-00'));
+    // Use the canonical grocery identity, not only the formatted display label.
+    // The persisted original label is authoritative for exact name matches.
+    const keys=typeof familyKey==='function'?[familyKey(general.label),familyKey(row.label)].filter(Boolean):[];
     const comparable=future.filter(use=>{
       const n=norm(use.name);
-      return label===n||label.includes(n)&&n.length>=5||n.includes(label)&&label.length>=5;
+      if(!n)return false;
+      if(n===original||n===label)return true;
+      if(typeof familyKey==='function')return keys.includes(familyKey(use.name));
+      return label.includes(n)&&n.length>=5||n.includes(label)&&label.length>=5;
     });
     if(comparable.length)return [];
     return [makeIssue('unused',row.label,'Dieser automatische Vorratskauf hat keinen nachgewiesenen zukünftigen Rezeptbedarf. Nicht in den Wagen legen, bis ein passender Verbrauch eingeplant ist.',true)];

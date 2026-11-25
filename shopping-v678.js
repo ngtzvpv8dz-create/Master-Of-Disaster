@@ -718,7 +718,7 @@
       if(/^kirschen tk/.test(n))return 'frozen_cherries';
       if(/^grune bohnen tk/.test(n))return 'frozen_green_beans';
       if(/^lasagneplatten/.test(n))return 'lasagna_sheets';
-      if(/^mais dose/.test(n))return 'canned_corn';
+      if(/^(?:mais dose|sonnenmais konserve)$/.test(n))return 'canned_corn';
       if(/^kichererbsen dose/.test(n))return 'canned_chickpeas';
       if(/^ananas dose/.test(n))return 'canned_pineapple';
       if(/^oregano gerebelt/.test(n))return 'oregano';
@@ -937,7 +937,7 @@
         ?(food.gaps||[]).find(item=>foodGapKey(item)===row.key):null;
       const issues=[
         ...(gap?freshness.gapIssues(gap,state.products||[]):[]),
-        ...freshness.stockupIssues(row,food.plannedShoppingUses||[])
+        ...freshness.stockupIssues(row,food.plannedShoppingUses||[],name=>shoppingFamily(shoppingFamilyLabel(name||'')))
       ];
       row.freshnessIssues=issues;
       row.blockPurchase=issues.some(issue=>issue.block)||Boolean(row.unmatchedPlannedPurchase);
