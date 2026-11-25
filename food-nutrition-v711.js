@@ -1938,7 +1938,7 @@
   // V802: preview a user's proposed meal edit using the EXACT existing
   // dynamic nutrition calculator and meal-order-aware ingredient allocations.
   // This is read-only. Nothing is booked or changed in Supabase.
-  function dayCaloriesWithProposedMeal(data,mealId,proposedIngredients){
+  function dayCaloriesWithProposedMeal(data,mealId,proposedIngredients,exact=false){
     const proposed=data.meals.map(meal=>String(meal.id)===String(mealId)
       ?{...meal,food_meal_ingredients:proposedIngredients}
       :meal);
@@ -1966,7 +1966,7 @@
     // Die Vorschau muss dieselben zusätzlichen Tageskcal wie die Live-Bilanz enthalten.
     total+=(data.extras||[]).filter(x=>x.consumption_date===target.meal_date)
       .reduce((sum,x)=>sum+(number(x.calories_kcal)||0),0);
-    return {complete,kcal:complete?Math.round(total):null,missing:[...new Set(missing)],date:target.meal_date};
+    return {complete,kcal:complete?(exact?total:Math.round(total)):null,missing:[...new Set(missing)],date:target.meal_date};
   }
 
   async function previewMealDayCalories(mealId,proposedIngredients){
@@ -1976,6 +1976,20 @@
     const before=dayCaloriesWithProposedMeal(data,mealId,meal.food_meal_ingredients||[]);
     const after=dayCaloriesWithProposedMeal(data,mealId,proposedIngredients);
     return {before,after};
+  }
+
+  function measuredFruitDayCaloriesFromFreshData(data,mealId,ingredientId,expectedQuantity,expectedUnit,proposal){
+    const meal=data.meals.find(row=>String(row.id)===String(mealId));
+    if(!meal||text(meal.status)!=='planned'||meal.inventory_booked_at||meal.source_meal_id||meal.leftover_id||meal.calories_kcal_per_serving_override!=null)throw new Error('Mahlzeit wurde geändert oder ist nicht mehr planbar.');
+    const items=meal.food_meal_ingredients||[];
+    const ingredient=items.find(i=>String(i.id)===String(ingredientId));
+    if(!ingredient||number(ingredient.quantity)!==number(expectedQuantity)||String(ingredient.unit)!==String(expectedUnit)||ingredient.allocation_override?.length)throw new Error('Zutat wurde geändert; bitte neu planen.');
+    const proposed=items.map(i=>String(i.id)===String(ingredientId)?{...i,quantity:proposal.gross,unit:'g',allocation_override:proposal.allocation}:i);
+    return {before:dayCaloriesWithProposedMeal(data,mealId,items,true),after:dayCaloriesWithProposedMeal(data,mealId,proposed,true)};
+  }
+
+  async function previewMeasuredFruitDayCalories(mealId,ingredientId,expectedQuantity,expectedUnit,proposal){
+    return measuredFruitDayCaloriesFromFreshData(await fetchData(),mealId,ingredientId,expectedQuantity,expectedUnit,proposal);
   }
 
   async function refresh(){
@@ -2204,7 +2218,8 @@
     version:VERSION,
     refresh,
     getStatus(){return structuredClone(lastStatus);},
-    previewMealDayCalories
+    previewMealDayCalories,
+    previewMeasuredFruitDayCalories
   };
   schedule(450);
 })();

@@ -1934,9 +1934,8 @@
 
   async function measuredFruitDayPreview(meal,ingredient,proposal,sb){
     const api=window.__modFoodNutritionV711;
-    if(!api?.previewMealDayCalories)throw new Error('Kalorienkontrolle nicht geladen.');
-    const proposed=(meal.ingredients||[]).map(i=>String(i.id)===String(ingredient.id)?{...i,quantity:proposal.gross,unit:'g',allocation_override:proposal.allocation}:i);
-    const preview=await api.previewMealDayCalories(meal.id,proposed);
+    if(!api?.previewMeasuredFruitDayCalories)throw new Error('Kalorienkontrolle nicht geladen.');
+    const preview=await api.previewMeasuredFruitDayCalories(meal.id,ingredient.id,ingredient.quantity,ingredient.unit,proposal);
     const extra=await withTimeout(sb.from('food_planned_extras').select('calories_kcal').eq('plan_date',meal.meal_date).eq('status','planned'),'Geplante Extras prüfen',10000);
     if(extra.error)throw extra.error;
     if(!Array.isArray(extra.data)||extra.data.some(x=>x.calories_kcal==null||!Number.isFinite(Number(x.calories_kcal))||Number(x.calories_kcal)<0))return {complete:false};

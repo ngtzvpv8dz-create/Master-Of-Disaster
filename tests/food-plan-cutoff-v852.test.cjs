@@ -92,3 +92,37 @@ test('Whole fruit proposal checks exact IDs and original gross weight; no silent
  assert.throws(()=>api.verifiedFruitProposal(data,'different',1));
  sourceState.lots='stale';assert.equal(api.measuredFruitChoices(meal).length,0);
 });
+
+test('Fruit planning interaction: only explicit, current and calorie-safe confirmation writes',async()=>{
+ const start=code.indexOf('  function measuredFruitChoices('),end=code.indexOf('  function wholeUnitReviewAction(',start);
+ const state={inventory:[{id:'stock',name:'Avocados Hass',family_name:'Avocado',unit:'Stück',quantity:4}],meals:[{id:'m',meal_date:'2026-11-25',status:'planned',ingredients:[{id:'i',name:'Avocado',quantity:100,unit:'g'}]}]};
+ const sourceState={meals:'cloud',inventory:'cloud',lots:'cloud'};
+ const proposal={status:'proposal_only',gross_g:151,allocation:[{piece_id:'p',lot_id:'l',product_id:'prod',inventory_id:'stock',quantity:1,unit:'Stück',gross_weight_g:151,actual_weight_g:151}]};
+ for(const scenario of ['success','over_budget','fraction_over_budget','incomplete','unknown_extra','changed','unavailable','weekend']){
+   const calls=[],modals=[];let previews=0,reloads=0;
+   state.meals[0].meal_date=scenario==='weekend'?'2026-11-28':'2026-11-25';
+   const sb={rpc:async(name,args)=>{calls.push({name,args});return {data:name==='food_propose_measured_fruit_pieces'?(scenario==='unavailable'?{status:'insufficient_verified_fresh_pieces'}:proposal):{status:'planned_not_consumed'}};},from:()=>({select:()=>({eq:()=>({eq:async()=>({data:[{calories_kcal:scenario==='unknown_extra'?null:100}]})})})})};
+   const win={__modFoodNutritionV711:{previewMeasuredFruitDayCalories:async(...args)=>{previews++;assert.equal(args[1],'i');assert.equal(args[4].gross,151);return {before:{complete:true,kcal:1500},after:{complete:scenario!=='incomplete',kcal:scenario==='over_budget'?1800:scenario==='fraction_over_budget'?1700.1:scenario==='weekend'?2000:scenario==='changed'&&previews>1?1601:1600}};}}};
+   const api=new Function('state','sourceState','normalizedStatus','esc','fmtQty','client','withTimeout','addModal','window','expandedMeals','mutate',code.slice(start,end)+';return {openMeasuredFruitPlan};')(state,sourceState,x=>x,x=>String(x),(q,u)=>q+' '+u,()=>sb,p=>p,(title,body,submit)=>modals.push({title,body,submit}),win,new Set(),async fn=>{reloads++;return fn();});
+   await api.openMeasuredFruitPlan('m');assert.equal(calls.length,0);
+   await modals[0].submit(new Map([['choice','0'],['count','1']]));
+   assert.equal(calls.length,1);
+   if(['success','weekend','changed'].includes(scenario)){
+     assert.equal(typeof modals[1].submit,'function');
+     if(scenario==='changed'){
+       await assert.rejects(()=>modals[1].submit(),/Tagesplanung geändert/);
+       assert.equal(calls.length,1);
+     }else{
+       await modals[1].submit();
+       assert.equal(calls.length,2);
+       assert.equal(calls[1].name,'food_apply_measured_fruit_proposal');
+       assert.equal(calls[1].args.p_expected_gross_g,151);
+       assert.equal(calls[1].args.p_expected_quantity,100);
+       assert.equal(reloads,1);
+     }
+   }else{
+     assert.equal(modals[1].submit,undefined);
+     assert.equal(reloads,0);
+   }
+ }
+});
