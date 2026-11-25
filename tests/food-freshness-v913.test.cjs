@@ -132,3 +132,18 @@ test('Three inclusive days for fresh produce; MHD may shorten, not extend',()=>{
 });
 
 test('Flavoured drinks are not fresh fruit',()=>{assert.equal(p.classify({name:'HOLY Hydration Orange'}),null);});
+
+test('actual stockup display names match original recipe identities without disabling the guard',()=>{
+ const today='2026-11-25';
+ const beef={label:'Mageres Rinderhack (ca. 5 % Fett)',general:{label:'Rinderhackfleisch Light',source:'food-stockup',needed_by:today}};
+ const corn={label:'Mais (Dose)',general:{label:'Mais',source:'food-stockup',needed_by:today}};
+ const uses=[{name:'Rinderhackfleisch Light',date:today,quantity:310,unit:'g'},{name:'Mais',date:today,quantity:100,unit:'g'}];
+ assert.equal(p.stockupIssues(beef,uses).length,0);
+ assert.equal(p.stockupIssues(corn,uses).length,0);
+ const family=name=>({ 'Rinderhackfleisch Light':'lean_beef','Mageres Rinderhack (ca. 5 % Fett)':'lean_beef','Mais':'canned_corn','Mais (Dose)':'canned_corn','Sonnenmais Konserve':'canned_corn','Hackfleisch gemischt':'mixed_mince','Maismehl':'corn_flour' }[name]||name);
+ assert.equal(p.stockupIssues(corn,[{name:'Sonnenmais Konserve',date:today}],family).length,0);
+ assert.equal(p.stockupIssues(beef,[{name:'Hackfleisch gemischt',date:today}],family)[0].block,true);
+ assert.equal(p.stockupIssues(corn,[{name:'Maismehl',date:today}],family)[0].block,true);
+ assert.equal(p.stockupIssues(beef,[],family)[0].block,true);
+ assert.equal(p.stockupIssues(corn,[{name:'Mais',date:'2026-11-24'}],family)[0].block,true);
+});
