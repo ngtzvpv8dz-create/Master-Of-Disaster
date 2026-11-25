@@ -221,7 +221,7 @@
     return unique([
       [family,group,variant].filter(Boolean).join(' '),
       [family,variant].filter(Boolean).join(' '),
-      [group,variant].filter(Boolean).join(' '),
+      group?[group,variant].filter(Boolean).join(' '):(!family?variant:''),
       [variant,group,family].filter(Boolean).join(' ')
     ]);
   }

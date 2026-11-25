@@ -128,3 +128,9 @@ test('manufacturer macro upper bounds are calculable but never exact',()=>{
  assert.equal(products[0].nutrition_per_100.protein_g,undefined);
  assert.equal(r.resolve({item:{name:'Brokkoli TK',unit:'g'},inventoryRows:[{id:'a',name:'Brokkoli',family_name:'Brokkoli',unit:'g',quantity:100},{id:'b',name:'Brokkoli TK',family_name:'Brokkoli',unit:'g',quantity:0}]}).available,0);
 });
+
+test('a drink flavour is not a standalone food identity',()=>{
+ const inventory=[{id:'holy',name:'HOLY Hydration Orange',family_name:'HOLY Hydration Orange',catalog_family_name:'HOLY Hydration',catalog_variant_label:'Orange',unit:'Portion',quantity:1}];
+ assert.equal(r.resolve({item:{name:'Orange',unit:'Stück'},inventoryRows:inventory}).resolution,'none');
+ assert.equal(r.resolve({item:{name:'HOLY Hydration Orange',unit:'Portion'},inventoryRows:inventory}).available,1);
+});

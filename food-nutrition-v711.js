@@ -1763,11 +1763,11 @@
   function nutritionText(n){
     if(!n?.complete)return '';
     const base=(n.estimated?'ca. ':'')+Math.round(n.kcal)+' kcal'+
-      (n.protein===null||n.protein===undefined?'':' · '+(n.proteinBound?'≤ ':'')+formatNumber(n.protein,1)+' g Protein');
+      (n.protein===null||n.protein===undefined?'':' · '+(n.proteinBound?'≤ ':'')+formatNumber(n.proteinBound?Math.ceil((n.protein-1e-10)*10)/10:n.protein,1)+' g Protein');
     // Display fat/carbs only when every contributing portion has reliable data.
     // Sugar and saturated fat are subsets, never additional calories.
     if(n.fat===null||n.fat===undefined||n.carbs===null||n.carbs===undefined)return base;
-    return base+' · '+(n.fatBound?'≤ ':'')+formatNumber(n.fat,1)+' g Fett · '+(n.carbsBound?'< ':'')+formatNumber(n.carbs,1)+' g KH'+(n.estimated?' · Referenzwerte':'');
+    return base+' · '+(n.fatBound?'≤ ':'')+formatNumber(n.fatBound?Math.ceil((n.fat-1e-10)*10)/10:n.fat,1)+' g Fett · '+(n.carbsBound?'< ':'')+formatNumber(n.carbs,1)+' g KH'+(n.estimated?' · Referenzwerte':'');
   }
 
   function ensureAllocationStyle(){
