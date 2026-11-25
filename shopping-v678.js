@@ -105,7 +105,7 @@
     if(/^joghurt griechischer art(?: 2)?$/.test(n))return 'Joghurt griechischer Art (2 % Fett)';
     if(/^naturjoghurt(?: fettarm)?(?: 1 5)?$/.test(n))return 'Naturjoghurt mild (1,5 % Fett)';
     if(/^kiwi(?: essbar)?$/.test(n))return 'Kiwi';
-    if(/^mango(?: essbar)?$/.test(n))return 'Mango';
+    if(/^mango(?: essbar| frisch)?$/.test(n))return 'Mango, frisch';
     if(/^pide ?fladen(?:brot)?$/.test(n))return 'Pide-Fladenbrot';
     if(/^pita(?: taschen)?$/.test(n))return 'Pita-Taschen';
     if(/^reis fit naturreis$|^naturreis$/.test(n))return 'Naturreis (lose, trocken)';
@@ -138,7 +138,8 @@
     if(/^limetten?$/.test(n))return 'Limette';
     if(/^zitronen?$/.test(n))return 'Zitrone';
     if(/^avocado(?: hass frisch)?$/.test(n))return 'Avocado Hass (Stück)';
-    if(/^tk blattspinat(?: monatsreserve)?$|^blattspinat tk$/.test(n))return 'Blattspinat TK';
+    if(/^(?:tk (?:blattspinat|spinat)|(?:blattspinat|spinat) (?:tk|tiefgekuhlt|tiefkuhl|gefroren|tiefgefroren))(?: monatsreserve)?$/.test(n))return 'Blattspinat, tiefgekühlt';
+    if(/^(?:blattspinat|spinat) frisch$/.test(n))return 'Blattspinat, frisch';
     if(/^tomaten(?: warm| roh| frisch)?$/.test(n))return 'Tomaten (frisch)';
     if(/^paprika roh$/.test(n))return 'Paprika (frisch)';
     if(/^paprika bunt$/.test(n))return 'Paprika bunt (frisch)';
@@ -563,7 +564,7 @@
           :(delayed?'Kaufen ab '+fmtDate(shoppingDate):''))
           +(item.freshWindowDays&&item.shortageDate
             ?'\nFrischware: '+fmtDate(shoppingDate)+' bis '+fmtDate(item.shortageDate)
-             +' vor Verzehr kaufen (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)'
+             +' vor Verzehr kaufen'+(item.freshDeadline?' (geplanter Verbrauch bis '+fmtDate(item.freshDeadline)+')':' (innerhalb von '+item.freshWindowDays+' Tagen verbrauchen)')
             :''),
         buyFrom:shoppingDate||null,neededDate:item.shortageDate||null,
         category:'Lebensmittel',
@@ -692,7 +693,8 @@
       if(/^(?:passata|passierte tomaten)/.test(n))return 'passata';
       if(/^rote paprika$|^paprika rot$|^paprika frisch rot$|^blockpaprika rot ganz(?: frische rohkost)?$/.test(n))return 'red_pepper';
       if(/^tk beeren(?:mischung|mix)?$|^tk beerenmischung$/.test(n))return 'tk_berries';
-      if(/^tk blattspinat|^blattspinat tk/.test(n))return 'frozen_spinach';
+      if(/^(?:tk (?:blattspinat|spinat)|(?:blattspinat|spinat) (?:tk|tiefgekuhlt|tiefkuhl|gefroren|tiefgefroren))(?: monatsreserve)?$/.test(n))return 'frozen_spinach';
+      if(/^(?:blattspinat|spinat) frisch$/.test(n))return 'fresh_spinach';
       if(/^vollkornbrot(?: frisch| geschnitten abgepackt)?$|^roggen vollkornbrot$/.test(n))return 'wholegrain_bread';
       if(/^zucchini(?: frisch)?$/.test(n))return 'zucchini';
       if(/^magerquark/.test(n))return 'quark';
