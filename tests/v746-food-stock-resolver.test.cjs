@@ -53,3 +53,14 @@ assert.equal(resolver.familyNeedMatch('Spinat TK','Spinat').mode,'frozen');
 assert.equal(resolver.familyNeedMatch('Paprika rot','Paprika rot').mode,'generic');
 
 console.log('V746 food stock resolver regression OK');
+
+const mango={id:'mango',name:'Mango frisch',family_name:'Mango',quantity:1,unit:'Stück',is_active:true};
+r=resolver.resolve({item:{name:'Mango (essbar)',unit:'g'},inventoryRows:[...rows,mango]});
+assert.equal(r.unitMismatch,true);
+assert.equal(r.rows[0].id,'mango');
+assert.equal(r.rows[0].quantity,1);
+assert.equal(r.available,0,'do not invent edible grams');
+r=resolver.resolve({item:{name:'Spinat TK',unit:'g'},inventoryRows:rows});
+assert.equal(r.available,802,'TK excludes fresh');
+r=resolver.resolve({item:{name:'Mango (essbar)',unit:'g'},inventoryRows:[{id:'cola',name:'Cola Zero Mango',family_name:'Pepsi Zero Mango',quantity:5,unit:'l'}]});
+assert.equal(r.rows.length,0,'flavour is not fruit');

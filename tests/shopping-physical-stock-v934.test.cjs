@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const src=fs.readFileSync(require('node:path').join(__dirname,'..','shopping-v678.js'),'utf8');
+const start=src.indexOf('    const shoppingFamily=name=>{');
+const end=src.indexOf('    // Only dates of real planned recipes',start);
+const family=new Function(src.slice(start,end)+'\nreturn shoppingFamily;')();
+for(const n of ['Spinat TK','Blattspinat TK','TK-Spinat','TK-Blattspinat'])assert.equal(family(n),'frozen_spinach');
+assert.notEqual(family('Spinat frisch'),family('Spinat TK'));
+assert.notEqual(family('Spinat'),family('Spinat TK'));
+assert.match(src,/item\.physicalStockLabel\|\|fmtQty\(item\.currentAvailable/);
+console.log('V934 stock display checks OK');
