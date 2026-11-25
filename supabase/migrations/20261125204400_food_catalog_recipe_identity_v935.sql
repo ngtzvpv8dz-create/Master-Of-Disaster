@@ -75,7 +75,15 @@ with source_rows as (
 ('Rote-Bete-Wraps · EDEKA Herzstücke','Wraps, Rote Bete'),
 ('Sonnenmais Konserve','Mais Dose'),
 ('Spitzpaprika Kapia Sweet','Spitzpaprika, Kapia, frisch'),
-('Wild-Heidelbeeren','Heidelbeeren, tiefgekühlt')),
+('Wild-Heidelbeeren','Heidelbeeren, tiefgekühlt'),
+('Eier','Hühnereier'),
+('Eier Größe M','Hühnereier'),
+('H-Milch 1,5 %','Milch, Kuhmilch, haltbar, 1,5 % Fett'),
+('Oregano gerebelt','Oregano getrocknet'),
+('Knoblauchzehen','Knoblauch, frisch'),
+('Penne Rigate','Penne'),
+('Trockenbackhefe','Trockenhefe'),
+('Leinsamen geschrotet braun','Geschrotete Leinsamen')),
 family_aliases(source_name,target_family) as (values ('Wasser','Wasser'),
 ('Mandu TK','Gefüllte Teigwaren'),
 ('Hokkaido-Kürbis TK','Kürbis'),
@@ -101,7 +109,18 @@ family_aliases(source_name,target_family) as (values ('Wasser','Wasser'),
 ('Erdnussbutter crunchy','Erdnussaufstriche'),
 ('Leinsamen geschrotet braun','Leinsamen'),
 ('Putenbrustfilet','Pute'),
-('Knoblauchzehen','Knoblauch')),
+('Knoblauchzehen','Knoblauch'),
+('Protein Coffee Classic Coffee','Protein-Kaffee'),
+('ESN Isoclear Fresh Cherry','Proteinpulver'),
+('ESN Isoclear Strawberry Lime','Proteinpulver'),
+('Asia-Gemüse','Gemüsemischungen'),
+('Knusperbrot Weizen','Knäcke- und Knusperbrot'),
+('Kokosraspeln','Kokos'),
+('Bio Basilikum','Basilikum'),
+('Buschbohnen','Grüne Bohnen'),
+('Barebells Vegan Protein Bar Caramel Peanut','Knabberzeug'),
+('Zwiebelmett','Schwein'),
+('Nussmischung','Nüsse und Saaten')),
 catalog as (
  select user_id,id as catalog_ingredient_id,null::uuid as product_variant_id,name as canonical_name,family_name,catalog_role,source_details
  from public.food_catalog_ingredients
@@ -111,13 +130,27 @@ catalog as (
 )
 select s.user_id,s.inventory_id,s.source_name,s.position_count,
 case when c.candidate_count=1 then c.canonical_name else s.source_name end as canonical_name,
-case when c.candidate_count=1 then c.family_name else coalesce(fa.target_family,pl.family_name,nullif(i.family_name,''),t.family_name) end as family_name,
+case when c.candidate_count=1 then c.family_name else coalesce(fa.target_family,pl.family_name,nullif(i.family_name,''),t.family_name,case
+  when s.source_name ~* 'paniertes Schweineschnitzel' then 'Schwein'
+  when s.source_name ~* 'Bratensoße' then 'Bratensoße'
+  when s.source_name ~* 'Gemüse: Erbsen, Karotten, Mais' then 'Gemüsemischungen'
+  when s.source_name ~* 'grüne Bohnen' then 'Grüne Bohnen'
+  when s.source_name ~* 'Kartoffelbrei' then 'Kartoffeln'
+  when s.source_name ~* 'Köttbullar' then 'Fleischbällchen'
+  end) end as family_name,
 case when c.candidate_count=1 then c.catalog_ingredient_id end as catalog_ingredient_id,
 case when c.candidate_count=1 then c.product_variant_id end as product_variant_id,
 case when c.candidate_count=1 and c.catalog_role='Zuordnung offen' then 'variant_open'
 when c.candidate_count=1 then 'matched'
 when c.candidate_count>1 then 'ambiguous'
-when coalesce(fa.target_family,pl.family_name,nullif(i.family_name,''),t.family_name) is not null then 'family_only'
+when coalesce(fa.target_family,pl.family_name,nullif(i.family_name,''),t.family_name,case
+  when s.source_name ~* 'paniertes Schweineschnitzel' then 'Schwein'
+  when s.source_name ~* 'Bratensoße' then 'Bratensoße'
+  when s.source_name ~* 'Gemüse: Erbsen, Karotten, Mais' then 'Gemüsemischungen'
+  when s.source_name ~* 'grüne Bohnen' then 'Grüne Bohnen'
+  when s.source_name ~* 'Kartoffelbrei' then 'Kartoffeln'
+  when s.source_name ~* 'Köttbullar' then 'Fleischbällchen'
+  end) is not null then 'family_only'
 else 'unmapped' end as resolution
 from source_keys s
 left join aliases a on lower(btrim(s.source_name))=lower(btrim(a.source_name))
