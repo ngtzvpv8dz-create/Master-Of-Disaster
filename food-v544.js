@@ -288,10 +288,11 @@
     if(linked.length&&linked.every(frozenProduct))return null;
     const explicit=linked.map(p=>Number(p.product_data?.fresh_use_within_days))
       .find(n=>Number.isInteger(n)&&n>0&&n<=14);
-    if(explicit)return explicit;
     const kind=window.ModFoodFreshnessV913?.classify?.({name:stock?.name||need?.label||''});
-    // V913: User-confirmed max. one-week window for fresh fruit, vegetables and dairy.
-    if(['fruit','vegetable','dairy'].includes(kind))return 7;
+    // Three inclusive calendar days for produce, regardless of an older seven-day product hint.
+    if(['fruit','vegetable'].includes(kind))return Math.min(2,explicit||2);
+    if(explicit)return explicit;
+    if(kind==='dairy')return 7;
     return null;
   };
   const fmtShortDate=iso=>iso?new Intl.DateTimeFormat('de-DE',{day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(new Date(iso+'T12:00:00')):'';
@@ -3377,6 +3378,58 @@
       +filterBar+contentBody;
   }
 
+  function freshShoppingLotLedger(data,stockInfo,need){
+    const policy=window.ModFoodFreshnessV913;
+    if(!policy||!Array.isArray(data.lots))return null;
+    const rows=stockInfo.stock?[stockInfo.stock]:(stockInfo.rows||[]);
+    const kind=policy.classify({name:need.label})||policy.classify(rows[0]);
+    if(!['fruit','vegetable'].includes(kind))return null;
+    const result=[];
+    for(const stock of rows){
+      if(stock?.is_active===false||stock?.pending_weighing||!(Number(stock?.quantity)>0))continue;
+      const stockLimit=inventoryQuantityInUnit(stock,need.unit);
+      if(stockLimit.unitMismatch)continue;
+      let remaining=stockLimit.available;
+      const lots=data.lots.filter(l=>String(l.inventory_id)===String(stock.id))
+        .sort((a,b)=>String(a.best_before_date||a.purchased_on||'9999').localeCompare(String(b.best_before_date||b.purchased_on||'9999')));
+      for(const lot of lots){
+        const frozen=/tk|tiefkühl|gefrier|freezer|frozen/i.test(String(lot.storage_location||''));
+        const purchased=String(lot.purchased_on||'').slice(0,10);
+        const mhd=String(lot.best_before_date||'').slice(0,10)||null;
+        if(!frozen&&!/^\d{4}-\d{2}-\d{2}$/.test(purchased))continue;
+        const qtyInUnit=(q,u)=>{
+          const n=Number(q)||0;
+          return inventoryQuantityInUnit({...stock,quantity:n,unit:u},need.unit).available;
+        };
+        const available=Math.min(remaining,Math.max(0,
+          qtyInUnit((Number(lot.unopened_packages)||0)*(Number(lot.package_quantity)||0),lot.package_unit)
+          +qtyInUnit(lot.opened_remaining_quantity,lot.opened_remaining_unit)));
+        if(!(available>0))continue;
+        const end=frozen?null:policy.deadline(purchased,kind,{mhd,openedOn:lot.batch_data?.opened_at||lot.batch_data?.opened_on});
+        if(!frozen&&!end)continue;
+        if(!frozen&&end<todayIso())continue;
+        remaining-=available;
+        result.push({available,purchased,end,frozen});
+      }
+    }
+    return result.sort((a,b)=>String(a.end||'9999').localeCompare(String(b.end||'9999')));
+  }
+
+  function takeFreshShoppingStock(ledger,uses){
+    let supplied=0,shortageDate=null;
+    for(const use of [...uses].sort((a,b)=>a.date.localeCompare(b.date))){
+      let missing=Number(use.quantity)||0;
+      for(const lot of ledger){
+        if(!(missing>0))break;
+        if(!lot.frozen&&(use.date<lot.purchased||use.date>lot.end))continue;
+        const take=Math.min(missing,lot.available);
+        lot.available-=take;missing-=take;supplied+=take;
+      }
+      if(missing>1e-8&&!shortageDate)shortageDate=use.date;
+    }
+    return {supplied,shortageDate};
+  }
+
   function deriveShopping(data){
     const needs=new Map();
     const inventoryByIdForShopping=new Map((data.inventory||[]).map(stock=>[stock.id,stock]));
@@ -3392,7 +3445,13 @@
         // Recipe nutrition remains in grams, but grocery stock counts whole fruit.
         // Generic apple recipes have no inventory_id: use the actual available
         // apple-family variety (e.g. 6 Pink Lady), not an unrelated apple SKU.
-        const linkedStock=inventoryByIdForShopping.get(item.inventory_id)||null;
+        const explicitPieces=Array.isArray(item.allocation_override)?item.allocation_override:[];
+        const exactPieceIds=new Set(explicitPieces.map(x=>x.piece_id));
+        const selectedStockId=explicitPieces[0]?.inventory_id;
+        const exactWholePieces=explicitPieces.length>0&&exactPieceIds.size===explicitPieces.length&&
+          explicitPieces.every(x=>x.piece_id&&x.lot_id&&x.inventory_id===selectedStockId&&x.unit==='Stück'&&Number(x.quantity)===1&&Number(x.gross_weight_g)>0)&&
+          (unit==='g'?Math.abs(explicitPieces.reduce((s,x)=>s+Number(x.gross_weight_g),0)-quantity)<.00001:unit==='Stück'&&quantity===explicitPieces.length);
+        const linkedStock=inventoryByIdForShopping.get(exactWholePieces?selectedStockId:item.inventory_id)||null;
         const namedFruit=normalizedIngredient(name,unit).toLocaleLowerCase('de-DE');
         const fruitFamily=unit==='g'&&!item.inventory_id
           ?(['apfel','äpfel'].includes(namedFruit)?'apfel'
@@ -3411,11 +3470,11 @@
           ||pieceData.edible_weight_per_piece_estimated_g||pieceData.piece_weight_g);
         const gramsToPieces=unit==='g'&&pieceStock?.unit==='Stück'
           &&Number.isFinite(pieceWeight)&&pieceWeight>0;
-        const shoppingUnit=gramsToPieces?'Stück':unit;
+        const shoppingUnit=exactWholePieces||gramsToPieces?'Stück':unit;
         // The saved 150 g Pink Lady weight is estimated. A 160 g snack is
         // one fruit, not two; allow 10% size variation when budgeting pieces.
         // Linked products keep their existing exact gram-to-piece behaviour.
-        const shoppingQuantity=gramsToPieces
+        const shoppingQuantity=exactWholePieces?explicitPieces.length:gramsToPieces
           ?(fruitFamily?Math.max(1,Math.ceil(quantity/(pieceWeight*1.1)-1e-8)):quantity/pieceWeight)
           :quantity;
         // Isoclear flavours share availability but not nutritional metadata.
@@ -3429,7 +3488,7 @@
           :(/^körniger frischkäse$/i.test(name)&&/leicht/i.test(String(item.label||'')))?'Körniger Frischkäse leicht'
           :name;
         const resolvedFamily=ingredientStockInfo(
-          {inventory_id:item.inventory_id||null,name:shoppingName,unit:shoppingUnit},
+          {inventory_id:(exactWholePieces?selectedStockId:item.inventory_id)||null,name:shoppingName,unit:shoppingUnit},
           data.inventory||[],inventoryByIdForShopping,
           new Map((data.inventory||[]).map(row=>[normalizedIngredient(row.name,row.unit),row]))
         );
@@ -3438,7 +3497,7 @@
         const sharedFamily=isIsoclearFamily
           ?linkedStock.family_name
           :resolvedFamily?.family?resolvedFamily.familyName:null;
-        const stockId=sharedFamily?null:(item.inventory_id||null);
+        const stockId=sharedFamily?null:((exactWholePieces?selectedStockId:item.inventory_id)||null);
         const normalizedFamily=sharedFamily?normalizedIngredient(sharedFamily,shoppingUnit):null;
         const canonical=normalizedFamily||normalizedIngredient(shoppingName,shoppingUnit);
         const key=sharedFamily
@@ -3546,8 +3605,16 @@
       const measuredProducePending=stockInfo.unitMismatch===true
         &&normalizedNeed==='avocado'
         &&familyRows.some(row=>row.unit==='Stück'&&Number(row.quantity)>0);
-      if(measuredProducePending)return;
+      if(measuredProducePending){
+        // Unmeasured pieces do not cover future gram demand after their freshness window.
+        const anyFresh=familyRows.some(row=>data.lots?.some(l=>String(l.inventory_id)===String(row.id)&&
+          (Number(l.unopened_packages)>0||Number(l.opened_remaining_quantity)>0)&&
+          l.purchased_on&&need.uses.some(use=>use.date<=plusDays(l.purchased_on,2)&&use.date>=l.purchased_on&&(!l.best_before_date||use.date<=l.best_before_date))));
+        if(!Array.isArray(data.lots)||anyFresh)return;
+      }
 
+      const freshLedger=freshShoppingLotLedger(data,stockInfo,need);
+      const initialFresh=freshLedger?freshLedger.reduce((s,l)=>s+l.available,0):null;
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
       const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,(data.products||[]).filter(product=>product.active!==false));
@@ -3567,7 +3634,8 @@
       });
 
       [...windows.values()].sort((a,b)=>a.buyFrom.localeCompare(b.buyFrom)).forEach(window=>{
-        const available=Math.min(remaining,window.required);
+        const dated=freshLedger?takeFreshShoppingStock(freshLedger,window.uses):null;
+        const available=dated?dated.supplied:Math.min(remaining,window.required);
         remaining=Math.max(0,remaining-window.required);
         const missing=Math.max(0,window.required-available);
         if(missing<=1e-8)return;
@@ -3579,7 +3647,7 @@
         // purchased in whole units. Recipe portions remain a separate rule.
         const purchaseMissing=need.unit==='Stück'
           ?Math.ceil(missing-1e-8):missing;
-        const actualShortageDate=shortageDateFor({uses:window.uses},available);
+        const actualShortageDate=dated?dated.shortageDate:shortageDateFor({uses:window.uses},available);
 
         gaps.push({
           ...need,
@@ -3587,7 +3655,7 @@
           uses:window.uses,
           inventory_id:stockInfo.family?null:(need.inventory_id||stock?.id||null),
           available,
-          currentAvailable:Math.max(0,stockInfo.available||0),
+          currentAvailable:initialFresh??Math.max(0,stockInfo.available||0),
           missing:purchaseMissing,
           label:stockInfo.family?need.label:(stock?.name||need.label),
           unitMismatch:stockInfo.unitMismatch,
