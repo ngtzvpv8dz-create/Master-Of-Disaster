@@ -17,7 +17,7 @@ Test unter der authentifizierten Benutzerrolle:
 ## Feststehende neun Arbeitspakete
 | Paket | Nachweis und verbleibender Abschluss |
 | --- | --- |
-| 1 Einkaufserfassung | Bonmaske und atomare Stückerfassung für Apfel/Avocado; ein Chargengruppenfall getestet. Mehrere Chargengruppen werden ausdrücklich abgelehnt, statt Gewichte zu erfinden. Manuelle neue Charge noch nicht integriert. |
+| 1 Einkaufserfassung | Entwicklungsumfang Apfel/Avocado vollständig: Einzel- und Mehrchargen-Bonmaske, manuelle gewogene Charge, Schutz des alten Mengenwegs. Gemeinsame Datenbanktests für Mehrchargenkauf und manuelle Erfassung erfolgreich, Rollback verifiziert. Gesamtabnahme und Übertragung auf weitere Sorten in Paketen 2/8/9. |
 | 2 Weitere Obst-/Gemüsesorten | Bruttoregel und Katalog vorhanden; Stückablauf nur Apfel/Avocado integriert. Bestehende Paprika- und sonstige Stücklogik nicht pauschal ersetzen. |
 | 3 Zusatzsnacks/Rückbuchung | Alte mehrdeutige Wege geschützt, gewöhnlicher Zusatzsnack getestet; genaue Stückbuchung und Rückbuchung für Früchte fehlen. |
 | 4 Automatische Speiseplanung | Stückvorschlag, Frische, Reservierung, Kalorienvorschau und explizite Übernahme vorhanden; gesamte automatische Speiseplanung noch nicht abgeschlossen. |
