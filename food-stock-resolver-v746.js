@@ -267,7 +267,7 @@
       const candidates=rows.filter(row=>text(row.name)===text(explicit));
       const pinned=candidates.find(row=>String(row.id)===String(item.inventory_id));
       const compatible=candidates.filter(row=>!quantityInUnit(row,unit).unitMismatch);
-      return exactRow(pinned||(compatible.length===1?compatible[0]:null),unit,'explicit-variant');
+      return exactRow(pinned||(compatible.length===1?compatible[0]:null),unit,pinned?'inventory_id':'explicit-variant');
     }
     const eggNeed=ingredientKey(name);
     if(/^(ei|eier)(\s|$)/.test(eggNeed)&&/\bgröße\s*m\b/.test(eggNeed)){
