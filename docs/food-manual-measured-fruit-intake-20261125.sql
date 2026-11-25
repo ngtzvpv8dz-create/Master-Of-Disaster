@@ -11,7 +11,7 @@ BEGIN
  IF jsonb_typeof(p_gross_weights) IS DISTINCT FROM 'array' THEN RAISE EXCEPTION 'Einzelgewichte erforderlich';END IF;
  n:=jsonb_array_length(p_gross_weights);
  IF n<1 OR n>500 OR EXISTS(SELECT 1 FROM jsonb_array_elements(p_gross_weights) x WHERE jsonb_typeof(x)<>'number' OR CASE WHEN jsonb_typeof(x)='number' THEN x::text::numeric<=0 ELSE true END) THEN RAISE EXCEPTION 'Einzelgewichte ungültig';END IF;
- SELECT * INTO f FROM public.food_inventory WHERE id=p_inventory_id AND user_id=u AND is_active AND unit='Stück' AND family_name IN ('Apfel','Avocado') FOR UPDATE;
+ SELECT * INTO f FROM public.food_inventory WHERE id=p_inventory_id AND user_id=u AND is_active AND unit='Stück' AND family_name IN ('Apfel','Avocado','Banane','Mango','Limette') FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Geeigneter Vorrat fehlt';END IF;
  IF NOT EXISTS(SELECT 1 FROM public.shopping_products WHERE id=p_product_id AND user_id=u AND inventory_id=f.id AND active) THEN RAISE EXCEPTION 'Produkt passt nicht zur Charge';END IF;
  SELECT * INTO l FROM public.food_inventory_lots WHERE id=p_request_id AND user_id=u;
@@ -26,7 +26,7 @@ BEGIN
  FOR ix IN 1..n LOOP
   w:=(p_gross_weights->(ix-1))::text::numeric;
   INSERT INTO public.food_inventory_pieces(user_id,inventory_id,lot_id,piece_index,produce_kind,color,weight_g,remaining_weight_g,status,weight_source,measured_on,note)
-  VALUES(u,f.id,p_request_id,ix,CASE WHEN f.family_name='Avocado' THEN 'avocado' ELSE 'apple' END,CASE WHEN f.family_name='Avocado' THEN 'grün' ELSE 'nicht erfasst' END,w,w,'whole','user_scale',(now() AT TIME ZONE 'Europe/Berlin')::date,'Manuell erfasstes Bruttogewicht');
+  VALUES(u,f.id,p_request_id,ix,CASE f.family_name WHEN 'Avocado' THEN 'avocado' WHEN 'Apfel' THEN 'apple' WHEN 'Banane' THEN 'banana' WHEN 'Mango' THEN 'mango' WHEN 'Limette' THEN 'lime' END,CASE WHEN f.family_name='Avocado' THEN 'grün' ELSE 'nicht erfasst' END,w,w,'whole','user_scale',(now() AT TIME ZONE 'Europe/Berlin')::date,'Manuell erfasstes Bruttogewicht');
  END LOOP;
  UPDATE public.food_inventory SET quantity=total,quantity_label=public.food_inventory_lot_label(id,total,unit),forecast_label=NULL,tone='fresh',updated_at=now() WHERE id=f.id AND user_id=u;
  INSERT INTO public.food_inventory_movements(user_id,inventory_id,kind,delta,quantity_before,quantity_after,note) VALUES(u,f.id,'add',n,f.quantity,total,'Manuelle gewogene Charge '||p_request_id::text);
@@ -68,7 +68,7 @@ begin
   if not found then raise exception 'Produktfamilie nicht gefunden oder keine Berechtigung'; end if;
   if v_item.quantity is null then raise exception 'Gesamtbestand nicht bekannt. Bitte zuerst den Bestand klären'; end if;
 
-  IF v_item.unit='Stück' AND v_item.family_name IN ('Apfel','Avocado') THEN RAISE EXCEPTION 'Einzeln gewogene Früchte nur über Stückverwaltung buchen'; END IF;
+  IF v_item.unit='Stück' AND v_item.family_name IN ('Apfel','Avocado','Banane','Mango','Limette') THEN RAISE EXCEPTION 'Einzeln gewogene Früchte nur über Stückverwaltung buchen'; END IF;
   if p_action='create' then
     if p_lot_id is not null then raise exception 'Für neue Chargen keine vorhandene Chargen-ID angeben'; end if;
     v_pkg:=p_package_quantity;

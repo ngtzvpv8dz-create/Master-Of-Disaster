@@ -1914,7 +1914,7 @@
     return (meal.ingredients||[]).flatMap(ingredient=>{
       if(ingredient.allocation_override?.length||!ingredient.id||!(Number(ingredient.quantity)>0)||!['g','stück'].includes(fold(ingredient.unit)))return [];
       return (state.inventory||[]).filter(stock=>stock.is_active!==false&&stock.unit==='Stück'&&Number(stock.quantity)>0
-        &&['Apfel','Avocado'].includes(stock.family_name)&&[fold(stock.family_name),fold(stock.name)].includes(fold(ingredient.name))
+        &&['Apfel','Avocado','Banane','Mango','Limette'].includes(stock.family_name)&&[fold(stock.family_name),fold(stock.name)].includes(fold(ingredient.name))
         &&(!ingredient.inventory_id||String(ingredient.inventory_id)===String(stock.id))).map(stock=>({ingredient,stock}));
     });
   }
@@ -2527,7 +2527,7 @@
   }
 
   function isMeasuredFruitStock(item){
-    return item?.unit==='Stück'&&['Apfel','Avocado'].includes(item?.family_name);
+    return item?.unit==='Stück'&&['Apfel','Avocado','Banane','Mango','Limette'].includes(item?.family_name);
   }
 
   async function openMeasuredFruitWithdrawal(id,lotId=null,defaultKind='consume'){

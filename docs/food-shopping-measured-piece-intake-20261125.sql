@@ -77,7 +77,7 @@ begin
     where id=v_item.product_id and user_id=v_user;
   end if;
 
-  v_measured_fruit:=v_inventory.unit='Stück' AND v_inventory.family_name IN ('Apfel','Avocado');
+  v_measured_fruit:=v_inventory.unit='Stück' AND v_inventory.family_name IN ('Apfel','Avocado','Banane','Mango','Limette');
   IF v_measured_fruit THEN
     v_weights:=coalesce(v_item.purchase_data->'gross_piece_weights_g',
       CASE WHEN v_item.purchase_data->>'measure_each_piece_gross_g'='true' THEN v_item.purchase_data->'actual_piece_weights_g' END);
@@ -201,7 +201,7 @@ begin
       FOR v_ix IN 1..v_count LOOP
         v_weight:=(v_group_weights->(CASE WHEN v_group_count>1 THEN v_ix-1 ELSE v_offset+v_ix-1 END))::text::numeric;
         INSERT INTO public.food_inventory_pieces(user_id,inventory_id,lot_id,piece_index,produce_kind,color,weight_g,remaining_weight_g,status,weight_source,measured_on,note)
-        VALUES(v_user,v_inventory.id,v_physical_lot.id,v_ix,CASE WHEN v_inventory.family_name='Avocado' THEN 'avocado' ELSE 'apple' END,CASE WHEN v_inventory.family_name='Avocado' THEN 'grün' ELSE 'nicht erfasst' END,v_weight,v_weight,'whole','user_scale',(now() AT TIME ZONE 'Europe/Berlin')::date,'Bruttogewicht aus bestätigter Einkaufswiegung, ohne Schalen-/Kernabzug');
+        VALUES(v_user,v_inventory.id,v_physical_lot.id,v_ix,CASE v_inventory.family_name WHEN 'Avocado' THEN 'avocado' WHEN 'Apfel' THEN 'apple' WHEN 'Banane' THEN 'banana' WHEN 'Mango' THEN 'mango' WHEN 'Limette' THEN 'lime' END,CASE WHEN v_inventory.family_name='Avocado' THEN 'grün' ELSE 'nicht erfasst' END,v_weight,v_weight,'whole','user_scale',(now() AT TIME ZONE 'Europe/Berlin')::date,'Bruttogewicht aus bestätigter Einkaufswiegung, ohne Schalen-/Kernabzug');
       END LOOP;
       v_offset:=v_offset+v_count;
     END LOOP;

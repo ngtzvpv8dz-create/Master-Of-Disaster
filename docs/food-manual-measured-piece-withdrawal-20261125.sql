@@ -9,7 +9,7 @@ BEGIN
  IF p_kind IS NULL OR p_kind NOT IN ('consume','remove','spoilage') THEN RAISE EXCEPTION 'Ungültiger Abgangsgrund'; END IF;
  n:=cardinality(p_piece_ids);
  IF n IS NULL OR n<1 OR array_ndims(p_piece_ids)<>1 OR n<>(SELECT count(DISTINCT x) FROM unnest(p_piece_ids) x) THEN RAISE EXCEPTION 'Eindeutige Stückauswahl erforderlich'; END IF;
- SELECT * INTO f FROM public.food_inventory WHERE id=p_inventory_id AND user_id=u AND is_active AND unit='Stück' AND family_name IN ('Avocado','Apfel') FOR UPDATE;
+ SELECT * INTO f FROM public.food_inventory WHERE id=p_inventory_id AND user_id=u AND is_active AND unit='Stück' AND family_name IN ('Avocado','Apfel','Banane','Mango','Limette') FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Geeigneter Vorrat nicht gefunden'; END IF;
  IF f.quantity IS NULL OR f.quantity IS DISTINCT FROM p_expected_quantity OR f.quantity<n THEN RAISE EXCEPTION 'Bestand geändert oder nicht ausreichend'; END IF;
  PERFORM id FROM public.food_inventory_lots WHERE inventory_id=f.id AND user_id=u ORDER BY id FOR UPDATE;

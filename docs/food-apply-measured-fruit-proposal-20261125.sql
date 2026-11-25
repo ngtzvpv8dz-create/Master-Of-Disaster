@@ -7,7 +7,7 @@ DECLARE u uuid:=auth.uid(); v_candidates jsonb; v_total numeric; v_count integer
 BEGIN
  IF u IS NULL THEN RAISE EXCEPTION 'Nicht angemeldet'; END IF;
  IF p_meal_date IS NULL OR p_meal_date<(now() AT TIME ZONE 'Europe/Berlin')::date OR p_piece_count IS NULL OR p_piece_count<1 OR p_piece_count>100 THEN RAISE EXCEPTION 'Ungültiger Planungstag oder Stückzahl'; END IF;
- IF NOT EXISTS(SELECT 1 FROM public.food_inventory f WHERE f.id=p_inventory_id AND f.user_id=u AND f.is_active AND f.family_name IN ('Apfel','Avocado') AND f.unit='Stück') THEN RAISE EXCEPTION 'Geeigneter Vorrat nicht gefunden'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM public.food_inventory f WHERE f.id=p_inventory_id AND f.user_id=u AND f.is_active AND f.family_name IN ('Apfel','Avocado','Banane','Mango','Limette') AND f.unit='Stück') THEN RAISE EXCEPTION 'Geeigneter Vorrat nicht gefunden'; END IF;
  IF p_ingredient_id IS NOT NULL AND NOT EXISTS (
  SELECT 1 FROM public.food_meal_ingredients i JOIN public.food_meals m ON m.id=i.meal_id AND m.user_id=i.user_id
  JOIN public.food_inventory f ON f.id=p_inventory_id AND f.user_id=u
@@ -55,7 +55,7 @@ BEGIN
  SELECT * INTO i FROM public.food_meal_ingredients WHERE id=p_ingredient_id AND user_id=u AND meal_id=m.id FOR UPDATE;
  IF NOT FOUND OR i.quantity IS DISTINCT FROM p_expected_quantity OR i.unit IS DISTINCT FROM p_expected_unit THEN RAISE EXCEPTION 'Rezeptmenge geändert; Vorschlag neu berechnen';END IF;
  IF i.allocation_override IS NOT NULL AND i.allocation_override<>'[]'::jsonb THEN RAISE EXCEPTION 'Bestehende Zutatenaufteilung zuerst gezielt ändern';END IF;
- SELECT * INTO f FROM public.food_inventory WHERE id=p_inventory_id AND user_id=u AND is_active AND unit='Stück' AND family_name IN ('Apfel','Avocado') FOR UPDATE;
+ SELECT * INTO f FROM public.food_inventory WHERE id=p_inventory_id AND user_id=u AND is_active AND unit='Stück' AND family_name IN ('Apfel','Avocado','Banane','Mango','Limette') FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'Geeigneter Vorrat nicht gefunden';END IF;
  IF lower(btrim(i.name)) NOT IN (lower(f.family_name),lower(f.name)) OR (i.inventory_id IS NOT NULL AND i.inventory_id<>f.id) THEN RAISE EXCEPTION 'Zutat und Vorrat passen nicht zusammen';END IF;
  PERFORM id FROM public.food_inventory_lots WHERE inventory_id=f.id AND user_id=u ORDER BY id FOR UPDATE;

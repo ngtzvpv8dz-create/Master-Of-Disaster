@@ -16,7 +16,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY INVOKER SET search_path TO 'public'
  SELECT 1 FROM public.food_inventory f JOIN public.food_inventory_pieces p ON p.inventory_id=f.id AND p.user_id=f.user_id
  JOIN public.food_inventory_lots l ON l.id=p.lot_id AND l.inventory_id=f.id AND l.user_id=f.user_id
  WHERE f.id=p_inventory_id AND f.user_id=auth.uid() AND f.is_active AND f.unit='Stück'
- AND f.family_name IN ('Apfel','Avocado') AND p.weight_source='user_scale')
+ AND f.family_name IN ('Apfel','Avocado','Banane','Mango','Limette') AND p.weight_source='user_scale')
 $fn$;
 REVOKE ALL ON FUNCTION public.food_has_measured_fruit_tracking(uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.food_has_measured_fruit_tracking(uuid) TO authenticated;

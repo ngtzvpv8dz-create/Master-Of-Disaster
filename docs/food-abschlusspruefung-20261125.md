@@ -29,3 +29,6 @@ Test unter der authentifizierten Benutzerrolle:
 
 ## Abschlussregel
 Keine neuen freiwilligen Features hinzufügen. Keine bereits bestandenen isolierten Tests erneut als eigene Arbeitspakete auflisten; bestehende automatisierte Regressionstests weiter normal ausführen. Verbleibende Punkte nur bearbeiten, wenn sie zum feststehenden Umfang oder zu nachgewiesenen Freigabeblockern gehören. Keine Produktivänderungen ohne Freigabe.
+
+## Fortschritt: Paket 2
+Gemeinsamer Rollback-Test: vorhandene Mango 753 g und Limette 98 g, manuelle neue Mango-Charge 301 + 309 g, frische Stückauswahl 610 g, exakte Entnahme, identischer vorheriger Datenbestand. Die Stückpfade sind zusätzlich für Banane vorbereitet; kein aktueller Bananenvorrat zum realen Test. Birne mit Teilstück und Paprika behalten ihre vorhandene Sonderlogik. Neue Verfügbarkeitsdefinition vor den sieben Kandidaten anwenden; nicht produktiv. Keine zusätzlichen Arbeitspakete.

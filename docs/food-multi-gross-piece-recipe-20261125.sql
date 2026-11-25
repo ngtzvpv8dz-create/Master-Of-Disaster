@@ -196,7 +196,7 @@ begin
       AND jsonb_array_length(i.allocation_override)>1
       AND EXISTS (SELECT 1 FROM jsonb_array_elements(i.allocation_override) a
         JOIN public.food_inventory f ON f.id::text=a->>'inventory_id' AND f.user_id=v_user
-        WHERE f.family_name IN ('Apfel','Avocado') AND lower(a->>'unit')='stück')
+        WHERE f.family_name IN ('Apfel','Avocado','Banane','Mango','Limette') AND lower(a->>'unit')='stück')
   LOOP
     SELECT count(*),count(DISTINCT a->>'piece_id'),coalesce(sum(c.gross_weight_g),0),
       coalesce(bool_and(c.piece_id IS NOT NULL AND a->>'unit'='Stück' AND a->>'quantity'='1'
@@ -207,7 +207,7 @@ begin
       ),false)
       INTO v_multi_count,v_multi_distinct,v_multi_gross,v_multi_valid
     FROM jsonb_array_elements(v_multi.allocation_override) a
-    LEFT JOIN public.food_inventory f ON f.id::text=a->>'inventory_id' AND f.user_id=v_user AND f.family_name IN ('Apfel','Avocado') AND f.is_active
+    LEFT JOIN public.food_inventory f ON f.id::text=a->>'inventory_id' AND f.user_id=v_user AND f.family_name IN ('Apfel','Avocado','Banane','Mango','Limette') AND f.is_active
     LEFT JOIN LATERAL public.food_available_measured_whole_pieces(f.id) c ON c.piece_id::text=a->>'piece_id' AND c.lot_id::text=a->>'lot_id';
     IF NOT v_multi_valid OR v_multi_count<>v_multi_distinct OR v_multi_gross IS DISTINCT FROM v_multi.quantity THEN
       RAISE EXCEPTION 'Mehrstück-Rezept: Stückauswahl und gesamtes Bruttogewicht stimmen nicht überein';

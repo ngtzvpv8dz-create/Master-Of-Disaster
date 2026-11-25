@@ -1343,7 +1343,7 @@
   }
 
   function requiresMeasuredPurchase(candidate){
-    return ['Apfel','Avocado'].includes(candidate?.ingredient_family_name);
+    return ['Apfel','Avocado','Banane','Mango','Limette'].includes(candidate?.ingredient_family_name);
   }
 
   function parseMeasuredPurchaseWeights(raw,quantity,unit,packageCount){

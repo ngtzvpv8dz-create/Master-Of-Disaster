@@ -73,7 +73,7 @@ BEGIN
   -- book precisely that physical piece and its lot, not an unrelated FIFO lot.
   IF v_capture AND v_unit='stück' AND EXISTS (
     SELECT 1 FROM public.food_inventory f
-    WHERE f.id=p_inventory_id AND f.user_id=v_owner AND f.family_name IN ('Avocado','Apfel')
+    WHERE f.id=p_inventory_id AND f.user_id=v_owner AND f.family_name IN ('Avocado','Apfel','Banane','Mango','Limette')
   ) AND EXISTS (
     SELECT 1 FROM public.food_inventory_pieces p JOIN public.food_inventory_lots l ON l.id=p.lot_id AND l.user_id=p.user_id AND l.inventory_id=p.inventory_id
     WHERE p.user_id=v_owner AND p.inventory_id=p_inventory_id AND (l.unopened_packages>0 OR coalesce(l.opened_remaining_quantity,0)>0)
