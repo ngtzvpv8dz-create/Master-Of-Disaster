@@ -3918,7 +3918,7 @@
     const grid=selected.length
       ?'<div class="food-recipe-grid-v544">'+selected.map(recipe=>recipeCard(recipe,data)).join('')+'</div>'
       :'<div class="food-empty-card-v544"><h4>Noch keine Rezepte in '+esc(selectedLabel)+'.</h4><p>Neue Rezepte kannst du direkt dieser Kategorie zuordnen.</p></div>';
-    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Deine Rezeptsammlung</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte'+(uncategorized?' · '+uncategorized+' ohne Kategorie':'')+'</small><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div>'
+    return '<div class="food-section-head-v544"><div><span>REZEPTE</span><h3>Deine Rezeptsammlung</h3></div><div class="food-section-actions-v549"><small>'+recipes.length+' Rezepte'+(uncategorized?' · '+uncategorized+' ohne Kategorie':'')+'</small><button type="button" class="food-action-v544 compact" data-food-catalog-editor>Zutaten</button><button type="button" class="food-action-v544 compact" data-food-add-recipe>+ Rezept</button></div></div>'
       +'<nav class="food-recipe-tabs-v628" aria-label="Rezeptkategorien">'+categoryTabs+'</nav>'
       +'<div class="food-recipe-category-head-v628"><strong>'+esc(selectedLabel)+'</strong><span>'+selected.length+' '+(selected.length===1?'Rezept':'Rezepte')+'</span></div>'
       +grid;
@@ -4041,6 +4041,63 @@
       try{const saved=await onSubmit(new FormData(event.currentTarget));if(saved===false){if(submit)submit.disabled=false;}else modal.remove();}catch(error){console.error(error);alert(error?.message||'Das konnte nicht gespeichert werden.');if(submit)submit.disabled=false;}
     });
     return modal;
+  }
+
+  async function loadCatalogForEditor(sb){
+    const rows=[];
+    for(let offset=0;offset<20000;offset+=250){
+      const r=await withTimeout(sb.from('food_catalog_ingredients').select('id,name,category,family_name,preference,desired_frequency,planning_excluded,whole_unit_policy,updated_at').order('name').order('id').range(offset,offset+249),'Zutatenstamm laden',12000);
+      if(r.error)throw r.error;
+      const chunk=r.data||[];rows.push(...chunk);
+      if(chunk.length<250)return rows;
+    }
+    throw new Error('Zutatenstamm zu groß für vollständige Ansicht. Keine unvollständige Liste bearbeiten.');
+  }
+
+  function filterCatalogEditorRows(rows,query){
+    const q=String(query||'').trim().toLocaleLowerCase('de-DE');
+    return rows.filter(r=>[r.name,r.category,r.family_name].some(v=>String(v||'').toLocaleLowerCase('de-DE').includes(q))).slice(0,100);
+  }
+
+  async function openCatalogEditor(){
+    const sb=client();if(!sb)throw new Error('Cloud-Verbindung fehlt.');
+    const rows=await loadCatalogForEditor(sb);
+    if(!rows.length)throw new Error('Kein Zutatenstamm verfügbar.');
+    const modal=addModal('Zutatenstamm bearbeiten','<form><p>'+rows.length+' Zutaten · nach Name, Familie oder Kategorie suchen.</p><label>Suche<input type="search" data-food-catalog-search placeholder="z. B. Avocado"></label><label>Zutat<select name="ingredient_id" required size="7"></select></label><small data-food-catalog-results></small><button class="food-action-v544" type="submit">Zutat bearbeiten</button></form>',async form=>{
+      const row=rows.find(r=>String(r.id)===String(form.get('ingredient_id')));
+      if(!row)throw new Error('Bitte eine Zutat auswählen.');
+      await editCatalogIngredient(sb,row);
+    });
+    if(!modal)return;
+    const search=modal.querySelector('[data-food-catalog-search]'),select=modal.querySelector('[name="ingredient_id"]'),status=modal.querySelector('[data-food-catalog-results]');
+    function sync(){
+      const found=filterCatalogEditorRows(rows,search.value);
+      select.innerHTML=found.map(r=>'<option value="'+esc(r.id)+'">'+esc(r.name)+'</option>').join('');
+      status.textContent=found.length+' angezeigt'+(found.length===100?' · Suche bei Bedarf eingrenzen':'');
+    }
+    search.addEventListener('input',sync);sync();
+  }
+
+  async function editCatalogIngredient(sb,row){
+    const result=await withTimeout(sb.from('food_catalog_product_variants').select('id,family_name,variant_name,whole_unit_policy').eq('family_name',row.family_name).order('variant_name'),'Varianten laden',10000);
+    if(result.error)throw result.error;
+    const variants=result.data||[];
+    const prefs=['Sehr gern','Gern','Ab und zu','Nur wenn es passt','Würde ich probieren','Mag ich nicht','Nie','Noch testen'];
+    const freq=['Alle 1–2 Tage','Alle 3–4 Tage','1× pro Woche','Alle 2 Wochen','1× pro Monat','Seltener','Nur bei passenden Rezepten','Noch offen','Nicht einplanen'];
+    const policy=[['flexible','Flexible Mengen'],['prefer_whole_edible','Ganze Stücke bevorzugen'],['whole_egg_required','Nur ganze Eier']];
+    const opts=(items,current)=>items.map(x=>{const [value,label]=Array.isArray(x)?x:[x,x];return '<option value="'+esc(value)+'" '+(value===current?'selected':'')+'>'+esc(label)+'</option>';}).join('');
+    const body='<form><p><strong>'+esc(row.name)+'</strong> · '+esc(row.family_name)+'</p><label>Bewertung<select name="preference">'+opts(prefs,row.preference)+'</select></label><label>Wunschhäufigkeit<select name="frequency">'+opts(freq,row.desired_frequency)+'</select></label><label>Verbrauchsregel<select name="policy">'+opts(policy,row.whole_unit_policy)+'</select></label>'
+      +(variants.length?'<label>Variante zusätzlich bearbeiten<select name="variant"><option value="">Keine Variantenänderung</option>'+variants.map(v=>'<option value="'+esc(v.id)+'">'+esc(v.variant_name)+'</option>').join('')+'</select></label><label>Verbrauchsregel der Variante<select name="variant_policy" disabled>'+opts(policy,'flexible')+'</select></label>':'')
+      +'<p>„Würde ich probieren“ bleibt offen, außer bei ausdrücklich „Nicht einplanen“. Abgelehnte Zutaten werden nicht eingeplant.</p><button type="submit" class="food-action-v544">Änderungen speichern</button></form>';
+    const modal=addModal('Zutatenregeln',body,async form=>{
+      const v=variants.find(x=>String(x.id)===String(form.get('variant')||''));
+      const res=await withTimeout(sb.rpc('food_update_catalog_preferences',{p_ingredient_id:row.id,p_expected_updated_at:row.updated_at,p_preference:String(form.get('preference')),p_frequency:String(form.get('frequency')),p_policy:String(form.get('policy')),p_variant_id:v?.id||null,p_expected_variant_policy:v?.whole_unit_policy||null,p_variant_policy:v?String(form.get('variant_policy')):null}),'Zutatenregeln speichern',12000);
+      if(res.error)throw res.error;
+      if(String(res.data?.ingredient_id)!==String(row.id))throw new Error('Speicherbestätigung fehlt.');
+      await mutate(()=>res.data);
+    });
+    const choice=modal?.querySelector('[name="variant"]'),rule=modal?.querySelector('[name="variant_policy"]');
+    choice?.addEventListener('change',()=>{const v=variants.find(x=>String(x.id)===choice.value);rule.disabled=!v;if(v)rule.value=v.whole_unit_policy;});
   }
 
   function tasteFeedbackModal(mealId){
@@ -5654,6 +5711,7 @@
     root.querySelectorAll('[data-food-open-garlic]').forEach(button=>button.addEventListener('click',()=>openGarlicModal(button.dataset.foodOpenGarlic)));
     root.querySelectorAll('[data-food-garlic-adjust]').forEach(button=>button.addEventListener('click',()=>garlicStockModal()));
     root.querySelectorAll('[data-food-storage]').forEach(button=>button.addEventListener('click',()=>storageModal(button.dataset.foodStorage)));
+    root.querySelectorAll('[data-food-catalog-editor]').forEach(button=>button.addEventListener('click',async()=>{button.disabled=true;try{await openCatalogEditor();}catch(error){alert(error?.message||'Zutatenstamm nicht verfügbar.');}finally{button.disabled=false;}}));
     root.querySelectorAll('[data-food-tab]').forEach(button=>button.addEventListener('click',()=>{activeTab=button.dataset.foodTab;render();}));
     root.querySelectorAll('[data-food-recipe-category]').forEach(button=>button.addEventListener('click',()=>{
       activeRecipeCategory=String(button.dataset.foodRecipeCategory||'breakfast');

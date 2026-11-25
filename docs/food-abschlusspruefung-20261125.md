@@ -32,3 +32,6 @@ Keine neuen freiwilligen Features hinzufügen. Keine bereits bestandenen isolier
 
 ## Fortschritt: Paket 2
 Gemeinsamer Rollback-Test: vorhandene Mango 753 g und Limette 98 g, manuelle neue Mango-Charge 301 + 309 g, frische Stückauswahl 610 g, exakte Entnahme, identischer vorheriger Datenbestand. Die Stückpfade sind zusätzlich für Banane vorbereitet; kein aktueller Bananenvorrat zum realen Test. Birne mit Teilstück und Paprika behalten ihre vorhandene Sonderlogik. Neue Verfügbarkeitsdefinition vor den sieben Kandidaten anwenden; nicht produktiv. Keine zusätzlichen Arbeitspakete.
+
+## Fortschritt: Paket 6
+Zutateneditor im Rezeptbereich mit paginiertem Laden, Suche, individueller Bewertung/Häufigkeit und Grundzutaten-/Varianten-Verbrauchsregel. DB-RPC unter authentifizierter Rolle erfolgreich: alte und neue Katalogzeilen, Regel-Normalisierung, Ausschluss, Variantenänderung, veralteter Stand und fremde Nutzer-ID; Rollback nachgewiesen. 1.251 synthetische Zeilen im UI-Ladetest vollständig geladen. Bestehende 123 abweichende Legacy-Bewertungen werden nicht pauschal überschrieben; der konsolidierte Katalog ist maßgeblich, Synchronisierung erfolgt bei ausdrücklicher Einzeländerung. Bisherige Geschmacksmeldung aktualisiert nach der Migration auch die Katalogbewertung. Browser-Abnahme und vollständige Planungskopplung bleiben Paket 4/8.
