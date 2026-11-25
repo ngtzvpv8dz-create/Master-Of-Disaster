@@ -214,6 +214,26 @@
         if(/hell|weiße/i.test(evidence))return 'Misopaste, hell';
       }
     }
+    if(raw==='kartoffeln'&&/vorwiegend festkochend/i.test(String(item?.label||'')))return 'Kartoffeln, vorwiegend festkochend';
+    if(source){
+      const evidence=String(source.name||'')+' '+String(source.label||'');
+      if(raw==='wraps'&&/wrap/i.test(evidence)){
+        if(/vollkorn/i.test(evidence))return 'Wraps, Vollkorn';
+        if(/karotten/i.test(evidence))return 'Wraps, Karotte';
+        if(/rote.bete/i.test(evidence))return 'Wraps, Rote Bete';
+      }
+      if(raw==='chio dip salsa'&&/salsa/i.test(evidence)){
+        if(/mild/i.test(evidence))return 'Salsa, mild';
+        if(/hot|scharf/i.test(evidence))return 'Salsa, scharf';
+      }
+      if(/feta|hirtenkäse/i.test(raw)&&/hirtenkäse/i.test(evidence)){
+        if(/leicht|27 %/i.test(evidence))return 'Hirtenkäse, leicht';
+        if(/normal|45 %/i.test(evidence))return 'Hirtenkäse, normal';
+      }
+    }
+    if(raw==='hirtenkäse'&&/leicht|light|fettreduziert|27 %/i.test(String(item?.label||'')))return 'Hirtenkäse, leicht';
+    if(raw==='hirtenkäse normal')return 'Hirtenkäse, normal';
+    if(raw==='käseaufschnitt leicht')return 'Schnittkäse, fettreduziert';
     const rows=state?.ingredientIdentities;
     if(rows!==identityCacheRows){
       identityCacheRows=rows;identityIndex=new Map();identityUnique=new Map();positionIdentityIndex=new Map();
@@ -732,7 +752,7 @@
     for(let offset=0;offset<25000;offset+=size){
       const result=await supabase.from('food_catalog_recipe_positions_v1')
         .select('ingredient_id,original_name,canonical_name,resolution')
-        .eq('user_id',userId).in('original_name',['Zwiebel','Kartoffeln','Spinat','Blattspinat','Miso-Paste'])
+        .eq('user_id',userId).in('resolution',['historical_documented','historical_recorded','flexible','matched_position','named_product'])
         .order('ingredient_id').range(offset,offset+size-1);
       if(result.error)throw result.error;
       const chunk=result.data||[];rows.push(...chunk);
@@ -993,6 +1013,12 @@
     const name=ingredientName(item);
     const unit=String(item?.unit||'').trim();
     let info=null;
+    const shared=typeof window==='undefined'?null:window.__modFoodStockResolverV746;
+    if(shared?.explicitVariantStockName?.(item)){
+      const exact=shared.resolve({item,inventoryRows});
+      return (exact.rows||[]).map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
+        .filter(entry=>!entry.info.unitMismatch&&entry.info.available>0);
+    }
 
     if(item?.inventory_id){
       const pinned=(inventoryRows||[]).find(row=>String(row.id)===String(item.inventory_id));
@@ -3345,7 +3371,7 @@
       +filterBar+contentBody;
   }
 
-  function datedProduceShoppingLedger(data,stockInfo,need){
+  function datedProduceShoppingLedger(data,stockInfo,need,reservedLots=null){
     const policy=window.ModFoodFreshnessV913;
     if(!policy||!Array.isArray(data.lots))return null;
     const kind=policy.classify({name:need.label});
@@ -3377,7 +3403,8 @@
         if(until<todayIso())continue;
         const q=(value,unit)=>inventoryQuantityInUnit({...stock,quantity:Number(value)||0,unit:unit||stock.unit},need.unit).available;
         const available=q((Number(lot.unopened_packages)||0)*(Number(lot.package_quantity)||0),lot.package_unit)+q(lot.opened_remaining_quantity,lot.opened_remaining_unit);
-        if(available>0)entries.push({bought,end:until,available});
+        const reserved=Number(reservedLots?.get(String(lot.id)))||0;
+        if(available>reserved)entries.push({id:String(lot.id),bought,end:until,available:available-reserved});
       }
       let remaining=limit.available;
       for(const entry of entries.sort((a,b)=>a.end.localeCompare(b.end))){
@@ -3455,12 +3482,13 @@
         // V861: Preparation qualifiers are not separate grocery products.
         // Preserve the recipe ingredient itself for nutrition and cooking.
         const frozenNeed=/\b(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)\b/i.test(name);
-        const shoppingName=isIsoclearFamily?linkedStock.family_name
+        const explicitName=window.__modFoodStockResolverV746?.explicitVariantStockName?.(item);
+        const shoppingName=explicitName|| (isIsoclearFamily?linkedStock.family_name
           :/^karotten (?:warm|rohkost|roh)$/i.test(name)?'Karotten'
           :(/^körniger frischkäse$/i.test(name)&&/leicht/i.test(String(item.label||'')))?'Körniger Frischkäse leicht'
-          :fruitFamily==='mango'?'Mango frisch':name;
+          :fruitFamily==='mango'?'Mango frisch':name);
         const resolvedFamily=ingredientStockInfo(
-          {inventory_id:item.inventory_id||null,name:shoppingName,unit:shoppingUnit},
+          {inventory_id:item.inventory_id||null,name:shoppingName,label:item.label,unit:shoppingUnit},
           data.inventory||[],inventoryByIdForShopping,
           new Map((data.inventory||[]).map(row=>[normalizedIngredient(row.name,row.unit),row]))
         );
@@ -3472,7 +3500,7 @@
         const sharedFamily=isIsoclearFamily
           ?linkedStock.family_name
           :resolvedFamily?.family&&!unrelatedProduceFamily?resolvedFamily.familyName:null;
-        const stockId=sharedFamily?null:(item.inventory_id||null);
+        const stockId=sharedFamily?null:(explicitName?resolvedFamily.stock?.id||null:item.inventory_id||null);
         // Do not collapse an explicitly frozen ingredient into the fresh family.
         const familyLabel=sharedFamily&&(frozenNeed||resolvedFamily?.familyMode==='frozen')&&!/\b(tk|tiefkühl|tiefgekühlt|gefroren|tiefgefroren)\b/i.test(sharedFamily)?sharedFamily+' TK':sharedFamily&&resolvedFamily?.familyMode==='fresh'&&!/\bfrisch\b/i.test(sharedFamily)?sharedFamily+' frisch':sharedFamily;
         const normalizedFamily=familyLabel?normalizedIngredient(familyLabel,shoppingUnit):null;
@@ -3480,7 +3508,7 @@
         const key=sharedFamily
           ?'family|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE')
           :(stockId?'stock|'+stockId+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE'));
-        const current=needs.get(key)||{inventory_id:stockId,label:familyLabel||shoppingName,canonical,unit:shoppingUnit,required:0,uses:[]};
+        const current=needs.get(key)||{inventory_id:stockId,label:familyLabel||shoppingName,canonical,unit:shoppingUnit,explicitVariant:Boolean(explicitName),variantEvidence:explicitName?String(item.label||name):null,required:0,uses:[]};
         current.required+=shoppingQuantity;
         current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
@@ -3504,7 +3532,9 @@
       return null;
     };
 
-    needs.forEach(need=>{
+    const reservedStock=new Map(),reservedLots=new Map();
+    // Reserve exact variants first so a flexible family cannot count the same physical stock twice.
+    [...needs.values()].sort((a,b)=>Number(b.explicitVariant)-Number(a.explicitVariant)).forEach(need=>{
       const normalizedNeed=need.canonical||normalizedIngredient(need.label,need.unit);
 
       if(normalizedNeed==='knoblauchzehen'){
@@ -3522,7 +3552,7 @@
       }
 
       let stockInfo=ingredientStockInfo(
-        {inventory_id:need.inventory_id||null,name:need.label,unit:need.unit},
+        {inventory_id:need.inventory_id||null,name:need.label,label:need.variantEvidence||need.label,unit:need.unit},
         inventoryRows,inventoryById,inventoryByName
       );
       // V1/V842: Verified product-family aliases for the grocery forecast only.
@@ -3569,6 +3599,14 @@
           stockInfo={available:0,unitMismatch:false,converted:false,rows:[],stock:null,family:false};
         }
       }
+      if(!need.explicitVariant&&stockInfo.family&&(stockInfo.rows||[]).some(row=>reservedStock.has(String(row.id)))){
+        const adjusted=stockInfo.rows.map(row=>{
+          const reserved=reservedStock.get(String(row.id));
+          if(!reserved||reserved.unit!==row.unit)return row;
+          return {...row,quantity:Math.max(0,Number(row.quantity||0)-reserved.amount)};
+        });
+        stockInfo={...stockInfo,rows:adjusted,available:adjusted.reduce((total,row)=>total+(inventoryQuantityInUnit(row,need.unit).available||0),0)};
+      }
       const stock=stockInfo.stock||null;
 
       // V1 14.11.2026: Die Familienauflösung liefert stock:null und die
@@ -3599,7 +3637,9 @@
         if(!window.ModFoodFreshnessV913||!Array.isArray(data.lots)||eligible)return;
       }
 
-      const datedLedger=datedProduceShoppingLedger(data,stockInfo,need);
+      const datedLedger=datedProduceShoppingLedger(data,stockInfo,need,need.explicitVariant?null:reservedLots);
+      const originalLotAmounts=datedLedger?.map(lot=>({...lot}))||[];
+      let suppliedByVariant=0;
       const datedAvailable=datedLedger?datedLedger.reduce((s,l)=>s+l.available,0):null;
       let remaining=Math.max(0,stockInfo.available||0);
       const windows=new Map();
@@ -3628,6 +3668,7 @@
         const dated=datedLedger?takeDatedProduce(datedLedger,window.uses):null;
         const available=dated?dated.supplied:Math.min(remaining,window.required);
         remaining=Math.max(0,remaining-window.required);
+        suppliedByVariant+=available;
         const missing=Math.max(0,window.required-available);
         if(missing<=1e-8)return;
         // Piece-counted produce is purchased as whole fruit, even when a
@@ -3658,6 +3699,13 @@
           freshWindowDays:shortFreshWindowDays||null
         });
       });
+      if(need.explicitVariant&&stock&&stock.unit===need.unit){
+        reservedStock.set(String(stock.id),{unit:stock.unit,amount:(reservedStock.get(String(stock.id))?.amount||0)+suppliedByVariant});
+        originalLotAmounts.forEach((lot,index)=>{
+          const used=lot.available-(datedLedger[index]?.available||0);
+          if(used>0)reservedLots.set(lot.id,(reservedLots.get(lot.id)||0)+used);
+        });
+      }
     });
     return gaps;
   }

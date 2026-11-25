@@ -9,7 +9,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const VERSION='V934';
+  const VERSION='V937';
   const FRESH=new Set(['frisch','frische','frischer','frisches','bio']);
   const FROZEN=new Set(['tk','tiefkühl','tiefgekühlt','tiefgefroren','gefroren']);
 
@@ -236,12 +236,44 @@
     return exactRow(matches[0],targetUnit,'catalog');
   }
 
+  // Same narrow explicit-variant contract as the database write trigger.
+  // Do not turn a general MHD-based choice into an arbitrary fixed SKU.
+  function explicitVariantStockName(item={}){
+    const name=String(item.name||'').trim().toLocaleLowerCase('de-DE');
+    const evidence=[item.name,item.label].filter(Boolean).join(' ');
+    if(['wraps','tortilla wraps vollkorn','tortilla-wraps vollkorn','wraps, vollkorn','karotten-wraps · edeka herzstücke','rote-bete-wraps · edeka herzstücke','wraps, karotte','wraps, rote bete'].includes(name)){
+      if(/nach MHD|Sorte aus Vorrat/i.test(evidence))return null;
+      if(/vollkorn/i.test(evidence))return 'Tortilla Wraps Vollkorn';
+      if(/karotten|wraps, karotte/i.test(evidence))return 'Karotten-Wraps · EDEKA Herzstücke';
+      if(/rote.bete/i.test(evidence))return 'Rote-Bete-Wraps · EDEKA Herzstücke';
+    }
+    if(['mais','mais dose','mais, konserve','sonnenmais konserve'].includes(name)&&/konserve|dose/i.test(evidence))return 'Sonnenmais Konserve';
+    if(['champignons','champignons braun','champignons, braun, frisch','champignons, braun'].includes(name)&&/braun/i.test(evidence))return 'Champignons braun';
+    if(['chio dip salsa','chio dip mild salsa','chio dip hot salsa','salsa mild','salsa scharf','salsa, mild','salsa, scharf'].includes(name)){
+      if(/mild/i.test(evidence))return 'Chio Dip Mild Salsa';
+      if(/scharf|hot/i.test(evidence))return 'Chio Dip Hot Salsa';
+    }
+    if(['feta / hirtenkäse','feta / hirtenkäse leicht','hirtenkäse','hirtenkäse leicht','hirtenkäse, leicht','hirtenkäse normal','hirtenkäse, normal'].includes(name)){
+      if(/leicht|light|fettreduziert|27 %/i.test(evidence))return 'Hirtenkäse';
+      if(/normal|45 %/i.test(evidence))return 'Hirtenkäse normal';
+    }
+    if(['schnittkäse','käseaufschnitt leicht','schnittkäse, fettreduziert'].includes(name)&&/leicht|fettreduziert/i.test(evidence))return 'Käseaufschnitt leicht';
+    return null;
+  }
+
   function resolve({item={},inventoryRows=[],inventoryAliases=[]}={}){
     const rows=(inventoryRows||[]).filter(row=>row?.is_active!==false);
     const name=String(item?.name||item?.label||'').trim();
     const unit=String(item?.unit||'').trim();
     const byId=new Map(rows.map(row=>[String(row.id),row]));
 
+    const explicit=explicitVariantStockName(item);
+    if(explicit){
+      const candidates=rows.filter(row=>text(row.name)===text(explicit));
+      const pinned=candidates.find(row=>String(row.id)===String(item.inventory_id));
+      const compatible=candidates.filter(row=>!quantityInUnit(row,unit).unitMismatch);
+      return exactRow(pinned||(compatible.length===1?compatible[0]:null),unit,pinned?'inventory_id':'explicit-variant');
+    }
     const eggNeed=ingredientKey(name);
     if(/^(ei|eier)(\s|$)/.test(eggNeed)&&/\bgröße\s*m\b/.test(eggNeed)){
       const matches=rows.filter(row=>text(row.name)==='eier'
@@ -293,6 +325,7 @@
     familyNeedMatch,
     familyForms,
     quantityInUnit,
+    explicitVariantStockName,
     rowMode
   };
 });

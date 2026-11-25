@@ -41,3 +41,48 @@ test('shopping forecast integrates variants, provisional whole fruit and actual 
  assert(later.some(g=>/mango/i.test(g.label)&&g.unit==='Stück'&&g.missing===1&&g.buyFrom==='2026-11-28'));
  assert(p.gapIssues(later[0],[]).some(i=>i.type==='window'&&i.block));
 });
+
+test('explicit variety and genuinely flexible family share physical stock once',()=>{
+ const variants=[
+ {id:'w',name:'Tortilla Wraps Vollkorn',family_name:'Wraps',unit:'Stück',quantity:5},
+ {id:'c',name:'Karotten-Wraps · EDEKA Herzstücke',family_name:'Wraps',unit:'Stück',quantity:0},
+ {id:'m',name:'Chio Dip Mild Salsa',family_name:'Chio Dip Salsa',unit:'ml',quantity:0},
+ {id:'h',name:'Chio Dip Hot Salsa',family_name:'Chio Dip Salsa',unit:'ml',quantity:50},
+ {id:'b',name:'Champignons braun',family_name:'Champignons',unit:'g',quantity:0},
+ {id:'white',name:'Champignons weiß',family_name:'Champignons',unit:'g',quantity:100},
+ {id:'corn',name:'Sonnenmais Konserve',family_name:'Mais',unit:'g',quantity:0},
+ {id:'cob',name:'Maiskolben',family_name:'Mais',unit:'g',quantity:200}
+ ];
+ const exact=(name,label,unit)=>r.resolve({item:{name,label,unit},inventoryRows:variants});
+ assert.equal(exact('Wraps','2 Stück Tortilla Wraps Vollkorn','Stück').available,5);
+ assert.equal(exact('Wraps','2 Stück Wraps (Sorte nach MHD)','Stück').available,5);
+ assert.equal(exact('Chio Dip Salsa','20 ml Chio Dip Mild Salsa','ml').available,0);
+ assert.equal(exact('Champignons','100 g Champignons braun','g').available,0);
+ assert.equal(exact('Mais','100 g Sonnenmais Konserve','g').available,0);
+ assert.equal(exact('Salsa, scharf','Salsa, scharf','ml').available,50);
+ const w={__modFoodStockResolverV746:r,ModFoodFreshnessV913:p};
+ const source=fs.readFileSync(path.join(__dirname,'..','food-v544.js'),'utf8').replace('window.__modFoodV544=api;','window.__testDerive=deriveShopping; window.__modFoodV544=api;');
+ class FixedDate extends Date{constructor(...args){super(...(args.length?args:['2026-11-25T18:00:00+01:00']));}static now(){return +new Date('2026-11-25T18:00:00+01:00');}}
+ vm.runInNewContext(source,{window:w,document:{readyState:'loading',addEventListener(){}},MutationObserver:class{},Date:FixedDate,Intl,console});
+ const meal=(date,name,label,quantity,unit)=>({meal_date:date,meal_type:'dinner',status:'planned',ingredients:[{name,label,quantity,unit}]});
+ const gaps=w.__testDerive({inventory:variants,products:[],lots:[],meals:[
+ meal('2026-11-26','Wraps','3 Stück Wraps (Sorte nach MHD)',3,'Stück'),
+ meal('2026-11-27','Wraps','4 Stück Tortilla Wraps Vollkorn',4,'Stück'),
+ meal('2026-11-27','Chio Dip Salsa','20 ml Chio Dip Mild Salsa',20,'ml'),
+ meal('2026-11-28','Mais','100 g Sonnenmais Konserve',100,'g')
+ ]});
+ assert(gaps.some(g=>g.label==='Wraps'&&g.missing===2));
+ assert(gaps.some(g=>g.label==='Chio Dip Mild Salsa'&&g.missing===20));
+ assert(gaps.some(g=>g.label==='Sonnenmais Konserve'&&g.missing===100));
+ assert.equal(variants[0].quantity,5,'planning never mutates physical stock');
+});
+
+test('reduced-fat cheese never counts normal-fat sibling inventory',()=>{
+ const variants=[
+ {id:'light',name:'Hirtenkäse',family_name:'Feta / Hirtenkäse',quantity:0,unit:'g'},
+ {id:'normal',name:'Hirtenkäse normal',family_name:'Feta / Hirtenkäse',quantity:200,unit:'g'}
+ ];
+ assert.equal(r.resolve({item:{name:'Feta / Hirtenkäse leicht',label:'65 g Feta / Hirtenkäse leicht',unit:'g'},inventoryRows:variants}).available,0);
+ assert.equal(r.resolve({item:{name:'Feta / Hirtenkäse',unit:'g'},inventoryRows:variants}).available,200);
+ assert.equal(r.resolve({item:{name:'Hirtenkäse normal',unit:'g'},inventoryRows:variants}).available,200);
+});
