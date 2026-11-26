@@ -65,6 +65,7 @@
   // Source: Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0)
   // and labelled generic comparisons for ingredients not covered by exact stock.
   const GENERAL_REFERENCE_BY_KEY={
+    "griechischerjoghurt":{kcal:58,protein:6,fat:2,carbs:4,unit:"g",source:"Vorhandenes Nutzeretikett 28.10.2026, griechischer Joghurt 2 % Fett; vereinbarte Planvariante",url:"project-product-catalog",planOnly:true},
     "weißkohl":{kcal:32,protein:1.382,fat:0.19,carbs:4.54,unit:"g",source:"BLS G342100 Weißkohl roh; Planreferenz",url:"https://blsdb.de/food?foodId=38196",planOnly:true},
     "ingwer":{kcal:48,protein:1.92,fat:0.75,carbs:6.8,unit:"g",source:"BLS R211200 Ingwer roh; Planreferenz",url:"https://blsdb.de/food?foodId=38957",planOnly:true},
     "batate":{kcal:119,protein:1.63,fat:0.6,carbs:25.2,unit:"g",source:"BLS K420100 Batate roh; Planreferenz",url:"https://blsdb.de/food?foodId=38253",planOnly:true},
