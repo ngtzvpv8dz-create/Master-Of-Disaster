@@ -173,3 +173,22 @@ test('real piece No. 1 and No. 2 retain their individually confirmed purchase gr
  const audit=collectNutritionAudit(data,'2099-11-01');
  assert.equal(audit.blocking,0);
 });
+
+test('avocado recipe piece estimate agrees with the audit without inventing actual lot weights',()=>{
+ const data=fresh();
+ const i={...item('av','Avocado',1,'Stück'),recipe_id:'r'};
+ data.recipes=[{id:'r',title:'Avocado-Rezept',servings:1,food_recipe_ingredients:[i]}];
+ data.inventory.push({...stock('a','Avocados Hass',3),family_name:'Avocado',unit:'Stück'});
+ data.products.push(product('ap','a',{energy_kcal:160,protein_g:2,fat_g:14.66,carbohydrates_g:8.53}));
+ const n=calculate([i],1,data);
+ assert.equal(n.complete,true);assert.equal(n.estimated,true);assert.equal(n.kcal,211.2);
+ assert.equal(collectNutritionAudit(data,'2026-11-01').blocking,0);
+ assert.equal(nutritionProblem(i,data).provisional,true);
+ assert.equal(nutritionProblem({...i,recipe_id:undefined},data).provisional,undefined);
+});
+test('creatine active-ingredient-only declaration remains informational, not invented zero',()=>{
+ const data=fresh();data.inventory.push(stock('creatine','Creatine Sticks'));
+ data.products.push(product('cp','creatine',{}, {nutrition_audit_exception_type:'creatine_active_ingredient_only'}));
+ const audit=collectNutritionAudit(data,'2026-11-01');assert.equal(audit.blocking,0);assert.equal(audit.review,1);
+ assert.deepEqual(data.products[0].nutrition_per_100,{});
+});
