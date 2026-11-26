@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V944';
+  const VERSION='V947';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -27,7 +27,11 @@
   let plannedThawCache=null;
   let prepDoneSet=new Set();
   let freshnessAuditExpanded=false;
-  const REQUEST_TIMEOUT_MS=3500;
+  const REQUEST_TIMEOUT_MS=15000;
+  const LONG_REQUEST_TIMEOUT_MS=25000;
+  const SESSION_TIMEOUT_MS=5000;
+  // The outer deadline must exceed session + longest bounded source deadline.
+  const FOOD_LOAD_TIMEOUT_MS=SESSION_TIMEOUT_MS+LONG_REQUEST_TIMEOUT_MS+5000;
   const SOURCE_KEYS=['meals','inventory','aliases','lots','recipes','shopping','cart','leftovers','products','intakes','freezer','mealPrepFreezer','pendingCheckout','extras','prepChecks','preferences','ingredientIdentities'];
   let sourceState=Object.fromEntries(SOURCE_KEYS.map(key=>[key,'unknown']));
   let cloudIssues=[];
@@ -780,28 +784,15 @@
   }
 
   async function loadIngredientIdentities(supabase,userId){
-    const rows=[],size=500;
-    for(let offset=0;offset<25000;offset+=size){
-      const result=await supabase.from('food_catalog_recipe_identity_v1')
-        .select('source_name,inventory_id,canonical_name,family_name,resolution')
-        .eq('user_id',userId).order('source_name').order('inventory_id').range(offset,offset+size-1);
-      if(result.error)throw result.error;
-      const chunk=result.data||[];rows.push(...chunk);
-      if(chunk.length<size)break;
-      if(offset+size>=25000)throw new Error('Zutatenstamm-Zuordnungen überschreiten den Ladebereich.');
-    }
-    // Position-specific evidence is only necessary for the formerly ambiguous
-    // variants; fetch them in stable, bounded pages alongside the common index.
-    for(let offset=0;offset<25000;offset+=size){
-      const result=await supabase.from('food_catalog_recipe_positions_v1')
-         .select('ingredient_id,original_name,canonical_name,family_name,resolution')
-        .eq('user_id',userId)
-        .order('ingredient_id').range(offset,offset+size-1);
-      if(result.error)throw result.error;
-      const chunk=result.data||[];rows.push(...chunk);
-      if(chunk.length<size)return {data:rows};
-    }
-    throw new Error('Rezeptpositions-Zuordnungen überschreiten den Ladebereich.');
+    if(!userId)throw new Error('Zutatenstamm: Anmeldung fehlt.');
+    const result=await supabase.rpc('food_catalog_identity_snapshot_v1');
+    if(result?.error)throw result.error;
+    const identities=result?.data?.identities,positions=result?.data?.positions;
+    if(!Array.isArray(identities)||!Array.isArray(positions))
+      throw new Error('Zutatenstamm: unvollständige Cloud-Antwort.');
+    if(identities.length>25000||positions.length>25000)
+      throw new Error('Zutatenstamm überschreitet den Ladebereich.');
+    return {data:[...identities,...positions]};
   }
 
   async function remoteData(){
@@ -809,7 +800,7 @@
     if(!supabase)return unavailableSnapshot('Cloud-Verbindung fehlt.');
     let session;
     try{
-      session=await withTimeout(supabase.auth.getSession(),'Anmeldung',2500);
+      session=await withTimeout(supabase.auth.getSession(),'Anmeldung',SESSION_TIMEOUT_MS);
     }catch(error){
       console.warn('V548 FOOD Sitzung nicht rechtzeitig verfügbar.',error);
       return unavailableSnapshot('Cloud-Sitzung antwortet gerade nicht.');
@@ -831,10 +822,10 @@
       safeQuery('Gefrierportionen',supabase.from('food_freezer_portions').select('id,inventory_id,product_id,source_lot_id,frozen_lot_id,meal_ingredient_id,quantity,unit,status,needed_on,label,note,origin_lot_snapshot,frozen_at,thaw_started_at,thawed_at').neq('status','cancelled').order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('TK-Meal-Prep',supabase.from('food_mealprep_freezer_portions').select('id,leftover_id,meal_id,servings,status,frozen_on,needed_on,thaw_started_at,thawed_at,note,created_at').in('status',['frozen','thawing','thawed']).order('needed_on',{ascending:true,nullsFirst:false})),
       safeQuery('Offene Einkaufsbuchungen',supabase.from('shopping_checkout_items').select('id,label,inventory_id,product_id,quantity,unit,checkout_id,best_before_date,inventory_applied_at,shopping_checkouts!inner(status)').is('inventory_applied_at',null).eq('shopping_checkouts.status','review').gte('created_at',plusDays(todayIso(),-3))),
-      safeQuery('Zusatzverzehr-Historie',loadExtraHistory(supabase,user.id),12000),
-      safeQuery('Zubereitungs-Checkliste',loadPrepChecks(supabase),12000),
-      safeQuery('Zutatenvorlieben',supabase.from('food_ingredient_preferences').select('id,ingredient_name,preference,note').eq('is_current_selection',true).order('ingredient_name'),12000),
-      safeQuery('Zutatenstamm-Zuordnungen',loadIngredientIdentities(supabase,user.id),12000)
+      safeQuery('Zusatzverzehr-Historie',loadExtraHistory(supabase,user.id),LONG_REQUEST_TIMEOUT_MS),
+      safeQuery('Zubereitungs-Checkliste',loadPrepChecks(supabase),LONG_REQUEST_TIMEOUT_MS),
+      safeQuery('Zutatenvorlieben',supabase.from('food_ingredient_preferences').select('id,ingredient_name,preference,note').eq('is_current_selection',true).order('ingredient_name'),LONG_REQUEST_TIMEOUT_MS),
+      safeQuery('Zutatenstamm-Zuordnungen',loadIngredientIdentities(supabase,user.id),LONG_REQUEST_TIMEOUT_MS)
     ]);
 
     cloudIssues=[];
@@ -6046,7 +6037,7 @@
     const root=ensureRoot();if(!root)return false;
     root.innerHTML=shell();
     try{
-      const data=await withTimeout(load(),'FOOD-Daten',10000);
+      const data=await withTimeout(load(),'FOOD-Daten',FOOD_LOAD_TIMEOUT_MS);
       if(serial!==renderSerial)return false;
       state=data;
       return paint(root,data);
