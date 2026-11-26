@@ -16,7 +16,20 @@
   const stockLinkedExtra=row=>String(row?.source_reference||'').startsWith('food-ui-v832-')
     &&(Boolean(row?.product_id)||/^food-ui-v832-inventory-[0-9a-f-]{36}-/.test(String(row?.source_reference||'')));
   function productName(p){return p?._inventoryOnly?'Vorrat · '+p.product_name:[p?.brand,p?.product_name,p?.variant].filter(Boolean).join(' · ');}
-  function nval(p,key){const v=p?.nutrition_per_100?.[key];return valid(v)?Number(v):null;}
+  function nval(p,key){
+    const n=p?.nutrition_per_100||{},v=n[key]??(key==='energy_kcal'?n.calories_kcal:key==='carbohydrates_g'?n.carbs_g:null);
+    return valid(v)?Number(v):null;
+  }
+  function nbound(p,key){
+    const n=p?.nutrition_per_100||{},v=n[key+'_lt']??(key==='protein_g'?n.protein_upper_bound_g_per_100_g:key==='carbohydrates_g'?n.carbs_g_lt:null);
+    return valid(v)&&Number(v)>0?Number(v):null;
+  }
+  const boundOf=(row,key)=>{const b=row?.nutrition_bounds?.[key];return b?.status==='upper_bound'&&valid(b.max)?Number(b.max):null;};
+  function macroText(row,key){
+    if(valid(row?.[key]))return nf(row[key],3);
+    const b=boundOf(row,key);
+    return b===null?'unbekannt':'< '+nf(Math.max(.001,Math.ceil(b*1000-1e-10)/1000),3);
+  }
   // Stückprodukte mit dokumentierter essbarer Portionsmenge: kein erneutes Wiegen verlangen.
   // Für Eier die explizite Schätzung verwenden, niemals das Schalengewicht.
   // V870: select exact whole pieces when packaging weight confirms conversion.
@@ -62,7 +75,7 @@
     const basis=String(p?.nutrition_per_100?.basis||p?.product_data?.nutrition_basis||'').toLowerCase();
     return /100.ml|per_100_ml/.test(basis)||p?.package_unit==='ml'?'ml':'g';
   }
-  function hasMacros(p){return Boolean(p)&&valid(nval(p,'energy_kcal'))&&valid(nval(p,'protein_g'));}
+  function hasMacros(p){return Boolean(p)&&valid(nval(p,'energy_kcal'))&&(valid(nval(p,'protein_g'))||nbound(p,'protein_g')!==null);}
   function offered(){
     // Fehlende Nährwertdaten dürfen kein Produkt aus der Suche entfernen.
     return [...products].sort((a,b)=>productName(a).localeCompare(productName(b),'de'));
@@ -77,16 +90,29 @@
     return 100;
   }
   function valuesFromCatalog(p,quantity){
-    const factor=(bases(p)==='Stück'&&catalogPieceWeight(p)?quantity*catalogPieceWeight(p):quantity)/100,n=p.nutrition_per_100||{};
-    const scaled=key=>valid(n[key])?Math.round(Number(n[key])*factor*100)/100:null;
-    const productData=p.product_data||{};
+    const unit=bases(p),mass=unit==='Stück'&&catalogPieceWeight(p)?quantity*catalogPieceWeight(p):quantity;
+    const factor=mass/100,n=p.nutrition_per_100||{};
+    const scaled=key=>{const value=nval(p,key);return value===null?null:Math.round(value*factor*1000)/1000;};
+    const productData=p.product_data||{},bounds={};
+    for(const key of ['protein_g','carbohydrates_g','fat_g','sugars_g','salt_g']){
+      if(nval(p,key)!==null)continue;
+      const upper=nbound(p,key);if(upper===null)continue;
+      let max=upper*factor;
+      const portion=productData.fat_label_per_7g_prepared_500ml?.fat_g_lt;
+      if(key==='fat_g'&&valid(portion)&&Number(portion)>0){
+        const basis=String(n.basis||'');
+        if(unit==='g'&&basis.includes('powder'))max=Math.min(max,Number(portion)*quantity/7);
+        if(unit==='ml'&&basis.includes('prepared'))max=Math.min(max,Number(portion)*quantity/500);
+      }
+      bounds[key]={status:'upper_bound',min:0,max,max_exclusive:true};
+    }
     let caffeine=null;
     if(valid(n.caffeine_mg))caffeine=scaled('caffeine_mg');
     else if(valid(productData.caffeine_mg_per_sachet)&&Number(productData.sachet_g)>0&&bases(p)==='g')
       caffeine=Math.round(Number(productData.caffeine_mg_per_sachet)*quantity/Number(productData.sachet_g)*100)/100;
     return {calories_kcal:scaled('energy_kcal'),protein_g:scaled('protein_g'),
       carbohydrates_g:scaled('carbohydrates_g'),fat_g:scaled('fat_g'),
-      sugars_g:scaled('sugars_g'),salt_g:scaled('salt_g'),caffeine_mg:caffeine};
+      sugars_g:scaled('sugars_g'),salt_g:scaled('salt_g'),caffeine_mg:caffeine,nutrition_bounds:bounds};
   }
   function panel(){return document.getElementById(PANEL);}
   function productOptions(){
@@ -139,17 +165,17 @@
   function rowsHtml(){
     // Arbeitgeber-Kaffee wird separat direkt beim Fruehstueck gezeigt.
     const visibleRows=rows.filter(row=>!(row.title==='Arbeitskaffee (vom Arbeitgeber)'&&String(row.source_reference||'').startsWith('food-planned-extra-v1-')));
-    const sum=visibleRows.reduce((a,r)=>({kcal:a.kcal+Number(r.calories_kcal||0),protein:a.protein+Number(r.protein_g||0),carbs:a.carbs+Number(r.carbohydrates_g||0),fat:a.fat+Number(r.fat_g||0)}),{kcal:0,protein:0,carbs:0,fat:0});
-    const incomplete=visibleRows.filter(r=>!valid(r.calories_kcal)||!valid(r.protein_g)).length;
+    const sum=visibleRows.reduce((a,r)=>({kcal:a.kcal+Number(r.calories_kcal||0),protein:a.protein+(valid(r.protein_g)?Number(r.protein_g):(boundOf(r,'protein_g')||0)),proteinBound:a.proteinBound||(!valid(r.protein_g)&&boundOf(r,'protein_g')!==null)}),{kcal:0,protein:0,proteinBound:false});
+    const incomplete=visibleRows.filter(r=>!valid(r.calories_kcal)||(!valid(r.protein_g)&&boundOf(r,'protein_g')===null)).length;
     return '<div class="food-extra-total-v828"><b>'+visibleRows.length+' Zusatz'+(visibleRows.length===1?'':'-Snacks')+'</b>'+
-      '<span>'+nf(sum.kcal,0)+' kcal · '+nf(sum.protein)+' g Protein'+(incomplete?' (bekannte Werte)':'')+'</span></div>'+
+      '<span>'+nf(sum.kcal,0)+' kcal · '+esc(sum.proteinBound?'< '+nf(Math.max(.001,Math.ceil(sum.protein*1000-1e-10)/1000),3):nf(sum.protein,3))+' g Protein'+(incomplete?' (bekannte Werte)':'')+'</span></div>'+
       (incomplete?'<p class="food-extra-help-v828">'+incomplete+' Eintrag'+(incomplete===1?' hat':'e haben')+' unbekannte Kalorien- oder Eiweißwerte. Tagesbilanz deshalb unvollständig, keine Nullwerte erfunden.</p>':'')+
       (visibleRows.length?'<ul class="food-extra-list-v828">'+visibleRows.map(r=>
-        '<li data-food-extra-row="'+esc(r.id)+'"'+(!valid(r.calories_kcal)||!valid(r.protein_g)?' class="food-extra-unresolved-v838"':'')+'><div><strong>'+esc(r.title)+'</strong><small>'+esc(extraQuantityDisplay(r))+' · '+
+        '<li data-food-extra-row="'+esc(r.id)+'"'+(!valid(r.calories_kcal)||(!valid(r.protein_g)&&boundOf(r,'protein_g')===null)?' class="food-extra-unresolved-v838"':'')+'><div><strong>'+esc(r.title)+'</strong><small>'+esc(extraQuantityDisplay(r))+' · '+
         (valid(r.calories_kcal)?nf(r.calories_kcal,0)+' kcal':'kcal unbekannt')+' · '+
-        (valid(r.protein_g)?nf(r.protein_g)+' g Protein':'Protein unbekannt')+
-        (r.carbohydrates_g!==null?' · KH '+nf(r.carbohydrates_g)+' g':'')+
-        (r.fat_g!==null?' · Fett '+nf(r.fat_g)+' g':'')+'</small></div>'+
+        (valid(r.protein_g)||boundOf(r,'protein_g')!==null?esc(macroText(r,'protein_g'))+' g Protein':'Protein unbekannt')+
+        (valid(r.carbohydrates_g)||boundOf(r,'carbohydrates_g')!==null?' · KH '+esc(macroText(r,'carbohydrates_g'))+' g':'')+
+        (valid(r.fat_g)||boundOf(r,'fat_g')!==null?' · Fett '+esc(macroText(r,'fat_g'))+' g':'')+'</small></div>'+
         '<div class="food-extra-row-actions-v828">'+(String(r.source_reference||'').startsWith('food-planned-extra-v1-')?'':'<button type="button" data-extra-edit="'+esc(r.id)+'" aria-label="'+esc(r.title)+' bearbeiten" title="Bearbeiten">✎</button>')+
         '<button type="button" data-extra-delete="'+esc(r.id)+'" aria-label="'+esc(r.title)+' löschen" title="Entfernen">✕</button></div></li>').join('')+'</ul>':
       '<p class="food-extra-empty-v828">Noch kein zusätzlicher Snack eingetragen.</p>');
@@ -197,7 +223,7 @@
       return;
     }
     const n=valuesFromCatalog(p,qty);
-    output.textContent=nf(n.calories_kcal,1)+' kcal · '+nf(n.protein_g)+' g Protein · '+nf(n.carbohydrates_g)+' g KH · '+nf(n.fat_g)+' g Fett'+
+    output.textContent=nf(n.calories_kcal,1)+' kcal · '+macroText(n,'protein_g')+' g Protein · '+macroText(n,'carbohydrates_g')+' g KH · '+macroText(n,'fat_g')+' g Fett'+
       (countedPieceWeight(p)?' · '+nf(qty)+' '+(qty===1?'Praline':'Pralinen')+' = '+nf(qty*countedPieceWeight(p))+' g':
        bases(p)==='Stück'&&ediblePieceWeight(p)?' · '+edibleWeightNote(p):'');
   }
@@ -217,7 +243,7 @@
     if(auth.error||!auth.data?.session?.user?.id)throw new Error('Bitte zuerst anmelden.');
     const uid=auth.data.session.user.id;
     const [a,catalog,stock]=await Promise.all([
-      supabase.from('food_extra_consumptions').select('id,consumption_date,product_id,title,kind,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g,sugars_g,salt_g,caffeine_mg,nutrition_source,source_reference').eq('user_id',uid).eq('consumption_date',date).order('created_at',{ascending:true}).limit(500),
+      supabase.from('food_extra_consumptions').select('id,consumption_date,product_id,title,kind,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g,sugars_g,salt_g,caffeine_mg,nutrition_bounds,nutrition_source,source_reference').eq('user_id',uid).eq('consumption_date',date).order('created_at',{ascending:true}).limit(500),
       fetchPages((start,end)=>supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,serving_quantity,serving_unit,nutrition_per_100,product_data').eq('active',true).order('id',{ascending:true}).range(start,end)),
       fetchPages((start,end)=>supabase.from('food_inventory').select('id,name,quantity,unit').eq('user_id',uid).eq('is_active',true).order('id',{ascending:true}).range(start,end))
     ]);
@@ -488,6 +514,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V838',refresh,openEntry,getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V939',refresh,openEntry,getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
