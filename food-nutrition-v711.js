@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V939';
+  const VERSION='V940';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -303,7 +303,7 @@
   }
 
   function genericFamilyAllocation(item,data){
-    if(window.__modFoodStockResolverV746?.explicitVariantStockName?.(item))return null;
+    if(item?.explicit_stock_selection===true||window.__modFoodStockResolverV746?.explicitVariantStockName?.(item))return null;
     const name=itemName(item);
     const unit=text(item?.unit);
     if(item?.inventory_id){
@@ -358,7 +358,7 @@
   // momentan verfügbarem Vorrat. Der FIFO-Vorrat bestimmt nur, welches
   // konkrete Produkt bei generischen Familien zuerst verwendet werden soll.
   function genericFamilyNutrition(item,data,allocationOverride=null){
-    if(window.__modFoodStockResolverV746?.explicitVariantStockName?.(item))return null;
+    if(item?.explicit_stock_selection===true||window.__modFoodStockResolverV746?.explicitVariantStockName?.(item))return null;
     const name=itemName(item);
     // Salz und Wasser bleiben null-kcal, auch wenn ein Vorratseintrag
     // oder eine Vorratsfamilie mit genau diesem Namen existiert.
@@ -548,6 +548,7 @@
     const stocks=(data?.inventory||[]).filter(s=>s.is_active!==false&&/^scheiben?$/.test(text(s.unit)));
     const pinned=item?.inventory_id?stocks.find(s=>String(s.id)===String(item.inventory_id)):null;
     if(pinned)return pinned;
+    if(item?.explicit_stock_selection===true)return null;
     const named=stocks.filter(s=>text(label).includes(text(s.name))||key(name)===key(s.name));
     if(named.length===1)return named[0];
     return null;
@@ -670,6 +671,12 @@
     const inventory=data.inventory;
     const products=data.products;
     const shared=window.__modFoodStockResolverV746;
+    if(item?.explicit_stock_selection===true&&item.inventory_id){
+      const stock=inventory.find(row=>String(row.id)===String(item.inventory_id)&&row.is_active!==false);
+      const product=stock?productForStock(stock,data):chooseProduct(products.filter(row=>String(row.inventory_id||'')===String(item.inventory_id)));
+      if(product)return {nutrition:nutritionOf(product),product,stock:stock||null,reference:product.product_data?.nutrition_reference_only===true};
+      return null;
+    }
     const explicit=shared?.explicitVariantStockName?.(item);
     if(explicit){
       const selected=shared.resolve({item,inventoryRows:inventory});
@@ -735,6 +742,15 @@
     const qty=number(item?.quantity);
     if(qty===null||qty<0)return null;
     const unit=text(item?.unit);
+    // A prepared dressing profile includes added oil. Never treat dry grams
+    // as prepared millilitres, nor assume an unmarked sachet is prepared.
+    if(text(source?.product?.nutrition_per_100?.basis)==='per 100 ml prepared with oil'){
+      if(unit==='ml')return qty;
+      if(unit==='l')return qty*1000;
+      const prepared=item?.prepared_dressing_standard===true||/nach (?:packungsanleitung|herstellerangabe)|standardzubereitung|zubereitet mit/i.test(String(item?.label||''));
+      const yieldMl=number(source?.product?.product_data?.prepared_yield_ml);
+      return prepared&&/^(beutel|päckchen|packung)$/.test(unit)&&yieldMl>0?qty*yieldMl:null;
+    }
     // Kikkoman pack and manufacturer nutrition are per 100 ml, while current
     // meal instructions and ingredient quantities use grams on the kitchen scale.
     // Never count grams as millilitres. 1 ml ~ 1.08 g, same as inventory migration.
@@ -1355,6 +1371,8 @@
       return {...entry,reason:absent.join(' und ')+' je 100 g/ml fehlen im Produktstamm.'};
     }
     if(basisAmount(item,source)===null){
+      if(text(source.product?.nutrition_per_100?.basis)==='per 100 ml prepared with oil')
+        return {...entry,reason:'Etikett vollständig für fertig zubereitetes Dressing inklusive Öl; Trockenpulver nicht als Milliliter rechnen. Zubereitungsmenge ausdrücklich angeben, Öl nicht doppelt zählen.'};
       return {...entry,reason:'Für die Einheit '+String(item.unit||'')+' fehlt ein verlässliches Stückgewicht bzw. eine Umrechnung.'};
     }
     if(source.nutrition.fat===null||source.nutrition.carbs===null)
@@ -1981,7 +1999,7 @@
     const to=plusDays(todayIso(),60);
     const results=await Promise.all([
       supabase.from('food_recipes').select('id,title,servings,calories_kcal_per_serving,protein_g_per_serving,food_recipe_ingredients(id,recipe_id,name,label,quantity,unit,sort_order,inventory_id)').eq('active',true),
-      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,prepared_sources_snapshot,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,allocation_override,eaten_only_extra)').gte('meal_date',from).lte('meal_date',to),
+      supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,inventory_booked_at,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,calories_kcal_per_serving_override,prepared_sources_snapshot,note,food_meal_ingredients(id,name,label,quantity,unit,sort_order,inventory_id,allocation_override,eaten_only_extra,explicit_stock_selection)').gte('meal_date',from).lte('meal_date',to),
       supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,quantity,unit,note,is_active,sort_order').eq('is_active',true),
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active'),
       supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,batch_data'),
