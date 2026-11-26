@@ -62,4 +62,7 @@ jobs:
           cat tests/food-audit-replay-schema.sql \
             supabase/migrations/20261126065814_food_nutrient_bounds_preserve_exact_v1_20261126.sql \
             supabase/migrations/20261126095447_food_audit_recognize_documented_nutrient_bounds_v1_20261126.sql \
+            supabase/migrations/20261126110250_food_direct_quantity_guard_v1_20261126.sql \
+            supabase/migrations/20261126110314_food_audit_recipe_inputs_not_static_macros_v1_20261126.sql \
+            supabase/migrations/20261126110515_food_audit_allow_documented_to_taste_seasoning_v1_20261126.sql \
             tests/food-audit-replay-assert.sql | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
