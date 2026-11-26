@@ -775,7 +775,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,rating,rating_updated_at,rating_note,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,rating,rating_updated_at,rating_note,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra,explicit_stock_selection)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at,updated_at,best_before_label').order('created_at')),
@@ -1014,8 +1014,8 @@
     const unit=String(item?.unit||'').trim();
     let info=null;
     const shared=typeof window==='undefined'?null:window.__modFoodStockResolverV746;
-    if(shared?.explicitVariantStockName?.(item)){
-      const exact=shared.resolve({item,inventoryRows});
+    if(item?.explicit_stock_selection===true||shared?.explicitVariantStockName?.(item)){
+      const exact=shared?.resolve?.({item,inventoryRows})||{rows:(inventoryRows||[]).filter(row=>String(row.id)===String(item.inventory_id)&&row.is_active!==false)};
       return (exact.rows||[]).map(stock=>({stock,info:inventoryQuantityInUnit(stock,unit)}))
         .filter(entry=>!entry.info.unitMismatch&&entry.info.available>0);
     }
@@ -3477,7 +3477,7 @@
           :quantity;
         // Isoclear flavours share availability but not nutritional metadata.
         // Count their combined stock ONCE and merge demand into one family key.
-        const isIsoclearFamily=String(linkedStock?.family_name||'').trim().toLocaleLowerCase('de-DE')
+        const isIsoclearFamily=item?.explicit_stock_selection!==true&&String(linkedStock?.family_name||'').trim().toLocaleLowerCase('de-DE')
           ==='esn isoclear whey protein isolate';
         // V861: Preparation qualifiers are not separate grocery products.
         // Preserve the recipe ingredient itself for nutrition and cooking.
@@ -3488,7 +3488,7 @@
           :(/^körniger frischkäse$/i.test(name)&&/leicht/i.test(String(item.label||'')))?'Körniger Frischkäse leicht'
           :fruitFamily==='mango'?'Mango frisch':name);
         const resolvedFamily=ingredientStockInfo(
-          {inventory_id:item.inventory_id||null,name:shoppingName,label:item.label,unit:shoppingUnit},
+          {inventory_id:item.inventory_id||null,name:shoppingName,label:item.label,unit:shoppingUnit,explicit_stock_selection:item.explicit_stock_selection===true},
           data.inventory||[],inventoryByIdForShopping,
           new Map((data.inventory||[]).map(row=>[normalizedIngredient(row.name,row.unit),row]))
         );
@@ -4759,7 +4759,7 @@
       addChanges.forEach((change,index)=>{
         const stock=(state?.inventory||[]).find(row=>String(row.id)===String(change.inventory_id));
         proposed.push({
-          id:'preview-added-'+index,inventory_id:change.inventory_id,
+          id:'preview-added-'+index,inventory_id:change.inventory_id,explicit_stock_selection:true,
           name:stock?.name||'Neue Zutat',quantity:change.quantity,unit:change.unit,
           label:stock?.name||'Neue Zutat'
         });
