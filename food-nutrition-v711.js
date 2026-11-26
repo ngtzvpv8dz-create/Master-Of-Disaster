@@ -1208,6 +1208,22 @@
         if(bread.estimated)referenceUsed=true;
         continue;
       }
+      // A recipe template or a distant purchase forecast may use a clearly
+      // marked gross-piece planning estimate. Current physical pieces and
+      // historical portions must still resolve their actual recorded weights.
+      if(!historical&&!item.inventory_id&&!item.explicit_stock_selection&&
+         /^avocado(?:s)?$/i.test(itemName(item))&&text(item.unit)==='stück'&&
+         (item.recipe_id||data.isPlanningForecast&&String(data.forecastDate||'')>plusDays(todayIso(),2))){
+        const count=number(item.quantity);
+        if(count!==null&&count>=0){
+          // Three remaining pieces individually weighed on 25.11.: 142/133/121 g.
+          // Mean is only a forecast, never a new lot weight or consumed snapshot.
+          const grams=count*132;
+          kcal+=160*grams/100;protein+=2*grams/100;
+          addMacro({fat:14.66,carbs:8.53},grams/100);
+          referenceUsed=true;continue;
+        }
+      }
       const allocationOverride=item?.id&&allocationMap?.get?.(String(item.id))||null;
       const familyNutrition=genericFamilyNutrition(item,data,allocationOverride);
       if(familyNutrition?.complete){
