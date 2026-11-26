@@ -47,7 +47,8 @@ test('unknown macros remain unknown while calorie and protein totals stay availa
  const r=calculate([item('Test',100,'g','s')],1,single({energy_kcal:100,protein_g:10,carbohydrates_g:20}));
  assert.equal(r.complete,true);assert.equal(r.kcal,100);
  assert.equal(r.fat,null);assert.equal(r.carbs,20);
- assert.doesNotMatch(nutritionText(r),/g Fett|g KH/);
+ assert.doesNotMatch(nutritionText(r),/g Fett/);
+ assert.match(nutritionText(r),/20 g KH/);
 });
 test('mixed brands with same kcal/protein cannot silently choose fat/carbs',()=>{
  const rows=[
