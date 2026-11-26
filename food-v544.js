@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V942';
+  const VERSION='V943';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -818,7 +818,7 @@
     if(session?.error||!user?.id)return unavailableSnapshot('Cloud-Sitzung ist nicht verfügbar.');
 
     const results=await Promise.all([
-      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,rating,rating_updated_at,rating_note,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra,explicit_stock_selection)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
+      safeQuery('Mahlzeiten',supabase.from('food_meals').select('id,meal_date,meal_type,title,status,sort_order,note,recipe_id,prepared_servings,eaten_servings,leftover_id,source_meal_id,prepared_at,inventory_booked_at,prepared_sources_snapshot,calories_kcal_per_serving_override,rating,rating_updated_at,rating_note,cooking_instructions_override,food_meal_ingredients(id,name,label,quantity,unit,quantity_confirmed,sort_order,inventory_id,thaw_started_at,allocation_override,eaten_only_extra,explicit_stock_selection)').lte('meal_date',planningHorizonIso()).order('meal_date').order('sort_order')),
       safeQuery('Vorrat',supabase.from('food_inventory_overview').select('id,name,family_name,variant_label,catalog_family_name,catalog_group_label,catalog_variant_label,quantity,unit,quantity_label,forecast_label,tone,note,sort_order,is_active,opened,use_priority,pending_weighing,shopping_excluded').order('sort_order')),
       safeQuery('Vorratsaliase',supabase.from('food_inventory_aliases').select('id,inventory_id,alias').order('alias')),
       safeQuery('Bestandschargen',supabase.from('food_inventory_lots').select('id,inventory_id,product_id,best_before_date,unopened_packages,opened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,storage_location,purchased_on,package_label,note,batch_data,created_at,updated_at,best_before_label').order('created_at')),
@@ -1582,11 +1582,25 @@
     return {prep,fresh};
   }
 
-  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true,prepMealId=null){
+  // A changed ingredient set is a new culinary task, not a numeric rewrite.
+  // Never display stale cooking instructions as if they were valid.
+  function sameIngredientComposition(a,b){
+    const keys=items=>(items||[]).map(item=>ingredientName(item).toLocaleLowerCase('de-DE')+'\u0000'+String(item.unit||'').trim().toLocaleLowerCase('de-DE')).sort();
+    return JSON.stringify(keys(a))===JSON.stringify(keys(b));
+  }
+  function mealCookingPlan(recipe,items,override){
+    const base=override&&typeof override.text==='string'&&Array.isArray(override.ingredients)
+      ?{steps:recipeInstructions({instructions:override.text}),items:override.ingredients}
+      :{steps:spiceInstructionsByTaste(recipeInstructions(recipe)),items:recipe.food_recipe_ingredients||recipe.ingredients||[]};
+    const pending=!sameIngredientComposition(base.items,items);
+    return {pending,steps:pending?[]:recipeInstructionAmounts(base.steps,base.items,items),draft:pending?base.steps:recipeInstructionAmounts(base.steps,base.items,items)};
+  }
+  function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true,prepMealId=null,cookingOverride=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
     const baseSteps=preparedMeal?recipeInstructions(recipe):spiceInstructionsByTaste(recipeInstructions(recipe));
-    const currentSteps=!preparedMeal&&itemsOverride?recipeInstructionAmounts(baseSteps,recipe.food_recipe_ingredients||recipe.ingredients||[],itemsOverride):baseSteps;
+    const plan=itemsOverride&&!preparedMeal?mealCookingPlan(recipe,items,cookingOverride):null;
+    const currentSteps=plan?plan.steps:(preparedMeal&&cookingOverride?.text?recipeInstructions({instructions:cookingOverride.text}):baseSteps);
     const instructions=canonicalInstructionText(currentSteps,items);
     // Stored recipe kcal are a historical catalog estimate. Meal cards use
     // the current ingredient quantities/products from food-nutrition-v711.js.
@@ -1597,7 +1611,7 @@
     ].filter(Boolean).join(' · '):'';
     const ingredientBlocks=preparedMeal?preparedIngredientListMarkup(preparedMeal):'<div class="food-recipe-detail-block-v572"><strong>Zutaten für '+esc(portionLabel(servings))+'</strong>'+ingredientListMarkup(items,allocationMap,prepMealId)+'</div>';
     const details=expanded
-      ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
+      ?'<div class="food-recipe-details-v572">'+ingredientBlocks+'<div class="food-recipe-detail-block-v572"><strong>Zubereitung</strong>'+(plan?.pending?'<p role="status">Zubereitung für die geänderten Zutaten noch anpassen.</p>':instructions.length?'<ol>'+instructions.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol>':'<p>Noch keine Zubereitung hinterlegt.</p>')+'</div>'+(recipe.description?'<p class="food-recipe-note-v572">'+esc(recipe.description)+'</p>':'')+'</div>'
       :'';
     const meta=[portionLabel(servings),recipe.prep_minutes?recipe.prep_minutes+' Min.':null,nutrition||null].filter(Boolean).join(' · ');
     return {details,meta};
@@ -2211,7 +2225,7 @@
     if(recipe){
       const presentationRecipe=num(meal.calories_kcal_per_serving_override)!==null?{...recipe,calories_kcal_per_serving:meal.calories_kcal_per_serving_override}:recipe;
       const allocationMap=plannedFamilyAllocationMaps().get(String(meal.id))||null;
-      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null,false,status==='planned'?meal.id:null);
+      const view=recipePresentation(presentationRecipe,expanded,meal.ingredients||[],meal.prepared_servings,null,allocationMap,status==='completed'?meal:null,false,status==='planned'?meal.id:null,meal.cooking_instructions_override);
       const note=visibleMealNote(meal.note,{completed:status==='completed'});
       const planNote=expanded&&note?'<p class="food-recipe-note-v572">'+esc(note)+'</p>':'';
       const freezeHint=status==='planned'?mealPrepStorageMarkup(meal):'';
@@ -2220,7 +2234,7 @@
         :'';
       return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-          +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(displayRecipeTitle(recipe.title))+'</h4><em>'+esc(view.meta)+'</em></span>'
+          +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(displayRecipeTitle(meal.title||recipe.title))+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +dailyCreatineReminderMarkup(meal)
@@ -4742,7 +4756,10 @@
     if(normalizedStatus(meal.status)==='completed'){alert('Bereits gebuchte Mahlzeiten werden nicht nachträglich verändert.');return;}
 
     const items=meal.ingredients||[];
-    if(!items.length){alert('Für diese Mahlzeit sind keine Zutaten hinterlegt.');return;}
+    const recipe=(state?.recipes||[]).find(row=>String(row.id)===String(meal.recipe_id));
+    if(!items.length||!recipe){alert('Für diese Mahlzeit sind keine Zutaten oder keine Rezeptvorlage hinterlegt.');return;}
+    const cookingPlan=mealCookingPlan(recipe,items,meal.cooking_instructions_override);
+    const initialInstructions=cookingPlan.draft.map((step,index)=>(index+1)+'. '+step).join('\n');
 
     let modal;
     const rows=items.map((item,index)=>{
@@ -4760,6 +4777,8 @@
       +'<div class="food-planned-qty-list-v630">'+rows+'</div>'
       +'<div class="food-planned-add-list-v758" data-food-planned-add-list></div>'
       +'<button type="button" class="food-action-v544 compact food-planned-add-button-v758" data-food-planned-add>+ Zutat aus Vorrat hinzufügen</button>'
+      +'<label>Zubereitung dieser Mahlzeit<textarea name="instructions_override" rows="7" maxlength="12000">'+esc(initialInstructions)+'</textarea></label>'
+      +(cookingPlan.pending?'<small>Bitte die Schritte an die geänderten Zutaten anpassen.</small>':'')
       +'<button class="food-action-v544" type="submit">Änderungen speichern</button>'
       +'</form>';
 
@@ -4776,6 +4795,9 @@
         if(!raw)return null;
         const quantity=Number(raw);
         if(!Number.isFinite(quantity)||quantity<=0)throw new Error('Bei Zutat '+(index+1)+' ist die Menge ungültig.');
+        const previous=items.find(item=>String(item.id)===id);
+        if(previous&&num(previous.quantity)===quantity&&previous.quantity_confirmed!==false)return null;
+        if(previous&&/^(stück|scheiben?|beutel|päckchen|packung)$/i.test(String(previous.unit||''))&&!Number.isInteger(quantity))throw new Error('Bitte eine ganze Stückzahl eingeben.');
         return {id,quantity};
       }).filter(Boolean);
 
@@ -4798,6 +4820,9 @@
       }).filter(Boolean);
 
       const changes=[...existingChanges,...addChanges];
+      const instructions=String(modal.querySelector('[name="instructions_override"]')?.value||'').trim();
+      const instructionsEdited=instructions!==initialInstructions.trim();
+      if(instructionsEdited)changes.push({instructions_override:instructions||null});
       if(!changes.length)throw new Error('Es gibt keine Änderung zum Speichern.');
 
       // Build exactly the form's proposed ingredient list, without changing
@@ -4806,7 +4831,8 @@
       const proposed=(meal.ingredients||[]).flatMap(item=>{
         const change=byId.get(String(item.id));
         if(change?.remove)return [];
-        return [{...item,quantity:change?.quantity??item.quantity}];
+        const quantity=change?.quantity??item.quantity;
+        return [{...item,quantity,allocation_override:change&&num(quantity)!==num(item.quantity)?null:item.allocation_override}];
       });
       addChanges.forEach((change,index)=>{
         const stock=(state?.inventory||[]).find(row=>String(row.id)===String(change.inventory_id));
@@ -4816,7 +4842,8 @@
           label:stock?.name||'Neue Zutat'
         });
       });
-      if(!(await confirmDailyKcalChange(meal,proposed)))return false;
+      if(!proposed.length)throw new Error('Eine Mahlzeit benötigt mindestens eine Zutat.');
+      if((existingChanges.length||addChanges.length)&&!(await confirmDailyKcalChange(meal,proposed)))return false;
 
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
       const result=await withTimeout(
