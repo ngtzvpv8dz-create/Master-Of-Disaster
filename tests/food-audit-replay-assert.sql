@@ -21,7 +21,8 @@ SELECT ('00000000-0000-0000-0004-'||lpad(n::text,12,'0'))::uuid,
  date '2026-01-01',case when n=4 then 'skipped' else 'planned' end,'Meal '||n FROM generate_series(1,4) n;
 INSERT INTO public.food_recipe_ingredients(id,user_id,recipe_id,name,quantity,unit) VALUES
  ('00000000-0000-0000-0005-000000000001','00000000-0000-0000-0001-000000000001','00000000-0000-0000-0003-000000000001','Known ingredient',100,'g'),
- ('00000000-0000-0000-0005-000000000002','00000000-0000-0000-0001-000000000001','00000000-0000-0000-0003-000000000002','Unknown quantity',NULL,'g');
+ ('00000000-0000-0000-0005-000000000002','00000000-0000-0000-0001-000000000001','00000000-0000-0000-0003-000000000002','Olivenöl',NULL,'nach Belieben'),
+ ('00000000-0000-0000-0005-000000000003','00000000-0000-0000-0001-000000000001','00000000-0000-0000-0003-000000000001','Pfeffer schwarz',NULL,'nach Belieben');
 DO $$ DECLARE t text; c text; v text; expected boolean; accepted boolean; n integer:=0; BEGIN
  FOR t,c,v,expected IN SELECT * FROM (VALUES
  ('food_inventory','quantity','-1',false),('food_inventory','quantity','NaN',false),('food_inventory','quantity','Infinity',false),('food_inventory','quantity','-Infinity',false),('food_inventory','quantity','0',true),('food_inventory','quantity','12.5',true),('food_inventory','quantity','NULL',true),
