@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V940';
+  const VERSION='V941';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -760,6 +760,13 @@
     return uniquelyPresentAlias(name,data)||referenceFor(item,data);
   }
 
+  function volumeNutritionDensity(product,name){
+    const p=product?.nutrition_per_100||{}, d=product?.product_data||{};
+    const f=number(p.grams_per_ml??d.conversion_factor_g_per_ml??d.density_measurement_2026_11_08?.grams_per_ml);
+    if(f!==null&&f>0)return f;
+    // Older snapshots for weighed Kikkoman soy sauce predate the explicit factor.
+    return /sojasauce|sojasoße|sojasosse/i.test(String(name||''))?1.08:null;
+  }
   function basisAmount(item,source){
     const qty=number(item?.quantity);
     if(qty===null||qty<0)return null;
@@ -773,13 +780,11 @@
       const yieldMl=number(source?.product?.product_data?.prepared_yield_ml);
       return prepared&&/^(beutel|päckchen|packung)$/.test(unit)&&yieldMl>0?qty*yieldMl:null;
     }
-    // Kikkoman pack and manufacturer nutrition are per 100 ml, while current
-    // meal instructions and ingredient quantities use grams on the kitchen scale.
-    // Never count grams as millilitres. 1 ml ~ 1.08 g, same as inventory migration.
-    const soyByVolume=/(?:sojasauce|sojasoße|sojasosse)/i.test(itemName(item))
-      &&text(source?.product?.nutrition_per_100?.basis)==='per_100_ml';
-    if(unit==='g'&&soyByVolume)return qty/1.08;
-    if(unit==='kg'&&soyByVolume)return qty*1000/1.08;
+    const nutritionBasis=text(source?.product?.nutrition_per_100?.basis);
+    if(nutritionBasis==='per 100 ml'&&['g','kg'].includes(unit)){
+      const density=volumeNutritionDensity(source.product,itemName(item));
+      return density===null?null:qty*(unit==='kg'?1000:1)/density;
+    }
     if(unit==='g'||unit==='ml')return qty;
     if(unit==='kg'||unit==='l')return qty*1000;
 
@@ -1025,8 +1030,8 @@
       const n=nutritionOf(product);
       if(n.kcal===null||n.protein===null)return {complete:false,missing:[name+' (Chargennährwerte fehlen)']};
       lastProduct=product;
-      let grams=stockUnit==='kg'||stockUnit==='l'?taken*1000:taken;
-      if(['g','kg'].includes(stockUnit)&&/sojasauce|sojasoße|sojasosse/i.test(name)&&text(product.nutrition_per_100?.basis)==='per_100_ml')grams/=1.08;
+      const grams=stockUnit==='stück'?taken:basisAmount({name,quantity:taken,unit:stockUnit},{product,stock});
+      if(grams===null)return {complete:false,missing:[name+' (Nährwertbasis / Umrechnung)']};
       let macroFactor=grams/100;
       if(stockUnit==='stück'){
         // V830: Für Obst die vereinbarte essbare Stückmenge übernehmen.
@@ -1154,6 +1159,28 @@
       carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,fatBound:fatKnown&&fatBound,proteinBound,missing:[]};
   }
 
+  // Estimates are for reusable recipe templates only. Current meal bookings
+  // and historical snapshots require their actual lot weights.
+  function recipePlanningPieceNutrition(item,historical=false){
+    if(historical||!item?.recipe_id||item?.prepared_nutrition_per_100||item?.allocation_override?.length)return null;
+    const name=key(itemName(item)), unit=text(item.unit),q=number(item.quantity);
+    if(q===null||q<=0)return null;
+    let grams,profile;
+    if(unit==='stück'&&name==='paprikarot'){
+      // Actual previous whole red pieces: 268g for 2, as recorded in template.
+      grams=q*134;profile={kcal:43,protein:1.3,fat:.5,carbs:6.4};
+    }else if(unit==='stück'&&name==='paprikagelb'){
+      // Purchase 11.11. mixed paprika; individually weighed yellow piece 146g.
+      grams=q*146;profile={kcal:35,protein:.98,fat:.21,carbs:5.92};
+    }else if(unit==='stück'&&name==='birne'){
+      // User's recorded whole pear weights, latest 267g on 21.11.
+      grams=q*267;profile={kcal:58,protein:.3,fat:.29,carbs:13.16};
+    }else if(unit==='scheibe'&&name==='vollkornbrot'){
+      // Existing BLS B101000 50g planning slice, not a physical Harry slice.
+      grams=q*50;profile=GENERAL_REFERENCE_BY_KEY.vollkornbrot;
+    }else return null;
+    return {complete:true,kcal:profile.kcal*grams/100,protein:profile.protein*grams/100,fat:profile.fat*grams/100,carbs:profile.carbs*grams/100,estimated:true,missing:[]};
+  }
   function calculate(items,servings,data,allocationMap=null,historical=false){
     if(historical)data={...data,historicalCalculation:true};
     const rows=Array.isArray(items)?items:[];
@@ -1187,6 +1214,10 @@
           addMacro(original.nutrition,grams/100);
         }
         continue;
+      }
+      const templatePiece=recipePlanningPieceNutrition(item,historical);
+      if(templatePiece){
+        kcal+=templatePiece.kcal;protein+=templatePiece.protein;addMacro(templatePiece,1);referenceUsed=true;continue;
       }
       const measuredPaprika=measuredPaprikaNutrition(item,data);
       if(measuredPaprika?.complete){
@@ -1292,6 +1323,8 @@
     const entry={id:String(item.id||''),name,reason:''};
     if(qty===null||qty<0)return {...entry,reason:'Die Zutatenmenge ist ungültig oder fehlt.'};
     if(qty===0)return null;
+    if(recipePlanningPieceNutrition(item,data?.historicalCalculation===true))
+      return { ...entry, awaitingPurchase:true, provisional:true, reason:'Planwert aus dokumentiertem Bruttogewicht bzw. Scheibenreferenz; tatsächliches Gewicht beim Einkauf erfassen.' };
     // A saved ingredient override must never conceal a product_id missing
     // on the REAL physical lot. Checking only the override's product_id would
     // reproduce the recurring "Paprika rot" provenance regression.
