@@ -55,8 +55,8 @@
       './food-stock-resolver-v746.js?v=20261125-v938-purchase-nutrition',
       './food-freshness-v913.js?v=20261125-v938-purchase-nutrition',
       './food-v544.js?v=20261125-v938-purchase-nutrition',
-      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds',
-      './food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'
+      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds-final',
+      './food-extra-snacks-v828.js?v=20261126-v939-nutrition-bounds-final','./food-planned-extras-v880.js?v=890-safe-anchor'
     ],
     shopping:[
       SUPABASE,
@@ -65,7 +65,7 @@
       './food-stock-resolver-v746.js?v=20261125-v938-purchase-nutrition',
       './food-freshness-v913.js?v=20261125-v938-purchase-nutrition',
       './food-v544.js?v=20261125-v938-purchase-nutrition',
-      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds',
+      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds-final',
       './shopping-v678.js?v=20261125-v938-purchase-nutrition'
     ],
     kistology:[
@@ -156,10 +156,10 @@
     sport:['./sport-v626.js?v=847-history-edit-verified','./sport-circuit-v682.js?v=683-active-priority'],
     food:['./food-freshness-v913.js?v=20261125-v938-purchase-nutrition',
       './food-v544.js?v=20261125-v938-purchase-nutrition',
-      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds','./food-extra-snacks-v828.js?v=901-atomic-stock-booking','./food-planned-extras-v880.js?v=890-safe-anchor'],
+      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds-final','./food-extra-snacks-v828.js?v=20261126-v939-nutrition-bounds-final','./food-planned-extras-v880.js?v=890-safe-anchor'],
     shopping:['./food-freshness-v913.js?v=20261125-v938-purchase-nutrition',
       './food-v544.js?v=20261125-v938-purchase-nutrition',
-      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds','./shopping-v678.js?v=20261125-v938-purchase-nutrition'],
+      './food-nutrition-v711.js?v=20261126-v939-nutrition-bounds-final','./shopping-v678.js?v=20261125-v938-purchase-nutrition'],
     kistology:['./kistology-v603.js?v=609-current'],
     finance:['./finance-v552.js?v=609-current','./finance-data-v553.js?v=878-finance-collapsible-sections'],
     denkfabrik:['./denkfabrik-v752.js?v=760-clear-roles'],
