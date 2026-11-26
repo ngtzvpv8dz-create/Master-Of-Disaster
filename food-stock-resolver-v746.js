@@ -9,7 +9,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
 
-  const VERSION='V937';
+  const VERSION='V940';
   const FRESH=new Set(['frisch','frische','frischer','frisches','bio']);
   const FROZEN=new Set(['tk','tiefkühl','tiefgekühlt','tiefgefroren','gefroren']);
 
@@ -267,6 +267,9 @@
     const unit=String(item?.unit||'').trim();
     const byId=new Map(rows.map(row=>[String(row.id),row]));
 
+    if(item?.explicit_stock_selection===true&&item.inventory_id){
+      return exactRow(byId.get(String(item.inventory_id))||null,unit,'explicit-stock-selection');
+    }
     const explicit=explicitVariantStockName(item);
     if(explicit){
       const candidates=rows.filter(row=>text(row.name)===text(explicit));
