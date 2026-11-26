@@ -70,12 +70,13 @@
     if(!p)return 'g';
     // Einheiten ohne belastbare 100-g-Nährwertbasis (z. B. Brausetabletten).
     const stockUnit=String(p.inventory_unit||'');
+    if(String(p?.nutrition_per_100?.basis||'')==='per_100_ml_prepared_with_oil'&&/^(Beutel|Päckchen|Packung)$/i.test(stockUnit))return stockUnit;
     if(countedPieceWeight(p)||(stockUnit==='Stück'&&ediblePieceWeight(p)))return 'Stück';
     if(!hasMacros(p)&&['Stück','Portion','Päckchen','Kapsel'].includes(stockUnit))return stockUnit;
     const basis=String(p?.nutrition_per_100?.basis||p?.product_data?.nutrition_basis||'').toLowerCase();
     return /100.ml|per_100_ml/.test(basis)||p?.package_unit==='ml'?'ml':'g';
   }
-  function hasMacros(p){return Boolean(p)&&valid(nval(p,'energy_kcal'))&&(valid(nval(p,'protein_g'))||nbound(p,'protein_g')!==null);}
+  function hasMacros(p){return Boolean(p)&&!(String(p?.nutrition_per_100?.basis||'')==='per_100_ml_prepared_with_oil'&&/^(Beutel|Päckchen|Packung)$/i.test(String(p.inventory_unit||'')))&&valid(nval(p,'energy_kcal'))&&(valid(nval(p,'protein_g'))||nbound(p,'protein_g')!==null);}
   function offered(){
     // Fehlende Nährwertdaten dürfen kein Produkt aus der Suche entfernen.
     return [...products].sort((a,b)=>productName(a).localeCompare(productName(b),'de'));
@@ -514,6 +515,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V939',refresh,openEntry,getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V940',refresh,openEntry,getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
