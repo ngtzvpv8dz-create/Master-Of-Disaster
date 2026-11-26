@@ -690,6 +690,10 @@
       if(/^h milch(?: 1 5)?$|^milch(?: 1 5)?$/.test(n))return 'milk_15';
       if(/eier? (gro(?:ss)e )?m$/.test(n))return 'eggs_m';
       if(/hahnchenbrust(?:filet)?/.test(n))return 'chicken_breast';
+      if(/^putenbrust(?:filet)?$/.test(n))return 'turkey_breast';
+      if(/^zarte haferflocken$/.test(n))return 'tender_oats';
+      if(/^esn isoclear fresh cherry$/.test(n))return 'isoclear_fresh_cherry';
+      if(/^hokkaido kurbis (?:tk|tiefgekuhlt)$/.test(n))return 'frozen_hokkaido';
       if(/mager.*(?:rinderhack|hackfleisch)|rinderhack.*mager|rinderhack.*5|rinderhack.*light/.test(n))return 'lean_beef_mince';
       if(/^karotten(?: frisch| warm| roh| rohkost)?$/.test(n))return 'carrots';
       if(/^naturjoghurt/.test(n))return 'plain_yogurt';
@@ -773,7 +777,7 @@
         const shoppingDate=String(row.general?.needed_by||todayIso());
         const next=useDates.find(date=>date>=shoppingDate);
         if(next)row.nextUseDate=next;
-        else if(row.section==='later'&&row.general?.source==='food-stockup'
+        else if(['now','later','cart'].includes(row.section)&&row.general?.source==='food-stockup'
           &&useDates.length===0)row.unmatchedPlannedPurchase=true;
       });
     // Show the real inventory for scheduled purchases as well as recipe gaps.
@@ -826,7 +830,7 @@
       'brown_rice','longgrain_rice','paella_rice','pepper','soy_sauce',
       'frozen_edamame','frozen_peas','frozen_cherries','frozen_green_beans',
       'lasagna_sheets','canned_corn','canned_chickpeas','canned_pineapple',
-      'oregano','tomato_salsa','coconut_flakes'
+      'oregano','tomato_salsa','coconut_flakes','tender_oats','isoclear_fresh_cherry','frozen_hokkaido'
     ]);
     const providerCapacity=(row,family)=>{
       const q=Number(row.general?.quantity)||0;
@@ -874,9 +878,10 @@
         const days=dayDifference(needed,entry.shopDate);
         if(days<0)return false;
         const notes=String(entry.row.general?.notes||'').toLocaleLowerCase('de-DE');
-        const canFreeze=['chicken_breast','lean_beef_mince'].includes(family)
-          &&/portion|einfrier|tk|tiefkühl|frost/.test(notes);
-        return days<=(stockStable.has(family)?45:canFreeze?7:['kiwi','skyr','plain_yogurt','greek_yogurt_2pct','apple','mandarin','cottage_cheese_light','red_pepper'].includes(family)?7:3);
+        const canFreeze=['chicken_breast','lean_beef_mince','turkey_breast'].includes(family)
+          &&/einfrier|tiefkühl|frost/.test(notes);
+        const freezerWindow=entry.row.general?.source==='food-stockup'?45:7;
+        return days<=(stockStable.has(family)?45:canFreeze?freezerWindow:['kiwi','skyr','plain_yogurt','greek_yogurt_2pct','apple','mandarin','cottage_cheese_light','red_pepper'].includes(family)?7:3);
       }).sort((a,b)=>b.shopDate.localeCompare(a.shopDate));
       for(const entry of candidates){
         if(uncovered<=0.0001)break;
