@@ -66,6 +66,8 @@
   // and labelled generic comparisons for ingredients not covered by exact stock.
   const GENERAL_REFERENCE_BY_KEY={
     "griechischerjoghurt":{kcal:58,protein:6,fat:2,carbs:4,unit:"g",source:"Vorhandenes Nutzeretikett 28.10.2026, griechischer Joghurt 2 % Fett; vereinbarte Planvariante",url:"project-product-catalog",planOnly:true},
+    "orange":{kcal:49,protein:1,fat:0.2,carbs:8.85,unit:"g",pieceWeight:180,source:"BLS F603100 Orange roh; Planstück ca. 180 g brutto (USDA 131 g essbarer Anteil, 27 % Schalenverlust); tatsächliches Bruttogewicht beim Einkauf",url:"https://blsdb.de",planOnly:true},
+    "mandutk":{kcal:169,protein:10.4,fat:4.6,carbs:18,unit:"g",source:"KO & CO Gemüse-Mandu 420 g, Vergleichsprodukt für Planung; keine Zuordnung zu Gyoza oder konkreter Charge",url:"https://www.rewe.de/shop/p/ko-co-korean-dumplings-gemuese-mandu-420g/9995417",planOnly:true},
     "weißkohl":{kcal:32,protein:1.382,fat:0.19,carbs:4.54,unit:"g",source:"BLS G342100 Weißkohl roh; Planreferenz",url:"https://blsdb.de/food?foodId=38196",planOnly:true},
     "ingwer":{kcal:48,protein:1.92,fat:0.75,carbs:6.8,unit:"g",source:"BLS R211200 Ingwer roh; Planreferenz",url:"https://blsdb.de/food?foodId=38957",planOnly:true},
     "batate":{kcal:119,protein:1.63,fat:0.6,carbs:25.2,unit:"g",source:"BLS K420100 Batate roh; Planreferenz",url:"https://blsdb.de/food?foodId=38253",planOnly:true},
@@ -1794,9 +1796,15 @@
     if(meal.leftover_id||meal.source_meal_id){
       const source=meal.source_meal_id?mealMap.get(String(meal.source_meal_id)):null;
       const recipe=meal.recipe_id?recipeMap.get(String(meal.recipe_id)):null;
-      const original=source
-        ?calculate(preparedOnly(withPreparedNutrition(source.food_meal_ingredients||[],source)),source.prepared_servings||1,data,null,true)
-        :(recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data):{complete:false,missing:['Meal-Prep-Basis']});
+      let original;
+      if(source){
+        const historicalSource=text(source.status)!=='planned'||!!source.inventory_booked_at;
+        const sourcePlan=historicalSource?null:plannedMealAllocationState(data);
+        const sourceContext=historicalSource?data:(sourcePlan.contexts.get(String(source.id))||{...data,isPlanningForecast:true,forecastDate:source.meal_date});
+        original=calculate(preparedOnly(withPreparedNutrition(source.food_meal_ingredients||[],source)),source.prepared_servings||1,sourceContext,sourcePlan?.allocations.get(String(source.id))||null,historicalSource);
+      }else{
+        original=recipe?calculate(recipe.food_recipe_ingredients||[],recipe.servings||1,data):{complete:false,missing:['Meal-Prep-Basis']};
+      }
       const extras=preparedOnly(items).length
         ?calculate(preparedOnly(items),meal.eaten_servings||meal.prepared_servings||1,context,allocations)
         :zeroNutrition();
