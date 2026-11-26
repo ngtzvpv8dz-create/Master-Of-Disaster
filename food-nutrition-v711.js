@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodNutritionV711)return;
 
-  const VERSION='V938';
+  const VERSION='V939';
   const ROOT_ID='modFoodV544';
   const ZERO_NAMES=new Set(['wasser','leitungswasser','salz']);
   let timer=null;
@@ -42,14 +42,20 @@
 
   function nutritionOf(product){
     const n=product?.nutrition_per_100||{};
-    const carbsExact=nutrient(n,['carbohydrates_g','carbs_g']);
-    const carbsUpper=nutrient(n,['carbohydrates_g_lt','carbs_g_lt']);
+    const read=(exactKeys,boundKeys)=>{
+      const exact=nutrient(n,exactKeys),upper=nutrient(n,boundKeys);
+      if(exact!==null&&exact>=0)return {value:exact,bound:false};
+      if(upper!==null&&upper>0)return {value:upper,bound:true};
+      return {value:null,bound:false};
+    };
+    const protein=read(['protein_g','protein'],['protein_g_lt','protein_upper_bound_g_per_100_g']);
+    const carbs=read(['carbohydrates_g','carbs_g'],['carbohydrates_g_lt','carbs_g_lt']);
+    const fat=read(['fat_g'],['fat_g_lt']);
     return {
       kcal:nutrient(n,['energy_kcal','calories_kcal','kcal']),
-      protein:nutrient(n,['protein_g','protein']),
-      carbs:carbsExact!==null?carbsExact:carbsUpper,
-      carbsBound:carbsExact===null&&carbsUpper!==null,
-      fat:nutrient(n,['fat_g'])
+      protein:protein.value,proteinBound:protein.bound,
+      carbs:carbs.value,carbsBound:carbs.bound,
+      fat:fat.value,fatBound:fat.bound
     };
   }
 
@@ -139,7 +145,7 @@
 
   function signature(product){
     const n=nutritionOf(product);
-    return [n.kcal,n.protein].map(v=>v===null?'?':String(v)).join('|');
+    return [n.kcal,n.protein,n.proteinBound?'upper-bound':'exact'].map(v=>v===null?'?':String(v)).join('|');
   }
 
   function chooseProduct(rows){
@@ -152,12 +158,12 @@
     // Same kcal/protein does not imply same fat/carbohydrates.
     const profiles=new Set(usable.map(p=>{
       const n=nutritionOf(p);
-      return [n.fat,n.carbs,n.carbsBound?'upper-bound':'exact'].map(x=>x===null?'?':String(x)).join('|');
+      return [n.fat,n.fatBound?'upper-bound':'exact',n.carbs,n.carbsBound?'upper-bound':'exact'].map(x=>x===null?'?':String(x)).join('|');
     }));
     if(profiles.size>1){
       const first=usable[0];
       return {...first,nutrition_per_100:{
-        ...first.nutrition_per_100,fat_g:null,carbohydrates_g:null,carbs_g:null,carbohydrates_g_lt:null,carbs_g_lt:null
+        ...first.nutrition_per_100,fat_g:null,fat_g_lt:null,carbohydrates_g:null,carbs_g:null,carbohydrates_g_lt:null,carbs_g_lt:null
       }};
     }
     return usable[0];
@@ -381,7 +387,7 @@
     // Familienprodukt fortschreiben, nicht kcal=0 oder "Vorrat reicht nicht".
     const allocation=allocationOverride||genericFamilyAllocation(item,data);
     const parts=(allocation?.allocations||[]).filter(part=>number(part.take)>0);
-    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,used=0,lastProduct=null,referenceUsed=false;
+    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,fatBound=false,proteinBound=false,used=0,lastProduct=null,referenceUsed=false;
     for(const part of parts){
       const stock=part.stock||familyStocks.find(row=>String(row.id)===String(part.inventoryId||''));
       // V877: Eine Zutatenfamilie kann mehrere reale Marken/Chargen IN EINEM
@@ -403,6 +409,8 @@
         if(lotMix.fat===null||lotMix.fat===undefined)fatKnown=false;else fat+=lotMix.fat;
         if(lotMix.carbs===null||lotMix.carbs===undefined)carbsKnown=false;else carbs+=lotMix.carbs;
         if(lotMix.carbsBound)carbsBound=true;
+       if(lotMix.fatBound)fatBound=true;
+       if(lotMix.proteinBound)proteinBound=true;
         used+=Number(part.take);
         lastProduct=lotMix.lastProduct||lastProduct;
         if(lotMix.lastProduct?.product_data?.nutrition_reference_only===true)referenceUsed=true;
@@ -421,6 +429,8 @@
       if(nut.fat===null)fatKnown=false;else fat+=nut.fat*amount/100;
       if(nut.carbs===null)carbsKnown=false;else carbs+=nut.carbs*amount/100;
       if(nut.carbsBound)carbsBound=true;
+       if(nut.fatBound)fatBound=true;
+       if(nut.proteinBound)proteinBound=true;
       used+=Number(part.take);
       lastProduct=product;
       if(product.product_data?.nutrition_reference_only===true)referenceUsed=true;
@@ -449,9 +459,11 @@
       if(nut.fat===null)fatKnown=false;else fat+=nut.fat*amount/100;
       if(nut.carbs===null)carbsKnown=false;else carbs+=nut.carbs*amount/100;
       if(nut.carbsBound)carbsBound=true;
+       if(nut.fatBound)fatBound=true;
+       if(nut.proteinBound)proteinBound=true;
     }
     return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
-      carbsBound:carbsKnown&&carbsBound,estimated:referenceUsed,missing:[]};
+      carbsBound:carbsKnown&&carbsBound,fatBound:fatKnown&&fatBound,proteinBound,estimated:referenceUsed,missing:[]};
   }
 
   function quantityInStockUnit(item,stock){
@@ -557,11 +569,12 @@
     const physical=Math.max(0,number(stock.quantity)||0);
     const invalid=()=>({complete:false,missing:[itemName(item)+' (vorhandene Brotscheiben: Chargengewichte prüfen)']});
     if(physical>total+.001)return invalid();
-    let skip=Math.max(0,total-physical),left=qty,kcal=0,protein=0,fat=0,carbs=0,estimated=false;
+    let skip=Math.max(0,total-physical),left=qty,kcal=0,protein=0,fat=0,carbs=0,estimated=false,proteinBound=false,fatBound=false,carbsBound=false;
     const add=(product,weight)=>{
       const n=nutritionOf(product);
       if([n.kcal,n.protein,n.fat,n.carbs].some(v=>v===null)||!(weight>0))return false;
-      kcal+=n.kcal*weight/100;protein+=n.protein*weight/100;fat+=n.fat*weight/100;carbs+=n.carbs*weight/100;return true;
+      kcal+=n.kcal*weight/100;protein+=n.protein*weight/100;fat+=n.fat*weight/100;carbs+=n.carbs*weight/100;
+       proteinBound||=n.proteinBound;fatBound||=n.fatBound;carbsBound||=n.carbsBound;return true;
     };
     for(const l of lots){
       if(left<=0)break;
@@ -589,7 +602,7 @@
         return {complete:false,awaitingPurchase:true,missing:[itemName(item)+' (neue Packung noch nicht gewogen)']};
       estimated=true;
     }
-    return {complete:true,kcal,protein,fat,carbs,estimated,missing:[]};
+    return {complete:true,kcal,protein,fat,carbs,proteinBound,fatBound,carbsBound,estimated,missing:[]};
   }
 
   function plannedMealAllocationState(data){
@@ -883,7 +896,7 @@
     const requested=number(item?.quantity);
     if(!Array.isArray(parts)||!parts.length||requested===null||requested<=0)return null;
     const selected=new Set();
-    let used=0,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false;
+    let used=0,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,fatBound=false,proteinBound=false;
     for(const part of parts){
       const take=number(part?.quantity);
       const lot=(data?.lots||[]).find(row=>String(row.id)===String(part.lot_id||'')
@@ -904,12 +917,14 @@
       if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
       if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*factor;
       if(n.carbsBound)carbsBound=true;
+       if(n.fatBound)fatBound=true;
+       if(n.proteinBound)proteinBound=true;
       used+=take;
     }
     if(Math.abs(used-requested)>.0001)return null;
     return {complete:true,kcal,protein,
       fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
-      carbsBound:carbsKnown&&carbsBound,missing:[]};
+      carbsBound:carbsKnown&&carbsBound,fatBound:fatKnown&&fatBound,proteinBound,missing:[]};
   }
 
   function mixedLotNutrition(item,data){
@@ -950,7 +965,7 @@
     const total=active.reduce((sum,v)=>sum+v.amount,0);
     const current=number(stock.quantity);
     if(current===null||current>total+.001)return {complete:false,missing:[name+' (nicht zugeordneter Altbestand)']};
-    let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,lastProduct=null;
+    let skip=Math.max(0,total-current),remaining=required,kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,fatBound=false,proteinBound=false,lastProduct=null;
     const isFrozen=v=>/(gefrier|tiefkühl|freezer|frozen)/.test(text(v.lot.storage_location));
     const isMeat=/(hähnchen|huhn|hackfleisch|rind|schwein|pute|fleisch)/.test(text(stock.name));
     const rank=v=>isMeat?0:v.open>0?0:isFrozen(v)?2:1;
@@ -993,6 +1008,8 @@
       if(n.fat===null)fatKnown=false;else fat+=n.fat*macroFactor;
       if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*macroFactor;
       if(n.carbsBound)carbsBound=true;
+       if(n.fatBound)fatBound=true;
+       if(n.proteinBound)proteinBound=true;
       remaining-=taken;
       if(remaining<=.0001)break;
     }
@@ -1011,12 +1028,14 @@
         if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
         if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*factor;
         if(n.carbsBound)carbsBound=true;
+       if(n.fatBound)fatBound=true;
+       if(n.proteinBound)proteinBound=true;
         remaining=0;estimated=true;lastProduct=p;
       }
     }
     if(remaining>.0001)return {complete:false,missing:[name+' (Chargenzuordnung unvollständig)']};
     return {complete:true,kcal,protein,fat:fatKnown?fat:null,carbs:carbsKnown?carbs:null,
-      carbsBound:carbsKnown&&carbsBound,missing:[],lastProduct,estimated};
+      carbsBound:carbsKnown&&carbsBound,fatBound:fatKnown&&fatBound,proteinBound,missing:[],lastProduct,estimated};
   }
 
   // V901: A user's saved physical product/lot allocation is authoritative.
@@ -1030,7 +1049,7 @@
     const wanted=number(item.quantity);
     if(wanted===null||wanted<=0)return invalid('Menge');
     let covered=0,kcal=0,protein=0,fat=0,carbs=0;
-    let fatKnown=true,carbsKnown=true,carbsBound=false;
+    let fatKnown=true,carbsKnown=true,carbsBound=false,fatBound=false,proteinBound=false;
     for(const part of parts){
       const count=number(part.quantity);
       const partUnit=text(part.unit||item.unit);
@@ -1089,22 +1108,26 @@
       if(n.fat===null)fatKnown=false;else fat+=n.fat*factor;
       if(n.carbs===null)carbsKnown=false;else carbs+=n.carbs*factor;
       if(n.carbsBound)carbsBound=true;
+       if(n.fatBound)fatBound=true;
+       if(n.proteinBound)proteinBound=true;
     }
     if(Math.abs(covered-wanted)>0.001)return invalid('Aufteilungsmenge passt nicht zum Rezept');
     return {complete:true,kcal,protein,fat:fatKnown?fat:null,
-      carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,missing:[]};
+      carbs:carbsKnown?carbs:null,carbsBound:carbsKnown&&carbsBound,fatBound:fatKnown&&fatBound,proteinBound,missing:[]};
   }
 
   function calculate(items,servings,data,allocationMap=null,historical=false){
     const rows=Array.isArray(items)?items:[];
     if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
     const div=Math.max(.01,number(servings)||1);
-    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,referenceUsed=false;
+    let kcal=0,protein=0,fat=0,carbs=0,fatKnown=true,carbsKnown=true,carbsBound=false,fatBound=false,proteinBound=false,referenceUsed=false;
     const missing=[];
     const addMacro=(n,scale)=>{
       if(n.fat===null||n.fat===undefined)fatKnown=false;else fat+=n.fat*scale;
       if(n.carbs===null||n.carbs===undefined)carbsKnown=false;else carbs+=n.carbs*scale;
       if(n.carbsBound)carbsBound=true;
+       if(n.fatBound)fatBound=true;
+       if(n.proteinBound)proteinBound=true;
     };
     for(const item of rows){
       if(toTasteSeasoning(item))continue;
@@ -1196,7 +1219,7 @@
     if(missing.length)return {complete:false,missing:[...new Set(missing)]};
     return {complete:true,kcal:kcal/div,protein:protein/div,
       fat:fatKnown?fat/div:null,carbs:carbsKnown?carbs/div:null,
-      carbsBound:carbsKnown&&carbsBound,estimated:referenceUsed,missing:[]};
+      carbsBound:carbsKnown&&carbsBound,fatBound:fatKnown&&fatBound,proteinBound,estimated:referenceUsed,missing:[]};
   }
 
 
@@ -1397,7 +1420,7 @@
           const n=src.nutrition||{};
           const basis=text(src.product?.nutrition_per_100?.basis).includes('100_ml')?'100 ml':'100 g';
           const numbers=n.kcal!==null&&n.protein!==null
-            ?formatNumber(n.kcal,1)+' kcal, '+formatNumber(n.protein,1)+' g Eiweiß je '+basis
+            ?formatNumber(n.kcal,1)+' kcal, '+formatMacro(n.protein,n.proteinBound)+' g Eiweiß je '+basis
             :'Nährwerte noch nicht vollständig geprüft';
           issues.push({id:String(item.id||''),name:itemName(item),
             provisional:true,unit:item.unit,quantity:item.quantity,
@@ -1452,14 +1475,14 @@
       const per=product.nutrition_per_100||{};
       const pd=product.product_data||{};
       const fatBound=number(per.fat_g_lt);
-      const proteinBound=number(per.protein_g_lt);
+      const proteinBound=number(per.protein_g_lt??per.protein_upper_bound_g_per_100_g);
       const carbBound=number(per.carbohydrates_g_lt??per.carbs_g_lt);
       // A manufacturer label saying "<0,5 g" is not an absent label.
       // Preserve an upper limit, never silently replace it with 0 or 0,5 exact.
       const limits=[
-        n.fat===null&&fatBound!==null?'Fett < '+formatNumber(fatBound,2)+' g':null,
-        n.protein===null&&proteinBound!==null?'Eiweiß < '+formatNumber(proteinBound,2)+' g':null,
-        n.carbs===null&&carbBound!==null?'Kohlenhydrate < '+formatNumber(carbBound,2)+' g':null
+        n.fatBound&&fatBound!==null?'Fett < '+formatNumber(fatBound,2)+' g':null,
+        n.proteinBound&&proteinBound!==null?'Eiweiß < '+formatNumber(proteinBound,2)+' g':null,
+        n.carbsBound&&carbBound!==null?'Kohlenhydrate < '+formatNumber(carbBound,2)+' g':null
       ].filter(Boolean);
       const missing=[n.kcal===null?'Kalorien':null,
         n.protein===null&&proteinBound===null?'Eiweiß':null,
@@ -1585,7 +1608,7 @@
   const zeroNutrition=()=>({complete:true,kcal:0,protein:0,fat:0,carbs:0,missing:[]});
   const combine=(a,b)=>a?.complete&&b?.complete
     ?{complete:true,kcal:a.kcal+b.kcal,protein:a.protein+b.protein,
-      carbsBound:!!(a.carbsBound||b.carbsBound),estimated:!!(a.estimated||b.estimated),
+      carbsBound:!!(a.carbsBound||b.carbsBound),fatBound:!!(a.fatBound||b.fatBound),proteinBound:!!(a.proteinBound||b.proteinBound),estimated:!!(a.estimated||b.estimated),
       fat:a.fat===null||a.fat===undefined||b.fat===null||b.fat===undefined?null:a.fat+b.fat,
       carbs:a.carbs===null||a.carbs===undefined||b.carbs===null||b.carbs===undefined?null:a.carbs+b.carbs,
       missing:[]}
@@ -1754,14 +1777,23 @@
   function formatNumber(value,max=1){
     return new Intl.NumberFormat('de-DE',{maximumFractionDigits:max}).format(value);
   }
+  // Upper limits are not exact values or invented zeros. Round displayed
+  // bounds upward so presentation never makes an upper limit stricter.
+  function formatMacro(value,bound){
+    if(bound){
+      if(value===0)return '0';
+      const upper=Math.max(.001,Math.ceil(value*1000-1e-10)/1000);
+      return '< '+formatNumber(upper,3);
+    }
+    return formatNumber(value,3);
+  }
   function nutritionText(n){
     if(!n?.complete)return '';
-    const base=(n.estimated?'ca. ':'')+Math.round(n.kcal)+' kcal'+
-      (n.protein===null||n.protein===undefined?'':' · '+formatNumber(n.protein,1)+' g Protein');
-    // Display fat/carbs only when every contributing portion has reliable data.
-    // Sugar and saturated fat are subsets, never additional calories.
-    if(n.fat===null||n.fat===undefined||n.carbs===null||n.carbs===undefined)return base;
-    return base+' · '+formatNumber(n.fat,1)+' g Fett · '+(n.carbsBound?'< ':'')+formatNumber(n.carbs,1)+' g KH'+(n.estimated?' · Referenzwerte':'');
+    let result=(n.estimated?'ca. ':'')+Math.round(n.kcal)+' kcal';
+    if(n.protein!==null&&n.protein!==undefined)result+=' · '+formatMacro(n.protein,n.proteinBound)+' g Protein';
+    if(n.fat!==null&&n.fat!==undefined)result+=' · '+formatMacro(n.fat,n.fatBound)+' g Fett';
+    if(n.carbs!==null&&n.carbs!==undefined)result+=' · '+formatMacro(n.carbs,n.carbsBound)+' g KH';
+    return result+(n.estimated?' · Referenzwerte':'');
   }
 
   function ensureAllocationStyle(){
@@ -1834,6 +1866,7 @@
       const portions=eaten!==null&&eaten>0?eaten:1;
       day.kcal+=nutrition.kcal*portions;
       day.protein+=nutrition.protein*portions;
+       if(nutrition.proteinBound&&portions>0)day.proteinBound=true;
     }else day.unresolved++;
     totals.set(date,day);
   }
@@ -1862,7 +1895,7 @@
     const allMissing=day.meals>0&&day.unresolved===day.meals&&!(day.extras>0);
     return {
       kcal:allMissing?'kcal offen':formatNumber(Math.round(day.kcal),0)+' kcal',
-      protein:allMissing?'Protein offen':formatNumber(day.protein,1)+' g Protein',
+      protein:allMissing?'Protein offen':formatMacro(day.protein,day.proteinBound)+' g Protein',
       note:incomplete?'⚠ '+day.unresolved+' offen':'', // V831: Extras sind bereits in kcal + Protein enthalten und stehen unten einzeln.
       label:incomplete?'Teilsumme':'Tag gesamt',
       incomplete
