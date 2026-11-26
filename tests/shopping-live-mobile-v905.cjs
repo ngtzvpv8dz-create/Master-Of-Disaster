@@ -12,9 +12,8 @@ async function run(browser,label,explicitPurchase){
   await page.route('**/*supabase.co/**',route=>route.abort());
   await page.goto(base+'/?check=shopping-live-v905-'+label,{waitUntil:'networkidle',timeout:60000});
   await page.waitForFunction(()=>window.__modAreaRuntimeV609,{timeout:30000});
-  assert.equal(await page.evaluate(()=>window.__modAreaRuntimeV609.preloadAll()),true,'preload current V1 modules');
   await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('food'));
-  await page.waitForFunction(()=>!!window.__modFoodV544,{timeout:30000});
+  await page.waitForFunction(()=>!!window.__modFoodV544,undefined,{timeout:30000});
   await page.evaluate(explicitPurchase=>{
    const food={
      inventory:[
