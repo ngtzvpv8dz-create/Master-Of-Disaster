@@ -138,7 +138,7 @@
       ...(ref.pieceWeight?{serving_quantity:ref.pieceWeight,serving_unit:'g'}:{})
     };
     return {nutrition:nutritionOf(product),product,stock:null,reference:true,
-      sourceName:ref.source,sourceUrl:ref.url};
+      sourceName:ref.source,sourceUrl:ref.url,planOnly:ref.planOnly===true};
   }
   // For broad recipe names, prefer the *single current physically present* variant.
   // Never conflate distinct fat percentages, or a refrigerated and frozen ingredient.
@@ -1440,6 +1440,13 @@
       const known=candidates.some(row=>products.some(p=>String(p.inventory_id)===String(row.id)&&p.active!==false));
       if(!physical&&!known&&!item.inventory_id&&data.purchaseExpectedIds?.has?.(String(item.id||'')))return {...entry,provisional:true,awaitingPurchase:true,reason:'Noch nicht gekauft: Produkt und Nährwertetikett beim Einkauf erfassen. Kein vorhandener Datensatz beschädigt.'};
       return {...entry,reason:'Kein passender Nährwert-Datensatz im Produktstamm gefunden.'};
+    }
+    if(source.reference&&source.planOnly&&!data.historicalCalculation&&!item.inventory_id&&data.purchaseExpectedIds?.has?.(String(item.id||''))){
+      const shared=typeof window==='undefined'?null:window.__modFoodStockResolverV746;
+      const resolved=shared?.resolve?.({item,inventoryRows:inventory});
+      const candidates=resolved?(resolved.rows||[]):inventory.filter(row=>row.is_active!==false&&(key(row.name)===key(name)||familyMatch(name,row.family_name)));
+      if(!candidates.some(row=>number(row.quantity)>0||products.some(p=>String(p.inventory_id)===String(row.id)&&p.active!==false)))
+        return {...entry,provisional:true,awaitingPurchase:true,reason:'Noch nicht gekauft: Nährwertvergleich dient nur der Planung. Produktdaten beim Einkauf erfassen.'};
     }
     if(source.nutrition.kcal===null||source.nutrition.protein===null){
       const absent=[source.nutrition.kcal===null?'Kalorien':null,source.nutrition.protein===null?'Protein':null].filter(Boolean);
