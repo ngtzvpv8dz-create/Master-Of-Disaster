@@ -1,0 +1,36 @@
+name: FOOD browser regression
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    name: Food browser compatibility (Chromium, WebKit, Firefox)
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.48.2-noble
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install matching Playwright library (engines already installed)
+        run: |
+          npm init -y
+          npm install --no-save playwright@1.48.2
+      - name: Run all three browsers even if one fails
+        env:
+          HOME: /root
+        run: |
+          status=0
+          for browser in chromium webkit firefox; do
+            node tests/food-browser-regression.cjs "$browser" || status=1
+          done
+          exit "$status"

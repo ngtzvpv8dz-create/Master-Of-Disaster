@@ -12,12 +12,6 @@ on:
       - .github/workflows/food-v918-browser.yml
   pull_request:
     branches: [main]
-    paths:
-      - food-v544.js
-      - food-v544.css
-      - food-nutrition-v711.js
-      - tests/food-v918-browser.cjs
-      - .github/workflows/food-v918-browser.yml
 permissions:
   contents: read
 jobs:

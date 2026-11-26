@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V943';
+  const VERSION='V944';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -1461,7 +1461,7 @@
           const raw=String(source.name||ingredientName(item));
           const oldName=Array.from(raw).map(ch=>'\\^$.*+?()[]{}|'.includes(ch)?'\\'+ch:ch).join('');
           const detail=familyText(label)===familyText(raw)||familyText(label)===familyText(canonical)
-            ?'':label.replace(new RegExp('(?<![\\p{L}\\p{N},-])'+oldName+'(?![\\p{L}\\p{N},-])','giu'),()=>canonical);
+            ?'':(/\s·\s/.test(label)?label:label.replace(new RegExp('(?<![\\p{L}\\p{N},-])'+oldName+'(?![\\p{L}\\p{N},-])','giu'),()=>canonical));
           const av=String(item?.name||'').trim().toLowerCase()==='avocado'
             ?/Avocado\s+Nr\.\s*(\d+).*?(\d+)\s*g\s*(?:brutto|Bruttogewicht)/i.exec(String(item.label||'')):null;
           const origin=/\bChile\b/i.test(String(source.label||''))?' · Chile':'';

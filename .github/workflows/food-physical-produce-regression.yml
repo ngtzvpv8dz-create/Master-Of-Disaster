@@ -2,16 +2,6 @@ name: Food physical produce stock regression
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'food-v544.js'
-      - 'food-stock-resolver-v746.js'
-      - 'tests/food-stock-meal-shopping.test.cjs'
-      - 'tests/food-lot-provenance-retention-v912.test.cjs'
-      - 'supabase/migrations/20261121092300_food_preserve_consumed_lot_provenance_v912.sql'
-      - 'tests/food-v912-cache-activation.test.cjs'
-      - 'area-runtime-v609.js'
-      - 'index.html'
-      - '.github/workflows/food-physical-produce-regression.yml'
   push:
     branches: [main]
     paths:

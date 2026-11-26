@@ -13,13 +13,6 @@ on:
       - .github/workflows/shopping-browser-smoke.yml
   pull_request:
     branches: [main]
-    paths:
-      - index.html
-      - area-runtime-v609.js
-      - food-v544.js
-      - shopping-v678.js
-      - tests/shopping-ui-browser-v1.cjs
-      - .github/workflows/shopping-browser-smoke.yml
 permissions:
   contents: read
 jobs:

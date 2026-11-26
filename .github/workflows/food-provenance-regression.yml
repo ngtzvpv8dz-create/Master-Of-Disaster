@@ -1,16 +1,12 @@
 name: Food Provenance Regression
 on:
   pull_request:
-    branches: [ main ]
-    paths:
-      - 'food-nutrition-v711.js'
-      - 'tests/food-confirmed-provenance-20261112.test.cjs'
-      - 'tests/food-inactive-product-history-v850.test.cjs'
-      - '.github/workflows/food-provenance-regression.yml'
+    branches: [main]
 permissions:
   contents: read
 jobs:
   nutrition:
+    name: Food product provenance nutrition
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

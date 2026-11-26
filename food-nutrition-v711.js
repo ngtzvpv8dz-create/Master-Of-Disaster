@@ -120,6 +120,10 @@
   function referenceFor(item,data){
     const ref=GENERAL_REFERENCE_BY_KEY[originalAlias(itemName(item))];
     if(!ref||(ref.planOnly&&data?.historicalCalculation))return null;
+    // A default 2% planning reference is only for absent stock. Available
+    // yoghurt is resolved by compatible physical product profiles below.
+    if(originalAlias(itemName(item))==='griechischerjoghurt'&&
+       (data?.inventory||[]).some(row=>row.is_active!==false&&number(row.quantity)>0&&/^griechischer joghurt (?:2 %|9,4 %)$/.test(text(row.family_name))))return null;
     const unit=text(item.unit);
     if(ref.unit==='g'&&!['g','kg','stück','scheibe','päckchen','packung'].includes(unit))return null;
     if(ref.unit==='ml'&&!['ml','l'].includes(unit))return null;
@@ -135,7 +139,7 @@
       ...(ref.pieceWeight?{serving_quantity:ref.pieceWeight,serving_unit:'g'}:{})
     };
     return {nutrition:nutritionOf(product),product,stock:null,reference:true,
-      sourceName:ref.source,sourceUrl:ref.url};
+      sourceName:ref.source,sourceUrl:ref.url,planOnly:ref.planOnly===true};
   }
   // For broad recipe names, prefer the *single current physically present* variant.
   // Never conflate distinct fat percentages, or a refrigerated and frozen ingredient.
@@ -147,11 +151,16 @@
     const rule=aliases[text(name)];
     if(!rule)return null;
     const stocks=(data?.inventory||[]).filter(stock=>stock.is_active!==false&&number(stock.quantity)>0&&rule(stock));
-    if(stocks.length!==1)return null;
-    const p=productForStock(stocks[0],data);
+    if(!stocks.length)return null;
+    const yoghurt=text(name)==='griechischer joghurt';
+    if(!yoghurt&&stocks.length!==1)return null;
+    if(yoghurt&&new Set(stocks.map(stock=>text(stock.family_name))).size!==1)return null;
+    const matching=stocks.map(stock=>productForStock(stock,data));
+    if(matching.some(product=>!product))return null;
+    const p=chooseProduct(matching);
     const n=nutritionOf(p);
     return p&&n.kcal!==null&&n.protein!==null
-      ?{nutrition:n,product:p,stock:stocks[0],reference:false,alias:true}
+      ?{nutrition:n,product:p,stock:stocks.length===1?stocks[0]:null,reference:false,alias:true}
       :null;
   }
 
@@ -1437,6 +1446,13 @@
       const known=candidates.some(row=>products.some(p=>String(p.inventory_id)===String(row.id)&&p.active!==false));
       if(!physical&&!known&&!item.inventory_id&&data.purchaseExpectedIds?.has?.(String(item.id||'')))return {...entry,provisional:true,awaitingPurchase:true,reason:'Noch nicht gekauft: Produkt und Nährwertetikett beim Einkauf erfassen. Kein vorhandener Datensatz beschädigt.'};
       return {...entry,reason:'Kein passender Nährwert-Datensatz im Produktstamm gefunden.'};
+    }
+    if(source.reference&&source.planOnly&&!data.historicalCalculation&&!item.inventory_id&&data.purchaseExpectedIds?.has?.(String(item.id||''))){
+      const shared=typeof window==='undefined'?null:window.__modFoodStockResolverV746;
+      const resolved=shared?.resolve?.({item,inventoryRows:inventory});
+      const candidates=resolved?(resolved.rows||[]):inventory.filter(row=>row.is_active!==false&&(key(row.name)===key(name)||familyMatch(name,row.family_name)));
+      if(!candidates.some(row=>number(row.quantity)>0||products.some(p=>String(p.inventory_id)===String(row.id)&&p.active!==false)))
+        return {...entry,provisional:true,awaitingPurchase:true,reason:'Noch nicht gekauft: Nährwertvergleich dient nur der Planung. Produktdaten beim Einkauf erfassen.'};
     }
     if(source.nutrition.kcal===null||source.nutrition.protein===null){
       const absent=[source.nutrition.kcal===null?'Kalorien':null,source.nutrition.protein===null?'Protein':null].filter(Boolean);

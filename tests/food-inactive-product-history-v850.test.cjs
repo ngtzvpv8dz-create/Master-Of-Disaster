@@ -49,7 +49,7 @@ test('Nutrition warning is not raised for inactive but existing product with val
     basisAmount:()=>100
   };
   vm.createContext(ctx);
-  vm.runInContext(between(nutrition,'  function nutritionProblem(','  const alarmEscape=')+'\nthis.validate=nutritionProblem;',ctx);
+  vm.runInContext(between(nutrition,'  function recipePlanningPieceNutrition(','  function calculate(')+between(nutrition,'  function nutritionProblem(','  const alarmEscape=')+'\nthis.validate=nutritionProblem;',ctx);
   const ingredient={id:'breakfast-berries',name:'Himbeeren',inventory_id:'berries',quantity:125,unit:'g'};
   const stock={id:'berries',name:'Himbeeren'};
   const lot={id:'lot',inventory_id:'berries',product_id:'old',unopened_packages:1,package_quantity:125};

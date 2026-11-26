@@ -37,7 +37,7 @@ const context={
   basisAmount:item=>Number(item.quantity)
 };
 vm.createContext(context);
-vm.runInContext(nutrition.slice(start,end)+'\nthis.audit=nutritionProblem;this.warningMarkup=mealNutritionWarningMarkup;',context);
+vm.runInContext(nutrition.slice(nutrition.indexOf('  function recipePlanningPieceNutrition('),nutrition.indexOf('  function calculate('))+nutrition.slice(start,end)+'\nthis.audit=nutritionProblem;this.warningMarkup=mealNutritionWarningMarkup;',context);
 
 const ingredient={id:'vegetable-1',inventory_id:'asia-stock',name:'Gemüsepfanne Asiatische Art',unit:'g',quantity:360};
 const stock={id:'asia-stock',name:'Gemüsepfanne Asiatische Art',quantity:710,unit:'g'};

@@ -106,4 +106,6 @@ test('measured bread uses remaining numbered slices and only future missing slic
  assert.equal(future.estimated,true);assert(Math.abs(future.kcal-500/9*2.41)<1e-8);
  const missing=n.nutritionProblem({id:'new-mandu',name:'Mandu TK',unit:'g',quantity:120},{inventory:[],products:[],lots:[],purchaseExpectedIds:new Set(['new-mandu'])});
  assert.equal(missing.awaitingPurchase,true);assert.equal(missing.provisional,true);
+ const regular=n.nutritionProblem({id:'new-pumpkin',name:'Hokkaido-Kürbis',unit:'g',quantity:100},{inventory:[],products:[],lots:[],purchaseExpectedIds:new Set(['new-pumpkin'])});
+ assert.equal(regular,null,'normal documented food reference is not a broken product');
 });

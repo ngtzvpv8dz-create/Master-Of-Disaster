@@ -17,7 +17,7 @@ const extract=(source,start,end)=>{
 };
 
 test('extra with missing macros is an incomplete day, not a completed zero-calorie day',()=>{
-  const src=extract(nut,'  function addConsumedExtrasToDays(','  function setText(');
+  const src=extract(nut,'  function formatMacro(','  function nutritionText(')+extract(nut,'  function extraProteinBound(','  function setText(');
   const ctx={number:x=>x===null||x===undefined||x===''?null:Number(x),
     formatNumber:(x,d=1)=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:d}).format(x)};
   vm.createContext(ctx);
