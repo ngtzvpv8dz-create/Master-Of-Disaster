@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V842';
+  const VERSION='V941';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -185,6 +185,9 @@
   // Original names remain operational keys for allocation and historical booking.
   // Catalogue identity is the shared presentation name, never a stock conversion.
   const ingredientName=item=>String(item?.name||item?.label||'Zutat').trim();
+  // The date suffix is an internal uniqueness key for otherwise identical
+  // recipe titles. It is never part of the culinary display title.
+  const displayRecipeTitle=value=>String(value||'').replace(/\s*\(Monatsplan\s+(?:\d{2}-\d{2}|[A-Z]\d+)\)\s*$/i,'').trim();
   const identityKey=(name,id)=>String(name||'').trim().toLocaleLowerCase('de-DE')+'|'+String(id||'');
   let identityCacheRows=null,identityIndex=new Map(),identityUnique=new Map(),positionIdentityIndex=new Map();
   function canonicalIngredientName(item,source=null){
@@ -194,7 +197,7 @@
       const evidence=String(source.name||'')+' '+String(source.label||'');
       if(/spinat/i.test(evidence)){
         if(source.frozen===true||/\b(?:tk|tiefgekühlt|tiefgefroren)\b/i.test(evidence))return 'Blattspinat, tiefgekühlt';
-        if(source.frozen===false||/\b(?:frisch|babyspinat)\b/i.test(evidence))return 'Blattspinat, frisch';
+        if(/\b(?:frisch|babyspinat)\b/i.test(evidence))return 'Blattspinat, frisch';
       }
     }
     // The saved historical source takes priority over present-day recipe defaults.
@@ -247,6 +250,13 @@
       }
     }
     const specific=positionIdentityIndex.get(String(item?.id||''));
+    // An explicit state must stay explicit even for legacy rows whose
+    // catalogue snapshot used an older spelling.
+    const spinachEvidence=original+' '+String(item?.label||'');
+    if(/^(?:(?:tk[- ]?)?(?:baby)?(?:blatt)?spinat|spinat)(?:[ ,].*)?$/i.test(original)){
+      if(/\b(?:tk|tiefgekühlt|tiefgefroren)\b/i.test(spinachEvidence)||/^tk[- ]?blattspinat/i.test(original))return 'Blattspinat, tiefgekühlt';
+      if(/\bfrisch\b|babyspinat/i.test(spinachEvidence))return 'Blattspinat, frisch';
+    }
     if(specific?.canonical_name)return String(specific.canonical_name);
     if(raw==='miso-paste'||raw==='miso-paste hell'||raw==='miso-paste dunkel'){
       const evidence=original+' '+String(item?.label||'');
@@ -264,6 +274,24 @@
       canonical=canonical.replace(/^TK[- ](.+)$/i,'$1, tiefgekühlt').replace(/ (?:TK|tiefgefroren)$/i,', tiefgekühlt');
     }
     return canonical;
+  }
+  function recipeInstructionAmounts(steps,recipeItems,mealItems){
+    if(!Array.isArray(mealItems))return steps;
+    const escaped=value=>Array.from(String(value)).map(ch=>'\\^$.*+?()[]{}|'.includes(ch)?'\\'+ch:ch).join('');
+    const rules=[];
+    for(const original of recipeItems||[]){
+      const matches=mealItems.filter(item=>ingredientName(item)===ingredientName(original)&&String(item.unit||'').toLowerCase()===String(original.unit||'').toLowerCase());
+      if(matches.length!==1)continue;
+      const from=num(original.quantity),to=num(matches[0].quantity);
+      if(from===null||to===null||Math.abs(from-to)<.000001)continue;
+      const unit=String(original.unit||'');
+      if(!/^(g|kg|ml|l)$/i.test(unit))continue;
+      const amount=escaped(String(from)).replace(/\\\./g,'[.,]');
+      const name=escaped(ingredientName(original));
+      const re=new RegExp('(?<![0-9.,])'+amount+'\\s*'+escaped(unit)+'\\s+'+name+'(?![\\p{L}\\p{N},-])','giu');
+      rules.push({re, replacement:String(to).replace('.',',')+' '+unit+' '+ingredientName(matches[0])});
+    }
+    return steps.map(step=>rules.reduce((value,rule)=>value.replace(rule.re,()=>rule.replacement),String(step)));
   }
   function canonicalInstructionText(steps,items){
     const aliases=new Map();
@@ -751,8 +779,8 @@
     // variants; fetch them in stable, bounded pages alongside the common index.
     for(let offset=0;offset<25000;offset+=size){
       const result=await supabase.from('food_catalog_recipe_positions_v1')
-        .select('ingredient_id,original_name,canonical_name,resolution')
-        .eq('user_id',userId).in('resolution',['historical_documented','historical_recorded','flexible','matched_position','named_product'])
+         .select('ingredient_id,original_name,canonical_name,family_name,resolution')
+        .eq('user_id',userId)
         .order('ingredient_id').range(offset,offset+size-1);
       if(result.error)throw result.error;
       const chunk=result.data||[];rows.push(...chunk);
@@ -1355,7 +1383,11 @@
     const sources=Array.isArray(snapshot?.sources)
       ?snapshot.sources.filter(row=>row&&Number(row.quantity)>0):[];
     const original=Array.isArray(snapshot?.ingredients)
-      ?snapshot.ingredients:(meal?.ingredients||[]);
+      ?snapshot.ingredients.map(item=>{
+        if(item?.id)return item;
+        const matches=(meal?.ingredients||[]).filter(row=>ingredientName(row)===ingredientName(item)&&String(row.unit||'')===String(item.unit||'')&&Number(row.quantity)===Number(item.quantity));
+        return matches.length===1?{...item,id:matches[0].id}:item;
+      }):(meal?.ingredients||[]);
     const eatenExtras=(meal?.ingredients||[]).filter(row=>row.eaten_only_extra===true);
     if(!sources.length&&!original.length&&!eatenExtras.length)return '';
 
@@ -1410,15 +1442,18 @@
           const wasFrozen=source.frozen===true;
           let label=String(source.label||source.name||ingredientName(item)).trim();
           if(wasFrozen)label=label.replace(/\s*[·,-]\s*frisch\s*$/i,'').trim()+' · aufgetaut (TK)';
-          const detail=familyText(label)===familyText(ingredientName(item))
-            ?'Produkt/Charge bei Zubereitung nicht näher dokumentiert':label;
+          const canonical=canonicalIngredientName(item,source);
+          const raw=String(source.name||ingredientName(item));
+          const oldName=Array.from(raw).map(ch=>'\\^$.*+?()[]{}|'.includes(ch)?'\\'+ch:ch).join('');
+          const detail=familyText(label)===familyText(raw)||familyText(label)===familyText(canonical)
+            ?'':label.replace(new RegExp('(?<![\\p{L}\\p{N},-])'+oldName+'(?![\\p{L}\\p{N},-])','giu'),()=>canonical);
           const av=String(item?.name||'').trim().toLowerCase()==='avocado'
             ?/Avocado\s+Nr\.\s*(\d+).*?(\d+)\s*g\s*(?:brutto|Bruttogewicht)/i.exec(String(item.label||'')):null;
           const origin=/\bChile\b/i.test(String(source.label||''))?' · Chile':'';
-          const shownName=av?'Avocados Hass'+origin+' · Nr. '+av[1]:canonicalIngredientName(item,source);
+          const shownName=av?canonical+' · Nr. '+av[1]+origin:canonical;
           const shownAmount=av?av[2]+' g brutto':fmtQty(source.quantity,source.unit);
           return '<li class="food-ingredient-has-allocation-v712"><span>'+esc(shownName)+'</span><b>'+esc(shownAmount)+'</b>'
-            +(av?'':'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
+            +(av||!detail?'':'<div class="food-ingredient-allocation-v712"><div class="food-ingredient-allocation-line-v712 is-single-source-v741">'
             +'<span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
             +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div>')+'</li>';
         });
@@ -1427,7 +1462,7 @@
         esc(num(item.quantity)===null?'Menge offen':ingredientQuantityForDisplay(item))+'</b></li>'];
     });
     const unassigned=ordered.filter(source=>!usedSources.has(source))
-      .map(source=>'<li><span>'+esc(source.label||source.name||'Vorratszutat')+
+      .map(source=>'<li><span>'+esc(canonicalIngredientName({name:source.name||source.label||'Vorratszutat',label:source.label,inventory_id:source.inventory_id},source))+
         '</span><b>'+esc(fmtQty(source.quantity,source.unit))+'</b></li>');
     const rows=[...itemRows,...unassigned];
     const extraMarkup=eatenExtras.length
@@ -1535,7 +1570,9 @@
   function recipePresentation(recipe,expanded,itemsOverride=null,servingsOverride=null,ingredientGroups=null,allocationMap=null,preparedMeal=null,showStoredNutrition=true,prepMealId=null){
     const items=itemsOverride||(recipe.food_recipe_ingredients||recipe.ingredients||[]);
     const servings=Math.max(1,Number(servingsOverride??recipe.servings)||1);
-    const instructions=canonicalInstructionText(preparedMeal?recipeInstructions(recipe):spiceInstructionsByTaste(recipeInstructions(recipe)),items);
+    const baseSteps=preparedMeal?recipeInstructions(recipe):spiceInstructionsByTaste(recipeInstructions(recipe));
+    const currentSteps=!preparedMeal&&itemsOverride?recipeInstructionAmounts(baseSteps,recipe.food_recipe_ingredients||recipe.ingredients||[],itemsOverride):baseSteps;
+    const instructions=canonicalInstructionText(currentSteps,items);
     // Stored recipe kcal are a historical catalog estimate. Meal cards use
     // the current ingredient quantities/products from food-nutrition-v711.js.
     // Avoid flashing outdated kcal before that authoritative calculation runs.
@@ -1567,7 +1604,7 @@
       return '<button type="button" class="'+(active?'is-active':'')+'" '+targetAttribute+'="'+esc(id)+'" data-food-rating="'+value+'" aria-label="'+label+'" aria-pressed="'+pressed+'" title="'+label+'">★</button>';
     }).join('');
     const status=rating===null?'Unbewertet':rating+' von 5 Sternen';
-    return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(recipe?.title||(kind==='meal'?'Mahlzeit':'Rezept'))+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div></div>';
+    return '<div class="food-recipe-rating-v636" role="group" aria-label="Bewertung für '+esc(displayRecipeTitle(recipe?.title)||(kind==='meal'?'Mahlzeit':'Rezept'))+'"><span>'+esc(status)+'</span><div class="food-recipe-stars-v636">'+stars+'</div></div>';
   }
 
   function ratingNoteControl(entry,kind='recipe'){
@@ -2083,7 +2120,7 @@
       :'';
 
     if(isMealPrep){
-      const title=meal.title||recipe?.title||'Meal Prep';
+      const title=displayRecipeTitle(meal.title||recipe?.title)||'Meal Prep';
       const extras=meal.ingredients||[];
       const detailNote=visibleMealNote(meal.note,{suppressGenericMealPrep:true,completed:status==='completed'});
       const extrasSummary=extras.length
@@ -2168,7 +2205,7 @@
         :'';
       return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-meal-card="'+esc(meal.id)+'">'
         +'<button type="button" class="food-recipe-toggle-v572" data-food-meal-toggle="'+esc(meal.id)+'" aria-expanded="'+expanded+'">'
-          +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(view.meta)+'</em></span>'
+          +'<span><small class="food-recipe-type-v544">'+esc(MEAL_LABELS[meal.meal_type]||meal.meal_type)+'</small><h4>'+esc(displayRecipeTitle(recipe.title))+'</h4><em>'+esc(view.meta)+'</em></span>'
           +'<b aria-hidden="true">'+(expanded?'−':'+')+'</b>'
         +'</button>'
         +dailyCreatineReminderMarkup(meal)
@@ -2232,7 +2269,7 @@
     const assignedLeftoverIds=new Set((data.meals||[]).filter(meal=>meal.meal_date>=todayIso()&&meal.leftover_id).map(meal=>String(meal.leftover_id)));
     const leftovers=(data.leftovers||[]).filter(item=>Number(item.available_servings)>0&&!assignedLeftoverIds.has(String(item.id)));
     const leftoverBlock=leftovers.length
-      ?'<section class="food-leftovers-v572"><div class="food-leftovers-head-v572"><strong>Restportionen</strong><span>'+leftovers.length+' verfügbar</span></div><div class="food-leftovers-grid-v572">'+leftovers.map(item=>{const recipe=item.food_recipes||{};return '<article><div><small>'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||'RESTE')+'</small><strong>'+esc(recipe.title||'Restportion')+'</strong><span>'+esc(portionLabel(item.available_servings))+' verfügbar</span></div><button type="button" class="food-action-v544 compact" data-food-schedule-leftover="'+esc(item.id)+'">Einplanen</button>'
+      ?'<section class="food-leftovers-v572"><div class="food-leftovers-head-v572"><strong>Restportionen</strong><span>'+leftovers.length+' verfügbar</span></div><div class="food-leftovers-grid-v572">'+leftovers.map(item=>{const recipe=item.food_recipes||{};return '<article><div><small>'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||'RESTE')+'</small><strong>'+esc(displayRecipeTitle(recipe.title)||'Restportion')+'</strong><span>'+esc(portionLabel(item.available_servings))+' verfügbar</span></div><button type="button" class="food-action-v544 compact" data-food-schedule-leftover="'+esc(item.id)+'">Einplanen</button>'
         +'<button type="button" class="food-action-v544 compact" data-food-mealprep-action="register"'
         +' data-leftover-id="'+esc(item.id)+'" data-servings="1" title="Nur bei tatsächlich eingefrorener Portion">🧊 1 Portion eingefroren bestätigen</button></article>';}).join('')+'</div></section>'
       :'';
@@ -4004,7 +4041,7 @@
     const view=recipePresentation(recipe,expanded);
     const preparedTotal=preparedPortionTotal(recipe.id,data);
     const meta=[view.meta,preparedPortionLabel(preparedTotal)].filter(Boolean).join(' · ');
-    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(recipe.title)+'</h4><em>'+esc(meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+recipeRatingControl(recipe)+ratingNoteControl(recipe)+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
+    return '<article class="food-recipe-card-v544 '+(expanded?'is-expanded-v572':'')+'" data-food-recipe-card="'+esc(recipe.id)+'"><button type="button" class="food-recipe-toggle-v572" data-food-recipe-toggle="'+esc(recipe.id)+'" aria-expanded="'+expanded+'"><span><small class="food-recipe-type-v544">'+esc(RECIPE_GROUP_LABELS[recipe.meal_type]||MEAL_LABELS[recipe.meal_type]||recipe.meal_type)+'</small><h4>'+esc(displayRecipeTitle(recipe.title))+'</h4><em>'+esc(meta)+'</em></span><b aria-hidden="true">'+(expanded?'−':'+')+'</b></button>'+recipeRatingControl(recipe)+ratingNoteControl(recipe)+view.details+'<div class="food-recipe-actions-v582"><button type="button" class="food-action-v544 compact" data-food-edit-recipe="'+esc(recipe.id)+'">Bearbeiten</button><button type="button" class="food-action-v544 food-recipe-plan-v572" data-food-schedule="'+esc(recipe.id)+'">Einplanen</button></div></article>';
   }
 
   function recipesView(data){
@@ -4262,7 +4299,7 @@
     if(!leftover){alert('Restportion nicht gefunden.');return;}
     const max=Math.max(.5,Number(leftover.available_servings)||.5);
     const recipe=leftover.food_recipes||{};
-    addModal('Restportion einplanen','<form><p class="food-leftover-modal-copy-v572"><strong>'+esc(recipe.title||'Restportion')+'</strong><br>'+esc(portionLabel(max))+' verfügbar</p><div class="food-form-grid-v544"><label>Tag<input name="date" type="date" min="'+todayIso()+'" value="'+plusDays(todayIso(),1)+'" required></label><label>Mahlzeit<select name="type">'+mealTypeOptions(planningMealType(recipe.meal_type))+'</select></label></div><label>Portionen<input name="servings" type="number" min="0.5" max="'+esc(max)+'" step="0.5" value="'+esc(Math.min(1,max))+'" required></label><button class="food-action-v544" type="submit">Rest einplanen</button></form>',async form=>{
+    addModal('Restportion einplanen','<form><p class="food-leftover-modal-copy-v572"><strong>'+esc(displayRecipeTitle(recipe.title)||'Restportion')+'</strong><br>'+esc(portionLabel(max))+' verfügbar</p><div class="food-form-grid-v544"><label>Tag<input name="date" type="date" min="'+todayIso()+'" value="'+plusDays(todayIso(),1)+'" required></label><label>Mahlzeit<select name="type">'+mealTypeOptions(planningMealType(recipe.meal_type))+'</select></label></div><label>Portionen<input name="servings" type="number" min="0.5" max="'+esc(max)+'" step="0.5" value="'+esc(Math.min(1,max))+'" required></label><button class="food-action-v544" type="submit">Rest einplanen</button></form>',async form=>{
       const servings=Number(form.get('servings'));
       if(!Number.isFinite(servings)||servings<=0||servings>max)throw new Error('Ungültige Restportion.');
       const supabase=client();if(!supabase)throw new Error('Cloud-Verbindung fehlt.');
