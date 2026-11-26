@@ -26,6 +26,8 @@ jobs:
           npm init -y
           npm install --no-save playwright@1.48.2
       - name: Run all three browsers even if one fails
+        env:
+          HOME: /root
         run: |
           status=0
           for browser in chromium webkit firefox; do
