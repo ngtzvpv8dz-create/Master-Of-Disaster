@@ -5,14 +5,14 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const src=fs.readFileSync(path.join(__dirname,'..','food-nutrition-v711.js'),'utf8');
-const start=src.indexOf('  function addConsumedExtrasToDays(');
+const start=src.indexOf('  function extraProteinBound(');
 const end=src.indexOf('  function dailySummary(',start);
 assert.ok(start>=0&&end>start,'Extra-Tagesintegration vorhanden');
 const addExtras=new Function('number',src.slice(start,end)+'return addConsumedExtrasToDays;')(
   value=>value===null||value===undefined||value===''?null:Number(value)
 );
 const s=src.indexOf('  function dailySummary('),e=src.indexOf('  function setText(',s);
-const dailySummary=new Function('formatNumber',src.slice(s,e)+'return dailySummary;')(
+const dailySummary=new Function('formatNumber',src.slice(src.indexOf('  function formatMacro('),src.indexOf('  function nutritionText('))+src.slice(s,e)+'return dailySummary;')(
   (v,max=1)=>new Intl.NumberFormat('de-DE',{maximumFractionDigits:max}).format(v)
 );
 
@@ -78,8 +78,8 @@ test('Milka Pralinen use whole pieces in Heute extra snack, not manual 5.7g',()=
   assert.equal(lib.bases(product),'Stück');
   assert.equal(lib.countedPieceWeight(product),5.7);
   assert.equal(lib.initialQty(product),1);
-  assert.equal(lib.valuesFromCatalog(product,1).calories_kcal,28.67);
-  assert.equal(lib.valuesFromCatalog(product,2).calories_kcal,57.34);
+  assert.equal(lib.valuesFromCatalog(product,1).calories_kcal,28.671);
+  assert.equal(lib.valuesFromCatalog(product,2).calories_kcal,57.342);
   assert.equal(lib.displayPieceQuantity(product,11.4,'g'),2);
   assert.equal(lib.extraQuantityDisplay({product_id:'milka',unit:'g',quantity:11.4}),'2 Stück');
   assert.match(extra,/if\(countedPieceWeight\(p\)&&!Number.isInteger\(qty\)\)/);
