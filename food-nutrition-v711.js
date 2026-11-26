@@ -65,6 +65,15 @@
   // Source: Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0)
   // and labelled generic comparisons for ingredients not covered by exact stock.
   const GENERAL_REFERENCE_BY_KEY={
+    "weißkohl":{kcal:32,protein:1.382,fat:0.19,carbs:4.54,unit:"g",source:"BLS G342100 Weißkohl roh; Planreferenz",url:"https://blsdb.de/food?foodId=38196",planOnly:true},
+    "ingwer":{kcal:48,protein:1.92,fat:0.75,carbs:6.8,unit:"g",source:"BLS R211200 Ingwer roh; Planreferenz",url:"https://blsdb.de/food?foodId=38957",planOnly:true},
+    "batate":{kcal:119,protein:1.63,fat:0.6,carbs:25.2,unit:"g",source:"BLS K420100 Batate roh; Planreferenz",url:"https://blsdb.de/food?foodId=38253",planOnly:true},
+    "buchweizen":{kcal:339,protein:13.05,fat:3.13,carbs:61.86,unit:"g",source:"BLS C322000 Buchweizen roh; Planreferenz",url:"https://blsdb.de/food?foodId=38125",planOnly:true},
+    "tofunatur":{kcal:115,protein:15.51,fat:5.63,carbs:0,unit:"g",source:"BLS H861000 Tofu natur; Planreferenz",url:"https://blsdb.de/food?foodId=37935",planOnly:true},
+    "kimchi":{kcal:51,protein:1.3,fat:0.3,carbs:10,unit:"g",source:"REWE Beste Wahl Kimchi 190g; Vergleichsprodukt bis Einkauf",url:"https://www.rewe.de/shop/p/rewe-beste-wahl-kimchi-190g/9561740",planOnly:true},
+    "zwiebelmett":{kcal:160,protein:17.8,fat:9.7,carbs:0.6,unit:"g",source:"REWE Zwiebelmett; Vergleichsprodukt bis Einkauf",url:"https://www.rewe.de/shop/p/zwiebelmett/506135",planOnly:true},
+    "hokkaidokürbistk":{kcal:31,protein:1.4,fat:0.2,carbs:5.298,unit:"g",source:"BLS G581000 Hokkaido roh als Näherung für ungewürzte TK-Ware; Planreferenz",url:"https://blsdb.de/food?foodId=38550",planOnly:true},
+    "spinatfrisch":{kcal:18,protein:2.067,fat:0.3,carbs:0.93,unit:"g",source:"BLS G211100 Spinat frisch, gespeicherte Referenz; Planreferenz",url:"https://blsdb.de",planOnly:true},
     "sojasauce":{kcal:76.6,protein:7.3,fat:1.02,carbs:6.35,unit:"ml",source:"BLS R143000 (66kcal/100g), auf 100ml mit geschätzter Dichte 1,16g/ml umgerechnet",url:"https://blsdb.de/food?foodId=38320"},
     "hokkaidokürbis":{kcal:31,protein:1.4,fat:0.2,carbs:5.298,unit:"g",source:"BLS G581000 Hokkaido roh (Kerne entfernt)",url:"https://blsdb.de/food?foodId=38550"},
     "kichererbsenabgetropft":{kcal:148,protein:8.4,fat:3,carbs:17.4,unit:"g",source:"BLS G770432 Kichererbse reif gekocht; Konserve abgetropft Näherung",url:"https://blsdb.de/food?foodId=42409"},
@@ -105,9 +114,9 @@
     "teriyakisauce":{kcal:100,protein:2,fat:0.1,carbs:22,unit:"g",source:"Teriyaki-Sauce, generische Rezeptur; Zucker und Salz je Marke variieren",url:"generic-teriyaki-sauce"}
   };
   const originalAlias=name=>key(name);
-  function referenceFor(item){
+  function referenceFor(item,data){
     const ref=GENERAL_REFERENCE_BY_KEY[originalAlias(itemName(item))];
-    if(!ref)return null;
+    if(!ref||(ref.planOnly&&data?.historicalCalculation))return null;
     const unit=text(item.unit);
     if(ref.unit==='g'&&!['g','kg','stück','scheibe','päckchen','packung'].includes(unit))return null;
     if(ref.unit==='ml'&&!['ml','l'].includes(unit))return null;
@@ -446,6 +455,16 @@
           if(product)break;
         }
       }
+      if(!product&&data.isPlanningForecast&&/^eier?$/.test(text(name))&&unit==='stück'){
+        const ids=new Set(familyStocks.map(row=>String(row.id)));
+        const prior=(data.lots||[]).filter(l=>ids.has(String(l.inventory_id))&&l.product_id)
+          .sort((a,b)=>String(b.purchased_on||b.created_at||'').localeCompare(String(a.purchased_on||a.created_at||'')));
+        for(const lot of prior){
+          const candidate=(data.products||[]).find(p=>String(p.id)===String(lot.product_id));
+          const n=candidate&&nutritionOf(candidate);
+          if(candidate&&eggEdibleWeightFromKnownSize(candidate)&&n.kcal!==null&&n.protein!==null){product=candidate;referenceUsed=true;break;}
+        }
+      }
       if(!product)return {complete:false,missing:[name+' (Nährwertprodukt ungeklärt)']};
       const nut=nutritionOf(product);
       if(nut.kcal===null||nut.protein===null)return {complete:false,missing:[name+' (Nährwerte fehlen)']};
@@ -687,7 +706,7 @@
       if(known)return {nutrition:known,product:null,stock};
       // An absent specific product is not permission to borrow nutrition from
       // another wrap, salsa or mushroom variant.
-      return referenceFor({...item,name:explicit});
+      return referenceFor({...item,name:explicit},data);
     }
     let stock=item?.inventory_id?inventory.find(row=>String(row.id)===String(item.inventory_id)):null;
 
@@ -735,7 +754,7 @@
       reference:product.product_data?.nutrition_reference_only===true};
     const fromNote=noteNutrition(stock);
     if(fromNote)return {nutrition:fromNote,product:null,stock};
-    return uniquelyPresentAlias(name,data)||referenceFor(item);
+    return uniquelyPresentAlias(name,data)||referenceFor(item,data);
   }
 
   function basisAmount(item,source){
@@ -1133,6 +1152,7 @@
   }
 
   function calculate(items,servings,data,allocationMap=null,historical=false){
+    if(historical)data={...data,historicalCalculation:true};
     const rows=Array.isArray(items)?items:[];
     if(!rows.length)return {complete:false,missing:['Keine Zutaten']};
     const div=Math.max(.01,number(servings)||1);
@@ -1197,7 +1217,7 @@
       if(familyNutrition&&!familyNutrition.complete){
         // A completely absent stock can use a transparent dietary reference;
         // never disguise a broken *physical* batch as a generic approximation.
-        const ref=referenceFor(item);
+        const ref=referenceFor(item,data);
         const hasPhysicalStock=(data?.inventory||[]).some(stock=>
           stock.is_active!==false&&number(stock.quantity)>0&&
           familyMatch(itemName(item),stock.family_name));
@@ -1343,7 +1363,7 @@
     if(generic&&!generic.complete){
       if(data.isPlanningForecast&&/^avocado(?:s)?$/i.test(name)&&text(item.unit)==='stück'&&String(data.forecastDate||'')>plusDays(todayIso(),2))
         return {...entry,awaitingPurchase:true,provisional:true,reason:'Für diese spätere Frischobst-Mahlzeit wird das Bruttogewicht der neuen Avocado beim Einkauf erfasst; heutige Stückgewichte nicht wiederverwenden.'};
-      const ref=referenceFor(item);
+      const ref=referenceFor(item,data);
       const hasPhysicalStock=(data?.inventory||[]).some(stock=>
         stock.is_active!==false&&number(stock.quantity)>0&&
         familyMatch(name,stock.family_name));
