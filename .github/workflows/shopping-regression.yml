@@ -15,15 +15,7 @@ on:
       - tests/shopping-optional-treats-v919.test.cjs
       - .github/workflows/shopping-regression.yml
   pull_request:
-    paths:
-      - food-v544.js
-      - food-freshness-v913.js
-      - shopping-v678.js
-      - tests/food-freshness-v913.test.cjs
-      - tests/food-prep-checklist-v916.test.cjs
-      - tests/food-spice-taste-prep-v918.test.cjs
-      - tests/shopping-v1.test.cjs
-      - .github/workflows/shopping-regression.yml
+    branches: [main]
 permissions:
   contents: read
 jobs:

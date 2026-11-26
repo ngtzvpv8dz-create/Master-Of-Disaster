@@ -8,11 +8,7 @@ on:
       - 'tests/food-stock-meal-shopping.test.cjs'
       - '.github/workflows/food-mealprep-regression.yml'
   pull_request:
-    paths:
-      - 'food-nutrition-v711.js'
-      - 'food-v544.js'
-      - 'tests/food-mealprep-nutrition.test.cjs'
-      - 'tests/food-stock-meal-shopping.test.cjs'
+    branches: [main]
 jobs:
   nutrition:
     runs-on: ubuntu-latest
