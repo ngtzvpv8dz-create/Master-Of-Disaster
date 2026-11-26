@@ -6,7 +6,7 @@
   'use strict';
   if(window.__modFoodV544)return;
 
-  const VERSION='V941';
+  const VERSION='V942';
   const ROOT_ID='modFoodV544';
   const BODY_CLASS='mod-food-v544';
   const SURFACE_CLASS='mod-food-surface-v544';
@@ -279,17 +279,32 @@
     if(!Array.isArray(mealItems))return steps;
     const escaped=value=>Array.from(String(value)).map(ch=>'\\^$.*+?()[]{}|'.includes(ch)?'\\'+ch:ch).join('');
     const rules=[];
+    const pieceForms={
+      'eier':['Ei','Eier'],'hühnereier':['Hühnerei','Hühnereier'],
+      'pita':['Pitabrot','Pitabrote'],'tortilla wraps vollkorn':['Vollkornwrap','Vollkornwraps']
+    };
     for(const original of recipeItems||[]){
       const matches=mealItems.filter(item=>ingredientName(item)===ingredientName(original)&&String(item.unit||'').toLowerCase()===String(original.unit||'').toLowerCase());
       if(matches.length!==1)continue;
       const from=num(original.quantity),to=num(matches[0].quantity);
       if(from===null||to===null||Math.abs(from-to)<.000001)continue;
-      const unit=String(original.unit||'');
-      if(!/^(g|kg|ml|l)$/i.test(unit))continue;
+      const unit=String(original.unit||''),raw=ingredientName(original);
       const amount=escaped(String(from)).replace(/\\\./g,'[.,]');
-      const name=escaped(ingredientName(original));
-      const re=new RegExp('(?<![0-9.,])'+amount+'\\s*'+escaped(unit)+'\\s+'+name+'(?![\\p{L}\\p{N},-])','giu');
-      rules.push({re, replacement:String(to).replace('.',',')+' '+unit+' '+ingredientName(matches[0])});
+      const boundary='(?![\\p{L}\\p{N},-])';
+      const prefix='(?<![0-9.,])'+amount+'\\s*';
+      const quantity=String(to).replace('.',',');
+      if(/^(g|kg|ml|l)$/i.test(unit)){
+        rules.push({re:new RegExp(prefix+escaped(unit)+'\\s+'+escaped(raw)+boundary,'giu'),replacement:quantity+' '+unit+' '+raw});
+      }else if(/^(stück|scheibe|scheiben|päckchen|packung)$/i.test(unit)){
+        const forms=pieceForms[raw.toLocaleLowerCase('de-DE')];
+        if(forms&&/^stück$/i.test(unit)){
+          rules.push({re:new RegExp(prefix+'(?:'+forms.map(escaped).join('|')+')'+boundary,'giu'),replacement:quantity+' '+forms[to===1?0:1]});
+        }
+        const slice=/^scheiben?$/i.test(unit);
+        const unitPattern=slice?'Scheiben?':escaped(unit);
+        const unitOut=slice?(to===1?'Scheibe':'Scheiben'):unit;
+        rules.push({re:new RegExp(prefix+unitPattern+'\\s+'+escaped(raw)+boundary,'giu'),replacement:quantity+' '+unitOut+' '+raw});
+      }
     }
     return steps.map(step=>rules.reduce((value,rule)=>value.replace(rule.re,()=>rule.replacement),String(step)));
   }
