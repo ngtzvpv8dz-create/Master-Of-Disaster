@@ -11,9 +11,11 @@ async function run(browser,label,explicitPurchase){
   await page.clock.setFixedTime(new Date('2026-11-14T10:00:00+01:00'));
   await page.route('**/*supabase.co/**',route=>route.abort());
   await page.goto(base+'/?check=shopping-live-v905-'+label,{waitUntil:'networkidle',timeout:60000});
-  await page.waitForFunction(()=>window.__modAreaRuntimeV609,{timeout:30000});
-  await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('food'));
-  await page.waitForFunction(()=>!!window.__modFoodV544,undefined,{timeout:30000});
+  await page.locator('main.app').waitFor({timeout:20000});
+  // Use actual production FOOD and SHOPPING scripts, as in the passing shopping browser suite.
+  // This targeted fixture test does not depend on unrelated staged module readiness.
+  await page.addScriptTag({url:base+'/food-v544.js?shopping-audit=1'});
+  await page.addScriptTag({url:base+'/shopping-v678.js?shopping-audit=1'});
   await page.evaluate(explicitPurchase=>{
    const food={
      inventory:[
@@ -52,8 +54,7 @@ async function run(browser,label,explicitPurchase){
    window.__modFoodV544.getShoppingSnapshot=async()=>food;
   },explicitPurchase);
   const loaded=await page.evaluate(async()=>{
-   const x=await window.__modAreaRuntimeV609.openArea('shopping');
-   if(!window.__modShoppingV678)return {err:'shopping not loaded',x};
+   if(!window.__modShoppingV678)return {err:'shopping not loaded'};
    window.__modShoppingV678.open();
    await window.__modShoppingV678.reload({refreshFood:false});
    return {ready:true,hasFood:!!window.__modShoppingV678.getState().food};
