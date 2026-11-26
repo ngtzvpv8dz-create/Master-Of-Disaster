@@ -26,6 +26,8 @@ jobs:
       - name: Relevant FOOD regression tests
         run: |
           node --test tests/food-planned-extras-mount-v885.test.cjs tests/food-planned-extras-v880.test.cjs tests/food-extras-v828.test.cjs tests/food-daily-warning-v838.test.cjs tests/food-recipe-quality-v880.test.cjs tests/food-inactive-product-history-v850.test.cjs tests/food-ratings-and-prepared-nutrition-v886.test.cjs tests/food-history-feedback-v887.test.cjs tests/food-rating-notes-click-v888.test.cjs tests/food-snack-recorded-v890.test.cjs
+      - name: FOOD catalog snapshot and load deadline regression
+        run: node --test tests/food-catalog-load-v947.test.cjs
       - name: FOOD inventory MHD and traceability regression
         run: node --test tests/food-inventory-mhd-traceability-v906.test.cjs
       - name: Red paprika product-source and edible-weight regressions
