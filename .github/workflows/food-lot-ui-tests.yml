@@ -27,3 +27,13 @@ jobs:
         run: node --test tests/food-recipe-quality-v880.test.cjs
       - name: Whole bread slice display
         run: node --test tests/food-whole-bread-slices-v881.test.cjs
+
+      - name: Verify current shopping deficit and explicit purchase in both browsers
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8898 --bind 127.0.0.1 >/tmp/food-shopping-test.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          node -e '(async()=>{for(let i=0;i<40;i++){try{if((await fetch("http://127.0.0.1:8898/index.html")).ok)return}catch{}await new Promise(r=>setTimeout(r,250))}throw Error("Local test server did not start")})().catch(e=>{console.error(e);process.exit(1)})'
+          FOOD_SHOPPING_TEST_BASE_URL=http://127.0.0.1:8898 node tests/shopping-live-mobile-v905.cjs
