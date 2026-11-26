@@ -2,19 +2,20 @@
 // V1 live shopping browser regression with isolated fixtures, NO personal data writes.
 const {chromium,webkit}=require('playwright');
 const assert=require('node:assert/strict');
-const base='https://ngtzvpv8dz-create.github.io/Master-Of-Disaster';
-async function run(browser,label){
- const ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/Berlin',serviceWorkers:'allow'});
+const base=String(process.env.FOOD_SHOPPING_TEST_BASE_URL||'https://ngtzvpv8dz-create.github.io/Master-Of-Disaster').replace(/\/$/,'');
+async function run(browser,label,explicitPurchase){
+ const ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/Berlin',serviceWorkers:'block'});
  try{
   const page=await ctx.newPage(),errs=[];
   page.on('pageerror',e=>errs.push(e.message));
+  await page.clock.setFixedTime(new Date('2026-11-14T10:00:00+01:00'));
   await page.route('**/*supabase.co/**',route=>route.abort());
   await page.goto(base+'/?check=shopping-live-v905-'+label,{waitUntil:'networkidle',timeout:60000});
   await page.waitForFunction(()=>window.__modAreaRuntimeV609,{timeout:30000});
   assert.equal(await page.evaluate(()=>window.__modAreaRuntimeV609.preloadAll()),true,'preload current V1 modules');
   await page.evaluate(()=>window.__modAreaRuntimeV609.openArea('food'));
   await page.waitForFunction(()=>!!window.__modFoodV544,{timeout:30000});
-  await page.evaluate(()=>{
+  await page.evaluate(explicitPurchase=>{
    const food={
      inventory:[
        {id:'bread',name:'Harry Vital+fit Brot',quantity:13,unit:'Scheiben',family_name:'Vollkornbrot',is_active:true},
@@ -37,6 +38,7 @@ async function run(browser,label){
      shopping_products:[],shopping_receipt_reviews:[],shopping_receipt_aliases:[],
      shopping_substitutions:[],shopping_day_skips:[],shopping_checkouts:[],finance_transactions:[]
    };
+   if(explicitPurchase)fixtures.shopping_items.push({...fixtures.shopping_items[0],id:'actual-hack',source:'manual',source_key:'manual-hack',notes:'Verbindlicher separater Einkauf 500 g.'});
    window.getSupabaseClient=()=>({
     auth:{getSession:async()=>({data:{session:{user:{id:'demo'}}},error:null})},
     from(table){
@@ -49,7 +51,7 @@ async function run(browser,label){
     }
    });
    window.__modFoodV544.getShoppingSnapshot=async()=>food;
-  });
+  },explicitPurchase);
   const loaded=await page.evaluate(async()=>{
    const x=await window.__modAreaRuntimeV609.openArea('shopping');
    if(!window.__modShoppingV678)return {err:'shopping not loaded',x};
@@ -62,20 +64,23 @@ async function run(browser,label){
   const cards=await page.locator('#modShoppingV643 .shopping-item-v643').allTextContents();
   const joined=cards.join(' | ');
   assert.equal(cards.filter(v=>/Rinderhack/i.test(v)).length,1,'one lean mince purchase, not duplicate: '+joined);
-  assert(/Rinderhack/i.test(joined)&&/500 g/.test(joined),'500 g purchase planned: '+joined);
+  const hack=cards.find(v=>/Rinderhack/i.test(v));
+  const expected=explicitPurchase?500:415;
+  assert(hack&&hack.includes('Kaufen '+expected+' g'),(explicitPurchase?'Explicit purchase must cover the deficit':'Historical audit must not override current deficit')+': '+joined);
+  assert(hack.includes('Aktuell im Vorrat 315 g'),'current stock is not the purchase quantity: '+joined);
   assert(/Tomaten \(frisch\)/.test(joined),'Tomatoes generic label displayed: '+joined);
   assert(!/Sorte prüfen/.test(joined),'remove confusing tomato warning');
   assert(!/Harry Vital\+fit/.test(joined),'existing bread should not become purchase');
   assert(!/TK-Zwiebel|Zwiebelwürfel/i.test(joined),'sufficient frozen onions should not become purchase');
   assert(!/Löwensenf|Senf extra/i.test(joined),'existing mustard should not become purchase');
   assert.equal(errs.length,0,'page errors: '+errs.join(' | '));
-  console.log('SHOPPING LIVE MOBILE PASS '+label+': one 500g lean mince; tomatoes without warning; no duplicate bread/onions/mustard purchase');
+  console.log('SHOPPING LIVE MOBILE PASS '+label+': one '+expected+'g lean mince ('+(explicitPurchase?'explicit purchase':'audit ignored')+'); tomatoes without warning; no duplicate bread/onions/mustard purchase');
  } finally{await ctx.close()}
 }
 (async()=>{
  for(const [label,engine] of [['Chromium',chromium],['WebKit',webkit]]){
   const b=await engine.launch({headless:true});
-  try{await run(b,label)}finally{await b.close()}
+  try{await run(b,label,false);await run(b,label,true)}finally{await b.close()}
  }
  console.log('SHOPPING V1 LIVE MOBILE BROWSER TESTS ALL PASS');
 })().catch(e=>{console.error('SHOPPING V1 LIVE MOBILE BROWSER FAIL',e);process.exitCode=1});
