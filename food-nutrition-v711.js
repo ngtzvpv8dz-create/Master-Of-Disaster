@@ -1181,6 +1181,9 @@
     }else if(unit==='stück'&&name==='paprikagelb'){
       // Purchase 11.11. mixed paprika; individually weighed yellow piece 146g.
       grams=q*146;profile={kcal:35,protein:.98,fat:.21,carbs:5.92};
+    }else if(unit==='stück'&&['avocado','avocados'].includes(name)&&!item.inventory_id&&!item.explicit_stock_selection){
+      // Same documented 132 g gross planning average as the calculator; never a lot weight.
+      grams=q*132;profile={kcal:160,protein:2,fat:14.66,carbs:8.53};
     }else if(unit==='stück'&&name==='birne'){
       // User's recorded whole pear weights, latest 267g on 21.11.
       grams=q*267;profile={kcal:58,protein:.3,fat:.29,carbs:13.16};
@@ -1596,7 +1599,7 @@
         n.carbs===null&&carbBound===null?'Kohlenhydrate':null].filter(Boolean);
       const exception=String(pd.nutrition_audit_exception_type||'');
       const declarationException=['supplement_micronutrients_only',
-        'creatine_macros_only_on_package','coffee_dry_nutrition_not_mandatory'].includes(exception);
+        'creatine_macros_only_on_package','creatine_active_ingredient_only','coffee_dry_nutrition_not_mandatory'].includes(exception);
       const provisional=pd.nutrition_reference_only===true
         ||pd.nutrition_is_reference===true||pd.nutrition_estimated===true
         ||pd.nutrition_review_needed===true||pd.nutrition_provisional===true
