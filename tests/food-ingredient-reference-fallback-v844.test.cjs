@@ -114,3 +114,16 @@ test('fresh unlabeled Hokkaido uses official reference; incompatible packaged pr
             prod('b','smoked',{energy_kcal:177,protein_g:22,fat_g:11,carbohydrates_g:0})],lots:[]};
  assert.ok(nutritionProblem({name:'Räucherlachs',quantity:80,unit:'g'},packaged)?.reason);
 });
+test('two same-fat compatible Greek yoghurt stocks use actual nutrition, not the default',()=>{
+ const data={inventory:[stock('a','Brand A','Griechischer Joghurt 2 %',200),stock('b','Brand B','Griechischer Joghurt 2 %',200)],products:[
+ prod('a1','a',{energy_kcal:58,protein_g:6,fat_g:2,carbohydrates_g:4}),
+ prod('b1','b',{energy_kcal:58,protein_g:6,fat_g:2,carbohydrates_g:4})],lots:[]};
+ const n=calc('Griechischer Joghurt',250,'g',data);
+ assert.equal(n.complete,true);near(n.kcal,145);near(n.fat,5);
+ const high={...data,inventory:data.inventory.map(x=>({...x,family_name:'Griechischer Joghurt 9,4 %'})),
+ products:data.products.map(x=>({...x,nutrition_per_100:{energy_kcal:114,protein_g:3.1,fat_g:9.4,carbohydrates_g:3.5}}))};
+ const h=calc('Griechischer Joghurt',250,'g',high);
+ assert.equal(h.complete,true);near(h.kcal,285);near(h.fat,23.5);
+ const conflict={...data,products:[data.products[0],{...data.products[1],nutrition_per_100:{energy_kcal:71,protein_g:6,fat_g:2,carbohydrates_g:5}}]};
+ assert.equal(calc('Griechischer Joghurt',250,'g',conflict).complete,false);
+});

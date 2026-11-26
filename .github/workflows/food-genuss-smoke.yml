@@ -39,3 +39,27 @@ jobs:
           grep -Fq 'work-coffee-employer-v1' food-planned-extras-v880.js
           ! grep -Fq 'recordedSnack' food-v544.js
           grep -Fq 'edit_food_planned_extra_v1' supabase/migrations/20261025202100_food_planned_extra_edit_v1.sql
+  audit-migration-replay:
+    name: Food audit migration replay
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: synthetic-ci-only
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Replay nutrient dependency and audit migration in isolated PostgreSQL
+        run: |
+          cat tests/food-audit-replay-schema.sql \
+            supabase/migrations/20261126065814_food_nutrient_bounds_preserve_exact_v1_20261126.sql \
+            supabase/migrations/20261126095447_food_audit_recognize_documented_nutrient_bounds_v1_20261126.sql \
+            tests/food-audit-replay-assert.sql | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
