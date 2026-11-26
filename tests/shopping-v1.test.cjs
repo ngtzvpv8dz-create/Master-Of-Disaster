@@ -113,3 +113,16 @@ test('planner handles 520 distinct items without losing entries',()=>{
   }
   assert.equal(food().deriveShopping(d).length,520);
 });
+
+test('monthly freezer and durable food-stockup cover later gaps once; fresh meat stays local',()=>{
+  const sh=shop(), names=['Hähnchenbrustfilet','Rinderhackfleisch Light','Putenbrustfilet','ESN Isoclear Fresh Cherry','Zarte Haferflocken','Hokkaido-Kürbis TK'];
+  const gaps=names.flatMap(label=>['2026-12-02','2026-12-19'].map(date=>({label,unit:'g',missing:100,required:100,available:0,buyFrom:date,shortageDate:date,uses:[{date,quantity:100}]})));
+  sh.state.food={gaps,inventory:[],manualFood:[],cartKeys:[],plannedShoppingUses:names.map(name=>({name,date:'2026-12-02'})),inventoryLots:[]};
+  sh.state.general=names.map((label,i)=>({id:'stockup'+i,label,quantity:250,unit:'g',category:'Lebensmittel',source:'food-stockup',status:'cart',needed_by:'2026-11-18',notes:i<3?'Sofort portionieren und einfrieren.':''}));
+  assert.equal(sh.buildRows().filter(r=>r.source==='food-gap').length,0);
+  assert.equal(sh.buildRows().length,names.length);
+  sh.state.general[0].notes='Frisch verwenden';
+  assert.equal(sh.buildRows().filter(r=>r.source==='food-gap'&&r.label==='Hähnchenbrustfilet').length,2);
+  sh.state.general.push({id:'obsolete',label:'Mandu TK',quantity:120,unit:'g',category:'Lebensmittel',source:'food-stockup',status:'cart',needed_by:'2026-11-18'});
+  assert.equal(sh.buildRows().find(r=>r.id==='general:obsolete').unmatchedPlannedPurchase,true);
+});
