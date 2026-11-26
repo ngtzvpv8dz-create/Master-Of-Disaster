@@ -66,6 +66,7 @@
     const estimated=valid(p?.product_data?.edible_weight_per_piece_estimated_g)&&!valid(p?.product_data?.edible_weight_per_piece_g);
     return (estimated?'ca. ':'')+nf(g)+' g essbarer Anteil je Stück'+(estimated?' (geschätzt)':'');
   }
+  function volumeDensity(p){const d=Number(p?.nutrition_per_100?.grams_per_ml||p?.product_data?.grams_per_ml);return Number.isFinite(d)&&d>0?d:null;}
   function bases(p){
     if(!p)return 'g';
     // Einheiten ohne belastbare 100-g-Nährwertbasis (z. B. Brausetabletten).
@@ -74,6 +75,7 @@
     if(countedPieceWeight(p)||(stockUnit==='Stück'&&ediblePieceWeight(p)))return 'Stück';
     if(!hasMacros(p)&&['Stück','Portion','Päckchen','Kapsel'].includes(stockUnit))return stockUnit;
     const basis=String(p?.nutrition_per_100?.basis||p?.product_data?.nutrition_basis||'').toLowerCase();
+    if(stockUnit==='g'&&basis==='per_100_ml'&&volumeDensity(p))return 'g';
     return /100.ml|per_100_ml/.test(basis)||p?.package_unit==='ml'?'ml':'g';
   }
   function hasMacros(p){return Boolean(p)&&!(String(p?.nutrition_per_100?.basis||'')==='per_100_ml_prepared_with_oil'&&/^(Beutel|Päckchen|Packung)$/i.test(String(p.inventory_unit||'')))&&valid(nval(p,'energy_kcal'))&&(valid(nval(p,'protein_g'))||nbound(p,'protein_g')!==null);}
@@ -88,11 +90,12 @@
     if(!['g','ml'].includes(unit))return 1;
     if(p.serving_unit===unit&&serving>0&&serving<=1500)return serving;
     if(p.package_unit===unit&&pack>0&&pack<=1000)return pack;
+    if(unit==='g'&&volumeDensity(p)&&p.package_unit==='ml'&&pack>0)return Math.round(pack*volumeDensity(p)*10)/10;
     return 100;
   }
   function valuesFromCatalog(p,quantity){
     const unit=bases(p),mass=unit==='Stück'&&catalogPieceWeight(p)?quantity*catalogPieceWeight(p):quantity;
-    const factor=mass/100,n=p.nutrition_per_100||{};
+    const n=p.nutrition_per_100||{},factor=mass/100/(unit==='g'&&n.basis==='per_100_ml'?(volumeDensity(p)||1):1);
     const scaled=key=>{const value=nval(p,key);return value===null?null:Math.round(value*factor*1000)/1000;};
     const productData=p.product_data||{},bounds={};
     for(const key of ['protein_g','carbohydrates_g','fat_g','sugars_g','salt_g']){
@@ -515,6 +518,6 @@
     observer.observe(document.documentElement,{subtree:true,childList:true});
     mount();
   }
-  window.__modFoodExtrasV828={version:'V940',refresh,openEntry,getStatus:()=>({date,count:rows.length,ready,loading})};
+  window.__modFoodExtrasV828={version:'V941',refresh,openEntry,getStatus:()=>({date,count:rows.length,ready,loading})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach,{once:true});else attach();
 })();
