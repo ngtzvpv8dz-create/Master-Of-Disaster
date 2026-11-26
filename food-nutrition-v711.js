@@ -120,6 +120,9 @@
   function referenceFor(item,data){
     const ref=GENERAL_REFERENCE_BY_KEY[originalAlias(itemName(item))];
     if(!ref||(ref.planOnly&&data?.historicalCalculation))return null;
+    // A planning reference must not cover ambiguous physical yoghurt stock.
+    if(originalAlias(itemName(item))==='griechischerjoghurt'&&
+       (data?.inventory||[]).filter(row=>row.is_active!==false&&number(row.quantity)>0&&/^griechischer joghurt (?:2 %|9,4 %)$/.test(text(row.family_name))).length>1)return null;
     const unit=text(item.unit);
     if(ref.unit==='g'&&!['g','kg','stück','scheibe','päckchen','packung'].includes(unit))return null;
     if(ref.unit==='ml'&&!['ml','l'].includes(unit))return null;
