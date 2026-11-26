@@ -4,10 +4,10 @@ const {chromium,webkit}=require('playwright');
 const assert=require('node:assert/strict');
 const base=String(process.env.FOOD_SHOPPING_TEST_BASE_URL||'https://ngtzvpv8dz-create.github.io/Master-Of-Disaster').replace(/\/$/,'');
 async function run(browser,label,explicitPurchase){
- const ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/Berlin',serviceWorkers:'block'});
+ const ctx=await browser.newContext({viewport:{width:390,height:844},timezoneId:'Europe/Berlin',serviceWorkers:'allow'});
  try{
   const page=await ctx.newPage(),errs=[];
-  page.on('pageerror',e=>errs.push(e.message));
+  page.on('pageerror',e=>errs.push(e.stack||e.message));
   await page.clock.setFixedTime(new Date('2026-11-14T10:00:00+01:00'));
   await page.route('**/*supabase.co/**',route=>route.abort());
   await page.goto(base+'/?check=shopping-live-v905-'+label,{waitUntil:'networkidle',timeout:60000});
