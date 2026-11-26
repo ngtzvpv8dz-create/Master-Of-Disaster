@@ -1,0 +1,9 @@
+# FOOD – verbindliche Planungsregeln (26.11.2026)
+
+- Nur Wasser und Trinkmilch in ml/l. Alle Soßen, Dips, Senf, Mayonnaise, Remoulade, Kokosmilch, Öl usw. in g planen. Bei Umrechnungen produktspezifische Dichte verwenden; Näherungen als vorläufig kennzeichnen. Unbekannte Dichte nicht erfinden. Historische Mengen unverändert lassen. Nährwertbasis der Hersteller erhalten.
+- Arbeitskaffee und dazugehörige Milch werden vom Arbeitgeber gestellt. Separater bestätigungspflichtiger Eintrag; kein privater Vorrat, keine Einkaufsmenge und keine doppelte Zutat im Frühstück. Milch als echte Rezeptzutat bleibt zulässig.
+- Sichtbare Titel ohne Monatsplan-Datum, interne Kennung oder technische Zusätze; Länderkennung/Flagge zulässig. Interne Planungs- und Nährwertreferenzhinweise nicht in Zubereitung, Beschreibung oder sichtbarem Mahlzeitentext.
+- Jede Zubereitung individuell, nummeriert, mit konkreten Zutaten und Mengen. Keine Sammelalternativen wie Reis/Nudeln/Kartoffeln, Ei/Hack, Pita/Wrap. Keine nicht vorhandenen Zutaten oder Meal-Prep-Anweisungen für Einzelportionen. Tatsächliche Mengenänderungen auch in der Zubereitungsanzeige berücksichtigen.
+- Historische Mahlzeiten: aktuelle kanonische Zutatenfamilie und Bezeichnung anzeigen; ursprüngliche Mengen, Verbrauch, Chargen und Nährwerte nicht durch Annahmen ersetzen. Beispiel: Blattspinat, tiefgekühlt statt TK-Blattspinat. Fehlende historische Nährwerte sind kein Abnahmekriterium.
+- Stückgewichte und Scheibengewichte bei Rezeptvorlagen nur als gekennzeichnete Planwerte verwenden, wenn das tatsächliche Gewicht noch nicht vorliegt. Beim Einkauf/Verbrauch tatsächliche Gewichte verwenden. Keine erfundenen historischen Mengen.
+- Vor Freigabe alle aktiven Rezepte und geplanten Mahlzeiten berechnen, Mengen/Einheiten prüfen, Bestandsbuchungen transaktional testen und Browserprüfung ausdrücklich als bestanden oder nicht durchführbar dokumentieren.
