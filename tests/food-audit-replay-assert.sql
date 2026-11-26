@@ -22,7 +22,7 @@ SELECT ('00000000-0000-0000-0004-'||lpad(n::text,12,'0'))::uuid,
 INSERT INTO public.food_recipe_ingredients(id,user_id,recipe_id,name,quantity,unit) VALUES
  ('00000000-0000-0000-0005-000000000001','00000000-0000-0000-0001-000000000001','00000000-0000-0000-0003-000000000001','Known ingredient',100,'g'),
  ('00000000-0000-0000-0005-000000000002','00000000-0000-0000-0001-000000000001','00000000-0000-0000-0003-000000000002','Unknown quantity',NULL,'g');
-DO $ DECLARE t text; c text; v text; expected boolean; accepted boolean; n integer:=0; BEGIN
+DO $$ DECLARE t text; c text; v text; expected boolean; accepted boolean; n integer:=0; BEGIN
  FOR t,c,v,expected IN SELECT * FROM (VALUES
  ('food_inventory','quantity','-1',false),('food_inventory','quantity','NaN',false),('food_inventory','quantity','Infinity',false),('food_inventory','quantity','-Infinity',false),('food_inventory','quantity','0',true),('food_inventory','quantity','12.5',true),('food_inventory','quantity','NULL',true),
  ('food_recipe_ingredients','quantity','-1',false),('food_recipe_ingredients','quantity','0',false),('food_recipe_ingredients','quantity','NaN',false),('food_recipe_ingredients','quantity','Infinity',false),('food_recipe_ingredients','quantity','0.25',true),('food_recipe_ingredients','quantity','NULL',true),
@@ -41,7 +41,7 @@ DO $ DECLARE t text; c text; v text; expected boolean; accepted boolean; n integ
   n:=n+1;
  END LOOP;
  RAISE NOTICE 'Direct quantity guard: % cases PASS',n;
-END $;
+END $$;
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0001-000000000001',false);
 DO $$ DECLARE actual text[]; BEGIN
