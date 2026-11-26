@@ -1872,15 +1872,20 @@
   }
 
   // Eindeutige Tages-Addition. Wird pro frischem Tages-Map genau einmal aufgerufen.
+  function extraProteinBound(extra){
+    const b=extra?.nutrition_bounds?.protein_g;
+    return b?.status==='upper_bound'&&number(b.max)!==null&&number(b.max)>0?number(b.max):null;
+  }
   function addConsumedExtrasToDays(totals,extras){
     for(const extra of extras||[]){
       const date=String(extra.consumption_date||'');
       if(!/^\d{4}-\d{2}-\d{2}$/.test(date))continue;
       const day=totals.get(date)||{kcal:0,protein:0,meals:0,unresolved:0,extras:0};
-      const kcal=number(extra.calories_kcal),protein=number(extra.protein_g);
+      const kcal=number(extra.calories_kcal),exactProtein=number(extra.protein_g),bound=extraProteinBound(extra),protein=exactProtein??bound;
       if(kcal===null||protein===null){day.unresolved++;day.meals++;totals.set(date,day);continue;}
       day.kcal+=kcal;
       day.protein+=protein;
+       if(exactProtein===null&&bound!==null)day.proteinBound=true;
       day.extras=(day.extras||0)+1;
       totals.set(date,day);
     }
@@ -1981,7 +1986,7 @@
       supabase.from('shopping_products').select('id,inventory_id,brand,product_name,variant,package_quantity,package_unit,nutrition_per_100,product_data,servings_per_package,serving_quantity,serving_unit,active'),
       supabase.from('food_inventory_lots').select('id,product_id,inventory_id,best_before_date,purchased_on,created_at,storage_location,unopened_packages,opened_remaining_quantity,opened_remaining_unit,package_quantity,package_unit,batch_data'),
       // Extra-Konsum wird als eigene, bereits gegessene Tagesposition gezählt.
-      supabase.from('food_extra_consumptions').select('id,consumption_date,title,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g').gte('consumption_date',from).lte('consumption_date',to).limit(1500)
+      supabase.from('food_extra_consumptions').select('id,consumption_date,title,quantity,unit,calories_kcal,protein_g,carbohydrates_g,fat_g,nutrition_bounds').gte('consumption_date',from).lte('consumption_date',to).limit(1500)
     ]);
     const bad=results.find(result=>result.error);
     if(bad?.error)throw bad.error;
@@ -2134,7 +2139,7 @@
       for(const extra of data.extras||[]){
         if(String(extra.consumption_date)!==todayIso())continue;
         const missing=[number(extra.calories_kcal)===null?'Kalorien':null,
-          number(extra.protein_g)===null?'Protein':null].filter(Boolean);
+          number(extra.protein_g)===null&&extraProteinBound(extra)===null?'Protein':null].filter(Boolean);
         if(!missing.length)continue;
         const name=String(extra.title||'Zusatz-Snack / Getränk');
         todayWarnings.push({id:String(extra.id),title:name,type:'extra',extra:true,
