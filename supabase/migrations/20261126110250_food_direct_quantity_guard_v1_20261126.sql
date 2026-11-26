@@ -1,0 +1,6 @@
+-- Preserve NULL for explicitly unknown amounts and zero for empty stock.
+ALTER TABLE public.food_inventory ADD CONSTRAINT food_inventory_quantity_finite_nonnegative_v1 CHECK (quantity IS NULL OR (quantity >= 0 AND quantity < 'Infinity'::numeric));
+ALTER TABLE public.food_recipe_ingredients ADD CONSTRAINT food_recipe_ingredients_quantity_finite_positive_v1 CHECK (quantity IS NULL OR (quantity > 0 AND quantity < 'Infinity'::numeric));
+ALTER TABLE public.food_meal_ingredients ADD CONSTRAINT food_meal_ingredients_quantity_finite_positive_v1 CHECK (quantity IS NULL OR (quantity > 0 AND quantity < 'Infinity'::numeric));
+ALTER TABLE public.food_inventory_lots ADD CONSTRAINT food_inventory_lots_amounts_finite_v1 CHECK ((opened_remaining_quantity IS NULL OR (opened_remaining_quantity >= 0 AND opened_remaining_quantity < 'Infinity'::numeric)) AND (package_quantity IS NULL OR (package_quantity > 0 AND package_quantity < 'Infinity'::numeric)) AND (servings_per_package IS NULL OR (servings_per_package > 0 AND servings_per_package < 'Infinity'::numeric)));
+ALTER TABLE public.food_meals ADD CONSTRAINT food_meals_servings_finite_v1 CHECK (prepared_servings < 'Infinity'::numeric AND eaten_servings < 'Infinity'::numeric);
