@@ -21,15 +21,15 @@ test('only actual spices are classified as free seasoning, not oil or sauces',()
   assert.equal(seasoningByTaste({name:'Olivenöl'}),false);
   assert.equal(seasoningByTaste({name:'Gochujang-Paste'}),false);
   const steps=['Die Sauce mit 1 g Pfeffer schwarz und 2 g Salz würzen.'];
-  assert.deepEqual(spiceInstructionsByTaste(steps),['Die Sauce mit Pfeffer schwarz nach Belieben und Salz nach Belieben würzen.']);
+  assert.deepEqual(spiceInstructionsByTaste(steps),['Die Sauce mit Pfeffer schwarz und Salz würzen.']);
 });
 test('recipe editor persists unweighed kitchen spices and forces weight for other foods',()=>{
   assert.match(food,/const quantity=spice\?null:Number\(rawQuantity\)/);
   assert.match(food,/const unit=spice\?'nach Belieben'/);
-  assert.match(food,/spice\?storedName\+' nach Belieben'/);
+  assert.match(food,/label:spice\?storedName:/);
   assert.match(food,/qty.disabled=true;qty.required=false/);
   assert.match(food,/!spice&&\(!rawQuantity\|\|!Number.isFinite\(quantity\)\|\|quantity<=0\)/);
-  assert.match(food,/optionalSeasoning\?'<small>Nach Belieben/);
+  assert.match(food,/const quantityHtml=isOptionalSeasoning\s*\?''/);
   assert.match(food,/Keine Mengenbuchung/);
   assert.match(food,/preparedMeal\?recipeInstructions\(recipe\):spiceInstructionsByTaste/);
 });
@@ -65,8 +65,8 @@ test('previous-evening prep tasks detect planned marinating and avoid historical
   const tasks=fn();
   assert.deepEqual(tasks.map(t=>t.mealId),['mar','soak']);
   assert.equal(tasks.every(t=>t.dueDate==='2026-11-22'),true);
-  assert.match(tasks[0].tasks[0],/Marinier/);
-  assert.match(tasks[1].tasks[0],/Einweich/);
+  assert.match(tasks[0].tasks[0],/Fleisch marinieren/i);
+  assert.match(tasks[1].tasks[0],/Bohnen einweichen/i);
   assert.match(food,/thawTodayAlertsMarkup\(\)\+prepAheadAlertMarkup\(\)/);
 });
 test('taste feedback only after a completed meal and explicit user confirmation',()=>{
@@ -80,4 +80,36 @@ test('taste feedback only after a completed meal and explicit user confirmation'
 });
 test('V1 food, nutrition and style assets are cache-busted in each import context',()=>{
   require('./food-release-cache-helper.cjs').verifyFoodReleaseCache(index,runtime);
+});
+
+test('actual planned ingredients determine concise preparation hints, not generic placeholders',()=>{
+  const fnSrc=snippet(food,'  function plannedAheadPrepTasks(){','  function prepAheadAlertMarkup(){');
+  const recipes=[
+    {id:'o',instructions:'1. 43 g Zarte Haferflocken mit Ei und Milch verrühren und kurz quellen lassen.\n2. Ausbacken.'},
+    {id:'p',instructions:'1. Mehl und Hefe zu einem Teig kneten; abgedeckt gehen lassen.\n2. Pizza backen.'},
+    {id:'g',instructions:'1. Glasnudeln nach Packungsanleitung einweichen oder garen.\n2. Mit Gemüse mischen.'},
+    {id:'c',instructions:'1. Couscous quellen lassen.\n2. Servieren.'}];
+  const meals=recipes.map((r,i)=>({id:r.id,recipe_id:r.id,title:['Haferpfannkuchen','Gemüse-Pizza','Glasnudelpfanne','Couscous'][i],meal_date:'2026-11-28',status:'planned'}));
+  meals.push({...meals[2],id:'leftover',title:'Meal Prep: Glasnudelpfanne',source_meal_id:'g'});
+  const fn=new Function('state','todayIso','normalizedStatus','plusDays',fnSrc+';return plannedAheadPrepTasks')({meals,recipes},()=> '2026-11-27',x=>x,()=> '2026-11-27');
+  assert.deepEqual(fn().map(t=>t.tasks[0]),[
+    'Haferflocken-Teig kurz quellen lassen (morgen vor dem Ausbacken)',
+    'Pizzateig kneten und gehen lassen (morgen vor dem Backen)',
+    'Glasnudeln nach Packungsanleitung einweichen oder garen (morgen vor der Zubereitung)',
+    'Couscous quellen lassen (morgen vor der Zubereitung)']);
+});
+test('new unweighed seasonings are accepted in UI and nutrition without treating sauces as free spices',()=>{
+  const def=snippet(food,'  const seasoningByTaste=item=>{','  const ingredientQuantityForDisplay=item=>{');
+  const fn=new Function(def+';return seasoningByTaste')();
+  const nd=snippet(nutrition,'  const itemName=item=>','  function nutrient(');
+  const nf=new Function('text',nd+';return toTasteSeasoning')(s=>String(s||'').trim().toLocaleLowerCase('de-DE'));
+  for(const name of ['Bunter Pfeffer','Chiliflocken','Knoblauchgranulat','Ingwer gemahlen','Petersilie frisch','Schnittlauch','Safran','Kräuter der Provence']){
+    assert.equal(fn({name,quantity:null,unit:'nach Belieben'}),true,name);
+    assert.equal(nf({name,quantity:null,unit:'nach Belieben'}),true,name);
+  }
+  for(const name of ['Olivenöl','Sojasauce','Currypaste rot','Gochujang','Dressing']){
+    assert.equal(fn({name}),false,name);
+    assert.equal(nf({name,quantity:null,unit:'nach Belieben'}),false,name);
+  }
+  assert.equal(fn({name:'Ingwer gemahlen',quantity:10,unit:'g'}),false);
 });

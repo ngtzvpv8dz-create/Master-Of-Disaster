@@ -349,12 +349,13 @@
   const seasoningByTaste=item=>{
     const n=String(item?.name||item?.label||'').trim().toLocaleLowerCase('de-DE');
     if(/^(?:salz|meersalz|steinsalz|pfeffer(?:\s|$)|chiliflocken|chilipulver|cayenne(?:pfeffer)?|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|getrocknete minze|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat(?:nuss)?|muskatblüte|fenchelsamen|piment|nelken|curry(?:pulver)?|gewürzmischung|italienische kräuter|provence kräuter)(?:\b|$)/i.test(n))return true;
+    if((item?.quantity==null||String(item?.unit||'').toLowerCase()==='nach belieben')&&/^(?:bunter pfeffer|chiliflocken|chilipulver|ingwer gemahlen|knoblauchgranulat|knoblauchpulver|kräuter der provence|minze|minze getrocknet|getrocknete minze|muskatnuss|petersilie|petersilie frisch|dill|safran|schnittlauch)$/i.test(n))return true;
     return false;
   };
   const spiceInstructionsByTaste=steps=>steps.map(step=>String(step)
-    .replace(/\b\d+(?:[.,]\d+)?\s*g\s+(Salz|Meersalz|Pfeffer schwarz|Paprikapulver edelsüß|Paprikapulver|Oregano gerebelt|Oregano|Kreuzkümmel gemahlen|Kreuzkümmel|Currypulver|Chiliflocken|Chilipulver|Cayennepfeffer|Zimt gemahlen|Zimt|Kurkuma|Muskatnuss|Thymian|Rosmarin|Basilikum)\b/gi,'$1 nach Belieben'));
+    .replace(/\b\d+(?:[.,]\d+)?\s*g\s+(Salz|Meersalz|Pfeffer schwarz|Paprikapulver edelsüß|Paprikapulver|Oregano gerebelt|Oregano|Kreuzkümmel gemahlen|Kreuzkümmel|Currypulver|Chiliflocken|Chilipulver|Cayennepfeffer|Zimt gemahlen|Zimt|Kurkuma|Muskatnuss|Thymian|Rosmarin|Basilikum)\b/gi,'$1'));
   const ingredientQuantityForDisplay=item=>{
-    if(seasoningByTaste(item)||String(item?.unit||'').toLocaleLowerCase('de-DE')==='nach belieben')return 'nach Belieben';
+    if(seasoningByTaste(item)||String(item?.unit||'').toLocaleLowerCase('de-DE')==='nach belieben')return '';
     const stored=fmtQty(item?.quantity,item?.unit);
     const soyGrams=soySauceScaleGrams(item);
     if(soyGrams!==null)return fmtQty(soyGrams,'g');
@@ -376,7 +377,7 @@
   const ingredientDisplay=item=>{
     const q=num(item?.quantity);
     if(q===null||Number.isNaN(q))return canonicalIngredientName(item);
-    return ingredientQuantityForDisplay(item)+' '+canonicalIngredientName(item);
+    return (ingredientQuantityForDisplay(item)+' '+canonicalIngredientName(item)).trim();
   };
   const normalizedIngredient=(name,unit='')=>{
     const normalized=String(name||'').trim().toLocaleLowerCase('de-DE');
@@ -1464,8 +1465,9 @@
             +'<span class="food-allocation-copy-v741">'+esc(detail)+'</span></div></div>')+'</li>';
         });
       }
-      return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(canonicalIngredientName(item))+'</span><b>'+
-        esc(num(item.quantity)===null?'Menge offen':ingredientQuantityForDisplay(item))+'</b></li>'];
+      const isUnweighed=String(item?.unit||'').toLowerCase()==='nach belieben'&&num(item.quantity)===null;
+      return ['<li class="food-ingredient-has-allocation-v712"><span>'+esc(canonicalIngredientName(item))+'</span>'+
+        (isUnweighed?'':'<b>'+esc(num(item.quantity)===null?'Menge offen':ingredientQuantityForDisplay(item))+'</b>')+'</li>'];
     });
     const unassigned=ordered.filter(source=>!usedSources.has(source))
       .map(source=>'<li><span>'+esc(canonicalIngredientName({name:source.name||source.label||'Vorratszutat',label:source.label,inventory_id:source.inventory_id},source))+
@@ -1512,16 +1514,18 @@
   }
 
   function ingredientListMarkup(items,allocationMap=null,prepMealId=null){
-    return '<ul>'+items.map(item=>{
+    const isSpice=item=>seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben';
+    const ordered=[...items.filter(item=>!isSpice(item)),...items.filter(isSpice)];
+    return '<ul>'+ordered.map(item=>{
       const q=num(item.quantity);
       const isTapWater=/^(wasser|leitungswasser)$/i.test(ingredientName(item));
       const isOptionalSeasoning=seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben';
-      const allocation=isTapWater?null:((item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item));
-      const allocationHtml=isTapWater?'':(isOptionalSeasoning&&!allocation?.allocations?.length?'':(allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item)));
+      const allocation=isTapWater||isOptionalSeasoning?null:((item?.id&&allocationMap?.get?.(String(item.id)))||manualAllocationForItem(item)||familyAllocationForItem(item)||specificAllocationForItem(item));
+      const allocationHtml=isTapWater||isOptionalSeasoning?'':(allocationMarkup(allocation,item)||missingIngredientSourceMarkup(item));
       const editable=editableAllocationContext(item);
       const canRemove=Boolean(editable);
-      const quantityHtml=seasoningByTaste(item)||String(item?.unit||'').toLowerCase()==='nach belieben'
-        ?'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">nach Belieben</b>'
+      const quantityHtml=isOptionalSeasoning
+        ?''
         :q===null||Number.isNaN(q)
         ?''
         :'<b class="'+(allocationHtml?'food-ingredient-total-v741':'')+'">'+esc(ingredientQuantityForDisplay(item))+'</b>';
@@ -1870,24 +1874,47 @@
   // An optional marinade is a suggestion, never a false safety requirement.
   function plannedAheadPrepTasks(){
     const result=[],today=todayIso();
+    const timing=step=>/über\s*nacht|am\s+vortag|am\s+vorabend|am\s+abend\s+davor|(?:mindestens|ca\.|rund)\s*(?:[2-9]|1\d|2\d)\s*stunden/i.test(step);
+    const subject=(step,pattern)=>{const m=step.match(pattern);return m?m[0][0].toLocaleUpperCase('de-DE')+m[0].slice(1):'';};
     for(const meal of state?.meals||[]){
       if(normalizedStatus(meal.status)!=='planned'||meal.inventory_booked_at||
         !/^\d{4}-\d{2}-\d{2}$/.test(String(meal.meal_date||''))||
-        meal.meal_date<today)continue;
+        meal.meal_date<today||meal.source_meal_id||meal.leftover_id||/^meal prep:/i.test(meal.title||''))continue;
       const recipe=(state?.recipes||[]).find(r=>String(r.id)===String(meal.recipe_id||''));
-      const directions=String(recipe?.instructions||'')+' '+String(meal.note||'');
-      const explicit=/über\s*nacht|am\s+vortag|am\s+vorabend|am\s+abend\s+davor|(?:mindestens|ca\.|rund)\s*(?:[2-9]|1\d|2\d)\s*stunden/i.test(directions);
+      const override=meal.cooking_instructions_override;
+      const directions=Array.isArray(override)?override.join('\n'):
+        typeof override?.text==='string'?override.text:String(recipe?.instructions||'');
+      const title=String(meal.title||recipe?.title||'Mahlzeit');
       const tasks=[];
-      if(/marinier|marinade|einlegen|durchziehen/i.test(directions))
-        tasks.push(explicit?'Marinieren oder einlegen nach Rezept rechtzeitig starten':'Marinade prüfen und bei Bedarf heute Abend vorbereiten');
-      if(/einweich|quell(?:en|zeit)|einweck|trockenbohnen|trockenlinsen|kichererbsen\s+getrocknet/i.test(directions))
-        tasks.push(explicit?'Einweich- und Quellzeiten heute einplanen':'Einweichen bzw. Quellen nach Rezept prüfen');
-      if(/vorteig|teigruhe|gehen\s+lassen|ruhen\s+lassen|kalte\s+gare/i.test(directions))
-        tasks.push(explicit?'Vorteig oder Teigruhe heute beginnen':'Teigvorbereitung für morgen prüfen');
+      for(const line of (directions+'\n'+String(meal.note||'')).split(/\n+/)){
+        const early=timing(line);
+        const when=early?'heute':'morgen vor der Zubereitung';
+        if(/marinier|marinade|einlegen|durchziehen/i.test(line)){
+          const food=subject(line,/(?:Hähnchenbrustfilet|Putenbrustfilet|Hähnchen|Pute|Rindfleisch|Schweinefleisch|Fleisch|Tofu|Lachs|Fisch|Gemüse)/i)
+            ||subject(title,/(?:Hähnchen|Pute|Rindfleisch|Schweinefleisch|Tofu|Lachs|Fisch|Gemüse)/i);
+          if(food)tasks.push(food+' marinieren ('+when+')');
+          else if(/marinade/i.test(line))tasks.push('Marinade anrühren ('+when+')');
+        }
+        if(/einweich|quell(?:en|zeit)|trockenbohnen|trockenlinsen|kichererbsen\s+getrocknet/i.test(line)){
+          const food=subject(line,/(?:Haferflocken|Couscous|Glasnudeln|Reisnudeln|Bulgur|Quinoa|Kichererbsen|(?:Trocken)?bohnen|(?:Trocken)?linsen|Reis|Chiasamen|Leinsamen)/i);
+          if(food){
+            if(/haferflocken/i.test(food)&&/quell/i.test(line))
+              tasks.push('Haferflocken-Teig '+(/kurz/i.test(line)?'kurz ':'')+'quellen lassen ('+(early?'heute':'morgen vor dem Ausbacken')+')');
+            else if(/glasnudeln|reisnudeln/i.test(food)&&/einweich/i.test(line)&&/oder garen/i.test(line))
+              tasks.push(food+' nach Packungsanleitung einweichen oder garen ('+when+')');
+            else tasks.push(food+(/einweich|trockenbohnen|trockenlinsen/i.test(line)?' einweichen':' quellen lassen')+' ('+when+')');
+          }
+        }
+        if(/vorteig|teigruhe|gehen\s+lassen|ruhen\s+lassen|kalte\s+gare/i.test(line)&&
+          /teig|hefe|pizza|brot|brötchen/i.test(line+' '+title)){
+          const food=/pizza/i.test(title+' '+line)?'Pizzateig':/vorteig/i.test(line)?'Vorteig':/hefe/i.test(line)?'Hefeteig':'Teig';
+          const action=/gehen\s+lassen|hefe|kalte\s+gare/i.test(line)?'kneten und gehen lassen':'vorbereiten und ruhen lassen';
+          tasks.push(food+' '+action+' ('+(early?'heute':'morgen vor dem Backen')+')');
+        }
+      }
       if(!tasks.length)continue;
       result.push({mealId:String(meal.id),dueDate:plusDays(meal.meal_date,-1),
-        mealDate:meal.meal_date,title:meal.title||recipe?.title||'Mahlzeit',
-        tasks:[...new Set(tasks)]});
+        mealDate:meal.meal_date,title,tasks:[...new Set(tasks)]});
     }
     return result;
   }
@@ -1899,7 +1926,7 @@
     return '<details class="food-prep-ahead-v918">'+
       '<summary>🧂 Für morgen vorbereiten · '+tasks.length+' '+(tasks.length===1?'Gericht':'Gerichte')+' · Details öffnen</summary>'+
       '<ul>'+tasks.map(t=>'<li><strong>'+esc(t.title)+'</strong><span>'+esc(t.tasks.join(' · '))+
-        '</span><small>Für '+esc(fmtDate(t.mealDate))+' · nur notwendige Schritte laut Rezept sind verpflichtend</small></li>').join('')+'</ul>'+
+        '</span><small>Für '+esc(fmtDate(t.mealDate))+'</small></li>').join('')+'</ul>'+
       '</details>';
   }
 
@@ -4261,7 +4288,7 @@
       const name=ingredientName(item);
       const shownName=canonicalIngredientName(item);
       if(seasoningByTaste(item)&&String(item?.unit||'').toLowerCase()==='nach belieben')
-        return '<div><span><strong>'+esc(shownName)+'</strong><small>Nach Belieben würzen · kein Gramm-Zwang</small></span><b class="is-ok">Keine Mengenbuchung</b></div>';
+        return '<div><span><strong>'+esc(shownName)+'</strong> </span><b class="is-ok">Keine Mengenbuchung</b></div>';
       if(isNonShoppingIngredient(name)){
         return '<div><span><strong>'+esc(shownName)+'</strong><small>Benötigt '+esc(required===null?'offen':fmtQty(required,item.unit))+'</small></span><b class="is-ok">Kein Einkauf nötig</b></div>';
       }
@@ -4759,7 +4786,7 @@
       const optionalSeasoning=String(item.unit||'').toLowerCase()==='nach belieben'&&seasoningByTaste(item);
       return '<div class="food-planned-qty-row-v630" data-food-planned-qty-row data-ingredient-id="'+esc(item.id)+'" data-food-planned-removed="false">'
         +'<span><strong>'+esc(canonicalIngredientName(item))+'</strong><small data-food-planned-qty-note>Nur diese Einplanung</small></span>'
-        +'<span class="food-planned-qty-controls-v729">'+(optionalSeasoning?'<small>Nach Belieben · keine Gramm-Buchung</small>':'<input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(value)+'" '+(value?'':'placeholder="offen"')+'>')+'<b>'+esc(item.unit||'')+'</b><button type="button" class="food-planned-remove-v729" data-food-planned-remove aria-pressed="false">Entfernen</button></span>'
+        +'<span class="food-planned-qty-controls-v729">'+(optionalSeasoning?'':'<input type="number" min="0.01" step="0.01" inputmode="decimal" value="'+esc(value)+'" '+(value?'':'placeholder="offen"')+'>')+(optionalSeasoning?'':'<b>'+esc(item.unit||'')+'</b>')+'<button type="button" class="food-planned-remove-v729" data-food-planned-remove aria-pressed="false">Entfernen</button></span>'
       +'</div>';
     }).join('');
 
@@ -5037,7 +5064,7 @@
       const spice=seasoningByTaste({name:name?.value||''});
       row.dataset.foodSeasoning=String(spice);
       if(spice){
-        if(qty){qty.value='';qty.disabled=true;qty.required=false;qty.placeholder='nach Belieben';}
+        if(qty){qty.value='';qty.disabled=true;qty.required=false;qty.placeholder='';}
         if(unit){unit.value='nach Belieben';unit.readOnly=true;}
       }else{
         if(qty){qty.disabled=false;qty.required=true;qty.placeholder='';}
@@ -5111,7 +5138,7 @@
         const unit=spice?'nach Belieben':String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
         if(!spice&&(!rawQuantity||!Number.isFinite(quantity)||quantity<=0))throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
         if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
-        return {user_id:user.id,inventory_id:family?null:inventoryId,name:storedName,label:spice?storedName+' nach Belieben':fmtQty(quantity,unit)+' '+storedName,quantity,unit,sort_order:index+1};
+        return {user_id:user.id,inventory_id:family?null:inventoryId,name:storedName,label:spice?storedName:fmtQty(quantity,unit)+' '+storedName,quantity,unit,sort_order:index+1};
       });
 
       const validatedInstructions=checkedFoodRecipeInstructions(spiceInstructionsByTaste(String(instructions||'').split('\n')).join('\n'),ingredients,title);
@@ -5215,7 +5242,7 @@
         const unit=spice?'nach Belieben':String(row.querySelector('[data-food-recipe-unit]')?.value||'').trim();
         if(!spice&&(!rawQuantity||!Number.isFinite(quantity)||quantity<=0))throw new Error('Bei Zutat '+(index+1)+' fehlt eine gültige Menge.');
         if(!unit)throw new Error('Bei Zutat '+(index+1)+' fehlt die Einheit.');
-        return {inventory_id:family?null:inventoryId,name:storedName,label:spice?storedName+' nach Belieben':fmtQty(quantity,unit)+' '+storedName,quantity,unit};
+        return {inventory_id:family?null:inventoryId,name:storedName,label:spice?storedName:fmtQty(quantity,unit)+' '+storedName,quantity,unit};
       });
 
       const validatedInstructions=checkedFoodRecipeInstructions(spiceInstructionsByTaste(String(instructions||'').split('\n')).join('\n'),ingredients,title);

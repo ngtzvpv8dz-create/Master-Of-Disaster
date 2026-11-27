@@ -29,7 +29,7 @@
   // Do not invent nutrients or flag missing gram values for these alone.
   // Energetically relevant pastes, sauces, oils and fresh vegetables still need measured amounts.
   const toTasteSeasoning=item=>text(item?.unit)==='nach belieben'&&
-    /^(salz|meersalz|steinsalz|pfeffer|chili|cayenne|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat|fenchelsamen|piment|nelken|currypulver|curry|gewürzmischung|italienische kräuter|provence kräuter)(\s|$)/i.test(itemName(item));
+    (/^(salz|meersalz|steinsalz|pfeffer|chili|cayenne|paprikapulver|paprika edelsüß|paprika rosenscharf|oregano|thymian|rosmarin|basilikum|zimt|kreuzkümmel|kumin|cumin|kurkuma|garam masala|ras el hanout|sumach|za.atar|koriander gemahlen|muskat|fenchelsamen|piment|nelken|currypulver|curry|gewürzmischung|italienische kräuter|provence kräuter)(\s|$)/i.test(itemName(item))||/^(?:bunter pfeffer|chiliflocken|chilipulver|ingwer gemahlen|knoblauchgranulat|knoblauchpulver|kräuter der provence|minze|minze getrocknet|getrocknete minze|muskatnuss|petersilie|petersilie frisch|dill|safran|schnittlauch)$/i.test(itemName(item)));
 
   function nutrient(source,names){
     const data=source&&typeof source==='object'?source:{};
