@@ -141,7 +141,12 @@ async function run(browser,label){
     await form.locator('button[type="submit"]').click();
     await page.waitForFunction(()=>window.__foodV918Browser.db.food_ingredient_preferences[0].preference==='Gern',{timeout:12000});
     const actions=await page.evaluate(()=>window.__foodV918Browser.actions);
-    assert.deepEqual(actions.slice(0,2).map(x=>x.type),['upsert','delete']);
+    const checks=actions.filter(x=>x.table==='food_meal_ingredient_prep_checks');
+    assert.deepEqual(checks.map(x=>x.type),['upsert','delete','upsert','delete']);
+    assert.equal(checks[0].item.ingredient_id,'i-pepper');
+    assert(checks[1].filters.some(([op,key,value])=>op==='eq'&&key==='ingredient_id'&&value==='i-pepper'));
+    assert.equal(checks[2].item.ingredient_id,'i-onion');
+    assert(checks[3].filters.some(([op,key,value])=>op==='eq'&&key==='ingredient_id'&&value==='i-onion'));
     assert(actions.some(x=>x.type==='rpc'&&x.name==='record_food_ingredient_taste_feedback'&&x.payload.p_meal_id==='m-done'),'tasting should use designated RPC');
     assert(actions.every(x=>x.table!=='food_inventory'&&x.table!=='food_inventory_lots'),'checkbox must not debit food');
     // Real extra-snack panel: the ordinary meal must remain, and 3 extras show separately.
