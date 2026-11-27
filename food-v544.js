@@ -1205,7 +1205,8 @@
           label:part.label,
           quantity:part.quantity,
           unit:item?.unit||unit,
-          frozen:part.frozen===true
+          frozen:part.frozen===true,
+          lotId:part.lotId||null
         }))
       :[];
 
@@ -1321,25 +1322,67 @@
   }
 
   function allocationMarkup(allocation,item){
-    const parts=Array.isArray(allocation?.allocations)?allocation.allocations:[];
-    const allocated=parts.reduce((sum,part)=>sum+Math.max(0,Number(part.quantity)||0),0);
+    const actualParts=Array.isArray(allocation?.allocations)?allocation.allocations:[];
     const requested=Math.max(0,Number(item?.quantity)||0);
-    const missing=Math.max(0,Math.min(Number(allocation?.remaining??requested)||0,requested-allocated));
+    const editable=editableAllocationContext(item);
+    // Display only: a specifically assigned, still-frozen physical portion
+    // belongs in the plan even while the availability resolver uses fresh stock.
+    // Never use this projection for booking, shopping, or editing allocations.
+    const pending=[];
+    if(editable&&!allocation?.manual&&!/(?:zwiebel|paprika)/i.test(ingredientName(item))&&
+      sourceIsReal('meals')&&sourceIsReal('lots')&&sourceIsReal('freezer')&&sourceIsReal('inventory')){
+      const seen=new Set();
+      let total=0;
+      for(const portion of state?.freezer||[]){
+        if(portion.status!=='frozen'||String(portion.meal_ingredient_id||'')!==String(item.id))continue;
+        const lot=(state?.lots||[]).find(row=>String(row.id)===String(portion.frozen_lot_id));
+        if(!lot||seen.has(String(lot.id))||!frozenStorageLocation(lot.storage_location))continue;
+        const stock=(state?.inventory||[]).find(row=>String(row.id)===String(lot.inventory_id));
+        if(!stock)continue;
+        const qty=familyAllocationConvertQuantity(Number(portion.quantity)||0,portion.unit,item.unit);
+        const physical=familyAllocationLotQuantity(lot,stock,item.unit);
+        if(!(qty>0)||!(physical>=qty-0.0001)||total+qty>requested+0.0001)continue;
+        const product=(state?.products||[]).find(row=>String(row.id)===String(lot.product_id))||null;
+        const name=stock.name==='Hähnchenbrustfilet'?stock.name:familyAllocationProductText(product,stock);
+        const date=lot.purchased_on?fmtDate(String(lot.purchased_on).slice(0,10)):'unbekannt';
+        pending.push({label:name+' · Kauf '+date+' · Noch aufzutauen',quantity:qty,unit:item.unit,
+          frozen:true,lotId:String(lot.id),pendingThaw:true});
+        total+=qty;
+        seen.add(String(lot.id));
+      }
+    }
+    const parts=pending.length?[...pending]:actualParts;
+    if(pending.length){
+      let left=requested-pending.reduce((sum,part)=>sum+part.quantity,0);
+      for(const part of actualParts){
+        if(left<=0.0001)break;
+        if(pending.some(row=>row.lotId===part.lotId))continue;
+        const quantity=Math.min(left,Math.max(0,Number(part.quantity)||0));
+        if(quantity>0){parts.push({...part,quantity});left-=quantity;}
+      }
+    }
+    const allocated=parts.reduce((sum,part)=>sum+Math.max(0,Number(part.quantity)||0),0);
+    const missing=pending.length?Math.max(0,requested-allocated):
+      Math.max(0,Math.min(Number(allocation?.remaining??requested)||0,requested-allocated));
     if(!parts.length&&missing<=0.0001)return '';
 
     const generic=familyText(ingredientName(item));
     const needed=Math.max(0,Number(item?.quantity)||0);
-    const editable=editableAllocationContext(item);
-    const sourceEditAllowed=Boolean(editable)&&missing<=0.0001;
-    const singleComplete=parts.length===1&&missing<=0.0001&&Math.abs((Number(parts[0]?.quantity)||0)-needed)<=0.0001;
+    const sourceEditAllowed=Boolean(editable)&&!pending.length&&missing<=0.0001;
+    const singleComplete=!pending.length&&parts.length===1&&missing<=0.0001&&Math.abs((Number(parts[0]?.quantity)||0)-needed)<=0.0001;
     const thawing=Boolean(item?.thaw_started_at);
     let html='<div class="food-ingredient-allocation-v712">';
     parts.forEach((part,index)=>{
       const rawLabel=String(part.label||'').trim();
       const detailLabel=!rawLabel||familyText(rawLabel)===generic?'Produkt nicht genauer erfasst':rawLabel;
       const frozen=part.frozen===true;
-      const thawClass=frozen&&thawing?' is-thawing-v741':'';
-      const status=frozen?(thawing?' · Auftauen läuft':' · eingefroren'):'';
+      const portion=part.lotId?(state?.freezer||[]).find(row=>
+        String(row.frozen_lot_id)===String(part.lotId)&&['frozen','thawing','thawed'].includes(row.status)):null;
+      const warming=portion?['thawing','thawed'].includes(portion.status):frozen&&thawing&&!part.pendingThaw;
+      const thawClass=warming?' is-thawing-v741':'';
+      const status=part.pendingThaw||/auftauen läuft|aufgetaut/i.test(detailLabel)?'':
+        portion?.status==='thawed'?' · Aufgetaut':
+        warming?' · Auftauen läuft':frozen?' · eingefroren':'';
       const canEdit=sourceEditAllowed&&Boolean(part.inventoryId);
       const amount=canEdit
         ?'<button type="button" class="food-allocation-qty-edit-v749" data-food-allocation-edit="'+esc(item.id)+'" data-food-allocation-index="'+index+'" aria-label="Menge von '+esc(detailLabel)+' ändern">'+esc(fmtQty(part.quantity,part.unit))+'</button>'
@@ -1350,6 +1393,10 @@
         +amount
         +'</div>';
     });
+    if(pending.length){
+      html+='<div class="food-ingredient-allocation-line-v712"><span class="food-allocation-arrow-v741" aria-hidden="true">↳</span>'
+        +'<span class="food-allocation-copy-v741">Geplante Chargen · TK-Portion erst nach Auftau-Bestätigung verfügbar</span></div>';
+    }
     if(missing>0.0001){
       // A counted, physically present fruit cannot be labelled "not in stock"
       // just because its recipe requires edible grams rather than whole pieces.
