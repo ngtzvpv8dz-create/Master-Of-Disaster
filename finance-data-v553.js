@@ -5,14 +5,14 @@
   'use strict';
   if(window.__modFinanceDataV555)return;
 
-  const VERSION='V900';
+  const VERSION='V949';
   const ROOT_ID='modFinanceV552';
   const REQUEST_TIMEOUT_MS=9000;
   let loadPromise=null;
   let visibleRefreshTimer=null;
   let rootObserver=null;
   let bodyObserver=null;
-  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[],plannedExpenses:[],plannedError:null,recurringTransactions:[],recurringError:null};
+  let state={loaded:false,loading:false,error:null,userId:null,currentBalance:null,periodMode:'month',periodTransactions:[],pendingTransactions:[],notVisibleTransactions:[],plannedExpenses:[],plannedError:null,recurringTransactions:[],recurringError:null,cashBalance:null,cashError:null};
   const expandedTransactions=new Set();
   const expandedCategories=new Set();
   // Separate section toggles for each period. In GESAMT the very long
@@ -431,6 +431,27 @@
   }
 
 
+  function cashPanelHtml(){
+    const cash=state.cashBalance;
+    const balances=Array.isArray(cash?.balances)?cash.balances:[];
+    const eur=balances.find(b=>b.currency==='EUR');
+    const foreign=balances.filter(b=>b.currency!=='EUR');
+    const body=()=>{
+      if(state.cashError)return '<div class="finance-alert-v553"><strong>BARGELD NICHT VERFÜGBAR</strong><span>'+esc(state.cashError)+'</span></div>';
+      if(!cash||!eur)return '<div class="finance-empty-row-v552"><span>'+ (state.loading?'Bargeld wird geladen…':'Noch kein Bargeld-Startbestand hinterlegt.')+'</span></div>';
+      const rows=Array.isArray(cash.recent)?cash.recent:[];
+      return '<div class="finance-score-v552"><strong class="'+(num(eur.balance)<0?'is-negative':'is-positive')+'">'+esc(fmtMoney(eur.balance,'EUR'))+'</strong><span>Rechnerischer Bargeldbestand · getrennt vom Girokonto</span></div>'+
+        '<div class="finance-mini-stats-v552"><div><span>Startbestand '+esc(fmtDate(cash.counted_on))+'</span><b>'+esc(fmtMoney(eur.initial))+'</b></div><div><span>Bar-Einnahmen</span><b>'+esc(fmtMoney(eur.income))+'</b></div><div><span>Bar-Ausgaben</span><b>'+esc(fmtMoney(eur.expense))+'</b></div></div>'+
+        (foreign.length?'<div class="finance-balance-open-v679"><div class="finance-bankcheck-head-v693"><span>FREMDWÄHRUNG</span><strong>SEPARAT</strong></div>'+foreign.map(b=>'<div><span>'+esc(b.currency)+'</span><strong>'+esc(fmtMoney(b.balance,b.currency))+'</strong></div>').join('')+'</div>':'')+
+        '<div class="finance-empty-row-v552"><span>Letzte Bargeldbewegungen seit Inventur ('+esc(cash.movement_count)+')</span></div>'+
+        (rows.length?'<div class="finance-recent-v553">'+rows.map(row=>{
+          const income=row.transaction_type==='income';
+          return '<div class="finance-recent-entry-v554"><div class="finance-recent-row-v553 is-static"><div class="finance-recent-main-v554"><strong>'+esc(row.merchant||'Unbekannt')+'</strong><span>'+esc(fmtDate(row.transaction_date))+'</span></div><div class="finance-recent-amount-v554"><b class="'+(income?'is-positive':'is-negative')+'">'+(income?'+':'−')+esc(fmtMoney(row.total_amount,row.currency))+'</b></div></div></div>';
+        }).join('')+'</div>':'<div class="finance-empty-row-v552"><small>Noch keine Bewegungen seit der Inventur.</small></div>');
+    };
+    return panelSectionHtml('cash','BARGELD','Bargeldbestand',!state.cashError&&eur?fmtMoney(eur.balance,'EUR'):'—',body);
+  }
+
   /* V900: Prognose-Modell in eigenständigem Modul für prüfbare Hochrechnung. */
   function planningHtml(){
     const forecast=window.__modFinanceForecastV900;
@@ -481,6 +502,7 @@
       '<div class="finance-grid-v552">'+
         '<section class="finance-panel-v552 finance-chart-panel-v552"><div class="finance-panel-head-v552"><div><span>01 · CASHFLOW</span><h3>'+periodSpec().title+'</h3></div><small>LIVE VIEW</small></div>'+chartHtml()+'</section>'+
         '<section class="finance-panel-v552 finance-score-panel-v552"><div class="finance-panel-head-v552"><div><span>02 · STATUS</span><h3>Konto</h3></div><small>AKTUELL</small></div><div class="finance-score-v552"><strong class="'+balanceClass+'">'+(connected?fmtMoney(summary.balance,currency):'—')+'</strong><span>Saldo</span></div>'+balanceNotesHtml+'<div class="finance-mini-stats-v552"><div><span>Buchungen</span><b>'+(connected?String(summary.count):'—')+'</b></div><div><span>Ausgaben</span><b>'+(connected?String(summary.expenseCount):'—')+'</b></div><div><span>Einnahmen</span><b>'+(connected?String(summary.incomeCount):'—')+'</b></div></div></section>'+
+        cashPanelHtml()+
         planningHtml()+
           panelSectionHtml('bookings','04 · BUCHUNGEN','Alle im Zeitraum',periodSpec().label,recentHtml)+
           panelSectionHtml('categories','05 · KATEGORIEN','Ausgaben & Vorteile','DETAIL',categoriesHtml)+
@@ -597,18 +619,20 @@
     const planningPromise=fetchPlannedExpenses(supabase).then(data=>({data,error:null})).catch(error=>({data:[],error:String(error?.message||error)}));
     const recurringPromise=fetchRecurringTransactions(supabase).then(data=>({data,error:null})).catch(error=>({data:[],error:String(error?.message||error)}));
     const balanceQuery=supabase.rpc('finance_current_balance');
+    const cashPromise=withTimeout(supabase.rpc('finance_cash_balance_v1'),'Bargeld').then(result=>({data:result?.data??null,error:result?.error?.message??null})).catch(error=>({data:null,error:String(error?.message||error)}));
     const openQuery=supabase.from('finance_transactions')
       .select('id,transaction_date,bank_booking_date,transaction_time,created_at,merchant,location,total_amount,currency,payment_method,transaction_type,category,receipt_source,notes,booking_status,bank_reference,work_related,reimbursement_expected,finance_items(id,item_name,total_price,sort_order)')
       .in('booking_status',['pending','not_visible'])
       .order('transaction_date',{ascending:false})
       .order('created_at',{ascending:false});
 
-    const [periodTransactions,balanceResult,openResult,planningResult,recurringResult]=await Promise.all([
+    const [periodTransactions,balanceResult,openResult,planningResult,recurringResult,cashResult]=await Promise.all([
       periodPromise,
       withTimeout(balanceQuery,'Kontostand'),
       withTimeout(openQuery,'Vorgemerkte Buchungen'),
       planningPromise,
-      recurringPromise
+      recurringPromise,
+      cashPromise
     ]);
     if(balanceResult?.error)throw balanceResult.error;
     if(openResult?.error)throw openResult.error;
@@ -623,7 +647,9 @@
       plannedExpenses:planningResult.data,
       plannedError:planningResult.error,
       recurringTransactions:recurringResult.data,
-      recurringError:recurringResult.error
+      recurringError:recurringResult.error,
+      cashBalance:cashResult.data,
+      cashError:cashResult.error
     };
   }
 
@@ -699,7 +725,7 @@
       const sectionButton=event.target?.closest?.('[data-finance-section-toggle]');
       if(sectionButton&&root.contains(sectionButton)){
         const which=sectionButton.dataset.financeSectionToggle;
-        if(['forecast','bookings','categories'].includes(which)){
+        if(['forecast','bookings','categories','cash'].includes(which)){
           const set=collapsedPanelsByPeriod[state.periodMode];
           if(set.has(which))set.delete(which);
           else set.add(which);
@@ -751,7 +777,7 @@
       if(saved&&typeof saved==='object'){
         for(const period of ['month','year','all']){
           if(Array.isArray(saved[period])){
-            collapsedPanelsByPeriod[period]=new Set(saved[period].filter(value=>['forecast','bookings','categories'].includes(value)));
+            collapsedPanelsByPeriod[period]=new Set(saved[period].filter(value=>['forecast','bookings','categories','cash'].includes(value)));
           }
         }
       }
