@@ -76,3 +76,47 @@ test('stock and today both offer another piece; freeze and thaw visually distinc
   assert(css.includes('is-freeze-planned-v822'));
   assert(css.includes('rgba(255,183,84,.42)'));
 });
+
+
+function chargePreview(status){
+  const start=source.indexOf('  function allocationMarkup(allocation,item){');
+  const end=source.indexOf('  // Verbrauchsbuchungen',start);
+  assert(start>=0&&end>start);
+  const item={id:'ingredient',name:'Hähnchenbrustfilet',quantity:200,unit:'g'};
+  const allocation={allocations:status==='frozen'?
+    [{lotId:'fresh',label:'Frische Packung',quantity:200,unit:'g',inventoryId:'stock'}]:
+    [{lotId:'old',label:'Hähnchenbrustfilet · Kauf 01.10. · '+(status==='thawed'?'aufgetaut':'Auftauen läuft'),quantity:120,unit:'g',inventoryId:'stock'},
+     {lotId:'fresh',label:'Frische Packung',quantity:80,unit:'g',inventoryId:'stock'}],remaining:0};
+  const before=JSON.stringify(allocation);
+  const context={item,allocation,state:{freezer:[portion('a',120,status,'old')],
+    lots:[{id:'old',inventory_id:'stock',storage_location:status==='frozen'?'tk':'fridge',purchased_on:'2026-10-01'}],
+    inventory:[{id:'stock',name:'Hähnchenbrustfilet'}],products:[]},
+    editableAllocationContext:()=>({}),sourceIsReal:()=>true,
+    ingredientName:x=>x.name,familyText:x=>x.toLowerCase(),frozenStorageLocation:x=>x==='tk',
+    familyAllocationConvertQuantity:x=>x,familyAllocationLotQuantity:()=>120,
+    fmtDate:()=> '01.10.',fmtQty:(x,u)=>x+' '+u,esc:String};
+  const html=vm.runInNewContext(source.slice(start,end)+'\nallocationMarkup(allocation,item);',context);
+  assert.equal(JSON.stringify(allocation),before,'display must not mutate actual allocation');
+  return html;
+}
+
+test('reserved frozen portion appears with projected fresh remainder without booking or edit controls',()=>{
+  const html=chargePreview('frozen');
+  assert.match(html,/Noch aufzutauen/);
+  assert.match(html,/120 g/);
+  assert.match(html,/80 g/);
+  assert.doesNotMatch(html,/200 g|data-food-allocation-edit/);
+  assert.match(html,/erst nach Auftau-Bestätigung verfügbar/);
+  assert.doesNotMatch(html,/is-thawing-v741/);
+});
+
+test('confirmed thawing and thawed lots retain warm gradient while fresh lot stays neutral',()=>{
+  for(const status of ['thawing','thawed']){
+    const html=chargePreview(status);
+    assert.equal((html.match(/is-thawing-v741/g)||[]).length,1);
+    assert.match(html,/120 g/);
+    assert.match(html,/80 g/);
+    assert.match(html,/data-food-allocation-edit/);
+    assert.doesNotMatch(html,/Noch aufzutauen/);
+  }
+});
