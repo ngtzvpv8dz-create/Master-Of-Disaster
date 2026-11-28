@@ -152,13 +152,13 @@ test('unmeasured edible avocado yield cannot be an automatic grocery order; zero
   assert.ok(deriveShopping(data).some(gap=>/avocado/i.test(gap.label)&&gap.missing>0));
 });
 
-test('existing fresh stock remains provisionally available near-term; future stock is not consumed early',()=>{
+test('fresh stock respects purchase date plus two days; future stock is not consumed early',()=>{
  window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
  try{
  const tomato=stock('tom','Tomaten','Tomaten',500);
  const data={inventory:[tomato],products:[],lots:[lot('fresh','tom',500,'2026-11-14')],meals:[meal('2026-11-16',[ingredient('Tomaten',300,'tom')]),meal('2026-11-17',[ingredient('Tomaten',200,'tom')])]};
  const gaps=deriveShopping(data);assert.equal(gaps.length,1);assert.equal(gaps[0].missing,200);assert.equal(gaps[0].shortageDate,'2026-11-17');
- data.lots=[lot('old','tom',500,'2026-11-10')];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),200);
+ data.lots=[lot('old','tom',500,'2026-11-10')];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),500);assert.equal(data.inventory[0].quantity,500,'forecast never disposes of stock');
  data.lots=[lot('new','tom',500,'2026-11-17')];const prior=deriveShopping(data);assert.equal(prior.length,1);assert.equal(prior[0].missing,300);
  data.lots=[{...lot('fresh','tom',500,'2026-11-14'),best_before_date:'2026-11-15'}];assert.equal(deriveShopping(data).reduce((s,x)=>s+x.missing,0),500);
  const avocado={id:'a',name:'Avocados Hass',family_name:'Avocado',quantity:3,unit:'Stück',is_active:true};
@@ -192,4 +192,27 @@ test('a freshly purchased named apple variety counts against the apple family',(
  window.ModFoodFreshnessV913=require('../food-freshness-v913.js');
  try{const apple={id:'a',name:'Pink Lady',family_name:'Apfel',quantity:2,unit:'Stück',is_active:true};const data={inventory:[apple],products:[],lots:[{...lot('a1','a',2,'2026-11-14'),package_unit:'Stück',opened_remaining_unit:'Stück'}],meals:[meal('2026-11-16',[{name:'Apfel',quantity:2,unit:'Stück'}])]};assert.equal(deriveShopping(data).length,0);}
  finally{delete window.ModFoodFreshnessV913;}
+});
+
+test('Verified frozen portions stay reserved for their linked meal; no earlier phantom stock',()=>{
+ const chicken=stock('ch','Hähnchenbrustfilet','Hähnchenbrustfilet',903);
+ const data={inventory:[chicken],products:[],lots:[
+  lot('fridge','ch',300,'2026-11-14'),
+  lot('sunday','ch',350,'2026-11-14',true),
+  lot('friday','ch',253,'2026-11-14',true)
+ ],freezer:[
+  {inventory_id:'ch',frozen_lot_id:'sunday',meal_ingredient_id:'sun',quantity:350,unit:'g',status:'frozen'},
+  {inventory_id:'ch',frozen_lot_id:'friday',meal_ingredient_id:'fri',quantity:253,unit:'g',status:'frozen'}
+ ],meals:[
+  meal('2026-11-14',[{...ingredient('Hähnchenbrustfilet',300,'ch'),id:'sat'}]),
+  meal('2026-11-15',[{...ingredient('Hähnchenbrustfilet',550,'ch'),id:'sun'}]),
+  meal('2026-11-20',[{...ingredient('Hähnchenbrustfilet',253,'ch'),id:'fri'}])
+ ]};
+ const gaps=deriveShopping(data);
+ assert.equal(gaps.length,1);assert.equal(gaps[0].missing,200);
+ assert.equal(gaps[0].buyFrom,'2026-11-14');assert.equal(gaps[0].shortageDate,'2026-11-15');
+ assert.equal(chicken.quantity,903);
+ // A duplicate reservation cannot create or consume the same lot twice.
+ data.freezer.push({...data.freezer[1]});
+ assert.deepEqual(deriveShopping(data),gaps);
 });
