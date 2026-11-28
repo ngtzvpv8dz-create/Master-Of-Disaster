@@ -16,7 +16,7 @@
       SUPABASE,
       './supabase-config.js?v=609',
       './app.js?v=609',
-      './remote-commands.js?v=640-staged-bridge',
+      './remote-commands.js?v=20261128-work-blocks',
       './remote-historical-archive-import-v541.js?v=640-staged-bridge',
       './segment-active-duration-v487.js?v=487-1528',
       './segment-duration-v444.js?v=446-1228',
