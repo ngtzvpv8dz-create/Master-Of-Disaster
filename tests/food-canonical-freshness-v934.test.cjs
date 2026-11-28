@@ -35,7 +35,9 @@ test('shopping forecast integrates variants, provisional whole fruit and actual 
  const meal=(date,name,quantity)=>({meal_date:date,meal_type:'dinner',status:'planned',ingredients:[{name,quantity,unit:'g'}]});
  const data={inventory,products:[],lots:[{inventory_id:'m',purchased_on:'2026-11-21',package_quantity:1,package_unit:'Stück',unopened_packages:1}],meals:[meal('2026-11-26','Spinat TK',300),meal('2026-11-27','Blattspinat, tiefgekühlt',50),meal('2026-11-25','Mango (essbar)',170),meal('2026-11-29','Couscous',100),meal('2026-11-27','Reis',45)]};
  const gaps=w.__testDerive(data);
- assert(!gaps.some(g=>/spinat|mango|reis/i.test(g.label)));
+ assert(!gaps.some(g=>/spinat|reis/i.test(g.label)));
+ assert(gaps.some(g=>/mango/i.test(g.label)&&g.unit==='Stück'&&g.missing===1),'old fruit stays in physical stock but does not cover a meal beyond its planned freshness window');
+ assert.equal(inventory.find(i=>i.id==='m').quantity,1);
  assert(gaps.some(g=>g.label==='Couscous'&&g.missing===12));
  const later=w.__testDerive({...data,meals:[meal('2026-12-01','Mango (essbar)',170)]});
  assert(later.some(g=>/mango/i.test(g.label)&&g.unit==='Stück'&&g.missing===1&&g.buyFrom==='2026-11-28'));
