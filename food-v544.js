@@ -3525,12 +3525,9 @@
         const end=policy.deadline(bought,kind,{mhd:lot.best_before_date,openedOn:lot.batch_data?.opened_on||lot.batch_data?.opened_at||lot.opened_at});
         const plannedUntil=Number.isInteger(declared)&&declared>0&&declared<2?[end,plusDays(bought,declared)].sort()[0]:end;
         if(!plannedUntil)continue;
-        // The scheduling window is not a discard date for physical produce.
-        // Tentatively use existing stock promptly; the audit asks for a condition check.
-        // Never assume it covers a distant future recipe or override a dated MHD.
-        const near=plusDays(todayIso(),2);
-        const softEnd=bought<=todayIso()&&plannedUntil<near?near:plannedUntil;
-        const until=lot.best_before_date&&lot.best_before_date<softEnd?lot.best_before_date:softEnd;
+        // The planning deadline is not a disposal instruction: older physical stock remains
+        // visible, but cannot suppress a purchase for a meal outside the confirmed fresh-use window.
+        const until=plannedUntil;
         if(until<todayIso())continue;
         const q=(value,unit)=>inventoryQuantityInUnit({...stock,quantity:Number(value)||0,unit:unit||stock.unit},need.unit).available;
         const available=q((Number(lot.unopened_packages)||0)*(Number(lot.package_quantity)||0),lot.package_unit)+q(lot.opened_remaining_quantity,lot.opened_remaining_unit);
@@ -3641,7 +3638,7 @@
           :(stockId?'stock|'+stockId+'|'+shoppingUnit:'free|'+canonical+'|'+shoppingUnit.toLocaleLowerCase('de-DE'));
         const current=needs.get(key)||{inventory_id:stockId,label:familyLabel||shoppingName,canonical,unit:shoppingUnit,explicitVariant:Boolean(explicitName),variantEvidence:explicitName?String(item.label||name):null,required:0,uses:[]};
         current.required+=shoppingQuantity;
-        current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity});
+        current.uses.push({date:meal.meal_date,mealType:meal.meal_type,quantity:shoppingQuantity,ingredientId:item.id||null});
         if(current.canonical==='pfeffer schwarz')current.label='Pfeffer schwarz';
         if(current.canonical==='knoblauchzehen')current.label='Knoblauchzehen';
         needs.set(key,current);
@@ -3772,7 +3769,30 @@
       const originalLotAmounts=datedLedger?.map(lot=>({...lot}))||[];
       let suppliedByVariant=0;
       const datedAvailable=datedLedger?datedLedger.reduce((s,l)=>s+l.available,0):null;
-      let remaining=Math.max(0,stockInfo.available||0);
+      // Physically frozen portions reserved for a specific planned ingredient are not
+      // available for earlier meals. Reserve only verified, compatible real lots.
+      const reservedForIngredient=new Map();
+      const ingredientUses=new Map(need.uses.filter(u=>u.ingredientId).map(u=>[String(u.ingredientId),u]));
+      const matchingStocks=new Set((stockInfo.stock?[stockInfo.stock]:(stockInfo.rows||[])).map(row=>String(row.id)));
+      const countedLots=new Set();
+      let reservedTotal=0;
+      if(!datedLedger){
+        for(const portion of data.freezer||[]){
+          const ingredientId=String(portion.meal_ingredient_id||'');
+          const use=ingredientUses.get(ingredientId);
+          const lotId=String(portion.frozen_lot_id||'');
+          if(!use||!lotId||countedLots.has(lotId)||!matchingStocks.has(String(portion.inventory_id))||
+             !['frozen','thawing','thawed'].includes(portion.status)||portion.unit!==need.unit)continue;
+          const lot=(data.lots||[]).find(x=>String(x.id)===lotId&&String(x.inventory_id)===String(portion.inventory_id));
+          const amount=Number(portion.quantity);
+          if(!lot||lot.opened_remaining_unit!==need.unit||!(amount>0)||Number(lot.opened_remaining_quantity)!==amount)continue;
+          const already=reservedForIngredient.get(ingredientId)||0;
+          const accepted=Math.min(amount,Math.max(0,use.quantity-already),Math.max(0,Number(stockInfo.available||0)-reservedTotal));
+          if(accepted<=0)continue;
+          countedLots.add(lotId);reservedForIngredient.set(ingredientId,already+accepted);reservedTotal+=accepted;
+        }
+      }
+      let remaining=Math.max(0,(stockInfo.available||0)-reservedTotal);
       const windows=new Map();
       const shortFreshWindowDays=freshConsumptionWindowDays(need,stock,(data.products||[]).filter(product=>product.active!==false));
       const freshnessPolicy=window.ModFoodFreshnessV913;
@@ -3797,8 +3817,16 @@
 
       [...windows.values()].sort((a,b)=>a.buyFrom.localeCompare(b.buyFrom)).forEach(window=>{
         const dated=datedLedger?takeDatedProduce(datedLedger,window.uses):null;
-        const available=dated?dated.supplied:Math.min(remaining,window.required);
-        remaining=Math.max(0,remaining-window.required);
+        let reservedShortageDate=null;
+        let available=dated?dated.supplied:0;
+        if(!dated){
+          for(const use of [...window.uses].sort((a,b)=>a.date.localeCompare(b.date)||(['breakfast','lunch','snack','dinner'].indexOf(a.mealType)-['breakfast','lunch','snack','dinner'].indexOf(b.mealType)))){
+            const reserved=Math.min(use.quantity,reservedForIngredient.get(String(use.ingredientId||''))||0);
+            const free=Math.min(remaining,Math.max(0,use.quantity-reserved));
+            available+=reserved+free;remaining-=free;
+            if(reserved+free+1e-8<use.quantity&&!reservedShortageDate)reservedShortageDate=use.date;
+          }
+        }
         suppliedByVariant+=available;
         const missing=Math.max(0,window.required-available);
         if(missing<=1e-8)return;
@@ -3810,7 +3838,7 @@
         // purchased in whole units. Recipe portions remain a separate rule.
         const purchaseMissing=need.unit==='Stück'
           ?Math.ceil(missing-1e-8):missing;
-        const actualShortageDate=dated?dated.shortageDate:shortageDateFor({uses:window.uses},available);
+        const actualShortageDate=dated?dated.shortageDate:(reservedShortageDate||shortageDateFor({uses:window.uses},available));
 
         gaps.push({
           ...need,
