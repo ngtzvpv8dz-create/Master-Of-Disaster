@@ -29,7 +29,7 @@ async function run(engine,label,viewport){
   });
   assert.equal(actual.old,800);assert.equal(actual.canonical,800);assert.equal(actual.fresh,0);
   assert.equal(actual.wed,'2026-11-28');assert.equal(actual.sat,'2026-11-30');
-  assert.deepEqual(actual.gaps.map(g=>[g.label,g.missing]),[['Couscous',12]]);
+  assert.deepEqual(actual.gaps.map(g=>[g.label,g.missing]),[['Mango frisch',1],['Couscous',12]]);
   assert(actual.laterIssues.some(i=>i.type==='window'&&i.block));
   console.log('PASS '+label+' production resolver and grocery forecast');
  }finally{await browser.close();}
