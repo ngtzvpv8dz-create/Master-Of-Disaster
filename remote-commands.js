@@ -127,6 +127,38 @@
     return matches[0];
   }
 
+
+  // Remote work blocks use the same local model and move API as the Today UI.
+  function setTodayWorkBlocks(payload){
+    const api=window.__modTodayWorkBlocksV474;
+    if(!api)throw new Error('Arbeitsblock-Modul noch nicht geladen.');
+    const date=normalizeTodayDate(payload?.date);
+    if(!date||date!==getBerlinDateKey())throw new Error('Nur der aktuelle Heute-Tag ist zulässig.');
+    const active=tasks.filter(t=>t&&['open','running','paused'].includes(t.status)&&t.todayDate===date);
+    const requested=payload?.block_one;
+    if(!Array.isArray(requested)||!requested.length)throw new Error('Arbeitsblock 1 ist leer.');
+    const selected=requested.map(item=>{
+      if(!item||item.local_task_id==null)throw new Error('Stabile Aufgaben-ID fehlt.');
+      const matches=active.filter(t=>String(t.id)===String(item.local_task_id));
+      if(matches.length!==1||norm(matches[0].text)!==norm(item.text))throw new Error('Aufgabe nicht eindeutig im Heute-Bereich: '+String(item.text||item.local_task_id));
+      return matches[0];
+    });
+    const ids=new Set(selected.map(t=>String(t.id)));
+    if(ids.size!==selected.length)throw new Error('Doppelte Aufgaben-ID.');
+    const rest=active.filter(t=>!ids.has(String(t.id))).sort((a,b)=>(Number(a.todayOrder)||0)-(Number(b.todayOrder)||0));
+    let blocks=api.getBlocks(date);
+    if(blocks.length>2)throw new Error('Mehr als zwei vorhandene Arbeitsblöcke; keine Änderung vorgenommen.');
+    while(blocks.length<2){api.addBlock('',{date,render:false});blocks=api.getBlocks(date);}
+    [selected,rest].forEach((list,i)=>list.forEach(task=>{
+      if(!api.moveTaskToBlock(task.id,blocks[i].id,null,{date,render:false}))throw new Error('Arbeitsblock-Zuweisung fehlgeschlagen: '+task.text);
+    }));
+    if(typeof render==='function')render();
+    const snapshot=api.orderedByBlocks(date);
+    const result=snapshot.blocks.map((block,i)=>({block_number:i+1,block_id:block.id,tasks:snapshot.rows.filter(t=>t.todayWorkBlockId===block.id).map(t=>({local_task_id:t.id,text:t.text,number:dynamicNumber(t)}))}));
+    if(result.length!==2||result[0].tasks.length!==selected.length||result[1].tasks.length!==rest.length||result[0].tasks.some((t,i)=>String(t.local_task_id)!==String(selected[i].id))||result[1].tasks.some((t,i)=>String(t.local_task_id)!==String(rest[i].id)))throw new Error('Arbeitsblock-Nachprüfung fehlgeschlagen.');
+    return {date,blocks:result};
+  }
+
   function runTaskCommand(command,payload){
     let task;
     if(command==='START_TASK'){task=resolveTask(payload,['open']);startTask(task.id);}
@@ -190,10 +222,12 @@
   }
 
   async function processOne(client,row){
+    if(row.command==='SET_TODAY_WORK_BLOCKS'&&!window.__modTodayWorkBlocksV474)return false;
     try{
       let result={};
       if(row.command==='REPORT_INTEGRITY')result=integrityResult();
       else if(row.command==='REPORT_TASK_DETAILS')result=taskDetailResult(row.payload||{});
+      else if(row.command==='SET_TODAY_WORK_BLOCKS')result=setTodayWorkBlocks(row.payload||{});
       else if(row.command==='ADD_TASK'){
         const task=createLocalTask(row.payload);
         const remoteMeta=task.__remoteV450||{};
